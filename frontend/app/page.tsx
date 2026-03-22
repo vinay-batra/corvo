@@ -144,7 +144,7 @@ export default function Landing() {
         </motion.div>
 
         <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.5 }}
-          style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(44px, 8vw, 96px)", fontWeight: 800, lineHeight: 1.0, marginBottom: 24, letterSpacing: -3 }}>
+          style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(36px, 6vw, 72px)", fontWeight: 800, lineHeight: 1.05, marginBottom: 24, letterSpacing: -2, maxWidth: 900 }}>
           <span style={{ color: "#00ffb3", textShadow: "0 0 60px rgba(0,255,179,0.35)" }}>Know</span>{" "}
           <span style={{ color: "#f0f4ff" }}>your</span>{" "}
           <span style={{ color: "#38bdf8", textShadow: "0 0 60px rgba(56,189,248,0.35)" }}>portfolio.</span>
@@ -155,7 +155,7 @@ export default function Landing() {
 
         <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.65 }}
           style={{ fontSize: "clamp(15px, 2vw, 19px)", color: "rgba(224,232,255,0.6)", maxWidth: 560, margin: "0 auto 48px", lineHeight: 1.8, fontWeight: 300 }}>
-          Institutional-grade analytics, AI insights, and risk intelligence — built for everyday investors who want to invest smarter without the jargon.
+          Institutional-grade analytics, AI insights, and risk intelligence built for everyday investors who want to invest smarter without the jargon.
         </motion.p>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.75 }}
