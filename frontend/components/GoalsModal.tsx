@@ -7,7 +7,7 @@ const STEPS = [
   {
     id: "basics",
     title: "Let's personalize your portfolio",
-    subtitle: "A few quick questions so ALPHAi can give you smarter insights",
+    subtitle: "A few quick questions so Corvo can give you smarter insights",
     icon: "◈",
   },
   {

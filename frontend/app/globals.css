@@ -6,13 +6,13 @@
   --bg-void:        #01020a;
   --bg-deep:        #02040e;
   --bg-panel:       rgba(4, 8, 24, 0.95);
-  --bg-card:        rgba(255, 255, 255, 0.028);
-  --bg-card-hover:  rgba(255, 255, 255, 0.055);
-  --bg-glass:       rgba(10, 18, 40, 0.7);
+  --bg-card:        rgba(255, 255, 255, 0.06);
+  --bg-card-hover:  rgba(255, 255, 255, 0.1);
+  --bg-glass:       rgba(10, 18, 45, 0.85);
 
   /* Borders */
-  --border-dim:     rgba(255, 255, 255, 0.065);
-  --border-mid:     rgba(255, 255, 255, 0.12);
+  --border-dim:     rgba(255, 255, 255, 0.12);
+  --border-mid:     rgba(255, 255, 255, 0.2);
   --border-bright:  rgba(255, 255, 255, 0.22);
 
   /* Brand colors */
@@ -31,8 +31,8 @@
   /* Text */
   --text-primary:   #f0f4ff;
   --text-secondary: rgba(224, 232, 255, 0.7);
-  --text-muted:     rgba(180, 196, 230, 0.45);
-  --text-faint:     rgba(140, 160, 200, 0.3);
+  --text-muted:     rgba(200, 215, 245, 0.65);
+  --text-faint:     rgba(160, 185, 225, 0.5);
 
   /* Typography */
   --font-display:   'Syne', sans-serif;

@@ -86,7 +86,7 @@ function Card({ children, accent = "var(--green)", style = {}, delay = 0, classN
       transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
       className={className}
       style={{
-        background: "var(--bg-card)",
+        background: "rgba(255,255,255,0.06)",
         border: "1px solid var(--border-dim)",
         borderRadius: 20,
         padding: "24px",
@@ -286,10 +286,10 @@ export default function AppPage() {
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        style={{ width: 264, flexShrink: 0, background: "rgba(2,4,14,0.92)", borderRight: "1px solid var(--border-dim)", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, backdropFilter: "blur(20px)" }}
+        style={{ width: 264, flexShrink: 0, background: "rgba(6,10,28,0.97)", borderRight: "1px solid rgba(255,255,255,0.1)", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, backdropFilter: "blur(20px)" }}
       >
         {/* Logo */}
-        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border-dim)" }}>
+        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
             <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
               <polygon points="20,2 35,11 35,29 20,38 5,29 5,11" stroke="var(--green)" strokeWidth="1.5" fill="none" style={{ filter: "drop-shadow(0 0 4px rgba(0,255,179,0.5))" }} />
@@ -302,7 +302,7 @@ export default function AppPage() {
         </div>
 
         {/* Profile button */}
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-dim)" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
           <button
             onClick={() => setShowProfile(true)}
             style={{ width: "100%", padding: "8px 12px", background: "rgba(0,255,179,0.04)", border: "1px solid rgba(0,255,179,0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", transition: "all 0.2s" }}
@@ -328,7 +328,7 @@ export default function AppPage() {
         </div>
 
         {/* Period selector */}
-        <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border-dim)" }}>
+        <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
           <p style={{ fontSize: 8, letterSpacing: 3, color: "var(--text-faint)", textTransform: "uppercase", marginBottom: 8 }}>Period</p>
           <div style={{ display: "flex", gap: 4 }}>
             {PERIODS.map(p => (
@@ -336,7 +336,7 @@ export default function AppPage() {
                 flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 11, fontFamily: "var(--font-mono)",
                 background: period === p ? "rgba(0,255,179,0.12)" : "transparent",
                 border: period === p ? "1px solid rgba(0,255,179,0.35)" : "1px solid transparent",
-                color: period === p ? "var(--green)" : "var(--text-muted)",
+                color: period === p ? "var(--green)" : "rgba(200,215,245,0.6)",
                 cursor: "pointer", transition: "all 0.2s", letterSpacing: 0.5,
               }}>{PERIOD_LABELS[p]}</button>
             ))}
@@ -344,7 +344,7 @@ export default function AppPage() {
         </div>
 
         {/* Benchmark */}
-        <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border-dim)", position: "relative" }}>
+        <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.1)", position: "relative" }}>
           <p style={{ fontSize: 8, letterSpacing: 3, color: "var(--text-faint)", textTransform: "uppercase", marginBottom: 8 }}>Benchmark</p>
           <button
             onClick={() => setBenchmarkOpen(o => !o)}
@@ -374,7 +374,7 @@ export default function AppPage() {
         </div>
 
         {/* Saved portfolios */}
-        <div style={{ padding: "12px 16px 8px", borderTop: "1px solid var(--border-dim)" }}>
+        <div style={{ padding: "12px 16px 8px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
           <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
         </div>
 
@@ -396,7 +396,7 @@ export default function AppPage() {
           initial={{ y: -8, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 56, background: "rgba(2,4,14,0.7)", borderBottom: "1px solid var(--border-dim)", backdropFilter: "blur(16px)" }}
+          style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 56, background: "rgba(6,10,28,0.92)", borderBottom: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(16px)" }}
         >
           {/* Tabs */}
           <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
@@ -412,7 +412,7 @@ export default function AppPage() {
                   padding: "6px 14px", borderRadius: 8, cursor: "pointer",
                   background: activeTab === tab.id ? "rgba(0,255,179,0.08)" : "transparent",
                   border: activeTab === tab.id ? "1px solid rgba(0,255,179,0.2)" : "1px solid transparent",
-                  color: activeTab === tab.id ? "var(--green)" : "var(--text-muted)",
+                  color: activeTab === tab.id ? "var(--green)" : "rgba(200,215,245,0.65)",
                   fontSize: 12, fontFamily: "var(--font-body)", fontWeight: 500,
                   transition: "all 0.2s", letterSpacing: 0.3,
                 }}
