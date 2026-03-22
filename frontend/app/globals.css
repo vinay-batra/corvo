@@ -2,7 +2,6 @@
 @import "tailwindcss";
 
 :root {
-  /* Core palette */
   --bg-void:        #01020a;
   --bg-deep:        #020510;
   --bg-panel:       rgba(6, 10, 30, 0.97);
@@ -10,37 +9,33 @@
   --bg-card-hover:  rgba(255, 255, 255, 0.12);
   --bg-glass:       rgba(10, 18, 45, 0.88);
 
-  /* Borders - much more visible */
   --border-dim:     rgba(255, 255, 255, 0.14);
   --border-mid:     rgba(255, 255, 255, 0.22);
   --border-bright:  rgba(255, 255, 255, 0.35);
   --border-green:   rgba(0, 255, 179, 0.3);
 
-  /* Brand colors */
   --green:          #00ffb3;
   --green-dim:      rgba(0, 255, 179, 0.55);
   --green-glow:     rgba(0, 255, 179, 0.15);
   --green-deep:     rgba(0, 255, 179, 0.08);
   --cyan:           #38bdf8;
   --cyan-dim:       rgba(56, 189, 248, 0.55);
+  --purple:         #818cf8;
   --violet:         #818cf8;
   --violet-dim:     rgba(129, 140, 248, 0.55);
   --amber:          #fbbf24;
   --red:            #f87171;
   --rose:           #fb7185;
 
-  /* Text - all much brighter */
   --text-primary:   #f0f4ff;
   --text-secondary: rgba(224, 232, 255, 0.85);
   --text-muted:     rgba(200, 215, 245, 0.65);
   --text-faint:     rgba(170, 190, 230, 0.5);
 
-  /* Typography */
   --font-display:   'Syne', sans-serif;
   --font-mono:      'Space Mono', monospace;
   --font-body:      'Inter', sans-serif;
 
-  /* Shadows */
   --shadow-green:   0 0 40px rgba(0, 255, 179, 0.12);
   --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.4);
   --shadow-float:   0 8px 48px rgba(0, 0, 0, 0.6);
@@ -60,7 +55,6 @@ html, body {
 
 p, span, div, label { color: inherit; }
 
-/* Subtle grid */
 body::after {
   content: '';
   position: fixed;
@@ -73,7 +67,6 @@ body::after {
   z-index: 0;
 }
 
-/* Scrollbars */
 ::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0, 255, 179, 0.2); border-radius: 2px; }
@@ -81,7 +74,6 @@ body::after {
 
 ::selection { background: rgba(0, 255, 179, 0.18); color: var(--green); }
 
-/* Animations */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.3; transform: scale(0.7); }
@@ -100,7 +92,6 @@ body::after {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Input reset - make all inputs visible */
 input {
   color: var(--text-primary);
   font-family: var(--font-body);
@@ -108,11 +99,6 @@ input {
 input::placeholder {
   color: var(--text-muted);
 }
-input[type="range"] {
-  cursor: pointer;
-}
-
-/* Button reset */
 button {
   font-family: var(--font-body);
 }

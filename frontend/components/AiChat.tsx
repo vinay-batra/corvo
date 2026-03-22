@@ -73,7 +73,7 @@ export default function AiChat({ portfolioContext }: { portfolioContext: any }) 
   // Load goals from localStorage
   const goals = (() => {
     if (typeof window === "undefined") return null;
-    const raw = localStorage.getItem("alphai_goals");
+    const raw = localStorage.getItem("corvo_goals");
     if (!raw || raw === "skipped") return null;
     try { return JSON.parse(raw); } catch { return null; }
   })();
