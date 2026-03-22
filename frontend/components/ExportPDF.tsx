@@ -115,7 +115,7 @@ export default function ExportPDF({ data, assets, period }: ExportPDFProps) {
 </div>
 
 <div class="footer">
-  ALPHAi · Portfolio Intelligence Platform · Data sourced from Yahoo Finance · For informational purposes only. Not financial advice.
+  Corvo · Portfolio Intelligence Platform · Data sourced from Yahoo Finance · For informational purposes only. Not financial advice.
 </div>
 </body>
 </html>`;

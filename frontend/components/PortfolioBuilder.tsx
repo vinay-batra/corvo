@@ -10,9 +10,10 @@ const TYPE_LABELS: Record<string, string> = { EQUITY: "Stock", ETF: "ETF", CRYPT
 
 interface Asset { ticker: string; weight: number; }
 interface SearchResult { ticker: string; name: string; exchange: string; type: string; }
-interface Props { assets: Asset[]; setAssets: (a: Asset[]) => void; }
+interface Props { assets: Asset[]; onAssetsChange?: (a: Asset[]) => void; setAssets?: (a: Asset[]) => void; onAnalyze?: () => void; loading?: boolean; }
 
-export default function PortfolioBuilder({ assets, setAssets }: Props) {
+export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading }: Props) {
+  const updateAssets = onAssetsChange || setAssets || (() => {});
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [query, setQuery] = useState<Record<number, string>>({});
   const [searchResults, setSearchResults] = useState<Record<number, SearchResult[]>>({});
@@ -42,26 +43,26 @@ export default function PortfolioBuilder({ assets, setAssets }: Props) {
   }, []);
 
   const updateWeight = (i: number, val: number) => {
-    const next = [...assets]; next[i] = { ...next[i], weight: val }; setAssets(next);
+    const next = [...assets]; next[i] = { ...next[i], weight: val }; updateAssets(next);
   };
   const updateTicker = (i: number, val: string) => {
     setQuery(prev => ({ ...prev, [i]: val }));
-    const next = [...assets]; next[i] = { ...next[i], ticker: val.toUpperCase() }; setAssets(next);
+    const next = [...assets]; next[i] = { ...next[i], ticker: val.toUpperCase() }; updateAssets(next);
     liveSearch(i, val);
   };
   const selectTicker = (i: number, result: SearchResult) => {
     setQuery(prev => ({ ...prev, [i]: result.ticker }));
     setSearchResults(prev => ({ ...prev, [i]: [] }));
-    const next = [...assets]; next[i] = { ...next[i], ticker: result.ticker }; setAssets(next);
+    const next = [...assets]; next[i] = { ...next[i], ticker: result.ticker }; updateAssets(next);
     setActiveIndex(null);
     setTickerNames(prev => ({ ...prev, [result.ticker]: result.name }));
   };
-  const remove = (i: number) => setAssets(assets.filter((_, idx) => idx !== i));
-  const add = () => setAssets([...assets, { ticker: "", weight: 0.05 }]);
+  const remove = (i: number) => updateAssets(assets.filter((_, idx) => idx !== i));
+  const add = () => updateAssets([...assets, { ticker: "", weight: 0.05 }]);
   const equalizeWeights = () => {
     if (!assets.length) return;
     const w = parseFloat((1 / assets.length).toFixed(4));
-    setAssets(assets.map(a => ({ ...a, weight: w })));
+    updateAssets(assets.map(a => ({ ...a, weight: w })));
   };
 
   const handleImageImport = async (file: File) => {
@@ -79,7 +80,7 @@ export default function PortfolioBuilder({ assets, setAssets }: Props) {
         body: JSON.stringify({ image_base64: base64, media_type: file.type || "image/jpeg" }),
       });
       const data = await res.json();
-      if (data.assets?.length > 0) { setAssets(data.assets.slice(0, 20)); }
+      if (data.assets?.length > 0) { updateAssets(data.assets.slice(0, 20)); }
       else { setImportError("No holdings found — try a clearer screenshot."); }
     } catch { setImportError("Import failed. Try again."); }
     setImportLoading(false);
@@ -195,6 +196,16 @@ export default function PortfolioBuilder({ assets, setAssets }: Props) {
           </button>
         )}
       </div>
+
+      {onAnalyze && (
+        <button
+          onClick={onAnalyze}
+          disabled={loading}
+          style={{ width: "100%", marginTop: 10, padding: "10px", background: loading ? "rgba(0,255,179,0.05)" : "rgba(0,255,179,0.12)", border: "1px solid rgba(0,255,179,0.4)", borderRadius: 10, color: "#00ffb3", fontSize: 11, fontWeight: 700, letterSpacing: 3, fontFamily: "var(--font-display)", cursor: loading ? "default" : "pointer", transition: "all 0.2s", textTransform: "uppercase" as any }}
+        >
+          {loading ? "Analyzing..." : "Analyze →"}
+        </button>
+      )}
     </div>
   );
 }

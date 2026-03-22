@@ -39,7 +39,7 @@ const STEPS = [
   {
     target: "ai",
     title: "AI Chat",
-    body: "Ask anything about your portfolio. 'Should I add gold?', 'Am I too concentrated in tech?', 'What happens if the market drops 30%?' — ALPHAi knows your exact holdings.",
+    body: "Ask anything about your portfolio. 'Should I add gold?', 'Am I too concentrated in tech?', 'What happens if the market drops 30%?' — Corvo knows your exact holdings.",
     icon: "◆",
     color: "var(--purple)",
     position: "center",
