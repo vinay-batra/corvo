@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import Metrics from "../../components/Metrics";
@@ -24,11 +24,11 @@ import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 
 const TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "risk",     label: "Risk" },
-  { id: "simulate", label: "Simulate" },
-  { id: "news",     label: "News" },
-  { id: "ai",       label: "AI Chat" },
+  { id: "overview", label: "Overview",  icon: "◈" },
+  { id: "risk",     label: "Risk",      icon: "◬" },
+  { id: "simulate", label: "Simulate",  icon: "◎" },
+  { id: "news",     label: "News",      icon: "◷" },
+  { id: "ai",       label: "AI Chat",   icon: "✦" },
 ];
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
@@ -51,355 +51,518 @@ function LiveClock() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
-  return <span style={{ fontFamily: "var(--font-display)", fontSize: 11, color: "rgba(240,244,248,0.55)", letterSpacing: 2 }}>{time}</span>;
+  return (
+    <span style={{
+      fontFamily: "var(--font-mono)", fontSize: 10,
+      color: "var(--text-muted)", letterSpacing: 2
+    }}>{time}</span>
+  );
 }
 
 function PulsingDot({ color = "var(--green)" }: { color?: string }) {
-  return <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: color, animation: "pulse-dot 2s infinite" }} />;
+  return (
+    <span style={{
+      display: "inline-block", width: 5, height: 5, borderRadius: "50%",
+      background: color, animation: "pulse-dot 2s infinite",
+      boxShadow: `0 0 6px ${color}`
+    }} />
+  );
 }
 
-function GlassCard({ children, accent, title, style = {} }: any) {
+function SectionHeader({ title, accent = "var(--green)" }: { title: string; accent?: string }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "24px 28px", position: "relative", overflow: "hidden", ...style }}
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+      <div style={{ width: 2, height: 16, background: accent, borderRadius: 1, boxShadow: `0 0 8px ${accent}` }} />
+      <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, letterSpacing: 4, color: "var(--text-muted)", textTransform: "uppercase" }}>{title}</span>
+    </div>
+  );
+}
+
+function Card({ children, accent = "var(--green)", style = {}, delay = 0, className = "" }: any) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+      className={className}
+      style={{
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-dim)",
+        borderRadius: 20,
+        padding: "24px",
+        position: "relative",
+        overflow: "hidden",
+        backdropFilter: "blur(12px)",
+        ...style
+      }}
     >
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, opacity: 0.5 }} />
-      {title && <p style={{ fontSize: 9, letterSpacing: 3, color: "rgba(240,244,248,0.55)", textTransform: "uppercase", marginBottom: 16 }}>{title}</p>}
+      {/* Top accent line */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 1,
+        background: `linear-gradient(90deg, transparent 0%, ${accent}60 50%, transparent 100%)`
+      }} />
       {children}
     </motion.div>
   );
 }
 
-function EmptyState({ loading }: { loading: boolean }) {
+function LoadingSpinner() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 360, gap: 16 }}>
-      {loading ? (
-        <>
-          <div style={{ width: 40, height: 40, border: "2px solid var(--border-mid)", borderTopColor: "var(--green)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <p style={{ fontSize: 12, letterSpacing: 2, color: "rgba(240,244,248,0.55)", textTransform: "uppercase" }}>Crunching the numbers...</p>
-        </>
-      ) : (
-        <>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 48, color: "var(--border-mid)" }}>◈</div>
-          <p style={{ fontSize: 12, letterSpacing: 2, color: "rgba(240,244,248,0.55)", textTransform: "uppercase" }}>Add assets to begin analysis</p>
-        </>
-      )}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 20 }}>
+      <div style={{ position: "relative", width: 48, height: 48 }}>
+        <div style={{ position: "absolute", inset: 0, border: "1px solid rgba(0,255,179,0.1)", borderTopColor: "var(--green)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        <div style={{ position: "absolute", inset: 6, border: "1px solid rgba(56,189,248,0.1)", borderTopColor: "var(--cyan)", borderRadius: "50%", animation: "spin 0.7s linear infinite reverse" }} />
+        <div style={{ position: "absolute", inset: 14, width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 4, height: 4, background: "var(--green)", borderRadius: "50%", boxShadow: "0 0 8px var(--green)" }} />
+        </div>
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--green)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>Crunching Numbers</p>
+        <p style={{ fontSize: 11, color: "var(--text-faint)" }}>Fetching market data...</p>
+      </div>
     </div>
+  );
+}
+
+function EmptyState({ loading }: { loading: boolean }) {
+  const [showGoals, setShowGoals] = useState(false);
+  const [goals, setGoals] = useState<any>(null);
+  const [showTour, setShowTour] = useState(false);
+
+  useEffect(() => {
+    const g = localStorage.getItem("corvo_goals");
+    if (g) setGoals(JSON.parse(g));
+    else setShowGoals(true);
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 400, gap: 20 }}>
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 400, gap: 24, textAlign: "center", padding: "0 32px" }}
+      >
+        {/* Animated logo mark */}
+        <motion.div
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: "relative" }}
+        >
+          <svg width="64" height="64" viewBox="0 0 40 40" fill="none">
+            <motion.polygon points="20,2 35,11 35,29 20,38 5,29 5,11"
+              stroke="rgba(0,255,179,0.3)" strokeWidth="1" fill="none"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} />
+            <motion.polygon points="20,2 35,11 35,29 20,38 5,29 5,11"
+              stroke="var(--green)" strokeWidth="1.5" fill="none"
+              strokeDasharray="100"
+              initial={{ strokeDashoffset: 100 }} animate={{ strokeDashoffset: 0 }}
+              transition={{ duration: 2, ease: "easeOut" }}
+              style={{ filter: "drop-shadow(0 0 6px rgba(0,255,179,0.6))" }} />
+            <motion.path d="M26 14 A8 8 0 1 0 26 26" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" fill="none"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+              transition={{ duration: 1.5, delay: 0.5 }}
+              style={{ filter: "drop-shadow(0 0 4px rgba(0,255,179,0.8))" }} />
+            <motion.circle cx="20" cy="20" r="2" fill="var(--green)"
+              initial={{ scale: 0 }} animate={{ scale: 1 }}
+              transition={{ delay: 1.5, type: "spring" }}
+              style={{ filter: "drop-shadow(0 0 6px var(--green))" }} />
+          </svg>
+          <div style={{ position: "absolute", inset: -12, background: "radial-gradient(circle, rgba(0,255,179,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
+        </motion.div>
+
+        <div>
+          <motion.h2
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8, letterSpacing: -0.5 }}
+          >
+            Build your portfolio
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.45 }}
+            style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.7, maxWidth: 300 }}
+          >
+            Add assets on the left and hit <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)", fontSize: 12 }}>ANALYZE</span> to get institutional-grade insights instantly.
+          </motion.p>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          style={{ display: "flex", gap: 8 }}
+        >
+          {["VOO", "AAPL", "MSFT", "BTC-USD"].map((t, i) => (
+            <motion.div key={t}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 + i * 0.1 }}
+              style={{ padding: "6px 12px", background: "rgba(0,255,179,0.06)", border: "1px solid rgba(0,255,179,0.15)", borderRadius: 8, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--green)", letterSpacing: 1 }}
+            >{t}</motion.div>
+          ))}
+        </motion.div>
+      </motion.div>
+
+      <AnimatePresence>
+        {showGoals && (
+          <GoalsModal
+            onComplete={(g: any) => { setGoals(g); setShowGoals(false); setShowTour(true); }}
+            onSkip={() => { setShowGoals(false); setShowTour(true); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showTour && <OnboardingTour onComplete={() => setShowTour(false)} />}
+      </AnimatePresence>
+    </>
   );
 }
 
 export default function AppPage() {
   const [assets, setAssets] = useState([
-    { ticker: "AAPL", weight: 0.5 },
-    { ticker: "MSFT", weight: 0.5 },
+    { ticker: "AAPL", weight: 50 },
+    { ticker: "MSFT", weight: 50 },
   ]);
-  const [data, setData]           = useState<any>(null);
-  const [period, setPeriod]       = useState("1y");
+  const [period, setPeriod] = useState("1y");
   const [benchmark, setBenchmark] = useState("^GSPC");
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState<string | null>(null);
-  const [tab, setTab]             = useState("overview");
-  const [showBenchmarks, setShowBenchmarks] = useState(false);
-  const [showGoals, setShowGoals] = useState(() => {
-    if (typeof window !== "undefined") return !localStorage.getItem("alphai_goals");
-    return false;
-  });
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [goals, setGoals] = useState<any>(null);
+  const [showGoals, setShowGoals] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [goals, setGoals] = useState<any>(null);
+  const [benchmarkOpen, setBenchmarkOpen] = useState(false);
 
   useEffect(() => {
-    const timeout = setTimeout(async () => {
-      if (assets.some(a => !a.ticker.trim())) return;
-      setLoading(true); setError(null);
-      try {
-        const res = await fetchPortfolio(assets, period, benchmark);
-        setData(res);
-      } catch {
-        setError("Backend offline — start your FastAPI server.");
-      }
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timeout);
-  }, [assets, period, benchmark]);
+    const g = localStorage.getItem("corvo_goals");
+    if (g) setGoals(JSON.parse(g));
+    else setShowGoals(true);
+  }, []);
 
-  const portfolioContext = data ? { ...data, period } : {};
-  const benchLabel = BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark;
-
-  const loadPortfolio = (savedAssets: { ticker: string; weight: number }[], savedPeriod: string) => {
-    setAssets(savedAssets);
-    setPeriod(savedPeriod);
+  const handleAnalyze = async () => {
+    const validAssets = assets.filter(a => a.ticker && a.weight > 0);
+    if (validAssets.length === 0) return;
+    setLoading(true);
+    setData(null);
+    try {
+      const totalWeight = validAssets.reduce((s, a) => s + a.weight, 0);
+      const normalizedWeights = validAssets.map(a => a.weight / totalWeight);
+      const result = await fetchPortfolio(
+        validAssets.map(a => a.ticker),
+        normalizedWeights,
+        period,
+        benchmark
+      );
+      setData(result);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
   };
 
+  const benchmarkLabel = BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark;
+
   return (
-    <div style={{ display: "flex", height: "100vh", position: "relative", zIndex: 1 }}>
+    <div style={{ display: "flex", height: "100vh", background: "var(--bg-void)", position: "relative", overflow: "hidden" }}>
 
-      {/* SIDEBAR */}
+      {/* Ambient glow orbs */}
+      <div style={{ position: "fixed", top: "5%", left: "15%", width: 600, height: 600, background: "radial-gradient(circle, rgba(0,255,179,0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", bottom: "10%", right: "10%", width: 400, height: 400, background: "radial-gradient(circle, rgba(56,189,248,0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+
+      {/* ─── LEFT SIDEBAR ─── */}
       <motion.aside
-        initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.5 }}
-        style={{ width: 300, flexShrink: 0, borderRight: "1px solid var(--border-dim)", background: "rgba(2,4,8,0.9)", backdropFilter: "blur(20px)", display: "flex", flexDirection: "column", overflowY: "auto" }}
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        style={{ width: 264, flexShrink: 0, background: "rgba(2,4,14,0.92)", borderRight: "1px solid var(--border-dim)", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, backdropFilter: "blur(20px)" }}
       >
-        <div style={{ padding: "24px 24px 16px", borderBottom: "1px solid var(--border-dim)" }}>
-          <a href="/" style={{ textDecoration: "none" }}>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 900, letterSpacing: 5, color: "var(--green)", textShadow: "0 0 24px rgba(0,255,160,0.4)" }}>
-              CORVO
-            </div>
-          </a>
-          <div style={{ fontSize: 9, letterSpacing: 3, color: "rgba(240,244,248,0.55)", marginTop: 3, textTransform: "uppercase" }}>Portfolio Intelligence</div>
-          <button onClick={() => setShowProfile(true)}
-            style={{ marginTop: 10, fontSize: 9, letterSpacing: 2, color: "rgba(0,255,160,0.5)", background: "rgba(0,255,160,0.05)", border: "1px solid rgba(0,255,160,0.15)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "var(--font-display)", transition: "all 0.2s" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,255,160,0.1)"; e.currentTarget.style.color = "var(--green)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,255,160,0.05)"; e.currentTarget.style.color = "rgba(0,255,160,0.5)"; }}
-          >◈ EDIT PROFILE</button>
-        </div>
-
-        <div style={{ padding: "16px 16px 0" }}>
-          <PortfolioBuilder assets={assets} setAssets={setAssets} />
-        </div>
-
-        <div style={{ padding: "12px 16px 0" }}>
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 12, padding: "14px 16px" }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "rgba(240,244,248,0.55)", textTransform: "uppercase", marginBottom: 10 }}>Period</p>
-            <div style={{ display: "flex", gap: 5 }}>
-              {PERIODS.map(p => (
-                <button key={p} onClick={() => setPeriod(p)} style={{
-                  flex: 1, padding: "6px 0", borderRadius: 7, fontSize: 10, fontWeight: 600, letterSpacing: 1, cursor: "pointer",
-                  border: `1px solid ${period === p ? "rgba(0,255,160,0.4)" : "var(--border-dim)"}`,
-                  background: period === p ? "rgba(0,255,160,0.08)" : "transparent",
-                  color: period === p ? "var(--green)" : "var(--text-muted)",
-                  fontFamily: "var(--font-display)", transition: "all 0.2s",
-                }}>{PERIOD_LABELS[p]}</button>
-              ))}
-            </div>
+        {/* Logo */}
+        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border-dim)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+              <polygon points="20,2 35,11 35,29 20,38 5,29 5,11" stroke="var(--green)" strokeWidth="1.5" fill="none" style={{ filter: "drop-shadow(0 0 4px rgba(0,255,179,0.5))" }} />
+              <path d="M26 14 A8 8 0 1 0 26 26" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+              <circle cx="20" cy="20" r="2" fill="var(--green)" style={{ filter: "drop-shadow(0 0 4px var(--green))" }} />
+            </svg>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, letterSpacing: 5, color: "var(--green)", textShadow: "0 0 20px rgba(0,255,179,0.3)" }}>CORVO</span>
           </div>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-faint)", textTransform: "uppercase", paddingLeft: 2 }}>Portfolio Intelligence</p>
         </div>
 
-        <div style={{ padding: "8px 16px 0" }}>
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 12, padding: "14px 16px" }}>
-            <button onClick={() => setShowBenchmarks(v => !v)}
-              style={{ width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-            >
-              <p style={{ fontSize: 9, letterSpacing: 3, color: "rgba(240,244,248,0.55)", textTransform: "uppercase" }}>Benchmark</p>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 9, fontFamily: "var(--font-display)", letterSpacing: 1, color: "var(--cyan)", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", padding: "2px 7px", borderRadius: 4 }}>{benchLabel}</span>
-                <span style={{ color: "rgba(240,244,248,0.55)", fontSize: 10 }}>{showBenchmarks ? "▲" : "▼"}</span>
-              </div>
-            </button>
-            <AnimatePresence>
-              {showBenchmarks && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10 }}>
-                    {BENCHMARKS.map(b => (
-                      <button key={b.ticker} onClick={() => { setBenchmark(b.ticker); setShowBenchmarks(false); }} style={{
-                        padding: "7px 10px", borderRadius: 7, fontSize: 10, letterSpacing: 1, cursor: "pointer",
-                        border: `1px solid ${benchmark === b.ticker ? "rgba(0,212,255,0.35)" : "var(--border-dim)"}`,
-                        background: benchmark === b.ticker ? "rgba(0,212,255,0.07)" : "transparent",
-                        color: benchmark === b.ticker ? "var(--cyan)" : "var(--text-muted)",
-                        fontFamily: "var(--font-display)", transition: "all 0.15s",
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                      }}>
-                        <span>{b.ticker}</span>
-                        <span style={{ fontSize: 9, opacity: 0.6 }}>{b.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        <div style={{ paddingTop: 8 }}>
-          <SavedPortfolios currentAssets={assets} currentPeriod={period} onLoad={loadPortfolio} />
-        </div>
-
-        {data && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            style={{ margin: "0 16px 16px", padding: "12px 14px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.15)", borderRadius: 12, position: "relative", overflow: "hidden" }}
+        {/* Profile button */}
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-dim)" }}>
+          <button
+            onClick={() => setShowProfile(true)}
+            style={{ width: "100%", padding: "8px 12px", background: "rgba(0,255,179,0.04)", border: "1px solid rgba(0,255,179,0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", transition: "all 0.2s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,255,179,0.08)"; e.currentTarget.style.borderColor = "rgba(0,255,179,0.2)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,255,179,0.04)"; e.currentTarget.style.borderColor = "rgba(0,255,179,0.1)"; }}
           >
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, var(--cyan), transparent)", opacity: 0.5 }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              <PulsingDot color="var(--cyan)" />
-              <span style={{ fontSize: 9, letterSpacing: 3, color: "var(--cyan-dim)", textTransform: "uppercase" }}>AI Analyst</span>
+            <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(0,255,179,0.12)", border: "1px solid rgba(0,255,179,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "var(--green)" }}>✦</div>
+            <div style={{ textAlign: "left", flex: 1 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)" }}>Edit Profile</p>
+              <p style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: 0.5 }}>Goals & preferences</p>
             </div>
-            <p style={{ fontSize: 11, color: "rgba(240,244,248,0.75)", lineHeight: 1.65 }}>
-              {(() => {
-                const ret = data.portfolio_return;
-                const vol = data.portfolio_volatility;
-                const sharpe = (ret - 0.04) / vol;
-                const tickers = assets.map(a => a.ticker).join(", ");
-                if (sharpe > 1.5) return `Strong risk-adjusted return on ${tickers}. Sharpe of ${sharpe.toFixed(2)} is excellent.`;
-                if (ret < 0) return `${tickers} is down ${(ret * 100).toFixed(1)}% this period. Consider rebalancing.`;
-                return `${tickers} returned ${(ret * 100).toFixed(1)}% with ${(vol * 100).toFixed(1)}% vol. ${sharpe > 1 ? "Solid risk-adjusted performance." : "Consider diversifying to improve Sharpe ratio."}`;
-              })()}
-            </p>
-            <button onClick={() => setTab("ai")} style={{ marginTop: 8, fontSize: 9, letterSpacing: 2, color: "var(--cyan-dim)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-display)", padding: 0, textTransform: "uppercase" }}>
-              Ask AI →
-            </button>
-          </motion.div>
-        )}
+          </button>
+        </div>
 
-        <div style={{ marginTop: "auto", padding: "10px 20px", borderTop: "1px solid var(--border-dim)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: loading ? "var(--cyan-dim)" : error ? "var(--red)" : "var(--green-dim)" }}>
-            <PulsingDot color={loading ? "var(--cyan)" : error ? "var(--red)" : "var(--green)"} />
-            {loading ? "ANALYZING" : error ? "OFFLINE" : "LIVE"}
+        {/* Portfolio builder */}
+        <div style={{ flex: 1, overflow: "auto", padding: "16px" }}>
+          <PortfolioBuilder
+            assets={assets}
+            onAssetsChange={setAssets}
+            onAnalyze={handleAnalyze}
+            loading={loading}
+          />
+        </div>
+
+        {/* Period selector */}
+        <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border-dim)" }}>
+          <p style={{ fontSize: 8, letterSpacing: 3, color: "var(--text-faint)", textTransform: "uppercase", marginBottom: 8 }}>Period</p>
+          <div style={{ display: "flex", gap: 4 }}>
+            {PERIODS.map(p => (
+              <button key={p} onClick={() => setPeriod(p)} style={{
+                flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 11, fontFamily: "var(--font-mono)",
+                background: period === p ? "rgba(0,255,179,0.12)" : "transparent",
+                border: period === p ? "1px solid rgba(0,255,179,0.35)" : "1px solid transparent",
+                color: period === p ? "var(--green)" : "var(--text-muted)",
+                cursor: "pointer", transition: "all 0.2s", letterSpacing: 0.5,
+              }}>{PERIOD_LABELS[p]}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Benchmark */}
+        <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border-dim)", position: "relative" }}>
+          <p style={{ fontSize: 8, letterSpacing: 3, color: "var(--text-faint)", textTransform: "uppercase", marginBottom: 8 }}>Benchmark</p>
+          <button
+            onClick={() => setBenchmarkOpen(o => !o)}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-dim)", borderRadius: 8, cursor: "pointer", color: "var(--cyan)", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: 1 }}
+          >
+            <span>{benchmarkLabel}</span>
+            <span style={{ color: "var(--text-faint)", fontSize: 8 }}>▾</span>
+          </button>
+          <AnimatePresence>
+            {benchmarkOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -4, scaleY: 0.9 }}
+                animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                exit={{ opacity: 0, y: -4, scaleY: 0.9 }}
+                style={{ position: "absolute", bottom: "100%", left: 16, right: 16, background: "rgba(4,8,24,0.98)", border: "1px solid var(--border-mid)", borderRadius: 12, overflow: "hidden", zIndex: 100, backdropFilter: "blur(16px)", marginBottom: 4 }}
+              >
+                {BENCHMARKS.map(b => (
+                  <button key={b.ticker} onClick={() => { setBenchmark(b.ticker); setBenchmarkOpen(false); }}
+                    style={{ width: "100%", textAlign: "left", padding: "9px 14px", background: b.ticker === benchmark ? "rgba(0,255,179,0.08)" : "transparent", border: "none", color: b.ticker === benchmark ? "var(--green)" : "var(--text-secondary)", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-body)", transition: "all 0.15s", letterSpacing: 0.3 }}
+                    onMouseEnter={e => { if (b.ticker !== benchmark) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+                    onMouseLeave={e => { if (b.ticker !== benchmark) e.currentTarget.style.background = "transparent"; }}
+                  >{b.label}</button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Saved portfolios */}
+        <div style={{ padding: "12px 16px 8px", borderTop: "1px solid var(--border-dim)" }}>
+          <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "10px 16px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <PulsingDot />
+            <span style={{ fontSize: 9, color: "var(--text-faint)", letterSpacing: 1 }}>LIVE</span>
           </div>
           <LiveClock />
         </div>
       </motion.aside>
 
-      {/* MAIN */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* ─── MAIN CONTENT ─── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 1 }}>
 
-        <motion.div initial={{ y: -12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.4 }}
-          style={{ padding: "12px 24px", borderBottom: "1px solid var(--border-dim)", background: "rgba(2,4,8,0.7)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}
+        {/* Top bar */}
+        <motion.header
+          initial={{ y: -8, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 56, background: "rgba(2,4,14,0.7)", borderBottom: "1px solid var(--border-dim)", backdropFilter: "blur(16px)" }}
         >
-          <div style={{ display: "flex", gap: 3 }}>
-            {TABS.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} style={{
-                padding: "7px 14px", borderRadius: 8, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, cursor: "pointer",
-                border: `1px solid ${tab === t.id ? (t.id === "ai" ? "rgba(0,212,255,0.3)" : "rgba(0,255,160,0.3)") : "transparent"}`,
-                background: tab === t.id ? (t.id === "ai" ? "rgba(0,212,255,0.07)" : "rgba(0,255,160,0.07)") : "transparent",
-                color: tab === t.id ? (t.id === "ai" ? "var(--cyan)" : "var(--green)") : "var(--text-muted)",
-                fontFamily: "var(--font-display)", transition: "all 0.2s",
-              }}>
-                {t.label}
-                {t.id === "ai" && <span style={{ marginLeft: 5, fontSize: 7, background: "rgba(0,212,255,0.2)", color: "var(--cyan)", padding: "2px 4px", borderRadius: 3 }}>AI</span>}
-              </button>
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+            {TABS.map((tab, i) => (
+              <motion.button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + i * 0.05 }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "6px 14px", borderRadius: 8, cursor: "pointer",
+                  background: activeTab === tab.id ? "rgba(0,255,179,0.08)" : "transparent",
+                  border: activeTab === tab.id ? "1px solid rgba(0,255,179,0.2)" : "1px solid transparent",
+                  color: activeTab === tab.id ? "var(--green)" : "var(--text-muted)",
+                  fontSize: 12, fontFamily: "var(--font-body)", fontWeight: 500,
+                  transition: "all 0.2s", letterSpacing: 0.3,
+                }}
+                onMouseEnter={e => { if (activeTab !== tab.id) { e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; } }}
+                onMouseLeave={e => { if (activeTab !== tab.id) { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.background = "transparent"; } }}
+              >
+                <span style={{ fontSize: 10, opacity: 0.8 }}>{tab.icon}</span>
+                {tab.label}
+                {tab.id === "ai" && (
+                  <span style={{ padding: "1px 6px", background: "rgba(0,255,179,0.15)", border: "1px solid rgba(0,255,179,0.3)", borderRadius: 4, fontSize: 8, letterSpacing: 1, color: "var(--green)" }}>AI</span>
+                )}
+              </motion.button>
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {loading && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ fontSize: 10, color: "var(--cyan-dim)", letterSpacing: 2, textTransform: "uppercase" }}>⟳ Analyzing...</motion.span>}
-            {error && <span style={{ fontSize: 10, color: "var(--red)", letterSpacing: 1 }}>{error}</span>}
-            {data && <ExportPDF data={data} assets={assets} period={period} />}
+
+          {/* Right controls */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {data && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "rgba(0,255,179,0.05)", border: "1px solid rgba(0,255,179,0.12)", borderRadius: 8 }}>
+                <PulsingDot />
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)", letterSpacing: 1 }}>
+                  {assets.filter(a => a.ticker).length} ASSETS
+                </span>
+              </motion.div>
+            )}
+            <ExportPDF data={data} assets={assets} />
             <UserMenu />
           </div>
-        </motion.div>
+        </motion.header>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+        {/* Content */}
+        <div style={{ flex: 1, overflow: "auto", padding: "24px 28px" }}>
           <AnimatePresence mode="wait">
-
-            {tab === "overview" && (
-              <motion.div key="overview" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                {data ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-                      <Metrics data={data} />
-                    </div>
-                    <PerformanceChart data={data} />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                      <HealthScore data={data} />
-                      <AiInsights data={data} assets={assets} onAskAi={() => setTab("ai")} />
-                      <BenchmarkComparison data={data} />
-                    </div>
-                    <Breakdown assets={assets} />
-                  </div>
-                ) : <EmptyState loading={loading} />}
+            {!data && !loading ? (
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <EmptyState loading={false} />
               </motion.div>
-            )}
+            ) : loading ? (
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <LoadingSpinner />
+              </motion.div>
+            ) : activeTab === "overview" ? (
+              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -8 }}>
+                {/* Metric cards */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+                  <Metrics data={data} />
+                </div>
 
-            {tab === "risk" && (
-              <motion.div key="risk" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                {data ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                      <GlassCard accent="var(--red)" title="Max Drawdown">
-                        <div style={{ fontFamily: "var(--font-display)", fontSize: 36, fontWeight: 700, color: "var(--red)", letterSpacing: -2 }}>{(data.max_drawdown * 100).toFixed(2)}%</div>
-                        <p style={{ fontSize: 12, color: "rgba(240,244,248,0.75)", marginTop: 8 }}>Worst peak-to-trough decline in the selected period.</p>
-                      </GlassCard>
-                      <GlassCard accent="var(--cyan)" title="Annualized Volatility">
-                        <div style={{ fontFamily: "var(--font-display)", fontSize: 36, fontWeight: 700, color: "var(--cyan)", letterSpacing: -2 }}>{(data.portfolio_volatility * 100).toFixed(2)}%</div>
-                        <p style={{ fontSize: 12, color: "rgba(240,244,248,0.75)", marginTop: 8 }}>Standard deviation of daily returns × √252.</p>
-                      </GlassCard>
-                      <GlassCard accent="var(--green)" title="Sharpe Ratio">
-                        <div style={{ fontFamily: "var(--font-display)", fontSize: 36, fontWeight: 700, color: "var(--green)", letterSpacing: -2 }}>{((data.portfolio_return - 0.04) / data.portfolio_volatility).toFixed(2)}</div>
-                        <p style={{ fontSize: 12, color: "rgba(240,244,248,0.75)", marginTop: 8 }}>Risk-adjusted return above 4% risk-free rate.</p>
-                      </GlassCard>
-                    </div>
-                    <DrawdownChart assets={assets} period={period} />
+                {/* Performance chart */}
+                <Card accent="var(--green)" style={{ marginBottom: 16 }} delay={0.1}>
+                  <SectionHeader title="Performance" accent="var(--green)" />
+                  <PerformanceChart
+                    tickers={assets.map(a => a.ticker)}
+                    weights={assets.map(a => a.weight / assets.reduce((s, x) => s + x.weight, 0))}
+                    period={period}
+                    benchmark={benchmark}
+                    benchmarkLabel={benchmarkLabel}
+                  />
+                </Card>
+
+                {/* Bottom row */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                  <Card accent="var(--amber)" delay={0.2}>
+                    <SectionHeader title="Health Score" accent="var(--amber)" />
+                    <HealthScore data={data} />
+                  </Card>
+                  <Card accent="var(--cyan)" delay={0.25}>
+                    <SectionHeader title="AI Insights" accent="var(--cyan)" />
+                    <AiInsights data={data} assets={assets} onAskAi={() => setActiveTab("ai")} />
+                  </Card>
+                  <Card accent="var(--violet)" delay={0.3}>
+                    <SectionHeader title={`vs ${benchmarkLabel}`} accent="var(--violet)" />
+                    <BenchmarkComparison data={data} benchmarkLabel={benchmarkLabel} />
+                  </Card>
+                </div>
+
+                {/* Allocation breakdown */}
+                <Card accent="var(--green)" style={{ marginTop: 12 }} delay={0.35}>
+                  <SectionHeader title="Allocation" accent="var(--green)" />
+                  <Breakdown assets={assets} />
+                </Card>
+              </motion.div>
+            ) : activeTab === "risk" ? (
+              <motion.div key="risk" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                  <Card accent="var(--red)">
+                    <SectionHeader title="Drawdown" accent="var(--red)" />
+                    <DrawdownChart
+                      tickers={assets.map(a => a.ticker)}
+                      weights={assets.map(a => a.weight / assets.reduce((s, x) => s + x.weight, 0))}
+                      period={period}
+                    />
+                  </Card>
+                  <Card accent="var(--violet)">
+                    <SectionHeader title="Correlation Matrix" accent="var(--violet)" />
                     <CorrelationHeatmap assets={assets} period={period} />
-                  </div>
-                ) : <EmptyState loading={loading} />}
+                  </Card>
+                </div>
               </motion.div>
-            )}
-
-            {tab === "simulate" && (
-              <motion.div key="simulate" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                {data ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-                    <MonteCarloChart assets={assets} period={period} />
-                    <GlassCard accent="var(--purple)" title="About This Simulation">
-                      <p style={{ fontSize: 12, color: "rgba(240,244,248,0.75)", lineHeight: 1.7 }}>
-                        Monte Carlo simulation projects 300 possible portfolio trajectories over the next 252 trading days, based on the historical mean and volatility of your current portfolio.
-                      </p>
-                      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-                        {[
-                          { label: "Simulations", value: "300", color: "var(--green)" },
-                          { label: "Horizon", value: "1 Year (252 days)", color: "var(--cyan)" },
-                          { label: "Model", value: "GBM (Log-Normal)", color: "var(--purple)" },
-                          { label: "Inputs", value: "Historical μ, σ", color: "rgba(240,244,248,0.75)" },
-                        ].map(r => (
-                          <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-dim)", paddingBottom: 10 }}>
-                            <span style={{ fontSize: 11, color: "rgba(240,244,248,0.55)", letterSpacing: 1 }}>{r.label}</span>
-                            <span style={{ fontSize: 11, fontFamily: "var(--font-display)", color: r.color, letterSpacing: 1 }}>{r.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <p style={{ marginTop: 16, fontSize: 10, color: "rgba(240,244,248,0.55)", lineHeight: 1.6 }}>
-                        Past performance does not guarantee future results. This simulation is for illustrative purposes only.
-                      </p>
-                    </GlassCard>
-                  </div>
-                ) : <EmptyState loading={loading} />}
+            ) : activeTab === "simulate" ? (
+              <motion.div key="simulate" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}>
+                <Card accent="var(--cyan)">
+                  <SectionHeader title="Monte Carlo Simulation" accent="var(--cyan)" />
+                  <MonteCarloChart
+                    tickers={assets.map(a => a.ticker)}
+                    weights={assets.map(a => a.weight / assets.reduce((s, x) => s + x.weight, 0))}
+                    period={period}
+                  />
+                </Card>
               </motion.div>
-            )}
-
-            {tab === "news" && (
-              <motion.div key="news" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                <NewsFeed assets={assets} />
+            ) : activeTab === "news" ? (
+              <motion.div key="news" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}>
+                <Card accent="var(--amber)">
+                  <SectionHeader title="Market News" accent="var(--amber)" />
+                  <NewsFeed tickers={assets.map(a => a.ticker)} />
+                </Card>
               </motion.div>
-            )}
-
-            {tab === "ai" && (
-              <motion.div key="ai" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                <AiChat portfolioContext={portfolioContext} />
+            ) : activeTab === "ai" ? (
+              <motion.div key="ai" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
+                style={{ height: "calc(100vh - 56px - 48px)" }}>
+                <AiChat data={data} assets={assets} goals={goals} />
               </motion.div>
-            )}
-
+            ) : null}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Profile Editor */}
-      <AnimatePresence>
-        {showProfile && <ProfileEditor onClose={() => setShowProfile(false)} />}
-      </AnimatePresence>
-
-      {/* Goals Modal */}
+      {/* Modals */}
       <AnimatePresence>
         {showGoals && (
           <GoalsModal
-            onComplete={(g) => {
-              setGoals(g);
-              localStorage.setItem("alphai_goals", JSON.stringify(g));
-              setShowGoals(false);
-              setShowTour(true);
-            }}
-            onSkip={() => {
-              localStorage.setItem("alphai_goals", "skipped");
-              setShowGoals(false);
-              setShowTour(true);
-            }}
+            onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); setShowTour(true); }}
+            onSkip={() => { setShowGoals(false); setShowTour(true); }}
           />
         )}
       </AnimatePresence>
-
-      {/* Onboarding Tour */}
       <AnimatePresence>
         {showTour && <OnboardingTour onComplete={() => setShowTour(false)} />}
       </AnimatePresence>
-
+      <AnimatePresence>
+        {showProfile && (
+          <ProfileEditor
+            goals={goals}
+            onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }}
+            onClose={() => setShowProfile(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
