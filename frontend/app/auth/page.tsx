@@ -2,20 +2,43 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
+
+function CorvoMark({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
+      <motion.polygon points="20,2 35,11 35,29 20,38 5,29 5,11"
+        stroke="#00ffb3" strokeWidth="1.5" fill="none"
+        strokeDasharray="120"
+        initial={{ strokeDashoffset: 120 }} animate={{ strokeDashoffset: 0 }}
+        transition={{ duration: 1.5, ease: "easeOut" }}
+        style={{ filter: "drop-shadow(0 0 6px rgba(0,255,179,0.5))" }} />
+      <motion.path d="M26 14 A8 8 0 1 0 26 26"
+        stroke="#00ffb3" strokeWidth="2.5" strokeLinecap="round" fill="none"
+        initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+        transition={{ duration: 1.2, delay: 0.5 }}
+        style={{ filter: "drop-shadow(0 0 4px rgba(0,255,179,0.7))" }} />
+      <motion.circle cx="20" cy="20" r="2" fill="#00ffb3"
+        initial={{ scale: 0 }} animate={{ scale: 1 }}
+        transition={{ delay: 1.4, type: "spring" }}
+        style={{ filter: "drop-shadow(0 0 4px #00ffb3)" }} />
+    </svg>
+  );
+}
 
 function AuthForm() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") ?? "/app";
   const callbackError = searchParams.get("error");
 
-  const [mode, setMode]       = useState<"login" | "signup">("login");
-  const [email, setEmail]     = useState("");
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(callbackError ? "Google sign-in failed — please try again." : null);
+  const [error, setError] = useState<string | null>(callbackError ? "Google sign-in failed — please try again." : null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const handle = async () => {
     setLoading(true); setError(null); setSuccess(null);
@@ -34,76 +57,82 @@ function AuthForm() {
   const handleGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${nextPath}`,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${nextPath}` },
     });
   };
 
-  const inputStyle = {
-    padding: "12px 16px",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 10,
-    color: "#e2e8f0",
-    fontSize: 13,
-    fontFamily: "'Space Grotesk', sans-serif",
-    outline: "none",
-    width: "100%",
-    transition: "border-color 0.2s",
-  } as React.CSSProperties;
-
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#020408", position: "relative", margin: 0, padding: 0 }}>
-      {/* Grid bg */}
-      <div style={{ position: "fixed", inset: 0, backgroundImage: "linear-gradient(rgba(0,200,150,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,150,0.025) 1px, transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />
+    <div style={{
+      minHeight: "100vh", background: "#01020a", display: "flex", alignItems: "center",
+      justifyContent: "center", padding: 24, position: "relative", overflow: "hidden",
+      fontFamily: "'Inter', sans-serif"
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400&family=Inter:wght@300;400;500;600&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.6)} }
+      `}</style>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        style={{ width: 400, padding: "40px", background: "rgba(2,8,18,0.9)", border: "1px solid rgba(0,255,160,0.15)", borderRadius: 16, position: "relative", overflow: "hidden", zIndex: 1 }}
+      {/* Grid */}
+      <div style={{ position: "fixed", inset: 0, backgroundImage: "linear-gradient(rgba(0,255,179,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,179,0.01) 1px, transparent 1px)", backgroundSize: "40px 40px", pointerEvents: "none" }} />
+
+      {/* Glow orbs */}
+      <div style={{ position: "fixed", top: "20%", left: "30%", width: 400, height: 400, background: "radial-gradient(circle, rgba(0,255,179,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "20%", right: "25%", width: 300, height: 300, background: "radial-gradient(circle, rgba(56,189,248,0.03) 0%, transparent 70%)", pointerEvents: "none" }} />
+
+      {/* Back to home */}
+      <motion.a href="/" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+        style={{ position: "fixed", top: 24, left: 28, display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "rgba(224,232,255,0.4)", textDecoration: "none", transition: "color 0.2s", letterSpacing: 0.5 }}
+        onMouseEnter={e => e.currentTarget.style.color = "rgba(224,232,255,0.8)"}
+        onMouseLeave={e => e.currentTarget.style.color = "rgba(224,232,255,0.4)"}
       >
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, #00ffa0, transparent)", opacity: 0.6 }} />
+        <span style={{ fontSize: 14 }}>←</span> Corvo
+      </motion.a>
+
+      {/* Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        style={{ width: 400, background: "rgba(4,8,24,0.96)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 24, padding: "40px 36px", position: "relative", overflow: "hidden", zIndex: 1, backdropFilter: "blur(20px)" }}
+      >
+        {/* Top accent */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(0,255,179,0.6), transparent)", transformOrigin: "left" }} />
+
+        {/* Corner glow */}
+        <div style={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, background: "radial-gradient(circle, rgba(0,255,179,0.05) 0%, transparent 70%)", pointerEvents: "none" }} />
 
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <a href="/" style={{ textDecoration: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="20,2 35,11 35,29 20,38 5,29 5,11" stroke="#00ffa0" strokeWidth="1.5" fill="none" style={{filter:"drop-shadow(0 0 6px rgba(0,255,160,0.6))"}}/>
-              <path d="M26 14 A8 8 0 1 0 26 26" stroke="#00ffa0" strokeWidth="2.5" strokeLinecap="round" fill="none" style={{filter:"drop-shadow(0 0 4px rgba(0,255,160,0.8))"}}/>
-              <circle cx="20" cy="20" r="2" fill="#00ffa0" style={{filter:"drop-shadow(0 0 4px rgba(0,255,160,1))"}}/>
-            </svg>
-            <div style={{ fontFamily: "'Orbitron', monospace", fontSize: 22, fontWeight: 900, letterSpacing: 5, color: "#00ffa0", textShadow: "0 0 24px rgba(0,255,160,0.4)" }}>
-              CORVO
-            </div>
+          <a href="/" style={{ textDecoration: "none", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <CorvoMark size={40} />
+            <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: 5, color: "#00ffb3", textShadow: "0 0 20px rgba(0,255,179,0.3)" }}>CORVO</span>
           </a>
-          <p style={{ fontSize: 11, letterSpacing: 2, color: "rgba(255,255,255,0.35)", marginTop: 4, textTransform: "uppercase" }}>Portfolio Intelligence</p>
+          <p style={{ fontSize: 11, color: "rgba(224,232,255,0.3)", marginTop: 6, letterSpacing: 2, fontFamily: "'Space Mono', monospace" }}>Portfolio Intelligence</p>
         </div>
 
         {/* Mode toggle */}
-        <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 3, marginBottom: 24 }}>
+        <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 3, marginBottom: 24, border: "1px solid rgba(255,255,255,0.05)" }}>
           {(["login", "signup"] as const).map(m => (
             <button key={m} onClick={() => { setMode(m); setError(null); setSuccess(null); }} style={{
-              flex: 1, padding: "8px", borderRadius: 6, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
-              background: mode === m ? "rgba(0,255,160,0.1)" : "transparent",
-              border: mode === m ? "1px solid rgba(0,255,160,0.3)" : "1px solid transparent",
-              color: mode === m ? "#00ffa0" : "rgba(226,232,240,0.3)",
-              fontFamily: "'Orbitron', monospace", cursor: "pointer", transition: "all 0.2s",
+              flex: 1, padding: "9px", borderRadius: 9, fontSize: 12, letterSpacing: 1,
+              background: mode === m ? "rgba(0,255,179,0.1)" : "transparent",
+              border: mode === m ? "1px solid rgba(0,255,179,0.25)" : "1px solid transparent",
+              color: mode === m ? "#00ffb3" : "rgba(224,232,255,0.35)",
+              fontFamily: "'Inter', sans-serif", cursor: "pointer", transition: "all 0.2s", fontWeight: 600,
+              textTransform: "uppercase",
             }}>{m === "login" ? "Log In" : "Sign Up"}</button>
           ))}
         </div>
 
-        {/* Google button */}
-        <button onClick={handleGoogle} style={{
-          width: "100%", padding: "12px", marginBottom: 16, borderRadius: 10,
-          background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
-          color: "rgba(226,232,240,0.7)", fontSize: 13, cursor: "pointer",
-          fontFamily: "'Space Grotesk', sans-serif", transition: "all 0.2s",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-        }}
-          onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"}
-          onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"}
+        {/* Google */}
+        <button onClick={handleGoogle} style={{ width: "100%", padding: "12px", marginBottom: 20, borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(224,232,255,0.7)", fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontWeight: 500 }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -114,60 +143,76 @@ function AuthForm() {
           Continue with Google
         </button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
-          <span style={{ fontSize: 11, color: "rgba(226,232,240,0.25)", letterSpacing: 1 }}>OR</span>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+        {/* Divider */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.05)" }} />
+          <span style={{ fontSize: 10, color: "rgba(224,232,255,0.2)", letterSpacing: 2, fontFamily: "'Space Mono', monospace" }}>OR</span>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.05)" }} />
         </div>
 
         {/* Inputs */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
-          <input
-            type="email" placeholder="Email" value={email}
-            onChange={e => setEmail(e.target.value)}
-            style={inputStyle}
-            onFocus={e => e.target.style.borderColor = "rgba(0,255,160,0.4)"}
-            onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
-          />
-          <input
-            type="password" placeholder="Password" value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handle()}
-            style={inputStyle}
-            onFocus={e => e.target.style.borderColor = "rgba(0,255,160,0.4)"}
-            onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
-          />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+          {[
+            { type: "email", placeholder: "Email address", value: email, onChange: setEmail, field: "email" },
+            { type: "password", placeholder: "Password", value: password, onChange: setPassword, field: "password" },
+          ].map(({ type, placeholder, value, onChange, field }) => (
+            <div key={field} style={{ position: "relative" }}>
+              <input
+                type={type} placeholder={placeholder} value={value}
+                onChange={e => onChange(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handle()}
+                onFocus={() => setFocusedField(field)}
+                onBlur={() => setFocusedField(null)}
+                style={{
+                  width: "100%", padding: "12px 16px",
+                  background: focusedField === field ? "rgba(0,255,179,0.03)" : "rgba(255,255,255,0.025)",
+                  border: `1px solid ${focusedField === field ? "rgba(0,255,179,0.25)" : "rgba(255,255,255,0.07)"}`,
+                  borderRadius: 12, color: "#f0f4ff", fontSize: 14, fontFamily: "'Inter', sans-serif",
+                  outline: "none", transition: "all 0.2s", letterSpacing: 0.3,
+                }}
+              />
+            </div>
+          ))}
         </div>
 
-        {error && (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ fontSize: 12, color: "#ff4d6d", marginBottom: 12, textAlign: "center", lineHeight: 1.5 }}>
-            {error}
-          </motion.p>
-        )}
-        {success && (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ fontSize: 12, color: "#00ffa0", marginBottom: 12, textAlign: "center", lineHeight: 1.5 }}>
-            {success}
-          </motion.p>
-        )}
+        {/* Messages */}
+        <AnimatePresence>
+          {error && (
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              style={{ padding: "10px 14px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, fontSize: 12, color: "#f87171", marginBottom: 14, lineHeight: 1.5 }}>
+              {error}
+            </motion.div>
+          )}
+          {success && (
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              style={{ padding: "10px 14px", background: "rgba(0,255,179,0.06)", border: "1px solid rgba(0,255,179,0.2)", borderRadius: 10, fontSize: 12, color: "#00ffb3", marginBottom: 14, lineHeight: 1.5 }}>
+              {success}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <button onClick={handle} disabled={loading} style={{
-          width: "100%", padding: "13px", borderRadius: 10, fontSize: 11, letterSpacing: 3,
-          background: loading ? "transparent" : "rgba(0,255,160,0.1)",
-          border: "1px solid rgba(0,255,160,0.4)",
-          color: "#00ffa0", fontFamily: "'Orbitron', monospace",
-          cursor: loading ? "default" : "pointer", transition: "all 0.2s",
-        }}
-          onMouseEnter={e => { if (!loading) e.currentTarget.style.background = "rgba(0,255,160,0.15)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = loading ? "transparent" : "rgba(0,255,160,0.1)"; }}
+        {/* Submit */}
+        <motion.button
+          onClick={handle} disabled={loading}
+          whileHover={{ scale: loading ? 1 : 1.01 }}
+          whileTap={{ scale: loading ? 1 : 0.99 }}
+          style={{ width: "100%", padding: "13px", borderRadius: 12, fontSize: 12, letterSpacing: 2, background: loading ? "rgba(0,255,179,0.04)" : "rgba(0,255,179,0.1)", border: "1px solid rgba(0,255,179,0.35)", color: "#00ffb3", fontFamily: "'Inter', sans-serif", cursor: loading ? "default" : "pointer", transition: "all 0.2s", fontWeight: 700, textTransform: "uppercase", boxShadow: loading ? "none" : "0 0 20px rgba(0,255,179,0.08)" }}
         >
-          {loading ? "..." : mode === "login" ? "LOG IN" : "CREATE ACCOUNT"}
-        </button>
+          {loading ? (
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <span style={{ width: 12, height: 12, border: "1.5px solid rgba(0,255,179,0.2)", borderTopColor: "#00ffb3", borderRadius: "50%", animation: "spin 0.8s linear infinite", display: "inline-block" }} />
+              {mode === "login" ? "Signing in..." : "Creating account..."}
+            </span>
+          ) : mode === "login" ? "Log In" : "Create Account"}
+        </motion.button>
 
         {mode === "signup" && (
-          <p style={{ marginTop: 16, fontSize: 11, color: "rgba(226,232,240,0.25)", textAlign: "center", lineHeight: 1.6 }}>
+          <p style={{ marginTop: 16, fontSize: 11, color: "rgba(224,232,255,0.2)", textAlign: "center", lineHeight: 1.6, fontFamily: "'Inter', sans-serif" }}>
             By signing up you agree to our terms of service.
           </p>
         )}
+
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </motion.div>
     </div>
   );
@@ -175,7 +220,7 @@ function AuthForm() {
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#020408" }} />}>
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#01020a" }} />}>
       <AuthForm />
     </Suspense>
   );
