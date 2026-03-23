@@ -81,7 +81,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       <motion.div initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
-        style={{ width: 480, background: C.navy3, border: `1px solid rgba(255,255,255,0.07)`, borderRadius: 18, padding: "36px 36px 32px", position: "relative" }}>
+        style={{ width: "min(480px, 95vw)", background: C.navy3, border: `1px solid rgba(255,255,255,0.07)`, borderRadius: 18, padding: "36px 36px 32px", position: "relative" }}>
 
         {/* Progress bar */}
         <div style={{ height: 2, background: "rgba(255,255,255,0.06)", borderRadius: 1, marginBottom: 32, overflow: "hidden" }}>

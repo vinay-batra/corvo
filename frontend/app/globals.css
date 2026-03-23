@@ -67,3 +67,50 @@ input::placeholder { color: var(--cream3); }
 [data-metric]:hover {
   animation: glow-pulse 2s ease-in-out infinite;
 }
+
+/* ===================== MOBILE RESPONSIVE ===================== */
+@media (max-width: 767px) {
+  /* Prevent horizontal scroll */
+  html, body { overflow-x: hidden !important; max-width: 100vw !important; }
+  
+  /* Metric cards - 2 columns on mobile */
+  .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  
+  /* Three col becomes one col on mobile */
+  .three-col { grid-template-columns: 1fr !important; }
+  
+  /* Charts - reduce height on mobile */
+  .js-plotly-plot, .plot-container { max-width: 100% !important; overflow: hidden !important; }
+  
+  /* Monte Carlo stat cards - stack on mobile */
+  .mc-stat-grid { grid-template-columns: 1fr !important; }
+  
+  /* Modals - full width on mobile */
+  .modal-inner { 
+    width: 95vw !important; 
+    max-width: 95vw !important; 
+    margin: 10px !important;
+    padding: 20px 16px !important;
+  }
+  
+  /* Fix Plotly charts overflowing */
+  .plotly { max-width: 100% !important; overflow: hidden !important; }
+  svg.main-svg { max-width: 100% !important; }
+  
+  /* Topbar actions - smaller on mobile */
+  .topbar-actions { gap: 4px !important; }
+  
+  /* News feed - better mobile layout */
+  .news-tabs { overflow-x: auto !important; flex-wrap: nowrap !important; }
+  
+  /* AI chat - full height */
+  .ai-chat-container { height: calc(100vh - 140px) !important; }
+  
+  /* Reduce font sizes slightly */
+  .metric-value-lg { font-size: 20px !important; }
+}
+
+@media (max-width: 480px) {
+  .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  .three-col { grid-template-columns: 1fr !important; }
+}
