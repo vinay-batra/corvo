@@ -9,8 +9,8 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 
 const C = {
   amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", amber3: "rgba(201,168,76,0.06)",
-  border: "rgba(255,255,255,0.06)",
-  cream: "#e8e0cc", cream2: "rgba(232,224,204,0.6)", cream3: "rgba(232,224,204,0.25)",
+  border: "rgba(255,255,255,0.12)",
+  cream: "#e8e0cc", cream2: "rgba(232,224,204,0.85)", cream3: "rgba(232,224,204,0.65)",
   red: "#e05c5c", green: "#5cb88a",
 };
 
