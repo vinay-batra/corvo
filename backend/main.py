@@ -1,35 +1,15 @@
-from fastapi import FastAPI
-import math
-
-def sanitize(obj):
-    """Recursively replace NaN/Inf with None for JSON compliance."""
-    if isinstance(obj, float):
-        if math.isnan(obj) or math.isinf(obj):
-            return None
-        return obj
-    if isinstance(obj, dict):
-        return {k: sanitize(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [sanitize(v) for v in obj]
-    return obj
-
-
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
 import yfinance as yf
+import pandas as pd
+import math
+import os
+import json
+from datetime import datetime, timezone
 
-from data import get_data
-from portfolio import (
-    calculate_returns,
-    portfolio_performance,
-    cumulative_returns,
-    max_drawdown,
-)
-from optimizer import optimize_portfolio
-from chat import chat_with_claude, parse_portfolio_from_image
-
-app = FastAPI()
+app = FastAPI(title="Corvo API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,270 +21,514 @@ app.add_middleware(
 
 PERIOD_MAP = {"6mo": "6mo", "1y": "1y", "2y": "2y", "5y": "5y"}
 
-@app.get("/portfolio")
-def portfolio(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", benchmark: str = "^GSPC"):
-    tickers_list = [t.strip() for t in tickers.split(",")]
-    yf_period = PERIOD_MAP.get(period, "1y")
+def safe_float(val):
+    """Convert to float, returning 0 for NaN/Inf."""
+    try:
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return 0.0
+        return f
+    except:
+        return 0.0
 
-    data = get_data(tickers_list, period=yf_period)
-    returns = calculate_returns(data)
+def safe_list(lst):
+    return [safe_float(x) for x in lst]
+
+def get_prices(tickers, period="1y"):
+    """Download prices for a list of tickers."""
+    period = PERIOD_MAP.get(period, "1y")
+    try:
+        if len(tickers) == 1:
+            data = yf.download(tickers[0], period=period, auto_adjust=True, progress=False)
+            if data.empty:
+                return None
+            if "Close" in data.columns:
+                return data[["Close"]].rename(columns={"Close": tickers[0]})
+            return None
+        else:
+            data = yf.download(tickers, period=period, auto_adjust=True, progress=False)
+            if data.empty:
+                return None
+            if isinstance(data.columns, pd.MultiIndex):
+                if "Close" in data.columns.get_level_values(0):
+                    prices = data["Close"]
+                elif "Adj Close" in data.columns.get_level_values(0):
+                    prices = data["Adj Close"]
+                else:
+                    return None
+            else:
+                if "Close" in data.columns:
+                    prices = data[["Close"]]
+                elif "Adj Close" in data.columns:
+                    prices = data[["Adj Close"]]
+                else:
+                    return None
+            prices = prices.dropna(axis=1, how="all")
+            return prices
+    except Exception as e:
+        print(f"Error downloading {tickers}: {e}")
+        return None
+
+
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "Corvo API"}
+
+
+@app.get("/docs-check")
+def docs_check():
+    return {"status": "running"}
+
+
+@app.get("/portfolio")
+def portfolio(
+    tickers: str = "AAPL,MSFT",
+    weights: str = "",
+    period: str = "1y",
+    benchmark: str = "^GSPC"
+):
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not tickers_list:
+        raise HTTPException(status_code=400, detail="No tickers provided")
+
+    # Parse weights
+    if weights:
+        try:
+            w_list = [float(x) for x in weights.split(",")]
+        except:
+            w_list = [1.0 / len(tickers_list)] * len(tickers_list)
+    else:
+        w_list = [1.0 / len(tickers_list)] * len(tickers_list)
+
+    if len(w_list) != len(tickers_list):
+        w_list = [1.0 / len(tickers_list)] * len(tickers_list)
+
+    total = sum(w_list)
+    if total <= 0:
+        w_list = [1.0 / len(tickers_list)] * len(tickers_list)
+    else:
+        w_list = [w / total for w in w_list]
+
+    weights_arr = np.array(w_list)
+
+    # Download prices
+    all_tickers = tickers_list + [benchmark]
+    prices = get_prices(all_tickers, period)
+
+    if prices is None or prices.empty:
+        raise HTTPException(status_code=500, detail="Failed to fetch price data")
+
+    # Separate benchmark
+    bench_prices = None
+    if benchmark in prices.columns:
+        bench_prices = prices[benchmark].dropna()
+        prices = prices.drop(columns=[benchmark])
+
+    # Keep only requested tickers that loaded
+    available = [t for t in tickers_list if t in prices.columns]
+    if not available:
+        raise HTTPException(status_code=500, detail="No valid ticker data returned")
+
+    prices = prices[available].dropna()
+    if prices.empty or len(prices) < 2:
+        raise HTTPException(status_code=500, detail="Insufficient price data")
+
+    # Align weights to available tickers
+    avail_weights = []
+    for t in available:
+        idx = tickers_list.index(t) if t in tickers_list else None
+        avail_weights.append(w_list[idx] if idx is not None else 1.0 / len(available))
+    total_avail = sum(avail_weights)
+    avail_weights = [w / total_avail for w in avail_weights]
+    weights_arr = np.array(avail_weights)
+
+    # Daily returns
+    returns = prices.pct_change().dropna()
+    if returns.empty:
+        raise HTTPException(status_code=500, detail="Could not calculate returns")
+
+    # Portfolio returns
+    port_returns = returns[available].values @ weights_arr
+
+    # Annualized stats (252 trading days)
+    ann_return = safe_float(np.mean(port_returns) * 252)
+    ann_vol = safe_float(np.std(port_returns) * np.sqrt(252))
+    sharpe = safe_float((ann_return - 0.04) / ann_vol) if ann_vol > 0 else 0.0
+
+    # Max drawdown
+    cum = np.cumprod(1 + port_returns)
+    running_max = np.maximum.accumulate(cum)
+    drawdowns = (cum - running_max) / running_max
+    max_dd = safe_float(np.min(drawdowns))
+
+    # Cumulative returns for chart
+    port_cum = [safe_float(x) for x in (cum - 1).tolist()]
+    dates = [str(d)[:10] for d in returns.index.tolist()]
+
+    # Benchmark cumulative returns
+    bench_cum = []
+    if bench_prices is not None:
+        bench_prices = bench_prices.reindex(prices.index).ffill().bfill()
+        bench_ret = bench_prices.pct_change().dropna()
+        b_cum = np.cumprod(1 + bench_ret.values) - 1
+        bench_cum = [safe_float(x) for x in b_cum.tolist()]
+        # Align lengths
+        min_len = min(len(port_cum), len(bench_cum))
+        port_cum = port_cum[:min_len]
+        bench_cum = bench_cum[:min_len]
+        dates = dates[:min_len]
+
+    # Individual stock returns for breakdown
+    individual_returns = {}
+    for t in available:
+        t_ret = safe_float(np.mean(returns[t].values) * 252)
+        individual_returns[t] = t_ret
+
+    return {
+        "tickers": available,
+        "weights": [safe_float(w) for w in avail_weights],
+        "portfolio_return": ann_return,
+        "portfolio_volatility": ann_vol,
+        "sharpe_ratio": sharpe,
+        "max_drawdown": max_dd,
+        "dates": dates,
+        "portfolio_cumulative": port_cum,
+        "benchmark_cumulative": bench_cum,
+        "individual_returns": individual_returns,
+        "period": period,
+    }
+
+
+@app.get("/drawdown")
+def drawdown(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"):
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not tickers_list:
+        raise HTTPException(status_code=400, detail="No tickers")
 
     if weights:
-        raw = [float(w) for w in weights.split(",")]
-        total = sum(raw)
-        user_weights = np.array([w / total for w in raw])
+        try:
+            w_list = [float(x) for x in weights.split(",")]
+        except:
+            w_list = [1.0 / len(tickers_list)] * len(tickers_list)
     else:
-        user_weights = None
+        w_list = [1.0 / len(tickers_list)] * len(tickers_list)
 
-    optimal_weights = optimize_portfolio(returns)
-    active_weights = user_weights if user_weights is not None else optimal_weights
+    total = sum(w_list) or 1
+    w_list = [w / total for w in w_list]
 
-    portfolio_returns = portfolio_performance(returns, active_weights)
-    growth = cumulative_returns(portfolio_returns)
+    prices = get_prices(tickers_list, period)
+    if prices is None or prices.empty:
+        raise HTTPException(status_code=500, detail="Failed to fetch data")
 
-    bench_ticker = benchmark if benchmark else "^GSPC"
-    benchmark_data = get_data([bench_ticker], period=yf_period)
-    benchmark_returns = calculate_returns(benchmark_data)
-    benchmark_returns = benchmark_returns.reindex(portfolio_returns.index).dropna()
-    benchmark_growth = cumulative_returns(benchmark_returns)
+    available = [t for t in tickers_list if t in prices.columns]
+    prices = prices[available].dropna()
+    avail_w = [w_list[tickers_list.index(t)] for t in available]
+    total_w = sum(avail_w) or 1
+    avail_w = [w / total_w for w in avail_w]
 
-    _, max_dd = max_drawdown(growth)
+    returns = prices.pct_change().dropna()
+    port_returns = returns.values @ np.array(avail_w)
+    cum = np.cumprod(1 + port_returns)
+    running_max = np.maximum.accumulate(cum)
+    dd = (cum - running_max) / running_max
 
-    mean_returns = returns.mean()
-    cov_matrix = returns.cov()
-    frontier = []
-    for _ in range(1000):
-        w = np.random.random(len(tickers_list))
-        w /= w.sum()
-        ret = float(np.sum(mean_returns * w) * 252)
-        vol = float(np.sqrt(np.dot(w.T, np.dot(cov_matrix * 252, w))))
-        frontier.append({"return": ret, "volatility": vol})
+    return {
+        "dates": [str(d)[:10] for d in returns.index.tolist()],
+        "drawdown": safe_list(dd.tolist()),
+    }
 
-    port_return = float(np.sum(mean_returns * active_weights) * 252)
-    port_vol = float(np.sqrt(np.dot(active_weights.T, np.dot(cov_matrix * 252, active_weights))))
 
-    n = 300
-    return sanitize({
-        "tickers": tickers_list,
-        "weights": [float(w) for w in optimal_weights],
-        "max_drawdown": float(max_dd),
-        "growth": [float(x) for x in growth.tail(n).values],
-        "benchmark": [float(x) for x in benchmark_growth.tail(n).values],
-        "dates": [str(d) for d in growth.tail(n).index],
-        "efficient_frontier": frontier,
-        "portfolio_return": port_return,
-        "portfolio_volatility": port_vol,
-        "period": period,
-        "benchmark_ticker": bench_ticker,
-    })
+@app.get("/correlation")
+def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if len(tickers_list) < 2:
+        return {"matrix": [], "tickers": tickers_list}
+
+    prices = get_prices(tickers_list, period)
+    if prices is None or prices.empty:
+        raise HTTPException(status_code=500, detail="Failed to fetch data")
+
+    available = [t for t in tickers_list if t in prices.columns]
+    prices = prices[available].dropna()
+    corr = prices.pct_change().dropna().corr()
+
+    matrix = []
+    for t1 in available:
+        row = []
+        for t2 in available:
+            row.append(safe_float(corr.loc[t1, t2]) if t1 in corr.index and t2 in corr.columns else 0.0)
+        matrix.append(row)
+
+    return {"matrix": matrix, "tickers": available}
+
+
+@app.get("/montecarlo")
+def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 300):
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not tickers_list:
+        raise HTTPException(status_code=400, detail="No tickers")
+
+    if weights:
+        try:
+            w_list = [float(x) for x in weights.split(",")]
+        except:
+            w_list = [1.0 / len(tickers_list)] * len(tickers_list)
+    else:
+        w_list = [1.0 / len(tickers_list)] * len(tickers_list)
+
+    total = sum(w_list) or 1
+    w_list = [w / total for w in w_list]
+
+    prices = get_prices(tickers_list, period)
+    if prices is None or prices.empty:
+        raise HTTPException(status_code=500, detail="Failed to fetch data")
+
+    available = [t for t in tickers_list if t in prices.columns]
+    prices = prices[available].dropna()
+    avail_w = [w_list[tickers_list.index(t)] for t in available]
+    total_w = sum(avail_w) or 1
+    avail_w = [w / total_w for w in avail_w]
+
+    returns = prices.pct_change().dropna()
+    port_returns = returns.values @ np.array(avail_w)
+
+    mu = float(np.mean(port_returns))
+    sigma = float(np.std(port_returns))
+    horizon = 252
+
+    np.random.seed(42)
+    sims = np.random.normal(mu, sigma, (simulations, horizon))
+    paths = np.cumprod(1 + sims, axis=1) - 1  # shape (sims, horizon)
+
+    final_vals = paths[:, -1]
+    p5 = float(np.percentile(final_vals, 5))
+    p25 = float(np.percentile(final_vals, 25))
+    p50 = float(np.percentile(final_vals, 50))
+    p75 = float(np.percentile(final_vals, 75))
+    p95 = float(np.percentile(final_vals, 95))
+
+    # Percentile bands across time
+    pct_bands = {
+        "p5": safe_list(np.percentile(paths, 5, axis=0).tolist()),
+        "p25": safe_list(np.percentile(paths, 25, axis=0).tolist()),
+        "p50": safe_list(np.percentile(paths, 50, axis=0).tolist()),
+        "p75": safe_list(np.percentile(paths, 75, axis=0).tolist()),
+        "p95": safe_list(np.percentile(paths, 95, axis=0).tolist()),
+    }
+
+    # Sample paths (20)
+    sample_paths = [safe_list(paths[i].tolist()) for i in range(min(20, simulations))]
+
+    return {
+        "horizon": horizon,
+        "simulations": simulations,
+        "final_p5": p5,
+        "final_p25": p25,
+        "final_p50": p50,
+        "final_p75": p75,
+        "final_p95": p95,
+        "bands": pct_bands,
+        "sample_paths": sample_paths,
+    }
+
+
+@app.get("/news")
+def news(tickers: str = "AAPL"):
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    market_tickers = ["SPY", "QQQ", "^GSPC"]
+    result = {"market": [], "sections": {}}
+
+    # Market news
+    seen_urls = set()
+    for mt in market_tickers:
+        try:
+            t = yf.Ticker(mt)
+            articles = t.news or []
+            for a in articles[:8]:
+                url = a.get("link", "")
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                content = a.get("content", {})
+                pub_date = ""
+                try:
+                    ts = a.get("providerPublishTime") or content.get("pubDate", "")
+                    if isinstance(ts, (int, float)):
+                        pub_date = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                    else:
+                        pub_date = str(ts)
+                except:
+                    pub_date = ""
+                result["market"].append({
+                    "ticker": "MARKET",
+                    "title": a.get("title", content.get("title", "")),
+                    "summary": content.get("summary", a.get("summary", "")),
+                    "publisher": a.get("publisher", content.get("provider", {}).get("displayName", "")),
+                    "url": url,
+                    "published": pub_date,
+                })
+                if len(result["market"]) >= 15:
+                    break
+        except Exception as e:
+            print(f"Market news error for {mt}: {e}")
+
+    # Per-ticker news
+    for ticker in tickers_list:
+        result["sections"][ticker] = []
+        try:
+            t = yf.Ticker(ticker)
+            articles = t.news or []
+            for a in articles[:15]:
+                url = a.get("link", "")
+                content = a.get("content", {})
+                pub_date = ""
+                try:
+                    ts = a.get("providerPublishTime") or content.get("pubDate", "")
+                    if isinstance(ts, (int, float)):
+                        pub_date = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                    else:
+                        pub_date = str(ts)
+                except:
+                    pub_date = ""
+                result["sections"][ticker].append({
+                    "ticker": ticker,
+                    "title": a.get("title", content.get("title", "")),
+                    "summary": content.get("summary", a.get("summary", "")),
+                    "publisher": a.get("publisher", content.get("provider", {}).get("displayName", "")),
+                    "url": url,
+                    "published": pub_date,
+                })
+        except Exception as e:
+            print(f"News error for {ticker}: {e}")
+
+    return result
+
+
+@app.get("/search-ticker")
+def search_ticker(q: str = ""):
+    if not q or len(q) < 1:
+        return {"results": []}
+    try:
+        results = yf.Search(q, max_results=8)
+        quotes = results.quotes if hasattr(results, "quotes") else []
+        out = []
+        for r in quotes[:8]:
+            symbol = r.get("symbol", "")
+            name = r.get("longname") or r.get("shortname") or symbol
+            exchange = r.get("exchange", "")
+            qtype = r.get("quoteType", "EQUITY")
+            if symbol:
+                out.append({"ticker": symbol, "name": name, "exchange": exchange, "type": qtype})
+        return {"results": out}
+    except Exception as e:
+        print(f"Search error: {e}")
+        return {"results": []}
 
 
 class ChatRequest(BaseModel):
     message: str
     history: list = []
     portfolio_context: dict = {}
+    user_goals: dict = {}
+
 
 @app.post("/chat")
 def chat(req: ChatRequest):
-    reply = chat_with_claude(req.message, req.history, req.portfolio_context)
-    return {"reply": reply}
-
-
-@app.get("/validate-ticker")
-def validate_ticker(ticker: str):
-    """Check if a ticker is valid and return its name."""
     try:
-        t = yf.Ticker(ticker.upper().strip())
-        hist = t.history(period="5d")
-        if hist.empty:
-            return {"valid": False, "name": "", "ticker": ticker.upper()}
-        info = t.fast_info
-        name = getattr(info, 'company_name', None) or ""
-        if not name:
-            # Fallback: use longName from info dict
-            try:
-                name = t.info.get("longName", "") or t.info.get("shortName", "") or ticker.upper()
-            except Exception:
-                name = ticker.upper()
-        return {"valid": True, "name": name, "ticker": ticker.upper()}
-    except Exception:
-        return {"valid": False, "name": "", "ticker": ticker.upper()}
+        import anthropic
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
 
+        client = anthropic.Anthropic(api_key=api_key)
 
-class ImageRequest(BaseModel):
-    image_base64: str
-    media_type: str = "image/jpeg"
+        ctx = req.portfolio_context
+        goals = req.user_goals
+        tickers = ctx.get("tickers", [])
+        weights = ctx.get("weights", [])
+        ret = ctx.get("portfolio_return", 0)
+        vol = ctx.get("portfolio_volatility", 0)
+        sharpe = (ret - 0.04) / max(vol, 0.001)
+        dd = ctx.get("max_drawdown", 0)
+        period = ctx.get("period", "1y")
+
+        goals_text = ""
+        if goals:
+            age = goals.get("age", "")
+            salary = goals.get("salary", "")
+            invested = goals.get("invested", "")
+            risk = goals.get("riskTolerance", "")
+            goal = goals.get("goal", "")
+            timeline = goals.get("timeline", "")
+            if age:
+                goals_text = f"\nUser profile: Age {age}, Salary ${salary}/yr, ${invested} invested, {risk} risk tolerance, Goal: {goal}, Timeline: {timeline} years."
+
+        system = f"""You are Corvo AI, an expert portfolio analyst. Be concise, direct, and data-driven like a Goldman Sachs analyst.
+
+Portfolio:
+- Tickers: {', '.join(tickers)}
+- Weights: {', '.join(f"{t}: {w:.1%}" for t, w in zip(tickers, weights))}
+- Annualized Return: {ret:.2%}
+- Annualized Volatility: {vol:.2%}
+- Sharpe Ratio: {sharpe:.2f}
+- Max Drawdown: {dd:.2%}
+- Period: {period}{goals_text}
+
+Format responses with short bullet points (use • not -). Max 150 words. Reference specific numbers. Plain text only, no markdown headers."""
+
+        messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
+        messages.append({"role": "user", "content": req.message})
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=512,
+            system=system,
+            messages=messages,
+        )
+        return {"reply": response.content[0].text}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Chat error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/parse-portfolio-image")
-def parse_portfolio_image_endpoint(req: ImageRequest):
-    """Parse a brokerage screenshot and return tickers + weights."""
+def parse_portfolio_image(body: dict):
     try:
-        assets = parse_portfolio_from_image(req.image_base64, req.media_type)
-        return {"assets": assets}
+        import anthropic
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+        client = anthropic.Anthropic(api_key=api_key)
+        image_b64 = body.get("image_base64", "")
+        media_type = body.get("media_type", "image/jpeg")
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {"type": "base64", "media_type": media_type, "data": image_b64}
+                    },
+                    {
+                        "type": "text",
+                        "text": "Extract all stock/ETF/crypto holdings from this brokerage screenshot. Return ONLY a JSON array like: [{\"ticker\": \"AAPL\", \"weight\": 0.25}]. Use percentage allocations as weights (0-1). If no percentages shown, distribute equally. Return only the JSON array, nothing else."
+                    }
+                ]
+            }]
+        )
+        import re
+        text = response.content[0].text.strip()
+        match = re.search(r'\[.*\]', text, re.DOTALL)
+        if match:
+            assets = json.loads(match.group())
+            return {"assets": assets}
+        return {"assets": []}
     except Exception as e:
-        return {"assets": [], "error": str(e)}
-
-
-@app.get("/drawdown")
-def drawdown_series(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"):
-    tickers_list = [t.strip() for t in tickers.split(",")]
-    yf_period = PERIOD_MAP.get(period, "1y")
-    data = get_data(tickers_list, period=yf_period)
-    returns = calculate_returns(data)
-
-    if weights:
-        raw = [float(w) for w in weights.split(",")]
-        total = sum(raw)
-        active_weights = np.array([w / total for w in raw])
-    else:
-        active_weights = optimize_portfolio(returns)
-
-    port_returns = portfolio_performance(returns, active_weights)
-    growth = cumulative_returns(port_returns)
-    drawdown, _ = max_drawdown(growth)
-
-    n = 300
-    return sanitize({
-        "dates": [str(d) for d in drawdown.tail(n).index],
-        "drawdown": [float(x) for x in drawdown.tail(n).values],
-    })
-
-
-@app.get("/correlation")
-def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
-    tickers_list = [t.strip() for t in tickers.split(",")]
-    yf_period = PERIOD_MAP.get(period, "1y")
-    data = get_data(tickers_list, period=yf_period)
-    returns = calculate_returns(data)
-    corr = returns.corr()
-    return {
-        "tickers": tickers_list,
-        "matrix": corr.values.tolist(),
-    }
-
-
-@app.get("/montecarlo")
-def monte_carlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 200, horizon: int = 252):
-    tickers_list = [t.strip() for t in tickers.split(",")]
-    yf_period = PERIOD_MAP.get(period, "1y")
-    data = get_data(tickers_list, period=yf_period)
-    returns = calculate_returns(data)
-
-    if weights:
-        raw = [float(w) for w in weights.split(",")]
-        total = sum(raw)
-        active_weights = np.array([w / total for w in raw])
-    else:
-        active_weights = optimize_portfolio(returns)
-
-    port_returns = portfolio_performance(returns, active_weights)
-    mu = float(port_returns.mean())
-    sigma = float(port_returns.std())
-
-    paths = []
-    for _ in range(simulations):
-        daily = np.random.normal(mu, sigma, horizon)
-        path = list(np.cumprod(1 + daily))
-        paths.append(path)
-
-    paths_arr = np.array(paths)
-    p5  = np.percentile(paths_arr, 5,  axis=0).tolist()
-    p25 = np.percentile(paths_arr, 25, axis=0).tolist()
-    p50 = np.percentile(paths_arr, 50, axis=0).tolist()
-    p75 = np.percentile(paths_arr, 75, axis=0).tolist()
-    p95 = np.percentile(paths_arr, 95, axis=0).tolist()
-
-    sample_indices = np.random.choice(simulations, min(20, simulations), replace=False)
-    sample_paths = paths_arr[sample_indices].tolist()
-
-    return {
-        "horizon": horizon,
-        "simulations": simulations,
-        "p5": p5, "p25": p25, "p50": p50, "p75": p75, "p95": p95,
-        "sample_paths": sample_paths,
-        "final_p5":  float(paths_arr[:, -1].min()),
-        "final_p50": float(np.median(paths_arr[:, -1])),
-        "final_p95": float(paths_arr[:, -1].max()),
-    }
-
-
-@app.get("/news")
-def news(tickers: str = "AAPL"):
-    tickers_list = [t.strip() for t in tickers.split(",")][:8]
-
-    def parse_articles(raw_news, ticker, limit=15):
-        out = []
-        seen = set()
-        for item in raw_news[:limit * 2]:
-            content = item.get("content", {})
-            title = content.get("title", "") or item.get("title", "")
-            if not title or title in seen:
-                continue
-            seen.add(title)
-            summary = content.get("summary", "") or item.get("summary", "")
-            provider = (content.get("provider", {}) or {}).get("displayName", "") or item.get("publisher", "")
-            pub_date = content.get("pubDate", "") or str(item.get("providerPublishTime", ""))
-            url = ""
-            for key in ["clickThroughUrl", "canonicalUrl"]:
-                val = content.get(key, {}) or {}
-                if isinstance(val, dict):
-                    url = val.get("url", "")
-                if url:
-                    break
-            out.append({
-                "ticker": ticker,
-                "title": title,
-                "summary": summary[:300] if summary else "",
-                "publisher": provider,
-                "url": url,
-                "published": pub_date,
-            })
-            if len(out) >= limit:
-                break
-        return out
-
-    # General market news — fetch from SPY, QQQ, ^GSPC
-    market_articles = []
-    for market_ticker in ["SPY", "QQQ", "^GSPC"]:
-        try:
-            raw = yf.Ticker(market_ticker).news or []
-            market_articles.extend(parse_articles(raw, "MARKET", limit=8))
-        except Exception:
-            pass
-    # Deduplicate market articles by title
-    seen_titles = set()
-    unique_market = []
-    for a in market_articles:
-        if a["title"] not in seen_titles:
-            seen_titles.add(a["title"])
-            unique_market.append(a)
-    market_articles = unique_market[:20]
-
-    # Per-ticker articles
-    ticker_sections = []
-    for ticker in tickers_list:
-        try:
-            raw = yf.Ticker(ticker).news or []
-            articles = parse_articles(raw, ticker, limit=15)
-            if articles:
-                ticker_sections.append({
-                    "ticker": ticker,
-                    "articles": articles,
-                })
-        except Exception:
-            pass
-
-    return {
-        "market": market_articles,
-        "sections": ticker_sections,
-        # Legacy flat format for backward compat
-        "articles": [a for s in ticker_sections for a in s["articles"]],
-    }
-
-
-@app.get("/search-ticker")
-async def search_ticker(q: str):
-    """Live search across all Yahoo Finance tickers."""
-    from search import search_tickers
-    results = await search_tickers(q)
-    return {"results": results}
+        print(f"Image parse error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
