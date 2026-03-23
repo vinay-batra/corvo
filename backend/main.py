@@ -412,6 +412,33 @@ def news(tickers: str = "AAPL"):
     return result
 
 
+
+@app.get("/prices")
+def get_prices_live(tickers: str = "AAPL"):
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    result = {}
+    for ticker in tickers_list[:20]:
+        try:
+            t = yf.Ticker(ticker)
+            info = t.fast_info
+            price = safe_float(getattr(info, "last_price", 0) or 0)
+            prev_close = safe_float(getattr(info, "previous_close", 0) or 0)
+            if price > 0 and prev_close > 0:
+                change = price - prev_close
+                pct = (change / prev_close) * 100
+            else:
+                change = 0.0
+                pct = 0.0
+            if price > 0:
+                result[ticker] = {
+                    "price": safe_float(price),
+                    "change": safe_float(change),
+                    "pct": safe_float(pct),
+                }
+        except Exception as e:
+            print(f"Price error for {ticker}: {e}")
+    return result
+
 @app.get("/search-ticker")
 def search_ticker(q: str = ""):
     if not q or len(q) < 1:
