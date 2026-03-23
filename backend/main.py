@@ -345,7 +345,11 @@ def news(tickers: str = "AAPL"):
             t = yf.Ticker(mt)
             articles = t.news or []
             for a in articles[:8]:
-                url = a.get("link", "")
+                url = (a.get("link") or 
+                       a.get("url") or 
+                       (a.get("content") or {}).get("canonicalUrl", {}).get("url", "") or
+                       (a.get("content") or {}).get("clickThroughUrl", {}).get("url", "") or
+                       "")
                 if url in seen_urls:
                     continue
                 seen_urls.add(url)
@@ -379,7 +383,11 @@ def news(tickers: str = "AAPL"):
             t = yf.Ticker(ticker)
             articles = t.news or []
             for a in articles[:15]:
-                url = a.get("link", "")
+                url = (a.get("link") or 
+                       a.get("url") or 
+                       (a.get("content") or {}).get("canonicalUrl", {}).get("url", "") or
+                       (a.get("content") or {}).get("clickThroughUrl", {}).get("url", "") or
+                       "")
                 content = a.get("content", {})
                 pub_date = ""
                 try:
