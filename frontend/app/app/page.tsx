@@ -29,7 +29,7 @@ const C = {
   amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)",
 };
 
-const TABS = ["Overview","Risk","Simulate","News","AI Chat"];
+const TABS = ["Overview","Simulate","News","AI Chat"];
 const PERIODS = ["6mo","1y","2y","5y"];
 const PERIOD_LABELS: Record<string,string> = {"6mo":"6M","1y":"1Y","2y":"2Y","5y":"5Y"};
 const BENCHMARKS = [
@@ -283,13 +283,6 @@ export default function AppPage() {
                   <Card style={{marginBottom:0}}><CardHdr title={`vs ${benchLabel}`}/><BenchmarkComparison data={data}/></Card>
                 </div>
                 <Card style={{marginTop:10}}><CardHdr title="Allocation"/><Breakdown assets={assets}/></Card>
-              </motion.div>
-            ):tab==="Risk"?(
-              <motion.div key="risk" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                  <Card style={{marginBottom:0}}><CardHdr title="Drawdown"/><DrawdownChart assets={assets} period={period}/></Card>
-                  <Card style={{marginBottom:0}}><CardHdr title="Correlation"/><CorrelationHeatmap assets={assets} period={period}/></Card>
-                </div>
               </motion.div>
             ):tab==="Simulate"?(
               <motion.div key="simulate" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>

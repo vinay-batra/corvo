@@ -230,38 +230,76 @@ def monte_carlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y
 
 @app.get("/news")
 def news(tickers: str = "AAPL"):
-    tickers_list = [t.strip() for t in tickers.split(",")][:6]
-    results = []
-    for ticker in tickers_list:
+    tickers_list = [t.strip() for t in tickers.split(",")][:8]
+
+    def parse_articles(raw_news, ticker, limit=15):
+        out = []
+        seen = set()
+        for item in raw_news[:limit * 2]:
+            content = item.get("content", {})
+            title = content.get("title", "") or item.get("title", "")
+            if not title or title in seen:
+                continue
+            seen.add(title)
+            summary = content.get("summary", "") or item.get("summary", "")
+            provider = (content.get("provider", {}) or {}).get("displayName", "") or item.get("publisher", "")
+            pub_date = content.get("pubDate", "") or str(item.get("providerPublishTime", ""))
+            url = ""
+            for key in ["clickThroughUrl", "canonicalUrl"]:
+                val = content.get(key, {}) or {}
+                if isinstance(val, dict):
+                    url = val.get("url", "")
+                if url:
+                    break
+            out.append({
+                "ticker": ticker,
+                "title": title,
+                "summary": summary[:300] if summary else "",
+                "publisher": provider,
+                "url": url,
+                "published": pub_date,
+            })
+            if len(out) >= limit:
+                break
+        return out
+
+    # General market news — fetch from SPY, QQQ, ^GSPC
+    market_articles = []
+    for market_ticker in ["SPY", "QQQ", "^GSPC"]:
         try:
-            t = yf.Ticker(ticker)
-            raw_news = t.news or []
-            for item in raw_news[:3]:
-                content = item.get("content", {})
-                title = content.get("title", "") or item.get("title", "")
-                summary = content.get("summary", "") or item.get("summary", "")
-                provider = (content.get("provider", {}) or {}).get("displayName", "") or item.get("publisher", "")
-                pub_date = content.get("pubDate", "") or str(item.get("providerPublishTime", ""))
-                url = ""
-                click_through = content.get("clickThroughUrl", {}) or {}
-                if isinstance(click_through, dict):
-                    url = click_through.get("url", "")
-                if not url:
-                    canonical = content.get("canonicalUrl", {}) or {}
-                    if isinstance(canonical, dict):
-                        url = canonical.get("url", "")
-                if title:
-                    results.append({
-                        "ticker": ticker,
-                        "title": title,
-                        "summary": summary[:200] if summary else "",
-                        "publisher": provider,
-                        "url": url,
-                        "published": pub_date,
-                    })
+            raw = yf.Ticker(market_ticker).news or []
+            market_articles.extend(parse_articles(raw, "MARKET", limit=8))
         except Exception:
             pass
-    return {"articles": results}
+    # Deduplicate market articles by title
+    seen_titles = set()
+    unique_market = []
+    for a in market_articles:
+        if a["title"] not in seen_titles:
+            seen_titles.add(a["title"])
+            unique_market.append(a)
+    market_articles = unique_market[:20]
+
+    # Per-ticker articles
+    ticker_sections = []
+    for ticker in tickers_list:
+        try:
+            raw = yf.Ticker(ticker).news or []
+            articles = parse_articles(raw, ticker, limit=15)
+            if articles:
+                ticker_sections.append({
+                    "ticker": ticker,
+                    "articles": articles,
+                })
+        except Exception:
+            pass
+
+    return {
+        "market": market_articles,
+        "sections": ticker_sections,
+        # Legacy flat format for backward compat
+        "articles": [a for s in ticker_sections for a in s["articles"]],
+    }
 
 
 @app.get("/search-ticker")
