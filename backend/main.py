@@ -460,6 +460,95 @@ def search_ticker(q: str = ""):
         return {"results": []}
 
 
+class ReportRequest(BaseModel):
+    portfolio_context: dict = {}
+    user_goals: dict = {}
+
+
+@app.post("/generate-report")
+def generate_report(req: ReportRequest):
+    try:
+        import anthropic
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+        client = anthropic.Anthropic(api_key=api_key)
+        ctx = req.portfolio_context
+        goals = req.user_goals
+
+        tickers = ctx.get("tickers", [])
+        weights = ctx.get("weights", [])
+        ret = ctx.get("portfolio_return", 0)
+        vol = ctx.get("portfolio_volatility", 0)
+        sharpe = ctx.get("sharpe_ratio", (ret - 0.04) / max(vol, 0.001))
+        dd = ctx.get("max_drawdown", 0)
+        period = ctx.get("period", "1y")
+        ind_returns = ctx.get("individual_returns", {})
+
+        goals_text = ""
+        if goals:
+            age = goals.get("age", "")
+            goal = goals.get("goal", "")
+            risk = goals.get("riskTolerance", "")
+            timeline = goals.get("timeline", "")
+            if age:
+                goals_text = f"\n\nInvestor Profile: Age {age}, Goal: {goal}, Risk tolerance: {risk}, Timeline: {timeline} years."
+
+        # Individual stock performance
+        stock_perf = ""
+        if ind_returns:
+            stock_perf = "\n\nIndividual stock returns (annualized):\n" + "\n".join(
+                f"- {t}: {r*100:+.1f}%" for t, r in ind_returns.items()
+            )
+
+        prompt = f"""You are a senior portfolio analyst at a top-tier investment firm. Write a comprehensive, professional portfolio analysis report for the following portfolio.
+
+Portfolio: {", ".join(f"{t} ({w:.1%})" for t, w in zip(tickers, weights))}
+Period: {period}
+Annualized Return: {ret:.2%}
+Annualized Volatility: {vol:.2%}
+Sharpe Ratio: {sharpe:.2f}
+Max Drawdown: {dd:.2%}{stock_perf}{goals_text}
+
+Write a full analysis report with these sections:
+
+## Executive Summary
+A 2-3 sentence overview of portfolio performance and key takeaway.
+
+## Performance Analysis
+Detailed analysis of returns vs risk. Comment on whether the return justifies the volatility. Reference specific numbers.
+
+## Risk Assessment
+Analyze the volatility and max drawdown. What does this mean for the investor? Is this portfolio suitable for their risk tolerance?
+
+## Portfolio Composition Analysis
+Analyze the allocation. Is it well-diversified? Are there concentration risks? Comment on individual holdings if performance data is available.
+
+## Strengths
+3-4 bullet points of what this portfolio does well.
+
+## Areas for Improvement
+3-4 bullet points of specific actionable improvements.
+
+## Conclusion
+A clear, direct recommendation. Should the investor hold, rebalance, or make changes?
+
+Write in a professional but accessible tone. Be specific — reference actual numbers throughout. Use bullet points (- item) for lists. Keep it thorough but concise — aim for 500-700 words total. Do not include any disclaimers or caveats within the analysis itself."""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return {"analysis": response.content[0].text}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Report generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list = []
