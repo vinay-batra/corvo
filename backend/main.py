@@ -167,7 +167,7 @@ def drawdown_series(tickers: str = "AAPL,MSFT", weights: str = "", period: str =
     return sanitize({
         "dates": [str(d) for d in drawdown.tail(n).index],
         "drawdown": [float(x) for x in drawdown.tail(n).values],
-    }
+    })
 
 
 @app.get("/correlation")

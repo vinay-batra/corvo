@@ -1,7 +1,9 @@
 "use client";
-
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
+
+const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", border: "rgba(255,255,255,0.08)", navy: "#0a0e14", cream: "#e8e0cc", cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)" };
 
 export default function UserMenu() {
   const [user, setUser] = useState<any>(null);
@@ -9,56 +11,42 @@ export default function UserMenu() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user ?? null));
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  };
+  const signOut = async () => { await supabase.auth.signOut(); window.location.href = "/"; };
 
-  if (!user) {
-    return (
-      <a href="/auth" style={{
-        padding: "7px 16px", borderRadius: 8, fontSize: 10, letterSpacing: 2,
-        background: "rgba(0,255,160,0.08)", border: "1px solid rgba(0,255,160,0.25)",
-        color: "#00ffa0", fontFamily: "'Orbitron', monospace", textDecoration: "none",
-        transition: "all 0.2s", cursor: "pointer",
-      }}>LOG IN</a>
-    );
-  }
+  if (!user) return (
+    <a href="/auth" style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, letterSpacing: 1, background: "transparent", border: `1px solid rgba(201,168,76,0.3)`, color: C.amber, textDecoration: "none", transition: "all 0.2s", fontWeight: 500 }}
+      onMouseEnter={e => { (e.target as any).style.background = C.amber2; }}
+      onMouseLeave={e => { (e.target as any).style.background = "transparent"; }}>LOG IN</a>
+  );
 
   return (
     <div style={{ position: "relative" }}>
-      <button onClick={() => setOpen(!open)} style={{
-        display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
-        background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 8, cursor: "pointer", color: "rgba(226,232,240,0.6)", fontFamily: "'Space Grotesk', sans-serif", fontSize: 12,
-      }}>
-        <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(0,255,160,0.15)", border: "1px solid rgba(0,255,160,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#00ffa0", fontFamily: "'Orbitron', monospace" }}>
+      <button onClick={() => setOpen(!open)}
+        style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+        <div style={{ width: 24, height: 24, borderRadius: "50%", background: C.amber2, border: "1px solid rgba(201,168,76,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.amber, fontWeight: 700 }}>
           {user.email?.[0]?.toUpperCase()}
         </div>
-        {user.email?.split("@")[0]}
+        <span style={{ fontSize: 12, color: C.cream2 }}>{user.email?.split("@")[0]}</span>
       </button>
 
-      {open && (
-        <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "#0a1020", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: 6, minWidth: 160, zIndex: 100 }}>
-          <div style={{ padding: "8px 12px", fontSize: 11, color: "rgba(226,232,240,0.3)", borderBottom: "1px solid rgba(255,255,255,0.05)", marginBottom: 4 }}>
-            {user.email}
-          </div>
-          <button onClick={signOut} style={{
-            width: "100%", padding: "8px 12px", background: "none", border: "none",
-            color: "#ff4d6d", fontSize: 12, cursor: "pointer", textAlign: "left",
-            fontFamily: "'Space Grotesk', sans-serif", borderRadius: 6,
-          }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,77,109,0.08)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "none")}
-          >Sign out</button>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }}
+            style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: 6, minWidth: 180, zIndex: 100, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+            <div style={{ padding: "8px 12px", fontSize: 11, color: C.cream3, borderBottom: "1px solid rgba(255,255,255,0.05)", marginBottom: 4 }}>{user.email}</div>
+            <button onClick={signOut}
+              style={{ width: "100%", padding: "8px 12px", background: "none", border: "none", color: "#e05c5c", fontSize: 12, cursor: "pointer", textAlign: "left", borderRadius: 6, transition: "background 0.1s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(224,92,92,0.08)"}
+              onMouseLeave={e => e.currentTarget.style.background = "none"}>Sign out</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
