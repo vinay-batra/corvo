@@ -19,7 +19,7 @@ function StatCard({ label, value, color, desc, delay }: { label: string; value: 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ background: hov ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${hov ? "rgba(201,168,76,0.2)" : C.border}`, borderRadius: 12, padding: "18px 20px", transition: "all 0.2s", cursor: "default" }}>
+      style={{ background: hov ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.02)", border: `1px solid ${hov ? "rgba(201,168,76,0.2)" : C.border}`, borderRadius: 12, padding: "18px 20px", transition: "all 0.2s", cursor: "default" }}>
       <p style={{ fontSize: 8, letterSpacing: 2.5, color: C.cream3, textTransform: "uppercase", marginBottom: 10 }}>{label}</p>
       <p style={{ fontFamily: "Space Mono, monospace", fontSize: 28, fontWeight: 700, color, letterSpacing: -1, lineHeight: 1, marginBottom: 8 }}>{value}</p>
       <p style={{ fontSize: 11, color: C.cream3, lineHeight: 1.65 }}>{desc}</p>
@@ -176,10 +176,10 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
             ]}
             layout={{
               paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-              font: { color: "rgba(232,224,204,0.3)", family: "Inter", size: 10 },
+              font: { color: "rgba(232,224,204,0.75)", family: "Inter", size: 10 },
               margin: { t: 8, b: 40, l: 56, r: 16 },
-              xaxis: { title: { text: "Trading Days", font: { color: "rgba(232,224,204,0.25)", size: 9 } }, gridcolor: "rgba(255,255,255,0.03)", linecolor: "rgba(255,255,255,0.04)", tickcolor: "transparent" },
-              yaxis: { gridcolor: "rgba(255,255,255,0.03)", linecolor: "rgba(255,255,255,0.04)", tickcolor: "transparent", tickformat: ".0f", ticksuffix: "%" },
+              xaxis: { title: { text: "Trading Days", font: { color: "rgba(232,224,204,0.25)", size: 9 } }, gridcolor: "rgba(255,255,255,0.07)", linecolor: "rgba(255,255,255,0.08)", tickcolor: "transparent" },
+              yaxis: { gridcolor: "rgba(255,255,255,0.07)", linecolor: "rgba(255,255,255,0.08)", tickcolor: "transparent", tickformat: ".0f", ticksuffix: "%" },
               showlegend: false, hovermode: "x unified",
               hoverlabel: { bgcolor: "#0d1117", bordercolor: "rgba(201,168,76,0.4)", font: { color: C.cream, family: "Inter", size: 11 } },
             }}
