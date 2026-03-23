@@ -1,4 +1,4 @@
-# ALPHAi — Portfolio Intelligence Platform
+# Corvo — Portfolio Intelligence Platform
 
 AI-powered portfolio analysis and optimization. Built with Next.js, FastAPI, and Claude AI.
 
@@ -53,7 +53,7 @@ App runs at `http://localhost:3000`, backend at `http://localhost:8000`
    ANTHROPIC_API_KEY=sk-ant-...
    ```
 5. Deploy — Railway will start `uvicorn main:app --host 0.0.0.0 --port $PORT`
-6. Copy your Railway public URL (e.g. `https://alphai-backend.up.railway.app`)
+6. Copy your Railway public URL (e.g. `https://-backend.up.railway.app`)
 
 ### Frontend → Vercel
 1. Go to [vercel.com](https://vercel.com) → **Add New Project** → import your GitHub repo
