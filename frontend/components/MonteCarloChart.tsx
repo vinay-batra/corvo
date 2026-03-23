@@ -159,11 +159,20 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
 
           <Plot
             data={[
+              ...(data.sample_paths || []).map((path: number[]) => ({
+                x: days,
+                y: path.map((v: number) => v * 100),
+                type: "scatter" as const,
+                mode: "lines" as const,
+                line: { color: "rgba(201,168,76,0.08)", width: 1 },
+                hoverinfo: "skip" as const,
+                showlegend: false,
+              })),
               { x: days, y: data.bands.p5.map((v: number) => v * 100), type: "scatter", mode: "lines", line: { color: "rgba(201,168,76,0.2)", width: 1, dash: "dot" }, showlegend: false, hoverinfo: "skip" } as any,
               { x: days, y: data.bands.p95.map((v: number) => v * 100), type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(201,168,76,0.08)", line: { color: "rgba(201,168,76,0.2)", width: 1, dash: "dot" }, showlegend: false } as any,
               { x: days, y: data.p75, type: "scatter", mode: "lines", line: { color: "rgba(0,0,0,0)", width: 0 }, showlegend: false, hoverinfo: "skip" } as any,
               { x: days, y: data.p25, type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(201,168,76,0.1)", line: { color: "rgba(201,168,76,0.25)", width: 1, dash: "dot" }, showlegend: false } as any,
-              { x: days, y: data.bands.p50.map((v: number) => v * 100), type: "scatter", mode: "lines", line: { color: C.amber, width: 2.5 }, showlegend: false } as any,
+
             ]}
             layout={{
               paper_bgcolor: "transparent", plot_bgcolor: "transparent",
