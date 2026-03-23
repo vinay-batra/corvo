@@ -168,14 +168,14 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
               { x: days, y: data.bands.p5.map((v: number) => v * 100),  type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(201,168,76,0.05)", line: { color: "rgba(201,168,76,0.15)", width: 1, dash: "dot" }, showlegend: false } as any,
               { x: days, y: data.p75, type: "scatter", mode: "lines", line: { color: "rgba(0,0,0,0)", width: 0 }, showlegend: false, hoverinfo: "skip" } as any,
               { x: days, y: data.p25, type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(201,168,76,0.1)", line: { color: "rgba(201,168,76,0.25)", width: 1, dash: "dot" }, showlegend: false } as any,
-              { x: days, y: data.bands.p5.map((v: number) => v * 100)0, type: "scatter", mode: "lines", line: { color: C.amber, width: 2.5 }, showlegend: false } as any,
+              { x: days, y: data.bands.p50.map((v: number) => v * 100), type: "scatter", mode: "lines", line: { color: C.amber, width: 2.5 }, showlegend: false } as any,
             ]}
             layout={{
               paper_bgcolor: "transparent", plot_bgcolor: "transparent",
               font: { color: "rgba(232,224,204,0.3)", family: "Inter", size: 10 },
               margin: { t: 8, b: 40, l: 56, r: 16 },
               xaxis: { title: { text: "Trading Days", font: { color: "rgba(232,224,204,0.25)", size: 9 } }, gridcolor: "rgba(255,255,255,0.03)", linecolor: "rgba(255,255,255,0.04)", tickcolor: "transparent" },
-              yaxis: { gridcolor: "rgba(255,255,255,0.03)", linecolor: "rgba(255,255,255,0.04)", tickcolor: "transparent", tickformat: ".2f" },
+              yaxis: { gridcolor: "rgba(255,255,255,0.03)", linecolor: "rgba(255,255,255,0.04)", tickcolor: "transparent", tickformat: ".0f", ticksuffix: "%" },
               showlegend: false, hovermode: "x unified",
               hoverlabel: { bgcolor: "#0d1117", bordercolor: "rgba(201,168,76,0.4)", font: { color: C.cream, family: "Inter", size: 11 } },
             }}
