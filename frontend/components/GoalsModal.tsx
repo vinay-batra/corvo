@@ -1,250 +1,174 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const C = {
+  navy: "#0a0e14", navy3: "#111620", navy4: "#161c26",
+  border: "rgba(255,255,255,0.07)", cream: "#e8e0cc",
+  cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)",
+  amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)",
+};
+
+interface Goals {
+  age: string; retirementAge: string; salary: string;
+  invested: string; monthlyContribution: string;
+  riskTolerance: string; goal: string;
+}
+
+interface Props { onComplete: (g: Goals) => void; onSkip: () => void; }
 
 const STEPS = [
   {
-    id: "basics",
-    title: "Let's personalize your portfolio",
-    subtitle: "A few quick questions so Corvo can give you smarter insights",
-    icon: "◈",
+    title: "Tell us about yourself",
+    desc: "We'll use this to personalize your analysis",
+    fields: [
+      { key: "age", label: "Your Age", placeholder: "28", type: "number" },
+      { key: "retirementAge", label: "Target Retirement Age", placeholder: "65", type: "number" },
+    ],
   },
   {
-    id: "timeline",
-    title: "When do you need this money?",
-    subtitle: "This helps us understand how much risk makes sense for you",
-    icon: "◷",
+    title: "Your financial picture",
+    desc: "Helps us contextualize your portfolio size",
+    fields: [
+      { key: "salary", label: "Annual Salary ($)", placeholder: "85,000", type: "number" },
+      { key: "invested", label: "Already Invested ($)", placeholder: "25,000", type: "number" },
+      { key: "monthlyContribution", label: "Monthly Contribution ($)", placeholder: "500", type: "number" },
+    ],
   },
   {
-    id: "risk",
-    title: "How do you feel about risk?",
-    subtitle: "Be honest — there's no wrong answer",
-    icon: "◬",
-  },
-  {
-    id: "goal",
-    title: "What's your main goal?",
-    subtitle: "We'll tailor your AI insights around this",
-    icon: "◎",
+    title: "Your investment style",
+    desc: "How do you approach risk and returns?",
+    fields: [],
   },
 ];
 
-interface Goals {
-  age: string;
-  salary: string;
-  invested: string;
-  retirementAge: string;
-  riskTolerance: string;
-  goal: string;
-  monthlyContribution: string;
-}
+const RISK_OPTIONS = [
+  { value: "conservative", label: "Conservative", desc: "Preserve capital. Lower returns, lower risk." },
+  { value: "moderate", label: "Moderate", desc: "Balanced growth. Comfortable with some swings." },
+  { value: "aggressive", label: "Aggressive", desc: "Maximum growth. Can handle high volatility." },
+];
 
-interface Props {
-  onComplete: (goals: Goals) => void;
-  onSkip: () => void;
-}
-
-function InputField({ label, value, onChange, placeholder, prefix, type = "text" }: any) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 10, letterSpacing: 2, color: "rgba(226,232,240,0.45)", textTransform: "uppercase" }}>{label}</label>
-      <div style={{ position: "relative" }}>
-        {prefix && <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: focused ? "var(--green)" : "rgba(226,232,240,0.3)", pointerEvents: "none" }}>{prefix}</span>}
-        <input
-          type={type}
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={{
-            width: "100%",
-            padding: prefix ? "10px 12px 10px 26px" : "10px 12px",
-            background: "rgba(255,255,255,0.04)",
-            border: `1px solid ${focused ? "var(--green)" : "rgba(255,255,255,0.1)"}`,
-            borderRadius: 8,
-            color: "#e2e8f0",
-            fontSize: 14,
-            fontFamily: "var(--font-body)",
-            outline: "none",
-            transition: "border-color 0.2s",
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function OptionButton({ label, sublabel, selected, onClick, color = "var(--green)" }: any) {
-  return (
-    <button onClick={onClick} style={{
-      padding: "14px 16px", background: selected ? `${color}10` : "rgba(255,255,255,0.03)",
-      border: `1px solid ${selected ? color : "rgba(255,255,255,0.08)"}`,
-      borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all 0.2s", width: "100%",
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${selected ? color : "rgba(255,255,255,0.2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          {selected && <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />}
-        </div>
-        <div>
-          <p style={{ fontSize: 13, color: selected ? "#e2e8f0" : "rgba(226,232,240,0.6)", fontWeight: selected ? 600 : 400 }}>{label}</p>
-          {sublabel && <p style={{ fontSize: 11, color: "rgba(226,232,240,0.35)", marginTop: 2 }}>{sublabel}</p>}
-        </div>
-      </div>
-    </button>
-  );
-}
+const GOAL_OPTIONS = [
+  { value: "retirement", label: "Retirement" },
+  { value: "wealth", label: "Wealth Building" },
+  { value: "income", label: "Passive Income" },
+  { value: "short", label: "Short-Term Gain" },
+];
 
 export default function GoalsModal({ onComplete, onSkip }: Props) {
   const [step, setStep] = useState(0);
   const [goals, setGoals] = useState<Goals>({
-    age: "", salary: "", invested: "", retirementAge: "65",
-    riskTolerance: "", goal: "", monthlyContribution: "",
+    age: "", retirementAge: "65", salary: "", invested: "", monthlyContribution: "",
+    riskTolerance: "moderate", goal: "retirement",
+  });
+  const [focused, setFocused] = useState<string|null>(null);
+
+  const set = (k: keyof Goals, v: string) => setGoals(p => ({ ...p, [k]: v }));
+  const next = () => step < STEPS.length - 1 ? setStep(s => s + 1) : onComplete(goals);
+
+  const inputStyle = (k: string): React.CSSProperties => ({
+    width: "100%", padding: "11px 14px",
+    background: "rgba(255,255,255,0.03)",
+    border: `1px solid ${focused === k ? C.amber : C.border}`,
+    borderRadius: 10, color: C.cream, fontSize: 14,
+    fontFamily: "'Inter', sans-serif", outline: "none", transition: "border-color 0.15s",
   });
 
-  const set = (key: keyof Goals) => (val: string) => setGoals(prev => ({ ...prev, [key]: val }));
-
-  const canNext = () => {
-    if (step === 0) return goals.age !== "" && goals.salary !== "";
-    if (step === 1) return goals.retirementAge !== "";
-    if (step === 2) return goals.riskTolerance !== "";
-    if (step === 3) return goals.goal !== "";
-    return true;
-  };
-
-  const next = () => { if (step < STEPS.length - 1) setStep(s => s + 1); else onComplete(goals); };
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{ background: "#080f1e", border: "1px solid rgba(0,255,160,0.2)", borderRadius: 20, width: "100%", maxWidth: 520, overflow: "hidden", position: "relative" }}
-      >
-        {/* Top accent line */}
-        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, var(--green), var(--cyan), transparent)" }} />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: "fixed", inset: 0, background: "rgba(10,14,20,0.85)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+      <motion.div initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
+        style={{ width: 480, background: C.navy3, border: `1px solid rgba(255,255,255,0.07)`, borderRadius: 18, padding: "36px 36px 32px", position: "relative" }}>
 
         {/* Progress bar */}
-        <div style={{ height: 2, background: "rgba(255,255,255,0.05)" }}>
-          <motion.div
-            animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
-            transition={{ duration: 0.4 }}
-            style={{ height: "100%", background: "linear-gradient(90deg, var(--green), var(--cyan))" }}
-          />
+        <div style={{ height: 2, background: "rgba(255,255,255,0.06)", borderRadius: 1, marginBottom: 32, overflow: "hidden" }}>
+          <motion.div animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }} transition={{ duration: 0.4 }}
+            style={{ height: "100%", background: C.amber, borderRadius: 1 }} />
         </div>
 
-        <div style={{ padding: "32px 36px" }}>
-          {/* Step counter */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
-            <div style={{ display: "flex", gap: 6 }}>
-              {STEPS.map((_, i) => (
-                <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i <= step ? "var(--green)" : "rgba(255,255,255,0.1)", transition: "all 0.3s" }} />
-              ))}
-            </div>
-            <button onClick={onSkip} style={{ fontSize: 11, color: "rgba(226,232,240,0.3)", background: "none", border: "none", cursor: "pointer", letterSpacing: 1 }}>SKIP</button>
+        {/* Step dots */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            {STEPS.map((_, i) => (
+              <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i <= step ? C.amber : "rgba(255,255,255,0.1)", transition: "all 0.3s" }} />
+            ))}
           </div>
+          <button onClick={onSkip} style={{ fontSize: 11, color: C.cream3, background: "none", border: "none", cursor: "pointer", letterSpacing: 1 }}>SKIP</button>
+        </div>
 
-          {/* Step header */}
-          <AnimatePresence mode="wait">
-            <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
-              <p style={{ fontSize: 28, fontFamily: "var(--font-display)", color: "var(--green)", marginBottom: 4 }}>{STEPS[step].icon}</p>
-              <h2 style={{ fontSize: 20, color: "#e2e8f0", fontWeight: 600, marginBottom: 6, lineHeight: 1.3 }}>{STEPS[step].title}</h2>
-              <p style={{ fontSize: 13, color: "rgba(226,232,240,0.45)", marginBottom: 28, lineHeight: 1.5 }}>{STEPS[step].subtitle}</p>
+        {/* Logo mark */}
+        <div style={{ width: 36, height: 36, border: `1px solid rgba(201,168,76,0.3)`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+          <svg width="20" height="20" viewBox="0 0 40 40" fill="none">
+            <path d="M14 28 A8 8 0 1 1 26 28" stroke={C.amber} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+            <circle cx="20" cy="20" r="3" fill={C.amber}/>
+          </svg>
+        </div>
 
-              {/* Step 0: Basics */}
-              {step === 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <InputField label="Your Age" value={goals.age} onChange={set("age")} placeholder="e.g. 28" type="number" />
-                    <InputField label="Retirement Age" value={goals.retirementAge} onChange={set("retirementAge")} placeholder="e.g. 65" type="number" />
+        <AnimatePresence mode="wait">
+          <motion.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 500, color: C.cream, marginBottom: 6 }}>{STEPS[step].title}</h2>
+            <p style={{ fontSize: 13, color: C.cream3, marginBottom: 28, lineHeight: 1.6 }}>{STEPS[step].desc}</p>
+
+            {step < 2 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {STEPS[step].fields.map(f => (
+                  <div key={f.key}>
+                    <label style={{ fontSize: 10, letterSpacing: 1.5, color: C.cream3, textTransform: "uppercase", display: "block", marginBottom: 6 }}>{f.label}</label>
+                    <input type={f.type} placeholder={f.placeholder}
+                      value={goals[f.key as keyof Goals]}
+                      onChange={e => set(f.key as keyof Goals, e.target.value)}
+                      onFocus={() => setFocused(f.key)} onBlur={() => setFocused(null)}
+                      style={inputStyle(f.key)} />
                   </div>
-                  <InputField label="Annual Salary" value={goals.salary} onChange={set("salary")} placeholder="e.g. 85000" prefix="$" type="number" />
-                  <InputField label="Already Invested" value={goals.invested} onChange={set("invested")} placeholder="e.g. 25000" prefix="$" type="number" />
-                  <InputField label="Monthly Contribution" value={goals.monthlyContribution} onChange={set("monthlyContribution")} placeholder="e.g. 500" prefix="$" type="number" />
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {/* Risk tolerance */}
+                <div>
+                  <label style={{ fontSize: 10, letterSpacing: 1.5, color: C.cream3, textTransform: "uppercase", display: "block", marginBottom: 10 }}>Risk Tolerance</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {RISK_OPTIONS.map(o => (
+                      <button key={o.value} onClick={() => set("riskTolerance", o.value)}
+                        style={{ padding: "12px 14px", background: goals.riskTolerance === o.value ? C.amber2 : "rgba(255,255,255,0.02)", border: `1px solid ${goals.riskTolerance === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all 0.15s", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 500, color: goals.riskTolerance === o.value ? C.amber : C.cream, marginBottom: 2 }}>{o.label}</p>
+                          <p style={{ fontSize: 11, color: C.cream3 }}>{o.desc}</p>
+                        </div>
+                        {goals.riskTolerance === o.value && <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.amber, flexShrink: 0 }} />}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
-
-              {/* Step 1: Timeline */}
-              {step === 1 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {[
-                    { val: "short", label: "Less than 5 years", sub: "Short-term savings or near-term goal" },
-                    { val: "medium", label: "5–15 years", sub: "Building wealth over time" },
-                    { val: "long", label: "15–30 years", sub: "Retirement or long-term wealth" },
-                    { val: "verylong", label: "30+ years", sub: "Generational wealth building" },
-                  ].map(o => (
-                    <OptionButton key={o.val} label={o.label} sublabel={o.sub}
-                      selected={goals.riskTolerance === o.val + "_time"}
-                      onClick={() => { set("riskTolerance")(o.val + "_time"); setGoals(g => ({ ...g, retirementAge: g.retirementAge })); }}
-                    />
-                  ))}
+                {/* Goal */}
+                <div>
+                  <label style={{ fontSize: 10, letterSpacing: 1.5, color: C.cream3, textTransform: "uppercase", display: "block", marginBottom: 10 }}>Primary Goal</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    {GOAL_OPTIONS.map(o => (
+                      <button key={o.value} onClick={() => set("goal", o.value)}
+                        style={{ padding: "11px 14px", background: goals.goal === o.value ? C.amber2 : "rgba(255,255,255,0.02)", border: `1px solid ${goals.goal === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 10, cursor: "pointer", color: goals.goal === o.value ? C.amber : C.cream2, fontSize: 12, fontWeight: 500, transition: "all 0.15s" }}>
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-              {/* Step 2: Risk */}
-              {step === 2 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {[
-                    { val: "conservative", label: "Conservative", sub: "I hate losing money. Keep it safe, even if returns are lower", color: "var(--cyan)" },
-                    { val: "moderate", label: "Moderate", sub: "Some ups and downs are fine — I want solid growth", color: "var(--green)" },
-                    { val: "aggressive", label: "Aggressive", sub: "I can handle big swings. I want maximum long-term growth", color: "var(--purple)" },
-                    { val: "yolo", label: "High Risk / High Reward", sub: "Crypto, growth stocks, I'm here for big gains", color: "#f59e0b" },
-                  ].map(o => (
-                    <OptionButton key={o.val} label={o.label} sublabel={o.sub} color={o.color}
-                      selected={goals.riskTolerance === o.val}
-                      onClick={() => set("riskTolerance")(o.val)}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Step 3: Goal */}
-              {step === 3 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {[
-                    { val: "retirement", label: "Retire comfortably", sub: "Build a nest egg to live off in retirement" },
-                    { val: "wealth", label: "Build long-term wealth", sub: "Grow my net worth over time" },
-                    { val: "income", label: "Generate passive income", sub: "Dividends, distributions, cash flow" },
-                    { val: "house", label: "Save for a big purchase", sub: "Home, car, or other major expense" },
-                    { val: "learn", label: "Learn investing", sub: "Just getting started, exploring my options" },
-                  ].map(o => (
-                    <OptionButton key={o.val} label={o.label} sublabel={o.sub}
-                      selected={goals.goal === o.val}
-                      onClick={() => set("goal")(o.val)}
-                    />
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Navigation */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
-            <button onClick={() => step > 0 ? setStep(s => s - 1) : onSkip()}
-              style={{ fontSize: 12, color: "rgba(226,232,240,0.35)", background: "none", border: "none", cursor: "pointer", letterSpacing: 1 }}>
-              {step === 0 ? "SKIP FOR NOW" : "← BACK"}
-            </button>
-            <motion.button
-              onClick={next}
-              disabled={!canNext()}
-              whileHover={canNext() ? { scale: 1.02 } : {}}
-              whileTap={canNext() ? { scale: 0.98 } : {}}
-              style={{
-                padding: "12px 28px", background: canNext() ? "var(--green)" : "rgba(255,255,255,0.08)",
-                border: "none", borderRadius: 10, color: canNext() ? "#020408" : "rgba(226,232,240,0.2)",
-                fontSize: 12, fontWeight: 700, letterSpacing: 2, cursor: canNext() ? "pointer" : "not-allowed",
-                fontFamily: "var(--font-display)", transition: "all 0.2s",
-              }}
-            >
-              {step === STEPS.length - 1 ? "GET STARTED →" : "NEXT →"}
-            </motion.button>
-          </div>
+        {/* Footer */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
+          <button onClick={onSkip} style={{ fontSize: 12, color: C.cream3, background: "none", border: "none", cursor: "pointer" }}>
+            Skip for now
+          </button>
+          <button onClick={next}
+            style={{ padding: "11px 28px", background: C.amber, border: "none", borderRadius: 10, color: C.navy, fontSize: 13, fontWeight: 600, cursor: "pointer", letterSpacing: 0.3 }}>
+            {step < STEPS.length - 1 ? "Next →" : "Get Started →"}
+          </button>
         </div>
       </motion.div>
     </motion.div>

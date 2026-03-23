@@ -1,4 +1,19 @@
 from fastapi import FastAPI
+import math
+
+def sanitize(obj):
+    """Recursively replace NaN/Inf with None for JSON compliance."""
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    if isinstance(obj, dict):
+        return {k: sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [sanitize(v) for v in obj]
+    return obj
+
+
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
@@ -69,7 +84,7 @@ def portfolio(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y",
     port_vol = float(np.sqrt(np.dot(active_weights.T, np.dot(cov_matrix * 252, active_weights))))
 
     n = 300
-    return {
+    return sanitize({
         "tickers": tickers_list,
         "weights": [float(w) for w in optimal_weights],
         "max_drawdown": float(max_dd),
@@ -81,7 +96,7 @@ def portfolio(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y",
         "portfolio_volatility": port_vol,
         "period": period,
         "benchmark_ticker": bench_ticker,
-    }
+    })
 
 
 class ChatRequest(BaseModel):
@@ -149,10 +164,10 @@ def drawdown_series(tickers: str = "AAPL,MSFT", weights: str = "", period: str =
     drawdown, _ = max_drawdown(growth)
 
     n = 300
-    return {
+    return sanitize({
         "dates": [str(d) for d in drawdown.tail(n).index],
         "drawdown": [float(x) for x in drawdown.tail(n).values],
-    }
+    })
 
 
 @app.get("/correlation")
@@ -247,3 +262,11 @@ def news(tickers: str = "AAPL"):
         except Exception:
             pass
     return {"articles": results}
+
+
+@app.get("/search-ticker")
+async def search_ticker(q: str):
+    """Live search across all Yahoo Finance tickers."""
+    from search import search_tickers
+    results = await search_tickers(q)
+    return {"results": results}

@@ -1,111 +1,77 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase, Portfolio } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
 
-interface Props {
-  currentAssets: { ticker: string; weight: number }[];
-  currentPeriod: string;
-  onLoad: (assets: { ticker: string; weight: number }[], period: string) => void;
-}
+const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", border: "rgba(255,255,255,0.06)", cream: "#e8e0cc", cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)" };
+interface Asset { ticker: string; weight: number; }
+interface Portfolio { id: string; name: string; assets: Asset[]; period: string; }
 
-export default function SavedPortfolios({ currentAssets, currentPeriod, onLoad }: Props) {
+export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asset[]; data: any; onLoad: (a: Asset[]) => void }) {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [showSave, setShowSave] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [focused, setFocused] = useState(false);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    fetchPortfolios();
-  }, []);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setUser(data.user)); fetchPortfolios(); }, []);
 
   const fetchPortfolios = async () => {
-    const { data } = await supabase
-      .from("portfolios")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setPortfolios(data);
+    const { data } = await supabase.from("portfolios").select("*").order("created_at", { ascending: false });
+    if (data) setPortfolios(data as Portfolio[]);
   };
 
   const save = async () => {
     if (!name.trim() || !user) return;
     setSaving(true);
-    await supabase.from("portfolios").insert({
-      name: name.trim(),
-      assets: currentAssets,
-      period: currentPeriod,
-      user_id: user.id,
-    });
-    setName("");
-    setShowSave(false);
-    fetchPortfolios();
-    setSaving(false);
+    await supabase.from("portfolios").insert({ name: name.trim(), assets, user_id: user.id });
+    setName(""); setShowSave(false); fetchPortfolios(); setSaving(false);
   };
 
-  const remove = async (id: string) => {
-    await supabase.from("portfolios").delete().eq("id", id);
-    fetchPortfolios();
-  };
+  const remove = async (id: string) => { await supabase.from("portfolios").delete().eq("id", id); fetchPortfolios(); };
 
   if (!user) return null;
 
   return (
-    <div style={{ padding: "0 16px 20px" }}>
-      <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "rgba(226,232,240,0.22)", textTransform: "uppercase" }}>Saved</p>
-          <button onClick={() => setShowSave(!showSave)} style={{
-            fontSize: 9, letterSpacing: 2, color: "#00ffa0", background: "none", border: "none",
-            cursor: "pointer", fontFamily: "'Orbitron', monospace", textTransform: "uppercase",
-          }}>+ Save</button>
-        </div>
-
-        <AnimatePresence>
-          {showSave && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ marginBottom: 10, overflow: "hidden" }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                <input
-                  value={name} onChange={e => setName(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && save()}
-                  placeholder="Portfolio name..."
-                  style={{ flex: 1, padding: "7px 10px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,255,160,0.2)", borderRadius: 7, color: "#e2e8f0", fontSize: 11, fontFamily: "'Space Grotesk', sans-serif", outline: "none" }}
-                />
-                <button onClick={save} disabled={saving} style={{
-                  padding: "7px 12px", background: "rgba(0,255,160,0.1)", border: "1px solid rgba(0,255,160,0.3)",
-                  borderRadius: 7, color: "#00ffa0", fontSize: 10, cursor: "pointer", fontFamily: "'Orbitron', monospace",
-                }}>OK</button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {portfolios.length === 0 ? (
-          <p style={{ fontSize: 11, color: "rgba(226,232,240,0.2)", textAlign: "center", padding: "8px 0" }}>No saved portfolios</p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {portfolios.map(p => (
-              <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.04)", cursor: "pointer" }}
-                onClick={() => onLoad(p.assets, p.period)}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(0,255,160,0.2)")}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.04)")}
-              >
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 12, color: "rgba(226,232,240,0.7)", marginBottom: 2 }}>{p.name}</p>
-                  <p style={{ fontSize: 10, color: "rgba(226,232,240,0.25)" }}>{p.assets.map(a => a.ticker).join(", ")} · {p.period}</p>
-                </div>
-                <button onClick={e => { e.stopPropagation(); remove(p.id); }} style={{ background: "none", border: "none", color: "rgba(255,77,109,0.3)", cursor: "pointer", fontSize: 12, padding: "0 2px" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "#ff4d6d")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,77,109,0.3)")}
-                >✕</button>
-              </motion.div>
-            ))}
-          </div>
-        )}
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <span style={{ fontSize: 8, letterSpacing: 2.5, color: C.cream3, textTransform: "uppercase" }}>Saved</span>
+        <button onClick={() => setShowSave(s => !s)} style={{ fontSize: 9, letterSpacing: 1, color: C.amber, background: "none", border: "none", cursor: "pointer" }}>+ Save</button>
       </div>
+      <AnimatePresence>
+        {showSave && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden", marginBottom: 8 }}>
+            <div style={{ display: "flex", gap: 5 }}>
+              <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && save()}
+                onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} placeholder="Portfolio name..."
+                style={{ flex: 1, padding: "6px 9px", background: "rgba(255,255,255,0.04)", border: `1px solid ${focused ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 7, color: C.cream, fontSize: 11, fontFamily: "Inter,sans-serif", outline: "none", transition: "border-color 0.15s" }} />
+              <button onClick={save} disabled={saving} style={{ padding: "6px 10px", background: C.amber2, border: "1px solid rgba(201,168,76,0.3)", borderRadius: 7, color: C.amber, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>{saving ? "..." : "OK"}</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {portfolios.length === 0 ? (
+        <p style={{ fontSize: 10, color: C.cream3, textAlign: "center", padding: "6px 0" }}>No saved portfolios</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {portfolios.map(p => (
+            <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 9px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: `1px solid ${C.border}`, cursor: "pointer", transition: "all 0.15s" }}
+              onClick={() => onLoad(p.assets)}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.25)"; e.currentTarget.style.background = "rgba(201,168,76,0.04)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 11, color: C.cream2, marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</p>
+                <p style={{ fontSize: 9, color: C.cream3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.assets.map((a: Asset) => a.ticker).join(", ")}</p>
+              </div>
+              <button onClick={e => { e.stopPropagation(); remove(p.id); }} style={{ background: "none", border: "none", color: "rgba(224,92,92,0.3)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
+                onMouseLeave={e => e.currentTarget.style.color = "rgba(224,92,92,0.3)"}>✕</button>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

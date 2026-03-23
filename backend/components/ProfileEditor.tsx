@@ -39,7 +39,7 @@ interface Props { onClose: () => void; }
 export default function ProfileEditor({ onClose }: Props) {
   const saved = (() => {
     if (typeof window === "undefined") return {};
-    try { return JSON.parse(localStorage.getItem("alphai_goals") || "{}"); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem("corvo_goals") || "{}"); } catch { return {}; }
   })();
 
   const [form, setForm] = useState({
@@ -55,7 +55,7 @@ export default function ProfileEditor({ onClose }: Props) {
   const set = (key: string) => (val: string) => setForm(p => ({ ...p, [key]: val }));
 
   const save = () => {
-    localStorage.setItem("alphai_goals", JSON.stringify(form));
+    localStorage.setItem("corvo_goals", JSON.stringify(form));
     onClose();
   };
 

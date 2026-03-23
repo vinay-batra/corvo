@@ -1,126 +1,113 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { motion } from "framer-motion";
 
-const RISK_OPTIONS = [
-  { val: "conservative", label: "Conservative", sub: "Keep it safe" },
-  { val: "moderate", label: "Moderate", sub: "Balanced growth" },
-  { val: "aggressive", label: "Aggressive", sub: "Max long-term growth" },
-  { val: "yolo", label: "High Risk", sub: "Crypto & growth stocks" },
-];
+const C = {
+  navy3: "#111620", navy4: "#161c26", border: "rgba(255,255,255,0.07)",
+  cream: "#e8e0cc", cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)",
+  amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)",
+};
 
-const GOAL_OPTIONS = [
-  { val: "retirement", label: "Retire comfortably" },
-  { val: "wealth", label: "Build long-term wealth" },
-  { val: "income", label: "Generate passive income" },
-  { val: "house", label: "Save for a big purchase" },
-  { val: "learn", label: "Learn investing" },
-];
-
-function Field({ label, value, onChange, prefix, type = "text" }: any) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <label style={{ fontSize: 9, letterSpacing: 2, color: "rgba(240,244,248,0.4)", textTransform: "uppercase" }}>{label}</label>
-      <div style={{ position: "relative" }}>
-        {prefix && <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: focused ? "var(--green)" : "rgba(240,244,248,0.3)", pointerEvents: "none" }}>{prefix}</span>}
-        <input type={type} value={value} onChange={e => onChange(e.target.value)}
-          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-          style={{ width: "100%", padding: prefix ? "9px 10px 9px 22px" : "9px 10px", background: "rgba(255,255,255,0.05)", border: `1px solid ${focused ? "var(--green)" : "rgba(255,255,255,0.1)"}`, borderRadius: 8, color: "#f0f4f8", fontSize: 13, fontFamily: "var(--font-body)", outline: "none", transition: "border-color 0.2s" }}
-        />
-      </div>
-    </div>
-  );
+interface Goals {
+  age: string; retirementAge: string; salary: string;
+  invested: string; monthlyContribution: string;
+  riskTolerance: string; goal: string;
 }
 
-interface Props { onClose: () => void; }
+interface Props { goals: Goals | null; onSave: (g: Goals) => void; onClose: () => void; }
 
-export default function ProfileEditor({ onClose }: Props) {
-  const saved = (() => {
-    if (typeof window === "undefined") return {};
-    try { return JSON.parse(localStorage.getItem("corvo_goals") || "{}"); } catch { return {}; }
-  })();
+const RISK_OPTIONS = ["conservative", "moderate", "aggressive"];
+const GOAL_OPTIONS = [
+  { value: "retirement", label: "Retirement" },
+  { value: "wealth", label: "Wealth Building" },
+  { value: "income", label: "Passive Income" },
+  { value: "short", label: "Short-Term Gain" },
+];
 
-  const [form, setForm] = useState({
-    age: saved.age || "",
-    salary: saved.salary || "",
-    invested: saved.invested || "",
-    monthlyContribution: saved.monthlyContribution || "",
-    retirementAge: saved.retirementAge || "65",
-    riskTolerance: saved.riskTolerance || "",
-    goal: saved.goal || "",
+export default function ProfileEditor({ goals, onSave, onClose }: Props) {
+  const [form, setForm] = useState<Goals>(goals || {
+    age: "", retirementAge: "65", salary: "", invested: "",
+    monthlyContribution: "", riskTolerance: "moderate", goal: "retirement",
+  });
+  const [focused, setFocused] = useState<string | null>(null);
+  const set = (k: keyof Goals, v: string) => setForm(p => ({ ...p, [k]: v }));
+
+  const inputStyle = (k: string): React.CSSProperties => ({
+    width: "100%", padding: "10px 12px",
+    background: "rgba(255,255,255,0.03)",
+    border: `1px solid ${focused === k ? C.amber : C.border}`,
+    borderRadius: 9, color: C.cream, fontSize: 13,
+    fontFamily: "'Inter', sans-serif", outline: "none", transition: "border-color 0.15s",
   });
 
-  const set = (key: string) => (val: string) => setForm(p => ({ ...p, [key]: val }));
-
-  const save = () => {
-    localStorage.setItem("corvo_goals", JSON.stringify(form));
-    onClose();
-  };
+  const fields = [
+    { key: "age", label: "Age", placeholder: "28" },
+    { key: "retirementAge", label: "Retirement Age", placeholder: "65" },
+    { key: "salary", label: "Annual Salary ($)", placeholder: "85000" },
+    { key: "invested", label: "Invested ($)", placeholder: "25000" },
+    { key: "monthlyContribution", label: "Monthly Contribution ($)", placeholder: "500" },
+  ];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(6px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-    >
-      <motion.div initial={{ opacity: 0, scale: 0.94, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-        style={{ background: "#080f1e", border: "1px solid rgba(0,255,160,0.2)", borderRadius: 18, width: "100%", maxWidth: 500, overflow: "hidden", position: "relative", maxHeight: "90vh", overflowY: "auto" }}
-      >
-        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, var(--green), var(--cyan), transparent)" }} />
-        <div style={{ padding: "28px 32px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-            <div>
-              <p style={{ fontSize: 9, letterSpacing: 3, color: "rgba(240,244,248,0.35)", textTransform: "uppercase", marginBottom: 4 }}>Edit</p>
-              <h2 style={{ fontSize: 18, color: "#f0f4f8", fontWeight: 600 }}>Your Profile</h2>
-            </div>
-            <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(240,244,248,0.3)", fontSize: 20, cursor: "pointer" }}>✕</button>
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(10,14,20,0.8)", backdropFilter: "blur(6px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
+        onClick={e => e.stopPropagation()}
+        style={{ width: 480, maxHeight: "85vh", overflowY: "auto", background: C.navy3, border: `1px solid ${C.border}`, borderRadius: 16, padding: "28px 28px 24px" }}>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <div>
+            <p style={{ fontSize: 9, letterSpacing: 2, color: C.amber, textTransform: "uppercase", marginBottom: 4 }}>Settings</p>
+            <h3 style={{ fontSize: 18, fontWeight: 500, color: C.cream }}>Profile & Goals</h3>
           </div>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, color: C.cream2, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {/* Basics */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <Field label="Your Age" value={form.age} onChange={set("age")} type="number" />
-              <Field label="Retirement Age" value={form.retirementAge} onChange={set("retirementAge")} type="number" />
+        {/* Fields */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+          {fields.map(f => (
+            <div key={f.key}>
+              <label style={{ fontSize: 9, letterSpacing: 1.5, color: C.cream3, textTransform: "uppercase", display: "block", marginBottom: 5 }}>{f.label}</label>
+              <input type="number" placeholder={f.placeholder} value={form[f.key as keyof Goals]}
+                onChange={e => set(f.key as keyof Goals, e.target.value)}
+                onFocus={() => setFocused(f.key)} onBlur={() => setFocused(null)}
+                style={inputStyle(f.key)} />
             </div>
-            <Field label="Annual Salary" value={form.salary} onChange={set("salary")} prefix="$" type="number" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <Field label="Amount Invested" value={form.invested} onChange={set("invested")} prefix="$" type="number" />
-              <Field label="Monthly Contribution" value={form.monthlyContribution} onChange={set("monthlyContribution")} prefix="$" type="number" />
-            </div>
+          ))}
+        </div>
 
-            {/* Risk */}
-            <div>
-              <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(240,244,248,0.4)", textTransform: "uppercase", marginBottom: 10 }}>Risk Tolerance</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {RISK_OPTIONS.map(o => (
-                  <button key={o.val} onClick={() => set("riskTolerance")(o.val)}
-                    style={{ padding: "10px 12px", background: form.riskTolerance === o.val ? "rgba(0,255,160,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${form.riskTolerance === o.val ? "rgba(0,255,160,0.4)" : "rgba(255,255,255,0.08)"}`, borderRadius: 8, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}>
-                    <p style={{ fontSize: 12, color: form.riskTolerance === o.val ? "var(--green)" : "#f0f4f8", fontWeight: 600 }}>{o.label}</p>
-                    <p style={{ fontSize: 10, color: "rgba(240,244,248,0.4)", marginTop: 2 }}>{o.sub}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Goal */}
-            <div>
-              <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(240,244,248,0.4)", textTransform: "uppercase", marginBottom: 10 }}>Primary Goal</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {GOAL_OPTIONS.map(o => (
-                  <button key={o.val} onClick={() => set("goal")(o.val)}
-                    style={{ padding: "10px 14px", background: form.goal === o.val ? "rgba(0,255,160,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${form.goal === o.val ? "rgba(0,255,160,0.4)" : "rgba(255,255,255,0.08)"}`, borderRadius: 8, cursor: "pointer", textAlign: "left", color: form.goal === o.val ? "var(--green)" : "#f0f4f8", fontSize: 13, transition: "all 0.15s" }}>
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <motion.button onClick={save} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-              style={{ padding: "13px", background: "var(--green)", border: "none", borderRadius: 10, color: "#020408", fontSize: 12, fontWeight: 700, letterSpacing: 2, cursor: "pointer", fontFamily: "var(--font-display)", marginTop: 4 }}>
-              SAVE PROFILE
-            </motion.button>
+        {/* Risk */}
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ fontSize: 9, letterSpacing: 1.5, color: C.cream3, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Risk Tolerance</label>
+          <div style={{ display: "flex", gap: 6 }}>
+            {RISK_OPTIONS.map(o => (
+              <button key={o} onClick={() => set("riskTolerance", o)}
+                style={{ flex: 1, padding: "8px", background: form.riskTolerance === o ? C.amber2 : "rgba(255,255,255,0.02)", border: `1px solid ${form.riskTolerance === o ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 8, color: form.riskTolerance === o ? C.amber : C.cream2, fontSize: 11, fontWeight: 500, cursor: "pointer", textTransform: "capitalize", transition: "all 0.15s" }}>
+                {o}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* Goal */}
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ fontSize: 9, letterSpacing: 1.5, color: C.cream3, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Primary Goal</label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {GOAL_OPTIONS.map(o => (
+              <button key={o.value} onClick={() => set("goal", o.value)}
+                style={{ padding: "9px", background: form.goal === o.value ? C.amber2 : "rgba(255,255,255,0.02)", border: `1px solid ${form.goal === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 8, color: form.goal === o.value ? C.amber : C.cream2, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" }}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: "11px", background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 9, color: C.cream2, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={() => onSave(form)} style={{ flex: 2, padding: "11px", background: C.amber, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer", letterSpacing: 0.3 }}>Save Changes</button>
         </div>
       </motion.div>
     </motion.div>
