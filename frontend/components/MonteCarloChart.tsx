@@ -67,9 +67,9 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
   }, [assets, period]);
 
   const days = data ? Array.from({ length: data.horizon }, (_, i) => i + 1) : [];
-  const p5  = data ? ((data.final_p5  * 100) - 100).toFixed(1) : null;
-  const p50 = data ? ((data.final_p50 * 100) - 100).toFixed(1) : null;
-  const p95 = data ? ((data.final_p95 * 100) - 100).toFixed(1) : null;
+  const p5  = data ? ((data.final_p5  * 100)).toFixed(1) : null;
+  const p50 = data ? ((data.final_p50 * 100)).toFixed(1) : null;
+  const p95 = data ? ((data.final_p95 * 100)).toFixed(1) : null;
 
   return (
     <>
