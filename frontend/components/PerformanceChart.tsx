@@ -1,20 +1,16 @@
 "use client";
-
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
-
 const BENCHMARK_LABELS: Record<string, string> = {
   "^GSPC": "S&P 500", "^IXIC": "Nasdaq", "^DJI": "Dow Jones",
   "^RUT": "Russell 2000", "SPY": "SPY ETF", "QQQ": "QQQ ETF", "GLD": "Gold",
 };
-
 const C = { amber: "#c9a84c", cream3: "rgba(232,224,204,0.3)" };
-
 export default function PerformanceChart({ data }: { data: any }) {
   const benchLabel = BENCHMARK_LABELS[data.benchmark_ticker] ?? data.benchmark_ticker ?? "Benchmark";
-
+  const portfolioY = (data.portfolio_cumulative || data.growth || []);
+  const benchmarkY = (data.benchmark_cumulative || data.benchmark || []);
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -32,16 +28,15 @@ export default function PerformanceChart({ data }: { data: any }) {
           </span>
         </div>
       </div>
-
       <Plot
         data={[
           {
-            x: data.dates, y: data.growth, type: "scatter", mode: "lines", name: "Portfolio",
+            x: data.dates, y: portfolioY, type: "scatter", mode: "lines", name: "Portfolio",
             line: { color: "#c9a84c", width: 2 },
             fill: "tozeroy", fillcolor: "rgba(201,168,76,0.05)",
           },
           {
-            x: data.dates, y: data.benchmark, type: "scatter", mode: "lines", name: benchLabel,
+            x: data.dates, y: benchmarkY, type: "scatter", mode: "lines", name: benchLabel,
             line: { color: "rgba(232,224,204,0.3)", width: 1.5, dash: "dot" },
             fill: "tozeroy", fillcolor: "rgba(232,224,204,0.02)",
           },
