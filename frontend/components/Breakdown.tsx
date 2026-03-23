@@ -1,18 +1,18 @@
 "use client";
 import { motion } from "framer-motion";
 
-// Amber-family palette — distinct but cohesive
+// Distinct color palette — visible against dark background
 const COLORS = [
   "#c9a84c",  // amber
-  "#e8c87a",  // light amber
-  "#a07830",  // dark amber
-  "#d4956a",  // amber-coral
-  "#b8a060",  // muted amber
-  "#f0d090",  // pale gold
-  "#8a6020",  // deep gold
-  "#e0b050",  // bright amber
-  "#c0906a",  // amber-rose
-  "#d8c080",  // warm cream
+  "#5b9bd5",  // blue
+  "#e05c5c",  // red
+  "#5cb88a",  // green
+  "#b87fd4",  // purple
+  "#e0965c",  // orange
+  "#5cd4d4",  // teal
+  "#d45cb8",  // pink
+  "#8abd5b",  // lime
+  "#d4c45c",  // yellow
 ];
 
 interface Asset { ticker: string; weight: number; }
@@ -43,7 +43,7 @@ export default function Breakdown({ assets }: { assets: Asset[] }) {
             style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 8, height: 8, borderRadius: 2, background: a.color, flexShrink: 0 }} />
             <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: a.color, letterSpacing: 0.5 }}>{a.ticker}</span>
-            <span style={{ fontSize: 10, color: "rgba(232,224,204,0.3)" }}>{(a.pct * 100).toFixed(1)}%</span>
+            <span style={{ fontSize: 10, color: "rgba(232,224,204,0.55)" }}>{(a.pct * 100).toFixed(1)}%</span>
           </motion.div>
         ))}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import { Metrics } from "../../components/Metrics";
@@ -18,6 +19,7 @@ import ExportPDF from "../../components/ExportPDF";
 import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
+import SharePortfolio from "../../components/SharePortfolio";
 import { fetchPortfolio } from "../../lib/api";
 
 const C = {
@@ -26,6 +28,8 @@ const C = {
   cream: "#e8e0cc", cream2: "rgba(232,224,204,0.65)", cream3: "rgba(232,224,204,0.35)",
   amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)",
 };
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const TABS = ["Overview","Simulate","News","AI Chat"];
 const PERIODS = ["6mo","1y","2y","5y"];
@@ -36,7 +40,12 @@ const BENCHMARKS = [
   {ticker:"QQQ",label:"QQQ ETF"},{ticker:"GLD",label:"Gold"},
 ];
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Example portfolios for empty state
+const EXAMPLE_PORTFOLIOS = [
+  { name: "Big Tech", assets: [{ticker:"AAPL",weight:0.25},{ticker:"MSFT",weight:0.25},{ticker:"GOOGL",weight:0.25},{ticker:"NVDA",weight:0.25}] },
+  { name: "Index Core", assets: [{ticker:"VOO",weight:0.6},{ticker:"QQQ",weight:0.3},{ticker:"GLD",weight:0.1}] },
+  { name: "Crypto Mix", assets: [{ticker:"BTC-USD",weight:0.5},{ticker:"ETH-USD",weight:0.3},{ticker:"AAPL",weight:0.2}] },
+];
 
 function Clock() {
   const [t, setT] = useState("");
@@ -73,30 +82,51 @@ function Spinner() {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onLoad }: { onLoad: (assets: any[]) => void }) {
   return (
     <motion.div initial={{opacity:0}} animate={{opacity:1}}
-      style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:320,gap:16,textAlign:"center"}}>
-      <div style={{width:52,height:52,border:`1px solid rgba(201,168,76,0.2)`,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(201,168,76,0.05)"}}>
-        <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+      style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:320,gap:24,textAlign:"center",padding:"40px 20px"}}>
+      <div style={{width:56,height:56,border:`1px solid rgba(201,168,76,0.2)`,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(201,168,76,0.05)"}}>
+        <svg width="30" height="30" viewBox="0 0 40 40" fill="none">
           <path d="M14 28 A8 8 0 1 1 26 28" stroke={C.amber} strokeWidth="2" strokeLinecap="round" fill="none"/>
           <circle cx="20" cy="20" r="2.5" fill={C.amber}/>
         </svg>
       </div>
       <div>
-        <p style={{fontSize:16,fontWeight:500,color:C.cream,marginBottom:6}}>Build your portfolio</p>
-        <p style={{fontSize:13,color:C.cream3,lineHeight:1.7}}>Add assets on the left and click Analyze</p>
+        <p style={{fontSize:18,fontWeight:600,color:C.cream,marginBottom:8}}>Build your portfolio</p>
+        <p style={{fontSize:13,color:C.cream3,lineHeight:1.8,maxWidth:380}}>
+          Search for any stock, ETF, or crypto in the sidebar. Set your allocations and click Analyze to get your full breakdown.
+        </p>
       </div>
-      <div style={{display:"flex",gap:6,marginTop:4}}>
-        {["VOO","AAPL","BTC-USD"].map(t=>(
-          <span key={t} style={{padding:"4px 10px",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:6,fontSize:11,fontFamily:"Space Mono,monospace",color:C.amber,background:"rgba(201,168,76,0.06)"}}>{t}</span>
-        ))}
+
+      {/* Example portfolios */}
+      <div style={{width:"100%",maxWidth:520}}>
+        <p style={{fontSize:9,letterSpacing:3,color:C.cream3,textTransform:"uppercase",marginBottom:14}}>Or try an example</p>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          {EXAMPLE_PORTFOLIOS.map(p => (
+            <button key={p.name} onClick={() => onLoad(p.assets)}
+              style={{padding:"14px 10px",background:"rgba(255,255,255,0.03)",border:`1px solid ${C.border}`,borderRadius:10,cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(201,168,76,0.3)";e.currentTarget.style.background="rgba(201,168,76,0.05)"}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background="rgba(255,255,255,0.03)"}}>
+              <p style={{fontSize:11,fontWeight:600,color:C.cream,marginBottom:6}}>{p.name}</p>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,justifyContent:"center"}}>
+                {p.assets.map(a=>(
+                  <span key={a.ticker} style={{fontSize:9,fontFamily:"Space Mono,monospace",color:C.amber,background:C.amber2,padding:"1px 5px",borderRadius:3}}>{a.ticker}</span>
+                ))}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
+
+      <p style={{fontSize:11,color:C.cream3}}>
+        Supports stocks, ETFs, crypto — any ticker on Yahoo Finance
+      </p>
     </motion.div>
   );
 }
 
-// Real-time price ticker for sidebar
+// Live prices in sidebar
 function LivePrices({ assets }: { assets: {ticker:string;weight:number}[] }) {
   const [prices, setPrices] = useState<Record<string,{price:number;change:number;pct:number}>>({});
   const intervalRef = useRef<any>(null);
@@ -106,16 +136,13 @@ function LivePrices({ assets }: { assets: {ticker:string;weight:number}[] }) {
     if (!tickers.length) return;
     try {
       const res = await fetch(`${API_URL}/prices?tickers=${tickers.join(",")}`);
-      if (res.ok) {
-        const data = await res.json();
-        setPrices(data);
-      }
+      if (res.ok) setPrices(await res.json());
     } catch {}
   };
 
   useEffect(() => {
     fetchPrices();
-    intervalRef.current = setInterval(fetchPrices, 30000); // refresh every 30s
+    intervalRef.current = setInterval(fetchPrices, 30000);
     return () => clearInterval(intervalRef.current);
   }, [assets.map(a=>a.ticker).join(",")]);
 
@@ -125,7 +152,7 @@ function LivePrices({ assets }: { assets: {ticker:string;weight:number}[] }) {
   return (
     <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
       <div style={{fontSize:8,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase",marginBottom:8}}>Live Prices</div>
-      <div style={{display:"flex",flexDirection:"column",gap:5}}>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {tickers.map(ticker => {
           const p = prices[ticker];
           const isPos = p ? p.pct >= 0 : null;
@@ -154,7 +181,8 @@ function LivePrices({ assets }: { assets: {ticker:string;weight:number}[] }) {
   );
 }
 
-export default function AppPage() {
+function AppInner() {
+  const searchParams = useSearchParams();
   const [assets, setAssets] = useState([{ticker:"AAPL",weight:0.5},{ticker:"MSFT",weight:0.5}]);
   const [period, setPeriod] = useState("1y");
   const [benchmark, setBenchmark] = useState("^GSPC");
@@ -167,36 +195,60 @@ export default function AppPage() {
   const [showProfile, setShowProfile] = useState(false);
   const [benchOpen, setBenchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [error, setError] = useState<string|null>(null);
 
   useEffect(() => {
     const g = localStorage.getItem("corvo_goals");
     if (g) setGoals(JSON.parse(g));
     else setShowGoals(true);
 
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  },[]);
+    // Load from URL params (shared portfolio)
+    const t = searchParams.get("t");
+    const w = searchParams.get("w");
+    const p = searchParams.get("p");
+    const b = searchParams.get("b");
+    if (t && w) {
+      const tickers = t.split(",");
+      const weights = w.split(",").map(Number);
+      if (tickers.length === weights.length) {
+        setAssets(tickers.map((ticker, i) => ({ ticker, weight: weights[i] })));
+        if (p) setPeriod(p);
+        if (b) setBenchmark(b);
+        // Auto-analyze shared portfolio
+        setTimeout(() => {
+          const valid = tickers.map((ticker, i) => ({ ticker, weight: weights[i] })).filter(a => a.ticker && a.weight > 0);
+          if (valid.length) handleAnalyzeWith(valid, p || "1y", b || "^GSPC");
+        }, 500);
+      }
+    }
+  }, []);
+
+  const handleAnalyzeWith = async (a: any[], p: string, b: string) => {
+    setLoading(true); setData(null); setError(null);
+    try {
+      const result = await fetchPortfolio(a, p, b);
+      if (result.error || result.detail) {
+        setError(result.detail || result.error || "Failed to analyze portfolio");
+      } else {
+        setData(result);
+      }
+    } catch(e: any) {
+      setError("Could not connect to backend. Please try again.");
+    }
+    setLoading(false);
+  };
 
   const handleAnalyze = async () => {
     const valid = assets.filter(a=>a.ticker&&a.weight>0);
     if (!valid.length) return;
-    setLoading(true); setData(null);
-    if (isMobile) setSidebarOpen(false);
-    try {
-      const result = await fetchPortfolio(valid, period, benchmark);
-      setData(result);
-    } catch(e) { console.error(e); }
-    setLoading(false);
+    if (sidebarOpen) setSidebarOpen(false);
+    await handleAnalyzeWith(valid, period, benchmark);
   };
 
   const benchLabel = BENCHMARKS.find(b=>b.ticker===benchmark)?.label??benchmark;
 
   const sidebarContent = (
     <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
-      {/* Edit Profile */}
       <div style={{padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
         <button onClick={()=>setShowProfile(true)}
           style={{width:"100%",padding:"9px 12px",background:"rgba(255,255,255,0.03)",border:`1px solid ${C.border}`,borderRadius:9,display:"flex",alignItems:"center",gap:9,cursor:"pointer",transition:"border-color 0.15s"}}
@@ -212,13 +264,11 @@ export default function AppPage() {
         </button>
       </div>
 
-      {/* Assets */}
       <div style={{padding:"16px 16px",borderBottom:`1px solid ${C.border}`}}>
         <div style={{fontSize:8,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase",marginBottom:12}}>Assets</div>
         <PortfolioBuilder assets={assets} onAssetsChange={setAssets} loading={loading}/>
       </div>
 
-      {/* Period */}
       <div style={{padding:"16px 16px",borderBottom:`1px solid ${C.border}`}}>
         <div style={{fontSize:8,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase",marginBottom:10}}>Period</div>
         <div style={{display:"flex",gap:4}}>
@@ -231,7 +281,6 @@ export default function AppPage() {
         </div>
       </div>
 
-      {/* Benchmark */}
       <div style={{padding:"16px 16px",borderBottom:`1px solid ${C.border}`,position:"relative"}}>
         <div style={{fontSize:8,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase",marginBottom:10}}>Benchmark</div>
         <button onClick={()=>setBenchOpen(o=>!o)}
@@ -257,7 +306,6 @@ export default function AppPage() {
         </AnimatePresence>
       </div>
 
-      {/* Analyze */}
       <div style={{padding:"16px 16px",borderBottom:`1px solid ${C.border}`}}>
         <button onClick={handleAnalyze} disabled={loading}
           style={{width:"100%",padding:"11px",background:loading?"rgba(201,168,76,0.3)":C.amber,border:"none",borderRadius:9,color:loading?"rgba(10,14,20,0.5)":"#0a0e14",fontSize:12,fontWeight:700,letterSpacing:2,cursor:loading?"default":"pointer",textTransform:"uppercase",transition:"all 0.2s"}}
@@ -267,10 +315,8 @@ export default function AppPage() {
         </button>
       </div>
 
-      {/* Live Prices */}
       <LivePrices assets={assets}/>
 
-      {/* Saved Portfolios */}
       <div style={{padding:"16px 16px",borderBottom:`1px solid ${C.border}`}}>
         <SavedPortfolios assets={assets} data={data} onLoad={(a:any)=>setAssets(a)}/>
       </div>
@@ -285,19 +331,18 @@ export default function AppPage() {
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
         * { box-sizing: border-box; }
+        .sidebar-desktop { display: flex !important; flex-direction: column; }
+        .mobile-only { display: none !important; }
         @media (max-width: 767px) {
           .sidebar-desktop { display: none !important; }
-        }
-        @media (min-width: 768px) {
-          .mobile-header { display: none !important; }
-          .sidebar-overlay { display: none !important; }
+          .mobile-only { display: flex !important; }
+          .desktop-only { display: none !important; }
         }
       `}</style>
 
       {/* DESKTOP SIDEBAR */}
-      <aside className="sidebar-desktop" style={{width:268,flexShrink:0,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",background:C.navy,overflow:"hidden"}}>
-        {/* Logo */}
-        <a href="/" style={{padding:"20px 18px 16px",borderBottom:`1px solid ${C.border}`,display:"block",textDecoration:"none",transition:"background 0.15s",cursor:"pointer"}}
+      <aside className="sidebar-desktop" style={{width:268,flexShrink:0,borderRight:`1px solid ${C.border}`,background:C.navy,overflow:"hidden"}}>
+        <a href="/" style={{padding:"20px 18px 16px",borderBottom:`1px solid ${C.border}`,display:"block",textDecoration:"none",transition:"background 0.15s"}}
           onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,0.04)"}
           onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
@@ -311,7 +356,6 @@ export default function AppPage() {
           <div style={{fontSize:8,letterSpacing:2,color:C.cream3,textTransform:"uppercase",paddingLeft:24}}>Portfolio Intelligence</div>
         </a>
         {sidebarContent}
-        {/* Footer */}
         <div style={{padding:"11px 16px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <div style={{width:5,height:5,borderRadius:"50%",background:C.amber,animation:"pulse 2s infinite"}}/>
@@ -321,23 +365,20 @@ export default function AppPage() {
         </div>
       </aside>
 
-      {/* MOBILE OVERLAY SIDEBAR */}
+      {/* MOBILE OVERLAY */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
-            <motion.div className="sidebar-overlay"
-              initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+            <motion.div className="mobile-only" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
               onClick={()=>setSidebarOpen(false)}
               style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:40}}/>
-            <motion.aside
+            <motion.aside className="mobile-only"
               initial={{x:-280}} animate={{x:0}} exit={{x:-280}}
               transition={{type:"tween",duration:0.25}}
-              style={{position:"fixed",left:0,top:0,bottom:0,width:280,background:C.navy,borderRight:`1px solid ${C.border}`,zIndex:50,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-              {/* Mobile logo + close */}
-              <div style={{padding:"16px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              style={{position:"fixed",left:0,top:0,bottom:0,width:280,background:C.navy,borderRight:`1px solid ${C.border}`,zIndex:50,flexDirection:"column",overflow:"hidden"}}>
+              <div style={{padding:"16px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div style={{fontFamily:"Space Mono,monospace",fontSize:13,fontWeight:700,letterSpacing:4,color:C.cream}}>CORVO</div>
-                <button onClick={()=>setSidebarOpen(false)}
-                  style={{background:"none",border:"none",color:C.cream3,fontSize:18,cursor:"pointer",padding:"2px 6px"}}>✕</button>
+                <button onClick={()=>setSidebarOpen(false)} style={{background:"none",border:"none",color:C.cream3,fontSize:18,cursor:"pointer"}}>✕</button>
               </div>
               {sidebarContent}
             </motion.aside>
@@ -347,10 +388,10 @@ export default function AppPage() {
 
       {/* MAIN */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
-        {/* Mobile top bar */}
-        <header className="mobile-header" style={{height:48,flexShrink:0,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",background:C.navy2}}>
-          <button onClick={()=>setSidebarOpen(true)}
-            style={{background:"none",border:"none",color:C.cream,cursor:"pointer",padding:"4px",display:"flex",flexDirection:"column",gap:4}}>
+
+        {/* Mobile header */}
+        <header className="mobile-only" style={{height:48,flexShrink:0,borderBottom:`1px solid ${C.border}`,alignItems:"center",justifyContent:"space-between",padding:"0 16px",background:C.navy2}}>
+          <button onClick={()=>setSidebarOpen(true)} style={{background:"none",border:"none",color:C.cream,cursor:"pointer",padding:4,display:"flex",flexDirection:"column",gap:4}}>
             <div style={{width:18,height:1.5,background:C.cream,borderRadius:1}}/>
             <div style={{width:18,height:1.5,background:C.cream,borderRadius:1}}/>
             <div style={{width:12,height:1.5,background:C.cream,borderRadius:1}}/>
@@ -360,7 +401,7 @@ export default function AppPage() {
         </header>
 
         {/* Desktop topbar */}
-        <header style={{height:44,flexShrink:0,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",background:C.navy2}} className="sidebar-desktop" >
+        <header className="desktop-only" style={{height:44,flexShrink:0,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",background:C.navy2}}>
           <div style={{display:"flex",gap:2}}>
             {TABS.map(t=>(
               <button key={t} onClick={()=>setTab(t)}
@@ -371,30 +412,45 @@ export default function AppPage() {
             ))}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <SharePortfolio data={data} assets={assets} period={period} benchmark={benchmark}/>
             <ExportPDF data={data} assets={assets}/>
             <UserMenu/>
           </div>
         </header>
 
-        {/* Mobile tab bar */}
-        <div style={{display:"none",borderBottom:`1px solid ${C.border}`,background:C.navy2,flexShrink:0}} className="mobile-tabs">
-          <style>{`.mobile-tabs { display: flex !important; } @media (min-width: 768px) { .mobile-tabs { display: none !important; } }`}</style>
-          <div style={{display:"flex",overflowX:"auto",padding:"0 8px",gap:2,scrollbarWidth:"none"}}>
+        {/* Mobile tabs */}
+        <div style={{borderBottom:`1px solid ${C.border}`,background:C.navy2,flexShrink:0,display:"none"}} className="mobile-tabs">
+          <style>{`.mobile-tabs { display: block !important; } @media (min-width: 768px) { .mobile-tabs { display: none !important; } }`}</style>
+          <div style={{display:"flex",overflowX:"auto",padding:"0 8px",scrollbarWidth:"none"}}>
             {TABS.map(t=>(
               <button key={t} onClick={()=>setTab(t)}
-                style={{padding:"10px 12px",fontSize:11,whiteSpace:"nowrap",borderBottom:tab===t?`2px solid ${C.amber}`:"2px solid transparent",background:"transparent",border:"none",borderBottom:tab===t?`2px solid ${C.amber}`:"2px solid transparent",color:tab===t?C.amber:C.cream3,cursor:"pointer",transition:"all 0.15s",flexShrink:0}}>
+                style={{padding:"10px 14px",fontSize:12,whiteSpace:"nowrap",background:"transparent",border:"none",borderBottom:tab===t?`2px solid ${C.amber}`:"2px solid transparent",color:tab===t?C.amber:C.cream3,cursor:"pointer",transition:"all 0.15s",flexShrink:0}}>
                 {t}
               </button>
             ))}
           </div>
         </div>
 
+        {/* Error banner */}
+        <AnimatePresence>
+          {error && (
+            <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}
+              style={{padding:"10px 20px",background:"rgba(224,92,92,0.12)",borderBottom:"1px solid rgba(224,92,92,0.2)",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+              <span style={{fontSize:12,color:"#e05c5c"}}>⚠ {error}</span>
+              <button onClick={()=>setError(null)} style={{background:"none",border:"none",color:"rgba(224,92,92,0.6)",cursor:"pointer",fontSize:16}}>✕</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Content */}
-        <main style={{flex:1,overflowY:"auto",padding:"16px 16px",background:C.navy2}}>
-          <style>{`@media (min-width: 768px) { .main-content { padding: 20px 24px !important; } }`}</style>
+        <main style={{flex:1,overflowY:"auto",padding:"16px",background:C.navy2}}>
+          <style>{`@media (min-width: 768px) { .main-pad { padding: 20px 24px !important; } }`}</style>
+          <div className="main-pad">
           <AnimatePresence mode="wait">
             {!data&&!loading?(
-              <motion.div key="empty" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><EmptyState/></motion.div>
+              <motion.div key="empty" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+                <EmptyState onLoad={(a) => { setAssets(a); }}/>
+              </motion.div>
             ):loading?(
               <motion.div key="loading" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><Spinner/></motion.div>
             ):tab==="Overview"?(
@@ -403,10 +459,7 @@ export default function AppPage() {
                   <style>{`@media (min-width: 768px) { .metrics-grid { grid-template-columns: repeat(4,1fr) !important; } }`}</style>
                   <div className="metrics-grid" style={{display:"contents"}}><Metrics data={data}/></div>
                 </div>
-                <Card>
-                  <CardHdr title="Performance"/>
-                  <PerformanceChart data={data}/>
-                </Card>
+                <Card><CardHdr title="Performance"/><PerformanceChart data={data}/></Card>
                 <div style={{display:"grid",gridTemplateColumns:"1fr",gap:10}}>
                   <style>{`@media (min-width: 900px) { .three-col { grid-template-columns: 1fr 1fr 1fr !important; } }`}</style>
                   <div className="three-col" style={{display:"grid",gridTemplateColumns:"1fr",gap:10}}>
@@ -431,6 +484,7 @@ export default function AppPage() {
               </motion.div>
             ):null}
           </AnimatePresence>
+          </div>
         </main>
       </div>
 
@@ -445,5 +499,13 @@ export default function AppPage() {
         {showProfile&&<ProfileEditor goals={goals} onSave={(g:any)=>{setGoals(g);localStorage.setItem("corvo_goals",JSON.stringify(g));setShowProfile(false);}} onClose={()=>setShowProfile(false)}/>}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function AppPage() {
+  return (
+    <Suspense fallback={<div style={{minHeight:"100vh",background:"#0d1117"}}/>}>
+      <AppInner/>
+    </Suspense>
   );
 }
