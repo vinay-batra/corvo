@@ -401,7 +401,7 @@ function AppInner() {
         </header>
 
         {/* Desktop topbar */}
-        <header className="desktop-only" style={{height:44,flexShrink:0,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",background:C.navy2}}>
+        <header className="desktop-only topbar-actions" style={{height:44,flexShrink:0,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",background:C.navy2}}>
           <div style={{display:"flex",gap:2}}>
             {TABS.map(t=>(
               <button key={t} onClick={()=>setTab(t)}
@@ -455,14 +455,14 @@ function AppInner() {
               <motion.div key="loading" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><Spinner/></motion.div>
             ):tab==="Overview"?(
               <motion.div key="overview" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:10}}>
-                  <style>{`@media (min-width: 768px) { .metrics-grid { grid-template-columns: repeat(4,1fr) !important; } }`}</style>
+                <div className="metrics-grid" style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:10}}>
+                  <style>{`@media (min-width: 600px) { .metrics-grid { grid-template-columns: repeat(4,1fr) !important; } }`}</style>
                   <div className="metrics-grid" style={{display:"contents"}}><Metrics data={data}/></div>
                 </div>
                 <Card><CardHdr title="Performance"/><PerformanceChart data={data}/></Card>
                 <div style={{display:"grid",gridTemplateColumns:"1fr",gap:10}}>
                   <style>{`@media (min-width: 900px) { .three-col { grid-template-columns: 1fr 1fr 1fr !important; } }`}</style>
-                  <div className="three-col" style={{display:"grid",gridTemplateColumns:"1fr",gap:10}}>
+                  <div className="three-col" style={{display:"grid",gridTemplateColumns:"1fr",gap:10,marginTop:10}}>
                     <Card style={{marginBottom:0}}><CardHdr title="Health Score"/><HealthScore data={data}/></Card>
                     <Card style={{marginBottom:0}}><CardHdr title="AI Insights"/><AiInsights data={data} assets={assets} onAskAi={()=>setTab("AI Chat")}/></Card>
                     <Card style={{marginBottom:0}}><CardHdr title={`vs ${benchLabel}`}/><BenchmarkComparison data={data}/></Card>
@@ -479,7 +479,7 @@ function AppInner() {
                 <Card><CardHdr title="Market News"/><NewsFeed assets={assets}/></Card>
               </motion.div>
             ):tab==="AI Chat"?(
-              <motion.div key="ai" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} style={{height:"calc(100vh - 92px)"}}>
+              <motion.div key="ai" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} style={{height:"calc(100vh - 140px)"}}>
                 <AiChat portfolioContext={{tickers:assets.map(a=>a.ticker),weights:assets.map(a=>a.weight),data}} userGoals={goals}/>
               </motion.div>
             ):null}

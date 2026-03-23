@@ -53,7 +53,7 @@ export default function PerformanceChart({ data }: { data: any }) {
           hoverlabel: { bgcolor: "#0d1117", bordercolor: "rgba(201,168,76,0.4)", font: { color: "#e8e0cc", family: "Inter", size: 11 } },
         }}
         config={{ displayModeBar: false, responsive: true }}
-        style={{ width: "100%", height: 260 }}
+        style={{ width: "100%", height: 240 }}
       />
     </motion.div>
   );

@@ -34,7 +34,7 @@ function ExplainerModal({ onClose }: { onClose: () => void }) {
       style={{ position: "fixed", inset: 0, background: "rgba(10,14,20,0.88)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <motion.div initial={{ opacity: 0, scale: 0.94, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
         onClick={e => e.stopPropagation()}
-        style={{ width: 540, background: "#111620", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 18, padding: "36px 36px 32px", position: "relative", maxHeight: "85vh", overflowY: "auto" }}>
+        style={{ width: "min(540px, 95vw)", background: "#111620", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 18, padding: "36px 36px 32px", position: "relative", maxHeight: "85vh", overflowY: "auto" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.05)", border: "none", borderRadius: "50%", width: 26, height: 26, cursor: "pointer", fontSize: 12, color: C.cream3 }}>✕</button>
         <p style={{ fontSize: 8, letterSpacing: 2.5, color: C.amber, textTransform: "uppercase", marginBottom: 8 }}>Deep Dive</p>
         <h3 style={{ fontSize: 22, fontWeight: 500, color: C.cream, marginBottom: 24 }}>Monte Carlo Simulation</h3>
@@ -93,7 +93,7 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
 
       {/* Percentile stat cards */}
       {data && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+        <div className="mc-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
           <StatCard
             label="5th Percentile — Worst Case"
             value={`${Number(p5) >= 0 ? "+" : ""}${p5}%`}
@@ -184,11 +184,11 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
               hoverlabel: { bgcolor: "#0d1117", bordercolor: "rgba(201,168,76,0.4)", font: { color: C.cream, family: "Inter", size: 11 } },
             }}
             config={{ displayModeBar: false, responsive: true }}
-            style={{ width: "100%", height: 300 }}
+            style={{ width: "100%", height: 280 }}
           />
 
           {/* Plain English explanation row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 16 }}>
+          <div className="mc-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginTop: 16 }}>
             {[
               { term: "5th Percentile", plain: "Your bad day. In 19 out of 20 simulations you did better than this. It's your downside floor — the loss you should be prepared to take." },
               { term: "Median (50th Pct)", plain: "The middle outcome. Half of all 300 simulations ended above this, half below. This is your most realistic baseline expectation." },

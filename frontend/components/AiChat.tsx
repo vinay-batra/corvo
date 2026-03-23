@@ -99,7 +99,7 @@ export default function AiChat({ portfolioContext }: { portfolioContext: any }) 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: C.navy3, borderRadius: 12, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowX: "hidden", background: C.navy3, borderRadius: 12, border: `1px solid ${C.border}`, overflow: "hidden" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       {goals && (
