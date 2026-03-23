@@ -6,33 +6,38 @@ export async function GET(request: Request) {
   const next = searchParams.get("next") ?? "/app";
 
   if (code) {
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { persistSession: false, detectSessionInUrl: false } }
-    );
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    
-    if (!error && data.session) {
-      const response = NextResponse.redirect(`${origin}${next}`);
-      const projectRef = "bkdjillyzyyysmkpvnos";
-      const cookieName = `sb-${projectRef}-auth-token`;
-      const sessionStr = JSON.stringify([
-        data.session.access_token,
-        data.session.refresh_token,
-      ]);
-      response.cookies.set(cookieName, sessionStr, {
-        httpOnly: false,
-        secure: true,
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 365,
-        path: "/",
-      });
-      return response;
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { flowType: "pkce", persistSession: false } }
+      );
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      
+      if (error) {
+        console.error("exchangeCodeForSession error:", error.message, error.status);
+        return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(error.message)}`);
+      }
+      
+      if (data.session) {
+        const response = NextResponse.redirect(`${origin}${next}`);
+        const projectRef = "bkdjillyzyyysmkpvnos";
+        const sessionStr = JSON.stringify([
+          data.session.access_token,
+          data.session.refresh_token,
+        ]);
+        response.cookies.set(`sb-${projectRef}-auth-token`, sessionStr, {
+          httpOnly: false, secure: true, sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 365, path: "/",
+        });
+        return response;
+      }
+    } catch (e: any) {
+      console.error("Callback exception:", e.message);
+      return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(e.message)}`);
     }
-    console.error("OAuth error:", error?.message);
   }
 
-  return NextResponse.redirect(`${origin}/auth?error=auth_callback_failed`);
+  return NextResponse.redirect(`${origin}/auth?error=no_code`);
 }
