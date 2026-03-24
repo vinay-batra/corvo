@@ -1,5 +1,7 @@
 # Corvo - Portfolio Intelligence Platform
 
+![Corvo Dashboard](./Screenshot%202026-03-23%20at%201.21.36%20PM.jpeg)
+
 Corvo is a full-stack portfolio intelligence platform designed to help users understand risk, performance, and decision-making in their investments.
 
 Instead of focusing on stock prediction, Corvo focuses on portfolio structure, risk exposure, and forward-looking analysis.
