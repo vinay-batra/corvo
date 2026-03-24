@@ -1,99 +1,122 @@
-# Corvo — Portfolio Intelligence Platform
+# Corvo - Portfolio Intelligence Platform
 
-AI-powered portfolio analysis and optimization. Built with Next.js, FastAPI, and Claude AI.
+Corvo is a full-stack portfolio intelligence platform designed to help users understand risk, performance, and decision-making in their investments.
 
-## Stack
-- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind, Framer Motion, Plotly
-- **Backend**: FastAPI, yfinance, NumPy, Anthropic Claude API
-- **Auth & DB**: Supabase (Google OAuth + email/password)
-- **Deploy**: Vercel (frontend) + Railway (backend)
-
-## Local Development
-
-### 1. Supabase Setup
-1. Create a project at [supabase.com](https://supabase.com)
-2. Run the SQL in `SUPABASE_SETUP.sql` in the Supabase SQL Editor
-3. Enable Google OAuth: **Authentication → Providers → Google**
-   - Add your Google OAuth Client ID + Secret
-   - Set the callback URL to: `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
-4. Copy your project URL and anon key
-
-### 2. Frontend
-```bash
-cd frontend
-cp .env.local.example .env.local
-# Edit .env.local with your Supabase keys
-npm install
-npm run dev
-```
-
-### 3. Backend
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env — add your ANTHROPIC_API_KEY
-uvicorn main:app --reload
-```
-
-App runs at `http://localhost:3000`, backend at `http://localhost:8000`
+Instead of focusing on stock prediction, Corvo focuses on portfolio structure, risk exposure, and forward-looking analysis.
 
 ---
 
-## Deployment
+## Overview
 
-### Backend → Railway
-1. Push repo to GitHub
-2. Create a new project at [railway.app](https://railway.app) → **Deploy from GitHub**
-3. Select your repo — Railway will auto-detect `railway.toml`
-4. Go to **Variables** and add:
-   ```
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-5. Deploy — Railway will start `uvicorn main:app --host 0.0.0.0 --port $PORT`
-6. Copy your Railway public URL (e.g. `https://-backend.up.railway.app`)
+Most retail investing tools emphasize picking the “best stock.”
 
-### Frontend → Vercel
-1. Go to [vercel.com](https://vercel.com) → **Add New Project** → import your GitHub repo
-2. Set **Root Directory** to `frontend`
-3. Add these **Environment Variables**:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-   NEXT_PUBLIC_API_URL=https://your-railway-url.up.railway.app
-   ```
-4. Deploy
+Corvo is built around a different idea:
 
-### Supabase Google OAuth (after Vercel deploy)
-In Supabase → **Authentication → URL Configuration**, add:
-- **Site URL**: `https://your-app.vercel.app`
-- **Redirect URLs**: `https://your-app.vercel.app/auth/callback`
+> Understanding risk, diversification, and probabilistic outcomes matters more than prediction.
+
+The platform allows users to analyze portfolios, simulate future scenarios, and receive AI-generated insights on their allocation and risk profile.
 
 ---
 
-## Features
+## Core Features
 
-### Core
-- Portfolio analysis: returns, volatility, Sharpe ratio, max drawdown
-- Efficient frontier visualization
-- Portfolio optimization (max Sharpe)
-- Benchmark comparison (S&P 500, Nasdaq, Dow, Russell 2000, QQQ, Gold)
+### Portfolio Analysis
+- Portfolio returns and cumulative performance
+- Volatility and risk metrics
+- Sharpe ratio and risk-adjusted returns
+- Maximum drawdown analysis
 
-### Tier 2
-- Drawdown chart (full time-series)
-- Correlation heatmap between holdings
-- Monte Carlo simulation (300 paths, 1-year horizon)
-- Stock news feed (per ticker)
-- PDF export
-- Google OAuth + email/password auth
-- Auth guard on `/app`
-- Saved portfolios (Supabase)
-- Custom benchmark selector
+### Benchmarking
+- Performance comparison against major indices
+- Relative return and risk evaluation
 
-## Routes
-- `/` — Landing page
-- `/auth` — Login / Sign up
-- `/auth/callback` — OAuth callback (do not delete)
-- `/app` — Main portfolio app (auth required)
+### Simulation & Modeling
+- Monte Carlo simulations (forward portfolio scenarios)
+- Probabilistic outcome visualization
+
+### AI Portfolio Insights
+- Natural language explanations of portfolio structure
+- Risk identification (concentration, diversification, volatility)
+- Strategy-level suggestions
+
+### Data & System Design
+- Real-time market data integration (yfinance)
+- Structured backend for financial calculations
+- Separation of modeling logic and UI layer
+
+---
+
+## Tech Stack
+
+**Frontend**
+- Next.js
+- TypeScript
+- Tailwind CSS
+- Framer Motion
+- Plotly (visualizations)
+
+**Backend**
+- FastAPI
+- Python
+- NumPy / pandas (financial calculations)
+
+**Infrastructure**
+- Vercel (frontend deployment)
+- Railway (backend deployment)
+
+**AI**
+- Claude API (Anthropic)
+
+---
+
+## System Design
+
+Corvo is structured as a modular system:
+
+- **Frontend (Next.js)**  
+  Handles UI, user interaction, and visualization
+
+- **Backend (FastAPI)**  
+  Handles portfolio calculations, simulations, and data processing
+
+- **Data Layer**  
+  Market data ingestion and transformation
+
+- **AI Layer**  
+  Translates quantitative outputs into natural language insights
+
+---
+
+## Key Concepts
+
+Corvo is built around a few core ideas:
+
+- Historical data has limitations  
+- Prediction is inherently unstable  
+- Risk and structure are measurable  
+- Decision-making improves with probabilistic thinking  
+
+---
+
+## Current Status
+
+Corvo is in active development.
+
+Ongoing improvements:
+- Multi-portfolio comparison
+- Alerts and monitoring
+- Expanded risk modeling
+- Improved UI/UX
+
+---
+
+## Live Demo
+
+corvo.capital
+
+---
+
+## Author
+
+Vinay Batra  
+High School Quant | AI + Finance  
