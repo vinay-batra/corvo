@@ -5,7 +5,8 @@ import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchMonteCarlo } from "../lib/api";
 
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 const C = {
   amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", amber3: "rgba(201,168,76,0.06)",

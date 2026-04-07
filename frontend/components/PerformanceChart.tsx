@@ -1,7 +1,8 @@
 "use client";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 const BENCHMARK_LABELS: Record<string, string> = {
   "^GSPC": "S&P 500", "^IXIC": "Nasdaq", "^DJI": "Dow Jones",
   "^RUT": "Russell 2000", "SPY": "SPY ETF", "QQQ": "QQQ ETF", "GLD": "Gold",
