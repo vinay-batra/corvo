@@ -11,6 +11,9 @@ import requests
 from datetime import datetime, timezone
 import time
 
+SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+
 # ── In-memory rate limiting ────────────────────────────────────────────────────
 RATE_LIMITS: dict[str, list[float]] = {}
 
@@ -97,6 +100,61 @@ def root():
 @app.get("/docs-check")
 def docs_check():
     return {"status": "running"}
+
+
+@app.delete("/user")
+def delete_user(request: Request):
+    """
+    Hard-delete the authenticated user's account.
+
+    Flow:
+      1. Extract the JWT from the Authorization header.
+      2. Verify it against Supabase and extract the user ID.
+      3. Use the service-role key to call the Supabase admin delete endpoint.
+         This cascades to all tables with ON DELETE CASCADE (profiles,
+         email_preferences, learn_scores, portfolios, etc.).
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Server not configured for account deletion.")
+
+    # ── 1. Extract JWT ─────────────────────────────────────────────────────────
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header.")
+    jwt_token = auth_header[len("Bearer "):]
+
+    # ── 2. Verify JWT and get user ID ──────────────────────────────────────────
+    user_resp = requests.get(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={
+            "Authorization": f"Bearer {jwt_token}",
+            "apikey": SUPABASE_SERVICE_KEY,
+        },
+        timeout=10,
+    )
+    if user_resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid or expired token.")
+
+    user_id = user_resp.json().get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Could not determine user ID.")
+
+    # ── 3. Hard-delete via Supabase admin API ──────────────────────────────────
+    delete_resp = requests.delete(
+        f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+        headers={
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+            "apikey": SUPABASE_SERVICE_KEY,
+        },
+        timeout=10,
+    )
+    if delete_resp.status_code not in (200, 204):
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete account: {delete_resp.text}",
+        )
+
+    return {"ok": True}
 
 
 @app.get("/portfolio")
