@@ -25,6 +25,7 @@ import { fetchPortfolio } from "../../lib/api";
 import AlertsPanel from "../../components/AlertsPanel";
 import Watchlist from "../../components/Watchlist";
 import PortfolioHistory from "../../components/PortfolioHistory";
+import EmailPreferences from "../../components/EmailPreferences";
 
 const TABS = [
   { id: "overview",  label: "Overview",  icon: "◈" },
@@ -333,7 +334,9 @@ export default function AppPage() {
   const [showProfile, setShowProfile] = useState(false);
   const [benchOpen, setBenchOpen]     = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showAlerts, setShowAlerts]   = useState(false);
+  const [showAlerts, setShowAlerts]         = useState(false);
+  const [showEmailPrefs, setShowEmailPrefs] = useState(false);
+  const [unsubscribeMode, setUnsubscribeMode] = useState(false);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfMode, setWhatIfMode]   = useState(false);
   const [whatIfWeights, setWhatIfWeights] = useState<Record<string, number>>({});
@@ -365,6 +368,12 @@ export default function AppPage() {
           setShowGoals(false);
         }
       } catch {}
+    }
+
+    // Unsubscribe from digest via email link
+    if (params.get("unsubscribe") === "true") {
+      setUnsubscribeMode(true);
+      setShowEmailPrefs(true);
     }
 
     // Demo mode
@@ -689,7 +698,7 @@ export default function AppPage() {
               </button>
             )}
             <ExportPDF data={data} assets={assets} />
-            <UserMenu />
+            <UserMenu onEmailPrefs={() => setShowEmailPrefs(true)} />
           </div>
         </header>
 
@@ -794,6 +803,14 @@ export default function AppPage() {
       </AnimatePresence>
       <AnimatePresence>
         {showProfile && <ProfileEditor goals={goals} onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }} onClose={() => setShowProfile(false)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showEmailPrefs && (
+          <EmailPreferences
+            autoDisableDigest={unsubscribeMode}
+            onClose={() => { setShowEmailPrefs(false); setUnsubscribeMode(false); }}
+          />
+        )}
       </AnimatePresence>
       <AnimatePresence>
         {showAlerts && (
