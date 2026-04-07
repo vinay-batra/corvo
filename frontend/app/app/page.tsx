@@ -145,6 +145,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel }: { assets: { t
 
   useEffect(() => {
     if (!assets.length) return;
+    if (typeof window === "undefined") return;
     setLoadingCurrent(true);
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     const total = valid.reduce((s, a) => s + a.weight, 0);
