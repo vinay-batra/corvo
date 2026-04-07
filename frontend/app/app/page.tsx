@@ -127,14 +127,12 @@ function Empty() {
 }
 
 // ── Portfolio Comparison ──────────────────────────────────────────────────────
-function CompareTab({ assets, period, benchmark, benchmarkLabel }: { assets: { ticker: string; weight: number }[]; period: string; benchmark: string; benchmarkLabel: string }) {
+function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: { assets: { ticker: string; weight: number }[]; period: string; benchmark: string; benchmarkLabel: string; currentData: any }) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   const [savedPortfolios, setSavedPortfolios] = useState<any[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [results, setResults] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
-  const [currentResult, setCurrentResult] = useState<any>(null);
-  const [loadingCurrent, setLoadingCurrent] = useState(false);
 
   useEffect(() => {
     try {
@@ -142,17 +140,6 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel }: { assets: { t
       if (raw) setSavedPortfolios(JSON.parse(raw));
     } catch {}
   }, []);
-
-  useEffect(() => {
-    if (!assets.length) return;
-    if (typeof window === "undefined") return;
-    setLoadingCurrent(true);
-    const valid = assets.filter(a => a.ticker && a.weight > 0);
-    const total = valid.reduce((s, a) => s + a.weight, 0);
-    const norm = valid.map(a => ({ ...a, weight: a.weight / total }));
-    fetch(`${API_URL}/portfolio?tickers=${norm.map(a => a.ticker).join(",")}&weights=${norm.map(a => a.weight.toFixed(4)).join(",")}&period=${period}&benchmark=${benchmark}`)
-      .then(r => r.json()).then(d => setCurrentResult(d)).catch(() => {}).finally(() => setLoadingCurrent(false));
-  }, [assets.map(a => a.ticker + a.weight).join(","), period]);
 
   const analyzePortfolio = async (portfolio: any) => {
     if (results[portfolio.id] || loading[portfolio.id]) return;
@@ -172,7 +159,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel }: { assets: { t
   };
 
   const allPortfolios = [
-    { id: "__current__", name: "Current", result: currentResult, loading: loadingCurrent, tickers: assets.map(a => a.ticker) },
+    { id: "__current__", name: "Current", result: currentData, loading: false, tickers: assets.map(a => a.ticker) },
     ...savedPortfolios.map(p => ({ id: p.id, name: p.name, result: results[p.id] || null, loading: loading[p.id] || false, tickers: (p.assets || []).map((a: any) => a.ticker), raw: p })),
   ];
   const active = allPortfolios.filter(p => (p.id === "__current__" || selected.includes(p.id)) && p.result);
@@ -487,28 +474,28 @@ export default function AppPage() {
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="c-metrics" style={S.metricsGrid}><Metrics data={data} /></div>
-                <Card><CardHeader title="Performance" /><PerformanceChart tickers={assets.map(a => a.ticker)} weights={normalWeights(assets)} period={period} benchmark={benchmark} benchmarkLabel={benchLabel} /></Card>
+                <Card><CardHeader title="Performance" /><PerformanceChart data={data} /></Card>
                 <div className="c-bgrid" style={S.bottomGrid}>
                   <Card style={{ marginBottom: 0 }}><CardHeader title="Health Score" /><HealthScore data={data} /></Card>
                   <Card style={{ marginBottom: 0 }}><CardHeader title="AI Insights" /><AiInsights data={data} assets={assets} onAskAi={() => setActiveTab("ai")} /></Card>
-                  <Card style={{ marginBottom: 0 }}><CardHeader title={`vs ${benchLabel}`} /><BenchmarkComparison data={data} benchmarkLabel={benchLabel} /></Card>
+                  <Card style={{ marginBottom: 0 }}><CardHeader title={`vs ${benchLabel}`} /><BenchmarkComparison data={data} /></Card>
                 </div>
                 <Card style={{ marginTop: 12 }}><CardHeader title="Allocation" /><Breakdown assets={assets} /></Card>
               </motion.div>
             ) : activeTab === "risk" ? (
               <motion.div key="risk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <Card style={{ marginBottom: 0 }}><CardHeader title="Drawdown" /><DrawdownChart tickers={assets.map(a => a.ticker)} weights={normalWeights(assets)} period={period} /></Card>
+                  <Card style={{ marginBottom: 0 }}><CardHeader title="Drawdown" /><DrawdownChart assets={assets} period={period} /></Card>
                   <Card style={{ marginBottom: 0 }}><CardHeader title="Correlation" /><CorrelationHeatmap assets={assets} period={period} /></Card>
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (
               <motion.div key="simulate" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <Card><CardHeader title="Monte Carlo Simulation" /><MonteCarloChart tickers={assets.map(a => a.ticker)} weights={normalWeights(assets)} period={period} /></Card>
+                <Card><CardHeader title="Monte Carlo Simulation" /><MonteCarloChart assets={assets} period={period} /></Card>
               </motion.div>
             ) : activeTab === "compare" ? (
               <motion.div key="compare" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <CompareTab assets={assets} period={period} benchmark={benchmark} benchmarkLabel={benchLabel} />
+                <CompareTab assets={assets} period={period} benchmark={benchmark} benchmarkLabel={benchLabel} currentData={data} />
               </motion.div>
             ) : activeTab === "news" ? (
               <motion.div key="news" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
