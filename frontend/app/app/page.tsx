@@ -22,6 +22,7 @@ import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import { fetchPortfolio } from "../../lib/api";
+import AlertsPanel from "../../components/AlertsPanel";
 
 const TABS = [
   { id: "overview",  label: "Overview",  icon: "◈" },
@@ -34,6 +35,13 @@ const TABS = [
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
 const PERIOD_LABELS: Record<string, string> = { "6mo": "6M", "1y": "1Y", "2y": "2Y", "5y": "5Y" };
+
+const PRESETS = [
+  { label: "Tech Heavy",  assets: [{ ticker: "AAPL", weight: 25 }, { ticker: "MSFT", weight: 25 }, { ticker: "NVDA", weight: 25 }, { ticker: "GOOGL", weight: 25 }] },
+  { label: "Diversified", assets: [{ ticker: "SPY",  weight: 40 }, { ticker: "BND",  weight: 30 }, { ticker: "GLD",  weight: 15 }, { ticker: "VNQ",   weight: 15 }] },
+  { label: "Crypto Mix",  assets: [{ ticker: "BTC",  weight: 60 }, { ticker: "ETH",  weight: 40 }] },
+  { label: "Dividend",    assets: [{ ticker: "VIG",  weight: 35 }, { ticker: "SCHD", weight: 35 }, { ticker: "JNJ",  weight: 15 }, { ticker: "KO",    weight: 15 }] },
+];
 
 const BENCHMARKS = [
   { ticker: "^GSPC",  label: "S&P 500" },
@@ -252,6 +260,8 @@ export default function AppPage() {
   const [showProfile, setShowProfile] = useState(false);
   const [benchOpen, setBenchOpen]     = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showAlerts, setShowAlerts]   = useState(false);
+  const [alertCount, setAlertCount]   = useState(0);
   const { dark, toggle: toggleDark }  = useTheme();
   const S = useS();
 
@@ -259,6 +269,31 @@ export default function AppPage() {
     const g = localStorage.getItem("corvo_goals");
     if (g && g !== "skipped") { try { setGoals(JSON.parse(g)); } catch {} }
     else setShowGoals(true);
+
+    // Load alert count
+    try {
+      const raw = localStorage.getItem("corvo_alerts");
+      if (raw) setAlertCount(JSON.parse(raw).length);
+    } catch {}
+
+    // Demo mode
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("demo") === "true") {
+      const demoAssets = [
+        { ticker: "SPY", weight: 40 },
+        { ticker: "QQQ", weight: 30 },
+        { ticker: "GLD", weight: 15 },
+        { ticker: "BND", weight: 15 },
+      ];
+      setAssets(demoAssets);
+      setShowGoals(false);
+      setLoading(true);
+      setData(null);
+      fetchPortfolio(demoAssets, "1y", "^GSPC")
+        .then((result: any) => { setData(result); setActiveTab("overview"); })
+        .catch((e: any) => console.error(e))
+        .finally(() => setLoading(false));
+    }
   }, []);
 
   const handleAnalyze = async () => {
@@ -315,6 +350,21 @@ export default function AppPage() {
             <div style={{ fontSize: 9, color: "var(--text3)" }}>Goals & preferences</div>
           </div>
         </button>
+      </div>
+
+      {/* Preset portfolios */}
+      <div style={{ padding: "8px 14px", borderBottom: "0.5px solid var(--border)" }}>
+        <div style={S.label}>Presets</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+          {PRESETS.map(p => (
+            <button key={p.label} onClick={() => setAssets(p.assets)}
+              style={{ padding: "5px 8px", fontSize: 10, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer", textAlign: "left" as const, transition: "all 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Builder */}
@@ -374,7 +424,14 @@ export default function AppPage() {
           <div style={{ width: 5, height: 5, borderRadius: "50%", background: loading ? "var(--text2)" : "var(--text)", animation: "pulse 2s infinite" }} />
           <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{loading ? "Analyzing" : "Live"}</span>
         </div>
-        <LiveClock />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Link href="/learn" style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textDecoration: "none", textTransform: "uppercase" as const }}
+            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = "var(--text)")}
+            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = "var(--text3)")}>
+            Learn
+          </Link>
+          <LiveClock />
+        </div>
       </div>
     </>
   );
@@ -392,11 +449,13 @@ export default function AppPage() {
           .c-metrics{grid-template-columns:repeat(2,1fr)!important}
           .c-bgrid{grid-template-columns:1fr!important}
           .c-content{padding:12px!important}
+          .c-mob-analyze{display:flex!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
           .c-mob-tabs{display:none!important}
           .c-mob-drawer{display:none!important}
+          .c-mob-analyze{display:none!important}
         }
         .tab-btn:hover{background:var(--bg3)!important;color:var(--text)!important}
       `}</style>
@@ -458,6 +517,19 @@ export default function AppPage() {
             ))}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {/* Alerts bell */}
+            <button onClick={() => setShowAlerts(true)} title="Alerts"
+              style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text2)" }}>
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              {alertCount > 0 && (
+                <span style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: "50%", background: "#c9a84c", border: "1.5px solid var(--bg)" }} />
+              )}
+            </button>
             <DarkModeToggle dark={dark} toggle={toggleDark} />
             <ExportPDF data={data} assets={assets} />
             <UserMenu />
@@ -511,6 +583,12 @@ export default function AppPage() {
         </main>
       </div>
 
+      {/* Mobile floating Analyze button */}
+      <button className="c-mob-analyze" onClick={handleAnalyze} disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
+        style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 150, padding: "13px 40px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "var(--bg3)" : "var(--text)", color: loading ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 24, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.3)", transition: "all 0.2s" }}>
+        {loading ? "Analyzing..." : "▶  Analyze"}
+      </button>
+
       <AnimatePresence>
         {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); setShowTour(true); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); setShowTour(true); }} />}
       </AnimatePresence>
@@ -519,6 +597,20 @@ export default function AppPage() {
       </AnimatePresence>
       <AnimatePresence>
         {showProfile && <ProfileEditor goals={goals} onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }} onClose={() => setShowProfile(false)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showAlerts && (
+          <AlertsPanel
+            assets={assets}
+            onClose={() => {
+              setShowAlerts(false);
+              try {
+                const raw = localStorage.getItem("corvo_alerts");
+                setAlertCount(raw ? JSON.parse(raw).length : 0);
+              } catch {}
+            }}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

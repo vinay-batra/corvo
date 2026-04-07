@@ -135,7 +135,7 @@ export default function Landing() {
 
         <div style={{ animation: "fadein 0.9s cubic-bezier(0.16,1,0.3,1) 0.6s both", display: "flex", gap: 12, marginBottom: 80 }}>
           <Link href="/auth" className="cta" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Start for free →</Link>
-          <Link href="/app" className="ghost" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(232,224,204,0.45)", textDecoration: "none" }}>Try demo</Link>
+          <Link href="/app?demo=true" className="ghost" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(232,224,204,0.45)", textDecoration: "none" }}>Try demo</Link>
         </div>
 
         {/* Dashboard preview */}
@@ -145,7 +145,7 @@ export default function Landing() {
             <div style={{ height: 38, background: "rgba(10,14,20,0.8)", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", padding: "0 16px", gap: 7 }}>
               {["#ff5f56","#ffbd2e","#27c93f"].map((c,i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}
               <div style={{ flex: 1, margin: "0 12px", height: 20, background: "rgba(255,255,255,0.04)", borderRadius: 4, display: "flex", alignItems: "center", paddingLeft: 10 }}>
-                <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, color: "rgba(201,168,76,0.35)", letterSpacing: 1 }}>corvo1.vercel.app/app</span>
+                <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, color: "rgba(201,168,76,0.35)", letterSpacing: 1 }}>corvo.capital/app</span>
               </div>
               <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, color: "rgba(201,168,76,0.3)", letterSpacing: 2 }}>LIVE</span>
             </div>

@@ -16,26 +16,35 @@ const SUGGESTIONS = [
   "What happens if the market drops 30%?",
 ];
 
-// Corvo raven logo — minimal geometric bird
+// Corvo raven logo — detailed silhouette
 function CorvoLogo({ size = 28 }: { size?: number }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%",
-      background: "#111", border: "1px solid rgba(0,0,0,0.15)",
+      background: "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)",
+      border: "1px solid rgba(201,168,76,0.25)",
       display: "flex", alignItems: "center", justifyContent: "center",
       flexShrink: 0,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
     }}>
-      <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 18 18" fill="none">
-        {/* Body */}
-        <ellipse cx="9" cy="11" rx="4" ry="5" fill="#fff" opacity="0.92"/>
+      <svg width={size * 0.68} height={size * 0.68} viewBox="0 0 32 32" fill="none">
+        {/* Tail feathers */}
+        <path d="M10 26 Q8 30 6 31 Q9 28 10 26Z" fill="#fff" opacity="0.55"/>
+        <path d="M12 26 Q11 30 9 32 Q12 29 12 26Z" fill="#fff" opacity="0.45"/>
+        {/* Main body */}
+        <path d="M10 22 Q8 18 10 14 Q13 10 17 10 Q20 10 22 12 Q25 15 24 19 Q23 23 19 25 Q14 27 10 22Z" fill="#fff" opacity="0.92"/>
+        {/* Wing sweep */}
+        <path d="M12 18 Q7 15 4 10 Q6 9 9 12 Q11 15 12 18Z" fill="#fff" opacity="0.7"/>
+        <path d="M12 20 Q6 19 3 15 Q5 14 8 17 Q10 19 12 20Z" fill="#fff" opacity="0.5"/>
         {/* Head */}
-        <circle cx="9" cy="5.5" r="3" fill="#fff" opacity="0.92"/>
-        {/* Beak */}
-        <path d="M11 5.5 L13.5 6.2 L11 7" fill="#fff" opacity="0.7"/>
-        {/* Wing hint */}
-        <path d="M5 9 Q3 11 4 14 Q6 12 9 13" fill="#fff" opacity="0.45"/>
+        <ellipse cx="20" cy="9" rx="4" ry="3.5" fill="#fff" opacity="0.95"/>
+        {/* Beak — curved, hooked */}
+        <path d="M23.5 8 Q26 8.5 26.5 10 Q25 9.5 24 10.5 Q23.5 9 23.5 8Z" fill="#fff" opacity="0.85"/>
         {/* Eye */}
-        <circle cx="10.2" cy="5.2" r="0.8" fill="#111"/>
+        <circle cx="21.2" cy="8.2" r="1.1" fill="#0d0d0d"/>
+        <circle cx="21.5" cy="7.9" r="0.35" fill="rgba(255,255,255,0.7)"/>
+        {/* Highlight on body */}
+        <path d="M16 13 Q19 12 21 15 Q19.5 13.5 16 13Z" fill="#c9a84c" opacity="0.3"/>
       </svg>
     </div>
   );
