@@ -26,6 +26,7 @@ import AlertsPanel from "../../components/AlertsPanel";
 import Watchlist from "../../components/Watchlist";
 import PortfolioHistory from "../../components/PortfolioHistory";
 import EmailPreferences from "../../components/EmailPreferences";
+import ReferralModal from "../../components/ReferralModal";
 
 const TABS = [
   { id: "overview",  label: "Overview",  icon: "◈" },
@@ -335,8 +336,11 @@ export default function AppPage() {
   const [benchOpen, setBenchOpen]     = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAlerts, setShowAlerts]         = useState(false);
-  const [showEmailPrefs, setShowEmailPrefs] = useState(false);
-  const [unsubscribeMode, setUnsubscribeMode] = useState(false);
+  const [showEmailPrefs, setShowEmailPrefs]     = useState(false);
+  const [unsubscribeMode, setUnsubscribeMode]   = useState(false);
+  const [showReferral, setShowReferral]         = useState(false);
+  const [errorMsg, setErrorMsg]                 = useState<string | null>(null);
+  const errorDismissRef                         = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfMode, setWhatIfMode]   = useState(false);
   const [whatIfWeights, setWhatIfWeights] = useState<Record<string, number>>({});
@@ -398,12 +402,17 @@ export default function AppPage() {
   const handleAnalyze = async () => {
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
-    setLoading(true); setData(null);
+    setLoading(true); setData(null); setErrorMsg(null);
+    if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
       const result = await fetchPortfolio(valid, period, benchmark);
       setData(result);
       setActiveTab("overview");
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setErrorMsg("Analysis failed — server may be temporarily unavailable.");
+      errorDismissRef.current = setTimeout(() => setErrorMsg(null), 10000);
+    }
     setLoading(false);
   };
 
@@ -696,12 +705,31 @@ export default function AppPage() {
               </button>
             )}
             <ExportPDF data={data} assets={assets} />
-            <UserMenu onEmailPrefs={() => setShowEmailPrefs(true)} />
+            <UserMenu onEmailPrefs={() => setShowEmailPrefs(true)} onReferral={() => setShowReferral(true)} />
           </div>
         </header>
 
         {/* Content */}
         <main className="c-content" style={S.content}>
+          {/* Error banner */}
+          <AnimatePresence>
+            {errorMsg && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                style={{ border: "0.5px solid rgba(224,92,92,0.4)", borderRadius: 10, padding: "12px 16px", background: "rgba(224,92,92,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ fontSize: 13, color: "#e05c5c" }}>{errorMsg}</span>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <button onClick={handleAnalyze}
+                    style={{ padding: "5px 12px", fontSize: 11, borderRadius: 6, border: "0.5px solid rgba(224,92,92,0.4)", background: "transparent", color: "#e05c5c", cursor: "pointer" }}>
+                    Try again
+                  </button>
+                  <button onClick={() => setErrorMsg(null)}
+                    style={{ width: 22, height: 22, borderRadius: 6, border: "none", background: "rgba(224,92,92,0.12)", color: "#e05c5c", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    ✕
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <AnimatePresence mode="wait">
             {!data && !loading ? (
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Empty /></motion.div>
@@ -801,6 +829,9 @@ export default function AppPage() {
       </AnimatePresence>
       <AnimatePresence>
         {showProfile && <ProfileEditor goals={goals} onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }} onClose={() => setShowProfile(false)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showReferral && <ReferralModal onClose={() => setShowReferral(false)} />}
       </AnimatePresence>
       <AnimatePresence>
         {showEmailPrefs && (

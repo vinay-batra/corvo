@@ -53,7 +53,7 @@ export function Metrics({ data, currency = "USD", rate = 1 }: { data: any; curre
               onMouseEnter={e=>{e.currentTarget.style.background=C.amber;e.currentTarget.style.color="#0a0e14";}}
               onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.06)";e.currentTarget.style.color=C.cream3;}}>?</button>
           </div>
-          <p style={{fontFamily:"Space Mono,monospace",fontSize:24,fontWeight:700,letterSpacing:-1,color:neg?C.red:C.amber,lineHeight:1}}>
+          <p style={{fontFamily:"Space Mono,monospace",fontSize:24,fontWeight:700,letterSpacing:-1,color:neg?C.red:"var(--text)",lineHeight:1}}>
             <Num value={value} fmt={fmt}/>
           </p>
           {bar!==null&&(

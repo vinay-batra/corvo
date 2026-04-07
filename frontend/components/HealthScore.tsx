@@ -19,7 +19,7 @@ function Ring({ score, size=96 }: { score:number; size?:number }) {
       </svg>
       <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
         <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.8}}
-          style={{fontFamily:"Space Mono,monospace",fontSize:20,fontWeight:700,color:C.amber,letterSpacing:-1,lineHeight:1}}>{score}</motion.p>
+          style={{fontFamily:"Space Mono,monospace",fontSize:20,fontWeight:700,color:"var(--text)",letterSpacing:-1,lineHeight:1}}>{score}</motion.p>
         <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:1}}
           style={{fontSize:8,letterSpacing:1,color:C.cream3,textTransform:"uppercase",marginTop:2}}>{label}</motion.p>
       </div>

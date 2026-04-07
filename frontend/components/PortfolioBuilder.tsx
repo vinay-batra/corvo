@@ -116,7 +116,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                     onBlur={()=>{blurT.current[i]=setTimeout(()=>{setActive(p=>p===i?null:p);setResults(p=>({...p,[i]:[]}));},200);}}
                     onChange={e=>updateTicker(i,e.target.value)}
                     placeholder="Search ticker..."
-                    style={{width:"100%",padding:"5px 8px",background:"rgba(255,255,255,0.04)",border:`1px solid ${active===i?"rgba(201,168,76,0.5)":C.border}`,borderRadius:7,color:C.amber,fontFamily:"Space Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:1,outline:"none",transition:"border-color 0.15s"}}/>
+                    style={{width:"100%",padding:"5px 8px",background:"rgba(255,255,255,0.04)",border:`1px solid ${active===i?"rgba(201,168,76,0.5)":C.border}`,borderRadius:7,color:"var(--text)",fontFamily:"Space Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:1,outline:"none",transition:"border-color 0.15s"}}/>
                   {searching[i]&&<div style={{position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:9,height:9,border:"1.5px solid rgba(201,168,76,0.2)",borderTopColor:C.amber,borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
                   <AnimatePresence>
                     {active===i&&res.length>0&&(
@@ -140,7 +140,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 </div>
                 <input type="number" min="0" max="100" step="1" value={Math.round(a.weight*100)}
                   onChange={e=>updateWeight(i,Math.max(0,Math.min(100,Number(e.target.value)))/100)}
-                  style={{width:36,padding:"5px 3px",background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:5,color:C.cream,fontSize:11,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"center"}}/>
+                  style={{width:36,padding:"5px 3px",background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:5,color:"var(--text)",fontSize:11,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"center"}}/>
                 <span style={{fontSize:9,color:C.cream3,flexShrink:0}}>%</span>
                 <button onClick={()=>remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.15)",fontSize:12,padding:"0 2px",lineHeight:1}}
                   onMouseEnter={e=>e.currentTarget.style.color="#e05c5c"}

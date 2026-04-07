@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
@@ -9,6 +9,24 @@ import os
 import json
 import requests
 from datetime import datetime, timezone
+import time
+
+# ── In-memory rate limiting ────────────────────────────────────────────────────
+RATE_LIMITS: dict[str, list[float]] = {}
+
+def check_rate_limit(ip: str, endpoint: str, max_requests: int, window_seconds: int) -> bool:
+    """Return True if this request should be rate-limited (i.e. blocked)."""
+    key = f"{ip}:{endpoint}"
+    now = time.time()
+    timestamps = RATE_LIMITS.get(key, [])
+    # Drop timestamps outside the window
+    timestamps = [t for t in timestamps if now - t < window_seconds]
+    if len(timestamps) >= max_requests:
+        RATE_LIMITS[key] = timestamps
+        return True
+    timestamps.append(now)
+    RATE_LIMITS[key] = timestamps
+    return False
 
 app = FastAPI(title="Corvo API", version="1.0.0")
 
@@ -83,11 +101,15 @@ def docs_check():
 
 @app.get("/portfolio")
 def portfolio(
+    request: Request,
     tickers: str = "AAPL,MSFT",
     weights: str = "",
     period: str = "1y",
     benchmark: str = "^GSPC"
 ):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "portfolio", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers provided")
@@ -530,7 +552,10 @@ class ReportRequest(BaseModel):
 
 
 @app.post("/generate-report")
-def generate_report(req: ReportRequest):
+def generate_report(req: ReportRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "generate-report", 10, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
     try:
         import anthropic
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -621,7 +646,10 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/chat")
-def chat(req: ChatRequest):
+def chat(req: ChatRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "chat", 20, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
     try:
         import anthropic
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")

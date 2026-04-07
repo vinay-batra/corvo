@@ -16,17 +16,19 @@ const SUGGESTIONS = [
   "What happens if the market drops 30%?",
 ];
 
-// Corvo raven logo — geometric amber raven head
+// Corvo raven logo — circular dark container with raven img
 function CorvoLogo({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{ flexShrink: 0 }}>
-      <path d="M15 55 L32 28 L58 22 L82 34 L78 48 L64 42 L46 48 L30 56 Z" fill="#c9a84c"/>
-      <path d="M78 48 L96 52 L82 60 L70 54 Z" fill="#c9a84c"/>
-      <path d="M46 48 L64 42 L68 56 L50 62 Z" fill="#2a1e08"/>
-      <path d="M64 34 L74 28 L78 40 L68 44 Z" fill="#0d0a04"/>
-      <path d="M30 56 L46 48 L50 62 L36 70 L20 64 Z" fill="#9a7420"/>
-      <path d="M15 55 L20 64 L10 74 L6 60 Z" fill="#c9a84c"/>
-    </svg>
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)",
+      border: "1px solid rgba(201,168,76,0.25)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexShrink: 0,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+    }}>
+      <img src="/raven-logo.svg" width={Math.round(size * 0.65)} height={Math.round(size * 0.65)} alt="Corvo" style={{ objectFit: "contain" }} />
+    </div>
   );
 }
 

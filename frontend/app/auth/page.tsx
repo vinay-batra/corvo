@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
@@ -15,6 +15,12 @@ const C = {
 function AuthForm() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") ?? "/app";
+
+  // Store referral code on load
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) localStorage.setItem("corvo_referrer", ref);
+  }, [searchParams]);
   const [mode, setMode] = useState<"login"|"signup"|"reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -88,20 +94,7 @@ function AuthForm() {
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <a href="/" style={{ textDecoration: "none", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#1a1a1a,#0d0d0d)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
-              <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
-                <path d="M10 26 Q8 30 6 31 Q9 28 10 26Z" fill="#fff" opacity="0.55"/>
-                <path d="M12 26 Q11 30 9 32 Q12 29 12 26Z" fill="#fff" opacity="0.45"/>
-                <path d="M10 22 Q8 18 10 14 Q13 10 17 10 Q20 10 22 12 Q25 15 24 19 Q23 23 19 25 Q14 27 10 22Z" fill="#fff" opacity="0.92"/>
-                <path d="M12 18 Q7 15 4 10 Q6 9 9 12 Q11 15 12 18Z" fill="#fff" opacity="0.7"/>
-                <path d="M12 20 Q6 19 3 15 Q5 14 8 17 Q10 19 12 20Z" fill="#fff" opacity="0.5"/>
-                <ellipse cx="20" cy="9" rx="4" ry="3.5" fill="#fff" opacity="0.95"/>
-                <path d="M23.5 8 Q26 8.5 26.5 10 Q25 9.5 24 10.5 Q23.5 9 23.5 8Z" fill="#fff" opacity="0.85"/>
-                <circle cx="21.2" cy="8.2" r="1.1" fill="#0d0d0d"/>
-                <circle cx="21.5" cy="7.9" r="0.35" fill="rgba(255,255,255,0.7)"/>
-                <path d="M16 13 Q19 12 21 15 Q19.5 13.5 16 13Z" fill="#c9a84c" opacity="0.3"/>
-              </svg>
-            </div>
+            <img src="/raven-logo.svg" width={40} height={32} alt="Corvo" />
             <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 15, fontWeight: 700, letterSpacing: 4, color: C.cream }}>CORVO</span>
           </a>
           <p style={{ fontSize: 11, color: C.cream3, marginTop: 4, letterSpacing: 1 }}>Portfolio Intelligence</p>
