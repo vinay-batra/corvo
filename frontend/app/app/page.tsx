@@ -160,7 +160,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel }: { assets: { t
       const total = portfolio.assets.reduce((s: number, a: any) => s + a.weight, 0);
       const norm = portfolio.assets.map((a: any) => ({ ...a, weight: a.weight / total }));
       const r = await fetch(`${API_URL}/portfolio?tickers=${norm.map((a: any) => a.ticker).join(",")}&weights=${norm.map((a: any) => a.weight.toFixed(4)).join(",")}&period=${period}&benchmark=${benchmark}`);
-      setResults(p => ({ ...p, [portfolio.id]: await r.json() }));
+      const d = await r.json(); setResults(p => ({ ...p, [portfolio.id]: d }));
     } catch {}
     setLoading(p => ({ ...p, [portfolio.id]: false }));
   };
