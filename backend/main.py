@@ -7,6 +7,7 @@ import pandas as pd
 import math
 import os
 import json
+import requests
 from datetime import datetime, timezone
 
 app = FastAPI(title="Corvo API", version="1.0.0")
@@ -338,76 +339,139 @@ def news(tickers: str = "AAPL"):
     market_tickers = ["SPY", "QQQ", "^GSPC"]
     result = {"market": [], "sections": {}}
 
+    def _parse_article(a: dict, ticker: str) -> dict | None:
+        content = a.get("content") or {}
+        url = (
+            a.get("link") or a.get("url") or
+            content.get("canonicalUrl", {}).get("url", "") or
+            content.get("clickThroughUrl", {}).get("url", "") or ""
+        )
+        title = a.get("title") or content.get("title") or ""
+        if not title or not url:
+            return None
+        pub_date = ""
+        try:
+            ts = a.get("providerPublishTime") or content.get("pubDate", "")
+            if isinstance(ts, (int, float)):
+                pub_date = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            elif ts:
+                pub_date = str(ts)
+        except:
+            pass
+        return {
+            "ticker": ticker,
+            "title": title,
+            "summary": content.get("summary") or a.get("summary") or "",
+            "publisher": a.get("publisher") or content.get("provider", {}).get("displayName") or "",
+            "url": url,
+            "published": pub_date,
+        }
+
     # Market news
     seen_urls = set()
     for mt in market_tickers:
         try:
             t = yf.Ticker(mt)
-            articles = t.news or []
-            for a in articles[:8]:
-                url = (a.get("link") or 
-                       a.get("url") or 
-                       (a.get("content") or {}).get("canonicalUrl", {}).get("url", "") or
-                       (a.get("content") or {}).get("clickThroughUrl", {}).get("url", "") or
-                       "")
-                if url in seen_urls:
-                    continue
-                seen_urls.add(url)
-                content = a.get("content", {})
-                pub_date = ""
-                try:
-                    ts = a.get("providerPublishTime") or content.get("pubDate", "")
-                    if isinstance(ts, (int, float)):
-                        pub_date = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-                    else:
-                        pub_date = str(ts)
-                except:
-                    pub_date = ""
-                result["market"].append({
-                    "ticker": "MARKET",
-                    "title": a.get("title", content.get("title", "")),
-                    "summary": content.get("summary", a.get("summary", "")),
-                    "publisher": a.get("publisher", content.get("provider", {}).get("displayName", "")),
-                    "url": url,
-                    "published": pub_date,
-                })
-                if len(result["market"]) >= 15:
-                    break
+            for a in (t.news or [])[:8]:
+                item = _parse_article(a, "MARKET")
+                if item and item["url"] not in seen_urls:
+                    seen_urls.add(item["url"])
+                    result["market"].append(item)
+                    if len(result["market"]) >= 15:
+                        break
         except Exception as e:
             print(f"Market news error for {mt}: {e}")
 
     # Per-ticker news
+    def normalize_article(a: dict, ticker: str) -> dict:
+        """Normalize a yfinance article dict into a clean format."""
+        content = a.get("content") or {}
+        url = (
+            a.get("link") or a.get("url") or
+            content.get("canonicalUrl", {}).get("url", "") or
+            content.get("clickThroughUrl", {}).get("url", "") or ""
+        )
+        pub_date = ""
+        try:
+            ts = a.get("providerPublishTime") or content.get("pubDate", "")
+            if isinstance(ts, (int, float)):
+                pub_date = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            elif ts:
+                pub_date = str(ts)
+        except:
+            pass
+        return {
+            "ticker": ticker,
+            "title": a.get("title") or content.get("title") or "",
+            "summary": content.get("summary") or a.get("summary") or "",
+            "publisher": a.get("publisher") or content.get("provider", {}).get("displayName") or "",
+            "url": url,
+            "published": pub_date,
+        }
+
+    def gnews_fallback(ticker: str, max_results: int = 8) -> list:
+        """Fallback: search GNews free API (no key needed for basic use)."""
+        try:
+            import urllib.request, urllib.parse
+            query = urllib.parse.quote(f"{ticker} stock")
+            url = f"https://gnews.io/api/v4/search?q={query}&lang=en&max={max_results}&apikey=free"
+            # GNews free doesn't need a key for very limited use; if blocked use RSS
+            # Use Yahoo Finance RSS as a more reliable free fallback
+            rss_url = f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US"
+            req = urllib.request.Request(rss_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                import xml.etree.ElementTree as ET
+                tree = ET.parse(resp)
+                root = tree.getroot()
+                items = root.findall(".//item")
+                articles = []
+                for item in items[:max_results]:
+                    title = item.findtext("title") or ""
+                    link = item.findtext("link") or ""
+                    pub = item.findtext("pubDate") or ""
+                    desc = item.findtext("description") or ""
+                    if title:
+                        articles.append({
+                            "ticker": ticker,
+                            "title": title,
+                            "summary": desc,
+                            "publisher": "Yahoo Finance",
+                            "url": link,
+                            "published": pub,
+                        })
+                return articles
+        except Exception as e:
+            print(f"RSS fallback error for {ticker}: {e}")
+            return []
+
     for ticker in tickers_list:
         result["sections"][ticker] = []
         try:
             t = yf.Ticker(ticker)
-            articles = t.news or []
-            for a in articles[:15]:
-                url = (a.get("link") or 
-                       a.get("url") or 
-                       (a.get("content") or {}).get("canonicalUrl", {}).get("url", "") or
-                       (a.get("content") or {}).get("clickThroughUrl", {}).get("url", "") or
-                       "")
-                content = a.get("content", {})
-                pub_date = ""
-                try:
-                    ts = a.get("providerPublishTime") or content.get("pubDate", "")
-                    if isinstance(ts, (int, float)):
-                        pub_date = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-                    else:
-                        pub_date = str(ts)
-                except:
-                    pub_date = ""
-                result["sections"][ticker].append({
-                    "ticker": ticker,
-                    "title": a.get("title", content.get("title", "")),
-                    "summary": content.get("summary", a.get("summary", "")),
-                    "publisher": a.get("publisher", content.get("provider", {}).get("displayName", "")),
-                    "url": url,
-                    "published": pub_date,
-                })
+            raw_articles = t.news or []
+            parsed = [normalize_article(a, ticker) for a in raw_articles[:15]]
+            # Filter out articles with no title or url
+            parsed = [a for a in parsed if a["title"] and a["url"]]
+            if parsed:
+                result["sections"][ticker] = parsed
+            else:
+                # yfinance returned nothing — try Finnhub first, then RSS
+                print(f"yfinance news empty for {ticker}, trying Finnhub fallback")
+                finnhub_articles = _finnhub_fallback(ticker)
+                if finnhub_articles:
+                    result["sections"][ticker] = finnhub_articles
+                else:
+                    result["sections"][ticker] = gnews_fallback(ticker)
         except Exception as e:
             print(f"News error for {ticker}: {e}")
+            finnhub_articles = _finnhub_fallback(ticker)
+            result["sections"][ticker] = finnhub_articles or gnews_fallback(ticker)
+
+    # Build flat articles list for backward compat (NewsFeed uses this)
+    all_articles = []
+    for ticker, arts in result["sections"].items():
+        all_articles.extend(arts)
+    result["articles"] = all_articles
 
     return result
 
@@ -537,7 +601,7 @@ A clear, direct recommendation. Should the investor hold, rebalance, or make cha
 Write in a professional but accessible tone. Be specific — reference actual numbers throughout. Use bullet points (- item) for lists. Keep it thorough but concise — aim for 500-700 words total. Do not include any disclaimers or caveats within the analysis itself."""
 
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-5",
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -567,45 +631,75 @@ def chat(req: ChatRequest):
         client = anthropic.Anthropic(api_key=api_key)
 
         ctx = req.portfolio_context
-        goals = req.user_goals
+        # Support goals from both portfolio_context (frontend passes it nested) and top-level
+        goals = req.user_goals or ctx.get("goals") or {}
         tickers = ctx.get("tickers", [])
         weights = ctx.get("weights", [])
         ret = ctx.get("portfolio_return", 0)
         vol = ctx.get("portfolio_volatility", 0)
-        sharpe = (ret - 0.04) / max(vol, 0.001)
+        sharpe = ctx.get("sharpe_ratio") or (ret - 0.04) / max(vol, 0.001)
         dd = ctx.get("max_drawdown", 0)
         period = ctx.get("period", "1y")
+        benchmark_return = ctx.get("benchmark_return")
+        health_score = ctx.get("health_score")
 
-        goals_text = ""
+        # Build rich investor profile from onboarding data
+        profile_lines = []
         if goals:
             age = goals.get("age", "")
+            retirement_age = goals.get("retirementAge", "")
             salary = goals.get("salary", "")
             invested = goals.get("invested", "")
-            risk = goals.get("riskTolerance", "")
+            monthly = goals.get("monthlyContribution", "")
+            risk = goals.get("riskTolerance", "moderate")
             goal = goals.get("goal", "")
-            timeline = goals.get("timeline", "")
             if age:
-                goals_text = f"\nUser profile: Age {age}, Salary ${salary}/yr, ${invested} invested, {risk} risk tolerance, Goal: {goal}, Timeline: {timeline} years."
+                years_to_retire = int(retirement_age or 65) - int(age) if age else None
+                profile_lines.append(f"Age: {age}" + (f", retiring at {retirement_age} ({years_to_retire} years away)" if retirement_age else ""))
+            if salary:
+                profile_lines.append(f"Salary: ${int(salary):,}/yr")
+            if invested:
+                profile_lines.append(f"Total invested: ${int(invested):,}")
+            if monthly:
+                profile_lines.append(f"Monthly contribution: ${int(monthly):,}")
+            if risk:
+                risk_label = {"conservative": "Conservative (capital preservation priority)", "moderate": "Moderate (balanced growth)", "aggressive": "Aggressive (maximum growth, high risk tolerance)"}.get(risk, risk)
+                profile_lines.append(f"Risk tolerance: {risk_label}")
+            if goal:
+                goal_label = {"retirement": "Retirement", "wealth": "Wealth building", "income": "Passive income", "short": "Short-term gains"}.get(goal, goal)
+                profile_lines.append(f"Investment goal: {goal_label}")
 
-        system = f"""You are Corvo AI, an expert portfolio analyst. Be concise, direct, and data-driven like a Goldman Sachs analyst.
+        investor_profile = ""
+        if profile_lines:
+            investor_profile = "\n\nINVESTOR PROFILE (from onboarding — always consider this in your answers):\n" + "\n".join(f"• {l}" for l in profile_lines)
 
-Portfolio:
-- Tickers: {', '.join(tickers)}
-- Weights: {', '.join(f"{t}: {w:.1%}" for t, w in zip(tickers, weights))}
+        benchmark_text = f"\n- Benchmark Return: {benchmark_return:.2%}" if benchmark_return is not None else ""
+        health_text = f"\n- Portfolio Health Score: {health_score}/100" if health_score is not None else ""
+
+        system = f"""You are Corvo AI, a personal portfolio analyst who knows this investor deeply. You have their full financial profile from onboarding and always tailor advice specifically to their situation — their age, goals, risk tolerance, and timeline.
+
+CURRENT PORTFOLIO:
+- Holdings: {', '.join(f"{t} ({w:.1%})" for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"}
 - Annualized Return: {ret:.2%}
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f}
 - Max Drawdown: {dd:.2%}
-- Period: {period}{goals_text}
+- Period: {period}{benchmark_text}{health_text}{investor_profile}
 
-Format responses with short bullet points (use • not -). Max 150 words. Reference specific numbers. Plain text only, no markdown headers."""
+RESPONSE RULES:
+• Be concise and direct — max 180 words
+• Use bullet points (•) for lists
+• Always reference specific numbers from the portfolio
+• When the investor has a profile, reference their goals/age/timeline in your answer
+• If they ask about risk, factor in their stated risk tolerance
+• Plain text only — no markdown headers or bold"""
 
         messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
         messages.append({"role": "user", "content": req.message})
 
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=512,
+            model="claude-sonnet-4-5",
+            max_tokens=600,
             system=system,
             messages=messages,
         )
@@ -630,7 +724,7 @@ def parse_portfolio_image(body: dict):
         media_type = body.get("media_type", "image/jpeg")
 
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-5",
             max_tokens=1000,
             messages=[{
                 "role": "user",
