@@ -286,6 +286,7 @@ export default function Landing() {
         <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)" }}>© 2026 Corvo</p>
         <div style={{ display: "flex", gap: 20 }}>
           {["Privacy","Terms"].map(l => <a key={l} href="#" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>{l}</a>)}
+          <a href="/learn" style={{ fontSize: 11, color: "rgba(201,168,76,0.4)", textDecoration: "none" }}>Learn</a>
         </div>
       </footer>
     </div>
