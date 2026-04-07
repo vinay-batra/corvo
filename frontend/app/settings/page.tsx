@@ -136,8 +136,30 @@ export default function SettingsPage() {
 
   const deleteAccount = async () => {
     setDeleting(true);
-    await supabase.auth.signOut();
-    window.location.href = "/";
+    try {
+      // Get the current session JWT to authenticate the delete request
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated");
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/user`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || `Server error ${res.status}`);
+      }
+
+      // Hard-delete confirmed — clear local state and redirect
+      await supabase.auth.signOut();
+      window.location.href = "/";
+    } catch (err) {
+      console.error("Account deletion failed:", err);
+      alert(`Deletion failed: ${err instanceof Error ? err.message : String(err)}`);
+      setDeleting(false);
+    }
   };
 
   const initials = (displayName || user?.email || "?")[0]?.toUpperCase();
