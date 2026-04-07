@@ -468,14 +468,7 @@ export default function AppPage() {
       {/* Logo → homepage */}
       <div style={S.sidebarTop}>
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-          <svg width="22" height="22" viewBox="0 0 100 100" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M15 55 L32 28 L58 22 L82 34 L78 48 L64 42 L46 48 L30 56 Z" fill="#c9a84c"/>
-            <path d="M78 48 L96 52 L82 60 L70 54 Z" fill="#c9a84c"/>
-            <path d="M46 48 L64 42 L68 56 L50 62 Z" fill="#2a1e08"/>
-            <path d="M64 34 L74 28 L78 40 L68 44 Z" fill="#0d0a04"/>
-            <path d="M30 56 L46 48 L50 62 L36 70 L20 64 Z" fill="#9a7420"/>
-            <path d="M15 55 L20 64 L10 74 L6 60 Z" fill="#c9a84c"/>
-          </svg>
+          <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" style={{ flexShrink: 0 }} />
           <div style={S.logo}>CORVO</div>
         </Link>
         <div style={S.logoSub}>Portfolio Intelligence</div>

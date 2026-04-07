@@ -155,7 +155,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
+    <div style={{ minHeight: "100vh", overflowY: "auto", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       {/* Header */}
@@ -166,7 +166,7 @@ export default function SettingsPage() {
           ← Back
         </Link>
         <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
-        <img src="/raven-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
+        <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Settings</span>
       </header>
 

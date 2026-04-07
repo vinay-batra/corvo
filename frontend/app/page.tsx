@@ -101,7 +101,7 @@ export default function Landing() {
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "rgba(10,14,20,0.9)" : "transparent", backdropFilter: navSolid ? "blur(16px)" : "none", borderBottom: navSolid ? "1px solid rgba(201,168,76,0.07)" : "none", transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           {/* Raven logo */}
-          <img src="/raven-logo.svg" width={28} height={22} alt="Corvo" />
+          <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "#e8e0cc" }}>CORVO</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -141,7 +141,7 @@ export default function Landing() {
             <div style={{ width: 180, background: "rgba(8,11,16,0.95)", borderRight: "1px solid rgba(255,255,255,0.05)", padding: "16px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
               <div style={{ padding: "0 14px 14px", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <img src="/raven-logo.svg" width={18} height={14} alt="Corvo" />
+                  <img src="/corvo-logo.svg" width={18} height={14} alt="Corvo" />
                   <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#e8e0cc" }}>CORVO</span>
                 </div>
               </div>
@@ -198,7 +198,7 @@ export default function Landing() {
               </div>
               {/* AI Chat bubble */}
               <div style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.14)", borderRadius: 8, padding: "9px 12px", display: "flex", alignItems: "flex-start", gap: 8 }}>
-                <img src="/raven-logo.svg" width={14} height={11} alt="" style={{ marginTop: 2, opacity: 0.8 }} />
+                <img src="/corvo-logo.svg" width={14} height={11} alt="" style={{ marginTop: 2, opacity: 0.8 }} />
                 <p style={{ fontSize: 10, color: "rgba(232,224,204,0.65)", lineHeight: 1.55 }}>Your tech concentration is high at 67% — consider adding BND or GLD to reduce correlation risk.</p>
               </div>
             </div>
@@ -332,12 +332,13 @@ export default function Landing() {
       {/* FOOTER */}
       <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/raven-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
+          <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
         </div>
         <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)" }}>© 2026 Corvo</p>
         <div style={{ display: "flex", gap: 20 }}>
-          {["Privacy","Terms"].map(l => <a key={l} href="#" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>{l}</a>)}
+          <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</a>
+          <a href="/terms"   style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</a>
           <a href="/learn" style={{ fontSize: 11, color: "rgba(201,168,76,0.4)", textDecoration: "none" }}>Learn</a>
         </div>
       </footer>
