@@ -94,7 +94,7 @@ function AuthForm() {
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <a href="/" style={{ textDecoration: "none", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <img src="/raven-logo.svg" width={40} height={32} alt="Corvo" />
+            <img src="/corvo-logo.svg" width={40} height={32} alt="Corvo" />
             <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 15, fontWeight: 700, letterSpacing: 4, color: C.cream }}>CORVO</span>
           </a>
           <p style={{ fontSize: 11, color: C.cream3, marginTop: 4, letterSpacing: 1 }}>Portfolio Intelligence</p>

@@ -27,7 +27,7 @@ function CorvoLogo({ size = 28 }: { size?: number }) {
       flexShrink: 0,
       boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
     }}>
-      <img src="/raven-logo.svg" width={Math.round(size * 0.65)} height={Math.round(size * 0.65)} alt="Corvo" style={{ objectFit: "contain" }} />
+      <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" style={{ objectFit: "contain" }} />
     </div>
   );
 }

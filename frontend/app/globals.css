@@ -48,7 +48,6 @@ html, body {
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
   transition: background 0.25s, color 0.25s;
 }
 
@@ -67,7 +66,3 @@ input::placeholder { color: var(--text3); }
 @keyframes spin    { to { transform: rotate(360deg); } }
 @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-/* ── Mobile responsive ── */
-@media (max-width: 768px) {
-  html, body { overflow: auto; }
-}
