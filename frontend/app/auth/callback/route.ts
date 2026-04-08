@@ -27,8 +27,8 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
-    return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(error.message)}`);
+    return NextResponse.redirect(`${origin}/auth?error=auth_failed`);
   }
 
-  return NextResponse.redirect(`${origin}/auth?error=no_code`);
+  return NextResponse.redirect(`${origin}/auth?error=auth_failed`);
 }
