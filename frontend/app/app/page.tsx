@@ -807,8 +807,10 @@ export default function AppPage() {
           .c-mob-tabs{display:flex!important}
           .c-metrics{grid-template-columns:repeat(2,1fr)!important}
           .c-bgrid{grid-template-columns:1fr!important}
+          .c-risk-grid{grid-template-columns:1fr!important}
           .c-content{padding:12px!important}
           .c-mob-analyze{display:flex!important}
+          .c-ai-tab{height:calc(100dvh - 140px)!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
@@ -816,6 +818,8 @@ export default function AppPage() {
           .c-mob-drawer{display:none!important}
           .c-mob-analyze{display:none!important}
         }
+        .c-mob-tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch}
+        .c-mob-tabs::-webkit-scrollbar{display:none}
       `}</style>
 
       {/* Desktop sidebar — collapsible */}
@@ -1088,7 +1092,7 @@ export default function AppPage() {
               </motion.div>
             ) : activeTab === "risk" ? (
               <motion.div key="risk" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="c-risk-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Drawdown" sections={[{label:"Plain English",text:"Shows the biggest loss from a peak to a trough in your portfolio over the selected period."},{label:"Example",text:"A -20% drawdown means your portfolio fell from $100K to $80K before recovering."},{label:"What's Good",text:"Drawdowns under 15% are generally considered manageable for long-term investors. Deeper troughs signal higher risk."}]} /><DrawdownChart assets={assets} period={period} /></Card>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Correlation" sections={[{label:"Plain English",text:"Shows how your assets move in relation to each other. A value of 1.0 means they move in perfect lockstep."},{label:"Example",text:"AAPL and MSFT often have correlation near 0.8 — when one drops, the other usually does too."},{label:"What's Good",text:"Aim for correlations below 0.5 between your major holdings. Low correlation = real diversification."}]} /><CorrelationHeatmap assets={assets} period={period} /></Card>
                 </div>
@@ -1114,7 +1118,7 @@ export default function AppPage() {
                 <Watchlist />
               </motion.div>
             ) : activeTab === "ai" ? (
-              <motion.div key="ai" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}
+              <motion.div key="ai" className="c-ai-tab" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}
                 style={{ height: "calc(100vh - 96px)", display: "flex", flexDirection: "column" }}>
                 <AiChat data={data} assets={assets} goals={goals} />
               </motion.div>

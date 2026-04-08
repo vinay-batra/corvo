@@ -15,13 +15,16 @@ function getCtx(): AudioContext | null {
   try {
     if (!_ac) {
       _ac = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log("[sound] AudioContext created, state:", _ac.state);
     }
     // Chrome suspends AudioContext until a user gesture. Resume it silently.
     if (_ac.state === "suspended") {
-      _ac.resume().catch(() => {});
+      console.log("[sound] AudioContext suspended — resuming");
+      _ac.resume().catch((e) => console.warn("[sound] resume failed:", e));
     }
     return _ac;
-  } catch {
+  } catch (e) {
+    console.warn("[sound] AudioContext unavailable:", e);
     return null;
   }
 }
@@ -57,11 +60,13 @@ function playTone(
 export function useSoundEffects() {
   /** Short sine click — for button presses */
   function click() {
+    console.log("[sound] playing sound: click", "enabled:", isEnabled());
     playTone(800, 0.03, "sine", 0.08);
   }
 
   /** Frequency sweep whoosh — for tab switches */
   function whoosh() {
+    console.log("[sound] playing sound: whoosh", "enabled:", isEnabled());
     if (!isEnabled()) return;
     const ac = getCtx();
     if (!ac) return;
@@ -80,12 +85,14 @@ export function useSoundEffects() {
 
   /** Two-tone chime — for analysis completion */
   function success() {
+    console.log("[sound] playing sound: success", "enabled:", isEnabled());
     playTone(523, 0.09, "sine", 0.1, 0);
     playTone(659, 0.09, "sine", 0.1, 0.1);
   }
 
   /** Low tone — for errors */
   function error() {
+    console.log("[sound] playing sound: error", "enabled:", isEnabled());
     playTone(200, 0.1, "sine", 0.1);
   }
 
