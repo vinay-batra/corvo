@@ -3,6 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import {
+  LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
+  GraduationCap, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
+  Sun, Moon,
+} from "lucide-react";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import Metrics from "../../components/Metrics";
 import PerformanceChart from "../../components/PerformanceChart";
@@ -30,14 +35,14 @@ import EmailPreferences from "../../components/EmailPreferences";
 import ReferralModal from "../../components/ReferralModal";
 
 const TABS = [
-  { id: "overview",  label: "Overview",  icon: "◈",  href: null },
-  { id: "risk",      label: "Risk",       icon: "◬",  href: null },
-  { id: "simulate",  label: "Simulate",   icon: "◎",  href: null },
-  { id: "compare",   label: "Compare",    icon: "⊞",  href: null },
-  { id: "news",      label: "News",       icon: "◷",  href: null },
-  { id: "watchlist", label: "Watchlist",  icon: "◉",  href: null },
-  { id: "ai",        label: "AI Chat",    icon: "✦",  href: null },
-  { id: "learn",     label: "Learn",      icon: null, href: "/learn" },
+  { id: "overview",  label: "Dashboard",  Icon: LayoutDashboard, href: null },
+  { id: "risk",      label: "Risk",        Icon: ShieldAlert,     href: null },
+  { id: "simulate",  label: "Simulations", Icon: FlaskConical,    href: null },
+  { id: "compare",   label: "Compare",     Icon: Eye,             href: null },
+  { id: "news",      label: "News",        Icon: Newspaper,       href: null },
+  { id: "watchlist", label: "Watchlist",   Icon: Eye,             href: null },
+  { id: "ai",        label: "AI Chat",     Icon: MessageSquare,   href: null },
+  { id: "learn",     label: "Learn",       Icon: GraduationCap,   href: "/learn" },
 ] as const;
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
@@ -59,12 +64,15 @@ const BENCHMARKS = [
   { ticker: "GLD",    label: "Gold" },
 ];
 
-function GraduationCapIcon({ size = 11 }: { size?: number }) {
+// Thin icon button helper
+function IconBtn({ onClick, title, children }: { onClick: () => void; title?: string; children: React.ReactNode }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-      <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-    </svg>
+    <button onClick={onClick} title={title}
+      style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", transition: "background 0.15s, color 0.15s", flexShrink: 0 }}
+      onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+      {children}
+    </button>
   );
 }
 
@@ -86,7 +94,6 @@ function useTheme() {
 function useS() {
   return {
     app:        { display: "flex", height: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)" } as React.CSSProperties,
-    sidebar:    { width: 244, flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column" as const, background: "var(--bg2)", overflow: "hidden" },
     sidebarTop: { padding: "14px 16px 12px", borderBottom: "0.5px solid var(--border)" },
     logo:       { fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" },
     logoSub:    { fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
@@ -95,7 +102,7 @@ function useS() {
     main:       { flex: 1, display: "flex", flexDirection: "column" as const, overflow: "hidden", background: "var(--bg)", minWidth: 0 },
     topbar:     { height: 48, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: "var(--bg)", gap: 8 },
     content:    { flex: 1, overflowY: "auto" as const, padding: "20px 24px" },
-    card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 12 } as React.CSSProperties,
+    card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 12, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px var(--border)" } as React.CSSProperties,
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
     cardAccent: { width: 2, height: 14, background: "var(--text)", borderRadius: 1 },
     cardTitle:  { fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
@@ -128,12 +135,9 @@ function TooltipCardHeader({ title, tooltip }: { title: string; tooltip: string 
 
 function DarkModeToggle({ dark, toggle }: { dark: boolean; toggle: () => void }) {
   return (
-    <button onClick={toggle} title={dark ? "Light mode" : "Dark mode"}
-      style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, transition: "background 0.15s", flexShrink: 0 }}
-      onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-      {dark ? "☀️" : "🌙"}
-    </button>
+    <IconBtn onClick={toggle} title={dark ? "Light mode" : "Dark mode"}>
+      {dark ? <Sun size={15} /> : <Moon size={15} />}
+    </IconBtn>
   );
 }
 
@@ -149,14 +153,18 @@ function Spinner() {
 function Empty() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 340, gap: 14, textAlign: "center" }}>
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <rect x="1" y="1" width="38" height="38" rx="8" stroke="var(--text)" strokeWidth="1"/>
-        <path d="M14 28 A8 8 0 1 1 26 28" stroke="var(--text)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-        <circle cx="20" cy="20" r="2" fill="var(--text)"/>
-      </svg>
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 400, gap: 20, textAlign: "center" }}>
+      <motion.img
+        src="/corvo-logo.svg"
+        alt="Corvo"
+        width={52}
+        height={52}
+        animate={{ y: [0, -8, 0] }}
+        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+        style={{ opacity: 0.7 }}
+      />
       <div>
-        <p style={{ fontSize: 15, fontWeight: 500, color: "var(--text)", marginBottom: 6 }}>Build your portfolio</p>
+        <p style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.3px", color: "var(--text)", marginBottom: 8 }}>Enter your portfolio to get started</p>
         <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7 }}>Add tickers on the left, then click Analyze</p>
       </div>
     </motion.div>
@@ -334,18 +342,23 @@ function useCurrency() {
 }
 
 export default function AppPage() {
-  const [assets, setAssets]           = useState([{ ticker: "AAPL", weight: 50 }, { ticker: "MSFT", weight: 50 }]);
-  const [period, setPeriod]           = useState("1y");
-  const [benchmark, setBenchmark]     = useState("^GSPC");
-  const [data, setData]               = useState<any>(null);
-  const [loading, setLoading]         = useState(false);
-  const [activeTab, setActiveTab]     = useState("overview");
-  const [goals, setGoals]             = useState<any>(null);
-  const [showGoals, setShowGoals]     = useState(false);
-  const [showTour, setShowTour]       = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const [benchOpen, setBenchOpen]     = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [assets, setAssets]               = useState([{ ticker: "AAPL", weight: 50 }, { ticker: "MSFT", weight: 50 }]);
+  const [period, setPeriod]               = useState("1y");
+  const [benchmark, setBenchmark]         = useState("^GSPC");
+  const [data, setData]                   = useState<any>(null);
+  const [loading, setLoading]             = useState(false);
+  const [analyzeComplete, setAnalyzeComplete] = useState(false);
+  const [activeTab, setActiveTab]         = useState("overview");
+  const [goals, setGoals]                 = useState<any>(null);
+  const [showGoals, setShowGoals]         = useState(false);
+  const [showTour, setShowTour]           = useState(false);
+  const [showProfile, setShowProfile]     = useState(false);
+  const [benchOpen, setBenchOpen]         = useState(false);
+  const [sidebarOpen, setSidebarOpen]     = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("corvo_sidebar_collapsed") === "true";
+  });
   const [showAlerts, setShowAlerts]         = useState(false);
   const [showEmailPrefs, setShowEmailPrefs]     = useState(false);
   const [unsubscribeMode, setUnsubscribeMode]   = useState(false);
@@ -454,12 +467,14 @@ export default function AppPage() {
   const handleAnalyze = async () => {
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
-    setLoading(true); setData(null); setErrorMsg(null);
+    setLoading(true); setData(null); setErrorMsg(null); setAnalyzeComplete(false);
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
       const result = await fetchPortfolio(valid, period, benchmark);
       setData(result);
       setActiveTab("overview");
+      setAnalyzeComplete(true);
+      setTimeout(() => setAnalyzeComplete(false), 600);
     } catch (e) {
       console.error(e);
       setErrorMsg("Analysis failed — server may be temporarily unavailable.");
@@ -563,10 +578,14 @@ export default function AppPage() {
 
       {/* Analyze button */}
       <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
-        <button onClick={handleAnalyze} disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
-          style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : "var(--text)", color: loading ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s" }}>
-          {loading ? "Analyzing..." : "▶  Analyze  ↵"}
-        </button>
+        <motion.button
+          onClick={handleAnalyze}
+          disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
+          animate={analyzeComplete ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+          transition={{ duration: 0.35 }}
+          style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : "var(--text)", color: loading ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
+          {loading ? "Analyzing..." : "Analyze"}
+        </motion.button>
       </div>
 
       {/* Period */}
@@ -607,26 +626,21 @@ export default function AppPage() {
         <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
       </div>
 
-      {/* Footer — Learn link (compact, moved to topbar tabs) */}
-      <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
-        <Link href="/learn" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", borderRadius: 9, border: "0.5px solid var(--border)", textDecoration: "none", background: "transparent", transition: "all 0.15s" }}
-          onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.borderColor = "var(--border2)"; }}
-          onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; }}>
-          <GraduationCapIcon size={15} />
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: "var(--text2)" }}>Learn Investing</div>
-            <div style={{ fontSize: 9, color: "var(--text3)" }}>Lessons &amp; quizzes</div>
-          </div>
-        </Link>
-      </div>
     </>
   );
+
+  const toggleSidebar = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    localStorage.setItem("corvo_sidebar_collapsed", String(next));
+  };
 
   return (
     <div style={S.app}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+        @keyframes analyze-ring{0%{box-shadow:0 0 0 0 rgba(201,168,76,0.5)}70%{box-shadow:0 0 0 8px rgba(201,168,76,0)}100%{box-shadow:0 0 0 0 rgba(201,168,76,0)}}
         @media(max-width:768px){
           .c-sidebar{display:none!important}
           .c-topbar{display:none!important}
@@ -643,11 +657,16 @@ export default function AppPage() {
           .c-mob-drawer{display:none!important}
           .c-mob-analyze{display:none!important}
         }
-        .tab-btn:hover{background:var(--bg3)!important;color:var(--text)!important}
       `}</style>
 
-      {/* Desktop sidebar */}
-      <aside className="c-sidebar" style={S.sidebar}><SidebarInner /></aside>
+      {/* Desktop sidebar — collapsible */}
+      <motion.aside
+        className="c-sidebar"
+        animate={{ width: sidebarCollapsed ? 0 : 244 }}
+        transition={{ type: "spring", damping: 30, stiffness: 260 }}
+        style={{ flexShrink: 0, borderRight: sidebarCollapsed ? "none" : "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden" }}>
+        <SidebarInner />
+      </motion.aside>
 
       {/* Mobile drawer */}
       <AnimatePresence>
@@ -668,7 +687,9 @@ export default function AppPage() {
       <div style={S.main}>
         {/* Mobile top bar */}
         <div className="c-mob-bar" style={{ height: 48, borderBottom: "0.5px solid var(--border)", alignItems: "center", justifyContent: "space-between", padding: "0 14px", background: "var(--bg)", flexShrink: 0 }}>
-          <button onClick={() => setSidebarOpen(true)} style={{ width: 32, height: 32, background: "none", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text)", fontSize: 16 }}>☰</button>
+          <button onClick={() => setSidebarOpen(true)} style={{ width: 32, height: 32, background: "none", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <PanelLeftOpen size={15} />
+          </button>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
           <DarkModeToggle dark={dark} toggle={toggleDark} />
         </div>
@@ -676,40 +697,56 @@ export default function AppPage() {
         {/* Mobile tabs */}
         <div className="c-mob-tabs" style={{ borderBottom: "0.5px solid var(--border)", padding: "0 8px", gap: 2, overflowX: "auto", flexShrink: 0, background: "var(--bg)" }}>
           {TABS.map(tab => {
-            const mobStyle: React.CSSProperties = { padding: "10px 10px", fontSize: 11, borderRadius: 6, border: "none", background: activeTab === tab.id ? "var(--bg3)" : "transparent", color: activeTab === tab.id ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: activeTab === tab.id ? 500 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" };
-            if (tab.href) return <Link key={tab.id} href={tab.href} className="tab-btn" style={mobStyle}><GraduationCapIcon size={11} /> {tab.label}</Link>;
-            return <button key={tab.id} className="tab-btn" onClick={() => setActiveTab(tab.id)} style={mobStyle}>{tab.icon} {tab.label}</button>;
+            const TabIcon = tab.Icon;
+            const isActive = activeTab === tab.id;
+            const mobStyle: React.CSSProperties = { padding: "10px 10px", fontSize: 11, borderRadius: 6, border: "none", background: isActive ? "var(--bg3)" : "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 500 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" };
+            if (tab.href) return <Link key={tab.id} href={tab.href} style={mobStyle}><TabIcon size={11} /> {tab.label}</Link>;
+            return <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={mobStyle}><TabIcon size={11} /> {tab.label}</button>;
           })}
         </div>
 
         {/* Desktop topbar */}
         <header className="c-topbar" style={S.topbar}>
-          <div style={{ display: "flex", gap: 2, flex: 1, overflowX: "auto" }}>
+          {/* Sidebar collapse toggle */}
+          <IconBtn onClick={toggleSidebar} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+            {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+          </IconBtn>
+
+          {/* Tabs with animated pill indicator */}
+          <div style={{ display: "flex", gap: 2, flex: 1, overflowX: "auto", position: "relative" }}>
             {TABS.map(tab => {
+              const TabIcon = tab.Icon;
+              const isActive = activeTab === tab.id;
               const tabStyle: React.CSSProperties = {
-                padding: "7px 14px", fontSize: 13, borderRadius: 8, flexShrink: 0,
-                border: activeTab === tab.id ? "0.5px solid var(--border2)" : "0.5px solid transparent",
-                background: activeTab === tab.id ? "var(--bg3)" : "transparent",
-                color: activeTab === tab.id ? "var(--text)" : "var(--text3)",
-                cursor: "pointer", fontWeight: activeTab === tab.id ? 500 : 400, transition: "all 0.15s",
+                position: "relative",
+                padding: "7px 12px", fontSize: 12, borderRadius: 8, flexShrink: 0,
+                border: "none", background: "transparent",
+                color: isActive ? "var(--text)" : "var(--text3)",
+                cursor: "pointer", fontWeight: isActive ? 500 : 400,
                 display: "flex", alignItems: "center", gap: 5, textDecoration: "none",
+                transition: "color 0.15s",
               };
-              if (tab.href) return (
-                <Link key={tab.id} href={tab.href} className="tab-btn" style={tabStyle}>
-                  <GraduationCapIcon size={11} />
-                  {tab.label}
-                </Link>
+              const content = (
+                <>
+                  {isActive && (
+                    <motion.span
+                      layoutId="tab-indicator"
+                      style={{ position: "absolute", inset: 0, borderRadius: 8, background: "var(--bg3)", border: "0.5px solid var(--border2)", zIndex: 0 }}
+                      transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                    />
+                  )}
+                  <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 5 }}>
+                    <TabIcon size={12} />
+                    {tab.label}
+                    {tab.id === "ai" && <span style={{ padding: "1px 5px", background: "var(--text)", color: "var(--bg)", borderRadius: 4, fontSize: 8, letterSpacing: 1 }}>AI</span>}
+                  </span>
+                </>
               );
-              return (
-                <button key={tab.id} className="tab-btn" onClick={() => setActiveTab(tab.id)} style={tabStyle}>
-                  <span style={{ fontSize: 11, opacity: 0.7 }}>{tab.icon}</span>
-                  {tab.label}
-                  {tab.id === "ai" && <span style={{ marginLeft: 2, padding: "1px 5px", background: "var(--text)", color: "var(--bg)", borderRadius: 4, fontSize: 8, letterSpacing: 1 }}>AI</span>}
-                  {tab.id === "compare" && <span style={{ marginLeft: 2, padding: "1px 5px", background: "rgba(201,168,76,0.15)", color: "#c9a84c", borderRadius: 4, fontSize: 8 }}>NEW</span>}
-                </button>
-              );
+              if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle}>{content}</Link>;
+              return <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={tabStyle}>{content}</button>;
             })}
           </div>
+
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
             {/* Currency selector */}
             <div style={{ position: "relative" }}>
@@ -785,81 +822,103 @@ export default function AppPage() {
           </AnimatePresence>
           <AnimatePresence mode="wait">
             {!data && !loading ? (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Empty /></motion.div>
+              <motion.div key="empty" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}><Empty /></motion.div>
             ) : loading ? (
-              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Spinner /></motion.div>
+              <motion.div key="loading" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}><Spinner /></motion.div>
             ) : activeTab === "overview" ? (
-              <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="c-metrics" style={S.metricsGrid}><Metrics data={data} currency={currency} rate={rate} /></div>
-                <Card>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                    <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
-                    <button onClick={() => { setWhatIfMode(w => !w); if (!whatIfMode) { const init: Record<string,number> = {}; assets.forEach(a => { init[a.ticker] = a.weight; }); setWhatIfWeights(init); } }}
-                      style={{ padding: "4px 10px", fontSize: 10, borderRadius: 6, border: "0.5px solid var(--border2)", background: whatIfMode ? "var(--text)" : "transparent", color: whatIfMode ? "var(--bg)" : "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}>
-                      {whatIfMode ? "✕ Exit What-if" : "◎ What-if"}
-                    </button>
-                  </div>
-                  {whatIfMode ? (
-                    <div>
-                      <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14 }}>Adjust weights to explore allocation scenarios. Re-analyze to see updated metrics.</p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-                        {assets.map(a => {
-                          const w = whatIfWeights[a.ticker] ?? a.weight;
-                          const total = Object.values(whatIfWeights).reduce((s, v) => s + v, 0) || 1;
-                          return (
-                            <div key={a.ticker}>
-                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                                <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text)" }}>{a.ticker}</span>
-                                <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text2)" }}>{((w / total) * 100).toFixed(0)}%</span>
-                              </div>
-                              <input type="range" min={1} max={100} value={w} onChange={e => setWhatIfWeights(prev => ({ ...prev, [a.ticker]: Number(e.target.value) }))}
-                                style={{ width: "100%", accentColor: "#c9a84c" }} />
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <button onClick={() => { const total = Object.values(whatIfWeights).reduce((s,v)=>s+v,0)||1; const updated = assets.map(a => ({ ...a, weight: Math.round((whatIfWeights[a.ticker]??a.weight)/total*100) })); setAssets(updated); setWhatIfMode(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
-                        style={{ padding: "8px 18px", fontSize: 11, background: "#c9a84c", border: "none", borderRadius: 8, color: "#0a0e14", fontWeight: 600, cursor: "pointer", marginRight: 8 }}>
-                        Apply & Re-analyze
+              <motion.div key="overview" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                <motion.div
+                  className="c-metrics"
+                  style={S.metricsGrid}
+                  initial="hidden"
+                  animate="visible"
+                  variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
+                  <Metrics data={data} currency={currency} rate={rate} />
+                </motion.div>
+                <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
+                  <Card>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
+                      <button onClick={() => { setWhatIfMode(w => !w); if (!whatIfMode) { const init: Record<string,number> = {}; assets.forEach(a => { init[a.ticker] = a.weight; }); setWhatIfWeights(init); } }}
+                        style={{ padding: "4px 10px", fontSize: 10, borderRadius: 6, border: "0.5px solid var(--border2)", background: whatIfMode ? "var(--text)" : "transparent", color: whatIfMode ? "var(--bg)" : "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}>
+                        {whatIfMode ? "Exit What-if" : "What-if"}
                       </button>
                     </div>
-                  ) : (
-                    <PerformanceChart data={data} />
-                  )}
-                </Card>
-                <div className="c-bgrid" style={S.bottomGrid}>
-                  <Card style={{ marginBottom: 0 }}><CardHeader title="Health Score" /><HealthScore data={data} /></Card>
-                  <Card style={{ marginBottom: 0 }}><CardHeader title="AI Insights" /><AiInsights data={data} assets={assets} onAskAi={() => setActiveTab("ai")} /></Card>
-                  <Card style={{ marginBottom: 0 }}><CardHeader title={`vs ${benchLabel}`} /><BenchmarkComparison data={data} /></Card>
-                </div>
-                <Card style={{ marginTop: 12 }}><CardHeader title="Allocation" /><Breakdown assets={assets} /></Card>
+                    {whatIfMode ? (
+                      <div>
+                        <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14 }}>Adjust weights to explore allocation scenarios. Re-analyze to see updated metrics.</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                          {assets.map(a => {
+                            const w = whatIfWeights[a.ticker] ?? a.weight;
+                            const total = Object.values(whatIfWeights).reduce((s, v) => s + v, 0) || 1;
+                            return (
+                              <div key={a.ticker}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                                  <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text)" }}>{a.ticker}</span>
+                                  <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text2)" }}>{((w / total) * 100).toFixed(0)}%</span>
+                                </div>
+                                <input type="range" min={1} max={100} value={w} onChange={e => setWhatIfWeights(prev => ({ ...prev, [a.ticker]: Number(e.target.value) }))}
+                                  style={{ width: "100%", accentColor: "var(--accent)" }} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <button onClick={() => { const total = Object.values(whatIfWeights).reduce((s,v)=>s+v,0)||1; const updated = assets.map(a => ({ ...a, weight: Math.round((whatIfWeights[a.ticker]??a.weight)/total*100) })); setAssets(updated); setWhatIfMode(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
+                          style={{ padding: "8px 18px", fontSize: 11, background: "var(--accent)", border: "none", borderRadius: 8, color: "#0a0e14", fontWeight: 600, cursor: "pointer", marginRight: 8 }}>
+                          Apply & Re-analyze
+                        </button>
+                      </div>
+                    ) : (
+                      <PerformanceChart data={data} />
+                    )}
+                  </Card>
+                </motion.div>
+                <motion.div
+                  className="c-bgrid"
+                  style={{ ...S.bottomGrid }}
+                  initial="hidden"
+                  animate="visible"
+                  variants={{ visible: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } } }}>
+                  {[
+                    { title: "Health Score", content: <HealthScore data={data} /> },
+                    { title: "AI Insights", content: <AiInsights data={data} assets={assets} onAskAi={() => setActiveTab("ai")} /> },
+                    { title: `vs ${benchLabel}`, content: <BenchmarkComparison data={data} /> },
+                  ].map(({ title, content }) => (
+                    <motion.div key={title} variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
+                      <Card style={{ marginBottom: 0 }}><CardHeader title={title} />{content}</Card>
+                    </motion.div>
+                  ))}
+                </motion.div>
+                <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} style={{ marginTop: 12 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
+                  <Card><CardHeader title="Allocation" /><Breakdown assets={assets} /></Card>
+                </motion.div>
                 <PortfolioHistory />
               </motion.div>
             ) : activeTab === "risk" ? (
-              <motion.div key="risk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div key="risk" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Drawdown" tooltip="Shows the largest peak-to-trough loss in your portfolio over the selected period. Deeper troughs = higher risk." /><DrawdownChart assets={assets} period={period} /></Card>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Correlation" tooltip="Shows how your assets move together. Values near 1.0 mean they crash together, reducing diversification benefit." /><CorrelationHeatmap assets={assets} period={period} /></Card>
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (
-              <motion.div key="simulate" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div key="simulate" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
                 <Card><CardHeader title="Monte Carlo Simulation" /><MonteCarloChart assets={assets} period={period} /></Card>
               </motion.div>
             ) : activeTab === "compare" ? (
-              <motion.div key="compare" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div key="compare" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
                 <CompareTab assets={assets} period={period} benchmark={benchmark} benchmarkLabel={benchLabel} currentData={data} />
               </motion.div>
             ) : activeTab === "news" ? (
-              <motion.div key="news" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div key="news" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
                 <Card><CardHeader title="Market News" /><NewsFeed assets={assets} /></Card>
               </motion.div>
             ) : activeTab === "watchlist" ? (
-              <motion.div key="watchlist" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div key="watchlist" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
                 <Watchlist />
               </motion.div>
             ) : activeTab === "ai" ? (
-              <motion.div key="ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              <motion.div key="ai" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}
                 style={{ height: "calc(100vh - 96px)", display: "flex", flexDirection: "column" }}>
                 <AiChat data={data} assets={assets} goals={goals} />
               </motion.div>
@@ -869,10 +928,15 @@ export default function AppPage() {
       </div>
 
       {/* Mobile floating Analyze button */}
-      <button className="c-mob-analyze" onClick={handleAnalyze} disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
-        style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 150, padding: "13px 40px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "var(--bg3)" : "var(--text)", color: loading ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 24, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.3)", transition: "all 0.2s" }}>
-        {loading ? "Analyzing..." : "▶  Analyze  ↵"}
-      </button>
+      <motion.button
+        className="c-mob-analyze"
+        onClick={handleAnalyze}
+        disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
+        animate={analyzeComplete ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+        transition={{ duration: 0.35 }}
+        style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 150, padding: "13px 40px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "var(--bg3)" : "var(--text)", color: loading ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 24, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.3)", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
+        {loading ? "Analyzing..." : "Analyze"}
+      </motion.button>
 
       <AnimatePresence>
         {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} />}
