@@ -635,6 +635,11 @@ export default function AppPage() {
     localStorage.setItem("corvo_sidebar_collapsed", String(next));
   };
 
+  useEffect(() => {
+    const t = setTimeout(() => window.dispatchEvent(new Event("resize")), 300);
+    return () => clearTimeout(t);
+  }, [sidebarCollapsed]);
+
   return (
     <div style={S.app}>
       <style>{`
@@ -884,8 +889,8 @@ export default function AppPage() {
                     { title: "AI Insights", content: <AiInsights data={data} assets={assets} onAskAi={() => setActiveTab("ai")} /> },
                     { title: `vs ${benchLabel}`, content: <BenchmarkComparison data={data} /> },
                   ].map(({ title, content }) => (
-                    <motion.div key={title} variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
-                      <Card style={{ marginBottom: 0 }}><CardHeader title={title} />{content}</Card>
+                    <motion.div key={title} variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }} style={{ display: "flex", flexDirection: "column" }}>
+                      <Card style={{ marginBottom: 0, flex: 1 }}><CardHeader title={title} />{content}</Card>
                     </motion.div>
                   ))}
                 </motion.div>
