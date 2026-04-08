@@ -354,7 +354,7 @@ export default function AppPage() {
   useEffect(() => {
     const g = localStorage.getItem("corvo_goals");
     if (g && g !== "skipped") { try { setGoals(JSON.parse(g)); } catch {} }
-    else setShowGoals(true);
+    // showGoals is controlled by the onboarding Supabase check below — not localStorage
 
     // Load alert count
     try {
@@ -433,10 +433,11 @@ export default function AppPage() {
         }
       }
 
-      // If goals modal won't show (goals already saved), trigger tour immediately
-      const goalsData = localStorage.getItem("corvo_goals");
-      if (goalsData) setShowTour(true);
-      // Otherwise goals modal will show, and its callbacks will trigger the tour
+      // Always show goals modal first, unless demo mode or shared portfolio
+      const params2 = new URLSearchParams(window.location.search);
+      if (!params2.get("portfolio") && params2.get("demo") !== "true") {
+        setShowGoals(true);
+      }
     })();
   }, []);
 

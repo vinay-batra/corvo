@@ -21,6 +21,7 @@
   --input-bg:    #ffffff;
   --input-border: rgba(0,0,0,0.15);
   --shadow:      0 1px 4px rgba(0,0,0,0.06);
+  --track:       rgba(0,0,0,0.08);
 }
 
 /* ── Dark mode ── */
@@ -38,6 +39,7 @@
   --input-bg:    #1a1a18;
   --input-border: rgba(255,255,255,0.12);
   --shadow:      0 1px 4px rgba(0,0,0,0.4);
+  --track:       rgba(255,255,255,0.06);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

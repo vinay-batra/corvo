@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 
-const C = { amber: "#c9a84c", cream: "#e8e0cc", cream2: "rgba(232,224,204,0.6)", cream3: "rgba(232,224,204,0.25)", border: "rgba(255,255,255,0.06)" };
+const C = { amber: "#c9a84c" };
 
 export default function AiInsights({ data, assets, onAskAi }: { data:any; assets:any[]; onAskAi:()=>void }) {
   const [hovered, setHovered] = useState<number|null>(null);
@@ -51,7 +51,7 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
           onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}
           style={{display:"flex",gap:8,alignItems:"flex-start",padding:"7px 8px",background:hovered===i?"rgba(201,168,76,0.05)":"transparent",border:"1px solid",borderColor:hovered===i?"rgba(201,168,76,0.15)":"transparent",borderRadius:8,transition:"all 0.15s"}}>
           <div style={{width:18,height:18,borderRadius:"50%",border:`1px solid rgba(201,168,76,0.2)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0,marginTop:1,background:"rgba(201,168,76,0.08)",color:C.amber}}>{ins.icon}</div>
-          <p style={{fontSize:11,color:C.cream2,lineHeight:1.55}}>{ins.text}</p>
+          <p style={{fontSize:11,color:"var(--text2)",lineHeight:1.55}}>{ins.text}</p>
         </motion.div>
       ))}
 
@@ -63,7 +63,7 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
             {rebalanceSuggestions.map((s,i)=>(
               <div key={i} style={{display:"flex",gap:6,alignItems:"flex-start"}}>
                 <span style={{color:C.amber,fontSize:9,marginTop:2,flexShrink:0}}>▸</span>
-                <p style={{fontSize:11,color:C.cream2,lineHeight:1.5}}>{s}</p>
+                <p style={{fontSize:11,color:"var(--text2)",lineHeight:1.5}}>{s}</p>
               </div>
             ))}
           </div>
