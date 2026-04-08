@@ -43,7 +43,7 @@ const RED   = "#e05c5c";
 
 const LEVELS = [
   { min: 0,    max: 99,   name: "Beginner",  color: "#9b9b98" },
-  { min: 100,  max: 299,  name: "Investor",  color: "#4a9eff" },
+  { min: 100,  max: 299,  name: "Investor",  color: "#c9a84c" },
   { min: 300,  max: 599,  name: "Analyst",   color: AMBER },
   { min: 600,  max: 999,  name: "Expert",    color: "#a78bfa" },
   { min: 1000, max: Infinity, name: "Master", color: "#f97316" },
@@ -1175,7 +1175,7 @@ const ARCADE_GAMES = [
   { id: "sharpe-game",   title: "Guess the Sharpe",       desc: "Calculate Sharpe ratios from real portfolio data.",                color: AMBER,     Icon: Target,       xp: 20, difficulty: "Medium" },
   { id: "crash-sim",     title: "Market Crash Simulator", desc: "Guess how far markets fell in famous historical crashes.",         color: "#e05c5c",  Icon: TrendingDown, xp: 15, difficulty: "Easy"   },
   { id: "options-game",  title: "Options P&L Calculator", desc: "Calculate profit/loss on calls and puts at expiry.",               color: "#a78bfa",  Icon: Calculator,   xp: 15, difficulty: "Medium" },
-  { id: "inflation-game",title: "Inflation Impact",       desc: "Real vs nominal returns — does your money keep up?",              color: "#4a9eff",  Icon: Percent,      xp: 10, difficulty: "Easy"   },
+  { id: "inflation-game",title: "Inflation Impact",       desc: "Real vs nominal returns — does your money keep up?",              color: "#b47ee0",  Icon: Percent,      xp: 10, difficulty: "Easy"   },
   { id: "fed-game",      title: "Fed Rate Decision",      desc: "Given macro indicators, what should the Fed do?",                 color: "#4caf7d",  Icon: Building2,    xp: 15, difficulty: "Hard"   },
   { id: "builder-game",  title: "Portfolio Challenge",    desc: "Pick assets to hit a specific goal — maximize Sharpe or diversify.",color: "#f97316",  Icon: BarChart2,    xp: 20, difficulty: "Easy"   },
   { id: "valuation-game",title: "Stock Valuation Showdown",desc: "Pick the more undervalued stock given P/E, EPS, and growth rate.", color: AMBER,     Icon: GitCompare,   xp: 20, difficulty: "Hard"   },
@@ -1199,6 +1199,44 @@ export default function LearnPage() {
   const [userId, setUserId]       = useState<string | null>(null);
   const [learnPoints, setLearnPoints] = useState(0);
 
+  // Daily challenge
+  const [dailyQuestion, setDailyQuestion]       = useState<{ question: string; options: string[]; correct: number; explanation: string } | null>(null);
+  const [dailyCompleted, setDailyCompleted]     = useState(false);
+  const [dailyLoading, setDailyLoading]         = useState(false);
+  const [dailySelected, setDailySelected]       = useState<number | null>(null);
+  const [dailyShowResult, setDailyShowResult]   = useState(false);
+  const [midnightCountdown, setMidnightCountdown] = useState("");
+
+  // Countdown to midnight UTC
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+      const diff = midnight.getTime() - now.getTime();
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setMidnightCountdown(`${h}h ${m}m ${s}s`);
+    };
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const fetchDailyQuestion = async () => {
+    setDailyLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/generate-questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: "investing", difficulty: "beginner", count: 1 }),
+      });
+      const d = await res.json();
+      if (d.questions?.[0]) setDailyQuestion(d.questions[0]);
+    } catch {}
+    setDailyLoading(false);
+  };
+
   useEffect(() => {
     try { setCompleted(JSON.parse(localStorage.getItem(COMPLETED_KEY) || "[]")); } catch {}
 
@@ -1209,7 +1247,7 @@ export default function LearnPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, xp, streak, last_activity_date, lessons_completed, lesson_progress")
+        .select("display_name, avatar_url, xp, streak, last_activity_date, lessons_completed, lesson_progress, last_daily_challenge")
         .eq("id", user.id)
         .single();
 
@@ -1225,6 +1263,15 @@ export default function LearnPage() {
         if (profile.lesson_progress && typeof profile.lesson_progress === "object") {
           setLessonProgress(profile.lesson_progress as Record<string, number[]>);
         }
+        // Check daily challenge
+        const today = new Date().toISOString().split("T")[0];
+        if (profile.last_daily_challenge === today) {
+          setDailyCompleted(true);
+        } else {
+          fetchDailyQuestion();
+        }
+      } else {
+        fetchDailyQuestion();
       }
 
       const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", user.id).single();
@@ -1319,6 +1366,21 @@ export default function LearnPage() {
     if (amount > 0) awardXP(amount);
   };
 
+  const submitDailyChallenge = async (optionIdx: number) => {
+    setDailySelected(optionIdx);
+    setDailyShowResult(true);
+    if (!dailyQuestion) return;
+    const isCorrect = optionIdx === dailyQuestion.correct;
+    if (isCorrect) {
+      await awardXP(25);
+    }
+    setDailyCompleted(true);
+    const today = new Date().toISOString().split("T")[0];
+    if (userId) {
+      await supabase.from("profiles").update({ last_daily_challenge: today }).eq("id", userId);
+    }
+  };
+
   const masteredLessons = LESSONS.filter(l => (lessonProgress[l.id]?.length ?? 0) >= l.quiz.length);
   const challengeUnlocked = masteredLessons.length >= 2;
 
@@ -1332,6 +1394,74 @@ export default function LearnPage() {
           {/* ── Home ── */}
           {activeSection === "home" && (
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+
+              {/* Daily Challenge */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{
+                  border: `0.5px solid ${dailyCompleted ? "rgba(76,175,125,0.3)" : `${AMBER}55`}`,
+                  borderRadius: 16, background: dailyCompleted ? "rgba(76,175,125,0.04)" : `${AMBER}0a`,
+                  padding: "20px 24px", position: "relative", overflow: "hidden",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: dailyQuestion && !dailyCompleted ? 16 : 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: dailyCompleted ? "rgba(76,175,125,0.15)" : `${AMBER}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <CalendarCheck size={18} color={dailyCompleted ? GREEN : AMBER} strokeWidth={1.5} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 1 }}>Daily Challenge</p>
+                        <p style={{ fontSize: 11, color: "var(--text3)" }}>
+                          {dailyCompleted
+                            ? <span style={{ color: GREEN }}>Completed · Next in {midnightCountdown}</span>
+                            : dailyLoading ? "Loading question…"
+                            : "+25 XP · Resets at midnight UTC"}
+                        </p>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 20, background: dailyCompleted ? "rgba(76,175,125,0.15)" : `${AMBER}18`, color: dailyCompleted ? GREEN : AMBER }}>
+                      {dailyCompleted ? "Done" : "+25 XP"}
+                    </span>
+                  </div>
+
+                  {/* Question */}
+                  {!dailyCompleted && dailyQuestion && (
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text)", marginBottom: 12, lineHeight: 1.5 }}>{dailyQuestion.question}</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                        {dailyQuestion.options.map((opt, i) => {
+                          const isSelected = dailySelected === i;
+                          const isCorrect = i === dailyQuestion.correct;
+                          let bg = "var(--bg2)";
+                          let border = "var(--border)";
+                          let color = "var(--text2)";
+                          if (dailyShowResult) {
+                            if (isCorrect) { bg = "rgba(76,175,125,0.12)"; border = "rgba(76,175,125,0.4)"; color = GREEN; }
+                            else if (isSelected && !isCorrect) { bg = "rgba(224,92,92,0.1)"; border = "rgba(224,92,92,0.4)"; color = RED; }
+                          }
+                          return (
+                            <button key={i} onClick={() => { if (!dailyShowResult) submitDailyChallenge(i); }}
+                              disabled={dailyShowResult}
+                              style={{ textAlign: "left", padding: "10px 14px", borderRadius: 10, border: `0.5px solid ${border}`, background: bg, color, fontSize: 13, cursor: dailyShowResult ? "default" : "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, width: 16, flexShrink: 0 }}>{String.fromCharCode(65 + i)}</span>
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {dailyShowResult && dailyQuestion.explanation && (
+                        <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--bg2)", borderRadius: 10, border: "0.5px solid var(--border)" }}>
+                          <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>{dailyQuestion.explanation}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!dailyCompleted && !dailyQuestion && !dailyLoading && (
+                    <button onClick={fetchDailyQuestion} style={{ marginTop: 8, padding: "8px 16px", fontSize: 12, borderRadius: 8, border: `0.5px solid ${AMBER}44`, background: `${AMBER}0d`, color: AMBER, cursor: "pointer" }}>
+                      Load question
+                    </button>
+                  )}
+                </div>
+              </div>
 
               {/* Challenge Mode */}
               <div style={{ marginBottom: 40 }}>

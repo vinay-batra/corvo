@@ -6,7 +6,7 @@ import { fetchPortfolio } from "../lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const COLORS = { current: "#c9a84c", whatif: "#5b9cf6" };
+const COLORS = { current: "#c9a84c", whatif: "#5cb88a" };
 
 interface Asset { ticker: string; weight: number; }
 

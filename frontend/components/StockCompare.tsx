@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const PALETTE = ["#c9a84c", "#5b9cf6", "#5cb88a", "#e05c5c"];
+const PALETTE = ["#c9a84c", "#b47ee0", "#5cb88a", "#e05c5c"];
 const MAX = 4;
 
 interface StockInfo {

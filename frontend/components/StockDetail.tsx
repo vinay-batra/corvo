@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import NewsFeed from "./NewsFeed";
+import { Eye, EyeOff } from "lucide-react";
+
+const STORAGE_KEY = "corvo_watchlist";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
@@ -61,6 +64,30 @@ export default function StockDetail({ ticker, onBack }: { ticker: string; onBack
   const [histDates, setHistDates] = useState<string[]>([]);
   const [histPrices, setHistPrices] = useState<number[]>([]);
   const [histLoading, setHistLoading] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const items: { ticker: string }[] = raw ? JSON.parse(raw) : [];
+      setInWatchlist(items.some(i => i.ticker === ticker));
+    } catch {}
+  }, [ticker]);
+
+  const toggleWatchlist = () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const items: { ticker: string; addedAt: string }[] = raw ? JSON.parse(raw) : [];
+      let next;
+      if (inWatchlist) {
+        next = items.filter(i => i.ticker !== ticker);
+      } else {
+        next = [...items, { ticker, addedAt: new Date().toISOString() }];
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      setInWatchlist(!inWatchlist);
+    } catch {}
+  };
 
   useEffect(() => {
     setLoading(true); setError(null);
@@ -108,7 +135,14 @@ export default function StockDetail({ ticker, onBack }: { ticker: string; onBack
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {/* Back + header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-        <button onClick={onBack} style={{ padding: "6px 12px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer", flexShrink: 0 }}>← Back</button>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <button onClick={onBack} style={{ padding: "6px 12px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>← Back</button>
+          <button onClick={toggleWatchlist}
+            style={{ padding: "6px 12px", fontSize: 12, borderRadius: 8, border: `0.5px solid ${inWatchlist ? "#c9a84c55" : "var(--border)"}`, background: inWatchlist ? "rgba(201,168,76,0.1)" : "transparent", color: inWatchlist ? "#c9a84c" : "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s" }}>
+            {inWatchlist ? <EyeOff size={12} /> : <Eye size={12} />}
+            {inWatchlist ? "Watching" : "Watch"}
+          </button>
+        </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5 }}>{info.ticker}</h1>
