@@ -11,7 +11,7 @@ import {
 import CommandPalette from "../../components/CommandPalette";
 import StockDetail from "../../components/StockDetail";
 import { OverviewSkeleton } from "../../components/SkeletonLoader";
-import { useSoundEffects } from "../../hooks/useSoundEffects";
+import { useSoundEffects, unlockAudio } from "../../hooks/useSoundEffects";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import Metrics from "../../components/Metrics";
 import PerformanceChart from "../../components/PerformanceChart";
@@ -54,10 +54,10 @@ const PERIODS = ["6mo", "1y", "2y", "5y"];
 const PERIOD_LABELS: Record<string, string> = { "6mo": "6M", "1y": "1Y", "2y": "2Y", "5y": "5Y" };
 
 const PRESETS = [
-  { label: "Tech Heavy",  assets: [{ ticker: "AAPL", weight: 25 }, { ticker: "MSFT", weight: 25 }, { ticker: "NVDA", weight: 25 }, { ticker: "GOOGL", weight: 25 }] },
-  { label: "Diversified", assets: [{ ticker: "SPY",  weight: 40 }, { ticker: "BND",  weight: 30 }, { ticker: "GLD",  weight: 15 }, { ticker: "VNQ",   weight: 15 }] },
-  { label: "Crypto Mix",  assets: [{ ticker: "BTC",  weight: 60 }, { ticker: "ETH",  weight: 40 }] },
-  { label: "Dividend",    assets: [{ ticker: "VIG",  weight: 35 }, { ticker: "SCHD", weight: 35 }, { ticker: "JNJ",  weight: 15 }, { ticker: "KO",    weight: 15 }] },
+  { label: "Tech Heavy",  assets: [{ ticker: "AAPL", weight: 0.25 }, { ticker: "MSFT", weight: 0.25 }, { ticker: "NVDA", weight: 0.25 }, { ticker: "GOOGL", weight: 0.25 }] },
+  { label: "Diversified", assets: [{ ticker: "SPY",  weight: 0.40 }, { ticker: "BND",  weight: 0.30 }, { ticker: "GLD",  weight: 0.15 }, { ticker: "VNQ",   weight: 0.15 }] },
+  { label: "Crypto Mix",  assets: [{ ticker: "BTC",  weight: 0.60 }, { ticker: "ETH",  weight: 0.40 }] },
+  { label: "Dividend",    assets: [{ ticker: "VIG",  weight: 0.35 }, { ticker: "SCHD", weight: 0.35 }, { ticker: "JNJ",  weight: 0.15 }, { ticker: "KO",    weight: 0.15 }] },
 ];
 
 const BENCHMARKS = [
@@ -495,11 +495,24 @@ export default function AppPage() {
   const handleAnalyzeRef = useRef(handleAnalyze);
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
   useEffect(() => {
+    const SHIFT_MAP: Record<string, string> = {
+      "a": "overview", "h": "overview",
+      "s": "stocks", "l": "learn",
+      "w": "watchlist",
+    };
     const handler = (e: KeyboardEvent) => {
       // Cmd+K / Ctrl+K → command palette
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setPaletteOpen(o => !o);
+        return;
+      }
+      // Cmd+Shift+A/S/L/W → quick tab jump
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && SHIFT_MAP[e.key.toLowerCase()]) {
+        e.preventDefault();
+        const tabId = SHIFT_MAP[e.key.toLowerCase()];
+        setActiveTab(tabId);
+        sound.whoosh();
         return;
       }
       if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
@@ -509,6 +522,13 @@ export default function AppPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // Unlock Web Audio API on first user interaction
+  useEffect(() => {
+    const unlock = () => { unlockAudio(); window.removeEventListener("click", unlock, true); };
+    window.addEventListener("click", unlock, true);
+    return () => window.removeEventListener("click", unlock, true);
   }, []);
 
   const exportCSV = () => {
@@ -1086,6 +1106,50 @@ export default function AppPage() {
         onToggleDark={toggleDark}
         dark={dark}
       />
+
+      {/* Floating ? cheatsheet button */}
+      <CheatsheetButton onOpenPalette={() => setPaletteOpen(true)} />
+    </div>
+  );
+}
+
+function CheatsheetButton({ onOpenPalette }: { onOpenPalette: () => void }) {
+  const [show, setShow] = useState(false);
+  const SHORTCUTS = [
+    { keys: "⌘K",      label: "Command palette" },
+    { keys: "⌘⇧S",    label: "Stocks tab" },
+    { keys: "⌘⇧W",    label: "Watchlist tab" },
+    { keys: "⌘⇧L",    label: "Learn tab" },
+    { keys: "⌘⇧A",    label: "Dashboard tab" },
+    { keys: "↵",       label: "Run analysis" },
+  ];
+  return (
+    <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 300 }}>
+      <AnimatePresence>
+        {show && (
+          <motion.div initial={{ opacity: 0, y: 8, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.96 }}
+            style={{ position: "absolute", bottom: "calc(100% + 8px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 12, padding: "14px 16px", width: 230, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+            <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Keyboard Shortcuts</p>
+            {SHORTCUTS.map(s => (
+              <div key={s.keys} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: "0.5px solid var(--border)" }}>
+                <span style={{ fontSize: 11, color: "var(--text2)" }}>{s.label}</span>
+                <kbd style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--accent)", background: "var(--bg3)", padding: "2px 6px", borderRadius: 4, border: "0.5px solid var(--border2)" }}>{s.keys}</kbd>
+              </div>
+            ))}
+            <button onClick={onOpenPalette}
+              style={{ width: "100%", marginTop: 10, padding: "7px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text2)", fontSize: 11, cursor: "pointer", letterSpacing: 0.5 }}>
+              Open Command Palette
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <button
+        onClick={() => setShow(s => !s)}
+        style={{ width: 36, height: 36, borderRadius: "50%", border: "0.5px solid var(--border2)", background: "var(--card-bg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--text3)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)", transition: "all 0.15s" }}
+        onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+        onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border2)"; }}>
+        ?
+      </button>
     </div>
   );
 }

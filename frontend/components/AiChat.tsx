@@ -115,10 +115,32 @@ export default function AiChat({ data, assets, goals: goalsProp }: {
     setMessages(nextHistory);
     setLoading(true);
     try {
+      // Fetch real-time prices for portfolio tickers before each message
+      const tickers: string[] = portfolioContext.tickers || [];
+      let market_context = "";
+      if (tickers.length > 0) {
+        try {
+          const priceResults = await Promise.all(
+            tickers.slice(0, 8).map(async (ticker: string) => {
+              try {
+                const r = await fetch(`${API_URL}/stock/${encodeURIComponent(ticker)}`);
+                if (!r.ok) return null;
+                const d = await r.json();
+                return `${ticker}: $${d.price?.toFixed(2) ?? "N/A"} (${d.change_pct != null ? (d.change_pct >= 0 ? "+" : "") + d.change_pct.toFixed(2) + "%" : "N/A"})`;
+              } catch { return null; }
+            })
+          );
+          const lines = priceResults.filter(Boolean);
+          if (lines.length > 0) {
+            market_context = `Current prices — ${lines.join(", ")}`;
+          }
+        } catch {}
+      }
+
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg, history: messages, portfolio_context: portfolioContext }),
+        body: JSON.stringify({ message: msg, history: messages, portfolio_context: portfolioContext, market_context }),
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const d = await res.json();
