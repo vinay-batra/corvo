@@ -797,6 +797,69 @@ RESPONSE RULES:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class GenerateQuestionsRequest(BaseModel):
+    topic: str
+    difficulty: str = "beginner"
+    count: int = 5
+    previously_wrong: list[str] = []
+
+
+@app.post("/generate-questions")
+def generate_questions(req: GenerateQuestionsRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "generate-questions", 10, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+
+    if req.difficulty not in ("beginner", "intermediate", "advanced"):
+        raise HTTPException(status_code=400, detail="difficulty must be beginner, intermediate, or advanced")
+    count = max(1, min(20, req.count))
+
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+    client = anthropic.Anthropic(api_key=api_key)
+
+    wrong_clause = ""
+    if req.previously_wrong:
+        wrong_clause = (
+            f" Focus especially on these concepts where the user struggled: "
+            f"{', '.join(req.previously_wrong)}."
+        )
+
+    system = "You are a financial education expert. Return ONLY valid JSON, no other text, no markdown fences."
+    prompt = (
+        f"Generate {count} multiple choice questions about {req.topic} at {req.difficulty} level."
+        f"{wrong_clause} "
+        f"Return ONLY a JSON array, no other text:\n"
+        f'[{{"question": "...", "options": ["A","B","C","D"], "correct": 0, "explanation": "..."}}]'
+    )
+
+    def call_claude() -> str:
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2000,
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.content[0].text.strip()
+
+    raw = call_claude()
+    try:
+        questions = json.loads(raw)
+    except json.JSONDecodeError:
+        raw = call_claude()
+        try:
+            questions = json.loads(raw)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=500, detail="Failed to generate valid questions. Please try again.")
+
+    if not isinstance(questions, list):
+        raise HTTPException(status_code=500, detail="Unexpected response format.")
+
+    return {"questions": questions}
+
+
 @app.post("/parse-portfolio-image")
 def parse_portfolio_image(body: dict):
     try:

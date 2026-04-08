@@ -1,11 +1,32 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import {
+  BrainCircuit,
+  Swords,
+  TrendingDown,
+  Landmark,
+  PiggyBank,
+  BarChart2,
+  Timer,
+  Trophy,
+  RefreshCw,
+  CheckCircle2,
+  BookOpen,
+  Star,
+  Flame,
+  Lock,
+  ChevronRight,
+  AlertCircle,
+  TrendingUp,
+  Target,
+} from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 // ── Constants ────────────────────────────────────────────────────────────────
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const AMBER = "#c9a84c";
 const GREEN = "#4caf7d";
 const RED   = "#e05c5c";
@@ -25,48 +46,11 @@ function getProgressPct(xp: number) {
   if (!nxt) return 100;
   return Math.min(100, ((xp - cur.min) / (nxt.min - cur.min)) * 100);
 }
-
-// ── SVG Icons ────────────────────────────────────────────────────────────────
-function FlameIcon({ size = 16, active = true }: { size?: number; active?: boolean }) {
-  return (
-    <svg width={size} height={size * 1.2} viewBox="0 0 20 24" fill="none">
-      <path d="M10 2C10 2 15 8 15 13C15 16.31 12.76 18 10 18C7.24 18 5 16.31 5 13C5 10 6.5 7.5 6.5 7.5C6.5 7.5 7 10 9 10C9 10 7.5 6 10 2Z"
-        fill={active ? "#f97316" : "var(--text3)"} />
-      <path d="M10 13C10 13 11.8 12 11.8 13.8C11.8 14.9 11 15.5 10 15.5C9 15.5 8.2 14.9 8.2 13.8C8.2 12.8 10 13 10 13Z"
-        fill={active ? "#fbbf24" : "var(--text3)"} />
-    </svg>
-  );
-}
-function LockIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-    </svg>
-  );
-}
-function StarIcon({ size = 12 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={AMBER} stroke="none">
-      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-    </svg>
-  );
-}
-function CheckCircleIcon({ size = 48 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <polyline points="9 12 11 14 15 10"/>
-    </svg>
-  );
-}
-function BookOpenIcon({ size = 48 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-    </svg>
-  );
+function getAIDifficulty(xp: number): "beginner" | "intermediate" | "advanced" {
+  const lvl = getLevel(xp);
+  if (lvl.name === "Beginner") return "beginner";
+  if (lvl.name === "Investor") return "intermediate";
+  return "advanced";
 }
 
 // ── XP Toast ─────────────────────────────────────────────────────────────────
@@ -86,7 +70,7 @@ function XPToast({ amount, onDone }: { amount: number; onDone: () => void }) {
         boxShadow: "0 8px 32px rgba(201,168,76,0.45)", zIndex: 2000,
         display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
       }}>
-      <StarIcon size={14} /> +{amount} XP
+      <Star size={14} fill={AMBER} color={AMBER} /> +{amount} XP
     </motion.div>
   );
 }
@@ -109,7 +93,6 @@ function LearnHeader({ xp, streak, displayName, avatarUrl }: { xp: number; strea
   const lvl = getLevel(xp); const nxt = getNextLevel(xp); const pct = getProgressPct(xp);
   return (
     <div style={{ background: "var(--bg2)", borderBottom: "0.5px solid var(--border)" }}>
-      {/* Nav */}
       <nav style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", borderBottom: "0.5px solid var(--border)" }}>
         <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
           <img src="/corvo-logo.svg" width={24} height={20} alt="Corvo" />
@@ -119,9 +102,7 @@ function LearnHeader({ xp, streak, displayName, avatarUrl }: { xp: number; strea
         <Link href="/app" style={{ fontSize: 12, color: "var(--text3)", textDecoration: "none" }}>← Analyzer</Link>
       </nav>
 
-      {/* XP / streak bar */}
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "14px 28px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        {/* Avatar */}
         {avatarUrl ? (
           <img src={avatarUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "0.5px solid var(--border2)", flexShrink: 0 }} />
         ) : (
@@ -143,9 +124,8 @@ function LearnHeader({ xp, streak, displayName, avatarUrl }: { xp: number; strea
           </div>
         </div>
 
-        {/* Streak */}
         <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: streak > 0 ? "rgba(249,115,22,0.1)" : "var(--bg3)", border: `0.5px solid ${streak > 0 ? "rgba(249,115,22,0.3)" : "var(--border)"}`, flexShrink: 0 }}>
-          <FlameIcon size={14} active={streak > 0} />
+          <Flame size={14} color={streak > 0 ? "#f97316" : "var(--text3)"} fill={streak > 0 ? "#f97316" : "none"} />
           <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: streak > 0 ? "#f97316" : "var(--text3)" }}>{streak}</span>
           <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>day{streak !== 1 ? "s" : ""}</span>
         </div>
@@ -184,10 +164,7 @@ function SharpGame({ onXP }: { onXP: (n: number) => void }) {
   };
 
   const next = () => {
-    if (round >= SHARPE_ROUNDS.length - 1) {
-      setDone(true);
-      return;
-    }
+    if (round >= SHARPE_ROUNDS.length - 1) { setDone(true); return; }
     setRound(r => r + 1); setGuess(""); setSubmitted(false);
   };
 
@@ -196,16 +173,20 @@ function SharpGame({ onXP }: { onXP: (n: number) => void }) {
     : score;
 
   useEffect(() => {
-    if (done && !xpAwarded && finalScore >= 3) {
-      onXP(20); setXpAwarded(true);
-    }
+    if (done && !xpAwarded && finalScore >= 3) { onXP(20); setXpAwarded(true); }
   }, [done]);
 
   const reset = () => { setRound(0); setGuess(""); setSubmitted(false); setScore(0); setDone(false); setHistory([]); setXpAwarded(false); };
 
   if (done) return (
     <div style={{ textAlign: "center", padding: "28px 0" }}>
-      <div style={{ fontSize: 44, marginBottom: 12 }}>{finalScore >= 4 ? "🎯" : finalScore >= 2 ? "📈" : "📚"}</div>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+        {finalScore >= 4
+          ? <Target size={44} color={AMBER} />
+          : finalScore >= 2
+            ? <TrendingUp size={44} color={GREEN} />
+            : <BookOpen size={44} color="var(--text3)" />}
+      </div>
       <p style={{ fontSize: 22, fontWeight: 500, color: "var(--text)", marginBottom: 8 }}>{finalScore} / {SHARPE_ROUNDS.length}</p>
       <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 22, lineHeight: 1.6 }}>
         {finalScore >= 4 ? "Excellent! Great intuition for risk-adjusted returns." : finalScore >= 2 ? "Good effort! Keep practicing." : "Sharpe intuition takes time — keep at it."}
@@ -259,7 +240,7 @@ function SharpGame({ onXP }: { onXP: (n: number) => void }) {
       ) : (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: isClose ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${isClose ? "rgba(76,175,125,0.35)" : "rgba(224,92,92,0.35)"}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
-            <p style={{ fontSize: 14, fontWeight: 500, color: isClose ? GREEN : RED, marginBottom: 5 }}>{isClose ? "✓ Correct!" : "✗ Not quite"}</p>
+            <p style={{ fontSize: 14, fontWeight: 500, color: isClose ? GREEN : RED, marginBottom: 5 }}>{isClose ? "Correct" : "Not quite"}</p>
             <p style={{ fontSize: 12, color: "var(--text3)" }}>
               Answer: <span style={{ fontFamily: "Space Mono, monospace", color: AMBER }}>{current.answer.toFixed(2)}</span>
               {" · "}({current.ret} − 4) ÷ {current.vol} = {current.answer.toFixed(2)}
@@ -267,7 +248,7 @@ function SharpGame({ onXP }: { onXP: (n: number) => void }) {
             <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>{current.hint}</p>
           </div>
           <button onClick={next} style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-            {round >= SHARPE_ROUNDS.length - 1 ? "See Results →" : "Next Round →"}
+            {round >= SHARPE_ROUNDS.length - 1 ? "See Results" : "Next Round"}
           </button>
         </motion.div>
       )}
@@ -300,44 +281,48 @@ function BuilderChallenge({ onXP }: { onXP: (n: number) => void }) {
     setSubmitted(true);
   };
 
+  const next = () => {
+    setChallenge(c => c + 1); setSelected([]); setSubmitted(false);
+  };
+
   return (
     <div>
-      <div style={{ background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", marginBottom: 18 }}>
-        <p style={{ fontSize: 9, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 5 }}>Challenge</p>
-        <p style={{ fontSize: 15, fontWeight: 500, color: "var(--text)", marginBottom: 6 }}>{current.goal}</p>
-        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.6 }}>{current.desc}</p>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+        <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Challenge {challenge + 1} of {CHALLENGES.length}</span>
       </div>
-      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 10 }}>Select 3 assets ({selected.length}/3):</p>
+      <div style={{ background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
+        <p style={{ fontSize: 9, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 5 }}>Goal</p>
+        <p style={{ fontSize: 15, fontWeight: 500, color: "var(--text)", marginBottom: 6 }}>{current.goal}</p>
+        <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.6 }}>{current.desc}</p>
+      </div>
+      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 10 }}>Pick 3 assets ({selected.length}/3 selected)</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
-        {current.assets.map(a => (
-          <button key={a} onClick={() => toggle(a)}
-            style={{ padding: "7px 14px", fontSize: 12, fontFamily: "Space Mono, monospace", fontWeight: 700, borderRadius: 8, cursor: selected.length >= 3 && !selected.includes(a) ? "not-allowed" : "pointer", opacity: selected.length >= 3 && !selected.includes(a) ? 0.4 : 1, background: selected.includes(a) ? `${AMBER}18` : "var(--bg2)", border: `0.5px solid ${selected.includes(a) ? `${AMBER}88` : "var(--border)"}`, color: selected.includes(a) ? AMBER : "var(--text2)", transition: "all 0.15s" }}>
-            {a}
-          </button>
-        ))}
+        {current.assets.map(a => {
+          const isSel = selected.includes(a);
+          return (
+            <button key={a} onClick={() => !submitted && toggle(a)}
+              style={{ padding: "8px 16px", background: isSel ? `${AMBER}22` : "var(--bg2)", border: `0.5px solid ${isSel ? AMBER : "var(--border)"}`, borderRadius: 8, color: isSel ? AMBER : "var(--text2)", fontSize: 13, fontWeight: isSel ? 600 : 400, cursor: submitted ? "default" : "pointer", fontFamily: "Space Mono, monospace" }}>
+              {a}
+            </button>
+          );
+        })}
       </div>
       {!submitted ? (
-        <button onClick={handleSubmit} disabled={selected.length < 3}
-          style={{ width: "100%", padding: "11px", background: selected.length >= 3 ? AMBER : "transparent", border: `0.5px solid var(--border)`, borderRadius: 9, color: selected.length >= 3 ? "#0a0e14" : "var(--text3)", fontSize: 13, fontWeight: 600, cursor: selected.length >= 3 ? "pointer" : "not-allowed" }}>
-          Check Answer
+        <button onClick={handleSubmit} disabled={selected.length !== 3}
+          style={{ width: "100%", padding: "11px", background: selected.length === 3 ? AMBER : "var(--bg3)", border: "none", borderRadius: 9, color: selected.length === 3 ? "#0a0e14" : "var(--text3)", fontSize: 13, fontWeight: 600, cursor: selected.length === 3 ? "pointer" : "default" }}>
+          Submit
         </button>
       ) : (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <div style={{ background: score >= 2 ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${score >= 2 ? "rgba(76,175,125,0.35)" : "rgba(224,92,92,0.35)"}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
-            <p style={{ fontSize: 14, fontWeight: 500, color: score >= 2 ? GREEN : RED, marginBottom: 5 }}>
-              {score === 3 ? "Perfect!" : score === 2 ? "Close!" : "Not quite"} — {score}/3 correct
-            </p>
-            <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 5 }}>Best answer: <span style={{ color: AMBER }}>{current.correct.join(", ")}</span></p>
-            <p style={{ fontSize: 11, color: "var(--text3)" }}>{current.hint}</p>
+          <div style={{ background: score >= 2 ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${score >= 2 ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+            <p style={{ fontSize: 14, fontWeight: 500, color: score >= 2 ? GREEN : RED, marginBottom: 5 }}>{score >= 2 ? "Well done!" : "Not quite"} — {score}/3 correct</p>
+            <p style={{ fontSize: 12, color: "var(--text3)" }}>Best picks: <span style={{ color: AMBER, fontFamily: "Space Mono, monospace" }}>{current.correct.join(", ")}</span></p>
+            <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>{current.hint}</p>
           </div>
-          {score >= 2 && !xpAwarded ? null : score >= 2 && <p style={{ fontSize: 11, color: AMBER, marginBottom: 10 }}>+20 XP earned!</p>}
-          {challenge < CHALLENGES.length - 1 ? (
-            <button onClick={() => { setChallenge(c => c + 1); setSelected([]); setSubmitted(false); setXpAwarded(false); }}
-              style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Next Challenge →</button>
-          ) : (
-            <button onClick={() => { setChallenge(0); setSelected([]); setSubmitted(false); setXpAwarded(false); }}
-              style={{ width: "100%", padding: "11px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>Start Over</button>
-          )}
+          {challenge < CHALLENGES.length - 1
+            ? <button onClick={next} style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Next Challenge</button>
+            : <p style={{ textAlign: "center", fontSize: 12, color: "var(--text3)" }}>All challenges complete!</p>
+          }
         </motion.div>
       )}
     </div>
@@ -347,7 +332,7 @@ function BuilderChallenge({ onXP }: { onXP: (n: number) => void }) {
 // ── Lessons & Quizzes ─────────────────────────────────────────────────────────
 const LESSONS = [
   {
-    id: "sharpe", title: "What is Sharpe Ratio?", icon: "◎", time: "3 min",
+    id: "sharpe", title: "What is Sharpe Ratio?", iconKey: "sharpe", time: "3 min",
     xpReward: 50,
     content: [
       { type: "text", text: "The Sharpe ratio measures how much return you're getting per unit of risk. It was invented by Nobel laureate William Sharpe in 1966." },
@@ -371,7 +356,7 @@ const LESSONS = [
     ],
   },
   {
-    id: "drawdown", title: "Max Drawdown Explained", icon: "◬", time: "3 min",
+    id: "drawdown", title: "Max Drawdown Explained", iconKey: "drawdown", time: "3 min",
     xpReward: 50,
     content: [
       { type: "text", text: "Max drawdown measures the largest peak-to-trough decline in portfolio value before a new peak is reached." },
@@ -395,7 +380,7 @@ const LESSONS = [
     ],
   },
   {
-    id: "diversification", title: "Diversification vs Correlation", icon: "◈", time: "4 min",
+    id: "diversification", title: "Diversification vs Correlation", iconKey: "diversification", time: "4 min",
     xpReward: 50,
     content: [
       { type: "text", text: "Holding many stocks doesn't automatically mean you're diversified. True diversification requires assets that don't move together — measured by correlation." },
@@ -419,7 +404,7 @@ const LESSONS = [
     ],
   },
   {
-    id: "montecarlo", title: "Monte Carlo Simulation", icon: "◷", time: "3 min",
+    id: "montecarlo", title: "Monte Carlo Simulation", iconKey: "montecarlo", time: "3 min",
     xpReward: 50,
     content: [
       { type: "text", text: "Monte Carlo simulation runs thousands of possible future scenarios using historical return data. Corvo runs 300 paths." },
@@ -442,221 +427,460 @@ const LESSONS = [
       { q: "Which percentile should you use as a portfolio stress-test?", options: ["90th", "50th", "10th", "75th"], correct: 2 },
     ],
   },
+  {
+    id: "bonds", title: "Bonds & Interest Rates", iconKey: "bonds", time: "4 min",
+    xpReward: 50,
+    content: [
+      { type: "text", text: "Bonds are loans you make to governments or corporations. In return, they pay you interest (the coupon) and return your principal at maturity. Bond prices and interest rates move in opposite directions — this is the most important rule in fixed income." },
+      { type: "formula", text: "Bond Price ↑ when Interest Rates ↓  ·  Bond Price ↓ when Interest Rates ↑" },
+      { type: "text", text: "Yield is the effective return you earn on a bond given today's price. When a bond's price falls below its face value, the yield rises above the coupon rate." },
+      { type: "list", items: ["Duration: measures how sensitive a bond is to rate changes", "A 10-year bond has higher duration (more sensitive) than a 2-year bond", "Rising rates hurt long-duration bonds more than short-duration ones", "Yield curve: normally upward sloping — longer maturities pay more"] },
+      { type: "text", text: "A duration of 7 means a 1% rise in rates reduces the bond's price by approximately 7%. This is why long-term bonds are riskier in rising-rate environments." },
+    ],
+    example: {
+      problem: "You hold a 10-year Treasury bond with a 4% coupon. Interest rates rise from 4% to 5%.",
+      steps: [
+        "Your bond pays 4% but new bonds now offer 5% — nobody wants to pay face value for yours",
+        "Duration of ~8 means a 1% rate rise → approx. −8% price decline",
+        "Your $10,000 bond is now worth roughly $9,200 on the open market",
+      ],
+      answer: "Bond price falls ~8%. You lose paper value but still receive the 4% coupon if you hold to maturity.",
+    },
+    quiz: [
+      { q: "When interest rates rise, what happens to existing bond prices?", options: ["They rise", "They fall", "They stay the same", "They double"], correct: 1 },
+      { q: "What is 'yield' on a bond?", options: ["The face value at maturity", "The effective return at current market price", "The coupon payment amount", "The credit rating"], correct: 1 },
+      { q: "Which bond is most sensitive to interest rate changes?", options: ["3-month Treasury bill", "2-year note", "10-year Treasury bond", "30-year Treasury bond"], correct: 3 },
+      { q: "Duration of 8 means a 1% rate increase causes approximately what price change?", options: ["+8%", "-1%", "-8%", "+1%"], correct: 2 },
+      { q: "A bond's coupon is 3% but it yields 5%. What does this imply about its price?", options: ["Trading above face value", "Trading at face value", "Trading below face value", "The bond has defaulted"], correct: 2 },
+    ],
+  },
+  {
+    id: "options", title: "Options Basics", iconKey: "options", time: "4 min",
+    xpReward: 50,
+    content: [
+      { type: "text", text: "An option is a contract giving you the right — but not the obligation — to buy or sell an asset at a predetermined price (the strike price) before a set date (expiry)." },
+      { type: "formula", text: "Call = right to BUY  ·  Put = right to SELL  ·  Premium = price you pay for the option" },
+      { type: "list", items: ["Call option: profits when stock rises above the strike price", "Put option: profits when stock falls below the strike price", "In the money (ITM): exercising the option has intrinsic value", "Out of the money (OTM): exercising would result in a loss — let it expire worthless", "Time decay: options lose value as expiry approaches (all else equal)"] },
+      { type: "text", text: "Intrinsic value for a call = Stock Price − Strike Price (if positive). For a put = Strike Price − Stock Price (if positive). Options also carry time value — the extra premium for the chance things move your way before expiry." },
+    ],
+    example: {
+      problem: "You buy a call option on AAPL with a $180 strike price, paying a $5 premium. At expiry, AAPL is at $195.",
+      steps: [
+        "Intrinsic value  =  Stock Price − Strike  =  $195 − $180  =  $15",
+        "Profit per share =  Intrinsic value − Premium paid  =  $15 − $5  =  $10",
+        "Each options contract covers 100 shares, so total profit = $1,000",
+      ],
+      answer: "You profit $10 per share ($1,000 per contract). If AAPL had stayed below $180, the option would expire worthless and you'd lose only the $5 premium.",
+    },
+    quiz: [
+      { q: "A call option gives you the right to:", options: ["Sell shares at the strike price", "Buy shares at the strike price", "Receive dividends automatically", "Borrow shares from the broker"], correct: 1 },
+      { q: "A put option is profitable when:", options: ["The stock rises above the strike price", "The stock stays flat", "The stock falls below the strike price", "Interest rates rise"], correct: 2 },
+      { q: "What happens to an out-of-the-money option at expiry?", options: ["It converts to shares", "It is exercised at a loss", "It expires worthless", "It rolls over to the next month"], correct: 2 },
+      { q: "You buy a put with a $50 strike. Stock falls to $38. What is the intrinsic value?", options: ["$12", "$38", "$50", "$0"], correct: 0 },
+      { q: "Time decay refers to:", options: ["The premium increasing as expiry approaches", "The option losing value as expiry approaches", "Dividends reducing the strike price", "Volatility shrinking over time"], correct: 1 },
+    ],
+  },
+  {
+    id: "taxes", title: "Tax Efficiency", iconKey: "taxes", time: "4 min",
+    xpReward: 50,
+    content: [
+      { type: "text", text: "How and when you sell investments matters almost as much as what you invest in. Taxes can silently erode returns — tax-efficient investing keeps more money compounding for you." },
+      { type: "formula", text: "Short-term gain (held < 1 year): taxed as ordinary income  ·  Long-term gain (held ≥ 1 year): taxed at 0%, 15%, or 20%" },
+      { type: "list", items: ["Long-term capital gains rates are significantly lower than ordinary income tax rates", "Tax-loss harvesting: sell a losing position to realize a loss that offsets gains", "The wash-sale rule: you cannot buy the same (or substantially identical) security within 30 days before/after the loss sale", "Tax-deferred accounts (401k, IRA): gains grow untaxed until withdrawal", "Index funds and ETFs are more tax-efficient than actively managed funds (lower turnover)"] },
+      { type: "text", text: "Asset location matters: hold high-turnover assets in tax-deferred accounts and buy-and-hold assets in taxable accounts to minimize your annual tax bill." },
+    ],
+    example: {
+      problem: "You have a $5,000 gain on AAPL (held 14 months) and a $3,000 loss on TSLA (held 6 months). Your income puts you in the 24% tax bracket.",
+      steps: [
+        "AAPL gain: long-term → taxed at 15% (not 24%) → tax = $750",
+        "TSLA loss: harvest by selling → offsets $3,000 of gains",
+        "Net taxable gain = $5,000 − $3,000 = $2,000  →  tax = $300",
+        "Tax saving vs. not harvesting: $750 − $300 = $450 saved",
+      ],
+      answer: "By harvesting the TSLA loss, you save $450 in taxes. Remember: don't buy TSLA back within 30 days (wash-sale rule).",
+    },
+    quiz: [
+      { q: "Long-term capital gains tax rates apply when you hold an asset for at least:", options: ["6 months", "1 year", "2 years", "3 years"], correct: 1 },
+      { q: "Tax-loss harvesting means:", options: ["Avoiding all capital gains taxes", "Selling a losing position to offset gains", "Holding losses until they recover", "Moving assets to a lower-tax state"], correct: 1 },
+      { q: "The wash-sale rule prevents you from:", options: ["Selling at a loss in a taxable account", "Claiming a loss if you rebuy the same security within 30 days", "Using a tax-deferred account for losses", "Harvesting more than $3,000 in losses per year"], correct: 1 },
+      { q: "Which account type allows gains to grow without annual tax?", options: ["Standard brokerage account", "Checking account", "Tax-deferred retirement account (401k/IRA)", "Money market account"], correct: 2 },
+      { q: "Index ETFs tend to be more tax-efficient than active funds because:", options: ["They have lower expense ratios", "They generate fewer taxable events due to low turnover", "They never pay dividends", "They are held in tax-deferred accounts by default"], correct: 1 },
+    ],
+  },
+  {
+    id: "valuation", title: "Stock Valuation", iconKey: "valuation", time: "4 min",
+    xpReward: 50,
+    content: [
+      { type: "text", text: "Stock valuation is about determining what a company is actually worth — its intrinsic value — and comparing that to the market price. A stock trading below intrinsic value is considered undervalued (a potential buy); above intrinsic value is overvalued." },
+      { type: "formula", text: "P/E Ratio = Price Per Share ÷ Earnings Per Share (EPS)" },
+      { type: "list", items: ["P/E of 15 = investors pay $15 for every $1 of annual earnings", "Low P/E: cheaper stock, but could signal low growth expectations", "High P/E: investors expect strong future growth (e.g., tech stocks often trade at 30–50x)", "Forward P/E uses next year's estimated earnings — more forward-looking"] },
+      { type: "text", text: "Discounted Cash Flow (DCF) is the gold standard of valuation. You project future cash flows, then discount them back to today's value using a required rate of return. The sum of those discounted flows is the intrinsic value." },
+      { type: "formula", text: "Intrinsic Value = Sum of (Future Cash Flows ÷ (1 + Discount Rate)^Year)" },
+    ],
+    example: {
+      problem: "Company A has a stock price of $50 and EPS of $2.50. Company B has a stock price of $80 and EPS of $5.33. Which is cheaper on a P/E basis?",
+      steps: [
+        "Company A P/E  =  $50 ÷ $2.50  =  20x",
+        "Company B P/E  =  $80 ÷ $5.33  =  15x",
+        "Company B trades at a lower multiple — cheaper per dollar of earnings",
+      ],
+      answer: "Company B is cheaper on P/E (15x vs 20x). But always check why — lower P/E can mean lower growth, not just a better bargain.",
+    },
+    quiz: [
+      { q: "A P/E ratio of 25 means investors pay $25 for every:", options: ["$25 of revenue", "$1 of annual earnings", "$1 of book value", "$25 of dividends"], correct: 1 },
+      { q: "Which P/E ratio suggests a cheaper stock (all else equal)?", options: ["50x", "35x", "20x", "10x"], correct: 3 },
+      { q: "In a DCF model, you discount future cash flows because:", options: ["Future money is worth more than today's money", "A dollar today is worth more than a dollar in the future", "Cash flows are uncertain and unreliable", "The government taxes future earnings more heavily"], correct: 1 },
+      { q: "Intrinsic value is best described as:", options: ["The current market price", "What a company is fundamentally worth based on future cash flows", "The book value on the balance sheet", "The 52-week high price"], correct: 1 },
+      { q: "A stock trading below its intrinsic value is considered:", options: ["Overvalued", "Undervalued", "Fairly valued", "A growth stock"], correct: 1 },
+    ],
+  },
 ];
+
+// Icon map for lessons
+function LessonIconComponent({ iconKey, size = 20, color = AMBER }: { iconKey: string; size?: number; color?: string }) {
+  const props = { size, color, strokeWidth: 1.5 };
+  switch (iconKey) {
+    case "sharpe":       return <Target {...props} />;
+    case "drawdown":     return <TrendingDown {...props} />;
+    case "diversification": return <BarChart2 {...props} />;
+    case "montecarlo":   return <RefreshCw {...props} />;
+    case "bonds":        return <Landmark {...props} />;
+    case "options":      return <TrendingUp {...props} />;
+    case "taxes":        return <PiggyBank {...props} />;
+    case "valuation":    return <BarChart2 {...props} />;
+    default:             return <Star {...props} />;
+  }
+}
 
 type Lesson = typeof LESSONS[0];
 
-// progress = array of question indices previously answered correctly (from DB)
-function LessonView({ lesson, onBack, onXP, progress }: {
-  lesson: Lesson;
-  onBack: () => void;
-  onXP: (amount: number, updatedProgress: number[]) => void;
-  progress: number[];
-}) {
-  const isMastered = progress.length >= lesson.quiz.length;
-  const [mode, setMode] = useState<"read" | "quiz">("read");
-  // qi = -1 means "show worked example" (non-skippable), qi >= 0 = question index
-  const [qi, setQi] = useState(-1);
+// ── AI Question type ─────────────────────────────────────────────────────────
+interface AIQuestion {
+  question: string;
+  options: string[];
+  correct: number;
+  explanation: string;
+}
+
+// ── AI Practice Session ───────────────────────────────────────────────────────
+function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number; onBack: () => void }) {
+  const [questions, setQuestions] = useState<AIQuestion[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [qi, setQi] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
-  // Track per-question correctness for this run
-  const [quizResults, setQuizResults] = useState<(boolean | null)[]>(() =>
-    new Array(lesson.quiz.length).fill(null)
-  );
-  const [quizDone, setQuizDone] = useState(false);
-  const [xpEarned, setXpEarned] = useState(0);
-  const [updatedProgressForDone, setUpdatedProgressForDone] = useState<number[]>([]);
+  const [results, setResults] = useState<boolean[]>([]);
+  const [done, setDone] = useState(false);
 
-  const enterQuiz = () => {
-    setMode("quiz"); setQi(-1); setSelected(null); setAnswered(false);
-    setQuizResults(new Array(lesson.quiz.length).fill(null));
-    setQuizDone(false); setXpEarned(0);
-  };
+  const difficulty = getAIDifficulty(xp);
 
-  const q = qi >= 0 ? lesson.quiz[qi] : null;
+  const fetchQuestions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setQuestions(null);
+    setQi(0); setSelected(null); setAnswered(false); setResults([]); setDone(false);
+    try {
+      const res = await fetch(`${API_URL}/generate-questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: lesson.title, difficulty, count: 5 }),
+      });
+      if (res.status === 429) { setError("Rate limit reached. Try again in an hour."); setLoading(false); return; }
+      if (!res.ok) { setError("Failed to generate questions. Please try again."); setLoading(false); return; }
+      const data = await res.json();
+      setQuestions(data.questions ?? []);
+    } catch {
+      setError("Network error. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [lesson.title, difficulty]);
+
+  useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
 
   const answer = (idx: number) => {
-    if (answered || selected !== null) return; // hard lock once selected
-    const correct = idx === q!.correct;
+    if (answered || !questions) return;
     setSelected(idx);
     setAnswered(true);
-    setQuizResults(prev => { const n = [...prev]; n[qi] = correct; return n; });
+    setResults(r => [...r, idx === questions[qi].correct]);
   };
 
   const nextQ = () => {
-    if (qi === -1) { setQi(0); return; } // advance past example
-
-    const isLast = qi >= lesson.quiz.length - 1;
-    if (isLast) {
-      // Build final results including current question
-      const finalResults = quizResults.map((r, i) => i === qi ? (selected === q!.correct) : r);
-      const correctIndices = finalResults.reduce<number[]>((acc, r, i) => r === true ? [...acc, i] : acc, []);
-      const newlyCorrect = correctIndices.filter(i => !progress.includes(i));
-      const combined = [...new Set([...progress, ...correctIndices])];
-      // Partial XP: proportional to newly answered correctly
-      const xp = newlyCorrect.length > 0
-        ? Math.max(1, Math.round(newlyCorrect.length / lesson.quiz.length * lesson.xpReward))
-        : 0;
-      setXpEarned(xp);
-      setUpdatedProgressForDone(combined);
-      setQuizDone(true);
-      onXP(xp, combined);
-    } else {
-      setQi(i => i + 1); setSelected(null); setAnswered(false);
-    }
+    if (!questions) return;
+    if (qi >= questions.length - 1) { setDone(true); return; }
+    setQi(i => i + 1); setSelected(null); setAnswered(false);
   };
 
-  return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>
-        ← Back to lessons
-      </button>
+  const accuracy = results.length > 0 ? Math.round(results.filter(Boolean).length / results.length * 100) : 0;
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
-        <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: AMBER, background: `${AMBER}12`, flexShrink: 0 }}>
-          {lesson.icon}
-        </div>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)" }}>{lesson.title}</h2>
-          <span style={{ fontSize: 11, color: "var(--text3)" }}>{lesson.time} read · +{lesson.xpReward} XP on quiz completion</span>
-        </div>
-        {isMastered
-          ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", borderRadius: 20, background: "rgba(167,139,250,0.12)", color: "#a78bfa", border: "0.5px solid rgba(167,139,250,0.3)" }}>★ Mastered</span>
-          : progress.length > 0
-            ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", borderRadius: 20, background: "rgba(76,175,125,0.12)", color: GREEN, border: "0.5px solid rgba(76,175,125,0.3)" }}>{progress.length}/{lesson.quiz.length} correct</span>
-            : null
-        }
+  if (loading) return (
+    <div style={{ textAlign: "center", padding: "60px 0" }}>
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block", marginBottom: 16 }}>
+        <RefreshCw size={32} color={AMBER} />
+      </motion.div>
+      <p style={{ fontSize: 14, color: "var(--text3)" }}>Generating {difficulty} questions about {lesson.title}...</p>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ textAlign: "center", padding: "40px 0" }}>
+      <AlertCircle size={36} color={RED} style={{ marginBottom: 12 }} />
+      <p style={{ fontSize: 14, color: RED, marginBottom: 20 }}>{error}</p>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+        <button onClick={fetchQuestions} style={{ padding: "10px 20px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Retry</button>
+        <button onClick={onBack} style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>Back</button>
       </div>
+    </div>
+  );
 
-      <AnimatePresence mode="wait">
-        {mode === "read" && (
-          <motion.div key="read" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28 }}>
-              {lesson.content.map((block, i) => {
-                if (block.type === "text") return <p key={i} style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.75 }}>{block.text}</p>;
-                if (block.type === "formula") return (
-                  <div key={i} style={{ background: `${AMBER}12`, border: `0.5px solid ${AMBER}44`, borderRadius: 10, padding: "12px 16px" }}>
-                    <p style={{ fontFamily: "Space Mono, monospace", fontSize: 13, color: AMBER }}>{block.text}</p>
-                  </div>
-                );
-                if (block.type === "list") return (
-                  <ul key={i} style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 0, listStyle: "none" }}>
-                    {(block.items || []).map((item, j) => (
-                      <li key={j} style={{ display: "flex", gap: 10, fontSize: 13, color: "var(--text2)", lineHeight: 1.6 }}>
-                        <span style={{ color: AMBER, flexShrink: 0, marginTop: 2 }}>▸</span>{item}
-                      </li>
-                    ))}
-                  </ul>
-                );
-                return null;
-              })}
+  if (done || !questions) {
+    if (!questions) return null;
+    return (
+      <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+          <BrainCircuit size={48} color={AMBER} />
+        </div>
+        <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>Practice Complete</p>
+        <p style={{ fontSize: 28, fontWeight: 700, color: accuracy >= 80 ? GREEN : accuracy >= 60 ? AMBER : RED, marginBottom: 4, fontFamily: "Space Mono, monospace" }}>{accuracy}%</p>
+        <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 24 }}>{results.filter(Boolean).length} of {results.length} correct</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24, textAlign: "left" }}>
+          {questions.map((q, i) => (
+            <div key={i} style={{ padding: "10px 14px", background: "var(--bg2)", borderRadius: 10, border: `0.5px solid ${results[i] ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}` }}>
+              <p style={{ fontSize: 12, color: results[i] ? GREEN : RED, marginBottom: 3, fontWeight: 500 }}>{results[i] ? "Correct" : "Incorrect"}: {q.options[q.correct]}</p>
+              <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.5 }}>{q.explanation}</p>
             </div>
-            <button onClick={enterQuiz}
-              style={{ width: "100%", padding: "12px", background: AMBER, border: "none", borderRadius: 10, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: 0.5 }}>
-              Take Quiz → +{lesson.xpReward} XP
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+          <button onClick={fetchQuestions} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            <RefreshCw size={14} /> Generate New Set
+          </button>
+          <button onClick={onBack} style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>Back</button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  const q = questions[qi];
+  return (
+    <motion.div key={qi} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Question {qi + 1} of {questions.length}</span>
+        <span style={{ fontSize: 10, padding: "3px 8px", background: `${AMBER}18`, color: AMBER, borderRadius: 6, textTransform: "capitalize" }}>{difficulty}</span>
+      </div>
+      <p style={{ fontSize: 16, fontWeight: 500, color: "var(--text)", lineHeight: 1.5, marginBottom: 18 }}>{q.question}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+        {q.options.map((opt, oi) => {
+          const isSelected = selected === oi;
+          const isCorrect = oi === q.correct;
+          let bg = "var(--bg2)", border = "var(--border)", color = "var(--text2)";
+          if (answered) {
+            if (isCorrect) { bg = "rgba(76,175,125,0.1)"; border = "rgba(76,175,125,0.4)"; color = GREEN; }
+            else if (isSelected && !isCorrect) { bg = "rgba(224,92,92,0.08)"; border = "rgba(224,92,92,0.4)"; color = RED; }
+          }
+          return (
+            <button key={oi} onClick={() => answer(oi)}
+              style={{ padding: "12px 16px", background: bg, border: `0.5px solid ${border}`, borderRadius: 10, color, fontSize: 13, textAlign: "left", cursor: answered ? "default" : "pointer", pointerEvents: answered ? "none" : "auto", transition: "all 0.15s", fontWeight: (isSelected || (answered && isCorrect)) ? 500 : 400 }}>
+              {opt}
             </button>
-          </motion.div>
-        )}
+          );
+        })}
+      </div>
+      {answered && (
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+          <div style={{ background: selected === q.correct ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${selected === q.correct ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
+            <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p>
+          </div>
+          <button onClick={nextQ}
+            style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            {qi >= questions.length - 1 ? "See Results" : "Next"}
+          </button>
+        </motion.div>
+      )}
+      <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 12, textAlign: "center" }}>AI Practice — no XP awarded</p>
+    </motion.div>
+  );
+}
 
-        {mode === "quiz" && !quizDone && qi === -1 && (
-          <motion.div key="example" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Worked Example</span>
-              <span style={{ fontSize: 11, color: "var(--text3)" }}>{lesson.quiz.length} questions ahead</span>
-            </div>
-            <div style={{ background: `${AMBER}0a`, border: `0.5px solid ${AMBER}33`, borderRadius: 12, padding: "18px 20px", marginBottom: 16 }}>
-              <p style={{ fontSize: 9, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 8 }}>Problem</p>
-              <p style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6, marginBottom: 16 }}>{lesson.example.problem}</p>
-              <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8 }}>Step-by-step</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                {lesson.example.steps.map((step, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: `${AMBER}22`, color: AMBER, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, fontFamily: "Space Mono, monospace" }}>{i + 1}</span>
-                    <p style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{step}</p>
-                  </div>
-                ))}
-              </div>
-              <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 12 }}>
-                <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 5 }}>Answer</p>
-                <p style={{ fontSize: 13, color: AMBER, fontWeight: 500 }}>{lesson.example.answer}</p>
-              </div>
-            </div>
-            <button onClick={nextQ}
-              style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Got it →
+// ── Challenge Mode ────────────────────────────────────────────────────────────
+function ChallengeMode({
+  masteredLessons, xp, userId, displayName, onBack, onPointsAwarded,
+}: {
+  masteredLessons: Lesson[]; xp: number; userId: string | null; displayName: string;
+  onBack: () => void; onPointsAwarded: (pts: number) => void;
+}) {
+  const [phase, setPhase] = useState<"loading" | "quiz" | "done">("loading");
+  const [questions, setQuestions] = useState<AIQuestion[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [qi, setQi] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [answered, setAnswered] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [questionScores, setQuestionScores] = useState<number[]>([]);
+  const [results, setResults] = useState<boolean[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const topics = masteredLessons.map(l => l.title).join(", ");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/generate-questions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic: `mixed topics covering: ${topics}`, difficulty: "advanced", count: 10 }),
+        });
+        if (!res.ok) { setLoadError("Failed to load challenge. Try again."); return; }
+        const data = await res.json();
+        setQuestions(data.questions ?? []);
+        setPhase("quiz");
+      } catch {
+        setLoadError("Network error. Check your connection.");
+      }
+    })();
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  // Timer
+  useEffect(() => {
+    if (phase !== "quiz" || answered) return;
+    if (timeLeft <= 0) {
+      handleAnswer(-1);
+      return;
+    }
+    timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [phase, timeLeft, answered]);
+
+  const handleAnswer = (idx: number) => {
+    if (answered || !questions[qi]) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const correct = idx === questions[qi].correct;
+    const timeBonus = correct ? Math.round(timeLeft / 60 * 10) : 0; // 0-10 pts bonus
+    const pts = correct ? 10 + timeBonus : 0;
+    setResults(r => [...r, correct]);
+    setQuestionScores(s => [...s, pts]);
+    setSelected(idx);
+    setAnswered(true);
+  };
+
+  const nextQ = async () => {
+    if (qi >= questions.length - 1) {
+      const finalScore = questionScores.reduce((a, b) => a + b, 0);
+      if (userId) {
+        const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", userId).single();
+        const prevPts = ls?.total_points ?? 0;
+        const newPts = prevPts + finalScore;
+        await supabase.from("learn_scores").upsert(
+          { user_id: userId, display_name: displayName || "", total_points: newPts, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" }
+        );
+        onPointsAwarded(finalScore);
+      }
+      setPhase("done");
+      return;
+    }
+    setQi(i => i + 1);
+    setSelected(null);
+    setAnswered(false);
+    setTimeLeft(60);
+  };
+
+  const totalScore = questionScores.reduce((a, b) => a + b, 0);
+  const correctCount = results.filter(Boolean).length;
+
+  if (phase === "loading") return (
+    <div style={{ textAlign: "center", padding: "60px 0" }}>
+      {loadError ? (
+        <>
+          <AlertCircle size={36} color={RED} style={{ marginBottom: 12 }} />
+          <p style={{ fontSize: 14, color: RED, marginBottom: 20 }}>{loadError}</p>
+          <button onClick={onBack} style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>Back</button>
+        </>
+      ) : (
+        <>
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block", marginBottom: 16 }}>
+            <RefreshCw size={32} color={AMBER} />
+          </motion.div>
+          <p style={{ fontSize: 14, color: "var(--text3)" }}>Generating 10-question challenge from your mastered topics...</p>
+        </>
+      )}
+    </div>
+  );
+
+  if (phase === "done") return (
+    <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+        <Trophy size={48} color={AMBER} />
+      </div>
+      <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>Challenge Complete</p>
+      <p style={{ fontFamily: "Space Mono, monospace", fontSize: 36, fontWeight: 700, color: AMBER, marginBottom: 4 }}>{totalScore}</p>
+      <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 24 }}>{correctCount}/{questions.length} correct · score posted to leaderboard</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 24, textAlign: "left" }}>
+        {questions.map((q, i) => (
+          <div key={i} style={{ display: "flex", gap: 10, padding: "10px 14px", background: "var(--bg2)", borderRadius: 10, border: `0.5px solid ${results[i] ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: results[i] ? GREEN : RED, flexShrink: 0 }}>{results[i] ? "+" + questionScores[i] : "0"} pts</span>
+            <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.4 }}>{q.question}</p>
+          </div>
+        ))}
+      </div>
+      <button onClick={onBack} style={{ padding: "10px 24px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Back to Learn</button>
+    </motion.div>
+  );
+
+  // Quiz phase
+  const q = questions[qi];
+  if (!q) return null;
+  const timerPct = (timeLeft / 60) * 100;
+  const timerColor = timeLeft > 20 ? GREEN : timeLeft > 10 ? AMBER : RED;
+
+  return (
+    <motion.div key={qi} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Question {qi + 1} of {questions.length}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Timer size={13} color={timerColor} />
+          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: timerColor }}>{timeLeft}s</span>
+          <span style={{ fontSize: 11, color: "var(--text3)" }}>· Score: {totalScore}</span>
+        </div>
+      </div>
+      {/* Timer bar */}
+      <div style={{ height: 4, background: "var(--track)", borderRadius: 2, overflow: "hidden", marginBottom: 18 }}>
+        <motion.div animate={{ width: `${timerPct}%` }} transition={{ duration: 0.3 }}
+          style={{ height: "100%", background: timerColor, borderRadius: 2 }} />
+      </div>
+      <p style={{ fontSize: 16, fontWeight: 500, color: "var(--text)", lineHeight: 1.5, marginBottom: 18 }}>{q.question}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+        {q.options.map((opt, oi) => {
+          const isSelected = selected === oi;
+          const isCorrect = oi === q.correct;
+          let bg = "var(--bg2)", border = "var(--border)", color = "var(--text2)";
+          if (answered) {
+            if (isCorrect) { bg = "rgba(76,175,125,0.1)"; border = "rgba(76,175,125,0.4)"; color = GREEN; }
+            else if (isSelected && !isCorrect) { bg = "rgba(224,92,92,0.08)"; border = "rgba(224,92,92,0.4)"; color = RED; }
+          }
+          return (
+            <button key={oi} onClick={() => handleAnswer(oi)}
+              style={{ padding: "12px 16px", background: bg, border: `0.5px solid ${border}`, borderRadius: 10, color, fontSize: 13, textAlign: "left", cursor: answered ? "default" : "pointer", pointerEvents: answered ? "none" : "auto", transition: "all 0.15s", fontWeight: (isSelected || (answered && isCorrect)) ? 500 : 400 }}>
+              {opt}
             </button>
-          </motion.div>
-        )}
-
-        {mode === "quiz" && !quizDone && qi >= 0 && q && (
-          <motion.div key={`q${qi}`} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-              <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Question {qi + 1} of {lesson.quiz.length}</span>
-              <span style={{ fontSize: 11, color: "var(--text3)" }}>{quizResults.filter(r => r === true).length} correct</span>
-            </div>
-            <p style={{ fontSize: 16, fontWeight: 500, color: "var(--text)", lineHeight: 1.5, marginBottom: 18 }}>{q.q}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
-              {q.options.map((opt, oi) => {
-                const isSelected = selected === oi;
-                const isCorrect = oi === q.correct;
-                let bg = "var(--bg2)"; let border = "var(--border)"; let color = "var(--text2)";
-                if (answered) {
-                  if (isCorrect) { bg = "rgba(76,175,125,0.1)"; border = "rgba(76,175,125,0.4)"; color = GREEN; }
-                  else if (isSelected && !isCorrect) { bg = "rgba(224,92,92,0.08)"; border = "rgba(224,92,92,0.4)"; color = RED; }
-                }
-                return (
-                  <button key={oi} onClick={() => answer(oi)}
-                    style={{ padding: "12px 16px", background: bg, border: `0.5px solid ${border}`, borderRadius: 10, color, fontSize: 13, textAlign: "left", cursor: answered ? "default" : "pointer", pointerEvents: answered ? "none" : "auto", transition: "all 0.15s", fontWeight: isSelected || (answered && isCorrect) ? 500 : 400 }}>
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
-            {answered && (
-              <motion.button initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={nextQ}
-                style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                {qi >= lesson.quiz.length - 1 ? "Finish →" : "Next →"}
-              </motion.button>
-            )}
-          </motion.div>
-        )}
-
-        {mode === "quiz" && quizDone && (
-          <motion.div key="done" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
-              {updatedProgressForDone.length >= lesson.quiz.length ? <CheckCircleIcon size={52} /> : <BookOpenIcon size={52} />}
-            </div>
-            {updatedProgressForDone.length >= lesson.quiz.length ? (
-              <>
-                <p style={{ fontSize: 20, fontWeight: 600, color: "#a78bfa", marginBottom: 6 }}>★ Lesson Mastered</p>
-                <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>All questions answered correctly. No more XP available from this lesson.</p>
-              </>
-            ) : (
-              <>
-                <p style={{ fontSize: 22, fontWeight: 500, color: "var(--text)", marginBottom: 8 }}>
-                  {updatedProgressForDone.length} / {lesson.quiz.length} mastered
-                </p>
-                {xpEarned > 0
-                  ? <p style={{ fontSize: 13, color: GREEN, marginBottom: 20 }}>+{xpEarned} XP for {updatedProgressForDone.filter(i => !progress.includes(i)).length} newly correct answer{updatedProgressForDone.filter(i => !progress.includes(i)).length !== 1 ? "s" : ""}!</p>
-                  : <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>No new questions answered correctly — no XP awarded.</p>
-                }
-              </>
-            )}
-            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              {updatedProgressForDone.length < lesson.quiz.length && (
-                <button onClick={enterQuiz}
-                  style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>
-                  Retry wrong ones
-                </button>
-              )}
-              <button onClick={onBack}
-                style={{ padding: "10px 20px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Back to Learn
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          );
+        })}
+      </div>
+      {answered && (
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+          <div style={{ background: selected === q.correct ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${selected === q.correct ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
+            <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p>
+            {selected === q.correct && <p style={{ fontSize: 12, color: GREEN, marginTop: 4, fontFamily: "Space Mono, monospace" }}>+{questionScores[qi] ?? 0} pts (speed bonus included)</p>}
+          </div>
+          <button onClick={nextQ}
+            style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            {qi >= questions.length - 1 ? "See Results" : "Next"}
+          </button>
+        </motion.div>
+      )}
     </motion.div>
   );
 }
@@ -672,8 +896,6 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     (async () => {
-      // Use a direct REST call with the anon key to bypass client-side auth state;
-      // requires a public SELECT policy on learn_scores (see SQL output in comments).
       const { data, error } = await supabase
         .from("learn_scores")
         .select("display_name,total_points")
@@ -685,7 +907,13 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
     })();
   }, []);
 
-  const medals = ["🥇", "🥈", "🥉"];
+  const rankLabel = (rank: number) => {
+    if (rank === 1) return <Trophy size={14} color={AMBER} />;
+    if (rank === 2) return <Trophy size={14} color="#9b9b98" />;
+    if (rank === 3) return <Trophy size={14} color="#cd7f32" />;
+    return <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, color: "var(--text3)" }}>#{rank}</span>;
+  };
+
   return (
     <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 14, padding: "22px 24px", marginTop: 40 }}>
       <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase", marginBottom: 6 }}>Global Leaderboard</p>
@@ -700,8 +928,8 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
             const isMe = user && (user?.user_metadata?.display_name === e.display_name || user?.email?.split("@")[0] === e.display_name);
             return (
               <div key={e.rank} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: isMe ? `${AMBER}12` : "var(--bg2)", border: `0.5px solid ${isMe ? `${AMBER}44` : "var(--border)"}`, borderRadius: 10 }}>
-                <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: e.rank <= 3 ? AMBER : "var(--text3)", width: 20, flexShrink: 0 }}>
-                  {e.rank <= 3 ? medals[e.rank - 1] : `#${e.rank}`}
+                <span style={{ width: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {rankLabel(e.rank)}
                 </span>
                 <span style={{ flex: 1, fontSize: 13, color: isMe ? AMBER : "var(--text2)" }}>{e.display_name}{isMe ? " (you)" : ""}</span>
                 <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: AMBER }}>{e.total_points}</span>
@@ -714,7 +942,7 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
       {!user && (
         <div style={{ marginTop: 16, textAlign: "center" }}>
           <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 10 }}>Log in to earn XP and appear on the leaderboard</p>
-          <Link href="/auth" style={{ padding: "8px 20px", background: AMBER, borderRadius: 9, color: "#0a0e14", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>Log in →</Link>
+          <Link href="/auth" style={{ padding: "8px 20px", background: AMBER, borderRadius: 9, color: "#0a0e14", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>Log in</Link>
         </div>
       )}
       {user && myPoints > 0 && (
@@ -726,16 +954,17 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 const GAMES = [
-  { id: "sharpe-game",   title: "Guess the Sharpe",     icon: "◎", desc: "Given return and volatility, calculate the Sharpe ratio.",            xp: 20, difficulty: "Medium" },
-  { id: "builder-game",  title: "Portfolio Challenge",   icon: "◈", desc: "Pick assets to hit a specific goal — maximize Sharpe or diversify.", xp: 20, difficulty: "Easy"   },
+  { id: "sharpe-game",  title: "Guess the Sharpe",   desc: "Given return and volatility, calculate the Sharpe ratio.",            xp: 20, difficulty: "Medium" },
+  { id: "builder-game", title: "Portfolio Challenge", desc: "Pick assets to hit a specific goal — maximize Sharpe or diversify.", xp: 20, difficulty: "Easy"   },
 ];
 
 const COMPLETED_KEY = "corvo_completed_lessons";
 
 export default function LearnPage() {
-  const [activeSection, setActiveSection] = useState<"home" | "game" | "lesson">("home");
-  const [activeGame, setActiveGame]       = useState<string | null>(null);
-  const [activeLesson, setActiveLesson]   = useState<Lesson | null>(null);
+  const [activeSection, setActiveSection] = useState<"home" | "game" | "lesson" | "ai-practice" | "challenge">("home");
+  const [activeGame, setActiveGame]           = useState<string | null>(null);
+  const [activeLesson, setActiveLesson]       = useState<Lesson | null>(null);
+  const [activePracticeLesson, setActivePracticeLesson] = useState<Lesson | null>(null);
 
   const [xp, setXp]               = useState(0);
   const [streak, setStreak]       = useState(0);
@@ -748,10 +977,8 @@ export default function LearnPage() {
   const [learnPoints, setLearnPoints] = useState(0);
 
   useEffect(() => {
-    // Load completed lessons from localStorage
     try { setCompleted(JSON.parse(localStorage.getItem(COMPLETED_KEY) || "[]")); } catch {}
 
-    // Load user XP/streak from Supabase
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -766,21 +993,17 @@ export default function LearnPage() {
       if (profile) {
         setDisplayName(profile.display_name || user.email?.split("@")[0] || "");
         setAvatarUrl(profile.avatar_url || null);
-        // Hydrate XP and streak from DB (authoritative)
         setXp(profile.xp ?? 0);
         setStreak(profile.streak ?? 0);
-        // Completed lessons — DB wins over localStorage
         if (Array.isArray(profile.lessons_completed) && profile.lessons_completed.length > 0) {
           setCompleted(profile.lessons_completed);
           try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(profile.lessons_completed)); } catch {}
         }
-        // lesson_progress (per-question correct indices)
         if (profile.lesson_progress && typeof profile.lesson_progress === "object") {
           setLessonProgress(profile.lesson_progress as Record<string, number[]>);
         }
       }
 
-      // Load learn_scores for leaderboard
       const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", user.id).single();
       if (ls) setLearnPoints(ls.total_points ?? 0);
     })();
@@ -799,15 +1022,11 @@ export default function LearnPage() {
     if (amount <= 0) return;
     setXpToast(amount);
 
-    if (!userId) {
-      setXp(prev => prev + amount);
-      return;
-    }
+    if (!userId) { setXp(prev => prev + amount); return; }
 
     const today     = new Date().toISOString().split("T")[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
-    // Always read fresh from DB to avoid stale closures
     const [{ data: profile }, { data: ls }] = await Promise.all([
       supabase.from("profiles").select("xp, streak, last_activity_date").eq("id", userId).single(),
       supabase.from("learn_scores").select("total_points").eq("user_id", userId).single(),
@@ -847,17 +1066,12 @@ export default function LearnPage() {
   }, [userId, displayName]);
 
   const handleLessonXP = async (amount: number, lessonId: string, updatedProgress: number[]) => {
-    // Update local lesson_progress state
     const newProgress = { ...lessonProgress, [lessonId]: updatedProgress };
     setLessonProgress(newProgress);
 
-    // If all questions now correct, mark lesson as completed
     const lesson = LESSONS.find(l => l.id === lessonId);
-    if (lesson && updatedProgress.length >= lesson.quiz.length) {
-      markComplete(lessonId);
-    }
+    if (lesson && updatedProgress.length >= lesson.quiz.length) markComplete(lessonId);
 
-    // Persist to DB
     if (userId) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -882,17 +1096,54 @@ export default function LearnPage() {
     if (amount > 0) awardXP(amount);
   };
 
+  const masteredLessons = LESSONS.filter(l => (lessonProgress[l.id]?.length ?? 0) >= l.quiz.length);
+  const challengeUnlocked = masteredLessons.length >= 2;
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-
       <LearnHeader xp={xp} streak={streak} displayName={displayName} avatarUrl={avatarUrl} />
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "36px 24px" }}>
         <AnimatePresence mode="wait">
+
           {/* ── Home ── */}
           {activeSection === "home" && (
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+
+              {/* Challenge Mode */}
+              <div style={{ marginBottom: 40 }}>
+                <button
+                  onClick={() => { if (challengeUnlocked) setActiveSection("challenge"); }}
+                  disabled={!challengeUnlocked}
+                  style={{
+                    width: "100%", padding: "20px 24px",
+                    background: challengeUnlocked ? `${AMBER}0e` : "var(--bg2)",
+                    border: `0.5px solid ${challengeUnlocked ? `${AMBER}55` : "var(--border)"}`,
+                    borderRadius: 16, cursor: challengeUnlocked ? "pointer" : "not-allowed",
+                    textAlign: "left", transition: "all 0.15s", opacity: challengeUnlocked ? 1 : 0.6,
+                  }}
+                  onMouseEnter={e => { if (challengeUnlocked) { e.currentTarget.style.background = `${AMBER}1a`; e.currentTarget.style.borderColor = `${AMBER}88`; } }}
+                  onMouseLeave={e => { if (challengeUnlocked) { e.currentTarget.style.background = `${AMBER}0e`; e.currentTarget.style.borderColor = `${AMBER}55`; } }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 42, height: 42, borderRadius: 12, background: challengeUnlocked ? `${AMBER}22` : "var(--bg3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Swords size={20} color={challengeUnlocked ? AMBER : "var(--text3)"} strokeWidth={1.5} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 15, fontWeight: 600, color: challengeUnlocked ? "var(--text)" : "var(--text3)", marginBottom: 2 }}>Challenge Mode</p>
+                        <p style={{ fontSize: 12, color: "var(--text3)" }}>
+                          {challengeUnlocked
+                            ? "10 timed questions · speed bonus · score on leaderboard"
+                            : `Master ${2 - masteredLessons.length} more lesson${2 - masteredLessons.length !== 1 ? "s" : ""} to unlock`}
+                        </p>
+                      </div>
+                    </div>
+                    {challengeUnlocked
+                      ? <ChevronRight size={16} color={AMBER} />
+                      : <Lock size={14} color="var(--text3)" />}
+                  </div>
+                </button>
+              </div>
 
               {/* Games */}
               <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase", marginBottom: 10 }}>Interactive Games</p>
@@ -905,7 +1156,9 @@ export default function LearnPage() {
                     onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 18, color: AMBER }}>{g.icon}</span>
+                        {g.id === "sharpe-game"
+                          ? <Target size={18} color={AMBER} strokeWidth={1.5} />
+                          : <BarChart2 size={18} color={AMBER} strokeWidth={1.5} />}
                         <span style={{ fontSize: 15, fontWeight: 500, color: "var(--text)" }}>{g.title}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -929,27 +1182,38 @@ export default function LearnPage() {
                   const isLocked   = idx > 0 && !completed.includes(LESSONS[idx - 1].id) && (lessonProgress[LESSONS[idx - 1].id]?.length ?? 0) < LESSONS[idx - 1].quiz.length;
                   const borderColor = isMastered ? "rgba(167,139,250,0.35)" : isStarted ? "rgba(76,175,125,0.3)" : "var(--border)";
                   return (
-                    <button key={l.id}
-                      onClick={() => { if (!isLocked) { setActiveLesson(l); setActiveSection("lesson"); } }}
-                      disabled={isLocked}
-                      style={{ padding: "18px", background: "var(--card-bg)", border: `0.5px solid ${borderColor}`, borderRadius: 14, cursor: isLocked ? "not-allowed" : "pointer", textAlign: "left", transition: "all 0.15s", opacity: isLocked ? 0.55 : 1 }}
-                      onMouseEnter={e => { if (!isLocked) { e.currentTarget.style.borderColor = `${AMBER}44`; e.currentTarget.style.background = "var(--bg2)"; } }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.background = "var(--card-bg)"; }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                        <span style={{ fontSize: 20, color: isLocked ? "var(--text3)" : AMBER }}>{l.icon}</span>
-                        {isLocked
-                          ? <LockIcon />
-                          : isMastered
-                            ? <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, padding: "2px 7px", borderRadius: 20, background: "rgba(167,139,250,0.12)", color: "#a78bfa" }}>★ Mastered</span>
-                            : isStarted
-                              ? <span style={{ fontSize: 9, padding: "2px 7px", background: "rgba(76,175,125,0.1)", color: GREEN, borderRadius: 6 }}>{prog.length}/{l.quiz.length}</span>
-                              : <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", background: `${AMBER}18`, color: AMBER, borderRadius: 6 }}>+{l.xpReward} XP</span>
-                        }
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 3 }}>{l.title}</p>
-                      <p style={{ fontSize: 11, color: "var(--text3)" }}>{l.time} read</p>
-                      {isLocked && <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 5 }}>Complete "{LESSONS[idx - 1].title}" first</p>}
-                    </button>
+                    <div key={l.id} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                      <button
+                        onClick={() => { if (!isLocked) { setActiveLesson(l); setActiveSection("lesson"); } }}
+                        disabled={isLocked}
+                        style={{ padding: "18px", background: "var(--card-bg)", border: `0.5px solid ${borderColor}`, borderRadius: isMastered ? "14px 14px 0 0" : 14, cursor: isLocked ? "not-allowed" : "pointer", textAlign: "left", transition: "all 0.15s", opacity: isLocked ? 0.55 : 1 }}
+                        onMouseEnter={e => { if (!isLocked) { e.currentTarget.style.borderColor = `${AMBER}44`; e.currentTarget.style.background = "var(--bg2)"; } }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.background = "var(--card-bg)"; }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                          <LessonIconComponent iconKey={l.iconKey} size={20} color={isLocked ? "var(--text3)" : AMBER} />
+                          {isLocked
+                            ? <Lock size={14} color="var(--text3)" />
+                            : isMastered
+                              ? <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, padding: "2px 7px", borderRadius: 20, background: "rgba(167,139,250,0.12)", color: "#a78bfa" }}>Mastered</span>
+                              : isStarted
+                                ? <span style={{ fontSize: 9, padding: "2px 7px", background: "rgba(76,175,125,0.1)", color: GREEN, borderRadius: 6 }}>{prog.length}/{l.quiz.length}</span>
+                                : <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", background: `${AMBER}18`, color: AMBER, borderRadius: 6 }}>+{l.xpReward} XP</span>
+                          }
+                        </div>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 3 }}>{l.title}</p>
+                        <p style={{ fontSize: 11, color: "var(--text3)" }}>{l.time} read</p>
+                        {isLocked && <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 5 }}>Complete "{LESSONS[idx - 1].title}" first</p>}
+                      </button>
+                      {isMastered && (
+                        <button
+                          onClick={() => { setActivePracticeLesson(l); setActiveSection("ai-practice"); }}
+                          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px", background: `${AMBER}0d`, border: `0.5px solid ${AMBER}44`, borderTop: "none", borderRadius: "0 0 14px 14px", cursor: "pointer", transition: "all 0.15s", color: AMBER, fontSize: 12, fontWeight: 500 }}
+                          onMouseEnter={e => { e.currentTarget.style.background = `${AMBER}1a`; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = `${AMBER}0d`; }}>
+                          <BrainCircuit size={13} color={AMBER} strokeWidth={1.5} /> AI Practice
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -966,7 +1230,7 @@ export default function LearnPage() {
                 {activeGame === "sharpe-game" && (
                   <>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-                      <span style={{ fontSize: 22, color: AMBER }}>◎</span>
+                      <Target size={22} color={AMBER} strokeWidth={1.5} />
                       <div>
                         <h2 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)" }}>Guess the Sharpe Ratio</h2>
                         <p style={{ fontSize: 12, color: "var(--text3)" }}>5 rounds · ±0.15 margin · +20 XP for 3+ correct</p>
@@ -978,7 +1242,7 @@ export default function LearnPage() {
                 {activeGame === "builder-game" && (
                   <>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-                      <span style={{ fontSize: 22, color: AMBER }}>◈</span>
+                      <BarChart2 size={22} color={AMBER} strokeWidth={1.5} />
                       <div>
                         <h2 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)" }}>Portfolio Challenge</h2>
                         <p style={{ fontSize: 12, color: "var(--text3)" }}>Pick the best assets for each goal · +20 XP</p>
@@ -1004,6 +1268,55 @@ export default function LearnPage() {
               </div>
             </motion.div>
           )}
+
+          {/* ── AI Practice ── */}
+          {activeSection === "ai-practice" && activePracticeLesson && (
+            <motion.div key="ai-practice" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>← Back</button>
+              <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 18, padding: "26px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+                  <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
+                    <BrainCircuit size={20} color={AMBER} strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)" }}>AI Practice</h2>
+                    <p style={{ fontSize: 11, color: "var(--text3)" }}>{activePracticeLesson.title} · {getAIDifficulty(xp)} difficulty · 5 questions</p>
+                  </div>
+                </div>
+                <AIPracticeSession lesson={activePracticeLesson} xp={xp} onBack={() => setActiveSection("home")} />
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Challenge ── */}
+          {activeSection === "challenge" && (
+            <motion.div key="challenge" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>← Back</button>
+              <div style={{ background: "var(--card-bg)", border: `0.5px solid ${AMBER}55`, borderRadius: 18, padding: "26px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+                  <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
+                    <Swords size={20} color={AMBER} strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)" }}>Challenge Mode</h2>
+                    <p style={{ fontSize: 11, color: "var(--text3)" }}>10 questions · 60s timer · speed bonus · leaderboard score</p>
+                  </div>
+                </div>
+                <ChallengeMode
+                  masteredLessons={masteredLessons}
+                  xp={xp}
+                  userId={userId}
+                  displayName={displayName}
+                  onBack={() => setActiveSection("home")}
+                  onPointsAwarded={(pts) => {
+                    setLearnPoints(p => p + pts);
+                    if (pts > 0) setXpToast(pts);
+                  }}
+                />
+              </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </div>
 
@@ -1012,5 +1325,214 @@ export default function LearnPage() {
         {xpToast !== null && <XPToast amount={xpToast} onDone={() => setXpToast(null)} />}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ── Lesson View ───────────────────────────────────────────────────────────────
+function LessonView({ lesson, onBack, onXP, progress }: {
+  lesson: Lesson;
+  onBack: () => void;
+  onXP: (amount: number, updatedProgress: number[]) => void;
+  progress: number[];
+}) {
+  const isMastered = progress.length >= lesson.quiz.length;
+  const [mode, setMode] = useState<"read" | "quiz">("read");
+  const [qi, setQi] = useState(-1);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [answered, setAnswered] = useState(false);
+  const [quizResults, setQuizResults] = useState<(boolean | null)[]>(() => new Array(lesson.quiz.length).fill(null));
+  const [quizDone, setQuizDone] = useState(false);
+  const [xpEarned, setXpEarned] = useState(0);
+  const [updatedProgressForDone, setUpdatedProgressForDone] = useState<number[]>([]);
+
+  const enterQuiz = () => {
+    setMode("quiz"); setQi(-1); setSelected(null); setAnswered(false);
+    setQuizResults(new Array(lesson.quiz.length).fill(null));
+    setQuizDone(false); setXpEarned(0);
+  };
+
+  const q = qi >= 0 ? lesson.quiz[qi] : null;
+
+  const answer = (idx: number) => {
+    if (answered || selected !== null) return;
+    const correct = idx === q!.correct;
+    setSelected(idx); setAnswered(true);
+    setQuizResults(prev => { const n = [...prev]; n[qi] = correct; return n; });
+  };
+
+  const nextQ = () => {
+    if (qi === -1) { setQi(0); return; }
+    const isLast = qi >= lesson.quiz.length - 1;
+    if (isLast) {
+      const finalResults = quizResults.map((r, i) => i === qi ? (selected === q!.correct) : r);
+      const correctIndices = finalResults.reduce<number[]>((acc, r, i) => r === true ? [...acc, i] : acc, []);
+      const newlyCorrect = correctIndices.filter(i => !progress.includes(i));
+      const combined = [...new Set([...progress, ...correctIndices])];
+      const xp = newlyCorrect.length > 0
+        ? Math.max(1, Math.round(newlyCorrect.length / lesson.quiz.length * lesson.xpReward))
+        : 0;
+      setXpEarned(xp);
+      setUpdatedProgressForDone(combined);
+      setQuizDone(true);
+      onXP(xp, combined);
+    } else {
+      setQi(i => i + 1); setSelected(null); setAnswered(false);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>
+        ← Back to lessons
+      </button>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+        <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
+          <LessonIconComponent iconKey={lesson.iconKey} size={20} color={AMBER} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)" }}>{lesson.title}</h2>
+          <span style={{ fontSize: 11, color: "var(--text3)" }}>{lesson.time} read · +{lesson.xpReward} XP on quiz completion</span>
+        </div>
+        {isMastered
+          ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", borderRadius: 20, background: "rgba(167,139,250,0.12)", color: "#a78bfa", border: "0.5px solid rgba(167,139,250,0.3)" }}>Mastered</span>
+          : progress.length > 0
+            ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", borderRadius: 20, background: "rgba(76,175,125,0.12)", color: GREEN, border: "0.5px solid rgba(76,175,125,0.3)" }}>{progress.length}/{lesson.quiz.length} correct</span>
+            : null
+        }
+      </div>
+
+      <AnimatePresence mode="wait">
+        {mode === "read" && (
+          <motion.div key="read" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28 }}>
+              {lesson.content.map((block, i) => {
+                if (block.type === "text") return <p key={i} style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.75 }}>{block.text}</p>;
+                if (block.type === "formula") return (
+                  <div key={i} style={{ background: `${AMBER}12`, border: `0.5px solid ${AMBER}44`, borderRadius: 10, padding: "12px 16px" }}>
+                    <p style={{ fontFamily: "Space Mono, monospace", fontSize: 13, color: AMBER }}>{block.text}</p>
+                  </div>
+                );
+                if (block.type === "list") return (
+                  <ul key={i} style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 0, listStyle: "none" }}>
+                    {(block.items || []).map((item, j) => (
+                      <li key={j} style={{ display: "flex", gap: 10, fontSize: 13, color: "var(--text2)", lineHeight: 1.6 }}>
+                        <span style={{ color: AMBER, flexShrink: 0, marginTop: 2 }}>▸</span>{item}
+                      </li>
+                    ))}
+                  </ul>
+                );
+                return null;
+              })}
+            </div>
+            <button onClick={enterQuiz}
+              style={{ width: "100%", padding: "12px", background: AMBER, border: "none", borderRadius: 10, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: 0.5 }}>
+              Take Quiz · +{lesson.xpReward} XP
+            </button>
+          </motion.div>
+        )}
+
+        {mode === "quiz" && !quizDone && qi === -1 && (
+          <motion.div key="example" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Worked Example</span>
+              <span style={{ fontSize: 11, color: "var(--text3)" }}>{lesson.quiz.length} questions ahead</span>
+            </div>
+            <div style={{ background: `${AMBER}0a`, border: `0.5px solid ${AMBER}33`, borderRadius: 12, padding: "18px 20px", marginBottom: 16 }}>
+              <p style={{ fontSize: 9, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 8 }}>Problem</p>
+              <p style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6, marginBottom: 16 }}>{lesson.example.problem}</p>
+              <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8 }}>Step-by-step</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                {lesson.example.steps.map((step, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: `${AMBER}22`, color: AMBER, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, fontFamily: "Space Mono, monospace" }}>{i + 1}</span>
+                    <p style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{step}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 12 }}>
+                <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 5 }}>Answer</p>
+                <p style={{ fontSize: 13, color: AMBER, fontWeight: 500 }}>{lesson.example.answer}</p>
+              </div>
+            </div>
+            <button onClick={nextQ}
+              style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Got it
+            </button>
+          </motion.div>
+        )}
+
+        {mode === "quiz" && !quizDone && qi >= 0 && q && (
+          <motion.div key={`q${qi}`} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+              <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Question {qi + 1} of {lesson.quiz.length}</span>
+              <span style={{ fontSize: 11, color: "var(--text3)" }}>{quizResults.filter(r => r === true).length} correct</span>
+            </div>
+            <p style={{ fontSize: 16, fontWeight: 500, color: "var(--text)", lineHeight: 1.5, marginBottom: 18 }}>{q.q}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+              {q.options.map((opt, oi) => {
+                const isSelected = selected === oi;
+                const isCorrect = oi === q.correct;
+                let bg = "var(--bg2)"; let border = "var(--border)"; let color = "var(--text2)";
+                if (answered) {
+                  if (isCorrect) { bg = "rgba(76,175,125,0.1)"; border = "rgba(76,175,125,0.4)"; color = GREEN; }
+                  else if (isSelected && !isCorrect) { bg = "rgba(224,92,92,0.08)"; border = "rgba(224,92,92,0.4)"; color = RED; }
+                }
+                return (
+                  <button key={oi} onClick={() => answer(oi)}
+                    style={{ padding: "12px 16px", background: bg, border: `0.5px solid ${border}`, borderRadius: 10, color, fontSize: 13, textAlign: "left", cursor: answered ? "default" : "pointer", pointerEvents: answered ? "none" : "auto", transition: "all 0.15s", fontWeight: isSelected || (answered && isCorrect) ? 500 : 400 }}>
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+            {answered && (
+              <motion.button initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={nextQ}
+                style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                {qi >= lesson.quiz.length - 1 ? "Finish" : "Next"}
+              </motion.button>
+            )}
+          </motion.div>
+        )}
+
+        {mode === "quiz" && quizDone && (
+          <motion.div key="done" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+              {updatedProgressForDone.length >= lesson.quiz.length
+                ? <CheckCircle2 size={52} color={GREEN} />
+                : <BookOpen size={52} color="var(--text3)" />}
+            </div>
+            {updatedProgressForDone.length >= lesson.quiz.length ? (
+              <>
+                <p style={{ fontSize: 20, fontWeight: 600, color: "#a78bfa", marginBottom: 6 }}>Lesson Mastered</p>
+                <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>All questions answered correctly. No more XP available from this lesson.</p>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: 22, fontWeight: 500, color: "var(--text)", marginBottom: 8 }}>
+                  {updatedProgressForDone.length} / {lesson.quiz.length} mastered
+                </p>
+                {xpEarned > 0
+                  ? <p style={{ fontSize: 13, color: GREEN, marginBottom: 20 }}>+{xpEarned} XP for {updatedProgressForDone.filter(i => !progress.includes(i)).length} newly correct answer{updatedProgressForDone.filter(i => !progress.includes(i)).length !== 1 ? "s" : ""}!</p>
+                  : <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>No new questions answered correctly — no XP awarded.</p>
+                }
+              </>
+            )}
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              {updatedProgressForDone.length < lesson.quiz.length && (
+                <button onClick={enterQuiz}
+                  style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>
+                  Retry wrong ones
+                </button>
+              )}
+              <button onClick={onBack}
+                style={{ padding: "10px 20px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Back to Learn
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
