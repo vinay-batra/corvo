@@ -100,12 +100,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
         </div>
 
         {/* Logo mark */}
-        <div style={{ width: 36, height: 36, border: `1px solid rgba(201,168,76,0.3)`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-          <svg width="20" height="20" viewBox="0 0 40 40" fill="none">
-            <path d="M14 28 A8 8 0 1 1 26 28" stroke={C.amber} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-            <circle cx="20" cy="20" r="3" fill={C.amber}/>
-          </svg>
-        </div>
+        <img src="/corvo-logo.svg" width={36} height={36} alt="Corvo" style={{ marginBottom: 20 }} />
 
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
