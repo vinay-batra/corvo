@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 import math
+import os
+import requests as _requests
 
 def sanitize(obj):
     """Recursively replace NaN/Inf with None for JSON compliance."""
@@ -30,6 +32,10 @@ from optimizer import optimize_portfolio
 from chat import chat_with_claude, parse_portfolio_from_image
 
 app = FastAPI()
+
+# Startup env check — visible in Railway logs
+print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', '')[:6] + '...)' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
+print(f"[startup] RESEND_FROM_EMAIL: {os.environ.get('RESEND_FROM_EMAIL', 'NOT SET')}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -270,3 +276,65 @@ async def search_ticker(q: str):
     from search import search_tickers
     results = await search_tickers(q)
     return {"results": results}
+
+
+# ── Email endpoints ────────────────────────────────────────────────────────────
+
+from pydantic import BaseModel
+
+class WelcomeEmailRequest(BaseModel):
+    email: str
+
+RESEND_FROM = "Corvo <hello@corvo.capital>"
+
+@app.post("/send-welcome-email")
+def send_welcome_email(req: WelcomeEmailRequest):
+    """Send a welcome email via Resend."""
+    print(f"[send-welcome-email] called for {req.email}")
+    key = os.environ.get("RESEND_API_KEY", "")
+    if not key:
+        print("[send-welcome-email] RESEND_API_KEY not set — skipping")
+        return {"ok": True, "skipped": True}
+    try:
+        r = _requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"from": RESEND_FROM, "to": [req.email], "subject": "Welcome to Corvo", "html": "<p>Welcome to Corvo — your portfolio intelligence platform.</p>"},
+            timeout=10,
+        )
+        r.raise_for_status()
+        print(f"[send-welcome-email] sent OK to {req.email}")
+        return {"ok": True}
+    except Exception as e:
+        print(f"[send-welcome-email] FAILED: {e}")
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/test-email")
+def test_email(email: str = ""):
+    """Debug endpoint — send a test email via Resend and return the result."""
+    import traceback
+    key = os.environ.get("RESEND_API_KEY", "")
+    if not key:
+        return {"ok": False, "error": "RESEND_API_KEY not configured", "hint": "Set RESEND_API_KEY in Railway environment variables"}
+    target = email or os.environ.get("TEST_EMAIL_TO", "")
+    if not target:
+        return {"ok": False, "error": "Provide ?email=you@example.com"}
+    print(f"[test-email] sending to {target}")
+    try:
+        r = _requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"from": RESEND_FROM, "to": [target], "subject": "Corvo — Test Email", "html": "<p>Corvo test email. Resend is working.</p>"},
+            timeout=10,
+        )
+        data = r.json()
+        if r.status_code in (200, 201):
+            print(f"[test-email] sent OK id={data.get('id')}")
+            return {"ok": True, "sent_to": target, "resend_id": data.get("id")}
+        print(f"[test-email] Resend error {r.status_code}: {data}")
+        return {"ok": False, "status": r.status_code, "error": data}
+    except Exception:
+        tb = traceback.format_exc()
+        print(f"[test-email] FAILED:\n{tb}")
+        return {"ok": False, "error": tb}

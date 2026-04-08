@@ -14,6 +14,11 @@ import time
 SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
+# Startup env check — visible in Railway logs
+print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', '')[:6] + '...)' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
+print(f"[startup] RESEND_FROM_EMAIL: {os.environ.get('RESEND_FROM_EMAIL', 'NOT SET')}")
+print(f"[startup] SUPABASE_URL: {'SET' if SUPABASE_URL else 'NOT SET'}")
+
 # ── In-memory rate limiting ────────────────────────────────────────────────────
 RATE_LIMITS: dict[str, list[float]] = {}
 

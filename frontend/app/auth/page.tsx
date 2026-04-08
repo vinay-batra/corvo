@@ -16,14 +16,16 @@ function AuthForm() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") ?? "/app";
 
-  // Redirect already-authenticated users
+  // Redirect already-authenticated users — hide form until check completes
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) window.location.replace(nextPath);
+      if (session) { window.location.replace(nextPath); return; }
+      setSessionChecked(true);
     });
     const ref = searchParams.get("ref");
     if (ref) localStorage.setItem("corvo_referrer", ref);
   }, [searchParams]);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [mode, setMode] = useState<"login"|"signup"|"reset"|"magic">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -102,6 +104,10 @@ function AuthForm() {
     borderRadius: 10, color: C.cream, fontSize: 14,
     outline: "none", transition: "border-color 0.15s",
   });
+
+  if (!sessionChecked) {
+    return <div style={{ minHeight: "100vh", background: C.navy2 }} />;
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: C.navy2, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Inter', sans-serif", position: "relative", overflow: "hidden" }}>

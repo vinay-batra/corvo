@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "../lib/supabase";
 
 interface Alert {
   id: string;
@@ -12,24 +13,18 @@ interface Alert {
   createdAt: string;
 }
 
-const STORAGE_KEY = "corvo_alerts";
+const LS_KEY = "corvo_alerts";
 
-function loadAlerts(): Alert[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+function loadLocal(): Alert[] {
+  try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+}
+function saveLocal(alerts: Alert[]) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(alerts)); } catch {}
 }
 
-function saveAlerts(alerts: Alert[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(alerts)); } catch {}
-}
-
+// Still exposed so the bell badge count can read it synchronously
 export function getAlertCount(): number {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw).length : 0;
-  } catch { return 0; }
+  try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r).length : 0; } catch { return 0; }
 }
 
 export default function AlertsPanel({ onClose, assets }: { onClose: () => void; assets?: { ticker: string; weight: number }[] }) {
@@ -38,32 +33,89 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
   const [ticker, setTicker] = useState("");
   const [condition, setCondition] = useState<"drops" | "rises">("drops");
   const [threshold, setThreshold] = useState("10");
+  const [userId, setUserId] = useState<string | null>(null);
 
-  useEffect(() => { setAlerts(loadAlerts()); }, []);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const uid = data.user?.id ?? null;
+      setUserId(uid);
+      fetchAlerts(uid);
+    });
+  }, []);
 
-  const addAlert = () => {
+  const fetchAlerts = async (uid: string | null) => {
+    if (uid) {
+      const { data, error } = await supabase
+        .from("price_alerts")
+        .select("*")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        const mapped: Alert[] = data.map((r: any) => ({
+          id: r.id,
+          type: r.type,
+          ticker: r.ticker,
+          condition: r.condition,
+          threshold: r.threshold,
+          createdAt: r.created_at,
+        }));
+        setAlerts(mapped);
+        saveLocal(mapped); // keep local in sync for badge count
+        return;
+      }
+    }
+    setAlerts(loadLocal());
+  };
+
+  const addAlert = async () => {
     const t = parseFloat(threshold);
     if (isNaN(t) || t <= 0) return;
     if (tab === "price" && !ticker.trim()) return;
+
     const newAlert: Alert = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`,
       type: tab,
       ticker: tab === "price" ? ticker.trim().toUpperCase() : undefined,
       condition,
       threshold: t,
       createdAt: new Date().toISOString(),
     };
+
+    if (userId) {
+      const { data, error } = await supabase
+        .from("price_alerts")
+        .insert({
+          user_id: userId,
+          type: newAlert.type,
+          ticker: newAlert.ticker ?? null,
+          condition: newAlert.condition,
+          threshold: newAlert.threshold,
+        })
+        .select()
+        .single();
+      if (!error && data) {
+        await fetchAlerts(userId);
+        setTicker(""); setThreshold("10");
+        return;
+      }
+    }
+
+    // Fallback: localStorage
     const updated = [newAlert, ...alerts];
     setAlerts(updated);
-    saveAlerts(updated);
-    setTicker("");
-    setThreshold("10");
+    saveLocal(updated);
+    setTicker(""); setThreshold("10");
   };
 
-  const removeAlert = (id: string) => {
+  const removeAlert = async (id: string) => {
+    if (userId) {
+      await supabase.from("price_alerts").delete().eq("id", id).eq("user_id", userId);
+      await fetchAlerts(userId);
+      return;
+    }
     const updated = alerts.filter(a => a.id !== id);
     setAlerts(updated);
-    saveAlerts(updated);
+    saveLocal(updated);
   };
 
   const formatAlert = (a: Alert) => {
@@ -214,7 +266,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
 
         <div style={{ padding: "10px 18px", borderTop: "0.5px solid var(--border)", flexShrink: 0 }}>
           <p style={{ fontSize: 10, color: "var(--text3)", textAlign: "center", lineHeight: 1.5 }}>
-            Alerts are stored locally. Push notifications coming soon.
+            {userId ? "Alerts synced to your account." : "Sign in to sync alerts across devices."}
           </p>
         </div>
       </motion.div>
