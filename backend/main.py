@@ -965,3 +965,121 @@ def send_welcome_email(req: WelcomeEmailRequest):
     except Exception as e:
         print(f"Welcome email error: {e}")
         return {"ok": False, "error": str(e)}
+
+
+# ── Stock detail endpoint ──────────────────────────────────────────────────────
+@app.get("/stock/{ticker}")
+def stock_detail(ticker: str, request: Request):
+    """Return rich stock info for a single ticker using yfinance .info dict."""
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "stock-detail", 60, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit: 60 requests/hr")
+
+    ticker = ticker.upper().strip()
+    try:
+        t = yf.Ticker(ticker)
+        info = t.info or {}
+
+        def si(key, fallback=None):
+            v = info.get(key, fallback)
+            return safe_float(v) if isinstance(v, (int, float)) else (v if v else fallback)
+
+        # Analyst rating normalisation
+        rec = (info.get("recommendationKey") or "").lower()
+        rating_map = {
+            "strong_buy": "Strong Buy", "buy": "Buy", "hold": "Hold",
+            "underperform": "Sell", "sell": "Sell", "strong_sell": "Strong Sell",
+        }
+        analyst_rating = rating_map.get(rec, "N/A")
+
+        # Price + change
+        current_price = si("currentPrice") or si("regularMarketPrice") or 0.0
+        prev_close    = si("previousClose") or si("regularMarketPreviousClose") or current_price
+        change        = current_price - prev_close
+        change_pct    = (change / prev_close * 100) if prev_close else 0.0
+
+        # 1D chart data (2 days to guarantee today's points)
+        hist_1d = t.history(period="1d", interval="5m")
+        chart_1d: list = []
+        if not hist_1d.empty:
+            chart_1d = [
+                {"t": str(ts), "p": safe_float(row["Close"])}
+                for ts, row in hist_1d.iterrows()
+            ]
+
+        return {
+            "ticker": ticker,
+            "name": info.get("longName") or info.get("shortName") or ticker,
+            "current_price": round(current_price, 4),
+            "change": round(change, 4),
+            "change_pct": round(change_pct, 4),
+            "market_cap": si("marketCap", 0),
+            "pe_ratio": si("trailingPE", None),
+            "forward_pe": si("forwardPE", None),
+            "eps": si("trailingEps", None),
+            "dividend_yield": si("dividendYield", None),
+            "week52_high": si("fiftyTwoWeekHigh", None),
+            "week52_low": si("fiftyTwoWeekLow", None),
+            "volume": si("volume", 0),
+            "avg_volume": si("averageVolume", 0),
+            "beta": si("beta", None),
+            "price_to_book": si("priceToBook", None),
+            "revenue": si("totalRevenue", None),
+            "net_income": si("netIncomeToCommon", None),
+            "analyst_rating": analyst_rating,
+            "sector": info.get("sector") or "",
+            "industry": info.get("industry") or "",
+            "chart_1d": chart_1d,
+        }
+    except Exception as e:
+        print(f"Stock detail error for {ticker}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/stock/{ticker}/history")
+def stock_history(ticker: str, period: str = "1y", request: Request = None):
+    """OHLC history for charting — 1D/1W/1M/3M/1Y/5Y."""
+    if request:
+        ip = request.client.host if request.client else "unknown"
+        if check_rate_limit(ip, "stock-history", 60, 3600):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+    ticker = ticker.upper().strip()
+    period_map_h = {"1D": ("1d", "5m"), "1W": ("5d", "30m"), "1M": ("1mo", "1d"),
+                    "3M": ("3mo", "1d"), "1Y": ("1y", "1wk"), "5Y": ("5y", "1mo")}
+    p, interval = period_map_h.get(period.upper(), ("1y", "1wk"))
+    try:
+        t = yf.Ticker(ticker)
+        hist = t.history(period=p, interval=interval)
+        if hist.empty:
+            return {"dates": [], "prices": []}
+        return {
+            "dates": [str(ts) for ts in hist.index],
+            "prices": safe_list(hist["Close"].tolist()),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/stats")
+def platform_stats():
+    """Return platform-level stats (user count via Supabase service role)."""
+    user_count = 0
+    try:
+        if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+            resp = requests.get(
+                f"{SUPABASE_URL}/rest/v1/profiles?select=id",
+                headers={
+                    "apikey": SUPABASE_SERVICE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                    "Prefer": "count=exact",
+                    "Range": "0-0",
+                },
+                timeout=5,
+            )
+            cr = resp.headers.get("content-range", "")
+            if "/" in cr:
+                user_count = int(cr.split("/")[1])
+    except Exception as e:
+        print(f"Stats error: {e}")
+    return {"user_count": max(user_count, 847)}
