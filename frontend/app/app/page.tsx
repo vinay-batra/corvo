@@ -22,6 +22,7 @@ import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import { fetchPortfolio } from "../../lib/api";
+import { supabase } from "../../lib/supabase";
 import AlertsPanel from "../../components/AlertsPanel";
 import Watchlist from "../../components/Watchlist";
 import PortfolioHistory from "../../components/PortfolioHistory";
@@ -341,6 +342,7 @@ export default function AppPage() {
   const [showReferral, setShowReferral]         = useState(false);
   const [errorMsg, setErrorMsg]                 = useState<string | null>(null);
   const errorDismissRef                         = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tourNeededRef                           = useRef<boolean>(false);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfMode, setWhatIfMode]   = useState(false);
   const [whatIfWeights, setWhatIfWeights] = useState<Record<string, number>>({});
@@ -397,6 +399,45 @@ export default function AppPage() {
         .catch((e: any) => console.error(e))
         .finally(() => setLoading(false));
     }
+
+    // Check onboarding status from Supabase (gates the tour on DB, not localStorage)
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", user.id)
+        .single();
+
+      const needsTour = !profile || !profile.onboarding_completed;
+      if (!needsTour) return;
+
+      tourNeededRef.current = true;
+
+      // New user — create profile row and send welcome email for OAuth signups
+      if (!profile) {
+        await supabase.from("profiles").upsert({
+          id: user.id,
+          onboarding_completed: false,
+          updated_at: new Date().toISOString(),
+        });
+        if (user.app_metadata?.provider && user.app_metadata.provider !== "email") {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          fetch(`${apiUrl}/send-welcome-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: user.email }),
+          }).catch(() => {});
+        }
+      }
+
+      // If goals modal won't show (goals already saved), trigger tour immediately
+      const goalsData = localStorage.getItem("corvo_goals");
+      if (goalsData) setShowTour(true);
+      // Otherwise goals modal will show, and its callbacks will trigger the tour
+    })();
   }, []);
 
   const handleAnalyze = async () => {
@@ -815,10 +856,15 @@ export default function AppPage() {
       </button>
 
       <AnimatePresence>
-        {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); setShowTour(true); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); setShowTour(true); }} />}
+        {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} />}
       </AnimatePresence>
       <AnimatePresence>
-        {showTour && <OnboardingTour onComplete={() => setShowTour(false)} />}
+        {showTour && <OnboardingTour onComplete={async () => {
+          setShowTour(false);
+          tourNeededRef.current = false;
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) await supabase.from("profiles").upsert({ id: user.id, onboarding_completed: true, updated_at: new Date().toISOString() });
+        }} />}
       </AnimatePresence>
       <AnimatePresence>
         {showProfile && <ProfileEditor goals={goals} onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }} onClose={() => setShowProfile(false)} />}
