@@ -88,13 +88,26 @@ function useS() {
   };
 }
 
-function LiveClock() {
-  const [t, setT] = useState("");
-  useEffect(() => {
-    const tick = () => setT(new Date().toLocaleTimeString("en-US", { hour12: false }));
-    tick(); const id = setInterval(tick, 1000); return () => clearInterval(id);
-  }, []);
-  return <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", letterSpacing: 1 }}>{t}</span>;
+function TooltipCardHeader({ title, tooltip }: { title: string; tooltip: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, position: "relative" }}>
+      <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+      <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{title}</span>
+      <button
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onClick={() => setShow(s => !s)}
+        style={{ width: 15, height: 15, borderRadius: "50%", border: "0.5px solid var(--border2)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--text3)", flexShrink: 0, lineHeight: 1 }}>
+        ?
+      </button>
+      {show && (
+        <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "var(--text2)", lineHeight: 1.65, maxWidth: 260, boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
+          {tooltip}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function DarkModeToggle({ dark, toggle }: { dark: boolean; toggle: () => void }) {
@@ -324,12 +337,14 @@ export default function AppPage() {
       {/* Logo → homepage */}
       <div style={S.sidebarTop}>
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-          <div style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="13" height="13" viewBox="0 0 18 18" fill="none">
-              <ellipse cx="9" cy="11" rx="4" ry="5" fill="var(--bg)" opacity="0.92"/>
-              <circle cx="9" cy="5.5" r="3" fill="var(--bg)" opacity="0.92"/>
-              <path d="M11 5.5 L13.5 6.2 L11 7" fill="var(--bg)" opacity="0.7"/>
-              <circle cx="10.2" cy="5.2" r="0.8" fill="var(--text)"/>
+          <div style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg,#1a1a1a,#0d0d0d)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="15" height="15" viewBox="0 0 32 32" fill="none">
+              <path d="M10 26 Q8 30 6 31 Q9 28 10 26Z" fill="#fff" opacity="0.55"/>
+              <path d="M10 22 Q8 18 10 14 Q13 10 17 10 Q20 10 22 12 Q25 15 24 19 Q23 23 19 25 Q14 27 10 22Z" fill="#fff" opacity="0.92"/>
+              <path d="M12 18 Q7 15 4 10 Q6 9 9 12 Q11 15 12 18Z" fill="#fff" opacity="0.7"/>
+              <ellipse cx="20" cy="9" rx="4" ry="3.5" fill="#fff" opacity="0.95"/>
+              <path d="M23.5 8 Q26 8.5 26.5 10 Q25 9.5 24 10.5 Q23.5 9 23.5 8Z" fill="#fff" opacity="0.85"/>
+              <circle cx="21.2" cy="8.2" r="1.1" fill="#0d0d0d"/>
             </svg>
           </div>
           <div style={S.logo}>CORVO</div>
@@ -418,20 +433,17 @@ export default function AppPage() {
         <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
       </div>
 
-      {/* Footer */}
-      <div style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "0.5px solid var(--border)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: loading ? "var(--text2)" : "var(--text)", animation: "pulse 2s infinite" }} />
-          <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{loading ? "Analyzing" : "Live"}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Link href="/learn" style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textDecoration: "none", textTransform: "uppercase" as const }}
-            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = "var(--text)")}
-            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = "var(--text3)")}>
-            Learn
-          </Link>
-          <LiveClock />
-        </div>
+      {/* Footer — Learn link */}
+      <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
+        <Link href="/learn" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", borderRadius: 9, border: "0.5px solid var(--border)", textDecoration: "none", background: "transparent", transition: "all 0.15s" }}
+          onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.borderColor = "var(--border2)"; }}
+          onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; }}>
+          <span style={{ fontSize: 16, lineHeight: 1 }}>📚</span>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "var(--text2)" }}>Learn Investing</div>
+            <div style={{ fontSize: 9, color: "var(--text3)" }}>Glossary &amp; guides</div>
+          </div>
+        </Link>
       </div>
     </>
   );
@@ -557,8 +569,8 @@ export default function AppPage() {
             ) : activeTab === "risk" ? (
               <motion.div key="risk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <Card style={{ marginBottom: 0 }}><CardHeader title="Drawdown" /><DrawdownChart assets={assets} period={period} /></Card>
-                  <Card style={{ marginBottom: 0 }}><CardHeader title="Correlation" /><CorrelationHeatmap assets={assets} period={period} /></Card>
+                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Drawdown" tooltip="Shows the largest peak-to-trough loss in your portfolio over the selected period. Deeper troughs = higher risk." /><DrawdownChart assets={assets} period={period} /></Card>
+                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Correlation" tooltip="Shows how your assets move together. Values near 1.0 mean they crash together, reducing diversification benefit." /><CorrelationHeatmap assets={assets} period={period} /></Card>
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (
