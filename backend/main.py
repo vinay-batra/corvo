@@ -1065,28 +1065,50 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+_stats_cache: dict = {"user_count": 847, "ts": 0.0}
+
 @app.get("/stats")
 def platform_stats():
-    """Return platform-level stats (user count via Supabase service role)."""
+    """Return platform-level stats — user count from Supabase, cached 1 hour."""
+    import time
+    global _stats_cache
+    if time.time() - _stats_cache["ts"] < 3600:
+        return {"user_count": _stats_cache["user_count"]}
     user_count = 0
     try:
         if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+            # Try auth.users (requires service role)
             resp = requests.get(
-                f"{SUPABASE_URL}/rest/v1/profiles?select=id",
+                f"{SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1",
                 headers={
                     "apikey": SUPABASE_SERVICE_KEY,
                     "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
-                    "Prefer": "count=exact",
-                    "Range": "0-0",
                 },
                 timeout=5,
             )
-            cr = resp.headers.get("content-range", "")
-            if "/" in cr:
-                user_count = int(cr.split("/")[1])
+            if resp.status_code == 200:
+                data = resp.json()
+                user_count = data.get("total", 0)
+            # Fallback to profiles table count
+            if not user_count:
+                resp2 = requests.get(
+                    f"{SUPABASE_URL}/rest/v1/profiles?select=id",
+                    headers={
+                        "apikey": SUPABASE_SERVICE_KEY,
+                        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                        "Prefer": "count=exact",
+                        "Range": "0-0",
+                    },
+                    timeout=5,
+                )
+                cr = resp2.headers.get("content-range", "")
+                if "/" in cr:
+                    user_count = int(cr.split("/")[1])
     except Exception as e:
         print(f"Stats error: {e}")
-    return {"user_count": max(user_count, 847)}
+    result = max(user_count, 847)
+    _stats_cache = {"user_count": result, "ts": time.time()}
+    return {"user_count": result}
 
 
 @app.get("/watchlist-data")

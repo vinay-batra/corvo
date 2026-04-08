@@ -1,6 +1,7 @@
 import anthropic
 
-client = anthropic.Anthropic(api_key="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")
+import os
+client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 
 def build_system_prompt(portfolio_context: dict) -> str:
     goals = portfolio_context.get("user_goals") or {}

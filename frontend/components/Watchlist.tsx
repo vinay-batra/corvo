@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import StockDetail from "./StockDetail";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const STORAGE_KEY = "corvo_watchlist";
@@ -17,7 +18,7 @@ interface StockData {
   change_pct: number | null;
   sparkline: number[];
 }
-interface Alert { ticker: string; targetPrice: number; direction: "above" | "below"; }
+interface Alert { ticker: string; targetPrice: number; direction: "above" | "below"; triggered?: boolean; }
 
 function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
   if (!data || data.length < 2) return <div style={{ width: 60, height: 28 }} />;
@@ -83,6 +84,9 @@ export default function Watchlist() {
   const [selected, setSelected]     = useState<string | null>(null);
   const [alertFor, setAlertFor]     = useState<string | null>(null);
   const [alerts, setAlerts]         = useState<Alert[]>([]);
+  const [notifGranted, setNotifGranted] = useState(false);
+  const { requestPermission, isGranted, notify } = usePushNotifications();
+  const alertCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     try {
@@ -91,7 +95,45 @@ export default function Watchlist() {
       const ar = localStorage.getItem(ALERTS_KEY);
       if (ar) setAlerts(JSON.parse(ar));
     } catch {}
+    setNotifGranted(isGranted());
   }, []);
+
+  // Check alerts every 5 minutes against current prices
+  useEffect(() => {
+    const checkAlerts = () => {
+      setAlerts(current => {
+        if (!current.length) return current;
+        let changed = false;
+        const next = current.map(a => {
+          if (a.triggered) return a;
+          const priceData = stockData[a.ticker];
+          if (!priceData?.price) return a;
+          const triggered =
+            (a.direction === "above" && priceData.price >= a.targetPrice) ||
+            (a.direction === "below" && priceData.price <= a.targetPrice);
+          if (triggered) {
+            notify(
+              `${a.ticker} Price Alert`,
+              `${a.ticker} crossed $${a.targetPrice.toFixed(2)} (now $${priceData.price.toFixed(2)})`,
+              `alert-${a.ticker}-${a.targetPrice}`
+            );
+            changed = true;
+            return { ...a, triggered: true };
+          }
+          return a;
+        });
+        if (changed) {
+          try { localStorage.setItem(ALERTS_KEY, JSON.stringify(next)); } catch {}
+          return next;
+        }
+        return current;
+      });
+    };
+
+    checkAlerts();
+    alertCheckRef.current = setInterval(checkAlerts, 5 * 60 * 1000);
+    return () => { if (alertCheckRef.current) clearInterval(alertCheckRef.current); };
+  }, [stockData]);
 
   const fetchData = useCallback(async (tickerList: string[]) => {
     if (!tickerList.length) return;
@@ -119,6 +161,10 @@ export default function Watchlist() {
   const saveAlerts = (list: Alert[]) => {
     setAlerts(list);
     try { localStorage.setItem(ALERTS_KEY, JSON.stringify(list)); } catch {}
+    // Auto-request notification permission when first alert is saved
+    if (list.length > 0 && !isGranted()) {
+      requestPermission().then(ok => setNotifGranted(ok));
+    }
   };
 
   const add = () => {
@@ -243,6 +289,17 @@ export default function Watchlist() {
               );
             })}
           </AnimatePresence>
+        </div>
+      )}
+
+      {/* Notifications enable button */}
+      {!notifGranted && (
+        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "12px 16px", background: "var(--card-bg)", marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: "var(--text2)" }}>Get browser alerts when price targets are hit</span>
+          <button onClick={async () => { const ok = await requestPermission(); setNotifGranted(ok); }}
+            style={{ padding: "6px 14px", fontSize: 11, borderRadius: 8, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.08)", color: "#c9a84c", cursor: "pointer", flexShrink: 0, marginLeft: 12 }}>
+            Enable Notifications
+          </button>
         </div>
       )}
 
