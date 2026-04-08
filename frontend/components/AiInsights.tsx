@@ -32,6 +32,18 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
   else
     insights.push({icon:"✓",text:`${assets.length} holdings provides good diversification`});
 
+  // Rebalancing suggestions: flag any asset deviating >5% from equal weight
+  const equalW = 1 / assets.length;
+  const totalW = assets.reduce((s, a) => s + a.weight, 0);
+  const rebalanceSuggestions = assets
+    .map(a => ({ ...a, normW: a.weight / totalW }))
+    .filter(a => Math.abs(a.normW - equalW) > 0.05)
+    .map(a => {
+      const diff = a.normW - equalW;
+      const action = diff > 0 ? "trim" : "add to";
+      return `Consider ${action}ing ${a.ticker} from ${(a.normW*100).toFixed(0)}% toward ${(equalW*100).toFixed(0)}%`;
+    });
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:4}}>
       {insights.map((ins,i)=>(
@@ -42,6 +54,22 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
           <p style={{fontSize:11,color:C.cream2,lineHeight:1.55}}>{ins.text}</p>
         </motion.div>
       ))}
+
+      {rebalanceSuggestions.length > 0 && (
+        <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.3}}
+          style={{marginTop:6,padding:"10px 12px",background:"rgba(201,168,76,0.04)",border:"1px solid rgba(201,168,76,0.12)",borderRadius:8}}>
+          <p style={{fontSize:8,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>Rebalancing</p>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {rebalanceSuggestions.map((s,i)=>(
+              <div key={i} style={{display:"flex",gap:6,alignItems:"flex-start"}}>
+                <span style={{color:C.amber,fontSize:9,marginTop:2,flexShrink:0}}>▸</span>
+                <p style={{fontSize:11,color:C.cream2,lineHeight:1.5}}>{s}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       <button onClick={onAskAi}
         style={{marginTop:6,padding:"8px 12px",background:C.amber,border:"none",borderRadius:8,color:"#0a0e14",fontSize:11,fontWeight:600,cursor:"pointer",letterSpacing:0.3,transition:"opacity 0.2s"}}
         onMouseEnter={e=>e.currentTarget.style.opacity="0.85"}
