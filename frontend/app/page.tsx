@@ -125,12 +125,41 @@ export default function Landing() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
 
+  const featuresRef = useRef<HTMLElement>(null);
+  const howItWorksRef = useRef<HTMLElement>(null);
+  const testimonialsRef = useRef<HTMLElement>(null);
+  const comparisonRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLElement>(null);
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onScroll = () => setNavSolid(el.scrollTop > 60);
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const sections = [featuresRef, howItWorksRef, testimonialsRef, comparisonRef, ctaRef];
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add("sr-visible");
+          obs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    sections.forEach((r) => { if (r.current) obs.observe(r.current); });
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const targets = document.querySelectorAll("[data-animate]");
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+    targets.forEach((t) => obs.observe(t));
+    return () => obs.disconnect();
   }, []);
 
   useEffect(() => {
@@ -164,6 +193,10 @@ export default function Landing() {
         .cta{transition:all 0.25s!important}.cta:hover{background:#d4b558!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(201,168,76,0.25)!important}
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(201,168,76,0.4)!important;color:#c9a84c!important}
         .nl:hover{color:#c9a84c!important}
+        [data-animate]{opacity:0;transform:translateY(20px);transition:opacity 0.6s ease,transform 0.6s ease}
+        [data-animate].visible{opacity:1;transform:translateY(0)}
+        .sr{opacity:0;transform:translateY(48px);transition:opacity 0.85s cubic-bezier(0.16,1,0.3,1),transform 0.85s cubic-bezier(0.16,1,0.3,1)}
+        .sr.sr-visible{opacity:1;transform:translateY(0)}
       `}</style>
 
       {/* Fixed grid bg */}
@@ -352,7 +385,7 @@ export default function Landing() {
       </div>
 
       {/* FEATURES */}
-      <section style={{ position: "relative", zIndex: 1, padding: "120px 56px" }}>
+      <section ref={featuresRef} className="sr" style={{ position: "relative", zIndex: 1, padding: "120px 56px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 72 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>What Corvo Does</p>
@@ -365,7 +398,7 @@ export default function Landing() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+      <section ref={howItWorksRef} className="sr" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 72 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>How It Works</p>
@@ -388,7 +421,7 @@ export default function Landing() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+      <section ref={testimonialsRef} className="sr" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 60 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase" }}>What Investors Say</p>
@@ -415,7 +448,7 @@ export default function Landing() {
       </section>
 
       {/* COMPARISON TABLE */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+      <section ref={comparisonRef} className="sr" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Why Corvo</p>
@@ -464,7 +497,7 @@ export default function Landing() {
       </section>
 
       {/* CTA */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 56px 140px" }}>
+      <section ref={ctaRef} className="sr" style={{ position: "relative", zIndex: 1, padding: "0 56px 140px" }}>
         <Reveal>
           <div style={{ maxWidth: 740, margin: "0 auto", textAlign: "center", padding: "80px 40px", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 24, background: "rgba(201,168,76,0.025)", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.02) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.02) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
