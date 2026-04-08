@@ -29,22 +29,26 @@ const EXPLAINERS = [
   { title: "Max Drawdown", simple: "Biggest drop from peak to trough that happened.", example: "$50k drops to $35k = -30% max drawdown.", good: "Closer to 0% is better. Under 10% very stable." },
 ];
 
-export function Metrics({ data }: { data: any }) {
+export function Metrics({ data, currency = "USD", rate = 1 }: { data: any; currency?: string; rate?: number }) {
   const [modal, setModal] = useState<number|null>(null);
   const sharpe = data.portfolio_volatility>0?(data.portfolio_return-0.04)/data.portfolio_volatility:0;
+  // Percentage-based metrics are currency-neutral; rate is available for future dollar values
   const items = [
     { label: "Return",       value: data.portfolio_return,     fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: data.portfolio_return<0, bar: null },
     { label: "Volatility",   value: data.portfolio_volatility, fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: false, bar: data.portfolio_volatility/0.6 },
     { label: "Sharpe",       value: sharpe,                    fmt: (v:number) => v.toFixed(2),                           neg: sharpe<0, bar: Math.min(Math.max(sharpe/3,0),1) },
     { label: "Max Drawdown", value: data.max_drawdown,         fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: true, bar: null },
   ];
+  void rate; // exchange rate available for future dollar-denominated metrics
   return (
     <>
       {items.map(({label,value,fmt,neg,bar},i) => (
         <motion.div key={label} initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:i*0.07}}
           style={{background:C.navy3,border:`1px solid ${C.border}`,borderRadius:12,padding:"16px 16px 14px"}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
-            <p style={{fontSize:8,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase"}}>{label}</p>
+            <p style={{fontSize:8,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase"}}>
+              {label}{i===0&&currency!=="USD"?<span style={{marginLeft:4,color:C.amber,letterSpacing:1}}> · {currency}</span>:null}
+            </p>
             <button onClick={()=>setModal(i)} style={{width:16,height:16,borderRadius:"50%",background:"rgba(255,255,255,0.06)",border:`1px solid ${C.border}`,color:C.cream3,fontSize:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
               onMouseEnter={e=>{e.currentTarget.style.background=C.amber;e.currentTarget.style.color="#0a0e14";}}
               onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.06)";e.currentTarget.style.color=C.cream3;}}>?</button>

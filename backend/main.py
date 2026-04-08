@@ -750,3 +750,69 @@ def parse_portfolio_image(body: dict):
     except Exception as e:
         print(f"Image parse error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class WelcomeEmailRequest(BaseModel):
+    email: str
+
+@app.post("/send-welcome-email")
+def send_welcome_email(req: WelcomeEmailRequest):
+    """Send a welcome email to a new Corvo user via Resend."""
+    resend_key = os.environ.get("RESEND_API_KEY", "")
+    if not resend_key:
+        # Silently succeed — email is best-effort
+        return {"ok": True, "skipped": True}
+
+    html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><style>
+  body {{ margin: 0; background: #0a0e14; color: #e8e0cc; font-family: 'Courier New', monospace; padding: 48px 24px; }}
+  .brand {{ font-size: 26px; font-weight: 900; letter-spacing: 8px; color: #c9a84c; margin-bottom: 4px; }}
+  .sub {{ font-size: 9px; letter-spacing: 3px; color: rgba(232,224,204,0.3); text-transform: uppercase; margin-bottom: 32px; }}
+  h1 {{ font-size: 20px; font-weight: 600; color: #e8e0cc; margin-bottom: 10px; }}
+  p {{ font-size: 14px; color: rgba(232,224,204,0.7); line-height: 1.75; margin-bottom: 16px; }}
+  .tip {{ background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.2); border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; }}
+  .tip-title {{ font-size: 11px; letter-spacing: 2px; color: #c9a84c; text-transform: uppercase; margin-bottom: 4px; }}
+  .tip-text {{ font-size: 13px; color: rgba(232,224,204,0.7); }}
+  .cta {{ display: inline-block; margin-top: 24px; padding: 14px 32px; background: #c9a84c; color: #0a0e14; font-weight: 700; font-size: 13px; letter-spacing: 2px; text-decoration: none; border-radius: 9px; }}
+  .footer {{ margin-top: 48px; font-size: 10px; color: rgba(232,224,204,0.2); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px; }}
+</style></head>
+<body>
+  <div class="brand">CORVO</div>
+  <div class="sub">Portfolio Intelligence</div>
+  <h1>Welcome to Corvo</h1>
+  <p>You've joined a smarter way to analyze your portfolio. Here's how to get the most out of Corvo:</p>
+  <div class="tip">
+    <div class="tip-title">Tip 1 — Start with a preset</div>
+    <div class="tip-text">Use the preset portfolios (Tech Heavy, Diversified, Crypto Mix, Dividend) to explore what Corvo can show you before entering your own tickers.</div>
+  </div>
+  <div class="tip">
+    <div class="tip-title">Tip 2 — Use the Learn tab</div>
+    <div class="tip-text">Unsure what Sharpe ratio means? Visit the Learn section to play our interactive games and read plain-English explanations of every metric.</div>
+  </div>
+  <div class="tip">
+    <div class="tip-title">Tip 3 — Save and compare</div>
+    <div class="tip-text">After analyzing a portfolio, save it. Then build a different one and compare them side-by-side in the Compare tab to see which has better risk-adjusted returns.</div>
+  </div>
+  <a class="cta" href="https://corvo.capital/app">OPEN CORVO →</a>
+  <div class="footer">You received this because you signed up for Corvo. Data is sourced from Yahoo Finance. Not financial advice.</div>
+</body>
+</html>"""
+
+    try:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
+            json={
+                "from": "Corvo <hello@corvo.capital>",
+                "to": [req.email],
+                "subject": "Welcome to Corvo — your portfolio intelligence platform",
+                "html": html,
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        return {"ok": True}
+    except Exception as e:
+        print(f"Welcome email error: {e}")
+        return {"ok": False, "error": str(e)}

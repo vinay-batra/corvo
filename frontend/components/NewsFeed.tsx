@@ -98,6 +98,32 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
         ))}
       </div>
 
+      {/* Sentiment summary bar for the active tab */}
+      {!loading && articles.length > 0 && (() => {
+        const bulls = articles.filter(a => getSentiment(a.title || "") === "BULLISH").length;
+        const bears = articles.filter(a => getSentiment(a.title || "") === "BEARISH").length;
+        const neutrals = articles.length - bulls - bears;
+        const bullPct = Math.round((bulls / articles.length) * 100);
+        const bearPct = Math.round((bears / articles.length) * 100);
+        const isBullish = bulls > bears;
+        const barColor = isBullish ? "#5cb88a" : bulls < bears ? "#e05c5c" : "var(--text3)";
+        return (
+          <div style={{ marginBottom: 14, padding: "10px 14px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: 10, color: "var(--text3)" }}>
+                <span style={{ color: barColor, fontWeight: 600 }}>{activeTab} sentiment</span>
+                {" · "}{bulls} bullish · {bears} bearish · {neutrals} neutral
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: barColor }}>{bullPct}% bullish</span>
+            </div>
+            <div style={{ height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden", display: "flex" }}>
+              <div style={{ width: `${bullPct}%`, background: "#5cb88a", transition: "width 0.4s ease" }} />
+              <div style={{ width: `${bearPct}%`, background: "#e05c5c", transition: "width 0.4s ease" }} />
+            </div>
+          </div>
+        );
+      })()}
+
       {loading ? (
         <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "24px 0" }}>
           <div style={{ width: 18, height: 18, border: "1.5px solid var(--border)", borderTopColor: "var(--text)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />

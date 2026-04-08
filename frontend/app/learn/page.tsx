@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { supabase } from "../../lib/supabase";
 
 const POINTS_KEY = "corvo_learn_points";
 const LEVELS = [
@@ -299,6 +300,74 @@ function LessonView({ lesson, onBack }: { lesson: typeof LESSONS[0]; onBack: () 
   );
 }
 
+// ── LEADERBOARD ──────────────────────────────────────────────────────────────
+interface LeaderEntry { display_name: string; total_points: number; rank: number; }
+
+function Leaderboard({ myPoints }: { myPoints: number }) {
+  const [entries, setEntries] = useState<LeaderEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    fetchLeaderboard();
+  }, []);
+
+  const fetchLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("learn_scores")
+        .select("display_name, total_points")
+        .order("total_points", { ascending: false })
+        .limit(10);
+      if (!error && data) {
+        setEntries(data.map((r: any, i: number) => ({ ...r, rank: i + 1 })));
+      }
+    } catch {}
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${C.border}`, borderRadius: 14, padding: "22px 24px", marginTop: 40 }}>
+      <p style={{ fontSize: 10, letterSpacing: 2.5, color: C.amber, textTransform: "uppercase", marginBottom: 8 }}>Global Leaderboard</p>
+      <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 20, fontWeight: 700, color: C.cream, letterSpacing: -0.5, marginBottom: 20 }}>Top learners</h2>
+
+      {!user ? (
+        <div style={{ textAlign: "center", padding: "20px 0" }}>
+          <p style={{ fontSize: 13, color: C.cream3, marginBottom: 12 }}>Log in to appear on the leaderboard</p>
+          <Link href="/auth" style={{ padding: "9px 22px", background: C.amber, borderRadius: 9, color: C.navy, fontSize: 12, fontWeight: 600, textDecoration: "none" }}>
+            Log in →
+          </Link>
+        </div>
+      ) : loading ? (
+        <p style={{ fontSize: 12, color: C.cream3 }}>Loading...</p>
+      ) : entries.length === 0 ? (
+        <p style={{ fontSize: 12, color: C.cream3 }}>No scores yet — be the first!</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {entries.map((e) => {
+            const isMe = user?.user_metadata?.display_name === e.display_name || (user?.email?.split("@")[0] === e.display_name);
+            return (
+              <div key={e.rank} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: isMe ? C.amber2 : "rgba(255,255,255,0.02)", border: `1px solid ${isMe ? "rgba(201,168,76,0.35)" : C.border}`, borderRadius: 10 }}>
+                <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: e.rank <= 3 ? C.amber : C.cream3, width: 20, flexShrink: 0 }}>
+                  {e.rank <= 3 ? ["🥇", "🥈", "🥉"][e.rank - 1] : `#${e.rank}`}
+                </span>
+                <span style={{ flex: 1, fontSize: 13, color: isMe ? C.amber : C.cream2 }}>{e.display_name}{isMe ? " (you)" : ""}</span>
+                <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: C.amber }}>{e.total_points}</span>
+                <span style={{ fontSize: 9, color: C.cream3 }}>pts</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {user && myPoints > 0 && (
+        <p style={{ fontSize: 11, color: C.cream3, marginTop: 14, textAlign: "center" }}>Your score: {myPoints} pts · {getLevel(myPoints).name}</p>
+      )}
+    </div>
+  );
+}
+
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 const GAMES = [
   { id: "sharpe-game", title: "Guess the Sharpe", icon: "🎯", desc: "Given return and volatility, can you calculate the Sharpe ratio?", difficulty: "Medium" },
@@ -319,6 +388,16 @@ export default function LearnPage() {
     setPoints(p => {
       const next = p + n;
       try { localStorage.setItem(POINTS_KEY, String(next)); } catch {}
+      // Upsert to Supabase leaderboard if logged in
+      supabase.auth.getUser().then(({ data }) => {
+        const user = data.user;
+        if (!user) return;
+        const displayName = user.user_metadata?.display_name || user.email?.split("@")[0] || "Anonymous";
+        supabase.from("learn_scores").upsert(
+          { user_id: user.id, display_name: displayName, total_points: next, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" }
+        ).then(() => {});
+      });
       return next;
     });
   };
@@ -404,6 +483,7 @@ export default function LearnPage() {
                   ))}
                 </div>
               </div>
+              <Leaderboard myPoints={points} />
             </motion.div>
           )}
 
