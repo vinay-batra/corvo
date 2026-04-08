@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import StockDetail from "./StockDetail";
 import { usePushNotifications } from "../hooks/usePushNotifications";
+import { supabase } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const STORAGE_KEY = "corvo_watchlist";
@@ -85,6 +86,8 @@ export default function Watchlist() {
   const [alertFor, setAlertFor]     = useState<string | null>(null);
   const [alerts, setAlerts]         = useState<Alert[]>([]);
   const [notifGranted, setNotifGranted] = useState(false);
+  const [userId, setUserId]         = useState<string | null>(null);
+  const userIdRef = useRef<string | null>(null);
   const { requestPermission, isGranted, notify } = usePushNotifications();
   const alertCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -92,10 +95,40 @@ export default function Watchlist() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setItems(JSON.parse(raw));
-      const ar = localStorage.getItem(ALERTS_KEY);
-      if (ar) setAlerts(JSON.parse(ar));
     } catch {}
     setNotifGranted(isGranted());
+
+    // Load alerts: Supabase if logged in, otherwise localStorage
+    supabase.auth.getUser().then(({ data }) => {
+      const uid = data?.user?.id ?? null;
+      setUserId(uid);
+      userIdRef.current = uid;
+      if (uid) {
+        supabase.from("price_alerts").select("*").eq("user_id", uid).then(({ data: rows }) => {
+          if (rows && rows.length > 0) {
+            const mapped: Alert[] = rows.map((r: any) => ({
+              ticker: r.ticker,
+              targetPrice: r.target_price,
+              direction: r.direction,
+              triggered: r.triggered ?? false,
+            }));
+            setAlerts(mapped);
+            try { localStorage.setItem(ALERTS_KEY, JSON.stringify(mapped)); } catch {}
+          } else {
+            // Fallback to localStorage if no Supabase rows
+            try {
+              const ar = localStorage.getItem(ALERTS_KEY);
+              if (ar) setAlerts(JSON.parse(ar));
+            } catch {}
+          }
+        });
+      } else {
+        try {
+          const ar = localStorage.getItem(ALERTS_KEY);
+          if (ar) setAlerts(JSON.parse(ar));
+        } catch {}
+      }
+    });
   }, []);
 
   // Check alerts every 5 minutes against current prices
@@ -124,6 +157,16 @@ export default function Watchlist() {
         });
         if (changed) {
           try { localStorage.setItem(ALERTS_KEY, JSON.stringify(next)); } catch {}
+          // Update triggered status in Supabase
+          const uid = userIdRef.current;
+          if (uid) {
+            next.filter(a => a.triggered).forEach(a => {
+              supabase.from("price_alerts")
+                .update({ triggered: true })
+                .eq("user_id", uid).eq("ticker", a.ticker).eq("target_price", a.targetPrice)
+                .then(() => {});
+            });
+          }
           return next;
         }
         return current;
@@ -158,12 +201,28 @@ export default function Watchlist() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch {}
   };
 
-  const saveAlerts = (list: Alert[]) => {
+  const saveAlerts = async (list: Alert[]) => {
     setAlerts(list);
     try { localStorage.setItem(ALERTS_KEY, JSON.stringify(list)); } catch {}
     // Auto-request notification permission when first alert is saved
     if (list.length > 0 && !isGranted()) {
       requestPermission().then(ok => setNotifGranted(ok));
+    }
+    // Persist to Supabase if logged in
+    if (userId) {
+      // Delete existing alerts for this user and re-insert
+      await supabase.from("price_alerts").delete().eq("user_id", userId);
+      if (list.length > 0) {
+        await supabase.from("price_alerts").insert(
+          list.map(a => ({
+            user_id: userId,
+            ticker: a.ticker,
+            target_price: a.targetPrice,
+            direction: a.direction,
+            triggered: a.triggered ?? false,
+          }))
+        );
+      }
     }
   };
 

@@ -6,13 +6,13 @@ import Link from "next/link";
 import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
   GraduationCap, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
-  Sun, Moon, CandlestickChart, Command, HelpCircle,
+  Sun, Moon, CandlestickChart, Command, HelpCircle, Sparkles, Home, Volume2, VolumeX,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
 import InfoModal from "../../components/InfoModal";
 import StockDetail from "../../components/StockDetail";
 import { OverviewSkeleton } from "../../components/SkeletonLoader";
-import { useSoundEffects, unlockAudio } from "../../hooks/useSoundEffects";
+import { useSoundEffects, unlockAudio, SOUND_KEY } from "../../hooks/useSoundEffects";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import Metrics from "../../components/Metrics";
 import PerformanceChart from "../../components/PerformanceChart";
@@ -167,7 +167,7 @@ function Empty() {
   );
 }
 
-const COMPARE_COLORS = ["#c9a84c", "#5b9cf6", "#5cb88a", "#b47ee0"];
+const COMPARE_COLORS = ["#c9a84c", "#b47ee0", "#5cb88a", "#e05c5c"];
 
 // ── Portfolio Comparison ──────────────────────────────────────────────────────
 function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: { assets: { ticker: string; weight: number }[]; period: string; benchmark: string; benchmarkLabel: string; currentData: any }) {
@@ -283,8 +283,8 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
               </div>
               {active.length >= 2 && (
                 <button onClick={generateAiInsight} disabled={aiLoading}
-                  style={{ padding: "5px 12px", fontSize: 10, borderRadius: 6, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.06)", color: "#c9a84c", cursor: aiLoading ? "default" : "pointer", letterSpacing: 0.5 }}>
-                  {aiLoading ? "Analyzing…" : "✦ AI Insight"}
+                  style={{ padding: "5px 12px", fontSize: 10, borderRadius: 6, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.06)", color: "#c9a84c", cursor: aiLoading ? "default" : "pointer", letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 5 }}>
+                  {aiLoading ? "Analyzing…" : <><Sparkles size={10} /> AI Insight</>}
                 </button>
               )}
             </div>
@@ -329,7 +329,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
           {aiInsight && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               style={{ border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 12, padding: "16px 18px", background: "rgba(201,168,76,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <span style={{ color: "#c9a84c", fontSize: 16, flexShrink: 0 }}>✦</span>
+              <Sparkles size={14} color="#c9a84c" style={{ flexShrink: 0, marginTop: 2 }} />
               <div>
                 <p style={{ fontSize: 9, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase", marginBottom: 6 }}>AI Comparison Insight</p>
                 <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{aiInsight}</p>
@@ -533,7 +533,7 @@ export default function AppPage() {
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
   useEffect(() => {
     const SHIFT_MAP: Record<string, string> = {
-      "a": "overview", "h": "overview",
+      "a": "overview",
       "s": "stocks", "l": "learn",
       "w": "watchlist",
     };
@@ -544,13 +544,29 @@ export default function AppPage() {
         setPaletteOpen(o => !o);
         return;
       }
-      // Cmd+Shift+A/S/L/W → quick tab jump
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && SHIFT_MAP[e.key.toLowerCase()]) {
-        e.preventDefault();
-        const tabId = SHIFT_MAP[e.key.toLowerCase()];
-        setActiveTab(tabId);
-        sound.whoosh();
-        return;
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+        const key = e.key.toLowerCase();
+        // Cmd+Shift+H → go to homepage
+        if (key === "h") {
+          e.preventDefault();
+          window.location.href = "/";
+          return;
+        }
+        // Cmd+Shift+M → toggle sound effects
+        if (key === "m") {
+          e.preventDefault();
+          const on = localStorage.getItem(SOUND_KEY) === "true";
+          localStorage.setItem(SOUND_KEY, on ? "false" : "true");
+          if (!on) sound.click();
+          return;
+        }
+        // Cmd+Shift+A/S/L/W → quick tab jump
+        if (SHIFT_MAP[key]) {
+          e.preventDefault();
+          setActiveTab(SHIFT_MAP[key]);
+          sound.whoosh();
+          return;
+        }
       }
       if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
       const tag = (document.activeElement as HTMLElement)?.tagName;
@@ -1032,12 +1048,36 @@ export default function AppPage() {
                   animate="visible"
                   variants={{ visible: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } } }}>
                   {[
-                    { title: "Health Score", content: <HealthScore data={data} /> },
-                    { title: "AI Insights", content: <AiInsights data={data} assets={assets} onAskAi={() => setActiveTab("ai")} /> },
-                    { title: `vs ${benchLabel}`, content: <BenchmarkComparison data={data} /> },
-                  ].map(({ title, content }) => (
+                    {
+                      title: "Health Score",
+                      content: <HealthScore data={data} />,
+                      sections: [
+                        { label: "Plain English", text: "A composite score from 0–100 that grades your portfolio on returns, risk-adjusted performance, stability, and resilience." },
+                        { label: "Example", text: "Score 78 = Good. Strong returns and Sharpe ratio, but some volatility keeping it from Excellent." },
+                        { label: "What's Good", text: "75–100 is Excellent. 50–74 Good. 25–49 Fair. Below 25 needs attention. Aim for 60+ for a solid long-term portfolio." },
+                      ],
+                    },
+                    {
+                      title: "AI Insights",
+                      content: <AiInsights data={data} assets={assets} onAskAi={() => setActiveTab("ai")} />,
+                      sections: [
+                        { label: "Plain English", text: "AI-generated observations about your portfolio's risk, diversification, and performance characteristics." },
+                        { label: "Example", text: "The AI might flag that 3 of your 4 holdings are in the same sector, increasing concentration risk." },
+                        { label: "What's Good", text: "Use insights as a starting point for research, not as financial advice. Diversification and balance are key themes to watch." },
+                      ],
+                    },
+                    {
+                      title: `vs ${benchLabel}`,
+                      content: <BenchmarkComparison data={data} />,
+                      sections: [
+                        { label: "Plain English", text: `Compares your portfolio's return against ${benchLabel} over the same period.` },
+                        { label: "Example", text: "If your portfolio returned +18% and S&P 500 returned +10%, you outperformed by +8 percentage points (pp)." },
+                        { label: "What's Good", text: "Consistently beating your benchmark by 2–5pp is exceptional. Even matching it while taking less risk is a win." },
+                      ],
+                    },
+                  ].map(({ title, content, sections }) => (
                     <motion.div key={title} variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }} style={{ display: "flex", flexDirection: "column" }}>
-                      <Card style={{ marginBottom: 0, flex: 1 }}><CardHeader title={title} />{content}</Card>
+                      <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -1055,7 +1095,11 @@ export default function AppPage() {
               </motion.div>
             ) : activeTab === "simulate" ? (
               <motion.div key="simulate" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                <Card><CardHeader title="Monte Carlo Simulation" /><MonteCarloChart assets={assets} period={period} /></Card>
+                <Card><TooltipCardHeader title="Monte Carlo Simulation" sections={[
+                  { label: "Plain English", text: "Runs thousands of random future scenarios based on your portfolio's historical returns and volatility to estimate a range of outcomes." },
+                  { label: "Example", text: "With 1,000 simulations, 90% of paths might end between $8,000 and $28,000 from a $10,000 start over 10 years." },
+                  { label: "What's Good", text: "A wide band means high uncertainty. A tight upward band is ideal. The median (50th percentile) path is a realistic central estimate." },
+                ]} /><MonteCarloChart assets={assets} period={period} /></Card>
               </motion.div>
             ) : activeTab === "compare" ? (
               <motion.div key="compare" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
@@ -1162,10 +1206,12 @@ function CheatsheetButton({ onOpenPalette }: { onOpenPalette: () => void }) {
   const [show, setShow] = useState(false);
   const SHORTCUTS = [
     { keys: "⌘K",      label: "Command palette" },
+    { keys: "⌘⇧A",    label: "Dashboard tab" },
     { keys: "⌘⇧S",    label: "Stocks tab" },
     { keys: "⌘⇧W",    label: "Watchlist tab" },
     { keys: "⌘⇧L",    label: "Learn tab" },
-    { keys: "⌘⇧A",    label: "Dashboard tab" },
+    { keys: "⌘⇧H",    label: "Go to homepage" },
+    { keys: "⌘⇧M",    label: "Toggle sound" },
     { keys: "↵",       label: "Run analysis" },
   ];
   return (

@@ -1149,39 +1149,38 @@ def watchlist_data(tickers: str, request: Request):
 
 @app.get("/test-email")
 def test_email(email: str = ""):
-    """Debug endpoint — send a test welcome email and return the result."""
-    import smtplib, traceback
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
+    """Debug endpoint — send a test email via Resend and return the result."""
+    import traceback
 
     target = email or os.environ.get("TEST_EMAIL_TO", "")
     if not target:
         return {"ok": False, "error": "Provide ?email=you@example.com or set TEST_EMAIL_TO env var"}
 
-    smtp_host = os.environ.get("SMTP_HOST", "")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USER", "")
-    smtp_pass = os.environ.get("SMTP_PASS", "")
+    resend_key = os.environ.get("RESEND_API_KEY", "")
+    if not resend_key:
+        return {"ok": False, "error": "RESEND_API_KEY not configured"}
 
-    print(f"[test-email] target={target} smtp_host={smtp_host} smtp_user={smtp_user}")
-
-    if not smtp_host or not smtp_user:
-        return {"ok": False, "error": "SMTP_HOST or SMTP_USER not configured", "smtp_host": smtp_host, "smtp_user": smtp_user}
+    print(f"[test-email] sending to {target} via Resend")
 
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Corvo — Test Email"
-        msg["From"] = smtp_user
-        msg["To"] = target
-        msg.attach(MIMEText("This is a Corvo test email. SMTP is working correctly.", "plain"))
-
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as s:
-            s.ehlo()
-            s.starttls()
-            s.login(smtp_user, smtp_pass)
-            s.sendmail(smtp_user, [target], msg.as_string())
-        print(f"[test-email] sent OK to {target}")
-        return {"ok": True, "sent_to": target}
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
+            json={
+                "from": "Corvo <hello@corvo.capital>",
+                "to": [target],
+                "subject": "Corvo — Test Email",
+                "html": "<p>This is a Corvo test email. Resend is working correctly.</p>",
+            },
+            timeout=10,
+        )
+        data = response.json()
+        if response.status_code in (200, 201):
+            print(f"[test-email] sent OK to {target} id={data.get('id')}")
+            return {"ok": True, "sent_to": target, "resend_id": data.get("id")}
+        else:
+            print(f"[test-email] Resend error {response.status_code}: {data}")
+            return {"ok": False, "error": data}
     except Exception:
         tb = traceback.format_exc()
         print(f"[test-email] FAILED:\n{tb}")

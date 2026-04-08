@@ -160,6 +160,7 @@ export default function Landing() {
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
         @keyframes pdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.25;transform:scale(0.45)}}
         @keyframes fadein{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes heroGrad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
         .cta{transition:all 0.25s!important}.cta:hover{background:#d4b558!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(201,168,76,0.25)!important}
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(201,168,76,0.4)!important;color:#c9a84c!important}
         .nl:hover{color:#c9a84c!important}
@@ -191,7 +192,12 @@ export default function Landing() {
 
       {/* HERO */}
       <section style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "110px 24px 70px" }}>
-        <div style={{ animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 24, marginBottom: 36, background: "rgba(201,168,76,0.06)" }}>
+        {/* Animated amber gradient mesh */}
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
+          <div style={{ position: "absolute", top: "-30%", left: "-20%", width: "80%", height: "80%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(201,168,76,0.08) 0%, transparent 70%)", animation: "heroGrad 18s ease infinite", backgroundSize: "300% 300%", filter: "blur(40px)" }} />
+          <div style={{ position: "absolute", bottom: "-20%", right: "-15%", width: "70%", height: "70%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(180,140,50,0.06) 0%, transparent 70%)", animation: "heroGrad 24s ease infinite reverse", backgroundSize: "300% 300%", filter: "blur(60px)" }} />
+        </div>
+        <div style={{ position: "relative", zIndex: 1, animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 24, marginBottom: 36, background: "rgba(201,168,76,0.06)" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
           <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>AI-Powered Portfolio Intelligence</span>
         </div>
