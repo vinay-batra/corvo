@@ -27,7 +27,8 @@ function AuthForm() {
   const [mode, setMode] = useState<"login"|"signup"|"reset"|"magic">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [magicSent, setMagicSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string|null>(null);
   const [success, setSuccess] = useState<string|null>(null);
@@ -73,6 +74,18 @@ function AuthForm() {
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback?next=${nextPath}` },
     });
+  };
+
+  const handleMagicLink = async () => {
+    if (!email) { setError("Enter your email address first."); return; }
+    setLoading(true); setError(null);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${nextPath}` },
+    });
+    setLoading(false);
+    if (error) setError(error.message);
+    else setMagicSent(true);
   };
 
   const handleGitHub = async () => {
@@ -222,6 +235,22 @@ function AuthForm() {
             <><div style={{ width: 12, height: 12, border: `1.5px solid rgba(10,14,20,0.3)`, borderTopColor: C.navy, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />Processing...</>
           ) : mode === "login" ? "Log In" : mode === "signup" ? "Create Account" : mode === "magic" ? "Send Magic Link" : "Send Reset Email"}
         </button>
+
+        {mode === "login" && (
+          magicSent ? (
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+              style={{ marginTop: 10, padding: "10px 12px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 8, fontSize: 12, color: C.amber, textAlign: "center" }}>
+              Check your email — magic link sent.
+            </motion.div>
+          ) : (
+            <button onClick={handleMagicLink} disabled={loading}
+              style={{ width: "100%", marginTop: 10, padding: "11px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 13, color: C.cream3, cursor: "pointer", transition: "border-color 0.15s, color 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.color = C.cream; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.cream3; }}>
+              Send magic link instead
+            </button>
+          )
+        )}
 
         {(mode === "reset" || mode === "magic") && (
           <button onClick={() => { setMode("login"); setError(null); setSuccess(null); }}
