@@ -1,4 +1,10 @@
 backend/venv
 .env
+.env.local
+.env.production
+.env.*.local
 backend/.env
 backend/.env.save
+backend/.env.local
+frontend/.env.local
+frontend/.env.production

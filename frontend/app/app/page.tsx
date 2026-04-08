@@ -9,6 +9,7 @@ import {
   Sun, Moon, CandlestickChart, Command, HelpCircle,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
+import InfoModal from "../../components/InfoModal";
 import StockDetail from "../../components/StockDetail";
 import { OverviewSkeleton } from "../../components/SkeletonLoader";
 import { useSoundEffects, unlockAudio } from "../../hooks/useSoundEffects";
@@ -33,6 +34,8 @@ import OnboardingTour from "../../components/OnboardingTour";
 import { fetchPortfolio } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 import AlertsPanel from "../../components/AlertsPanel";
+import WhatIfDrawer from "../../components/WhatIfDrawer";
+import StockCompare from "../../components/StockCompare";
 import Watchlist from "../../components/Watchlist";
 import PortfolioHistory from "../../components/PortfolioHistory";
 import EmailPreferences from "../../components/EmailPreferences";
@@ -116,24 +119,12 @@ function useS() {
   };
 }
 
-function TooltipCardHeader({ title, tooltip }: { title: string; tooltip: string }) {
-  const [show, setShow] = useState(false);
+function TooltipCardHeader({ title, sections }: { title: string; sections: { label: string; text: string }[] }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, position: "relative" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
       <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
       <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{title}</span>
-      <button
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-        onClick={() => setShow(s => !s)}
-        style={{ width: 15, height: 15, borderRadius: "50%", border: "0.5px solid var(--border2)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--text3)", flexShrink: 0, lineHeight: 1 }}>
-        ?
-      </button>
-      {show && (
-        <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "var(--text2)", lineHeight: 1.65, maxWidth: 260, boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
-          {tooltip}
-        </div>
-      )}
+      <InfoModal title={title} sections={sections} />
     </div>
   );
 }
@@ -176,6 +167,8 @@ function Empty() {
   );
 }
 
+const COMPARE_COLORS = ["#c9a84c", "#5b9cf6", "#5cb88a", "#b47ee0"];
+
 // ── Portfolio Comparison ──────────────────────────────────────────────────────
 function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: { assets: { ticker: string; weight: number }[]; period: string; benchmark: string; benchmarkLabel: string; currentData: any }) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -183,6 +176,8 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
   const [selected, setSelected] = useState<string[]>([]);
   const [results, setResults] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [aiInsight, setAiInsight] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -213,6 +208,26 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
     ...savedPortfolios.map(p => ({ id: p.id, name: p.name, result: results[p.id] || null, loading: loading[p.id] || false, tickers: (p.assets || []).map((a: any) => a.ticker), raw: p })),
   ];
   const active = allPortfolios.filter(p => (p.id === "__current__" || selected.includes(p.id)) && p.result);
+
+  const generateAiInsight = async () => {
+    if (active.length < 2) return;
+    setAiLoading(true); setAiInsight("");
+    try {
+      const summary = active.map(p => `${p.name}: Return ${((p.result.portfolio_return||0)*100).toFixed(1)}%, Sharpe ${(p.result.sharpe_ratio||0).toFixed(2)}, Volatility ${((p.result.portfolio_volatility||0)*100).toFixed(1)}%, Drawdown ${((p.result.max_drawdown||0)*100).toFixed(1)}%`).join(" | ");
+      const res = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `Compare these portfolios and give a clear 2-3 sentence recommendation on which is better and why: ${summary}. Focus on risk-adjusted returns and max drawdown.`,
+          history: [],
+          portfolio_context: {},
+        }),
+      });
+      const d = await res.json();
+      setAiInsight(d.reply || "");
+    } catch {}
+    setAiLoading(false);
+  };
 
   const metrics = [
     { key: "portfolio_return",    label: "Annual Return",  fmt: (v: number) => `${(v*100).toFixed(1)}%`,  positive: true },
@@ -259,47 +274,69 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
       )}
 
       {active.length > 0 && (
-        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, background: "var(--card-bg)", overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
-            <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Side-by-Side · {period.toUpperCase()} · vs {benchmarkLabel}</span>
+        <>
+          <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, background: "var(--card-bg)", overflow: "hidden", marginBottom: 12 }}>
+            <div style={{ padding: "14px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+                <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Side-by-Side · {period.toUpperCase()} · vs {benchmarkLabel}</span>
+              </div>
+              {active.length >= 2 && (
+                <button onClick={generateAiInsight} disabled={aiLoading}
+                  style={{ padding: "5px 12px", fontSize: 10, borderRadius: 6, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.06)", color: "#c9a84c", cursor: aiLoading ? "default" : "pointer", letterSpacing: 0.5 }}>
+                  {aiLoading ? "Analyzing…" : "✦ AI Insight"}
+                </button>
+              )}
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
+                    <th style={{ padding: "12px 20px", textAlign: "left", fontSize: 10, letterSpacing: 1, color: "var(--text3)", fontWeight: 500 }}>Metric</th>
+                    {active.map((p, pi) => (
+                      <th key={p.id} style={{ padding: "12px 20px", textAlign: "right", fontSize: 12, color: COMPARE_COLORS[pi % COMPARE_COLORS.length], fontWeight: 600, minWidth: 120 }}>
+                        {p.name}
+                        <div style={{ fontSize: 9, color: "var(--text3)", fontWeight: 400, marginTop: 2 }}>{p.tickers.slice(0, 3).join(", ")}{p.tickers.length > 3 ? "…" : ""}</div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.map((m, mi) => {
+                    const vals = active.map(p => p.result[m.key] ?? 0);
+                    const best = m.positive ? Math.max(...vals) : Math.min(...vals);
+                    return (
+                      <tr key={m.key} style={{ borderBottom: mi < metrics.length - 1 ? "0.5px solid var(--border)" : "none" }}>
+                        <td style={{ padding: "13px 20px", fontSize: 12, color: "var(--text2)" }}>{m.label}</td>
+                        {active.map((p, pi) => {
+                          const val = p.result[m.key] ?? 0;
+                          const isBest = val === best;
+                          return (
+                            <td key={p.id} style={{ padding: "13px 20px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: isBest ? 600 : 400, color: isBest ? COMPARE_COLORS[pi % COMPARE_COLORS.length] : "var(--text3)" }}>
+                              {m.fmt(val)}{isBest && <span style={{ marginLeft: 5, fontSize: 9 }}>★</span>}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
-                  <th style={{ padding: "12px 20px", textAlign: "left", fontSize: 10, letterSpacing: 1, color: "var(--text3)", fontWeight: 500 }}>Metric</th>
-                  {active.map(p => (
-                    <th key={p.id} style={{ padding: "12px 20px", textAlign: "right", fontSize: 12, color: "var(--text)", fontWeight: 500, minWidth: 120 }}>
-                      {p.name}
-                      <div style={{ fontSize: 9, color: "var(--text3)", fontWeight: 400, marginTop: 2 }}>{p.tickers.slice(0, 3).join(", ")}{p.tickers.length > 3 ? "…" : ""}</div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {metrics.map((m, mi) => {
-                  const vals = active.map(p => p.result[m.key] ?? 0);
-                  const best = m.positive ? Math.max(...vals) : Math.min(...vals);
-                  return (
-                    <tr key={m.key} style={{ borderBottom: mi < metrics.length - 1 ? "0.5px solid var(--border)" : "none" }}>
-                      <td style={{ padding: "13px 20px", fontSize: 12, color: "var(--text2)" }}>{m.label}</td>
-                      {active.map(p => {
-                        const val = p.result[m.key] ?? 0;
-                        const isBest = val === best;
-                        return (
-                          <td key={p.id} style={{ padding: "13px 20px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: isBest ? 600 : 400, color: isBest ? "var(--text)" : "var(--text3)" }}>
-                            {m.fmt(val)}{isBest && <span style={{ marginLeft: 5, fontSize: 9, color: "#c9a84c" }}>★</span>}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+
+          {/* AI insight panel */}
+          {aiInsight && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              style={{ border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 12, padding: "16px 18px", background: "rgba(201,168,76,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <span style={{ color: "#c9a84c", fontSize: 16, flexShrink: 0 }}>✦</span>
+              <div>
+                <p style={{ fontSize: 9, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase", marginBottom: 6 }}>AI Comparison Insight</p>
+                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{aiInsight}</p>
+              </div>
+            </motion.div>
+          )}
+        </>
       )}
     </div>
   );
@@ -366,6 +403,7 @@ export default function AppPage() {
   });
   const [paletteOpen, setPaletteOpen]   = useState(false);
   const [stockTicker, setStockTicker]   = useState<string | null>(null);
+  const [compareMode, setCompareMode]   = useState(false);
   const sound = useSoundEffects();
   const [showAlerts, setShowAlerts]         = useState(false);
   const [showEmailPrefs, setShowEmailPrefs]     = useState(false);
@@ -375,8 +413,7 @@ export default function AppPage() {
   const errorDismissRef                         = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tourNeededRef                           = useRef<boolean>(false);
   const [alertCount, setAlertCount]   = useState(0);
-  const [whatIfMode, setWhatIfMode]   = useState(false);
-  const [whatIfWeights, setWhatIfWeights] = useState<Record<string, number>>({});
+  const [whatIfOpen, setWhatIfOpen] = useState(false);
   const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
   const [currencyOpen, setCurrencyOpen] = useState(false);
@@ -933,10 +970,31 @@ export default function AppPage() {
           <AnimatePresence mode="wait">
             {activeTab === "stocks" ? (
               <motion.div key="stocks" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                {stockTicker ? (
+                {compareMode ? (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                      <button onClick={() => setCompareMode(false)}
+                        style={{ padding: "6px 12px", fontSize: 11, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
+                        ← Back
+                      </button>
+                      <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Stock Comparison</span>
+                    </div>
+                    <StockCompare />
+                  </>
+                ) : stockTicker ? (
                   <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} />
                 ) : (
-                  <StocksSearch onSelect={setStockTicker} />
+                  <>
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+                      <button onClick={() => setCompareMode(true)}
+                        style={{ padding: "7px 14px", fontSize: 11, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+                        ⇄ Compare Stocks
+                      </button>
+                    </div>
+                    <StocksSearch onSelect={setStockTicker} />
+                  </>
                 )}
               </motion.div>
             ) : !data && !loading ? (
@@ -957,38 +1015,14 @@ export default function AppPage() {
                   <Card>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                       <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
-                      <button onClick={() => { setWhatIfMode(w => !w); if (!whatIfMode) { const init: Record<string,number> = {}; assets.forEach(a => { init[a.ticker] = a.weight; }); setWhatIfWeights(init); } }}
-                        style={{ padding: "4px 10px", fontSize: 10, borderRadius: 6, border: "0.5px solid var(--border2)", background: whatIfMode ? "var(--text)" : "transparent", color: whatIfMode ? "var(--bg)" : "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}>
-                        {whatIfMode ? "Exit What-if" : "What-if"}
+                      <button onClick={() => setWhatIfOpen(true)}
+                        style={{ padding: "4px 10px", fontSize: 10, borderRadius: 6, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}>
+                        What-If →
                       </button>
                     </div>
-                    {whatIfMode ? (
-                      <div>
-                        <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14 }}>Adjust weights to explore allocation scenarios. Re-analyze to see updated metrics.</p>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-                          {assets.map(a => {
-                            const w = whatIfWeights[a.ticker] ?? a.weight;
-                            const total = Object.values(whatIfWeights).reduce((s, v) => s + v, 0) || 1;
-                            return (
-                              <div key={a.ticker}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                                  <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text)" }}>{a.ticker}</span>
-                                  <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text2)" }}>{((w / total) * 100).toFixed(0)}%</span>
-                                </div>
-                                <input type="range" min={1} max={100} value={w} onChange={e => setWhatIfWeights(prev => ({ ...prev, [a.ticker]: Number(e.target.value) }))}
-                                  style={{ width: "100%", accentColor: "var(--accent)" }} />
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <button onClick={() => { const total = Object.values(whatIfWeights).reduce((s,v)=>s+v,0)||1; const updated = assets.map(a => ({ ...a, weight: Math.round((whatIfWeights[a.ticker]??a.weight)/total*100) })); setAssets(updated); setWhatIfMode(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
-                          style={{ padding: "8px 18px", fontSize: 11, background: "var(--accent)", border: "none", borderRadius: 8, color: "#0a0e14", fontWeight: 600, cursor: "pointer", marginRight: 8 }}>
-                          Apply & Re-analyze
-                        </button>
-                      </div>
-                    ) : (
-                      <PerformanceChart data={data} />
-                    )}
+                    <PerformanceChart data={data} />
                   </Card>
                 </motion.div>
                 <motion.div
@@ -1015,8 +1049,8 @@ export default function AppPage() {
             ) : activeTab === "risk" ? (
               <motion.div key="risk" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Drawdown" tooltip="Shows the largest peak-to-trough loss in your portfolio over the selected period. Deeper troughs = higher risk." /><DrawdownChart assets={assets} period={period} /></Card>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Correlation" tooltip="Shows how your assets move together. Values near 1.0 mean they crash together, reducing diversification benefit." /><CorrelationHeatmap assets={assets} period={period} /></Card>
+                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Drawdown" sections={[{label:"Plain English",text:"Shows the biggest loss from a peak to a trough in your portfolio over the selected period."},{label:"Example",text:"A -20% drawdown means your portfolio fell from $100K to $80K before recovering."},{label:"What's Good",text:"Drawdowns under 15% are generally considered manageable for long-term investors. Deeper troughs signal higher risk."}]} /><DrawdownChart assets={assets} period={period} /></Card>
+                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Correlation" sections={[{label:"Plain English",text:"Shows how your assets move in relation to each other. A value of 1.0 means they move in perfect lockstep."},{label:"Example",text:"AAPL and MSFT often have correlation near 0.8 — when one drops, the other usually does too."},{label:"What's Good",text:"Aim for correlations below 0.5 between your major holdings. Low correlation = real diversification."}]} /><CorrelationHeatmap assets={assets} period={period} /></Card>
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (
@@ -1105,6 +1139,17 @@ export default function AppPage() {
         onAnalyze={handleAnalyze}
         onToggleDark={toggleDark}
         dark={dark}
+      />
+
+      {/* What-If drawer */}
+      <WhatIfDrawer
+        open={whatIfOpen}
+        onClose={() => setWhatIfOpen(false)}
+        assets={assets}
+        period={period}
+        benchmark={benchmark}
+        currentData={data}
+        onApply={(a) => { setAssets(a); setWhatIfOpen(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
       />
 
       {/* Floating ? cheatsheet button */}

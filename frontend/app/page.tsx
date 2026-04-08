@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { createBrowserClient } from "@supabase/ssr";
+import { motion } from "framer-motion";
 
 function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -120,6 +122,8 @@ const FEATURES = [
 export default function Landing() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [navSolid, setNavSolid] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -127,6 +131,22 @@ export default function Landing() {
     const onScroll = () => setNavSolid(el.scrollTop > 60);
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    // Check login state
+    const sb = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) setLoggedIn(true);
+    });
+    // Fetch live user count
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    fetch(`${API_URL}/stats`).then(r => r.json()).then(d => {
+      if (d.user_count) setLiveUserCount(d.user_count);
+    }).catch(() => {});
   }, []);
 
   return (
@@ -158,8 +178,14 @@ export default function Landing() {
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "#e8e0cc" }}>CORVO</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <Link href="/auth" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Log in</Link>
-          <Link href="/auth" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Get Started</Link>
+          {loggedIn ? (
+            <Link href="/app" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Go to Dashboard →</Link>
+          ) : (
+            <>
+              <Link href="/auth" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Log in</Link>
+              <Link href="/auth" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Get Started</Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -170,22 +196,43 @@ export default function Landing() {
           <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>AI-Powered Portfolio Intelligence</span>
         </div>
 
-        <h1 style={{ animation: "fadein 0.9s cubic-bezier(0.16,1,0.3,1) 0.3s both", fontFamily: "Space Mono,monospace", fontSize: "clamp(36px,6vw,78px)", fontWeight: 700, lineHeight: 1.06, letterSpacing: -3, marginBottom: 28, maxWidth: 840 }}>
-          <span style={{ display: "block", color: "#e8e0cc" }}>Your portfolio.</span>
+        <motion.h1
+          style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(36px,6vw,78px)", fontWeight: 700, lineHeight: 1.06, letterSpacing: -3, marginBottom: 28, maxWidth: 840 }}
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
+          initial="hidden" animate="visible"
+        >
+          <span style={{ display: "block", color: "#e8e0cc" }}>
+            {["Your", "portfolio."].map((w, i) => (
+              <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200 } } }}
+                style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
+            ))}
+          </span>
           <span style={{ display: "block", color: "#c9a84c", position: "relative" }}>
-            Analyzed.
+            {["Analyzed."].map((w, i) => (
+              <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
+                style={{ display: "inline-block" }}>{w}</motion.span>
+            ))}
             <span style={{ position: "absolute", bottom: 2, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(201,168,76,0.35), transparent)" }} />
           </span>
-        </h1>
+        </motion.h1>
 
-        <p style={{ animation: "fadein 0.9s cubic-bezier(0.16,1,0.3,1) 0.45s both", fontSize: 17, color: "rgba(232,224,204,0.45)", lineHeight: 1.85, fontWeight: 300, maxWidth: 520, marginBottom: 48 }}>
+        <motion.p
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
+          style={{ fontSize: 17, color: "rgba(232,224,204,0.45)", lineHeight: 1.85, fontWeight: 300, maxWidth: 520, marginBottom: 48 }}>
           Stop guessing. Start knowing exactly what your money is doing and why.
-        </p>
+        </motion.p>
 
-        <div style={{ animation: "fadein 0.9s cubic-bezier(0.16,1,0.3,1) 0.6s both", display: "flex", gap: 12, marginBottom: 80 }}>
-          <Link href="/auth" className="cta" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Start for free →</Link>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.9, type: "spring", damping: 20, stiffness: 200 }}
+          style={{ display: "flex", gap: 12, marginBottom: 80 }}>
+          {loggedIn ? (
+            <Link href="/app" className="cta" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Go to Dashboard →</Link>
+          ) : (
+            <Link href="/auth" className="cta" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Start for free →</Link>
+          )}
           <Link href="/app?demo=true" className="ghost" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c", textDecoration: "none", fontWeight: 500 }}>Try demo →</Link>
-        </div>
+        </motion.div>
 
         {/* Dashboard preview */}
         <div style={{ animation: "fadein 1s cubic-bezier(0.16,1,0.3,1) 0.8s both, float 7s ease-in-out 2.5s infinite", width: "min(920px,92vw)", position: "relative" }}>
@@ -290,11 +337,11 @@ export default function Landing() {
       <div style={{ position: "relative", zIndex: 1, padding: "28px 56px", display: "flex", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ display: "flex" }}>
-            {[{i:"M",c:"#c9a84c"},{i:"S",c:"#5cb88a"},{i:"J",c:"#7b8fcc"},{i:"A",c:"#e05c5c"},{i:"R",c:"#c9a84c"}].map((u,idx)=>(
+            {[{i:"M",c:"#c9a84c"},{i:"S",c:"#5cb88a"},{i:"J",c:"#c9a84c"},{i:"A",c:"#e05c5c"},{i:"R",c:"#5cb88a"}].map((u,idx)=>(
               <div key={idx} style={{ width: 32, height: 32, borderRadius: "50%", background: u.c+"22", border: `2px solid ${u.c}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: u.c, marginLeft: idx===0?0:-10, zIndex: 5-idx, position: "relative" }}>{u.i}</div>
             ))}
           </div>
-          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", letterSpacing: 0.2 }}>Join <span style={{ color: "#c9a84c", fontWeight: 600 }}>500+</span> investors already using Corvo</p>
+          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", letterSpacing: 0.2 }}>Join <span style={{ color: "#c9a84c", fontWeight: 600 }}>{liveUserCount ? `${liveUserCount.toLocaleString()}+` : "500+"}</span> investors already using Corvo</p>
         </div>
       </div>
 
@@ -342,9 +389,9 @@ export default function Landing() {
           </Reveal>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
             {[
-              { text: "Finally an app that explains what Sharpe ratio actually means for my portfolio.", name: "Marcus T.", role: "Retail Investor" },
-              { text: "The AI chat told me I was too concentrated in tech before I even asked.", name: "Sarah K.", role: "Self-directed IRA" },
-              { text: "Imported my Fidelity screenshot in 10 seconds. Immediately knew what to fix.", name: "James L.", role: "Index Fund Investor" },
+              { text: "Finally understand my portfolio's actual risk exposure.", name: "Marcus T.", role: "Retail Investor" },
+              { text: "Replaced my Bloomberg subscription for personal investing.", name: "Sarah K.", role: "Self-directed IRA" },
+              { text: "The Monte Carlo simulator alone is worth it.", name: "David R.", role: "Index Fund Investor" },
             ].map((t,i) => (
               <Reveal key={i} delay={i*0.12} y={24}>
                 <div style={{ padding: "28px", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 14, background: "rgba(255,255,255,0.01)", height: "100%" }}>
@@ -432,17 +479,19 @@ export default function Landing() {
       </div>
 
       {/* FOOTER */}
-      <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 56px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
-        </div>
-        <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)" }}>© 2026 Corvo</p>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-          <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</a>
-          <a href="/terms"   style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</a>
-          <a href="/learn"   style={{ fontSize: 11, color: "rgba(201,168,76,0.4)", textDecoration: "none" }}>Learn</a>
-          <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>GitHub</a>
+      <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 56px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
+            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
+          </div>
+          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", textAlign: "center" }}>© 2026 Corvo. All rights reserved.</p>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</a>
+            <a href="/terms"   style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</a>
+            <a href="/learn"   style={{ fontSize: 11, color: "rgba(201,168,76,0.4)", textDecoration: "none" }}>Learn</a>
+            <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>GitHub</a>
+          </div>
         </div>
       </footer>
     </div>

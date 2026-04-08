@@ -16,8 +16,11 @@ function AuthForm() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") ?? "/app";
 
-  // Store referral code on load
+  // Redirect already-authenticated users
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) window.location.replace(nextPath);
+    });
     const ref = searchParams.get("ref");
     if (ref) localStorage.setItem("corvo_referrer", ref);
   }, [searchParams]);
