@@ -52,6 +52,22 @@ function StarIcon({ size = 12 }: { size?: number }) {
     </svg>
   );
 }
+function CheckCircleIcon({ size = 48 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="9 12 11 14 15 10"/>
+    </svg>
+  );
+}
+function BookOpenIcon({ size = 48 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+    </svg>
+  );
+}
 
 // ── XP Toast ─────────────────────────────────────────────────────────────────
 function XPToast({ amount, onDone }: { amount: number; onDone: () => void }) {
@@ -340,6 +356,14 @@ const LESSONS = [
       { type: "list", items: ["Below 0: Not compensated for the risk", "0–1: Acceptable, but room for improvement", "1–2: Good risk-adjusted return", "Above 2: Excellent (rare outside specific strategies)"] },
       { type: "text", text: "The risk-free rate is typically the 3-month US Treasury yield (~4–5%). So a portfolio returning 12% with 20% volatility has a Sharpe of (12 − 4) ÷ 20 = 0.40." },
     ],
+    example: {
+      problem: "A portfolio returns 12% annually with 20% volatility. The risk-free rate is 4%.",
+      steps: [
+        "Excess return  =  Return − Risk-free rate  =  12% − 4%  =  8%",
+        "Sharpe ratio   =  Excess return ÷ Volatility  =  8% ÷ 20%  =  0.40",
+      ],
+      answer: "Sharpe = 0.40 — acceptable, but there's room to improve.",
+    },
     quiz: [
       { q: "What does a Sharpe ratio of exactly 0 mean?", options: ["Great risk-adjusted return", "No return above the risk-free rate", "Maximum possible volatility", "Perfect diversification"], correct: 1 },
       { q: "Portfolio returns 15%, volatility 20%, risk-free rate 4%. What's the Sharpe?", options: ["0.55", "0.75", "0.35", "1.10"], correct: 0 },
@@ -356,6 +380,14 @@ const LESSONS = [
       { type: "list", items: ["Volatility treats upswings and downswings equally", "Drawdown only captures losing periods", "A -50% drawdown requires a +100% return to break even", "Many investors panic-sell at the trough, locking in losses"] },
       { type: "text", text: "A max drawdown under 20% is generally manageable. Crypto portfolios often see 60–80% drawdowns." },
     ],
+    example: {
+      problem: "A portfolio peaks at $10,000 then falls to $7,500 before recovering.",
+      steps: [
+        "Decline       =  Trough − Peak  =  $7,500 − $10,000  =  −$2,500",
+        "Max Drawdown  =  Decline ÷ Peak  =  −$2,500 ÷ $10,000  =  −25%",
+      ],
+      answer: "Max drawdown = −25%. To break even, the portfolio must gain +33.3%.",
+    },
     quiz: [
       { q: "Portfolio peaks at $100k, falls to $65k. What's the max drawdown?", options: ["-25%", "-35%", "-45%", "-15%"], correct: 1 },
       { q: "A -50% drawdown requires what return just to break even?", options: ["+50%", "+75%", "+100%", "+150%"], correct: 2 },
@@ -371,6 +403,15 @@ const LESSONS = [
       { type: "list", items: ["AAPL vs MSFT: ~0.85 (highly correlated)", "SPY vs GLD: ~0.05 (near zero — good diversifier)", "SPY vs TLT: ~−0.30 (negative — bonds often rise when stocks fall)", "BTC vs stocks: ~0.40 (mild, increasing over time)"] },
       { type: "text", text: "The ideal portfolio combines assets with low or negative correlations — the free lunch of investing." },
     ],
+    example: {
+      problem: "You hold AAPL and want to add a second asset. Which one diversifies your portfolio better?",
+      steps: [
+        "AAPL vs MSFT correlation: +0.85 — both drop heavily in tech selloffs",
+        "AAPL vs GLD correlation:  +0.03 — gold is nearly uncorrelated with tech",
+        "Lower correlation → less portfolio risk for the same expected return",
+      ],
+      answer: "Add GLD. Near-zero correlation with AAPL provides genuine diversification.",
+    },
     quiz: [
       { q: "What correlation value means assets move in exactly the same direction?", options: ["0", "-1", "+1", "0.5"], correct: 2 },
       { q: "Which asset is most likely to provide diversification to an S&P 500 holding?", options: ["AAPL", "MSFT", "GLD", "QQQ"], correct: 2 },
@@ -386,8 +427,17 @@ const LESSONS = [
       { type: "text", text: "The wider the cone, the more uncertain your future. A volatile portfolio has a huge range — you might be up 300% or down 60%." },
       { type: "text", text: "Use the 10th percentile (bottom of the cone) as a stress-test: can you afford that outcome?" },
     ],
+    example: {
+      problem: "Two portfolios: A has 15% mean return, 40% volatility. B has 8% mean return, 12% volatility. Which has the wider Monte Carlo cone?",
+      steps: [
+        "Monte Carlo samples random returns using each portfolio's mean and volatility",
+        "Portfolio A: high volatility (40%) → a wide spread of outcomes over time",
+        "Portfolio B: low volatility (12%) → a narrow, more predictable cone",
+      ],
+      answer: "Portfolio A has the wider cone — higher volatility means more uncertainty about future value.",
+    },
     quiz: [
-      { q: "What does a wider cone in a Monte Carlo simulation indicate?", options: ["Lower returns", "More uncertainty about future outcomes", "Better expected performance", "Lower risk"] },
+      { q: "What does a wider cone in a Monte Carlo simulation indicate?", options: ["Lower returns", "More uncertainty about future outcomes", "Better expected performance", "Lower risk"], correct: 1 },
       { q: "What inputs does Monte Carlo use to generate scenarios?", options: ["Expert predictions", "Historical mean return and volatility", "Future earnings forecasts", "Economic indicators"], correct: 1 },
       { q: "Which percentile should you use as a portfolio stress-test?", options: ["90th", "50th", "10th", "75th"], correct: 2 },
     ],
@@ -398,28 +448,31 @@ type Lesson = typeof LESSONS[0];
 
 function LessonView({ lesson, onBack, onXP, completed }: { lesson: Lesson; onBack: () => void; onXP: (n: number) => void; completed: boolean }) {
   const [mode, setMode] = useState<"read" | "quiz">("read");
-  const [qi, setQi] = useState(0);
+  // qi = -1 means "show worked example", qi >= 0 means question index
+  const [qi, setQi] = useState(-1);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [quizDone, setQuizDone] = useState(false);
   const [xpGiven, setXpGiven] = useState(completed);
 
-  const q = lesson.quiz[qi];
+  const enterQuiz = () => { setMode("quiz"); setQi(-1); setSelected(null); setAnswered(false); setCorrectCount(0); setQuizDone(false); };
+
+  const q = qi >= 0 ? lesson.quiz[qi] : null;
 
   const answer = (idx: number) => {
-    if (answered) return;
+    if (answered || selected !== null) return; // hard lock: once selected, can't change
     setSelected(idx);
     setAnswered(true);
-    if (idx === q.correct) setCorrectCount(c => c + 1);
+    if (idx === q!.correct) setCorrectCount(c => c + 1);
   };
 
   const nextQ = () => {
+    if (qi === -1) { setQi(0); return; }
     if (qi >= lesson.quiz.length - 1) {
       setQuizDone(true);
-      if (!xpGiven && correctCount + (selected === q.correct ? 1 : 0) >= 2) {
-        onXP(lesson.xpReward); setXpGiven(true);
-      }
+      const finalCorrect = correctCount + (selected === q!.correct ? 1 : 0);
+      if (!xpGiven && finalCorrect >= 2) { onXP(lesson.xpReward); setXpGiven(true); }
     } else {
       setQi(i => i + 1); setSelected(null); setAnswered(false);
     }
@@ -465,14 +518,44 @@ function LessonView({ lesson, onBack, onXP, completed }: { lesson: Lesson; onBac
                 return null;
               })}
             </div>
-            <button onClick={() => setMode("quiz")}
+            <button onClick={enterQuiz}
               style={{ width: "100%", padding: "12px", background: AMBER, border: "none", borderRadius: 10, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: 0.5 }}>
               Take Quiz → +{lesson.xpReward} XP
             </button>
           </motion.div>
         )}
 
-        {mode === "quiz" && !quizDone && (
+        {mode === "quiz" && !quizDone && qi === -1 && (
+          <motion.div key="example" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Worked Example</span>
+              <span style={{ fontSize: 11, color: "var(--text3)" }}>{lesson.quiz.length} questions ahead</span>
+            </div>
+            <div style={{ background: `${AMBER}0a`, border: `0.5px solid ${AMBER}33`, borderRadius: 12, padding: "18px 20px", marginBottom: 16 }}>
+              <p style={{ fontSize: 9, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 8 }}>Problem</p>
+              <p style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6, marginBottom: 16 }}>{lesson.example.problem}</p>
+              <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8 }}>Step-by-step</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                {lesson.example.steps.map((step, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: `${AMBER}22`, color: AMBER, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, fontFamily: "Space Mono, monospace" }}>{i + 1}</span>
+                    <p style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{step}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 12 }}>
+                <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 5 }}>Answer</p>
+                <p style={{ fontSize: 13, color: AMBER, fontWeight: 500 }}>{lesson.example.answer}</p>
+              </div>
+            </div>
+            <button onClick={nextQ}
+              style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Start Quiz →
+            </button>
+          </motion.div>
+        )}
+
+        {mode === "quiz" && !quizDone && qi >= 0 && q && (
           <motion.div key={`q${qi}`} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Question {qi + 1} of {lesson.quiz.length}</span>
@@ -490,7 +573,7 @@ function LessonView({ lesson, onBack, onXP, completed }: { lesson: Lesson; onBac
                 }
                 return (
                   <button key={oi} onClick={() => answer(oi)}
-                    style={{ padding: "12px 16px", background: bg, border: `0.5px solid ${border}`, borderRadius: 10, color, fontSize: 13, textAlign: "left", cursor: answered ? "default" : "pointer", transition: "all 0.15s", fontWeight: isSelected || (answered && isCorrect) ? 500 : 400 }}>
+                    style={{ padding: "12px 16px", background: bg, border: `0.5px solid ${border}`, borderRadius: 10, color, fontSize: 13, textAlign: "left", cursor: answered ? "default" : "pointer", pointerEvents: answered ? "none" : "auto", transition: "all 0.15s", fontWeight: isSelected || (answered && isCorrect) ? 500 : 400 }}>
                     {opt}
                   </button>
                 );
@@ -507,17 +590,19 @@ function LessonView({ lesson, onBack, onXP, completed }: { lesson: Lesson; onBac
 
         {mode === "quiz" && quizDone && (
           <motion.div key="done" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
-            <div style={{ fontSize: 44, marginBottom: 12 }}>{correctCount >= 2 ? "🏆" : "📚"}</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+              {correctCount >= 2 ? <CheckCircleIcon size={52} /> : <BookOpenIcon size={52} />}
+            </div>
             <p style={{ fontSize: 22, fontWeight: 500, color: "var(--text)", marginBottom: 8 }}>
               {correctCount} / {lesson.quiz.length} correct
             </p>
             {correctCount >= 2 ? (
-              <p style={{ fontSize: 13, color: GREEN, marginBottom: 20 }}>+{lesson.xpReward} XP earned!</p>
+              <p style={{ fontSize: 13, color: GREEN, marginBottom: 20 }}>{xpGiven ? "XP already awarded for this lesson." : `+${lesson.xpReward} XP earned!`}</p>
             ) : (
               <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>Need 2/3 correct to earn XP. Try again!</p>
             )}
             <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              <button onClick={() => { setMode("quiz"); setQi(0); setSelected(null); setAnswered(false); setCorrectCount(0); setQuizDone(false); setXpGiven(xpGiven); }}
+              <button onClick={enterQuiz}
                 style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>
                 Retake
               </button>
@@ -544,7 +629,14 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     (async () => {
-      const { data, error } = await supabase.from("learn_scores").select("display_name,total_points").order("total_points", { ascending: false }).limit(10);
+      // Use a direct REST call with the anon key to bypass client-side auth state;
+      // requires a public SELECT policy on learn_scores (see SQL output in comments).
+      const { data, error } = await supabase
+        .from("learn_scores")
+        .select("display_name,total_points")
+        .order("total_points", { ascending: false })
+        .limit(10);
+      if (error) console.error("Leaderboard error:", error.message, error.code);
       if (!error && data) setEntries(data.map((r: any, i: number) => ({ ...r, rank: i + 1 })));
       setLoading(false);
     })();
@@ -555,19 +647,14 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
     <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 14, padding: "22px 24px", marginTop: 40 }}>
       <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase", marginBottom: 6 }}>Global Leaderboard</p>
       <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 20, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Top learners</h2>
-      {!user ? (
-        <div style={{ textAlign: "center", padding: "16px 0" }}>
-          <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 12 }}>Log in to appear on the leaderboard</p>
-          <Link href="/auth" style={{ padding: "9px 22px", background: AMBER, borderRadius: 9, color: "#0a0e14", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>Log in →</Link>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <p style={{ fontSize: 12, color: "var(--text3)" }}>Loading...</p>
       ) : entries.length === 0 ? (
         <p style={{ fontSize: 12, color: "var(--text3)" }}>No scores yet — be the first!</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {entries.map(e => {
-            const isMe = user?.user_metadata?.display_name === e.display_name || user?.email?.split("@")[0] === e.display_name;
+            const isMe = user && (user?.user_metadata?.display_name === e.display_name || user?.email?.split("@")[0] === e.display_name);
             return (
               <div key={e.rank} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: isMe ? `${AMBER}12` : "var(--bg2)", border: `0.5px solid ${isMe ? `${AMBER}44` : "var(--border)"}`, borderRadius: 10 }}>
                 <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: e.rank <= 3 ? AMBER : "var(--text3)", width: 20, flexShrink: 0 }}>
@@ -579,6 +666,12 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
               </div>
             );
           })}
+        </div>
+      )}
+      {!user && (
+        <div style={{ marginTop: 16, textAlign: "center" }}>
+          <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 10 }}>Log in to earn XP and appear on the leaderboard</p>
+          <Link href="/auth" style={{ padding: "8px 20px", background: AMBER, borderRadius: 9, color: "#0a0e14", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>Log in →</Link>
         </div>
       )}
       {user && myPoints > 0 && (
@@ -622,7 +715,7 @@ export default function LearnPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, xp, streak, last_activity_date")
+        .select("display_name, avatar_url, xp, streak, last_activity_date, lessons_completed")
         .eq("id", user.id)
         .single();
 
@@ -631,6 +724,11 @@ export default function LearnPage() {
         setAvatarUrl(profile.avatar_url || null);
         setXp(profile.xp || 0);
         setStreak(profile.streak || 0);
+        // DB is authoritative for completed lessons
+        if (Array.isArray(profile.lessons_completed) && profile.lessons_completed.length > 0) {
+          setCompleted(profile.lessons_completed);
+          try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(profile.lessons_completed)); } catch {}
+        }
       }
 
       // Also load learn_scores for leaderboard points
@@ -701,7 +799,26 @@ export default function LearnPage() {
     );
   }, [userId, learnPoints, displayName]);
 
-  const handleLessonXP = (amount: number, lessonId: string) => {
+  const handleLessonXP = async (amount: number, lessonId: string) => {
+    // DB-authoritative anti-cheat: only award XP once per lesson per account
+    if (userId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("lessons_completed")
+        .eq("id", userId)
+        .single();
+      const dbCompleted: string[] = profile?.lessons_completed || [];
+      if (dbCompleted.includes(lessonId)) {
+        markComplete(lessonId); // keep local state in sync
+        return; // XP already awarded, do not re-award
+      }
+      // Mark complete in DB before awarding
+      await supabase.from("profiles").upsert({
+        id: userId,
+        lessons_completed: [...dbCompleted, lessonId],
+        updated_at: new Date().toISOString(),
+      });
+    }
     markComplete(lessonId);
     awardXP(amount);
   };
