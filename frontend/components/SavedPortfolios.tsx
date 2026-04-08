@@ -4,9 +4,43 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
 const LS_KEY = "corvo_saved_portfolios";
+const HISTORY_KEY_PREFIX = "corvo_history_";
 const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", border: "rgba(255,255,255,0.06)", cream: "#e8e0cc", cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)" };
 interface Asset { ticker: string; weight: number; }
 interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; }
+
+function computeHealth(data: any): number {
+  const ret = data.portfolio_return ?? 0;
+  const vol = data.portfolio_volatility ?? 0.2;
+  const sharpe = vol > 0 ? (ret - 0.04) / vol : 0;
+  const rS = Math.min(Math.max(((ret + 0.3) / 0.6) * 100, 0), 100);
+  const shS = Math.min(Math.max((sharpe / 3) * 100, 0), 100);
+  const vS = Math.min(Math.max((1 - vol / 0.6) * 100, 0), 100);
+  const dS = Math.min(Math.max((1 + (data.max_drawdown ?? 0) / 0.5) * 100, 0), 100);
+  return Math.round(rS * 0.3 + shS * 0.3 + vS * 0.25 + dS * 0.15);
+}
+
+export function saveHistorySnapshot(portfolioId: string, data: any) {
+  try {
+    const key = HISTORY_KEY_PREFIX + portfolioId;
+    const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    const snapshot = {
+      date: new Date().toISOString(),
+      return: data.portfolio_return ?? 0,
+      volatility: data.portfolio_volatility ?? 0,
+      sharpe: data.portfolio_volatility > 0 ? (data.portfolio_return - 0.04) / data.portfolio_volatility : 0,
+      health: computeHealth(data),
+    };
+    // Keep last 30 snapshots, avoid duplicates on same day
+    const today = snapshot.date.slice(0, 10);
+    const filtered = existing.filter((s: any) => s.date?.slice(0, 10) !== today);
+    localStorage.setItem(key, JSON.stringify([...filtered, snapshot].slice(-30)));
+  } catch {}
+}
+
+export function loadHistory(portfolioId: string): any[] {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY_PREFIX + portfolioId) || "[]"); } catch { return []; }
+}
 
 function loadLocal(): Portfolio[] {
   try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
@@ -27,6 +61,18 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     fetchPortfolios();
   }, []);
+
+  // Auto-save history snapshot when analysis data is available
+  useEffect(() => {
+    if (!data) return;
+    const allLocal = loadLocal();
+    // Find a saved portfolio that matches the current assets
+    const currentTickers = assets.map(a => a.ticker).sort().join(",");
+    const match = allLocal.find(p =>
+      p.assets.map((a: Asset) => a.ticker).sort().join(",") === currentTickers
+    );
+    if (match) saveHistorySnapshot(match.id, data);
+  }, [data]);
 
   const fetchPortfolios = async () => {
     const local = loadLocal();

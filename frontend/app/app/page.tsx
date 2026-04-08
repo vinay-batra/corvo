@@ -24,6 +24,7 @@ import OnboardingTour from "../../components/OnboardingTour";
 import { fetchPortfolio } from "../../lib/api";
 import AlertsPanel from "../../components/AlertsPanel";
 import Watchlist from "../../components/Watchlist";
+import PortfolioHistory from "../../components/PortfolioHistory";
 
 const TABS = [
   { id: "overview",  label: "Overview",  icon: "◈" },
@@ -278,6 +279,47 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
   );
 }
 
+const CURRENCIES = ["USD", "GBP", "EUR", "JPY", "CAD"];
+const CURRENCY_SYMBOLS: Record<string, string> = { USD: "$", GBP: "£", EUR: "€", JPY: "¥", CAD: "C$" };
+const RATES_CACHE_KEY = "corvo_fx_rates";
+
+function useCurrency() {
+  const [currency, setCurrencyState] = useState("USD");
+  const [rate, setRate] = useState(1);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("corvo_currency") || "USD";
+    setCurrencyState(stored);
+    fetchRate(stored);
+  }, []);
+
+  const fetchRate = async (cur: string) => {
+    if (cur === "USD") { setRate(1); return; }
+    try {
+      const cacheRaw = sessionStorage.getItem(RATES_CACHE_KEY);
+      if (cacheRaw) {
+        const cache = JSON.parse(cacheRaw);
+        if (Date.now() - cache.ts < 3600000 && cache.rates[cur]) {
+          setRate(cache.rates[cur]);
+          return;
+        }
+      }
+      const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+      const data = await res.json();
+      sessionStorage.setItem(RATES_CACHE_KEY, JSON.stringify({ ts: Date.now(), rates: data.rates }));
+      setRate(data.rates[cur] ?? 1);
+    } catch {}
+  };
+
+  const setCurrency = (cur: string) => {
+    setCurrencyState(cur);
+    localStorage.setItem("corvo_currency", cur);
+    fetchRate(cur);
+  };
+
+  return { currency, rate, setCurrency };
+}
+
 export default function AppPage() {
   const [assets, setAssets]           = useState([{ ticker: "AAPL", weight: 50 }, { ticker: "MSFT", weight: 50 }]);
   const [period, setPeriod]           = useState("1y");
@@ -296,6 +338,8 @@ export default function AppPage() {
   const [whatIfMode, setWhatIfMode]   = useState(false);
   const [whatIfWeights, setWhatIfWeights] = useState<Record<string, number>>({});
   const { dark, toggle: toggleDark }  = useTheme();
+  const { currency, rate, setCurrency } = useCurrency();
+  const [currencyOpen, setCurrencyOpen] = useState(false);
   const S = useS();
 
   useEffect(() => {
@@ -598,6 +642,30 @@ export default function AppPage() {
             ))}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {/* Currency selector */}
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setCurrencyOpen(o => !o)}
+                style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text2)", display: "flex", alignItems: "center", gap: 4, transition: "background 0.15s", flexShrink: 0, fontFamily: "var(--font-mono)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                {CURRENCY_SYMBOLS[currency]}{currency} <span style={{ fontSize: 8 }}>▾</span>
+              </button>
+              <AnimatePresence>
+                {currencyOpen && (
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 100, boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+                    {CURRENCIES.map(c => (
+                      <button key={c} onClick={() => { setCurrency(c); setCurrencyOpen(false); }}
+                        style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: c === currency ? "var(--bg3)" : "transparent", border: "none", cursor: "pointer", fontSize: 12, color: c === currency ? "var(--text)" : "var(--text2)", fontFamily: "var(--font-mono)", display: "flex", gap: 6 }}
+                        onMouseEnter={e => { if (c !== currency) e.currentTarget.style.background = "var(--bg3)"; }}
+                        onMouseLeave={e => { if (c !== currency) e.currentTarget.style.background = "transparent"; }}>
+                        <span style={{ color: "#c9a84c", width: 16 }}>{CURRENCY_SYMBOLS[c]}</span>{c}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             {/* Alerts bell */}
             <button onClick={() => setShowAlerts(true)} title="Alerts"
               style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s" }}
@@ -634,7 +702,7 @@ export default function AppPage() {
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Spinner /></motion.div>
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="c-metrics" style={S.metricsGrid}><Metrics data={data} /></div>
+                <div className="c-metrics" style={S.metricsGrid}><Metrics data={data} currency={currency} rate={rate} /></div>
                 <Card>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                     <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
@@ -677,6 +745,7 @@ export default function AppPage() {
                   <Card style={{ marginBottom: 0 }}><CardHeader title={`vs ${benchLabel}`} /><BenchmarkComparison data={data} /></Card>
                 </div>
                 <Card style={{ marginTop: 12 }}><CardHeader title="Allocation" /><Breakdown assets={assets} /></Card>
+                <PortfolioHistory />
               </motion.div>
             ) : activeTab === "risk" ? (
               <motion.div key="risk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
