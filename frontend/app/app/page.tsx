@@ -30,14 +30,15 @@ import EmailPreferences from "../../components/EmailPreferences";
 import ReferralModal from "../../components/ReferralModal";
 
 const TABS = [
-  { id: "overview",  label: "Overview",  icon: "◈" },
-  { id: "risk",      label: "Risk",       icon: "◬" },
-  { id: "simulate",  label: "Simulate",   icon: "◎" },
-  { id: "compare",   label: "Compare",    icon: "⊞" },
-  { id: "news",      label: "News",       icon: "◷" },
-  { id: "watchlist", label: "Watchlist",  icon: "◉" },
-  { id: "ai",        label: "AI Chat",    icon: "✦" },
-];
+  { id: "overview",  label: "Overview",  icon: "◈",  href: null },
+  { id: "risk",      label: "Risk",       icon: "◬",  href: null },
+  { id: "simulate",  label: "Simulate",   icon: "◎",  href: null },
+  { id: "compare",   label: "Compare",    icon: "⊞",  href: null },
+  { id: "news",      label: "News",       icon: "◷",  href: null },
+  { id: "watchlist", label: "Watchlist",  icon: "◉",  href: null },
+  { id: "ai",        label: "AI Chat",    icon: "✦",  href: null },
+  { id: "learn",     label: "Learn",      icon: null, href: "/learn" },
+] as const;
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
 const PERIOD_LABELS: Record<string, string> = { "6mo": "6M", "1y": "1Y", "2y": "2Y", "5y": "5Y" };
@@ -57,6 +58,15 @@ const BENCHMARKS = [
   { ticker: "QQQ",    label: "QQQ ETF" },
   { ticker: "GLD",    label: "Gold" },
 ];
+
+function GraduationCapIcon({ size = 11 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+      <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+    </svg>
+  );
+}
 
 function useTheme() {
   const [dark, setDark] = useState(false);
@@ -597,15 +607,15 @@ export default function AppPage() {
         <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
       </div>
 
-      {/* Footer — Learn link */}
+      {/* Footer — Learn link (compact, moved to topbar tabs) */}
       <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
         <Link href="/learn" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", borderRadius: 9, border: "0.5px solid var(--border)", textDecoration: "none", background: "transparent", transition: "all 0.15s" }}
           onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.borderColor = "var(--border2)"; }}
           onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; }}>
-          <span style={{ fontSize: 16, lineHeight: 1 }}>📚</span>
+          <GraduationCapIcon size={15} />
           <div>
             <div style={{ fontSize: 11, fontWeight: 500, color: "var(--text2)" }}>Learn Investing</div>
-            <div style={{ fontSize: 9, color: "var(--text3)" }}>Glossary &amp; guides</div>
+            <div style={{ fontSize: 9, color: "var(--text3)" }}>Lessons &amp; quizzes</div>
           </div>
         </Link>
       </div>
@@ -665,32 +675,40 @@ export default function AppPage() {
 
         {/* Mobile tabs */}
         <div className="c-mob-tabs" style={{ borderBottom: "0.5px solid var(--border)", padding: "0 8px", gap: 2, overflowX: "auto", flexShrink: 0, background: "var(--bg)" }}>
-          {TABS.map(tab => (
-            <button key={tab.id} className="tab-btn" onClick={() => setActiveTab(tab.id)}
-              style={{ padding: "10px 10px", fontSize: 11, borderRadius: 6, border: "none", background: activeTab === tab.id ? "var(--bg3)" : "transparent", color: activeTab === tab.id ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: activeTab === tab.id ? 500 : 400, whiteSpace: "nowrap" as const, flexShrink: 0 }}>
-              {tab.icon} {tab.label}
-            </button>
-          ))}
+          {TABS.map(tab => {
+            const mobStyle: React.CSSProperties = { padding: "10px 10px", fontSize: 11, borderRadius: 6, border: "none", background: activeTab === tab.id ? "var(--bg3)" : "transparent", color: activeTab === tab.id ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: activeTab === tab.id ? 500 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" };
+            if (tab.href) return <Link key={tab.id} href={tab.href} className="tab-btn" style={mobStyle}><GraduationCapIcon size={11} /> {tab.label}</Link>;
+            return <button key={tab.id} className="tab-btn" onClick={() => setActiveTab(tab.id)} style={mobStyle}>{tab.icon} {tab.label}</button>;
+          })}
         </div>
 
         {/* Desktop topbar */}
         <header className="c-topbar" style={S.topbar}>
           <div style={{ display: "flex", gap: 2, flex: 1, overflowX: "auto" }}>
-            {TABS.map(tab => (
-              <button key={tab.id} className="tab-btn" onClick={() => setActiveTab(tab.id)} style={{
+            {TABS.map(tab => {
+              const tabStyle: React.CSSProperties = {
                 padding: "7px 14px", fontSize: 13, borderRadius: 8, flexShrink: 0,
                 border: activeTab === tab.id ? "0.5px solid var(--border2)" : "0.5px solid transparent",
                 background: activeTab === tab.id ? "var(--bg3)" : "transparent",
                 color: activeTab === tab.id ? "var(--text)" : "var(--text3)",
                 cursor: "pointer", fontWeight: activeTab === tab.id ? 500 : 400, transition: "all 0.15s",
-                display: "flex", alignItems: "center", gap: 5,
-              }}>
-                <span style={{ fontSize: 11, opacity: 0.7 }}>{tab.icon}</span>
-                {tab.label}
-                {tab.id === "ai" && <span style={{ marginLeft: 2, padding: "1px 5px", background: "var(--text)", color: "var(--bg)", borderRadius: 4, fontSize: 8, letterSpacing: 1 }}>AI</span>}
-                {tab.id === "compare" && <span style={{ marginLeft: 2, padding: "1px 5px", background: "rgba(201,168,76,0.15)", color: "#c9a84c", borderRadius: 4, fontSize: 8 }}>NEW</span>}
-              </button>
-            ))}
+                display: "flex", alignItems: "center", gap: 5, textDecoration: "none",
+              };
+              if (tab.href) return (
+                <Link key={tab.id} href={tab.href} className="tab-btn" style={tabStyle}>
+                  <GraduationCapIcon size={11} />
+                  {tab.label}
+                </Link>
+              );
+              return (
+                <button key={tab.id} className="tab-btn" onClick={() => setActiveTab(tab.id)} style={tabStyle}>
+                  <span style={{ fontSize: 11, opacity: 0.7 }}>{tab.icon}</span>
+                  {tab.label}
+                  {tab.id === "ai" && <span style={{ marginLeft: 2, padding: "1px 5px", background: "var(--text)", color: "var(--bg)", borderRadius: 4, fontSize: 8, letterSpacing: 1 }}>AI</span>}
+                  {tab.id === "compare" && <span style={{ marginLeft: 2, padding: "1px 5px", background: "rgba(201,168,76,0.15)", color: "#c9a84c", borderRadius: 4, fontSize: 8 }}>NEW</span>}
+                </button>
+              );
+            })}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
             {/* Currency selector */}

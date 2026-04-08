@@ -446,33 +446,61 @@ const LESSONS = [
 
 type Lesson = typeof LESSONS[0];
 
-function LessonView({ lesson, onBack, onXP, completed }: { lesson: Lesson; onBack: () => void; onXP: (n: number) => void; completed: boolean }) {
+// progress = array of question indices previously answered correctly (from DB)
+function LessonView({ lesson, onBack, onXP, progress }: {
+  lesson: Lesson;
+  onBack: () => void;
+  onXP: (amount: number, updatedProgress: number[]) => void;
+  progress: number[];
+}) {
+  const isMastered = progress.length >= lesson.quiz.length;
   const [mode, setMode] = useState<"read" | "quiz">("read");
-  // qi = -1 means "show worked example", qi >= 0 means question index
+  // qi = -1 means "show worked example" (non-skippable), qi >= 0 = question index
   const [qi, setQi] = useState(-1);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
+  // Track per-question correctness for this run
+  const [quizResults, setQuizResults] = useState<(boolean | null)[]>(() =>
+    new Array(lesson.quiz.length).fill(null)
+  );
   const [quizDone, setQuizDone] = useState(false);
-  const [xpGiven, setXpGiven] = useState(completed);
+  const [xpEarned, setXpEarned] = useState(0);
+  const [updatedProgressForDone, setUpdatedProgressForDone] = useState<number[]>([]);
 
-  const enterQuiz = () => { setMode("quiz"); setQi(-1); setSelected(null); setAnswered(false); setCorrectCount(0); setQuizDone(false); };
+  const enterQuiz = () => {
+    setMode("quiz"); setQi(-1); setSelected(null); setAnswered(false);
+    setQuizResults(new Array(lesson.quiz.length).fill(null));
+    setQuizDone(false); setXpEarned(0);
+  };
 
   const q = qi >= 0 ? lesson.quiz[qi] : null;
 
   const answer = (idx: number) => {
-    if (answered || selected !== null) return; // hard lock: once selected, can't change
+    if (answered || selected !== null) return; // hard lock once selected
+    const correct = idx === q!.correct;
     setSelected(idx);
     setAnswered(true);
-    if (idx === q!.correct) setCorrectCount(c => c + 1);
+    setQuizResults(prev => { const n = [...prev]; n[qi] = correct; return n; });
   };
 
   const nextQ = () => {
-    if (qi === -1) { setQi(0); return; }
-    if (qi >= lesson.quiz.length - 1) {
+    if (qi === -1) { setQi(0); return; } // advance past example
+
+    const isLast = qi >= lesson.quiz.length - 1;
+    if (isLast) {
+      // Build final results including current question
+      const finalResults = quizResults.map((r, i) => i === qi ? (selected === q!.correct) : r);
+      const correctIndices = finalResults.reduce<number[]>((acc, r, i) => r === true ? [...acc, i] : acc, []);
+      const newlyCorrect = correctIndices.filter(i => !progress.includes(i));
+      const combined = [...new Set([...progress, ...correctIndices])];
+      // Partial XP: proportional to newly answered correctly
+      const xp = newlyCorrect.length > 0
+        ? Math.max(1, Math.round(newlyCorrect.length / lesson.quiz.length * lesson.xpReward))
+        : 0;
+      setXpEarned(xp);
+      setUpdatedProgressForDone(combined);
       setQuizDone(true);
-      const finalCorrect = correctCount + (selected === q!.correct ? 1 : 0);
-      if (!xpGiven && finalCorrect >= 2) { onXP(lesson.xpReward); setXpGiven(true); }
+      onXP(xp, combined);
     } else {
       setQi(i => i + 1); setSelected(null); setAnswered(false);
     }
@@ -492,7 +520,12 @@ function LessonView({ lesson, onBack, onXP, completed }: { lesson: Lesson; onBac
           <h2 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)" }}>{lesson.title}</h2>
           <span style={{ fontSize: 11, color: "var(--text3)" }}>{lesson.time} read · +{lesson.xpReward} XP on quiz completion</span>
         </div>
-        {completed && <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", borderRadius: 20, background: "rgba(76,175,125,0.12)", color: GREEN, border: "0.5px solid rgba(76,175,125,0.3)" }}>✓ Done</span>}
+        {isMastered
+          ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", borderRadius: 20, background: "rgba(167,139,250,0.12)", color: "#a78bfa", border: "0.5px solid rgba(167,139,250,0.3)" }}>★ Mastered</span>
+          : progress.length > 0
+            ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "3px 8px", borderRadius: 20, background: "rgba(76,175,125,0.12)", color: GREEN, border: "0.5px solid rgba(76,175,125,0.3)" }}>{progress.length}/{lesson.quiz.length} correct</span>
+            : null
+        }
       </div>
 
       <AnimatePresence mode="wait">
@@ -550,7 +583,7 @@ function LessonView({ lesson, onBack, onXP, completed }: { lesson: Lesson; onBac
             </div>
             <button onClick={nextQ}
               style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Start Quiz →
+              Got it →
             </button>
           </motion.div>
         )}
@@ -559,7 +592,7 @@ function LessonView({ lesson, onBack, onXP, completed }: { lesson: Lesson; onBac
           <motion.div key={`q${qi}`} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Question {qi + 1} of {lesson.quiz.length}</span>
-              <span style={{ fontSize: 11, color: "var(--text3)" }}>{correctCount} correct</span>
+              <span style={{ fontSize: 11, color: "var(--text3)" }}>{quizResults.filter(r => r === true).length} correct</span>
             </div>
             <p style={{ fontSize: 16, fontWeight: 500, color: "var(--text)", lineHeight: 1.5, marginBottom: 18 }}>{q.q}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
@@ -591,21 +624,31 @@ function LessonView({ lesson, onBack, onXP, completed }: { lesson: Lesson; onBac
         {mode === "quiz" && quizDone && (
           <motion.div key="done" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
-              {correctCount >= 2 ? <CheckCircleIcon size={52} /> : <BookOpenIcon size={52} />}
+              {updatedProgressForDone.length >= lesson.quiz.length ? <CheckCircleIcon size={52} /> : <BookOpenIcon size={52} />}
             </div>
-            <p style={{ fontSize: 22, fontWeight: 500, color: "var(--text)", marginBottom: 8 }}>
-              {correctCount} / {lesson.quiz.length} correct
-            </p>
-            {correctCount >= 2 ? (
-              <p style={{ fontSize: 13, color: GREEN, marginBottom: 20 }}>{xpGiven ? "XP already awarded for this lesson." : `+${lesson.xpReward} XP earned!`}</p>
+            {updatedProgressForDone.length >= lesson.quiz.length ? (
+              <>
+                <p style={{ fontSize: 20, fontWeight: 600, color: "#a78bfa", marginBottom: 6 }}>★ Lesson Mastered</p>
+                <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>All questions answered correctly. No more XP available from this lesson.</p>
+              </>
             ) : (
-              <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>Need 2/3 correct to earn XP. Try again!</p>
+              <>
+                <p style={{ fontSize: 22, fontWeight: 500, color: "var(--text)", marginBottom: 8 }}>
+                  {updatedProgressForDone.length} / {lesson.quiz.length} mastered
+                </p>
+                {xpEarned > 0
+                  ? <p style={{ fontSize: 13, color: GREEN, marginBottom: 20 }}>+{xpEarned} XP for {updatedProgressForDone.filter(i => !progress.includes(i)).length} newly correct answer{updatedProgressForDone.filter(i => !progress.includes(i)).length !== 1 ? "s" : ""}!</p>
+                  : <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>No new questions answered correctly — no XP awarded.</p>
+                }
+              </>
             )}
             <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              <button onClick={enterQuiz}
-                style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>
-                Retake
-              </button>
+              {updatedProgressForDone.length < lesson.quiz.length && (
+                <button onClick={enterQuiz}
+                  style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>
+                  Retry wrong ones
+                </button>
+              )}
               <button onClick={onBack}
                 style={{ padding: "10px 20px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 Back to Learn
@@ -699,6 +742,7 @@ export default function LearnPage() {
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [completed, setCompleted] = useState<string[]>([]);
+  const [lessonProgress, setLessonProgress] = useState<Record<string, number[]>>({});
   const [xpToast, setXpToast]     = useState<number | null>(null);
   const [userId, setUserId]       = useState<string | null>(null);
   const [learnPoints, setLearnPoints] = useState(0);
@@ -715,25 +759,30 @@ export default function LearnPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, xp, streak, last_activity_date, lessons_completed")
+        .select("display_name, avatar_url, xp, streak, last_activity_date, lessons_completed, lesson_progress")
         .eq("id", user.id)
         .single();
 
       if (profile) {
         setDisplayName(profile.display_name || user.email?.split("@")[0] || "");
         setAvatarUrl(profile.avatar_url || null);
-        setXp(profile.xp || 0);
-        setStreak(profile.streak || 0);
-        // DB is authoritative for completed lessons
+        // Hydrate XP and streak from DB (authoritative)
+        setXp(profile.xp ?? 0);
+        setStreak(profile.streak ?? 0);
+        // Completed lessons — DB wins over localStorage
         if (Array.isArray(profile.lessons_completed) && profile.lessons_completed.length > 0) {
           setCompleted(profile.lessons_completed);
           try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(profile.lessons_completed)); } catch {}
         }
+        // lesson_progress (per-question correct indices)
+        if (profile.lesson_progress && typeof profile.lesson_progress === "object") {
+          setLessonProgress(profile.lesson_progress as Record<string, number[]>);
+        }
       }
 
-      // Also load learn_scores for leaderboard points
+      // Load learn_scores for leaderboard
       const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", user.id).single();
-      if (ls) setLearnPoints(ls.total_points || 0);
+      if (ls) setLearnPoints(ls.total_points ?? 0);
     })();
   }, []);
 
@@ -746,81 +795,91 @@ export default function LearnPage() {
     });
   };
 
-  const awardXP = useCallback(async (amount: number, source?: string) => {
+  const awardXP = useCallback(async (amount: number) => {
+    if (amount <= 0) return;
     setXpToast(amount);
-
-    const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
     if (!userId) {
       setXp(prev => prev + amount);
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("xp, streak, last_activity_date")
-      .eq("id", userId)
-      .single();
+    const today     = new Date().toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
-    const prevXp      = profile?.xp || 0;
-    const prevStreak  = profile?.streak || 0;
-    const lastDate    = profile?.last_activity_date || null;
+    // Always read fresh from DB to avoid stale closures
+    const [{ data: profile }, { data: ls }] = await Promise.all([
+      supabase.from("profiles").select("xp, streak, last_activity_date").eq("id", userId).single(),
+      supabase.from("learn_scores").select("total_points").eq("user_id", userId).single(),
+    ]);
+
+    const prevXp     = profile?.xp ?? 0;
+    const prevStreak = profile?.streak ?? 0;
+    const lastDate   = profile?.last_activity_date ?? null;
+    const prevPts    = ls?.total_points ?? 0;
 
     let newStreak = prevStreak;
     let dailyBonus = 0;
     if (lastDate === today) {
-      newStreak = prevStreak; // already active today
+      newStreak = prevStreak;
     } else if (lastDate === yesterday) {
       newStreak = prevStreak + 1; dailyBonus = 10;
     } else {
       newStreak = 1; dailyBonus = 10;
     }
 
-    const newXp = prevXp + amount + dailyBonus;
+    const newXp  = prevXp + amount + dailyBonus;
+    const newPts = prevPts + amount;
     setXp(newXp);
     setStreak(newStreak);
+    setLearnPoints(newPts);
 
-    await supabase.from("profiles").upsert({
-      id: userId,
-      xp: newXp,
-      streak: newStreak,
-      last_activity_date: today,
-      updated_at: new Date().toISOString(),
-    });
+    await Promise.all([
+      supabase.from("profiles").upsert({
+        id: userId, xp: newXp, streak: newStreak,
+        last_activity_date: today, updated_at: new Date().toISOString(),
+      }),
+      supabase.from("learn_scores").upsert(
+        { user_id: userId, display_name: displayName || "", total_points: newPts, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      ),
+    ]);
+  }, [userId, displayName]);
 
-    // Keep learn_scores in sync for leaderboard
-    const newLearnPts = learnPoints + amount;
-    setLearnPoints(newLearnPts);
-    const name = displayName || "";
-    await supabase.from("learn_scores").upsert(
-      { user_id: userId, display_name: name, total_points: newLearnPts, updated_at: new Date().toISOString() },
-      { onConflict: "user_id" }
-    );
-  }, [userId, learnPoints, displayName]);
+  const handleLessonXP = async (amount: number, lessonId: string, updatedProgress: number[]) => {
+    // Update local lesson_progress state
+    const newProgress = { ...lessonProgress, [lessonId]: updatedProgress };
+    setLessonProgress(newProgress);
 
-  const handleLessonXP = async (amount: number, lessonId: string) => {
-    // DB-authoritative anti-cheat: only award XP once per lesson per account
+    // If all questions now correct, mark lesson as completed
+    const lesson = LESSONS.find(l => l.id === lessonId);
+    if (lesson && updatedProgress.length >= lesson.quiz.length) {
+      markComplete(lessonId);
+    }
+
+    // Persist to DB
     if (userId) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("lessons_completed")
+        .select("lessons_completed, lesson_progress")
         .eq("id", userId)
         .single();
+
       const dbCompleted: string[] = profile?.lessons_completed || [];
-      if (dbCompleted.includes(lessonId)) {
-        markComplete(lessonId); // keep local state in sync
-        return; // XP already awarded, do not re-award
-      }
-      // Mark complete in DB before awarding
+      const dbProgress: Record<string, number[]> = (profile?.lesson_progress as Record<string, number[]>) || {};
+      const allCorrect = lesson && updatedProgress.length >= lesson.quiz.length;
+
       await supabase.from("profiles").upsert({
         id: userId,
-        lessons_completed: [...dbCompleted, lessonId],
+        lesson_progress: { ...dbProgress, [lessonId]: updatedProgress },
+        ...(allCorrect && !dbCompleted.includes(lessonId)
+          ? { lessons_completed: [...dbCompleted, lessonId] }
+          : {}),
         updated_at: new Date().toISOString(),
       });
     }
-    markComplete(lessonId);
-    awardXP(amount);
+
+    if (amount > 0) awardXP(amount);
   };
 
   return (
@@ -864,18 +923,28 @@ export default function LearnPage() {
               <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 26, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Core concepts</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {LESSONS.map((l, idx) => {
-                  const isCompleted = completed.includes(l.id);
-                  const isLocked = idx > 0 && !completed.includes(LESSONS[idx - 1].id);
+                  const prog = lessonProgress[l.id] ?? [];
+                  const isMastered = prog.length >= l.quiz.length;
+                  const isStarted  = prog.length > 0 && !isMastered;
+                  const isLocked   = idx > 0 && !completed.includes(LESSONS[idx - 1].id) && (lessonProgress[LESSONS[idx - 1].id]?.length ?? 0) < LESSONS[idx - 1].quiz.length;
+                  const borderColor = isMastered ? "rgba(167,139,250,0.35)" : isStarted ? "rgba(76,175,125,0.3)" : "var(--border)";
                   return (
                     <button key={l.id}
                       onClick={() => { if (!isLocked) { setActiveLesson(l); setActiveSection("lesson"); } }}
                       disabled={isLocked}
-                      style={{ padding: "18px", background: "var(--card-bg)", border: `0.5px solid ${isCompleted ? "rgba(76,175,125,0.3)" : "var(--border)"}`, borderRadius: 14, cursor: isLocked ? "not-allowed" : "pointer", textAlign: "left", transition: "all 0.15s", opacity: isLocked ? 0.55 : 1, position: "relative" }}
+                      style={{ padding: "18px", background: "var(--card-bg)", border: `0.5px solid ${borderColor}`, borderRadius: 14, cursor: isLocked ? "not-allowed" : "pointer", textAlign: "left", transition: "all 0.15s", opacity: isLocked ? 0.55 : 1 }}
                       onMouseEnter={e => { if (!isLocked) { e.currentTarget.style.borderColor = `${AMBER}44`; e.currentTarget.style.background = "var(--bg2)"; } }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = isCompleted ? "rgba(76,175,125,0.3)" : "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}>
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.background = "var(--card-bg)"; }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                         <span style={{ fontSize: 20, color: isLocked ? "var(--text3)" : AMBER }}>{l.icon}</span>
-                        {isLocked ? <LockIcon /> : isCompleted ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "2px 7px", borderRadius: 20, background: "rgba(76,175,125,0.12)", color: GREEN }}>✓</span> : <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", background: `${AMBER}18`, color: AMBER, borderRadius: 6 }}>+{l.xpReward} XP</span>}
+                        {isLocked
+                          ? <LockIcon />
+                          : isMastered
+                            ? <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, padding: "2px 7px", borderRadius: 20, background: "rgba(167,139,250,0.12)", color: "#a78bfa" }}>★ Mastered</span>
+                            : isStarted
+                              ? <span style={{ fontSize: 9, padding: "2px 7px", background: "rgba(76,175,125,0.1)", color: GREEN, borderRadius: 6 }}>{prog.length}/{l.quiz.length}</span>
+                              : <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", background: `${AMBER}18`, color: AMBER, borderRadius: 6 }}>+{l.xpReward} XP</span>
+                        }
                       </div>
                       <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 3 }}>{l.title}</p>
                       <p style={{ fontSize: 11, color: "var(--text3)" }}>{l.time} read</p>
@@ -903,7 +972,7 @@ export default function LearnPage() {
                         <p style={{ fontSize: 12, color: "var(--text3)" }}>5 rounds · ±0.15 margin · +20 XP for 3+ correct</p>
                       </div>
                     </div>
-                    <SharpGame onXP={n => awardXP(n, "game")} />
+                    <SharpGame onXP={n => awardXP(n)} />
                   </>
                 )}
                 {activeGame === "builder-game" && (
@@ -915,7 +984,7 @@ export default function LearnPage() {
                         <p style={{ fontSize: 12, color: "var(--text3)" }}>Pick the best assets for each goal · +20 XP</p>
                       </div>
                     </div>
-                    <BuilderChallenge onXP={n => awardXP(n, "game")} />
+                    <BuilderChallenge onXP={n => awardXP(n)} />
                   </>
                 )}
               </div>
@@ -929,8 +998,8 @@ export default function LearnPage() {
                 <LessonView
                   lesson={activeLesson}
                   onBack={() => setActiveSection("home")}
-                  onXP={n => handleLessonXP(n, activeLesson.id)}
-                  completed={completed.includes(activeLesson.id)}
+                  onXP={(amount, updatedProg) => handleLessonXP(amount, activeLesson.id, updatedProg)}
+                  progress={lessonProgress[activeLesson.id] ?? []}
                 />
               </div>
             </motion.div>
