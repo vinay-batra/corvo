@@ -149,9 +149,10 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
               { color: "rgba(201,168,76,0.25)", label: "25–75% range" },
               { color: C.amber, label: "Median" },
               { color: "rgba(201,168,76,0.15)", label: "300 simulations" },
+              { color: "rgba(201,168,76,0.55)", label: "SPY benchmark", dashed: true },
             ].map((l, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 18, height: 2, background: l.color, borderRadius: 1 }} />
+                <div style={{ width: 18, height: 2, background: l.color, borderRadius: 1, borderTop: (l as any).dashed ? `2px dashed ${l.color}` : undefined, borderBottom: "none", borderLeft: "none", borderRight: "none" }} />
                 <span style={{ fontSize: 10, color: C.cream3 }}>{l.label}</span>
               </div>
             ))}
@@ -172,7 +173,15 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
               { x: days, y: data.bands.p95.map((v: number) => v * 100), type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(201,168,76,0.08)", line: { color: "rgba(201,168,76,0.2)", width: 1, dash: "dot" }, showlegend: false } as any,
               { x: days, y: data.p75, type: "scatter", mode: "lines", line: { color: "rgba(0,0,0,0)", width: 0 }, showlegend: false, hoverinfo: "skip" } as any,
               { x: days, y: data.p25, type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(201,168,76,0.1)", line: { color: "rgba(201,168,76,0.25)", width: 1, dash: "dot" }, showlegend: false } as any,
-
+              // SPY benchmark: deterministic median path, 10% annual return, 15% vol
+              {
+                x: days,
+                y: days.map((d: number) => (Math.exp((0.10 - 0.5 * 0.15 * 0.15) / 252 * d) - 1) * 100),
+                type: "scatter", mode: "lines",
+                name: "SPY benchmark",
+                line: { color: "rgba(201,168,76,0.55)", width: 1.5, dash: "dash" },
+                hovertemplate: "SPY benchmark: %{y:.1f}%<extra></extra>",
+              } as any,
             ]}
             layout={{
               paper_bgcolor: "transparent", plot_bgcolor: "transparent",

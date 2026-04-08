@@ -19,9 +19,20 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
   const [articlesByTicker, setArticlesByTicker] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false);
 
-  // Vibrant palette for ticker badges (intentionally colorful)
   const palette = ["#c9a84c", "#3b82f6", "#ef4444", "#f59e0b", "#8b5cf6", "#10b981"];
   const tickerColor = (t: string) => palette[allTickers.indexOf(t) % palette.length];
+
+  const BULLISH_WORDS = ["gains", "rises", "beats", "surges", "strong", "growth", "up", "high", "record", "rally", "jumps", "soars", "outperforms", "upgrade", "buy"];
+  const BEARISH_WORDS = ["falls", "drops", "misses", "weak", "loss", "down", "crash", "cut", "risk", "concern", "decline", "tumbles", "warns", "downgrade", "sell", "slump"];
+
+  const getSentiment = (title: string): "BULLISH" | "BEARISH" | "NEUTRAL" => {
+    const lower = title.toLowerCase();
+    const b = BULLISH_WORDS.filter(w => lower.includes(w)).length;
+    const bear = BEARISH_WORDS.filter(w => lower.includes(w)).length;
+    if (b > bear) return "BULLISH";
+    if (bear > b) return "BEARISH";
+    return "NEUTRAL";
+  };
 
   useEffect(() => {
     if (!allTickers.length) return;
@@ -161,7 +172,18 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                         {article.summary}
                       </p>
                     )}
-                    <div style={{ display: "flex", gap: 10, fontSize: 10, color: "var(--text3)" }}>
+                    <div style={{ display: "flex", gap: 10, fontSize: 10, color: "var(--text3)", alignItems: "center", flexWrap: "wrap" }}>
+                      {(() => {
+                        const s = getSentiment(article.title || "");
+                        const sc = s === "BULLISH" ? { bg: "rgba(92,184,138,0.12)", color: "#5cb88a", border: "rgba(92,184,138,0.3)" }
+                          : s === "BEARISH" ? { bg: "rgba(224,92,92,0.12)", color: "#e05c5c", border: "rgba(224,92,92,0.3)" }
+                          : { bg: "var(--bg3)", color: "var(--text3)", border: "var(--border)" };
+                        return (
+                          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1, padding: "2px 6px", borderRadius: 4, background: sc.bg, color: sc.color, border: `0.5px solid ${sc.border}` }}>
+                            {s}
+                          </span>
+                        );
+                      })()}
                       {article.publisher && <span>{article.publisher}</span>}
                       {article.published && (
                         <span>

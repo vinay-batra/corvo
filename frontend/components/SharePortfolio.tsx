@@ -23,12 +23,8 @@ export default function SharePortfolio({ data, assets, period, benchmark }: Shar
   if (!data) return null;
 
   const generateShareUrl = () => {
-    const params = new URLSearchParams();
-    params.set("t", assets.map(a => a.ticker).join(","));
-    params.set("w", assets.map(a => a.weight.toFixed(4)).join(","));
-    params.set("p", period);
-    params.set("b", benchmark);
-    return `${window.location.origin}/app?${params.toString()}`;
+    const encoded = btoa(JSON.stringify(assets));
+    return `${window.location.origin}/app?portfolio=${encoded}`;
   };
 
   const handleShare = () => {

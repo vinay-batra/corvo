@@ -1,8 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+
+const POINTS_KEY = "corvo_learn_points";
+const LEVELS = [
+  { pts: 0,   name: "Beginner" },
+  { pts: 50,  name: "Analyst" },
+  { pts: 100, name: "Portfolio Manager" },
+  { pts: 150, name: "Fund Manager" },
+  { pts: 200, name: "CIO" },
+];
+function getLevel(pts: number) {
+  let lvl = LEVELS[0];
+  for (const l of LEVELS) { if (pts >= l.pts) lvl = l; }
+  return lvl;
+}
+function getNextLevel(pts: number) {
+  return LEVELS.find(l => l.pts > pts) || null;
+}
 
 const C = {
   amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", amber3: "rgba(201,168,76,0.06)",
@@ -21,7 +38,7 @@ const SHARPE_ROUNDS = [
   { portfolio: "TSLA 40% + NVDA 60%", ret: 31.4, vol: 54.2, answer: 0.51, hint: "High-growth tech — big swings in both directions." },
 ];
 
-function SharpGame() {
+function SharpGame({ onPoints }: { onPoints: (n: number) => void }) {
   const [round, setRound] = useState(0);
   const [guess, setGuess] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -36,7 +53,7 @@ function SharpGame() {
   const submit = () => {
     if (!guess || isNaN(numGuess)) return;
     const correct = isClose;
-    if (correct) setScore(s => s + 1);
+    if (correct) { setScore(s => s + 1); onPoints(10); }
     setHistory(h => [...h, { correct, guess: numGuess, answer: current.answer }]);
     setSubmitted(true);
   };
@@ -132,10 +149,11 @@ const CHALLENGES = [
   { goal: "Best Sharpe ratio", target: "sharpe", desc: "Pick 3 assets from the list to maximize your risk-adjusted return.", assets: ["SPY", "QQQ", "GLD", "TLT", "VIG", "SCHD", "BND"], correct: ["SPY", "VIG", "SCHD"], hint: "Dividend ETFs tend to have lower volatility, improving the Sharpe ratio." },
 ];
 
-function BuilderChallenge() {
+function BuilderChallenge({ onPoints }: { onPoints: (n: number) => void }) {
   const [challenge, setChallenge] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [awarded, setAwarded] = useState(false);
   const current = CHALLENGES[challenge];
 
   const toggle = (asset: string) => {
@@ -145,6 +163,11 @@ function BuilderChallenge() {
   };
 
   const score = selected.filter(s => current.correct.includes(s)).length;
+
+  const handleSubmit = () => {
+    if (score >= 2 && !awarded) { onPoints(15); setAwarded(true); }
+    setSubmitted(true);
+  };
 
   return (
     <div>
@@ -165,7 +188,7 @@ function BuilderChallenge() {
       </div>
 
       {!submitted ? (
-        <button onClick={() => setSubmitted(true)} disabled={selected.length < 3}
+        <button onClick={handleSubmit} disabled={selected.length < 3}
           style={{ width: "100%", padding: "11px", background: selected.length >= 3 ? C.amber : "transparent", border: `1px solid ${C.border}`, borderRadius: 9, color: selected.length >= 3 ? C.navy : C.cream3, fontSize: 13, fontWeight: 600, cursor: selected.length >= 3 ? "pointer" : "not-allowed" }}>
           Check Answer
         </button>
@@ -179,12 +202,12 @@ function BuilderChallenge() {
             <p style={{ fontSize: 12, color: C.cream3 }}>{current.hint}</p>
           </div>
           {challenge < CHALLENGES.length - 1 ? (
-            <button onClick={() => { setChallenge(c => c + 1); setSelected([]); setSubmitted(false); }}
+            <button onClick={() => { setChallenge(c => c + 1); setSelected([]); setSubmitted(false); setAwarded(false); }}
               style={{ width: "100%", padding: "11px", background: C.amber, border: "none", borderRadius: 9, color: C.navy, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               Next Challenge →
             </button>
           ) : (
-            <button onClick={() => { setChallenge(0); setSelected([]); setSubmitted(false); }}
+            <button onClick={() => { setChallenge(0); setSelected([]); setSubmitted(false); setAwarded(false); }}
               style={{ width: "100%", padding: "11px", background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, borderRadius: 9, color: C.cream2, fontSize: 13, cursor: "pointer" }}>
               Start Over
             </button>
@@ -286,6 +309,23 @@ export default function LearnPage() {
   const [activeSection, setActiveSection] = useState<"home" | "game" | "lesson">("home");
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<typeof LESSONS[0] | null>(null);
+  const [points, setPoints] = useState(0);
+
+  useEffect(() => {
+    try { setPoints(parseInt(localStorage.getItem(POINTS_KEY) || "0", 10) || 0); } catch {}
+  }, []);
+
+  const addPoints = (n: number) => {
+    setPoints(p => {
+      const next = p + n;
+      try { localStorage.setItem(POINTS_KEY, String(next)); } catch {}
+      return next;
+    });
+  };
+
+  const level = getLevel(points);
+  const nextLevel = getNextLevel(points);
+  const progressPct = nextLevel ? Math.min(100, ((points - level.pts) / (nextLevel.pts - level.pts)) * 100) : 100;
 
   return (
     <div style={{ minHeight: "100vh", background: C.navy, color: C.cream, fontFamily: "Inter, sans-serif" }}>
@@ -305,6 +345,22 @@ export default function LearnPage() {
         <span style={{ fontSize: 10, letterSpacing: 2.5, color: C.amber, textTransform: "uppercase" }}>Learn & Practice</span>
         <Link href="/app" style={{ fontSize: 12, color: C.cream3, textDecoration: "none" }}>← Back to analyzer</Link>
       </nav>
+
+      {/* Score tracker */}
+      <div style={{ background: "rgba(201,168,76,0.05)", borderBottom: `1px solid rgba(201,168,76,0.12)`, padding: "14px 32px" }}>
+        <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 9, letterSpacing: 2, color: C.amber, textTransform: "uppercase" }}>Level</span>
+            <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: C.amber }}>{level.name}</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 120, height: 4, background: "rgba(255,255,255,0.07)", borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ width: `${progressPct}%`, height: "100%", background: C.amber, borderRadius: 2, transition: "width 0.5s ease" }} />
+          </div>
+          <span style={{ fontSize: 11, color: C.cream3, whiteSpace: "nowrap" }}>
+            {points} pts{nextLevel ? ` · ${nextLevel.pts - points} to ${nextLevel.name}` : " · Max level!"}
+          </span>
+        </div>
+      </div>
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 24px" }}>
         <AnimatePresence mode="wait">
@@ -364,7 +420,7 @@ export default function LearnPage() {
                         <p style={{ fontSize: 12, color: C.cream3 }}>5 rounds · ±0.15 margin of error</p>
                       </div>
                     </div>
-                    <SharpGame />
+                    <SharpGame onPoints={addPoints} />
                   </>
                 )}
                 {activeGame === "builder-game" && (
@@ -376,7 +432,7 @@ export default function LearnPage() {
                         <p style={{ fontSize: 12, color: C.cream3 }}>Pick the best assets for each goal</p>
                       </div>
                     </div>
-                    <BuilderChallenge />
+                    <BuilderChallenge onPoints={addPoints} />
                   </>
                 )}
               </div>

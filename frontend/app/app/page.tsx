@@ -23,6 +23,7 @@ import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import { fetchPortfolio } from "../../lib/api";
 import AlertsPanel from "../../components/AlertsPanel";
+import Watchlist from "../../components/Watchlist";
 
 const TABS = [
   { id: "overview",  label: "Overview",  icon: "◈" },
@@ -30,6 +31,7 @@ const TABS = [
   { id: "simulate",  label: "Simulate",   icon: "◎" },
   { id: "compare",   label: "Compare",    icon: "⊞" },
   { id: "news",      label: "News",       icon: "◷" },
+  { id: "watchlist", label: "Watchlist",  icon: "◉" },
   { id: "ai",        label: "AI Chat",    icon: "✦" },
 ];
 
@@ -207,9 +209,25 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
           </div>
         </div>
       ) : (
-        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 12 }}>
-          <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text)", marginBottom: 6 }}>No saved portfolios yet</p>
-          <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.6 }}>Analyze a portfolio, then use the Save button in the sidebar to save it. Come back here to compare multiple portfolios side by side.</p>
+        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "24px 26px", background: "var(--card-bg)", marginBottom: 12 }}>
+          <p style={{ fontSize: 9, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>How to compare portfolios</p>
+          <p style={{ fontSize: 15, fontWeight: 500, color: "var(--text)", marginBottom: 20 }}>No saved portfolios yet</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {[
+              { n: "1", title: "Build a portfolio", desc: "Add tickers and weights in the left sidebar." },
+              { n: "2", title: "Analyze it", desc: "Click Analyze (or press ↵) to run the full analysis." },
+              { n: "3", title: "Save it", desc: "Use the Save button in the sidebar — it works without an account." },
+              { n: "4", title: "Compare side by side", desc: "Return here to select saved portfolios and compare key metrics." },
+            ].map(step => (
+              <div key={step.n} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                <div style={{ width: 26, height: 26, borderRadius: "50%", border: "0.5px solid rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#c9a84c", flexShrink: 0, fontFamily: "var(--font-mono)" }}>{step.n}</div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 2 }}>{step.title}</p>
+                  <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.55 }}>{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -275,6 +293,8 @@ export default function AppPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAlerts, setShowAlerts]   = useState(false);
   const [alertCount, setAlertCount]   = useState(0);
+  const [whatIfMode, setWhatIfMode]   = useState(false);
+  const [whatIfWeights, setWhatIfWeights] = useState<Record<string, number>>({});
   const { dark, toggle: toggleDark }  = useTheme();
   const S = useS();
 
@@ -289,8 +309,21 @@ export default function AppPage() {
       if (raw) setAlertCount(JSON.parse(raw).length);
     } catch {}
 
-    // Demo mode
     const params = new URLSearchParams(window.location.search);
+
+    // Portfolio sharing via base64 URL param
+    const portfolioParam = params.get("portfolio");
+    if (portfolioParam) {
+      try {
+        const decoded = JSON.parse(atob(portfolioParam));
+        if (Array.isArray(decoded) && decoded.length > 0) {
+          setAssets(decoded);
+          setShowGoals(false);
+        }
+      } catch {}
+    }
+
+    // Demo mode
     if (params.get("demo") === "true") {
       const demoAssets = [
         { ticker: "SPY", weight: 40 },
@@ -319,6 +352,42 @@ export default function AppPage() {
       setActiveTab("overview");
     } catch (e) { console.error(e); }
     setLoading(false);
+  };
+
+  const handleAnalyzeRef = useRef(handleAnalyze);
+  useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      handleAnalyzeRef.current();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const exportCSV = () => {
+    if (!data || !assets.length) return;
+    const total = assets.reduce((s, a) => s + a.weight, 0);
+    const rows: (string | number)[][] = [
+      ["Ticker", "Weight (%)"],
+      ...assets.map(a => [a.ticker, ((a.weight / total) * 100).toFixed(1)]),
+      [],
+      ["Portfolio Summary"],
+      ["Annual Return (%)", (data.portfolio_return * 100).toFixed(2)],
+      ["Volatility (%)", (data.portfolio_volatility * 100).toFixed(2)],
+      ["Sharpe Ratio", data.sharpe_ratio?.toFixed(2) ?? ""],
+      ["Max Drawdown (%)", (data.max_drawdown * 100).toFixed(2)],
+      ["Period", period],
+      ["Benchmark", benchLabel],
+    ];
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const uri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+    const a = document.createElement("a");
+    a.href = uri;
+    a.download = `corvo_${assets.map(a => a.ticker).join("-")}_${period}.csv`;
+    a.click();
   };
 
   const benchLabel = BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark;
@@ -391,7 +460,7 @@ export default function AppPage() {
       <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
         <button onClick={handleAnalyze} disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
           style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : "var(--text)", color: loading ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s" }}>
-          {loading ? "Analyzing..." : "▶  Analyze"}
+          {loading ? "Analyzing..." : "▶  Analyze  ↵"}
         </button>
       </div>
 
@@ -543,6 +612,14 @@ export default function AppPage() {
               )}
             </button>
             <DarkModeToggle dark={dark} toggle={toggleDark} />
+            {data && (
+              <button onClick={exportCSV} title="Export CSV"
+                style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text2)", display: "flex", alignItems: "center", gap: 5, transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                ↓ CSV
+              </button>
+            )}
             <ExportPDF data={data} assets={assets} />
             <UserMenu />
           </div>
@@ -558,7 +635,42 @@ export default function AppPage() {
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="c-metrics" style={S.metricsGrid}><Metrics data={data} /></div>
-                <Card><CardHeader title="Performance" /><PerformanceChart data={data} /></Card>
+                <Card>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
+                    <button onClick={() => { setWhatIfMode(w => !w); if (!whatIfMode) { const init: Record<string,number> = {}; assets.forEach(a => { init[a.ticker] = a.weight; }); setWhatIfWeights(init); } }}
+                      style={{ padding: "4px 10px", fontSize: 10, borderRadius: 6, border: "0.5px solid var(--border2)", background: whatIfMode ? "var(--text)" : "transparent", color: whatIfMode ? "var(--bg)" : "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}>
+                      {whatIfMode ? "✕ Exit What-if" : "◎ What-if"}
+                    </button>
+                  </div>
+                  {whatIfMode ? (
+                    <div>
+                      <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14 }}>Adjust weights to explore allocation scenarios. Re-analyze to see updated metrics.</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                        {assets.map(a => {
+                          const w = whatIfWeights[a.ticker] ?? a.weight;
+                          const total = Object.values(whatIfWeights).reduce((s, v) => s + v, 0) || 1;
+                          return (
+                            <div key={a.ticker}>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                                <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text)" }}>{a.ticker}</span>
+                                <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text2)" }}>{((w / total) * 100).toFixed(0)}%</span>
+                              </div>
+                              <input type="range" min={1} max={100} value={w} onChange={e => setWhatIfWeights(prev => ({ ...prev, [a.ticker]: Number(e.target.value) }))}
+                                style={{ width: "100%", accentColor: "#c9a84c" }} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <button onClick={() => { const total = Object.values(whatIfWeights).reduce((s,v)=>s+v,0)||1; const updated = assets.map(a => ({ ...a, weight: Math.round((whatIfWeights[a.ticker]??a.weight)/total*100) })); setAssets(updated); setWhatIfMode(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
+                        style={{ padding: "8px 18px", fontSize: 11, background: "#c9a84c", border: "none", borderRadius: 8, color: "#0a0e14", fontWeight: 600, cursor: "pointer", marginRight: 8 }}>
+                        Apply & Re-analyze
+                      </button>
+                    </div>
+                  ) : (
+                    <PerformanceChart data={data} />
+                  )}
+                </Card>
                 <div className="c-bgrid" style={S.bottomGrid}>
                   <Card style={{ marginBottom: 0 }}><CardHeader title="Health Score" /><HealthScore data={data} /></Card>
                   <Card style={{ marginBottom: 0 }}><CardHeader title="AI Insights" /><AiInsights data={data} assets={assets} onAskAi={() => setActiveTab("ai")} /></Card>
@@ -585,6 +697,10 @@ export default function AppPage() {
               <motion.div key="news" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <Card><CardHeader title="Market News" /><NewsFeed assets={assets} /></Card>
               </motion.div>
+            ) : activeTab === "watchlist" ? (
+              <motion.div key="watchlist" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <Watchlist />
+              </motion.div>
             ) : activeTab === "ai" ? (
               <motion.div key="ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 style={{ height: "calc(100vh - 96px)", display: "flex", flexDirection: "column" }}>
@@ -598,7 +714,7 @@ export default function AppPage() {
       {/* Mobile floating Analyze button */}
       <button className="c-mob-analyze" onClick={handleAnalyze} disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
         style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 150, padding: "13px 40px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "var(--bg3)" : "var(--text)", color: loading ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 24, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.3)", transition: "all 0.2s" }}>
-        {loading ? "Analyzing..." : "▶  Analyze"}
+        {loading ? "Analyzing..." : "▶  Analyze  ↵"}
       </button>
 
       <AnimatePresence>
