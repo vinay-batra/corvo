@@ -1,135 +1,88 @@
-# Corvo - Portfolio Intelligence Platform
+# Corvo — Portfolio Intelligence
 
-Corvo is a full-stack portfolio intelligence platform for analyzing risk, performance, and portfolio structure.
+> Your portfolio. Intelligently analyzed.
 
-It provides quantitative analysis, forward simulations, and AI-driven insights to improve investment decision-making.
+Corvo is a full-stack portfolio analytics platform that replaces the need for Bloomberg, Yahoo Finance, and Robinhood's research tools — without the cost. Built for serious retail investors who want institutional-grade analysis.
 
----
-
-## Overview
-
-Most retail investing tools emphasize picking the “best stock.”
-
-Corvo is built around a different idea:
-
-> Understanding risk, diversification, and probabilistic outcomes matters more than prediction.
-
-The platform allows users to analyze portfolios, simulate future scenarios, and receive AI-generated insights on their allocation and risk profile.
+**Live at [corvo.capital](https://corvo.capital)**
 
 ---
 
-## Core Features
+## Features
 
-### Portfolio Analysis
-- Portfolio returns and cumulative performance  
-- Volatility and risk metrics  
-- Sharpe ratio and risk-adjusted returns  
-- Maximum drawdown analysis  
+### Portfolio Analytics
+- Sharpe ratio, volatility, max drawdown, alpha, beta
+- Monte Carlo simulation with 300+ paths
+- Health score across returns, risk, stability, resilience
+- Benchmark comparison vs S&P 500, NASDAQ, and more
+- What-If mode — test portfolio changes side by side
 
-### Benchmarking
-- Performance comparison against major indices  
-- Relative return and risk evaluation  
+### Stock Research
+- Full stock detail: price, financials, analyst ratings, news
+- Compare up to 4 stocks simultaneously with normalized charts
+- Correlation heatmap between holdings
+- Live prices injected into every AI response
 
-### Simulation & Modeling
-- Monte Carlo simulations (forward portfolio scenarios)  
-- Probabilistic outcome visualization  
+### AI-Powered Insights
+- Claude-powered chat with real-time market context
+- Plain-English portfolio analysis
+- Rebalancing suggestions based on your goals
 
-### AI Portfolio Insights
-- Natural language explanations of portfolio structure  
-- Risk identification (concentration, diversification, volatility)  
-- Strategy-level suggestions  
+### Financial Education
+- 8 hand-crafted lessons with worked examples
+- AI-generated practice questions (infinite drill mode)
+- Challenge Mode — timed, scored, leaderboard
+- XP system, streaks, level progression (Beginner → Master)
+- 6 financial mini-games
 
-### Data & System Design
-- Real-time market data integration (yfinance)  
-- Structured backend for financial calculations  
-- Separation of modeling logic and UI layer  
+### Watchlist & Alerts
+- Live prices with 7-day sparklines
+- Browser push notifications for price alerts
+- One-click add from any stock detail view
 
----
-
-## Example Insight
-
-A portfolio concentrated in large-cap tech may show:
-
-- High returns but elevated volatility  
-- Increased drawdown risk  
-- Strong correlation between holdings  
-
-Corvo identifies these patterns and explains them in plain English.
+### Platform
+- Dark/light mode
+- Multi-currency (USD, GBP, EUR, JPY, CAD)
+- CSV + PDF export
+- Portfolio sharing via URL
+- Mobile responsive
 
 ---
 
 ## Tech Stack
 
-### Frontend
-- Next.js  
-- TypeScript  
-- Tailwind CSS  
-- Framer Motion  
-- Plotly (visualizations)  
-
-### Backend
-- FastAPI  
-- Python  
-- NumPy / pandas (financial calculations)  
-
-### Infrastructure
-- Vercel (frontend deployment)  
-- Railway (backend deployment)  
-
-### AI
-- Claude API (Anthropic)  
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16, TypeScript, Tailwind, Framer Motion, Plotly |
+| Backend | FastAPI, Python 3.13, yfinance, Anthropic SDK |
+| Database | Supabase (PostgreSQL) |
+| Auth | Supabase Auth — Google, GitHub, Magic Link |
+| Emails | Resend |
+| Deployment | Vercel (frontend), Railway (backend) |
 
 ---
 
-## System Design
+## Architecture
 
-Corvo is structured as a modular system:
-
-- **Frontend (Next.js)**  
-  Handles UI, user interaction, and visualization  
-
-- **Backend (FastAPI)**  
-  Handles portfolio calculations, simulations, and data processing  
-
-- **Data Layer**  
-  Market data ingestion and transformation  
-
-- **AI Layer**  
-  Translates quantitative outputs into natural language insights  
+corvo/
+├── frontend/          # Next.js app
+│   ├── app/
+│   │   ├── app/       # Main analyzer
+│   │   ├── learn/     # Education platform
+│   │   ├── auth/      # Authentication
+│   │   └── settings/  # User settings
+│   └── components/
+└── backend/           # FastAPI server
+└── main.py        # All API endpoints
 
 ---
 
-## Key Concepts
+## License
 
-Corvo is built around a few core ideas:
-
-- Historical data has limitations  
-- Prediction is inherently unstable  
-- Risk and structure are measurable  
-- Decision-making improves with probabilistic thinking  
+This project is licensed under the [Business Source License 1.1](LICENSE).  
+You may view and reference the code, but may not use it to build a competing commercial product.  
+The license converts to MIT on April 8, 2029.
 
 ---
 
-## Current Status
-
-Corvo is in active development.
-
-Ongoing improvements:
-
-- Multi-portfolio comparison  
-- Alerts and monitoring  
-- Expanded risk modeling  
-- Improved UI/UX  
-
----
-
-## Live Demo
-
-https://corvo.capital
-
----
-
-## Author
-
-Vinay Batra  
-High School Quant | AI + Finance  
+Built by [Vinay Batra](https://www.linkedin.com/in/vinay-batra/)
