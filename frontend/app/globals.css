@@ -12,15 +12,18 @@
   --text2:       #6b6b68;
   --text3:       #9b9b98;
   --green:       #111110;
+  --accent:      #c9a84c;
   --font-body:   'Inter', sans-serif;
   --font-mono:   'Space Mono', monospace;
   --radius:      8px;
   --radius-lg:   12px;
   /* card & input */
   --card-bg:     #ffffff;
+  --card-glass:  rgba(255,255,255,0.7);
   --input-bg:    #ffffff;
   --input-border: rgba(0,0,0,0.15);
   --shadow:      0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.1);
   --track:       rgba(0,0,0,0.08);
 }
 
@@ -35,10 +38,13 @@
   --text2:       #a8a8a4;
   --text3:       #6b6b68;
   --green:       #f0efed;
+  --accent:      #c9a84c;
   --card-bg:     #141413;
+  --card-glass:  rgba(255,255,255,0.03);
   --input-bg:    #1a1a18;
   --input-border: rgba(255,255,255,0.12);
   --shadow:      0 1px 4px rgba(0,0,0,0.4);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.4);
   --track:       rgba(255,255,255,0.06);
 }
 
@@ -50,14 +56,15 @@ html, body {
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
-  transition: background 0.25s, color 0.25s;
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 p, span, div, label { color: inherit; }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; opacity: 0.5; }
+::-webkit-scrollbar-thumb:hover { opacity: 1; }
 
 ::selection { background: var(--text); color: var(--bg); }
 
@@ -67,4 +74,28 @@ input::placeholder { color: var(--text3); }
 
 @keyframes spin    { to { transform: rotate(360deg); } }
 @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes analyze-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(201,168,76,0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(201,168,76,0); }
+  100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+}
+
+/* ── Typography enhancements ── */
+.metric-number {
+  font-size: clamp(20px, 2.5vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.section-heading {
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+/* ── Card glassmorphism ── */
+.glass-card {
+  background: var(--card-glass) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border);
+}
 
