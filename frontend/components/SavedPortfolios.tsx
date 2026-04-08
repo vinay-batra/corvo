@@ -3,9 +3,17 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
+const LS_KEY = "corvo_saved_portfolios";
 const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", border: "rgba(255,255,255,0.06)", cream: "#e8e0cc", cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)" };
 interface Asset { ticker: string; weight: number; }
-interface Portfolio { id: string; name: string; assets: Asset[]; period: string; }
+interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; }
+
+function loadLocal(): Portfolio[] {
+  try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+}
+function saveLocal(portfolios: Portfolio[]) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(portfolios)); } catch {}
+}
 
 export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asset[]; data: any; onLoad: (a: Asset[]) => void }) {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -15,23 +23,73 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
   const [user, setUser] = useState<any>(null);
   const [focused, setFocused] = useState(false);
 
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => setUser(data.user)); fetchPortfolios(); }, []);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    fetchPortfolios();
+  }, []);
 
   const fetchPortfolios = async () => {
-    const { data } = await supabase.from("portfolios").select("*").order("created_at", { ascending: false });
-    if (data) setPortfolios(data as Portfolio[]);
+    const local = loadLocal();
+    try {
+      const { data: remote, error } = await supabase.from("portfolios").select("*").order("created_at", { ascending: false });
+      if (!error && remote) {
+        // Merge: remote first, then any local-only ones (by id not in remote)
+        const remoteIds = new Set(remote.map((p: Portfolio) => p.id));
+        const localOnly = local.filter(p => !remoteIds.has(p.id));
+        setPortfolios([...remote as Portfolio[], ...localOnly]);
+        return;
+      }
+    } catch {}
+    // Supabase failed or not logged in — use localStorage only
+    setPortfolios(local);
   };
 
   const save = async () => {
-    if (!name.trim() || !user) return;
+    if (!name.trim()) return;
     setSaving(true);
-    await supabase.from("portfolios").insert({ name: name.trim(), assets, user_id: user.id });
-    setName(""); setShowSave(false); fetchPortfolios(); setSaving(false);
+    const newPortfolio: Portfolio = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`,
+      name: name.trim(),
+      assets,
+    };
+
+    // Try Supabase first if logged in
+    if (user) {
+      try {
+        const { data: inserted, error } = await supabase
+          .from("portfolios")
+          .insert({ name: newPortfolio.name, assets, user_id: user.id })
+          .select()
+          .single();
+        if (!error && inserted) {
+          // Also save to localStorage as backup
+          const local = loadLocal();
+          saveLocal([inserted as Portfolio, ...local]);
+          await fetchPortfolios();
+          setName(""); setShowSave(false); setSaving(false);
+          return;
+        }
+      } catch {}
+    }
+
+    // Fallback: save to localStorage
+    const local = loadLocal();
+    const updated = [newPortfolio, ...local];
+    saveLocal(updated);
+    setPortfolios(updated);
+    setName(""); setShowSave(false); setSaving(false);
   };
 
-  const remove = async (id: string) => { await supabase.from("portfolios").delete().eq("id", id); fetchPortfolios(); };
-
-  if (!user) return null;
+  const remove = async (id: string) => {
+    // Remove from local
+    const local = loadLocal().filter(p => p.id !== id);
+    saveLocal(local);
+    // Try to remove from Supabase too
+    if (user) {
+      try { await supabase.from("portfolios").delete().eq("id", id); } catch {}
+    }
+    await fetchPortfolios();
+  };
 
   return (
     <div>

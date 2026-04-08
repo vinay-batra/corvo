@@ -101,11 +101,17 @@ export default function Landing() {
       {/* NAV */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "rgba(10,14,20,0.9)" : "transparent", backdropFilter: navSolid ? "blur(16px)" : "none", borderBottom: navSolid ? "1px solid rgba(201,168,76,0.07)" : "none", transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <svg width="18" height="18" viewBox="0 0 40 40" fill="none" style={{ animation: "spin-slow 14s linear infinite" }}>
-            <rect x="1" y="1" width="38" height="38" rx="8" stroke="#c9a84c" strokeWidth="1.5"/>
-            <path d="M14 28 A8 8 0 1 1 26 28" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" fill="none"/>
-            <circle cx="20" cy="20" r="2.5" fill="#c9a84c"/>
-          </svg>
+          {/* Raven logo */}
+          <div style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg,#1a1a1a,#0d0d0d)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="15" height="15" viewBox="0 0 32 32" fill="none">
+              <path d="M10 26 Q8 30 6 31 Q9 28 10 26Z" fill="#fff" opacity="0.55"/>
+              <path d="M10 22 Q8 18 10 14 Q13 10 17 10 Q20 10 22 12 Q25 15 24 19 Q23 23 19 25 Q14 27 10 22Z" fill="#fff" opacity="0.92"/>
+              <path d="M12 18 Q7 15 4 10 Q6 9 9 12 Q11 15 12 18Z" fill="#fff" opacity="0.7"/>
+              <ellipse cx="20" cy="9" rx="4" ry="3.5" fill="#fff" opacity="0.95"/>
+              <path d="M23.5 8 Q26 8.5 26.5 10 Q25 9.5 24 10.5 Q23.5 9 23.5 8Z" fill="#fff" opacity="0.85"/>
+              <circle cx="21.2" cy="8.2" r="1.1" fill="#0d0d0d"/>
+            </svg>
+          </div>
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "#e8e0cc" }}>CORVO</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

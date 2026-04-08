@@ -5,14 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-// Accepts either tickers (string[]) or assets (object[]) for backwards compat
 interface Props {
   tickers?: string[];
   assets?: { ticker: string; weight?: number }[];
 }
 
 export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: Props) {
-  // Normalise to a simple string array
   const allTickers: string[] = tickersProp?.length
     ? tickersProp
     : (assetsProp || []).map(a => a.ticker);
@@ -21,7 +19,8 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
   const [articlesByTicker, setArticlesByTicker] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false);
 
-  const palette = ["#111110", "#3b82f6", "#ef4444", "#f59e0b", "#8b5cf6", "#10b981"];
+  // Vibrant palette for ticker badges (intentionally colorful)
+  const palette = ["#c9a84c", "#3b82f6", "#ef4444", "#f59e0b", "#8b5cf6", "#10b981"];
   const tickerColor = (t: string) => palette[allTickers.indexOf(t) % palette.length];
 
   useEffect(() => {
@@ -59,14 +58,14 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
               borderRadius: 6,
               border: "0.5px solid",
               borderColor: activeTab === tab
-                ? (tab === "ALL" ? "#111" : tickerColor(tab))
-                : "rgba(0,0,0,0.1)",
+                ? (tab === "ALL" ? "var(--border2)" : tickerColor(tab))
+                : "var(--border)",
               background: activeTab === tab
-                ? (tab === "ALL" ? "#111" : `${tickerColor(tab)}15`)
+                ? (tab === "ALL" ? "var(--text)" : `${tickerColor(tab)}18`)
                 : "transparent",
               color: activeTab === tab
-                ? (tab === "ALL" ? "#fff" : tickerColor(tab))
-                : "#6b6b68",
+                ? (tab === "ALL" ? "var(--bg)" : tickerColor(tab))
+                : "var(--text2)",
               cursor: "pointer",
               transition: "all 0.15s",
             }}
@@ -76,8 +75,8 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
               <span style={{
                 marginLeft: 5,
                 fontSize: 9,
-                background: activeTab === tab ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.07)",
-                color: activeTab === tab ? (tab === "ALL" ? "#fff" : tickerColor(tab)) : "#9b9b98",
+                background: activeTab === tab ? "rgba(255,255,255,0.15)" : "var(--bg3)",
+                color: activeTab === tab ? (tab === "ALL" ? "var(--bg)" : tickerColor(tab)) : "var(--text3)",
                 padding: "1px 5px",
                 borderRadius: 10,
               }}>
@@ -90,11 +89,11 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
 
       {loading ? (
         <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "24px 0" }}>
-          <div style={{ width: 18, height: 18, border: "1.5px solid rgba(0,0,0,0.1)", borderTopColor: "#111", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <span style={{ fontSize: 12, color: "#9b9b98" }}>Fetching latest news...</span>
+          <div style={{ width: 18, height: 18, border: "1.5px solid var(--border)", borderTopColor: "var(--text)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <span style={{ fontSize: 12, color: "var(--text3)" }}>Fetching latest news...</span>
         </div>
       ) : articles.length === 0 ? (
-        <p style={{ fontSize: 12, color: "#9b9b98", padding: "32px 0", textAlign: "center" }}>
+        <p style={{ fontSize: 12, color: "var(--text3)", padding: "32px 0", textAlign: "center" }}>
           No recent news found{activeTab !== "ALL" ? ` for ${activeTab}` : ""}.
         </p>
       ) : (
@@ -119,8 +118,8 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                 style={{
                   display: "block",
                   padding: "12px 14px",
-                  background: "#fff",
-                  border: "0.5px solid rgba(0,0,0,0.09)",
+                  background: "var(--card-bg)",
+                  border: "0.5px solid var(--border)",
                   borderRadius: 10,
                   textDecoration: "none",
                   cursor: article.url ? "pointer" : "default",
@@ -128,25 +127,24 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                 }}
                 onMouseEnter={e => {
                   if (article.url) {
-                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,0,0,0.2)";
-                    (e.currentTarget as HTMLElement).style.background = "#f8f8f7";
+                    (e.currentTarget as HTMLElement).style.borderColor = "var(--border2)";
+                    (e.currentTarget as HTMLElement).style.background = "var(--bg3)";
                   }
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,0,0,0.09)";
-                  (e.currentTarget as HTMLElement).style.background = "#fff";
+                  (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
+                  (e.currentTarget as HTMLElement).style.background = "var(--card-bg)";
                 }}
               >
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  {/* Ticker badge */}
                   <span style={{
                     flexShrink: 0,
                     fontSize: 9,
                     fontWeight: 600,
                     letterSpacing: 0.5,
                     color: tickerColor(article.ticker),
-                    background: `${tickerColor(article.ticker)}12`,
-                    border: `0.5px solid ${tickerColor(article.ticker)}35`,
+                    background: `${tickerColor(article.ticker)}14`,
+                    border: `0.5px solid ${tickerColor(article.ticker)}40`,
                     padding: "3px 7px",
                     borderRadius: 4,
                     marginTop: 1,
@@ -155,15 +153,15 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                   </span>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "#111", lineHeight: 1.45, marginBottom: 3 }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", lineHeight: 1.45, marginBottom: 3 }}>
                       {article.title}
                     </p>
                     {article.summary && (
-                      <p style={{ fontSize: 11.5, color: "#6b6b68", lineHeight: 1.55, marginBottom: 5 }}>
+                      <p style={{ fontSize: 11.5, color: "var(--text2)", lineHeight: 1.55, marginBottom: 5 }}>
                         {article.summary}
                       </p>
                     )}
-                    <div style={{ display: "flex", gap: 10, fontSize: 10, color: "#9b9b98" }}>
+                    <div style={{ display: "flex", gap: 10, fontSize: 10, color: "var(--text3)" }}>
                       {article.publisher && <span>{article.publisher}</span>}
                       {article.published && (
                         <span>
@@ -179,7 +177,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                         </span>
                       )}
                       {article.url && (
-                        <span style={{ color: "#111", fontWeight: 500 }}>↗ Read</span>
+                        <span style={{ color: "var(--text)", fontWeight: 500 }}>↗ Read</span>
                       )}
                     </div>
                   </div>
