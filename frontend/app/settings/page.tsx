@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import { SOUND_KEY } from "../../hooks/useSoundEffects";
 
 const PERIODS    = ["6mo", "1y", "2y", "5y"] as const;
 const BENCHMARKS = [
@@ -67,6 +68,9 @@ export default function SettingsPage() {
   const [newsSummary, setNewsSummary]             = useState(false);
   const [notifSaved, setNotifSaved]               = useState(false);
 
+  // Sound effects (localStorage)
+  const [soundEnabled, setSoundEnabled] = useState(false);
+
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting]                   = useState(false);
@@ -93,6 +97,7 @@ export default function SettingsPage() {
       const isDark = theme === "dark";
       setDark(isDark);
       document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+      setSoundEnabled(localStorage.getItem(SOUND_KEY) === "true");
     })();
   }, []);
 
@@ -268,6 +273,16 @@ export default function SettingsPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12, color: "var(--text3)" }}>{dark ? "Dark" : "Light"}</span>
               <Toggle on={dark} onChange={toggleTheme} />
+            </div>
+          </Row>
+          <Row label="Sound Effects" desc="Subtle audio feedback on interactions (off by default)">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12, color: "var(--text3)" }}>{soundEnabled ? "On" : "Off"}</span>
+              <Toggle on={soundEnabled} onChange={() => {
+                const next = !soundEnabled;
+                setSoundEnabled(next);
+                localStorage.setItem(SOUND_KEY, String(next));
+              }} />
             </div>
           </Row>
         </Section>

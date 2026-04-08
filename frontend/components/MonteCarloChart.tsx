@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { fetchMonteCarlo } from "../lib/api";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,38 +28,28 @@ function StatCard({ label, value, color, desc, delay }: { label: string; value: 
   );
 }
 
-function ExplainerModal({ onClose }: { onClose: () => void }) {
+function MonteCarloTooltip() {
+  const [show, setShow] = useState(false);
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(10,14,20,0.88)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <motion.div initial={{ opacity: 0, scale: 0.94, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
-        onClick={e => e.stopPropagation()}
-        style={{ width: "min(540px, 95vw)", background: "#111620", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 18, padding: "36px 36px 32px", position: "relative", maxHeight: "85vh", overflowY: "auto" }}>
-        <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.05)", border: "none", borderRadius: "50%", width: 26, height: 26, cursor: "pointer", fontSize: 12, color: C.cream3 }}>✕</button>
-        <p style={{ fontSize: 8, letterSpacing: 2.5, color: C.amber, textTransform: "uppercase", marginBottom: 8 }}>Deep Dive</p>
-        <h3 style={{ fontSize: 22, fontWeight: 500, color: C.cream, marginBottom: 24 }}>Monte Carlo Simulation</h3>
-        {[
-          { title: "What is it?", text: "Monte Carlo simulation runs your portfolio through hundreds of possible futures at once. Each simulation uses your historical returns and volatility to randomly generate a plausible path — like rolling dice 300 times to see all the ways the future could unfold." },
-          { title: "How does it work?", text: "We take your portfolio's past return and volatility, then use Geometric Brownian Motion to simulate 300 different one-year trajectories. Each path is random but constrained by your actual historical behavior — so aggressive portfolios get wilder paths, stable ones get tighter bands." },
-          { title: "What does the chart show?", text: "The faint lines are all 300 individual simulated paths. The inner darker band covers the 25th–75th percentile range (where the middle half of outcomes land). The outer band covers 5th–95th percentile (95% of all outcomes). The amber line is the median — your most expected outcome." },
-          { title: "What is a percentile?", text: "The 5th percentile is your bad-case scenario — only 5% of simulations ended lower. The 95th is best-case — only 5% ended higher. The median (50th percentile) is where exactly half of simulations landed above and half below. Think of it as your 'expected' outcome." },
-          { title: "How should I use this?", text: "Look at the 5th percentile first — can you stomach that loss? If it shows -30% and that would wreck your finances, you're taking too much risk. Use the median for realistic planning. The 95th percentile is your upside ceiling — don't build your retirement on it." },
-        ].map((s, i) => (
-          <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "14px 16px", marginBottom: 8 }}>
-            <p style={{ fontSize: 8, letterSpacing: 2, color: C.amber, textTransform: "uppercase", marginBottom: 6 }}>{s.title}</p>
-            <p style={{ fontSize: 13, color: C.cream2, lineHeight: 1.75 }}>{s.text}</p>
-          </div>
-        ))}
-      </motion.div>
-    </motion.div>
+    <div className="tooltip-root" style={{ display: "inline-flex", alignItems: "center" }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <button style={{ background: "none", border: "none", cursor: "pointer", color: C.cream3, display: "flex", alignItems: "center", padding: 2 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+        </svg>
+      </button>
+      {show && (
+        <div className="tooltip-box" style={{ minWidth: 240 }}>
+          Simulates thousands of possible future portfolio paths using your historical return and volatility. The amber band is the median; outer bands show the 5th–95th percentile range.
+        </div>
+      )}
+    </div>
   );
 }
 
 export default function MonteCarloChart({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [showExplainer, setShowExplainer] = useState(false);
 
   useEffect(() => {
     if (!assets.length) return;
@@ -75,21 +65,13 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
   return (
     <>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <AnimatePresence>
-        {showExplainer && <ExplainerModal onClose={() => setShowExplainer(false)} />}
-      </AnimatePresence>
 
       {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16 }}>
         <p style={{ fontSize: 13, color: C.cream3, lineHeight: 1.75, maxWidth: 560, fontWeight: 300 }}>
-          300 simulated futures for your portfolio over the next 252 trading days (1 year). Each path is a statistically plausible outcome based on your portfolio's historical returns and volatility.
+          300 simulated futures for your portfolio over the next 252 trading days (1 year).
         </p>
-        <button onClick={() => setShowExplainer(true)}
-          style={{ flexShrink: 0, padding: "8px 16px", background: C.amber2, border: "1px solid rgba(201,168,76,0.25)", borderRadius: 8, color: C.amber, fontSize: 11, cursor: "pointer", letterSpacing: 0.5, whiteSpace: "nowrap", transition: "all 0.15s" }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(201,168,76,0.2)"}
-          onMouseLeave={e => e.currentTarget.style.background = C.amber2}>
-          How does this work? →
-        </button>
+        <MonteCarloTooltip />
       </div>
 
       {/* Percentile stat cards */}

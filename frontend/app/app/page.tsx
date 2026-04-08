@@ -6,8 +6,12 @@ import Link from "next/link";
 import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
   GraduationCap, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
-  Sun, Moon,
+  Sun, Moon, CandlestickChart, Command, HelpCircle,
 } from "lucide-react";
+import CommandPalette from "../../components/CommandPalette";
+import StockDetail from "../../components/StockDetail";
+import { OverviewSkeleton } from "../../components/SkeletonLoader";
+import { useSoundEffects } from "../../hooks/useSoundEffects";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import Metrics from "../../components/Metrics";
 import PerformanceChart from "../../components/PerformanceChart";
@@ -35,14 +39,15 @@ import EmailPreferences from "../../components/EmailPreferences";
 import ReferralModal from "../../components/ReferralModal";
 
 const TABS = [
-  { id: "overview",  label: "Dashboard",  Icon: LayoutDashboard, href: null },
-  { id: "risk",      label: "Risk",        Icon: ShieldAlert,     href: null },
-  { id: "simulate",  label: "Simulations", Icon: FlaskConical,    href: null },
-  { id: "compare",   label: "Compare",     Icon: Eye,             href: null },
-  { id: "news",      label: "News",        Icon: Newspaper,       href: null },
-  { id: "watchlist", label: "Watchlist",   Icon: Eye,             href: null },
-  { id: "ai",        label: "AI Chat",     Icon: MessageSquare,   href: null },
-  { id: "learn",     label: "Learn",       Icon: GraduationCap,   href: "/learn" },
+  { id: "overview",  label: "Dashboard",  Icon: LayoutDashboard,  href: null },
+  { id: "stocks",    label: "Stocks",     Icon: CandlestickChart, href: null },
+  { id: "risk",      label: "Risk",       Icon: ShieldAlert,      href: null },
+  { id: "simulate",  label: "Simulations",Icon: FlaskConical,     href: null },
+  { id: "compare",   label: "Compare",    Icon: Eye,              href: null },
+  { id: "news",      label: "News",       Icon: Newspaper,        href: null },
+  { id: "watchlist", label: "Watchlist",  Icon: Eye,              href: null },
+  { id: "ai",        label: "AI Chat",    Icon: MessageSquare,    href: null },
+  { id: "learn",     label: "Learn",      Icon: GraduationCap,    href: "/learn" },
 ] as const;
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
@@ -342,7 +347,7 @@ function useCurrency() {
 }
 
 export default function AppPage() {
-  const [assets, setAssets]               = useState([{ ticker: "AAPL", weight: 50 }, { ticker: "MSFT", weight: 50 }]);
+  const [assets, setAssets]               = useState<{ ticker: string; weight: number }[]>([]);
   const [period, setPeriod]               = useState("1y");
   const [benchmark, setBenchmark]         = useState("^GSPC");
   const [data, setData]                   = useState<any>(null);
@@ -359,6 +364,9 @@ export default function AppPage() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("corvo_sidebar_collapsed") === "true";
   });
+  const [paletteOpen, setPaletteOpen]   = useState(false);
+  const [stockTicker, setStockTicker]   = useState<string | null>(null);
+  const sound = useSoundEffects();
   const [showAlerts, setShowAlerts]         = useState(false);
   const [showEmailPrefs, setShowEmailPrefs]     = useState(false);
   const [unsubscribeMode, setUnsubscribeMode]   = useState(false);
@@ -474,6 +482,7 @@ export default function AppPage() {
       setData(result);
       setActiveTab("overview");
       setAnalyzeComplete(true);
+      sound.success();
       setTimeout(() => setAnalyzeComplete(false), 600);
     } catch (e) {
       console.error(e);
@@ -487,6 +496,12 @@ export default function AppPage() {
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Cmd+K / Ctrl+K → command palette
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen(o => !o);
+        return;
+      }
       if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
       const tag = (document.activeElement as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
@@ -629,6 +644,72 @@ export default function AppPage() {
     </>
   );
 
+  // ── Stocks search mini-component ─────────────────────────────────────────────
+  function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
+    const [q, setQ] = useState("");
+    const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
+    const [busy, setBusy] = useState(false);
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+    useEffect(() => {
+      if (!q) { setResults([]); return; }
+      const t = setTimeout(async () => {
+        setBusy(true);
+        try {
+          const r = await fetch(`${API}/search-ticker?q=${encodeURIComponent(q)}`);
+          const d = await r.json();
+          setResults((d.results || []).slice(0, 8));
+        } catch {} finally { setBusy(false); }
+      }, 300);
+      return () => clearTimeout(t);
+    }, [q]);
+
+    const POPULAR = ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","BRK-B","SPY","QQQ"];
+    return (
+      <div style={{ maxWidth: 560, margin: "0 auto" }}>
+        <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Stock Lookup</p>
+        <div style={{ position: "relative", marginBottom: 20 }}>
+          <input
+            className="accent-input"
+            value={q} onChange={e => setQ(e.target.value)}
+            placeholder="Search any ticker or company…"
+            style={{ width: "100%", padding: "10px 14px", fontSize: 14, border: "0.5px solid var(--border2)", borderRadius: 10, background: "var(--input-bg)", color: "var(--text)", outline: "none" }}
+          />
+          {busy && <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
+        </div>
+        {results.length > 0 ? (
+          <div style={{ border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+            {results.map((r: any) => (
+              <div key={r.ticker} onClick={() => onSelect(r.ticker)}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", cursor: "pointer", borderBottom: "0.5px solid var(--border)", transition: "background 0.1s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                <div>
+                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>{r.ticker}</span>
+                  <span style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>{r.name}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : !q ? (
+          <div>
+            <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 10 }}>Popular tickers</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {POPULAR.map(t => (
+                <button key={t} onClick={() => onSelect(t)}
+                  style={{ padding: "6px 14px", fontSize: 12, fontFamily: "Space Mono, monospace", fontWeight: 700, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "all 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   const toggleSidebar = () => {
     const next = !sidebarCollapsed;
     setSidebarCollapsed(next);
@@ -748,7 +829,7 @@ export default function AppPage() {
                 </>
               );
               if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle}>{content}</Link>;
-              return <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={tabStyle}>{content}</button>;
+              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); }} style={tabStyle}>{content}</button>;
             })}
           </div>
 
@@ -777,6 +858,10 @@ export default function AppPage() {
                 )}
               </AnimatePresence>
             </div>
+            {/* Command palette hint */}
+            <IconBtn onClick={() => setPaletteOpen(true)} title="Command palette (⌘K)">
+              <Command size={14} />
+            </IconBtn>
             {/* Alerts bell */}
             <button onClick={() => setShowAlerts(true)} title="Alerts"
               style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s" }}
@@ -826,10 +911,18 @@ export default function AppPage() {
             )}
           </AnimatePresence>
           <AnimatePresence mode="wait">
-            {!data && !loading ? (
+            {activeTab === "stocks" ? (
+              <motion.div key="stocks" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                {stockTicker ? (
+                  <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} />
+                ) : (
+                  <StocksSearch onSelect={setStockTicker} />
+                )}
+              </motion.div>
+            ) : !data && !loading ? (
               <motion.div key="empty" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}><Empty /></motion.div>
             ) : loading ? (
-              <motion.div key="loading" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}><Spinner /></motion.div>
+              <motion.div key="loading" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
                 <motion.div
@@ -982,6 +1075,17 @@ export default function AppPage() {
           />
         )}
       </AnimatePresence>
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        tabs={TABS}
+        onTab={id => { setActiveTab(id); sound.whoosh(); }}
+        onStockSearch={t => { setStockTicker(t); setActiveTab("stocks"); }}
+        onAnalyze={handleAnalyze}
+        onToggleDark={toggleDark}
+        dark={dark}
+      />
     </div>
   );
 }

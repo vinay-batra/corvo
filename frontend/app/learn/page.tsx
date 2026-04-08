@@ -22,6 +22,16 @@ import {
   AlertCircle,
   TrendingUp,
   Target,
+  Gamepad2,
+  GraduationCap,
+  Calculator,
+  TrendingDown as CrashIcon,
+  Percent,
+  Building2,
+  GitCompare,
+  ListOrdered,
+  Sun,
+  CalendarCheck,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
@@ -952,17 +962,230 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
-const GAMES = [
-  { id: "sharpe-game",  title: "Guess the Sharpe",   desc: "Given return and volatility, calculate the Sharpe ratio.",            xp: 20, difficulty: "Medium" },
-  { id: "builder-game", title: "Portfolio Challenge", desc: "Pick assets to hit a specific goal — maximize Sharpe or diversify.", xp: 20, difficulty: "Easy"   },
+// ── Arcade Game: Market Crash Simulator ─────────────────────────────────────
+const CRASH_SCENARIOS = [
+  { name: "2008 Financial Crisis", clue: "Lehman Brothers collapsed, banks froze credit, housing market imploded.", answer: 2, options: ["-18%", "-32%", "-57%", "-71%"], correct: 2, explanation: "The S&P 500 fell ~57% from its 2007 peak to March 2009 trough." },
+  { name: "COVID Crash 2020",      clue: "Global pandemic declared, economies locked down overnight.", answer: 1, options: ["-15%", "-34%", "-50%", "-60%"], correct: 1, explanation: "The S&P 500 dropped 34% in just 33 days — fastest bear market ever." },
+  { name: "Dot-com Bust 2000–02",  clue: "Tech valuations collapsed after years of speculative excess.", answer: 2, options: ["-20%", "-35%", "-49%", "-65%"], correct: 2, explanation: "S&P 500 fell 49%. Nasdaq dropped 78% from peak to trough." },
+  { name: "2022 Rate Hike Cycle",  clue: "Fed raised rates at fastest pace since the 1980s to fight 8% inflation.", answer: 1, options: ["-10%", "-25%", "-40%", "-55%"], correct: 1, explanation: "S&P 500 fell 25.4% in 2022 — worst year since 2008." },
 ];
+function CrashSimulator({ onXP }: { onXP: (n: number) => void }) {
+  const [qi, setQi] = useState(0); const [sel, setSel] = useState<number|null>(null); const [done, setDone] = useState(false); const [score, setScore] = useState(0); const [awarded, setAwarded] = useState(false);
+  const q = CRASH_SCENARIOS[qi];
+  const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.correct) setScore(s => s + 1); };
+  const next = () => { if (qi >= CRASH_SCENARIOS.length - 1) { setDone(true); return; } setQi(i => i + 1); setSel(null); };
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(15); setAwarded(true); } }, [done]);
+  if (done) return (
+    <div style={{ textAlign: "center", padding: "20px 0" }}>
+      <Trophy size={40} color={AMBER} style={{ marginBottom: 12 }} />
+      <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{score}/{CRASH_SCENARIOS.length} correct</p>
+      <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 16 }}>{score >= 2 ? "+15 XP earned!" : "Need 2+ correct for XP. Try again!"}</p>
+      <button onClick={() => { setQi(0); setSel(null); setDone(false); setScore(0); setAwarded(false); }} style={{ padding: "8px 20px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>Play Again</button>
+    </div>
+  );
+  return (
+    <div>
+      <p style={{ fontSize: 9, letterSpacing: 2, color: "#e05c5c", textTransform: "uppercase", marginBottom: 8 }}>Scenario {qi+1}/{CRASH_SCENARIOS.length}</p>
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>{q.name}</h3>
+      <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6, marginBottom: 18 }}>{q.clue}</p>
+      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>How much did the S&P 500 drop at its worst?</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: sel !== null ? 14 : 0 }}>
+        {q.options.map((opt, i) => {
+          const picked = sel === i; const correct = i === q.correct; const show = sel !== null;
+          return (
+            <button key={i} onClick={() => submit(i)} style={{ padding: "12px", borderRadius: 10, border: `0.5px solid ${show ? (correct ? "rgba(76,175,125,0.6)" : picked ? "rgba(224,92,92,0.6)" : "var(--border)") : "var(--border)"}`, background: show ? (correct ? "rgba(76,175,125,0.1)" : picked ? "rgba(224,92,92,0.1)" : "transparent") : "transparent", color: "var(--text)", fontSize: 14, fontFamily: "Space Mono, monospace", fontWeight: 700, cursor: sel === null ? "pointer" : "default", transition: "all 0.15s" }}>
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+      {sel !== null && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+          <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p>
+        </motion.div>
+      )}
+      {sel !== null && <button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: AMBER, color: "#0a0e14", cursor: "pointer" }}>{qi < CRASH_SCENARIOS.length - 1 ? "Next →" : "See Results"}</button>}
+    </div>
+  );
+}
+
+// ── Arcade Game: Options Profit Calculator ───────────────────────────────────
+const OPTIONS_QS = [
+  { desc: "You buy a call option: Strike $150, Premium $8, Stock at expiry: $165", options: ["-$800", "+$700", "+$1,500", "+$300"], correct: 1, explanation: "Profit = (165-150-8) × 100 = $700. You exercise the option and net $7/share." },
+  { desc: "You buy a put option: Strike $100, Premium $5, Stock at expiry: $88", options: ["+$700", "-$500", "+$1,200", "+$500"], correct: 0, explanation: "Profit = (100-88-5) × 100 = $700. You sell at $100 what's worth $88." },
+  { desc: "You buy a call option: Strike $200, Premium $15, Stock at expiry: $205", options: ["-$1,000", "+$500", "+$1,500", "-$500"], correct: 3, explanation: "Profit = (205-200-15) × 100 = -$1,000 — wait, the net is -$10/share = -$1,000. Actually: (205-200) = 5, minus $15 premium = -$10/share × 100 = -$1,000. Loss!" },
+  { desc: "You buy a put option: Strike $50, Premium $3, Stock at expiry: $50", options: ["+$300", "-$300", "+$150", "$0"], correct: 1, explanation: "Stock is at strike — option expires worthless. You lose the $3 × 100 = $300 premium." },
+];
+function OptionsGame({ onXP }: { onXP: (n: number) => void }) {
+  const [qi, setQi] = useState(0); const [sel, setSel] = useState<number|null>(null); const [done, setDone] = useState(false); const [score, setScore] = useState(0); const [awarded, setAwarded] = useState(false);
+  const q = OPTIONS_QS[qi];
+  const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.correct) setScore(s => s + 1); };
+  const next = () => { if (qi >= OPTIONS_QS.length - 1) { setDone(true); return; } setQi(i => i + 1); setSel(null); };
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(15); setAwarded(true); } }, [done]);
+  if (done) return (
+    <div style={{ textAlign: "center", padding: "20px 0" }}>
+      <Calculator size={40} color="#a78bfa" style={{ marginBottom: 12 }} />
+      <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{score}/{OPTIONS_QS.length} correct</p>
+      <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 16 }}>{score >= 2 ? "+15 XP earned!" : "Try again to earn XP"}</p>
+      <button onClick={() => { setQi(0); setSel(null); setDone(false); setScore(0); setAwarded(false); }} style={{ padding: "8px 20px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>Play Again</button>
+    </div>
+  );
+  return (
+    <div>
+      <p style={{ fontSize: 9, letterSpacing: 2, color: "#a78bfa", textTransform: "uppercase", marginBottom: 8 }}>Question {qi+1}/{OPTIONS_QS.length}</p>
+      <p style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.65, marginBottom: 18, fontWeight: 500 }}>{q.desc}</p>
+      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>What is your total profit/loss? (1 contract = 100 shares)</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: sel !== null ? 14 : 0 }}>
+        {q.options.map((opt, i) => {
+          const picked = sel === i; const correct = i === q.correct; const show = sel !== null;
+          return <button key={i} onClick={() => submit(i)} style={{ padding: "12px", borderRadius: 10, border: `0.5px solid ${show ? (correct ? "rgba(76,175,125,0.6)" : picked ? "rgba(224,92,92,0.6)" : "var(--border)") : "var(--border)"}`, background: show ? (correct ? "rgba(76,175,125,0.1)" : picked ? "rgba(224,92,92,0.1)" : "transparent") : "transparent", color: "var(--text)", fontSize: 13, fontFamily: "Space Mono, monospace", fontWeight: 700, cursor: sel === null ? "pointer" : "default", transition: "all 0.15s" }}>{opt}</button>;
+        })}
+      </div>
+      {sel !== null && <><motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#a78bfa", color: "#fff", cursor: "pointer" }}>{qi < OPTIONS_QS.length - 1 ? "Next →" : "See Results"}</button></>}
+    </div>
+  );
+}
+
+// ── Arcade Game: Inflation Impact ────────────────────────────────────────────
+const INFLATION_QS = [
+  { q: "Inflation is 7% and your savings account pays 2%. What is your real return?", options: ["+9%", "+5%", "-5%", "-2%"], correct: 2, explanation: "Real return = 2% - 7% = -5%. Your money is losing purchasing power even though the nominal balance grows." },
+  { q: "Your bond pays 4% annually. Inflation rises to 6%. What happens to your real return?", options: ["+10%", "+2%", "-2%", "0%"], correct: 2, explanation: "Real return = 4% - 6% = -2%. Inflation erodes the real value of fixed-income returns." },
+  { q: "Inflation is 3% and stocks return 11%. What is the real return?", options: ["+8%", "+14%", "+3%", "+11%"], correct: 0, explanation: "Real return = 11% - 3% = 8%. Stocks historically beat inflation over the long run." },
+  { q: "$10,000 earning 0% with 5% inflation for 10 years is worth approximately:", options: ["$16,288", "$10,000", "$6,139", "$8,500"], correct: 2, explanation: "Real value = $10,000 / (1.05)^10 ≈ $6,139. Inflation destroys idle cash over time." },
+];
+function InflationGame({ onXP }: { onXP: (n: number) => void }) {
+  const [qi, setQi] = useState(0); const [sel, setSel] = useState<number|null>(null); const [done, setDone] = useState(false); const [score, setScore] = useState(0); const [awarded, setAwarded] = useState(false);
+  const q = INFLATION_QS[qi];
+  const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.correct) setScore(s => s + 1); };
+  const next = () => { if (qi >= INFLATION_QS.length - 1) { setDone(true); return; } setQi(i => i + 1); setSel(null); };
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(10); setAwarded(true); } }, [done]);
+  if (done) return (
+    <div style={{ textAlign: "center", padding: "20px 0" }}>
+      <Percent size={40} color="#4a9eff" style={{ marginBottom: 12 }} />
+      <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{score}/{INFLATION_QS.length} correct</p>
+      <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 16 }}>{score >= 2 ? "+10 XP earned!" : "Try again to earn XP"}</p>
+      <button onClick={() => { setQi(0); setSel(null); setDone(false); setScore(0); setAwarded(false); }} style={{ padding: "8px 20px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>Play Again</button>
+    </div>
+  );
+  return (
+    <div>
+      <p style={{ fontSize: 9, letterSpacing: 2, color: "#4a9eff", textTransform: "uppercase", marginBottom: 8 }}>Question {qi+1}/{INFLATION_QS.length}</p>
+      <p style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.65, marginBottom: 18, fontWeight: 500 }}>{q.q}</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: sel !== null ? 14 : 0 }}>
+        {q.options.map((opt, i) => {
+          const picked = sel === i; const correct = i === q.correct; const show = sel !== null;
+          return <button key={i} onClick={() => submit(i)} style={{ padding: "12px", borderRadius: 10, border: `0.5px solid ${show ? (correct ? "rgba(76,175,125,0.6)" : picked ? "rgba(224,92,92,0.6)" : "var(--border)") : "var(--border)"}`, background: show ? (correct ? "rgba(76,175,125,0.1)" : picked ? "rgba(224,92,92,0.1)" : "transparent") : "transparent", color: "var(--text)", fontSize: 13, fontWeight: 600, cursor: sel === null ? "pointer" : "default", transition: "all 0.15s" }}>{opt}</button>;
+        })}
+      </div>
+      {sel !== null && <><motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#4a9eff", color: "#fff", cursor: "pointer" }}>{qi < INFLATION_QS.length - 1 ? "Next →" : "See Results"}</button></>}
+    </div>
+  );
+}
+
+// ── Arcade Game: Fed Rate Decision ───────────────────────────────────────────
+const FED_SCENARIOS = [
+  { year: "June 2022", inflation: "8.6%", unemployment: "3.6%", correct: 0, options: ["Raise +75bps", "Hold", "Cut -25bps", "Raise +25bps"], actualAction: "Raised +75bps", why: "Inflation at 40-year high. Fed prioritized price stability over growth risk with the largest hike since 1994." },
+  { year: "March 2020", inflation: "2.3%", unemployment: "4.4% (rising)", correct: 2, options: ["Raise +50bps", "Hold", "Cut -100bps", "Cut -25bps"], actualAction: "Cut -100bps to near zero", why: "COVID caused sudden economic collapse. Emergency cut to near-zero + QE to support the economy." },
+  { year: "December 2019", inflation: "2.3%", unemployment: "3.5%", correct: 1, options: ["Raise +25bps", "Hold", "Cut -25bps", "Raise +50bps"], actualAction: "Held rates steady", why: "Economy was healthy with low inflation near target and full employment — no urgency to move." },
+  { year: "September 2024", inflation: "2.5%", unemployment: "4.2%", correct: 2, options: ["Raise +25bps", "Hold", "Cut -50bps", "Cut -25bps"], actualAction: "Cut -50bps", why: "Inflation was falling toward target. Labor market softening. Fed began easing cycle with a larger-than-expected cut." },
+];
+function FedGame({ onXP }: { onXP: (n: number) => void }) {
+  const [qi, setQi] = useState(0); const [sel, setSel] = useState<number|null>(null); const [done, setDone] = useState(false); const [score, setScore] = useState(0); const [awarded, setAwarded] = useState(false);
+  const q = FED_SCENARIOS[qi];
+  const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.correct) setScore(s => s + 1); };
+  const next = () => { if (qi >= FED_SCENARIOS.length - 1) { setDone(true); return; } setQi(i => i + 1); setSel(null); };
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(15); setAwarded(true); } }, [done]);
+  if (done) return (
+    <div style={{ textAlign: "center", padding: "20px 0" }}>
+      <Building2 size={40} color="#4caf7d" style={{ marginBottom: 12 }} />
+      <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{score}/{FED_SCENARIOS.length} correct</p>
+      <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 16 }}>{score >= 2 ? "+15 XP earned!" : "Try again!"}</p>
+      <button onClick={() => { setQi(0); setSel(null); setDone(false); setScore(0); setAwarded(false); }} style={{ padding: "8px 20px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>Play Again</button>
+    </div>
+  );
+  return (
+    <div>
+      <p style={{ fontSize: 9, letterSpacing: 2, color: "#4caf7d", textTransform: "uppercase", marginBottom: 8 }}>Scenario: {q.year}</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+        {[{label: "Inflation", val: q.inflation}, {label: "Unemployment", val: q.unemployment}].map(s => (
+          <div key={s.label} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", border: "0.5px solid var(--border)" }}>
+            <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 4 }}>{s.label}</p>
+            <p style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{s.val}</p>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>What should the Fed do?</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: sel !== null ? 14 : 0 }}>
+        {q.options.map((opt, i) => {
+          const picked = sel === i; const correct = i === q.correct; const show = sel !== null;
+          return <button key={i} onClick={() => submit(i)} style={{ padding: "10px", borderRadius: 10, border: `0.5px solid ${show ? (correct ? "rgba(76,175,125,0.6)" : picked ? "rgba(224,92,92,0.6)" : "var(--border)") : "var(--border)"}`, background: show ? (correct ? "rgba(76,175,125,0.1)" : picked ? "rgba(224,92,92,0.1)" : "transparent") : "transparent", color: "var(--text)", fontSize: 12, fontWeight: 600, cursor: sel === null ? "pointer" : "default", transition: "all 0.15s" }}>{opt}</button>;
+        })}
+      </div>
+      {sel !== null && <><motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 11, fontWeight: 600, color: "#4caf7d", marginBottom: 4 }}>Actual: {q.actualAction}</p><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.why}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#4caf7d", color: "#fff", cursor: "pointer" }}>{qi < FED_SCENARIOS.length - 1 ? "Next →" : "See Results"}</button></>}
+    </div>
+  );
+}
+
+// ── Arcade Game: Stock Valuation Showdown ────────────────────────────────────
+const VALUATION_ROUNDS = [
+  { a: { name: "Company A", pe: 12, eps: 5.2, growth: "8%" }, b: { name: "Company B", pe: 28, eps: 2.1, growth: "5%" }, winner: 0, reason: "Company A has a much lower P/E with higher EPS and faster growth — significantly more undervalued." },
+  { a: { name: "Company A", pe: 35, eps: 8.0, growth: "22%" }, b: { name: "Company B", pe: 15, eps: 3.5, growth: "4%" }, winner: 0, reason: "Company A's high growth rate justifies the premium. PEG ratio (P/E ÷ growth) is ~1.6 vs B's 3.75 — A is cheaper on a growth-adjusted basis." },
+  { a: { name: "Company A", pe: 18, eps: 4.0, growth: "10%" }, b: { name: "Company B", pe: 22, eps: 6.5, growth: "12%" }, winner: 1, reason: "Company B has higher EPS, slightly more growth, and only a small P/E premium — better value overall." },
+];
+function ValuationShowdown({ onXP }: { onXP: (n: number) => void }) {
+  const [round, setRound] = useState(0); const [sel, setSel] = useState<number|null>(null); const [done, setDone] = useState(false); const [score, setScore] = useState(0); const [awarded, setAwarded] = useState(false);
+  const q = VALUATION_ROUNDS[round];
+  const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.winner) setScore(s => s + 1); };
+  const next = () => { if (round >= VALUATION_ROUNDS.length - 1) { setDone(true); return; } setRound(r => r + 1); setSel(null); };
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(20); setAwarded(true); } }, [done]);
+  if (done) return (
+    <div style={{ textAlign: "center", padding: "20px 0" }}>
+      <GitCompare size={40} color={AMBER} style={{ marginBottom: 12 }} />
+      <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{score}/{VALUATION_ROUNDS.length} correct</p>
+      <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 16 }}>{score >= 2 ? "+20 XP earned!" : "Try again!"}</p>
+      <button onClick={() => { setRound(0); setSel(null); setDone(false); setScore(0); setAwarded(false); }} style={{ padding: "8px 20px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>Play Again</button>
+    </div>
+  );
+  return (
+    <div>
+      <p style={{ fontSize: 9, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 12 }}>Round {round+1}/{VALUATION_ROUNDS.length} — Which is more undervalued?</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: sel !== null ? 14 : 0 }}>
+        {[q.a, q.b].map((co, i) => {
+          const picked = sel === i; const correct = i === q.winner; const show = sel !== null;
+          return (
+            <button key={i} onClick={() => submit(i)} style={{ padding: "16px", borderRadius: 12, border: `0.5px solid ${show ? (correct ? "rgba(76,175,125,0.6)" : picked ? "rgba(224,92,92,0.6)" : "var(--border)") : "var(--border)"}`, background: show ? (correct ? "rgba(76,175,125,0.1)" : picked ? "rgba(224,92,92,0.1)" : "transparent") : "transparent", cursor: sel === null ? "pointer" : "default", textAlign: "left", transition: "all 0.15s" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 10 }}>{co.name}</p>
+              {[["P/E", co.pe], ["EPS", `$${co.eps}`], ["Growth", co.growth]].map(([l, v]) => (
+                <div key={l as string} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, color: "var(--text3)" }}>{l}</span>
+                  <span style={{ fontSize: 11, fontFamily: "Space Mono, monospace", fontWeight: 700, color: "var(--text)" }}>{v}</span>
+                </div>
+              ))}
+            </button>
+          );
+        })}
+      </div>
+      {sel !== null && <><motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.reason}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: AMBER, color: "#0a0e14", cursor: "pointer" }}>{round < VALUATION_ROUNDS.length - 1 ? "Next Round →" : "See Results"}</button></>}
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+const ARCADE_GAMES = [
+  { id: "sharpe-game",   title: "Guess the Sharpe",       desc: "Calculate Sharpe ratios from real portfolio data.",                color: AMBER,     Icon: Target,       xp: 20, difficulty: "Medium" },
+  { id: "crash-sim",     title: "Market Crash Simulator", desc: "Guess how far markets fell in famous historical crashes.",         color: "#e05c5c",  Icon: TrendingDown, xp: 15, difficulty: "Easy"   },
+  { id: "options-game",  title: "Options P&L Calculator", desc: "Calculate profit/loss on calls and puts at expiry.",               color: "#a78bfa",  Icon: Calculator,   xp: 15, difficulty: "Medium" },
+  { id: "inflation-game",title: "Inflation Impact",       desc: "Real vs nominal returns — does your money keep up?",              color: "#4a9eff",  Icon: Percent,      xp: 10, difficulty: "Easy"   },
+  { id: "fed-game",      title: "Fed Rate Decision",      desc: "Given macro indicators, what should the Fed do?",                 color: "#4caf7d",  Icon: Building2,    xp: 15, difficulty: "Hard"   },
+  { id: "builder-game",  title: "Portfolio Challenge",    desc: "Pick assets to hit a specific goal — maximize Sharpe or diversify.",color: "#f97316",  Icon: BarChart2,    xp: 20, difficulty: "Easy"   },
+  { id: "valuation-game",title: "Stock Valuation Showdown",desc: "Pick the more undervalued stock given P/E, EPS, and growth rate.", color: AMBER,     Icon: GitCompare,   xp: 20, difficulty: "Hard"   },
+] as const;
 
 const COMPLETED_KEY = "corvo_completed_lessons";
 
 export default function LearnPage() {
   const [activeSection, setActiveSection] = useState<"home" | "game" | "lesson" | "ai-practice" | "challenge">("home");
-  const [activeGame, setActiveGame]           = useState<string | null>(null);
+  const [activeGame, setActiveGame]           = useState<string | null>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [activeLesson, setActiveLesson]       = useState<Lesson | null>(null);
   const [activePracticeLesson, setActivePracticeLesson] = useState<Lesson | null>(null);
 
@@ -1145,35 +1368,42 @@ export default function LearnPage() {
                 </button>
               </div>
 
-              {/* Games */}
-              <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase", marginBottom: 10 }}>Interactive Games</p>
-              <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 26, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Learn by doing</h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 40 }}>
-                {GAMES.map(g => (
-                  <button key={g.id} onClick={() => { setActiveGame(g.id); setActiveSection("game"); }}
-                    style={{ padding: "16px 20px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 14, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${AMBER}55`; e.currentTarget.style.background = "var(--bg2)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        {g.id === "sharpe-game"
-                          ? <Target size={18} color={AMBER} strokeWidth={1.5} />
-                          : <BarChart2 size={18} color={AMBER} strokeWidth={1.5} />}
-                        <span style={{ fontSize: 15, fontWeight: 500, color: "var(--text)" }}>{g.title}</span>
+              {/* Arcade Games */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <Gamepad2 size={16} color={AMBER} />
+                <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase" }}>Financial Arcade</p>
+              </div>
+              <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Learn by doing</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 40 }}>
+                {ARCADE_GAMES.map(g => {
+                  const GIcon = g.Icon;
+                  return (
+                    <button key={g.id} onClick={() => { setActiveGame(g.id); setActiveSection("game"); }}
+                      style={{ padding: "16px 18px", background: "var(--card-bg)", border: `0.5px solid ${g.color}33`, borderRadius: 14, cursor: "pointer", textAlign: "left", transition: "all 0.2s", position: "relative", overflow: "hidden" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = `${g.color}0d`; e.currentTarget.style.borderColor = `${g.color}66`; e.currentTarget.style.boxShadow = `0 0 0 1px ${g.color}33`; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "var(--card-bg)"; e.currentTarget.style.borderColor = `${g.color}33`; e.currentTarget.style.boxShadow = "none"; }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: `${g.color}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <GIcon size={16} color={g.color} strokeWidth={1.5} />
+                        </div>
+                        <div style={{ display: "flex", gap: 5 }}>
+                          <span style={{ fontSize: 9, padding: "2px 7px", background: `${g.color}18`, color: g.color, borderRadius: 5, fontWeight: 700 }}>+{g.xp} XP</span>
+                          <span style={{ fontSize: 9, padding: "2px 7px", background: "var(--bg3)", color: "var(--text3)", borderRadius: 5 }}>{g.difficulty}</span>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 10, padding: "3px 8px", background: `${AMBER}18`, color: AMBER, borderRadius: 6, fontWeight: 700 }}>+{g.xp} XP</span>
-                        <span style={{ fontSize: 10, padding: "3px 8px", background: "var(--bg3)", color: "var(--text3)", borderRadius: 6 }}>{g.difficulty}</span>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: 13, color: "var(--text3)", paddingLeft: 28 }}>{g.desc}</p>
-                  </button>
-                ))}
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 4 }}>{g.title}</p>
+                      <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.5 }}>{g.desc}</p>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Lessons */}
-              <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase", marginBottom: 10 }}>Lessons</p>
-              <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 26, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Core concepts</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <GraduationCap size={16} color={AMBER} />
+                <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase" }}>Lessons</p>
+              </div>
+              <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Core concepts</h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {LESSONS.map((l, idx) => {
                   const prog = lessonProgress[l.id] ?? [];
@@ -1226,32 +1456,31 @@ export default function LearnPage() {
           {activeSection === "game" && (
             <motion.div key="game" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>← Back</button>
-              <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 18, padding: "26px" }}>
-                {activeGame === "sharpe-game" && (
-                  <>
+              {(() => {
+                const meta = ARCADE_GAMES.find(g => g.id === activeGame);
+                if (!meta) return null;
+                const GIcon = meta.Icon;
+                return (
+                  <div style={{ background: "var(--card-bg)", border: `0.5px solid ${meta.color}33`, borderRadius: 18, padding: "26px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-                      <Target size={22} color={AMBER} strokeWidth={1.5} />
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: `${meta.color}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <GIcon size={20} color={meta.color} strokeWidth={1.5} />
+                      </div>
                       <div>
-                        <h2 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)" }}>Guess the Sharpe Ratio</h2>
-                        <p style={{ fontSize: 12, color: "var(--text3)" }}>5 rounds · ±0.15 margin · +20 XP for 3+ correct</p>
+                        <h2 style={{ fontSize: 17, fontWeight: 600, color: "var(--text)" }}>{meta.title}</h2>
+                        <p style={{ fontSize: 11, color: "var(--text3)" }}>+{meta.xp} XP · {meta.difficulty}</p>
                       </div>
                     </div>
-                    <SharpGame onXP={n => awardXP(n)} />
-                  </>
-                )}
-                {activeGame === "builder-game" && (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-                      <BarChart2 size={22} color={AMBER} strokeWidth={1.5} />
-                      <div>
-                        <h2 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)" }}>Portfolio Challenge</h2>
-                        <p style={{ fontSize: 12, color: "var(--text3)" }}>Pick the best assets for each goal · +20 XP</p>
-                      </div>
-                    </div>
-                    <BuilderChallenge onXP={n => awardXP(n)} />
-                  </>
-                )}
-              </div>
+                    {activeGame === "sharpe-game"    && <SharpGame onXP={n => awardXP(n)} />}
+                    {activeGame === "crash-sim"      && <CrashSimulator onXP={n => awardXP(n)} />}
+                    {activeGame === "options-game"   && <OptionsGame onXP={n => awardXP(n)} />}
+                    {activeGame === "inflation-game" && <InflationGame onXP={n => awardXP(n)} />}
+                    {activeGame === "fed-game"       && <FedGame onXP={n => awardXP(n)} />}
+                    {activeGame === "builder-game"   && <BuilderChallenge onXP={n => awardXP(n)} />}
+                    {activeGame === "valuation-game" && <ValuationShowdown onXP={n => awardXP(n)} />}
+                  </div>
+                );
+              })()}
             </motion.div>
           )}
 
