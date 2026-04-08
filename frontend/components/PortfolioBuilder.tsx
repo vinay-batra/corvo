@@ -151,6 +151,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               <div style={{paddingLeft:9,marginTop:4}}>
                 <input type="range" min="0" max="1" step="0.01" value={a.weight}
                   onChange={e=>updateWeight(i,parseFloat(e.target.value))}
+                  onInput={e=>updateWeight(i,parseFloat((e.target as HTMLInputElement).value))}
                   style={{width:"100%",height:2,appearance:"none" as any,background:`linear-gradient(90deg,${C.amber} ${a.weight*100}%,rgba(255,255,255,0.08) ${a.weight*100}%)`,borderRadius:1,outline:"none",cursor:"pointer"}}/>
               </div>
             </motion.div>

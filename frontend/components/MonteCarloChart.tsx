@@ -128,11 +128,11 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
           {/* Chart legend */}
           <div style={{ display: "flex", gap: 20, marginBottom: 12, flexWrap: "wrap" }}>
             {[
-              { color: "rgba(201,168,76,0.1)", label: "5–95% range" },
+              { color: "rgba(180,40,40,0.3)", label: "5–95% range" },
               { color: "rgba(201,168,76,0.25)", label: "25–75% range" },
               { color: C.amber, label: "Median" },
-              { color: "rgba(201,168,76,0.15)", label: "300 simulations" },
-              { color: "rgba(201,168,76,0.55)", label: "SPY benchmark", dashed: true },
+              { color: "rgba(150,150,150,0.3)", label: "300 simulations" },
+              { color: "rgba(92,184,138,0.8)", label: "SPY benchmark", dashed: true },
             ].map((l, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 18, height: 2, background: l.color, borderRadius: 1, borderTop: (l as any).dashed ? `2px dashed ${l.color}` : undefined, borderBottom: "none", borderLeft: "none", borderRight: "none" }} />
@@ -148,21 +148,23 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
                 y: path.map((v: number) => v * 100),
                 type: "scatter" as const,
                 mode: "lines" as const,
-                line: { color: "rgba(201,168,76,0.08)", width: 1 },
+                line: { color: "rgba(150,150,150,0.08)", width: 1 },
                 hoverinfo: "skip" as const,
                 showlegend: false,
               })),
-              { x: days, y: data.bands.p5.map((v: number) => v * 100), type: "scatter", mode: "lines", line: { color: "rgba(201,168,76,0.2)", width: 1, dash: "dot" }, showlegend: false, hoverinfo: "skip" } as any,
-              { x: days, y: data.bands.p95.map((v: number) => v * 100), type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(201,168,76,0.08)", line: { color: "rgba(201,168,76,0.2)", width: 1, dash: "dot" }, showlegend: false } as any,
+              { x: days, y: data.bands.p5.map((v: number) => v * 100), type: "scatter", mode: "lines", line: { color: "rgba(180,40,40,0.4)", width: 1, dash: "dot" }, showlegend: false, hoverinfo: "skip" } as any,
+              { x: days, y: data.bands.p95.map((v: number) => v * 100), type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(180,40,40,0.1)", line: { color: "rgba(180,40,40,0.4)", width: 1, dash: "dot" }, showlegend: false } as any,
               { x: days, y: data.p75, type: "scatter", mode: "lines", line: { color: "rgba(0,0,0,0)", width: 0 }, showlegend: false, hoverinfo: "skip" } as any,
-              { x: days, y: data.p25, type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(201,168,76,0.1)", line: { color: "rgba(201,168,76,0.25)", width: 1, dash: "dot" }, showlegend: false } as any,
+              { x: days, y: data.p25, type: "scatter", mode: "lines", fill: "tonexty", fillcolor: "rgba(201,168,76,0.15)", line: { color: "rgba(201,168,76,0.4)", width: 1, dash: "dot" }, showlegend: false } as any,
+              // Median line
+              { x: days, y: data.bands.p50 ? data.bands.p50.map((v: number) => v * 100) : [], type: "scatter", mode: "lines", line: { color: "#c9a84c", width: 2 }, showlegend: false, hovertemplate: "Median: %{y:.1f}%<extra></extra>" } as any,
               // SPY benchmark: deterministic median path, 10% annual return, 15% vol
               {
                 x: days,
                 y: days.map((d: number) => (Math.exp((0.10 - 0.5 * 0.15 * 0.15) / 252 * d) - 1) * 100),
                 type: "scatter", mode: "lines",
                 name: "SPY benchmark",
-                line: { color: "rgba(201,168,76,0.55)", width: 1.5, dash: "dash" },
+                line: { color: "rgba(92,184,138,0.8)", width: 1.5, dash: "dash" },
                 hovertemplate: "SPY benchmark: %{y:.1f}%<extra></extra>",
               } as any,
             ]}

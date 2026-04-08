@@ -3,6 +3,60 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
+function ParticleCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let raf: number;
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    resize();
+    window.addEventListener("resize", resize);
+    const N = 60;
+    const particles = Array.from({ length: N }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 1.8 + 0.6,
+    }));
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < N; i++) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(201,168,76,0.4)";
+        ctx.fill();
+        for (let j = i + 1; j < N; j++) {
+          const q = particles[j];
+          const dx = p.x - q.x, dy = p.y - q.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(q.x, q.y);
+            ctx.strokeStyle = `rgba(201,168,76,${0.12 * (1 - dist / 120)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }} />;
+}
+
 function useReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -77,6 +131,7 @@ export default function Landing() {
 
   return (
     <div ref={containerRef} style={{ height: "100vh", overflowY: "auto", overflowX: "hidden", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
+      <ParticleCanvas />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
@@ -93,8 +148,6 @@ export default function Landing() {
       {/* Fixed grid bg */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.025) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.025) 1px, transparent 1px)", backgroundSize: "80px 80px" }} />
-        <div style={{ position: "absolute", top: "5%", left: "30%", width: 700, height: 500, background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 65%)" }} />
-        <div style={{ position: "absolute", bottom: "15%", right: "5%", width: 400, height: 400, background: "radial-gradient(circle, rgba(201,168,76,0.03) 0%, transparent 65%)" }} />
       </div>
 
       {/* NAV */}
@@ -308,6 +361,55 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* COMPARISON TABLE */}
+      <section style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 56 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Why Corvo</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1 }}>The only tool built<br />for serious investors</h2>
+          </Reveal>
+          <Reveal>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", borderBottom: "1px solid rgba(201,168,76,0.08)", fontWeight: 400 }}>Feature</th>
+                    {["Corvo","Robinhood","Yahoo Finance","Bloomberg"].map((t, i) => (
+                      <th key={t} style={{ padding: "14px 16px", textAlign: "center", fontSize: 11, fontWeight: 600, color: i === 0 ? "#c9a84c" : "rgba(232,224,204,0.3)", borderBottom: "1px solid rgba(201,168,76,0.08)", borderLeft: i === 0 ? "1px solid rgba(201,168,76,0.15)" : "none", background: i === 0 ? "rgba(201,168,76,0.03)" : "transparent" }}>{t}{i === 0 && <span style={{ display: "block", fontSize: 8, letterSpacing: 1.5, color: "rgba(201,168,76,0.5)", fontWeight: 400, marginTop: 2 }}>FREE</span>}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["AI Portfolio Analyst",      true, false, false, true],
+                    ["Portfolio Risk Analytics",  true, false, false, true],
+                    ["Monte Carlo Simulation",    true, false, false, true],
+                    ["Health Score",              true, false, false, false],
+                    ["Correlation Heatmap",       true, false, true,  true],
+                    ["Screenshot Import",         true, false, false, false],
+                    ["Benchmark Comparison",      true, true,  true,  true],
+                    ["Goal Tracking",             true, false, false, false],
+                    ["Free to use",               true, true,  true,  false],
+                  ].map(([label, ...vals], ri) => (
+                    <tr key={ri} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                      <td style={{ padding: "13px 20px", fontSize: 13, color: "rgba(232,224,204,0.6)", fontWeight: 300 }}>{label as string}</td>
+                      {(vals as boolean[]).map((v, ci) => (
+                        <td key={ci} style={{ padding: "13px 16px", textAlign: "center", borderLeft: ci === 0 ? "1px solid rgba(201,168,76,0.15)" : "none", background: ci === 0 ? "rgba(201,168,76,0.03)" : "transparent", fontSize: 14 }}>
+                          {v
+                            ? <span style={{ color: ci === 0 ? "#c9a84c" : "#5cb88a" }}>✓</span>
+                            : <span style={{ color: "rgba(255,255,255,0.12)" }}>—</span>
+                          }
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* CTA */}
       <section style={{ position: "relative", zIndex: 1, padding: "0 56px 140px" }}>
         <Reveal>
@@ -340,7 +442,6 @@ export default function Landing() {
           <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</a>
           <a href="/terms"   style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</a>
           <a href="/learn"   style={{ fontSize: 11, color: "rgba(201,168,76,0.4)", textDecoration: "none" }}>Learn</a>
-          <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>X / Twitter</a>
           <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>GitHub</a>
         </div>
       </footer>

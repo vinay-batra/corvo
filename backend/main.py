@@ -701,6 +701,7 @@ class ChatRequest(BaseModel):
     history: list = []
     portfolio_context: dict = {}
     user_goals: dict = {}
+    market_context: str = ""
 
 
 @app.post("/chat")
@@ -761,6 +762,7 @@ def chat(req: ChatRequest, request: Request):
 
         benchmark_text = f"\n- Benchmark Return: {benchmark_return:.2%}" if benchmark_return is not None else ""
         health_text = f"\n- Portfolio Health Score: {health_score}/100" if health_score is not None else ""
+        market_text = f"\n\nREAL-TIME MARKET PRICES (fetched seconds ago):\n{req.market_context}" if req.market_context else ""
 
         system = f"""You are Corvo AI, a personal portfolio analyst who knows this investor deeply. You have their full financial profile from onboarding and always tailor advice specifically to their situation — their age, goals, risk tolerance, and timeline.
 
@@ -770,7 +772,7 @@ CURRENT PORTFOLIO:
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f}
 - Max Drawdown: {dd:.2%}
-- Period: {period}{benchmark_text}{health_text}{investor_profile}
+- Period: {period}{benchmark_text}{health_text}{market_text}{investor_profile}
 
 RESPONSE RULES:
 • Be concise and direct — max 180 words
@@ -907,9 +909,10 @@ class WelcomeEmailRequest(BaseModel):
 @app.post("/send-welcome-email")
 def send_welcome_email(req: WelcomeEmailRequest):
     """Send a welcome email to a new Corvo user via Resend."""
+    print(f"[send-welcome-email] called for {req.email}")
     resend_key = os.environ.get("RESEND_API_KEY", "")
     if not resend_key:
-        # Silently succeed — email is best-effort
+        print("[send-welcome-email] RESEND_API_KEY not set — skipping")
         return {"ok": True, "skipped": True}
 
     html = f"""<!DOCTYPE html>
@@ -961,9 +964,10 @@ def send_welcome_email(req: WelcomeEmailRequest):
             timeout=10,
         )
         response.raise_for_status()
+        print(f"[send-welcome-email] sent OK to {req.email} (status {response.status_code})")
         return {"ok": True}
     except Exception as e:
-        print(f"Welcome email error: {e}")
+        print(f"[send-welcome-email] FAILED for {req.email}: {e}")
         return {"ok": False, "error": str(e)}
 
 
@@ -1083,3 +1087,80 @@ def platform_stats():
     except Exception as e:
         print(f"Stats error: {e}")
     return {"user_count": max(user_count, 847)}
+
+
+@app.get("/watchlist-data")
+def watchlist_data(tickers: str, request: Request):
+    """Return price, change_pct, and 7-day sparkline for a comma-separated list of tickers."""
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "watchlist-data", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded.")
+
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()][:20]
+    results = []
+    for ticker in ticker_list:
+        try:
+            t = yf.Ticker(ticker)
+            info = t.info or {}
+            current_price = safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0)
+            prev_close = safe_float(info.get("previousClose") or info.get("regularMarketPreviousClose") or current_price)
+            change = current_price - prev_close
+            change_pct = (change / prev_close * 100) if prev_close else 0.0
+            name = info.get("longName") or info.get("shortName") or ticker
+
+            # 7-day sparkline (daily closes)
+            hist = t.history(period="7d", interval="1d")
+            sparkline = [safe_float(row["Close"]) for _, row in hist.iterrows()] if not hist.empty else []
+
+            results.append({
+                "ticker": ticker,
+                "name": name,
+                "price": round(current_price, 2),
+                "change": round(change, 2),
+                "change_pct": round(change_pct, 2),
+                "sparkline": sparkline,
+            })
+        except Exception as e:
+            results.append({"ticker": ticker, "name": ticker, "price": None, "change": None, "change_pct": None, "sparkline": [], "error": str(e)})
+    return {"results": results}
+
+
+@app.get("/test-email")
+def test_email(email: str = ""):
+    """Debug endpoint — send a test welcome email and return the result."""
+    import smtplib, traceback
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    target = email or os.environ.get("TEST_EMAIL_TO", "")
+    if not target:
+        return {"ok": False, "error": "Provide ?email=you@example.com or set TEST_EMAIL_TO env var"}
+
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+
+    print(f"[test-email] target={target} smtp_host={smtp_host} smtp_user={smtp_user}")
+
+    if not smtp_host or not smtp_user:
+        return {"ok": False, "error": "SMTP_HOST or SMTP_USER not configured", "smtp_host": smtp_host, "smtp_user": smtp_user}
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Corvo — Test Email"
+        msg["From"] = smtp_user
+        msg["To"] = target
+        msg.attach(MIMEText("This is a Corvo test email. SMTP is working correctly.", "plain"))
+
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as s:
+            s.ehlo()
+            s.starttls()
+            s.login(smtp_user, smtp_pass)
+            s.sendmail(smtp_user, [target], msg.as_string())
+        print(f"[test-email] sent OK to {target}")
+        return {"ok": True, "sent_to": target}
+    except Exception:
+        tb = traceback.format_exc()
+        print(f"[test-email] FAILED:\n{tb}")
+        return {"ok": False, "error": tb}

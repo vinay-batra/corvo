@@ -7,13 +7,28 @@ function isEnabled(): boolean {
   return localStorage.getItem(STORAGE_KEY) === "true";
 }
 
-function ctx(): AudioContext | null {
+// Singleton AudioContext — reused across calls to avoid hitting the limit
+let _ac: AudioContext | null = null;
+
+function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   try {
-    return new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (!_ac) {
+      _ac = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    // Chrome suspends AudioContext until a user gesture. Resume it silently.
+    if (_ac.state === "suspended") {
+      _ac.resume().catch(() => {});
+    }
+    return _ac;
   } catch {
     return null;
   }
+}
+
+// Call this on the first user interaction to unlock audio
+export function unlockAudio(): void {
+  getCtx();
 }
 
 function playTone(
@@ -24,7 +39,7 @@ function playTone(
   delay = 0
 ): void {
   if (!isEnabled()) return;
-  const ac = ctx();
+  const ac = getCtx();
   if (!ac) return;
   const osc = ac.createOscillator();
   const gain = ac.createGain();
@@ -48,7 +63,7 @@ export function useSoundEffects() {
   /** Frequency sweep whoosh — for tab switches */
   function whoosh() {
     if (!isEnabled()) return;
-    const ac = ctx();
+    const ac = getCtx();
     if (!ac) return;
     const osc = ac.createOscillator();
     const gain = ac.createGain();
