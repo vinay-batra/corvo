@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
-  GraduationCap, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
+  MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
   Sun, Moon, CandlestickChart, Sparkles,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
@@ -50,7 +50,6 @@ const TABS = [
   { id: "news",      label: "News",       Icon: Newspaper,        href: null },
   { id: "watchlist", label: "Watchlist",  Icon: Eye,              href: null },
   { id: "ai",        label: "AI Chat",    Icon: MessageSquare,    href: null },
-  { id: "learn",     label: "Learn",      Icon: GraduationCap,    href: "/learn" },
 ] as const;
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
@@ -88,7 +87,9 @@ function useTheme() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
     const stored = localStorage.getItem("corvo_theme");
-    if (stored === "dark") { setDark(true); document.documentElement.setAttribute("data-theme", "dark"); }
+    const isDark = stored ? stored === "dark" : true; // default: dark
+    setDark(isDark);
+    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, []);
   const toggle = () => {
     const next = !dark;
@@ -468,8 +469,11 @@ export default function AppPage() {
         .finally(() => setLoading(false));
     }
 
-    // Check onboarding status from Supabase (gates the tour on DB, not localStorage)
+    // Check onboarding status — Supabase is the source of truth; localStorage is a fallback
     (async () => {
+      // Belt-and-suspenders: skip entirely if tour was already completed this browser session
+      if (localStorage.getItem("corvo_tour_completed") === "true") return;
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -1118,6 +1122,7 @@ export default function AppPage() {
         {showTour && <OnboardingTour onComplete={async () => {
           setShowTour(false);
           tourNeededRef.current = false;
+          localStorage.setItem("corvo_tour_completed", "true");
           const { data: { user } } = await supabase.auth.getUser();
           if (user) await supabase.from("profiles").upsert({ id: user.id, onboarding_completed: true, updated_at: new Date().toISOString() });
         }} />}
