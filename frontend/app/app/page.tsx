@@ -1063,13 +1063,14 @@ export default function AppPage() {
       </div>
 
       {/* Builder */}
-      <div style={{ flex: 1, overflow: "auto", padding: "12px 14px" }}>
+      <div id="tour-ticker-area" style={{ flex: 1, overflow: "auto", padding: "12px 14px" }}>
         <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} />
       </div>
 
       {/* Analyze button */}
       <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
         <motion.button
+          id="tour-analyze-btn"
           onClick={handleAnalyze}
           disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
           animate={analyzeComplete ? { scale: [1, 1.05, 1] } : { scale: 1 }}
@@ -1590,13 +1591,16 @@ export default function AppPage() {
         {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} />}
       </AnimatePresence>
       <AnimatePresence>
-        {showTour && <OnboardingTour onComplete={async () => {
-          setShowTour(false);
-          tourNeededRef.current = false;
-          localStorage.setItem("corvo_tour_completed", "true");
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) await supabase.from("profiles").upsert({ id: user.id, onboarding_completed: true, updated_at: new Date().toISOString() });
-        }} />}
+        {showTour && <OnboardingTour
+          assets={assets}
+          dataAvailable={data !== null}
+          onComplete={async () => {
+            setShowTour(false);
+            tourNeededRef.current = false;
+            localStorage.setItem("corvo_tour_completed", "true");
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) await supabase.from("profiles").upsert({ id: user.id, onboarding_completed: true, updated_at: new Date().toISOString() });
+          }} />}
       </AnimatePresence>
       <AnimatePresence>
         {showProfile && <ProfileEditor goals={goals} onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }} onClose={() => setShowProfile(false)} />}
