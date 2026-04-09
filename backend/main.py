@@ -1944,6 +1944,162 @@ async def check_price_alerts():
         print(f"[alerts] check_price_alerts error: {e}")
 
 
+class SnapshotRequest(BaseModel):
+    user_id: str
+    portfolio_id: str
+    tickers: str   # comma-separated
+    weights: str   # comma-separated floats
+
+
+@app.post("/portfolio/snapshot")
+def portfolio_snapshot(req: SnapshotRequest):
+    """
+    Fetch current prices, compute portfolio value (base $10 000) and cumulative
+    return from the first snapshot, then upsert into portfolio_snapshots for today.
+
+    Run this SQL in Supabase once before using the endpoint:
+      create table if not exists portfolio_snapshots (
+        id uuid default gen_random_uuid() primary key,
+        user_id uuid references profiles(id) on delete cascade,
+        portfolio_id uuid not null,
+        date date not null,
+        raw_value numeric not null,
+        portfolio_value numeric not null,
+        cumulative_return numeric not null,
+        created_at timestamptz default now(),
+        unique(portfolio_id, date)
+      );
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    tickers_list = [t.strip().upper() for t in req.tickers.split(",") if t.strip()]
+    if not tickers_list:
+        raise HTTPException(status_code=400, detail="No tickers provided")
+
+    try:
+        w_list = [float(w) for w in req.weights.split(",")]
+    except Exception:
+        w_list = [1.0 / len(tickers_list)] * len(tickers_list)
+
+    if len(w_list) != len(tickers_list):
+        w_list = [1.0 / len(tickers_list)] * len(tickers_list)
+
+    total = sum(w_list)
+    if total > 0:
+        w_list = [w / total for w in w_list]
+
+    # ── Fetch recent prices ────────────────────────────────────────────────────
+    try:
+        raw = yf.download(
+            tickers_list if len(tickers_list) > 1 else tickers_list[0],
+            period="5d", auto_adjust=True, progress=False,
+        )
+        if raw is None or raw.empty:
+            raise ValueError("Empty price data")
+
+        if isinstance(raw.columns, pd.MultiIndex):
+            lvl0 = raw.columns.get_level_values(0)
+            close_df = raw["Close"] if "Close" in lvl0 else raw["Adj Close"]
+        else:
+            close_df = raw[["Close"]].rename(columns={"Close": tickers_list[0]})
+
+        last_row = close_df.dropna(how="all").iloc[-1]
+        prices: dict = {t: safe_float(last_row.get(t, 0)) for t in tickers_list}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Price fetch failed: {exc}")
+
+    # ── Compute weighted price index ───────────────────────────────────────────
+    raw_value = 0.0
+    valid_weight = 0.0
+    for ticker, weight in zip(tickers_list, w_list):
+        price = prices.get(ticker, 0.0)
+        if price > 0:
+            raw_value += price * weight
+            valid_weight += weight
+
+    if raw_value <= 0:
+        raise HTTPException(status_code=500, detail="No valid prices for tickers")
+
+    if 0 < valid_weight < 1.0:
+        raw_value = raw_value / valid_weight  # normalise for partially available tickers
+
+    today = datetime.now(timezone.utc).date().isoformat()
+
+    # ── Get first snapshot as the base ────────────────────────────────────────
+    first_resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots",
+        headers=_sb_headers(),
+        params={
+            "portfolio_id": f"eq.{req.portfolio_id}",
+            "select": "date,raw_value",
+            "order": "date.asc",
+            "limit": "1",
+        },
+        timeout=10,
+    )
+
+    cumulative_return = 0.0
+    portfolio_value = 10000.0
+
+    if first_resp.status_code == 200:
+        rows = first_resp.json()
+        if rows and rows[0].get("date") != today:
+            base_raw = safe_float(rows[0].get("raw_value", 0))
+            if base_raw > 0:
+                cumulative_return = (raw_value / base_raw) - 1.0
+                portfolio_value = 10000.0 * (1.0 + cumulative_return)
+
+    # ── Upsert (merge on portfolio_id + date unique constraint) ──────────────
+    requests.post(
+        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots",
+        headers={**_sb_headers(), "Prefer": "resolution=merge-duplicates"},
+        json={
+            "user_id": req.user_id,
+            "portfolio_id": req.portfolio_id,
+            "date": today,
+            "raw_value": raw_value,
+            "portfolio_value": round(portfolio_value, 4),
+            "cumulative_return": round(cumulative_return, 6),
+        },
+        timeout=10,
+    )
+
+    return {
+        "ok": True,
+        "date": today,
+        "portfolio_value": round(portfolio_value, 2),
+        "cumulative_return_pct": round(cumulative_return * 100, 4),
+    }
+
+
+@app.get("/portfolio/history")
+def get_portfolio_history(portfolio_id: str, user_id: str = ""):
+    """Return all snapshots for a portfolio ordered by date ascending."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {"snapshots": []}
+
+    params: dict = {
+        "portfolio_id": f"eq.{portfolio_id}",
+        "select": "date,portfolio_value,cumulative_return",
+        "order": "date.asc",
+    }
+    if user_id:
+        params["user_id"] = f"eq.{user_id}"
+
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots",
+        headers=_sb_headers(),
+        params=params,
+        timeout=10,
+    )
+
+    if resp.status_code != 200:
+        return {"snapshots": []}
+
+    return {"snapshots": resp.json()}
+
+
 async def price_alert_loop():
     """Background loop: check price alerts every 60 seconds."""
     print("[alerts] background price alert checker started")

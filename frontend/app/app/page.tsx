@@ -579,6 +579,88 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
+// ── Portfolio Performance Trend ───────────────────────────────────────────────
+type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
+const PERF_RANGES = ["1W", "1M", "3M", "ALL"] as const;
+type PerfRange = typeof PERF_RANGES[number];
+
+function PortfolioPerformanceTrend({
+  history, range, setRange, loading,
+}: {
+  history: PerfSnapshot[];
+  range: PerfRange;
+  setRange: (r: PerfRange) => void;
+  loading: boolean;
+}) {
+  const AMBER = "#c9a84c";
+  const filtered = (() => {
+    if (range === "ALL") return history;
+    const cutoff = new Date();
+    if (range === "1W") cutoff.setDate(cutoff.getDate() - 7);
+    else if (range === "1M") cutoff.setMonth(cutoff.getMonth() - 1);
+    else if (range === "3M") cutoff.setMonth(cutoff.getMonth() - 3);
+    return history.filter(s => new Date(s.date) >= cutoff);
+  })();
+
+  return (
+    <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginTop: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+          <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Performance</span>
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          {PERF_RANGES.map(r => (
+            <button key={r} onClick={() => setRange(r)}
+              style={{ padding: "3px 9px", fontSize: 10, borderRadius: 5, border: `0.5px solid ${range === r ? AMBER : "var(--border)"}`, background: range === r ? `${AMBER}18` : "transparent", color: range === r ? AMBER : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 16, height: 16, border: "1.5px solid var(--border2)", borderTopColor: "var(--text)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        </div>
+      ) : filtered.length < 2 ? (
+        <p style={{ fontSize: 12, color: "var(--text3)", textAlign: "center", padding: "32px 0" }}>
+          Come back tomorrow to see your performance trend
+        </p>
+      ) : (
+        <ComparePlot
+          data={[{
+            type: "scatter",
+            mode: "lines",
+            x: filtered.map(s => s.date),
+            y: filtered.map(s => +((s.cumulative_return) * 100).toFixed(3)),
+            line: { color: AMBER, width: 2 },
+            fill: "tozeroy",
+            fillcolor: `${AMBER}14`,
+            hovertemplate: "%{x}<br><b>%{y:.2f}%</b><extra></extra>",
+          }]}
+          layout={{
+            height: 160,
+            margin: { t: 4, r: 4, b: 32, l: 44 },
+            paper_bgcolor: "transparent",
+            plot_bgcolor: "transparent",
+            xaxis: { showgrid: false, zeroline: false, tickfont: { size: 9, color: "#8a8a8a" }, type: "date" },
+            yaxis: { showgrid: true, gridcolor: "rgba(255,255,255,0.05)", zeroline: true, zerolinecolor: "rgba(255,255,255,0.12)", tickfont: { size: 9, color: "#8a8a8a" }, ticksuffix: "%" },
+          }}
+          config={{ displayModeBar: false, responsive: true }}
+          style={{ width: "100%" }}
+          useResizeHandler
+        />
+      )}
+      {filtered.length >= 2 && (
+        <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 6 }}>
+          {filtered.length} data point{filtered.length !== 1 ? "s" : ""} · updated on each analysis
+        </p>
+      )}
+    </div>
+  );
+}
+
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -628,6 +710,10 @@ export default function AppPage() {
   const referralCodeRef             = useRef<string>("");
   const [shareToast, setShareToast] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
+  const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
+  const [perfHistory, setPerfHistory] = useState<PerfSnapshot[]>([]);
+  const [perfRange, setPerfRange] = useState<PerfRange>("ALL");
+  const [perfLoading, setPerfLoading] = useState(false);
   const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
   const S = useS();
@@ -766,6 +852,34 @@ export default function AppPage() {
           setSidePrices(map);
         })
         .catch(() => {});
+      // Fire-and-forget: snapshot for saved portfolios (logged-in users only)
+      if (userId) {
+        const currentTickers = valid.map(a => a.ticker).sort().join(",");
+        (async () => {
+          try {
+            const { data: pfs } = await supabase.from("portfolios").select("id,tickers").eq("user_id", userId);
+            const match = pfs?.find((p: any) =>
+              ((p.tickers as string[]) || []).slice().sort().join(",") === currentTickers
+            );
+            if (match) {
+              setSavedPortfolioId(match.id);
+              const API_SNAP = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+              fetch(`${API_SNAP}/portfolio/snapshot`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  user_id: userId,
+                  portfolio_id: match.id,
+                  tickers: valid.map(a => a.ticker).join(","),
+                  weights: valid.map(a => a.weight).join(","),
+                }),
+              }).catch(() => {});
+            } else {
+              setSavedPortfolioId(null);
+            }
+          } catch { setSavedPortfolioId(null); }
+        })();
+      }
     } catch (e) {
       console.error(e);
       setErrorMsg("Analysis failed — server may be temporarily unavailable.");
@@ -810,6 +924,18 @@ export default function AppPage() {
     const id = setInterval(fetchLivePrices, 5000);
     return () => clearInterval(id);
   }, [data, fetchLivePrices]); // fetchLivePrices is stable, only data restart matters
+
+  // ── Load portfolio performance history when savedPortfolioId is known ────────
+  useEffect(() => {
+    if (!savedPortfolioId || !userId) { setPerfHistory([]); return; }
+    setPerfLoading(true);
+    const API_H = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    fetch(`${API_H}/portfolio/history?portfolio_id=${savedPortfolioId}&user_id=${userId}`)
+      .then(r => r.json())
+      .then(d => setPerfHistory(d.snapshots || []))
+      .catch(() => setPerfHistory([]))
+      .finally(() => setPerfLoading(false));
+  }, [savedPortfolioId, userId]);
 
   // ── Show notification prompt once after login ────────────────────────────────
   useEffect(() => {
@@ -1394,6 +1520,14 @@ export default function AppPage() {
                       Save this portfolio →
                     </button>
                   </motion.div>
+                )}
+                {savedPortfolioId && (
+                  <PortfolioPerformanceTrend
+                    history={perfHistory}
+                    range={perfRange}
+                    setRange={setPerfRange}
+                    loading={perfLoading}
+                  />
                 )}
                 <PortfolioHistory />
               </motion.div>
