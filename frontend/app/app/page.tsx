@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -35,6 +35,7 @@ import OnboardingTour from "../../components/OnboardingTour";
 import { fetchPortfolio } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 import AlertsPanel from "../../components/AlertsPanel";
+import LivePriceStrip from "../../components/LivePriceStrip";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
 import StockCompare from "../../components/StockCompare";
 import Watchlist from "../../components/Watchlist";
@@ -702,8 +703,6 @@ export default function AppPage() {
   const tourNeededRef                           = useRef<boolean>(false);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
-  const [sidePrices, setSidePrices] = useState<Record<string, { price: number; change_pct: number }>>({});
-  const [flashingTickers, setFlashingTickers] = useState<Set<string>>(new Set());
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [userId, setUserId]         = useState<string | null>(null);
   const [navProfile, setNavProfile] = useState<{ displayName: string; avatarUrl: string | null }>({ displayName: "", avatarUrl: null });
@@ -842,16 +841,6 @@ export default function AppPage() {
       setAnalyzeComplete(true);
       sound.success();
       setTimeout(() => setAnalyzeComplete(false), 600);
-      // Fetch live prices for the sidebar strip
-      const API_URL_PRICES = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      fetch(`${API_URL_PRICES}/watchlist-data?tickers=${valid.map(a => a.ticker).join(",")}`)
-        .then(r => r.json())
-        .then(d => {
-          const map: Record<string, { price: number; change_pct: number }> = {};
-          (d.results || []).forEach((s: any) => { if (s?.ticker && s.price) map[s.ticker] = { price: s.price, change_pct: s.change_pct ?? 0 }; });
-          setSidePrices(map);
-        })
-        .catch(() => {});
       // Fire-and-forget: snapshot for saved portfolios (logged-in users only)
       if (userId) {
         const currentTickers = valid.map(a => a.ticker).sort().join(",");
@@ -890,40 +879,6 @@ export default function AppPage() {
 
   const handleAnalyzeRef = useRef(handleAnalyze);
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
-
-  // ── Live price refresh every 5 seconds ──────────────────────────────────────
-  // Use a ref for assets so fetchLivePrices is stable and never causes interval restarts
-  const assetsRef = useRef(assets);
-  useEffect(() => { assetsRef.current = assets; }, [assets]);
-
-  const fetchLivePrices = useCallback(async () => {
-    const valid = assetsRef.current.filter(a => a.ticker && a.weight > 0);
-    if (!valid.length) return;
-    const API_LP = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    try {
-      const r = await fetch(`${API_LP}/watchlist-data?tickers=${valid.map(a => a.ticker).join(",")}`);
-      const d = await r.json();
-      const map: Record<string, { price: number; change_pct: number }> = {};
-      (d.results || []).forEach((s: any) => { if (s?.ticker && s.price) map[s.ticker] = { price: s.price, change_pct: s.change_pct ?? 0 }; });
-      setSidePrices(prev => {
-        // Skip re-render entirely if nothing changed
-        const anyDiff = Object.keys(map).some(t => !prev[t] || Math.abs(prev[t].price - map[t].price) > 0.001);
-        if (!anyDiff && Object.keys(map).length === Object.keys(prev).length) return prev;
-        const changed = Object.keys(map).filter(t => prev[t] && Math.abs(prev[t].price - map[t].price) > 0.001);
-        if (changed.length > 0) {
-          setFlashingTickers(new Set(changed));
-          setTimeout(() => setFlashingTickers(new Set()), 600);
-        }
-        return map;
-      });
-    } catch {}
-  }, []); // stable — reads assets from ref, never recreated
-
-  useEffect(() => {
-    if (!data || !assetsRef.current.length) return;
-    const id = setInterval(fetchLivePrices, 5000);
-    return () => clearInterval(id);
-  }, [data, fetchLivePrices]); // fetchLivePrices is stable, only data restart matters
 
   // ── Load portfolio performance history when savedPortfolioId is known ────────
   useEffect(() => {
@@ -1120,33 +1075,8 @@ export default function AppPage() {
         <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
       </div>
 
-      {/* Live price strip */}
-      {Object.keys(sidePrices).length > 0 && (
-        <div style={{ padding: "8px 14px", borderTop: "0.5px solid var(--border)" }}>
-          <style>{`
-            @keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
-            @keyframes priceFlash{0%{color:#c9a84c}100%{color:inherit}}
-            .price-flash{animation:priceFlash 0.6s ease-out forwards}
-          `}</style>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#5cb88a", animation: "livePulse 2s ease-in-out infinite" }} />
-            <span style={{ fontSize: 8, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Live</span>
-          </div>
-          {assets.filter(a => a.ticker && sidePrices[a.ticker]).map(a => {
-            const s = sidePrices[a.ticker];
-            const pos = (s?.change_pct ?? 0) >= 0;
-            const flashing = flashingTickers.has(a.ticker);
-            return (
-              <div key={a.ticker} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0" }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--text2)" }}>{a.ticker}</span>
-                <span className={flashing ? "price-flash" : undefined} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: flashing ? "#c9a84c" : pos ? "#5cb88a" : "#e05c5c", transition: "color 0.3s" }}>
-                  ${s.price.toFixed(2)} <span style={{ fontSize: 9 }}>{pos ? "+" : ""}{s.change_pct.toFixed(2)}%</span>
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Live price strip — isolated component; ticks never re-render AppPage */}
+      <LivePriceStrip assets={assets} active={!!data} />
 
     </>
   );

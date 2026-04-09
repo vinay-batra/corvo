@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { fetchDrawdown } from "../lib/api";
@@ -8,7 +8,7 @@ import { fetchDrawdown } from "../lib/api";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
-export default function DrawdownChart({ assets, period }: { assets: any[]; period: string }) {
+const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -78,4 +78,6 @@ export default function DrawdownChart({ assets, period }: { assets: any[]; perio
       ) : null}
     </motion.div>
   );
-}
+});
+
+export default DrawdownChart;
