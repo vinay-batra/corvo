@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -71,7 +72,21 @@ export default function AiChat({ data, assets, goals: goalsProp }: {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
+  const [referralLink, setReferralLink] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUserId(data.user.id);
+        const ref = data.user.id.replace(/-/g, "").slice(0, 8);
+        setReferralLink(`https://corvo.capital/app?ref=${ref}`);
+      }
+    });
+  }, []);
 
   const goals = goalsProp || (() => {
     if (typeof window === "undefined") return null;
@@ -140,8 +155,14 @@ export default function AiChat({ data, assets, goals: goalsProp }: {
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg, history: messages, portfolio_context: portfolioContext, market_context }),
+        body: JSON.stringify({ message: msg, history: messages, portfolio_context: portfolioContext, market_context, user_id: userId }),
       });
+      if (res.status === 429) {
+        setLimitReached(true);
+        setMessages(nextHistory); // leave last user msg visible
+        setLoading(false);
+        return;
+      }
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const d = await res.json();
       setMessages([...nextHistory, { role: "assistant", content: d.reply }]);
@@ -235,24 +256,46 @@ export default function AiChat({ data, assets, goals: goalsProp }: {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ display: "flex", gap: 8, paddingTop: 12, borderTop: "0.5px solid var(--border)", flexShrink: 0 }}>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && send()}
-          placeholder="Ask about your portfolio..."
-          style={{ flex: 1, padding: "11px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 13, outline: "none", transition: "border-color 0.15s" }}
-          onFocus={e => e.target.style.borderColor = "var(--border2)"}
-          onBlur={e => e.target.style.borderColor = "var(--border)"}
-        />
-        <button
-          onClick={() => send()}
-          disabled={!input.trim() || loading}
-          style={{ padding: "11px 18px", background: input.trim() && !loading ? "var(--text)" : "transparent", border: "0.5px solid", borderColor: input.trim() && !loading ? "var(--text)" : "var(--border)", borderRadius: 8, color: input.trim() && !loading ? "var(--bg)" : "var(--text3)", fontSize: 11, fontWeight: 600, letterSpacing: 1.5, cursor: input.trim() && !loading ? "pointer" : "default", transition: "all 0.15s", fontFamily: "var(--font-mono)" }}
-        >
-          SEND
-        </button>
-      </div>
+      {limitReached ? (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          style={{ borderTop: "0.5px solid var(--border)", paddingTop: 16, flexShrink: 0 }}>
+          <div style={{ background: "rgba(201,168,76,0.07)", border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 10, padding: "16px 18px" }}>
+            <p style={{ fontSize: 13, color: "var(--text)", fontWeight: 500, marginBottom: 4 }}>Daily limit reached</p>
+            <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.6, marginBottom: 14 }}>
+              {"You've used all 15 messages for today. Invite a friend to unlock +5 more per day."}
+            </p>
+            {referralLink && (
+              <button
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(referralLink); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+                }}
+                style={{ width: "100%", padding: "10px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: copied ? "#5cb88a" : "#c9a84c", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s", letterSpacing: 0.3 }}
+              >
+                {copied ? "✓ Link copied!" : "Invite a Friend — Copy Link"}
+              </button>
+            )}
+          </div>
+        </motion.div>
+      ) : (
+        <div style={{ display: "flex", gap: 8, paddingTop: 12, borderTop: "0.5px solid var(--border)", flexShrink: 0 }}>
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && send()}
+            placeholder="Ask about your portfolio..."
+            style={{ flex: 1, padding: "11px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 13, outline: "none", transition: "border-color 0.15s" }}
+            onFocus={e => e.target.style.borderColor = "var(--border2)"}
+            onBlur={e => e.target.style.borderColor = "var(--border)"}
+          />
+          <button
+            onClick={() => send()}
+            disabled={!input.trim() || loading}
+            style={{ padding: "11px 18px", background: input.trim() && !loading ? "var(--text)" : "transparent", border: "0.5px solid", borderColor: input.trim() && !loading ? "var(--text)" : "var(--border)", borderRadius: 8, color: input.trim() && !loading ? "var(--bg)" : "var(--text3)", fontSize: 11, fontWeight: 600, letterSpacing: 1.5, cursor: input.trim() && !loading ? "pointer" : "default", transition: "all 0.15s", fontFamily: "var(--font-mono)" }}
+          >
+            SEND
+          </button>
+        </div>
+      )}
     </div>
   );
 }

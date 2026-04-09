@@ -1,12 +1,16 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export async function fetchPortfolio(assets: any[], period: string, benchmark = "^GSPC") {
+export async function fetchPortfolio(assets: any[], period: string, benchmark = "^GSPC", userId = "", referralCode = "") {
   const total = assets.reduce((sum, a) => sum + a.weight, 0);
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
+  const extras = [
+    userId ? `user_id=${encodeURIComponent(userId)}` : "",
+    referralCode ? `referral_code=${encodeURIComponent(referralCode)}` : "",
+  ].filter(Boolean).join("&");
   const res = await fetch(
-    `${API_URL}/portfolio?tickers=${tickers}&weights=${weights}&period=${period}&benchmark=${encodeURIComponent(benchmark)}`
+    `${API_URL}/portfolio?tickers=${tickers}&weights=${weights}&period=${period}&benchmark=${encodeURIComponent(benchmark)}${extras ? "&" + extras : ""}`
   );
   return res.json();
 }
