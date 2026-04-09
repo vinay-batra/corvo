@@ -9,6 +9,29 @@ const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", border: "rgba(255
 interface Asset { ticker: string; weight: number; }
 interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; }
 
+/** Map a Supabase portfolios row → local Portfolio */
+function fromDb(row: any): Portfolio {
+  const tickers: string[] = row.tickers ?? [];
+  const weights: number[] = row.weights ?? [];
+  return {
+    id: row.id,
+    name: row.name,
+    assets: tickers.map((t, i) => ({ ticker: t, weight: weights[i] ?? 0 })),
+  };
+}
+
+/** Map local Portfolio → Supabase row shape */
+function toDb(p: Portfolio, userId: string) {
+  return {
+    id: p.id,
+    user_id: userId,
+    name: p.name,
+    tickers: p.assets.map(a => a.ticker),
+    weights: p.assets.map(a => a.weight),
+    updated_at: new Date().toISOString(),
+  };
+}
+
 function computeHealth(data: any): number {
   const ret = data.portfolio_return ?? 0;
   const vol = data.portfolio_volatility ?? 0.2;
@@ -31,7 +54,6 @@ export function saveHistorySnapshot(portfolioId: string, data: any) {
       sharpe: data.portfolio_volatility > 0 ? (data.portfolio_return - 0.04) / data.portfolio_volatility : 0,
       health: computeHealth(data),
     };
-    // Keep last 30 snapshots, avoid duplicates on same day
     const today = snapshot.date.slice(0, 10);
     const filtered = existing.filter((s: any) => s.date?.slice(0, 10) !== today);
     localStorage.setItem(key, JSON.stringify([...filtered, snapshot].slice(-30)));
@@ -58,59 +80,57 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
   const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    fetchPortfolios();
+    supabase.auth.getUser().then(({ data: authData }) => {
+      const u = authData.user ?? null;
+      setUser(u);
+      fetchPortfolios(u);
+    });
   }, []);
 
-  // Auto-save history snapshot when analysis data is available
+  // Auto-save history snapshot when analysis data arrives
   useEffect(() => {
-    if (!data) return;
-    const allLocal = loadLocal();
-    // Find a saved portfolio that matches the current assets
+    if (!data || !portfolios.length) return;
     const currentTickers = assets.map(a => a.ticker).sort().join(",");
-    const match = allLocal.find(p =>
+    const match = portfolios.find(p =>
       p.assets.map((a: Asset) => a.ticker).sort().join(",") === currentTickers
     );
     if (match) saveHistorySnapshot(match.id, data);
   }, [data]);
 
-  const fetchPortfolios = async () => {
-    const local = loadLocal();
-    try {
-      const { data: remote, error } = await supabase.from("portfolios").select("*").order("created_at", { ascending: false });
-      if (!error && remote) {
-        // Merge: remote first, then any local-only ones (by id not in remote)
-        const remoteIds = new Set(remote.map((p: Portfolio) => p.id));
-        const localOnly = local.filter(p => !remoteIds.has(p.id));
-        setPortfolios([...remote as Portfolio[], ...localOnly]);
-        return;
-      }
-    } catch {}
-    // Supabase failed or not logged in — use localStorage only
-    setPortfolios(local);
+  const fetchPortfolios = async (u?: any) => {
+    const activeUser = u ?? user;
+    if (activeUser) {
+      try {
+        const { data: remote, error } = await supabase
+          .from("portfolios")
+          .select("*")
+          .eq("user_id", activeUser.id)
+          .order("created_at", { ascending: false });
+        if (!error && remote) {
+          setPortfolios(remote.map(fromDb));
+          return;
+        }
+      } catch {}
+    }
+    // Logged-out or Supabase unavailable — use localStorage
+    setPortfolios(loadLocal());
   };
 
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
     const newPortfolio: Portfolio = {
-      id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`,
+      id: crypto.randomUUID(),
       name: name.trim(),
       assets,
     };
 
-    // Try Supabase first if logged in
     if (user) {
       try {
-        const { data: inserted, error } = await supabase
+        const { error } = await supabase
           .from("portfolios")
-          .insert({ name: newPortfolio.name, assets, user_id: user.id })
-          .select()
-          .single();
-        if (!error && inserted) {
-          // Also save to localStorage as backup
-          const local = loadLocal();
-          saveLocal([inserted as Portfolio, ...local]);
+          .upsert(toDb(newPortfolio, user.id), { onConflict: "id" });
+        if (!error) {
           await fetchPortfolios();
           setName(""); setShowSave(false); setSaving(false);
           return;
@@ -118,7 +138,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
       } catch {}
     }
 
-    // Fallback: save to localStorage
+    // Fallback: localStorage
     const local = loadLocal();
     const updated = [newPortfolio, ...local];
     saveLocal(updated);
@@ -127,14 +147,14 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
   };
 
   const remove = async (id: string) => {
-    // Remove from local
-    const local = loadLocal().filter(p => p.id !== id);
-    saveLocal(local);
-    // Try to remove from Supabase too
     if (user) {
-      try { await supabase.from("portfolios").delete().eq("id", id); } catch {}
+      try { await supabase.from("portfolios").delete().eq("id", id).eq("user_id", user.id); } catch {}
+      await fetchPortfolios();
+    } else {
+      const updated = loadLocal().filter(p => p.id !== id);
+      saveLocal(updated);
+      setPortfolios(updated);
     }
-    await fetchPortfolios();
   };
 
   return (

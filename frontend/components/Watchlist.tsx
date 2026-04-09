@@ -112,74 +112,82 @@ export default function Watchlist() {
   const { requestPermission, isGranted, notify } = usePushNotifications();
   const alertCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Initialize lists from localStorage
+  // Initialize lists and items — from Supabase if logged in, localStorage otherwise
   useEffect(() => {
-    let loadedLists: WatchList[] = [];
-    try {
-      const raw = localStorage.getItem(LISTS_KEY);
-      if (raw) loadedLists = JSON.parse(raw);
-    } catch {}
-
-    let loadedItems: WatchItem[] = [];
-    try {
-      // Migrate old format (just tickers, no listId)
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        loadedItems = parsed.map((i: any) => typeof i === "string" ? { ticker: i, addedAt: new Date().toISOString(), listId: "" } : i);
-      }
-    } catch {}
-
-    // Create default list if none
-    if (loadedLists.length === 0) {
-      const defaultList: WatchList = { id: genId(), name: "My Watchlist", icon: "📈", tickers: [] };
-      loadedLists = [defaultList];
-      // Migrate old tickers to default list
-      loadedItems = loadedItems.map(i => ({ ...i, listId: defaultList.id }));
-      try { localStorage.setItem(LISTS_KEY, JSON.stringify(loadedLists)); } catch {}
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedItems)); } catch {}
-    } else {
-      // Ensure migrated items have a valid listId
-      loadedItems = loadedItems.map(i => ({
-        ...i,
-        listId: i.listId || loadedLists[0].id,
-      }));
-    }
-
-    setLists(loadedLists);
-    setItems(loadedItems);
-    setActiveListId(loadedLists[0].id);
-    setNotifGranted(isGranted());
-
-    supabase.auth.getUser().then(({ data }) => {
-      const uid = data?.user?.id ?? null;
+    (async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      const uid = authData?.user?.id ?? null;
       setUserId(uid);
       userIdRef.current = uid;
+      setNotifGranted(isGranted());
+
       if (uid) {
-        supabase.from("price_alerts").select("*").eq("user_id", uid).then(({ data: rows }) => {
-          if (rows && rows.length > 0) {
-            const mapped: Alert[] = rows.map((r: any) => ({
-              ticker: r.ticker,
-              targetPrice: r.target_price,
-              direction: r.direction,
-              triggered: r.triggered ?? false,
-            }));
-            setAlerts(mapped);
-            try { localStorage.setItem(ALERTS_KEY, JSON.stringify(mapped)); } catch {}
-          } else {
-            try {
-              const ar = localStorage.getItem(ALERTS_KEY);
-              if (ar) setAlerts(JSON.parse(ar));
-            } catch {}
-          }
-        });
+        // ── Logged-in: load from Supabase ──────────────────────────────
+        const [{ data: dbLists }, { data: dbItems }] = await Promise.all([
+          supabase.from("watchlist_lists").select("*").eq("user_id", uid).order("created_at", { ascending: true }),
+          supabase.from("watchlist_items").select("*").eq("user_id", uid).order("added_at", { ascending: true }),
+        ]);
+
+        let loadedLists: WatchList[] = (dbLists ?? []).map((r: any) => ({
+          id: r.id, name: r.name, icon: r.icon ?? "📈", tickers: [],
+        }));
+        const loadedItems: WatchItem[] = (dbItems ?? []).map((r: any) => ({
+          ticker: r.ticker, addedAt: r.added_at, listId: r.list_id,
+        }));
+
+        // New user: create a default list in Supabase
+        if (loadedLists.length === 0) {
+          const defaultId = crypto.randomUUID();
+          await supabase.from("watchlist_lists").insert({ id: defaultId, user_id: uid, name: "My Watchlist", icon: "📈" });
+          loadedLists = [{ id: defaultId, name: "My Watchlist", icon: "📈", tickers: [] }];
+        }
+
+        setLists(loadedLists);
+        setItems(loadedItems);
+        setActiveListId(loadedLists[0].id);
+
+        // Alerts from Supabase
+        const { data: alertRows } = await supabase.from("price_alerts").select("*").eq("user_id", uid);
+        if (alertRows && alertRows.length > 0) {
+          const mapped: Alert[] = alertRows.map((r: any) => ({
+            ticker: r.ticker, targetPrice: r.target_price, direction: r.direction, triggered: r.triggered ?? false,
+          }));
+          setAlerts(mapped);
+          try { localStorage.setItem(ALERTS_KEY, JSON.stringify(mapped)); } catch {}
+        } else {
+          try { const ar = localStorage.getItem(ALERTS_KEY); if (ar) setAlerts(JSON.parse(ar)); } catch {}
+        }
       } else {
+        // ── Logged-out: load from localStorage ────────────────────────
+        let loadedLists: WatchList[] = [];
+        try { const raw = localStorage.getItem(LISTS_KEY); if (raw) loadedLists = JSON.parse(raw); } catch {}
+
+        let loadedItems: WatchItem[] = [];
         try {
-          const ar = localStorage.getItem(ALERTS_KEY);
-          if (ar) setAlerts(JSON.parse(ar));
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            loadedItems = parsed.map((i: any) => typeof i === "string" ? { ticker: i, addedAt: new Date().toISOString(), listId: "" } : i);
+          }
         } catch {}
+
+        if (loadedLists.length === 0) {
+          const defaultList: WatchList = { id: genId(), name: "My Watchlist", icon: "📈", tickers: [] };
+          loadedLists = [defaultList];
+          loadedItems = loadedItems.map(i => ({ ...i, listId: defaultList.id }));
+          try { localStorage.setItem(LISTS_KEY, JSON.stringify(loadedLists)); } catch {}
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedItems)); } catch {}
+        } else {
+          loadedItems = loadedItems.map(i => ({ ...i, listId: i.listId || loadedLists[0].id }));
+        }
+
+        setLists(loadedLists);
+        setItems(loadedItems);
+        setActiveListId(loadedLists[0].id);
+
+        try { const ar = localStorage.getItem(ALERTS_KEY); if (ar) setAlerts(JSON.parse(ar)); } catch {}
       }
-    });
+    })();
   }, []);
 
   // Alert checking
@@ -247,12 +255,16 @@ export default function Watchlist() {
 
   const saveLists = (newLists: WatchList[]) => {
     setLists(newLists);
-    try { localStorage.setItem(LISTS_KEY, JSON.stringify(newLists)); } catch {}
+    if (!userId) {
+      try { localStorage.setItem(LISTS_KEY, JSON.stringify(newLists)); } catch {}
+    }
   };
 
   const saveItems = (newItems: WatchItem[]) => {
     setItems(newItems);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems)); } catch {}
+    if (!userId) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems)); } catch {}
+    }
   };
 
   const saveAlerts = async (list: Alert[]) => {
@@ -283,35 +295,59 @@ export default function Watchlist() {
       setError(`"${ticker}" not found — check the symbol and try again`); setValidating(false); return;
     }
     setValidating(false);
-    const next = [...items, { ticker, addedAt: new Date().toISOString(), listId: activeListId }];
-    saveItems(next);
+    const newItem: WatchItem = { ticker, addedAt: new Date().toISOString(), listId: activeListId };
+    saveItems([...items, newItem]);
     setInput("");
     fetchData([ticker]);
+    if (userId) {
+      try {
+        await supabase.from("watchlist_items").insert({ user_id: userId, list_id: activeListId, ticker, added_at: newItem.addedAt });
+      } catch {}
+    }
   };
 
   const remove = (ticker: string) => {
     saveItems(items.filter(i => !(i.ticker === ticker && i.listId === activeListId)));
     setStockData(prev => { const n = { ...prev }; delete n[ticker]; return n; });
+    if (userId) {
+      supabase.from("watchlist_items")
+        .delete()
+        .eq("user_id", userId)
+        .eq("list_id", activeListId)
+        .eq("ticker", ticker)
+        .then(() => {});
+    }
   };
 
-  const createList = () => {
+  const createList = async () => {
     if (!newListName.trim()) return;
-    const newList: WatchList = { id: genId(), name: newListName.trim(), icon: newListIcon, tickers: [] };
-    const next = [...lists, newList];
-    saveLists(next);
+    const newId = userId ? crypto.randomUUID() : genId();
+    const newList: WatchList = { id: newId, name: newListName.trim(), icon: newListIcon, tickers: [] };
+    saveLists([...lists, newList]);
     setActiveListId(newList.id);
     setCreatingList(false);
     setNewListName("");
     setNewListIcon("📈");
+    if (userId) {
+      try {
+        await supabase.from("watchlist_lists").insert({ id: newList.id, user_id: userId, name: newList.name, icon: newList.icon });
+      } catch {}
+    }
   };
 
-  const deleteList = (id: string) => {
+  const deleteList = async (id: string) => {
     if (lists.length <= 1) return;
     const next = lists.filter(l => l.id !== id);
     saveLists(next);
     saveItems(items.filter(i => i.listId !== id));
     if (activeListId === id) setActiveListId(next[0].id);
     setCtxMenu(null);
+    if (userId) {
+      try {
+        // ON DELETE CASCADE on watchlist_items removes the items automatically
+        await supabase.from("watchlist_lists").delete().eq("id", id).eq("user_id", userId);
+      } catch {}
+    }
   };
 
   const startRename = (list: WatchList) => {
@@ -321,10 +357,18 @@ export default function Watchlist() {
     setCtxMenu(null);
   };
 
-  const saveRename = () => {
+  const saveRename = async () => {
     if (!editName.trim() || !editingListId) return;
-    saveLists(lists.map(l => l.id === editingListId ? { ...l, name: editName.trim(), icon: editIcon } : l));
+    const listId = editingListId;
+    const newName = editName.trim();
+    const newIcon = editIcon;
+    saveLists(lists.map(l => l.id === listId ? { ...l, name: newName, icon: newIcon } : l));
     setEditingListId(null);
+    if (userId) {
+      try {
+        await supabase.from("watchlist_lists").update({ name: newName, icon: newIcon }).eq("id", listId).eq("user_id", userId);
+      } catch {}
+    }
   };
 
   // Close context menu on outside click
