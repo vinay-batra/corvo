@@ -778,8 +778,12 @@ export default function AppPage() {
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
 
   // ── Live price refresh every 5 seconds ──────────────────────────────────────
+  // Use a ref for assets so fetchLivePrices is stable and never causes interval restarts
+  const assetsRef = useRef(assets);
+  useEffect(() => { assetsRef.current = assets; }, [assets]);
+
   const fetchLivePrices = useCallback(async () => {
-    const valid = assets.filter(a => a.ticker && a.weight > 0);
+    const valid = assetsRef.current.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
     const API_LP = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     try {
@@ -788,6 +792,9 @@ export default function AppPage() {
       const map: Record<string, { price: number; change_pct: number }> = {};
       (d.results || []).forEach((s: any) => { if (s?.ticker && s.price) map[s.ticker] = { price: s.price, change_pct: s.change_pct ?? 0 }; });
       setSidePrices(prev => {
+        // Skip re-render entirely if nothing changed
+        const anyDiff = Object.keys(map).some(t => !prev[t] || Math.abs(prev[t].price - map[t].price) > 0.001);
+        if (!anyDiff && Object.keys(map).length === Object.keys(prev).length) return prev;
         const changed = Object.keys(map).filter(t => prev[t] && Math.abs(prev[t].price - map[t].price) > 0.001);
         if (changed.length > 0) {
           setFlashingTickers(new Set(changed));
@@ -796,13 +803,13 @@ export default function AppPage() {
         return map;
       });
     } catch {}
-  }, [assets]);
+  }, []); // stable — reads assets from ref, never recreated
 
   useEffect(() => {
-    if (!data || !assets.length) return;
+    if (!data || !assetsRef.current.length) return;
     const id = setInterval(fetchLivePrices, 5000);
     return () => clearInterval(id);
-  }, [data, assets, fetchLivePrices]);
+  }, [data, fetchLivePrices]); // fetchLivePrices is stable, only data restart matters
 
   // ── Show notification prompt once after login ────────────────────────────────
   useEffect(() => {

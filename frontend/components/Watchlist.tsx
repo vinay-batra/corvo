@@ -367,7 +367,7 @@ export default function Watchlist() {
                   </div>
                   <input
                     autoFocus value={editName} onChange={e => setEditName(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") saveRename(); if (e.key === "Escape") setEditingListId(null); }}
+                    onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); saveRename(); } if (e.key === "Escape") setEditingListId(null); }}
                     style={{ width: 80, padding: "2px 4px", background: "transparent", border: "none", color: "var(--text)", fontSize: 12, outline: "none" }}
                   />
                   <button onClick={saveRename} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0 }}>✓</button>
@@ -405,7 +405,7 @@ export default function Watchlist() {
               </div>
               <input
                 autoFocus value={newListName} onChange={e => setNewListName(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") createList(); if (e.key === "Escape") { setCreatingList(false); setNewListName(""); } }}
+                onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); createList(); } if (e.key === "Escape") { setCreatingList(false); setNewListName(""); } }}
                 placeholder="List name…"
                 style={{ width: 90, padding: "2px 4px", background: "transparent", border: "none", color: "var(--text)", fontSize: 12, outline: "none" }}
               />
@@ -453,7 +453,7 @@ export default function Watchlist() {
           <input
             value={input}
             onChange={e => { setInput(e.target.value.toUpperCase()); setError(""); }}
-            onKeyDown={e => e.key === "Enter" && add()}
+            onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") add(); }}
             placeholder={`Add ticker to ${activeList?.icon ?? ""} ${activeList?.name ?? "list"}…`}
             style={{ flex: 1, padding: "9px 12px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
           />
