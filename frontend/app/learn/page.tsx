@@ -1278,54 +1278,50 @@ export default function LearnPage() {
     try { setCompleted(JSON.parse(localStorage.getItem(COMPLETED_KEY) || "[]")); } catch {}
 
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          if (checkLocalDaily()) setDailyCompleted(true);
+          else fetchDailyQuestion();
+          return;
+        }
+        setUserId(user.id);
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name, avatar_url, xp, streak, last_activity_date, lessons_completed, lesson_progress, last_daily_challenge")
+          .eq("id", user.id)
+          .single();
+
+        // Set all profile display values before clearing the loading skeleton
+        setDisplayName(profile?.display_name || user.email?.split("@")[0] || "");
+        setAvatarUrl(profile?.avatar_url || null);
+        setXp(profile?.xp ?? 0);
+        setStreak(profile?.streak ?? 0);
+
+        if (profile) {
+          if (Array.isArray(profile.lessons_completed) && profile.lessons_completed.length > 0) {
+            setCompleted(profile.lessons_completed);
+            try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(profile.lessons_completed)); } catch {}
+          }
+          if (profile.lesson_progress && typeof profile.lesson_progress === "object") {
+            setLessonProgress(profile.lesson_progress as Record<string, number[]>);
+          }
+          if (profile.last_daily_challenge === today || checkLocalDaily()) {
+            setDailyCompleted(true);
+          } else {
+            fetchDailyQuestion();
+          }
+        } else {
+          if (checkLocalDaily()) setDailyCompleted(true);
+          else fetchDailyQuestion();
+        }
+
+        const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", user.id).single();
+        if (ls) setLearnPoints(ls.total_points ?? 0);
+      } finally {
         setProfileLoading(false);
-        if (checkLocalDaily()) {
-          setDailyCompleted(true);
-        } else {
-          fetchDailyQuestion();
-        }
-        return;
       }
-      setUserId(user.id);
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name, avatar_url, xp, streak, last_activity_date, lessons_completed, lesson_progress, last_daily_challenge")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        setDisplayName(profile.display_name || user.email?.split("@")[0] || "");
-        setAvatarUrl(profile.avatar_url || null);
-        setXp(profile.xp ?? 0);
-        setStreak(profile.streak ?? 0);
-        if (Array.isArray(profile.lessons_completed) && profile.lessons_completed.length > 0) {
-          setCompleted(profile.lessons_completed);
-          try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(profile.lessons_completed)); } catch {}
-        }
-        if (profile.lesson_progress && typeof profile.lesson_progress === "object") {
-          setLessonProgress(profile.lesson_progress as Record<string, number[]>);
-        }
-        // Check daily challenge (Supabase + localStorage)
-        if (profile.last_daily_challenge === today || checkLocalDaily()) {
-          setDailyCompleted(true);
-        } else {
-          fetchDailyQuestion();
-        }
-      } else {
-        if (checkLocalDaily()) {
-          setDailyCompleted(true);
-        } else {
-          fetchDailyQuestion();
-        }
-      }
-
-      setProfileLoading(false);
-
-      const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", user.id).single();
-      if (ls) setLearnPoints(ls.total_points ?? 0);
     })();
   }, []);
 
