@@ -8,7 +8,8 @@ import { supabase } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const STORAGE_KEY = "corvo_watchlist";
-const ALERTS_KEY  = "corvo_alerts";
+// Separate key from AlertsPanel (which uses corvo_alerts with a different schema)
+const ALERTS_KEY  = "corvo_watchlist_alerts";
 
 interface WatchItem { ticker: string; addedAt: string; }
 interface StockData {
@@ -141,15 +142,18 @@ export default function Watchlist() {
           if (a.triggered) return a;
           const priceData = stockData[a.ticker];
           if (!priceData?.price) return a;
+          if (a.targetPrice == null || !a.direction) return a;
           const triggered =
             (a.direction === "above" && priceData.price >= a.targetPrice) ||
             (a.direction === "below" && priceData.price <= a.targetPrice);
           if (triggered) {
-            notify(
-              `${a.ticker} Price Alert`,
-              `${a.ticker} crossed $${a.targetPrice.toFixed(2)} (now $${priceData.price.toFixed(2)})`,
-              `alert-${a.ticker}-${a.targetPrice}`
-            );
+            try {
+              notify(
+                `${a.ticker} Price Alert`,
+                `${a.ticker} crossed $${a.targetPrice.toFixed(2)} (now $${priceData.price?.toFixed(2) ?? "?"})`,
+                `alert-${a.ticker}-${a.targetPrice}`
+              );
+            } catch {}
             changed = true;
             return { ...a, triggered: true };
           }
@@ -183,11 +187,14 @@ export default function Watchlist() {
     setLoadingAll(true);
     try {
       const r = await fetch(`${API_URL}/watchlist-data?tickers=${tickerList.join(",")}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
       const map: Record<string, StockData> = {};
-      (d.results || []).forEach((s: StockData) => { map[s.ticker] = s; });
+      ((d.results ?? []) as StockData[]).forEach(s => { if (s?.ticker) map[s.ticker] = s; });
       setStockData(prev => ({ ...prev, ...map }));
-    } catch {}
+    } catch (e) {
+      console.warn("[Watchlist] fetchData failed:", e);
+    }
     setLoadingAll(false);
   }, []);
 
@@ -370,7 +377,7 @@ export default function Watchlist() {
             {alerts.map((a, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "var(--bg3)", borderRadius: 8 }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text)", fontWeight: 700 }}>{a.ticker}</span>
-                <span style={{ fontSize: 11, color: "var(--text2)" }}>Price {a.direction} ${a.targetPrice.toFixed(2)}</span>
+                <span style={{ fontSize: 11, color: "var(--text2)" }}>Price {a.direction ?? "—"} ${a.targetPrice != null ? a.targetPrice.toFixed(2) : "—"}</span>
                 <button onClick={() => saveAlerts(alerts.filter((_, idx) => idx !== i))}
                   style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 12, padding: "0 4px" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}

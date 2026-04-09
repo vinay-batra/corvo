@@ -51,7 +51,7 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
               initial={{ scale: 0.94, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 12 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               onClick={e => e.stopPropagation()}
-              style={{ width: "100%", maxWidth: 420, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.5)" }}
+              style={{ width: "100%", maxWidth: 480, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.5)" }}
             >
               {/* Header */}
               <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -73,7 +73,7 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
                 {sections.map((s, i) => (
                   <div key={i}>
                     <p style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>{s.label}</p>
-                    <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{s.text}</p>
+                    <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, wordBreak: "break-word", overflowWrap: "break-word" }}>{s.text}</p>
                   </div>
                 ))}
               </div>
