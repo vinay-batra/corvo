@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { fetchCorrelation } from "../lib/api";
@@ -8,7 +8,7 @@ import { fetchCorrelation } from "../lib/api";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
-export default function CorrelationHeatmap({ assets, period }: { assets: any[]; period: string }) {
+const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -85,4 +85,6 @@ export default function CorrelationHeatmap({ assets, period }: { assets: any[]; 
       ) : null}
     </motion.div>
   );
-}
+});
+
+export default CorrelationHeatmap;

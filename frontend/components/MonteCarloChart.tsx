@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { fetchMonteCarlo } from "../lib/api";
@@ -15,7 +15,7 @@ const C = {
   red: "#e05c5c", green: "#5cb88a",
 };
 
-export default function MonteCarloChart({ assets, period }: { assets: any[]; period: string }) {
+const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -167,4 +167,6 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
       ) : null}
     </>
   );
-}
+});
+
+export default MonteCarloChart;
