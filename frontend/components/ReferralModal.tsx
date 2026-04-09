@@ -52,7 +52,7 @@ export default function ReferralModal({ onClose }: Props) {
         </div>
 
         <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.6, marginBottom: 20 }}>
-          Share your referral link with friends. When they sign up, they get straight into Corvo and you both get credit.
+          Share your link with friends. When they sign up and analyze their first portfolio, you unlock +5 AI chat messages per day (up to +25 total).
         </p>
 
         <div style={{ background: "var(--bg2)", border: "0.5px solid var(--border2)", borderRadius: 10, padding: "12px 16px", marginBottom: 14, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text2)", wordBreak: "break-all" as const }}>
