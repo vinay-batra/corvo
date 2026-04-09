@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
@@ -908,8 +909,150 @@ def parse_portfolio_image(body: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def get_email_html(display_name=None, email_type="welcome", user_id=None):
+    """Return a table-based HTML email string compatible with Gmail, Outlook, and Apple Mail."""
+    amber = "#c9a84c"
+    bg = "#0a0a0a"
+    card_bg = "#111111"
+    text = "#e8e0cc"
+    text_muted = "#888880"
+
+    if email_type == "weekly_digest":
+        greeting = f"Your weekly digest, {display_name}" if display_name else "Your weekly digest"
+        cta_text = "View Your Portfolio &rarr;"
+    else:
+        greeting = f"Welcome, {display_name} &#x1F44B;" if display_name else "Welcome to Corvo &#x1F44B;"
+        cta_text = "Go to Dashboard &rarr;"
+
+    unsubscribe_url = (
+        f"https://corvo.capital/unsubscribe?user_id={user_id}"
+        if user_id
+        else "https://corvo.capital/unsubscribe"
+    )
+
+    features = [
+        ("&#x1F4CA;", "Portfolio Analysis", "Sharpe ratio, Monte Carlo simulations, drawdown charts, and a health score for your holdings."),
+        ("&#x1F916;", "AI Insights", "Ask questions about your portfolio and get real-time answers with live market context."),
+        ("&#x1F393;", "Financial Education", "Lessons, quizzes, and mini-games that teach real investing concepts &mdash; with XP and leaderboards."),
+    ]
+
+    feature_rows = ""
+    for icon, title, body in features:
+        feature_rows += f"""
+        <tr>
+          <td style="padding:8px 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background:{card_bg};border-radius:8px;border:1px solid #222;">
+              <tr>
+                <td style="padding:16px 20px;vertical-align:top;width:36px;font-size:22px;">{icon}</td>
+                <td style="padding:16px 20px 16px 0;vertical-align:top;">
+                  <p style="margin:0 0 4px 0;font-family:Arial,sans-serif;font-size:13px;
+                             font-weight:700;color:{amber};letter-spacing:0.5px;">{title}</p>
+                  <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;
+                             color:{text_muted};line-height:1.6;">{body}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>"""
+
+    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Corvo</title>
+</head>
+<body style="margin:0;padding:0;background-color:{bg};">
+  <!-- Outer wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="background-color:{bg};min-height:100vh;">
+    <tr>
+      <td align="center" style="padding:48px 16px;">
+
+        <!-- Email card -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0"
+               style="max-width:600px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <p style="margin:0 0 4px 0;font-family:'Courier New',Courier,monospace;
+                         font-size:28px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
+              <p style="margin:0;font-family:Arial,sans-serif;font-size:9px;
+                         letter-spacing:3px;color:#555;text-transform:uppercase;">Portfolio Intelligence</p>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding-bottom:6px;">
+              <p style="margin:0;font-family:Arial,sans-serif;font-size:22px;
+                         font-weight:700;color:{text};">{greeting}</p>
+            </td>
+          </tr>
+
+          <!-- Subheading -->
+          <tr>
+            <td style="padding-bottom:24px;">
+              <p style="margin:0;font-family:Arial,sans-serif;font-size:14px;
+                         color:{text_muted};line-height:1.6;">
+                Your account is ready. Here&#39;s what you can do with Corvo:
+              </p>
+            </td>
+          </tr>
+
+          <!-- Feature cards -->
+          <tr>
+            <td>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                {feature_rows}
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA button -->
+          <tr>
+            <td align="center" style="padding:32px 0;">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="border-radius:8px;background-color:{amber};">
+                    <a href="https://corvo.capital/app"
+                       style="display:inline-block;padding:14px 36px;font-family:Arial,sans-serif;
+                              font-size:14px;font-weight:700;color:#000000;text-decoration:none;
+                              border-radius:8px;letter-spacing:0.5px;">{cta_text}</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="border-top:1px solid #1e1e1e;padding-top:24px;">
+              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
+                         color:#444;text-align:center;line-height:1.8;">
+                &copy; 2026 Corvo &nbsp;&middot;&nbsp;
+                <a href="https://corvo.capital" style="color:#555;text-decoration:none;">corvo.capital</a>
+                &nbsp;&middot;&nbsp;
+                <a href="{unsubscribe_url}" style="color:#555;text-decoration:none;">Unsubscribe</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+
 class WelcomeEmailRequest(BaseModel):
     email: str
+    display_name: str | None = None
+    user_id: str | None = None
 
 @app.post("/send-welcome-email")
 def send_welcome_email(req: WelcomeEmailRequest):
@@ -920,41 +1063,7 @@ def send_welcome_email(req: WelcomeEmailRequest):
         print("[send-welcome-email] RESEND_API_KEY not set — skipping")
         return {"ok": True, "skipped": True}
 
-    html = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><style>
-  body {{ margin: 0; background: #0a0e14; color: #e8e0cc; font-family: 'Courier New', monospace; padding: 48px 24px; }}
-  .brand {{ font-size: 26px; font-weight: 900; letter-spacing: 8px; color: #c9a84c; margin-bottom: 4px; }}
-  .sub {{ font-size: 9px; letter-spacing: 3px; color: rgba(232,224,204,0.3); text-transform: uppercase; margin-bottom: 32px; }}
-  h1 {{ font-size: 20px; font-weight: 600; color: #e8e0cc; margin-bottom: 10px; }}
-  p {{ font-size: 14px; color: rgba(232,224,204,0.7); line-height: 1.75; margin-bottom: 16px; }}
-  .tip {{ background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.2); border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; }}
-  .tip-title {{ font-size: 11px; letter-spacing: 2px; color: #c9a84c; text-transform: uppercase; margin-bottom: 4px; }}
-  .tip-text {{ font-size: 13px; color: rgba(232,224,204,0.7); }}
-  .cta {{ display: inline-block; margin-top: 24px; padding: 14px 32px; background: #c9a84c; color: #0a0e14; font-weight: 700; font-size: 13px; letter-spacing: 2px; text-decoration: none; border-radius: 9px; }}
-  .footer {{ margin-top: 48px; font-size: 10px; color: rgba(232,224,204,0.2); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px; }}
-</style></head>
-<body>
-  <div class="brand">CORVO</div>
-  <div class="sub">Portfolio Intelligence</div>
-  <h1>Welcome to Corvo</h1>
-  <p>You've joined a smarter way to analyze your portfolio. Here's how to get the most out of Corvo:</p>
-  <div class="tip">
-    <div class="tip-title">Tip 1 — Start with a preset</div>
-    <div class="tip-text">Use the preset portfolios (Tech Heavy, Diversified, Crypto Mix, Dividend) to explore what Corvo can show you before entering your own tickers.</div>
-  </div>
-  <div class="tip">
-    <div class="tip-title">Tip 2 — Use the Learn tab</div>
-    <div class="tip-text">Unsure what Sharpe ratio means? Visit the Learn section to play our interactive games and read plain-English explanations of every metric.</div>
-  </div>
-  <div class="tip">
-    <div class="tip-title">Tip 3 — Save and compare</div>
-    <div class="tip-text">After analyzing a portfolio, save it. Then build a different one and compare them side-by-side in the Compare tab to see which has better risk-adjusted returns.</div>
-  </div>
-  <a class="cta" href="https://corvo.capital/app">OPEN CORVO →</a>
-  <div class="footer">You received this because you signed up for Corvo. Data is sourced from Yahoo Finance. Not financial advice.</div>
-</body>
-</html>"""
+    html = get_email_html(display_name=req.display_name, email_type="welcome", user_id=req.user_id)
 
     try:
         response = requests.post(
@@ -963,7 +1072,7 @@ def send_welcome_email(req: WelcomeEmailRequest):
             json={
                 "from": "Corvo <hello@corvo.capital>",
                 "to": [req.email],
-                "subject": "Welcome to Corvo — your portfolio intelligence platform",
+                "subject": "Welcome to Corvo \U0001f3af",
                 "html": html,
             },
             timeout=10,
@@ -1190,3 +1299,65 @@ def test_email(email: str = ""):
         tb = traceback.format_exc()
         print(f"[test-email] FAILED:\n{tb}")
         return {"ok": False, "error": tb}
+
+
+@app.get("/unsubscribe", response_class=HTMLResponse)
+def unsubscribe(user_id: str = ""):
+    """Set weekly_digest and price_alerts to false in email_preferences for the given user."""
+    success = False
+    if user_id and SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        try:
+            resp = requests.patch(
+                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}",
+                headers={
+                    "apikey": SUPABASE_SERVICE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=minimal",
+                },
+                json={"weekly_digest": False, "price_alerts": False},
+                timeout=8,
+            )
+            success = resp.status_code in (200, 204)
+            print(f"[unsubscribe] user_id={user_id} status={resp.status_code}")
+        except Exception as e:
+            print(f"[unsubscribe] error: {e}")
+
+    if success:
+        body_text = "You&#39;ve been unsubscribed from Corvo emails. You won&#39;t receive weekly digests or price alert emails going forward."
+        detail_text = "You can re-enable these at any time in your <a href=\"https://corvo.capital/app\" style=\"color:#c9a84c;\">account settings</a>."
+    else:
+        body_text = "Something went wrong processing your request."
+        detail_text = "Please visit your <a href=\"https://corvo.capital/app\" style=\"color:#c9a84c;\">account settings</a> to manage email preferences."
+
+    return HTMLResponse(content=f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unsubscribed — Corvo</title>
+  <style>
+    body {{ margin: 0; padding: 0; background: #0a0a0a; color: #e8e0cc;
+            font-family: Arial, sans-serif; display: flex; align-items: center;
+            justify-content: center; min-height: 100vh; }}
+    .card {{ max-width: 480px; width: 100%; padding: 48px 32px; text-align: center; }}
+    .brand {{ font-size: 24px; font-weight: 900; letter-spacing: 6px; color: #c9a84c;
+              font-family: 'Courier New', Courier, monospace; margin-bottom: 4px; }}
+    .sub {{ font-size: 9px; letter-spacing: 3px; color: #555; text-transform: uppercase;
+            margin-bottom: 40px; }}
+    .icon {{ font-size: 40px; margin-bottom: 20px; }}
+    h1 {{ font-size: 20px; font-weight: 700; color: #e8e0cc; margin: 0 0 12px; }}
+    p {{ font-size: 14px; color: #888880; line-height: 1.7; margin: 0 0 12px; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">CORVO</div>
+    <div class="sub">Portfolio Intelligence</div>
+    <div class="icon">{"&#x2705;" if success else "&#x26A0;"}</div>
+    <h1>{"Unsubscribed" if success else "Oops"}</h1>
+    <p>{body_text}</p>
+    <p>{detail_text}</p>
+  </div>
+</body>
+</html>""", status_code=200)

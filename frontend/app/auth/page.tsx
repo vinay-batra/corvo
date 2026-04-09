@@ -43,15 +43,17 @@ function AuthForm() {
       if (error) setError(error.message);
       else window.location.href = nextPath;
     } else if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data: signUpData, error } = await supabase.auth.signUp({ email, password });
       if (error) setError(error.message);
       else {
         setSuccess("Check your email to confirm your account.");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const userId = signUpData.user?.id ?? null;
+        const displayName = email.split("@")[0] || null;
         fetch(`${apiUrl}/send-welcome-email`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, display_name: displayName, user_id: userId }),
         }).catch(() => {});
       }
     } else if (mode === "magic") {
