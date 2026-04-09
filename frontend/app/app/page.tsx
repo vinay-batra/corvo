@@ -494,10 +494,11 @@ export default function AppPage() {
         });
         if (user.app_metadata?.provider && user.app_metadata.provider !== "email") {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || null;
           fetch(`${apiUrl}/send-welcome-email`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: user.email }),
+            body: JSON.stringify({ email: user.email, display_name: displayName, user_id: user.id }),
           }).catch(() => {});
         }
       }
