@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
   GraduationCap, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
-  Sun, Moon, CandlestickChart, Command, HelpCircle, Sparkles, Home, Volume2, VolumeX,
+  Sun, Moon, CandlestickChart, Command, Sparkles,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
 import InfoModal from "../../components/InfoModal";
@@ -532,41 +532,12 @@ export default function AppPage() {
   const handleAnalyzeRef = useRef(handleAnalyze);
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
   useEffect(() => {
-    const SHIFT_MAP: Record<string, string> = {
-      "a": "overview",
-      "s": "stocks", "l": "learn",
-      "w": "watchlist",
-    };
     const handler = (e: KeyboardEvent) => {
       // Cmd+K / Ctrl+K → command palette
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setPaletteOpen(o => !o);
         return;
-      }
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
-        const key = e.key.toLowerCase();
-        // Cmd+Shift+H → go to homepage
-        if (key === "h") {
-          e.preventDefault();
-          window.location.href = "/";
-          return;
-        }
-        // Cmd+Shift+M → toggle sound effects
-        if (key === "m") {
-          e.preventDefault();
-          const on = localStorage.getItem(SOUND_KEY) === "true";
-          localStorage.setItem(SOUND_KEY, on ? "false" : "true");
-          if (!on) sound.click();
-          return;
-        }
-        // Cmd+Shift+A/S/L/W → quick tab jump
-        if (SHIFT_MAP[key]) {
-          e.preventDefault();
-          setActiveTab(SHIFT_MAP[key]);
-          sound.whoosh();
-          return;
-        }
       }
       if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
       const tag = (document.activeElement as HTMLElement)?.tagName;
@@ -1200,51 +1171,6 @@ export default function AppPage() {
         onApply={(a) => { setAssets(a); setWhatIfOpen(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
       />
 
-      {/* Floating ? cheatsheet button */}
-      <CheatsheetButton onOpenPalette={() => setPaletteOpen(true)} />
-    </div>
-  );
-}
-
-function CheatsheetButton({ onOpenPalette }: { onOpenPalette: () => void }) {
-  const [show, setShow] = useState(false);
-  const SHORTCUTS = [
-    { keys: "⌘K",      label: "Command palette" },
-    { keys: "⌘⇧A",    label: "Dashboard tab" },
-    { keys: "⌘⇧S",    label: "Stocks tab" },
-    { keys: "⌘⇧W",    label: "Watchlist tab" },
-    { keys: "⌘⇧L",    label: "Learn tab" },
-    { keys: "⌘⇧H",    label: "Go to homepage" },
-    { keys: "⌘⇧M",    label: "Toggle sound" },
-    { keys: "↵",       label: "Run analysis" },
-  ];
-  return (
-    <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 300 }}>
-      <AnimatePresence>
-        {show && (
-          <motion.div initial={{ opacity: 0, y: 8, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.96 }}
-            style={{ position: "absolute", bottom: "calc(100% + 8px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 12, padding: "14px 16px", width: 230, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
-            <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Keyboard Shortcuts</p>
-            {SHORTCUTS.map(s => (
-              <div key={s.keys} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: "0.5px solid var(--border)" }}>
-                <span style={{ fontSize: 11, color: "var(--text2)" }}>{s.label}</span>
-                <kbd style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--accent)", background: "var(--bg3)", padding: "2px 6px", borderRadius: 4, border: "0.5px solid var(--border2)" }}>{s.keys}</kbd>
-              </div>
-            ))}
-            <button onClick={onOpenPalette}
-              style={{ width: "100%", marginTop: 10, padding: "7px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text2)", fontSize: 11, cursor: "pointer", letterSpacing: 0.5 }}>
-              Open Command Palette
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <button
-        onClick={() => setShow(s => !s)}
-        style={{ width: 36, height: 36, borderRadius: "50%", border: "0.5px solid var(--border2)", background: "var(--card-bg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--text3)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)", transition: "all 0.15s" }}
-        onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
-        onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border2)"; }}>
-        ?
-      </button>
     </div>
   );
 }

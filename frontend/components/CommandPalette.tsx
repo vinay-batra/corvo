@@ -139,14 +139,6 @@ export default function CommandPalette({ open, onClose, tabs, onTab, onStockSear
                 ))
               )}
             </div>
-            <div style={{ padding: "8px 16px", borderTop: "0.5px solid var(--border)", display: "flex", gap: 16 }}>
-              {[["↑↓", "Navigate"], ["↵", "Select"], ["Esc", "Close"]].map(([key, label]) => (
-                <span key={key} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <kbd style={{ padding: "2px 6px", fontSize: 9, background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 4, color: "var(--text3)" }}>{key}</kbd>
-                  <span style={{ fontSize: 10, color: "var(--text3)" }}>{label}</span>
-                </span>
-              ))}
-            </div>
           </motion.div>
         </motion.div>
       )}
