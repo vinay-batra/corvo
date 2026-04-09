@@ -44,6 +44,56 @@ function StatRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function MetricCard({ label, value, tooltip }: { label: string; value: string; tooltip: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      style={{ border: "0.5px solid var(--border)", borderRadius: 10, padding: "14px 16px", background: "var(--card-bg)", position: "relative", cursor: "default" }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <div style={{ fontSize: 9, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontFamily: "Space Mono, monospace", fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{value}</div>
+      {show && (
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)",
+          background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8,
+          padding: "8px 12px", fontSize: 11, color: "var(--text2)", lineHeight: 1.5,
+          whiteSpace: "normal", width: 220, zIndex: 100, pointerEvents: "none",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+        }}>
+          {tooltip}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AddlMetricRow({ label, value, tooltip, valueColor }: { label: string; value: string; tooltip: string; valueColor?: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "0.5px solid var(--border)", position: "relative", cursor: "default" }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <span style={{ fontSize: 12, color: "var(--text3)" }}>{label}</span>
+      <span style={{ fontSize: 13, fontFamily: "Space Mono, monospace", fontWeight: 600, color: valueColor || "var(--text)" }}>{value}</span>
+      {show && (
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 6px)", right: 0,
+          background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8,
+          padding: "8px 12px", fontSize: 11, color: "var(--text2)", lineHeight: 1.5,
+          whiteSpace: "normal", width: 220, zIndex: 100, pointerEvents: "none",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+        }}>
+          {tooltip}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface StockInfo {
   ticker: string; name: string;
   current_price: number; change: number; change_pct: number;
@@ -54,6 +104,13 @@ interface StockInfo {
   price_to_book: number | null; revenue: number | null; net_income: number | null;
   analyst_rating: string; sector: string; industry: string;
   chart_1d: { t: string; p: number }[];
+  // new fields
+  earnings_date: string | null;
+  revenue_growth: number | null;
+  profit_margin: number | null;
+  debt_to_equity: number | null;
+  short_ratio: number | null;
+  insider_ownership: number | null;
 }
 
 export default function StockDetail({ ticker, onBack }: { ticker: string; onBack: () => void }) {
@@ -215,7 +272,7 @@ export default function StockDetail({ ticker, onBack }: { ticker: string; onBack
           <StatRow label="Market Cap"    value={fmt(info.market_cap, "$")} />
           <StatRow label="P/E Ratio"     value={fmt(info.pe_ratio, "", "", 1)} />
           <StatRow label="EPS"           value={fmt(info.eps, "$")} />
-          <StatRow label="Dividend Yield" value={info.dividend_yield ? `${(info.dividend_yield * 100).toFixed(2)}%` : "—"} />
+          <StatRow label="Dividend Yield" value={info.dividend_yield != null ? `${info.dividend_yield.toFixed(2)}%` : "—"} />
           <StatRow label="52W High"      value={fmt(info.week52_high, "$")} />
           <StatRow label="52W Low"       value={fmt(info.week52_low, "$")} />
         </div>
@@ -228,6 +285,86 @@ export default function StockDetail({ ticker, onBack }: { ticker: string; onBack
           <StatRow label="Price/Book"    value={fmt(info.price_to_book, "", "", 2)} />
           <StatRow label="Revenue"       value={fmt(info.revenue, "$")} />
         </div>
+      </div>
+
+      {/* Valuation */}
+      <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginBottom: 14 }}>
+        <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Valuation</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+          <MetricCard
+            label="P/E Ratio"
+            value={info.pe_ratio != null ? info.pe_ratio.toFixed(2) : "—"}
+            tooltip="Price divided by earnings per share. Lower = cheaper relative to earnings. S&P 500 average ~22."
+          />
+          <MetricCard
+            label="Forward P/E"
+            value={info.forward_pe != null ? info.forward_pe.toFixed(2) : "—"}
+            tooltip="Based on estimated future earnings. Lower than trailing P/E suggests growth expected."
+          />
+          <MetricCard
+            label="Price / Book"
+            value={info.price_to_book != null ? info.price_to_book.toFixed(2) : "—"}
+            tooltip="Price relative to book value. Under 1.0 means trading below asset value."
+          />
+          <MetricCard
+            label="Dividend Yield"
+            value={info.dividend_yield != null ? `${info.dividend_yield.toFixed(2)}%` : "0%"}
+            tooltip="Annual dividend as % of stock price. 0% means no dividend paid."
+          />
+          <MetricCard
+            label="Revenue Growth"
+            value={info.revenue_growth != null ? `${info.revenue_growth.toFixed(1)}%` : "—"}
+            tooltip="How fast the company is growing its top line year over year."
+          />
+          <MetricCard
+            label="Profit Margin"
+            value={info.profit_margin != null ? `${info.profit_margin.toFixed(1)}%` : "—"}
+            tooltip="% of revenue that becomes profit. Higher is better."
+          />
+        </div>
+      </div>
+
+      {/* Additional Metrics */}
+      <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginBottom: 14 }}>
+        <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Additional Metrics</p>
+        {(() => {
+          const earningsColor = (() => {
+            if (!info.earnings_date) return undefined;
+            const days = Math.round((new Date(info.earnings_date).getTime() - Date.now()) / 86400000);
+            return days >= 0 && days <= 14 ? "#c9a84c" : undefined;
+          })();
+          const earningsLabel = (() => {
+            if (!info.earnings_date) return "—";
+            const days = Math.round((new Date(info.earnings_date).getTime() - Date.now()) / 86400000);
+            if (days < 0) return info.earnings_date.slice(0, 10);
+            return `Earnings in ${days} day${days === 1 ? "" : "s"}`;
+          })();
+          return (
+            <>
+              <AddlMetricRow
+                label="Next Earnings Date"
+                value={earningsLabel}
+                tooltip="Next scheduled earnings report date."
+                valueColor={earningsColor}
+              />
+              <AddlMetricRow
+                label="Debt / Equity"
+                value={info.debt_to_equity != null ? info.debt_to_equity.toFixed(2) : "—"}
+                tooltip="How much debt vs shareholder equity. Above 2.0 is considered high leverage."
+              />
+              <AddlMetricRow
+                label="Short Interest Ratio"
+                value={info.short_ratio != null ? info.short_ratio.toFixed(2) : "—"}
+                tooltip="Days to cover short positions. Above 10 is heavily shorted."
+              />
+              <AddlMetricRow
+                label="Insider Ownership"
+                value={info.insider_ownership != null ? `${info.insider_ownership.toFixed(1)}%` : "—"}
+                tooltip="% of shares held by insiders. High = management has skin in the game."
+              />
+            </>
+          );
+        })()}
       </div>
 
       {/* News */}

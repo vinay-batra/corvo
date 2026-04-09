@@ -1487,6 +1487,29 @@ def stock_detail(ticker: str, request: Request):
                 for ts, row in hist_1d.iterrows()
             ]
 
+        def _round(v, digits):
+            return round(v, digits) if v is not None else None
+
+        # Earnings date — take first item if list (yfinance returns list of timestamps)
+        earnings_raw = info.get("earningsDate")
+        earnings_date = None
+        if earnings_raw:
+            if isinstance(earnings_raw, (list, tuple)) and len(earnings_raw) > 0:
+                earnings_raw = earnings_raw[0]
+            try:
+                import datetime as _dt
+                if hasattr(earnings_raw, "isoformat"):
+                    earnings_date = earnings_raw.isoformat()
+                else:
+                    earnings_date = _dt.datetime.fromtimestamp(int(earnings_raw)).date().isoformat()
+            except Exception:
+                earnings_date = None
+
+        divi_raw = si("dividendYield", None)
+        rev_growth_raw = si("revenueGrowth", None)
+        profit_margin_raw = si("profitMargins", None)
+        insider_raw = si("heldPercentInsiders", None)
+
         return {
             "ticker": ticker,
             "name": info.get("longName") or info.get("shortName") or ticker,
@@ -1494,22 +1517,29 @@ def stock_detail(ticker: str, request: Request):
             "change": round(change, 4),
             "change_pct": round(change_pct, 4),
             "market_cap": si("marketCap", 0),
-            "pe_ratio": si("trailingPE", None),
-            "forward_pe": si("forwardPE", None),
+            "pe_ratio": _round(si("trailingPE", None), 2),
+            "forward_pe": _round(si("forwardPE", None), 2),
             "eps": si("trailingEps", None),
-            "dividend_yield": si("dividendYield", None),
+            "dividend_yield": _round(divi_raw * 100, 2) if divi_raw is not None else None,
             "week52_high": si("fiftyTwoWeekHigh", None),
             "week52_low": si("fiftyTwoWeekLow", None),
             "volume": si("volume", 0),
             "avg_volume": si("averageVolume", 0),
             "beta": si("beta", None),
-            "price_to_book": si("priceToBook", None),
+            "price_to_book": _round(si("priceToBook", None), 2),
             "revenue": si("totalRevenue", None),
             "net_income": si("netIncomeToCommon", None),
             "analyst_rating": analyst_rating,
             "sector": info.get("sector") or "",
             "industry": info.get("industry") or "",
             "chart_1d": chart_1d,
+            # — new fields —
+            "earnings_date": earnings_date,
+            "revenue_growth": _round(rev_growth_raw * 100, 1) if rev_growth_raw is not None else None,
+            "profit_margin": _round(profit_margin_raw * 100, 1) if profit_margin_raw is not None else None,
+            "debt_to_equity": _round(si("debtToEquity", None), 2),
+            "short_ratio": _round(si("shortRatio", None), 2),
+            "insider_ownership": _round(insider_raw * 100, 1) if insider_raw is not None else None,
         }
     except Exception as e:
         print(f"Stock detail error for {ticker}: {e}")
