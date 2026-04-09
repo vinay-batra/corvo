@@ -8,6 +8,7 @@ import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
   MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
   Sun, Moon, CandlestickChart, Sparkles, BookOpen,
+  Calendar, CheckCircle2,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
 import InfoModal from "../../components/InfoModal";
@@ -586,12 +587,14 @@ const PERF_RANGES = ["1W", "1M", "3M", "ALL"] as const;
 type PerfRange = typeof PERF_RANGES[number];
 
 function PortfolioPerformanceTrend({
-  history, range, setRange, loading,
+  history, range, setRange, loading, portfolioName, onAnalyze,
 }: {
   history: PerfSnapshot[];
   range: PerfRange;
   setRange: (r: PerfRange) => void;
   loading: boolean;
+  portfolioName: string;
+  onAnalyze: () => void;
 }) {
   const AMBER = "#c9a84c";
   const filtered = (() => {
@@ -603,60 +606,98 @@ function PortfolioPerformanceTrend({
     return history.filter(s => new Date(s.date) >= cutoff);
   })();
 
+  const hasChart = filtered.length >= 2;
+  const hasOneSnapshot = history.length === 1;
+
   return (
-    <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginTop: 12 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
-          <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Performance</span>
+    <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px var(--border)" }}>
+      <style>{`@keyframes perfPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.45;transform:scale(0.75)}}`}</style>
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: hasChart ? 16 : 20 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: portfolioName ? 5 : 0 }}>
+            <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1, flexShrink: 0 }} />
+            <Calendar size={11} style={{ color: "var(--text3)", flexShrink: 0 }} />
+            <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Performance</span>
+            <div title="Updates every time you analyze" style={{ display: "flex", alignItems: "center", cursor: "default" }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: AMBER, animation: "perfPulse 2s ease-in-out infinite" }} />
+            </div>
+          </div>
+          {portfolioName && (
+            <span style={{ fontSize: 11, color: "var(--text2)", marginLeft: 20, display: "block" }}>{portfolioName}</span>
+          )}
         </div>
-        <div style={{ display: "flex", gap: 4 }}>
-          {PERF_RANGES.map(r => (
-            <button key={r} onClick={() => setRange(r)}
-              style={{ padding: "3px 9px", fontSize: 10, borderRadius: 5, border: `0.5px solid ${range === r ? AMBER : "var(--border)"}`, background: range === r ? `${AMBER}18` : "transparent", color: range === r ? AMBER : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
-              {r}
-            </button>
-          ))}
-        </div>
+        {hasChart && (
+          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+            {PERF_RANGES.map(r => (
+              <button key={r} onClick={() => setRange(r)}
+                style={{ padding: "3px 9px", fontSize: 10, borderRadius: 5, border: `0.5px solid ${range === r ? AMBER : "var(--border)"}`, background: range === r ? `${AMBER}18` : "transparent", color: range === r ? AMBER : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
+                {r}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Body */}
       {loading ? (
         <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: 16, height: 16, border: "1.5px solid var(--border2)", borderTopColor: "var(--text)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         </div>
-      ) : filtered.length < 2 ? (
-        <p style={{ fontSize: 12, color: "var(--text3)", textAlign: "center", padding: "32px 0" }}>
-          Come back tomorrow to see your performance trend
-        </p>
+      ) : history.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "24px 16px 16px" }}>
+          <p style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", marginBottom: 8, letterSpacing: "-0.3px", lineHeight: 1.3 }}>
+            Your performance tracking starts today
+          </p>
+          <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, marginBottom: 20, maxWidth: 400, margin: "0 auto 20px" }}>
+            Analyze this portfolio daily to build your performance history.{" "}
+            Come back tomorrow to see your first trend.
+          </p>
+          <button onClick={onAnalyze}
+            style={{ padding: "8px 22px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: AMBER, color: "#0a0e14", cursor: "pointer", letterSpacing: 0.5, transition: "opacity 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
+            Analyze Now
+          </button>
+        </div>
+      ) : hasOneSnapshot ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 8px", justifyContent: "center" }}>
+          <CheckCircle2 size={18} style={{ color: AMBER, flexShrink: 0 }} />
+          <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6 }}>
+            First snapshot saved!{" "}
+            <span style={{ color: "var(--text3)" }}>Analyze again tomorrow to see your trend line.</span>
+          </p>
+        </div>
       ) : (
-        <ComparePlot
-          data={[{
-            type: "scatter",
-            mode: "lines",
-            x: filtered.map(s => s.date),
-            y: filtered.map(s => +((s.cumulative_return) * 100).toFixed(3)),
-            line: { color: AMBER, width: 2 },
-            fill: "tozeroy",
-            fillcolor: `${AMBER}14`,
-            hovertemplate: "%{x}<br><b>%{y:.2f}%</b><extra></extra>",
-          }]}
-          layout={{
-            height: 160,
-            margin: { t: 4, r: 4, b: 32, l: 44 },
-            paper_bgcolor: "transparent",
-            plot_bgcolor: "transparent",
-            xaxis: { showgrid: false, zeroline: false, tickfont: { size: 9, color: "#8a8a8a" }, type: "date" },
-            yaxis: { showgrid: true, gridcolor: "rgba(255,255,255,0.05)", zeroline: true, zerolinecolor: "rgba(255,255,255,0.12)", tickfont: { size: 9, color: "#8a8a8a" }, ticksuffix: "%" },
-          }}
-          config={{ displayModeBar: false, responsive: true }}
-          style={{ width: "100%" }}
-          useResizeHandler
-        />
-      )}
-      {filtered.length >= 2 && (
-        <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 6 }}>
-          {filtered.length} data point{filtered.length !== 1 ? "s" : ""} · updated on each analysis
-        </p>
+        <>
+          <ComparePlot
+            data={[{
+              type: "scatter",
+              mode: "lines",
+              x: filtered.map(s => s.date),
+              y: filtered.map(s => +((s.cumulative_return) * 100).toFixed(3)),
+              line: { color: AMBER, width: 2 },
+              fill: "tozeroy",
+              fillcolor: `${AMBER}14`,
+              hovertemplate: "%{x}<br><b>%{y:.2f}%</b><extra></extra>",
+            }]}
+            layout={{
+              height: 160,
+              margin: { t: 4, r: 4, b: 32, l: 44 },
+              paper_bgcolor: "transparent",
+              plot_bgcolor: "transparent",
+              xaxis: { showgrid: false, zeroline: false, tickfont: { size: 9, color: "#8a8a8a" }, type: "date" },
+              yaxis: { showgrid: true, gridcolor: "rgba(255,255,255,0.05)", zeroline: true, zerolinecolor: "rgba(255,255,255,0.12)", tickfont: { size: 9, color: "#8a8a8a" }, ticksuffix: "%" },
+            }}
+            config={{ displayModeBar: false, responsive: true }}
+            style={{ width: "100%" }}
+            useResizeHandler
+          />
+          <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 6 }}>
+            {filtered.length} data point{filtered.length !== 1 ? "s" : ""} · updated on each analysis
+          </p>
+        </>
       )}
     </div>
   );
@@ -710,6 +751,7 @@ export default function AppPage() {
   const [shareToast, setShareToast] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
+  const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
   const [perfHistory, setPerfHistory] = useState<PerfSnapshot[]>([]);
   const [perfRange, setPerfRange] = useState<PerfRange>("ALL");
   const [perfLoading, setPerfLoading] = useState(false);
@@ -846,12 +888,13 @@ export default function AppPage() {
         const currentTickers = valid.map(a => a.ticker).sort().join(",");
         (async () => {
           try {
-            const { data: pfs } = await supabase.from("portfolios").select("id,tickers").eq("user_id", userId);
+            const { data: pfs } = await supabase.from("portfolios").select("id,name,tickers").eq("user_id", userId);
             const match = pfs?.find((p: any) =>
               ((p.tickers as string[]) || []).slice().sort().join(",") === currentTickers
             );
             if (match) {
               setSavedPortfolioId(match.id);
+              setSavedPortfolioName(match.name || "");
               const API_SNAP = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
               fetch(`${API_SNAP}/portfolio/snapshot`, {
                 method: "POST",
@@ -879,6 +922,36 @@ export default function AppPage() {
 
   const handleAnalyzeRef = useRef(handleAnalyze);
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
+
+  // ── Detect saved portfolio from assets (pre-analysis) ───────────────────────
+  useEffect(() => {
+    if (!assets.length) { setSavedPortfolioId(null); setSavedPortfolioName(""); return; }
+    const currentTickers = assets.map(a => a.ticker).filter(Boolean).sort().join(",");
+    if (!currentTickers) return;
+
+    // Check localStorage first (works for logged-out users too)
+    try {
+      const saved: any[] = JSON.parse(localStorage.getItem("corvo_saved_portfolios") || "[]");
+      const match = saved.find(p => {
+        const t = (p.tickers || (p.assets || []).map((a: any) => a.ticker)).slice().sort().join(",");
+        return t === currentTickers;
+      });
+      if (match) { setSavedPortfolioId(match.id); setSavedPortfolioName(match.name || ""); return; }
+    } catch {}
+
+    // Supabase fallback for logged-in users
+    if (!userId) { setSavedPortfolioId(null); setSavedPortfolioName(""); return; }
+    (async () => {
+      try {
+        const { data: pfs } = await supabase.from("portfolios").select("id,name,tickers").eq("user_id", userId);
+        const match = pfs?.find((p: any) =>
+          ((p.tickers as string[]) || []).slice().sort().join(",") === currentTickers
+        );
+        if (match) { setSavedPortfolioId(match.id); setSavedPortfolioName(match.name || ""); }
+        else { setSavedPortfolioId(null); setSavedPortfolioName(""); }
+      } catch { setSavedPortfolioId(null); setSavedPortfolioName(""); }
+    })();
+  }, [assets, userId]);
 
   // ── Load portfolio performance history when savedPortfolioId is known ────────
   useEffect(() => {
@@ -1368,6 +1441,16 @@ export default function AppPage() {
             ) : !data && !loading ? (
               <motion.div key="empty" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Empty onPreset={(a) => setAssets(a.map(x => ({ ...x, weight: Math.round(x.weight * 100) })))} />
+                {savedPortfolioId && (
+                  <PortfolioPerformanceTrend
+                    history={perfHistory}
+                    range={perfRange}
+                    setRange={setPerfRange}
+                    loading={perfLoading}
+                    portfolioName={savedPortfolioName}
+                    onAnalyze={handleAnalyze}
+                  />
+                )}
               </motion.div>
             ) : loading ? (
               <motion.div key="loading" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
@@ -1395,6 +1478,19 @@ export default function AppPage() {
                     <PerformanceChart data={data} />
                   </Card>
                 </motion.div>
+                {/* Portfolio Performance — prominent, full-width, before AI insights */}
+                {savedPortfolioId && (
+                  <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} transition={{ duration: 0.2 }}>
+                    <PortfolioPerformanceTrend
+                      history={perfHistory}
+                      range={perfRange}
+                      setRange={setPerfRange}
+                      loading={perfLoading}
+                      portfolioName={savedPortfolioName}
+                      onAnalyze={handleAnalyze}
+                    />
+                  </motion.div>
+                )}
                 <motion.div
                   className="c-bgrid"
                   style={{ ...S.bottomGrid }}
@@ -1451,14 +1547,6 @@ export default function AppPage() {
                       Save this portfolio →
                     </button>
                   </motion.div>
-                )}
-                {savedPortfolioId && (
-                  <PortfolioPerformanceTrend
-                    history={perfHistory}
-                    range={perfRange}
-                    setRange={setPerfRange}
-                    loading={perfLoading}
-                  />
                 )}
                 <PortfolioHistory />
               </motion.div>
