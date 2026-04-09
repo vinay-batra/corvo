@@ -1365,6 +1365,16 @@ def get_email_html(display_name=None, email_type="welcome", user_id=None):
             </td>
           </tr>
 
+          <!-- Spam notice -->
+          <tr>
+            <td align="center" style="padding-bottom:20px;">
+              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
+                         color:#444;text-align:center;line-height:1.8;">
+                If you don&#39;t see our emails, check your spam folder and mark us as safe.
+              </p>
+            </td>
+          </tr>
+
           <!-- Divider -->
           <tr>
             <td style="border-top:1px solid #1e1e1e;padding-top:24px;">
