@@ -306,29 +306,6 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
   );
 }
 
-/* ─── PDF Reports bento card ─── */
-function BentoPDFCard({ delay = 0 }: { delay?: number }) {
-  return (
-    <BentoCard delay={delay} style={{ gridArea: "pdfreports", padding: "28px" }}>
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>PDF Reports</p>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 8, letterSpacing: -0.5 }}>Export & share</h3>
-      <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", lineHeight: 1.7, marginBottom: 24 }}>Generate a full PDF report of your portfolio analysis in one click.</p>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 12, padding: "14px 16px" }}>
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <rect width="32" height="32" rx="8" fill="rgba(201,168,76,0.1)" />
-          <path d="M10 8h8l6 6v12a2 2 0 01-2 2H10a2 2 0 01-2-2V10a2 2 0 012-2z" stroke="#c9a84c" strokeWidth="1.5" strokeLinejoin="round" />
-          <path d="M18 8v6h6" stroke="#c9a84c" strokeWidth="1.5" strokeLinejoin="round" />
-          <path d="M16 18v5M13.5 20.5L16 23l2.5-2.5" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <div>
-          <p style={{ fontSize: 11, fontWeight: 600, color: "#e8e0cc", marginBottom: 2 }}>portfolio-report.pdf</p>
-          <p style={{ fontSize: 10, color: "rgba(232,224,204,0.3)" }}>Ready to download · 2.4 MB</p>
-        </div>
-      </div>
-    </BentoCard>
-  );
-}
-
 /* ─── Stock Deep Dives bento card ─── */
 function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
   return (
@@ -398,6 +375,21 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
             <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 3 }}>Paths · Horizon</p>
             <p style={{ fontSize: 11, color: "rgba(232,224,204,0.5)", fontFamily: "Space Mono,monospace" }}>300 · 30yr</p>
           </div>
+        </div>
+      </div>
+      {/* Divider + PDF Reports section */}
+      <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "24px 0" }} />
+      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v8M5 7l3 3 3-3" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M3 12h10" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </div>
+        <div>
+          <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 5 }}>PDF Reports</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 5, letterSpacing: -0.3 }}>Export & share</p>
+          <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65 }}>Generate a full portfolio report in one click.</p>
         </div>
       </div>
     </BentoCard>
@@ -717,14 +709,13 @@ export default function Landing() {
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>What Corvo Does</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,44px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1 }}>Everything your portfolio<br />actually needs</h2>
           </Reveal>
-          <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist montecarlo" "learnxp deepdives pdfreports"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
+          <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist montecarlo" "learnxp deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
             <BentoPortfolioCard delay={0} />
             <BentoAIChatCard delay={0.1} />
             <BentoWatchlistCard delay={0.15} />
             <BentoMonteCarloCard delay={0.05} />
             <BentoLearnCard delay={0.2} />
             <BentoDeepDivesCard delay={0.25} />
-            <BentoPDFCard delay={0.3} />
           </div>
         </div>
       </section>
