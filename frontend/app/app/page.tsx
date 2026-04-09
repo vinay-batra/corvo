@@ -40,6 +40,7 @@ import Watchlist from "../../components/Watchlist";
 import PortfolioHistory from "../../components/PortfolioHistory";
 import EmailPreferences from "../../components/EmailPreferences";
 import ReferralModal from "../../components/ReferralModal";
+import SettingsPage from "../settings/page";
 
 const TABS = [
   { id: "overview",  label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -396,6 +397,7 @@ export default function AppPage() {
   const [showGoals, setShowGoals]         = useState(false);
   const [showTour, setShowTour]           = useState(false);
   const [showProfile, setShowProfile]     = useState(false);
+  const [showSettings, setShowSettings]   = useState(false);
   const [benchOpen, setBenchOpen]         = useState(false);
   const [sidebarOpen, setSidebarOpen]     = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -416,6 +418,8 @@ export default function AppPage() {
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
   const [sidePrices, setSidePrices] = useState<Record<string, { price: number; change_pct: number }>>({});
+  const [userId, setUserId]         = useState<string | null>(null);
+  const referralCodeRef             = useRef<string>("");
   const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
   const S = useS();
@@ -432,6 +436,13 @@ export default function AppPage() {
     } catch {}
 
     const params = new URLSearchParams(window.location.search);
+
+    // Capture referral code from ?ref= and persist it for the first portfolio analysis
+    const refCode = params.get("ref") || localStorage.getItem("corvo_pending_referral") || "";
+    if (refCode) {
+      referralCodeRef.current = refCode;
+      localStorage.setItem("corvo_pending_referral", refCode);
+    }
 
     // Portfolio sharing via base64 URL param
     const portfolioParam = params.get("portfolio");
@@ -476,6 +487,7 @@ export default function AppPage() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setUserId(user.id);
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -520,7 +532,13 @@ export default function AppPage() {
     setLoading(true); setData(null); setErrorMsg(null); setAnalyzeComplete(false);
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
-      const result = await fetchPortfolio(valid, period, benchmark);
+      const pendingRef = referralCodeRef.current;
+      const result = await fetchPortfolio(valid, period, benchmark, userId || "", pendingRef);
+      // Clear pending referral after first successful analysis
+      if (pendingRef) {
+        referralCodeRef.current = "";
+        localStorage.removeItem("corvo_pending_referral");
+      }
       setData(result);
       setActiveTab("overview");
       setAnalyzeComplete(true);
@@ -939,7 +957,7 @@ export default function AppPage() {
               </button>
             )}
             <ExportPDF data={data} assets={assets} />
-            <UserMenu onEmailPrefs={() => setShowEmailPrefs(true)} onReferral={() => setShowReferral(true)} />
+            <UserMenu onEmailPrefs={() => setShowEmailPrefs(true)} onReferral={() => setShowReferral(true)} onSettings={() => setShowSettings(true)} />
           </div>
         </header>
 
@@ -1129,6 +1147,15 @@ export default function AppPage() {
       </AnimatePresence>
       <AnimatePresence>
         {showProfile && <ProfileEditor goals={goals} onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }} onClose={() => setShowProfile(false)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, zIndex: 490, background: "var(--bg)", overflowY: "auto" }}>
+            <SettingsPage onClose={() => setShowSettings(false)} />
+          </motion.div>
+        )}
       </AnimatePresence>
       <AnimatePresence>
         {showReferral && <ReferralModal onClose={() => setShowReferral(false)} />}

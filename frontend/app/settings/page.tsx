@@ -46,7 +46,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   );
 }
 
-export default function SettingsPage() {
+export default function SettingsPage({ onClose }: { onClose?: () => void }) {
   const [user, setUser]               = useState<any>(null);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl]     = useState<string | null>(null);
@@ -187,11 +187,19 @@ export default function SettingsPage() {
 
       {/* Header */}
       <header style={{ height: 52, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg)", position: "sticky", top: 0, zIndex: 10 }}>
-        <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
-          onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-          onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
-          ← Back
-        </Link>
+        {onClose ? (
+          <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", fontSize: 12, cursor: "pointer", transition: "color 0.15s", padding: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
+            ← Back
+          </button>
+        ) : (
+          <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
+            ← Back
+          </Link>
+        )}
         <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
         <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Settings</span>

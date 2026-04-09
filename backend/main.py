@@ -180,11 +180,17 @@ def portfolio(
     tickers: str = "AAPL,MSFT",
     weights: str = "",
     period: str = "1y",
-    benchmark: str = "^GSPC"
+    benchmark: str = "^GSPC",
+    user_id: str = "",
+    referral_code: str = "",
 ):
     ip = request.client.host if request.client else "unknown"
     if check_rate_limit(ip, "portfolio", 30, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
+    # Process referral bonus on first analysis
+    if user_id and referral_code:
+        import threading
+        threading.Thread(target=process_referral_bonus, args=(user_id, referral_code), daemon=True).start()
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers provided")
@@ -713,19 +719,149 @@ Write in a professional but accessible tone. Be specific — reference actual nu
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── Daily chat limit helpers ───────────────────────────────────────────────────
+
+BASE_DAILY_CHAT_LIMIT = 15
+
+def _sb_headers():
+    return {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "Content-Type": "application/json",
+    }
+
+def get_daily_chat_limit(user_id: str) -> int:
+    """Return effective daily chat limit: base 15 + bonus (max 40 total)."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return BASE_DAILY_CHAT_LIMIT
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}&select=bonus_messages_per_day",
+            headers=_sb_headers(), timeout=5,
+        )
+        if resp.status_code == 200:
+            rows = resp.json()
+            if rows:
+                bonus = rows[0].get("bonus_messages_per_day") or 0
+                return min(BASE_DAILY_CHAT_LIMIT + int(bonus), 40)
+    except Exception as e:
+        print(f"[chat-limit] get_daily_chat_limit error: {e}")
+    return BASE_DAILY_CHAT_LIMIT
+
+
+def get_daily_chat_count(user_id: str) -> int:
+    """Return messages sent by this user today (UTC day boundary)."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return 0
+    try:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/chat_usage?user_id=eq.{user_id}&created_at=gte.{today}T00:00:00Z&select=id",
+            headers={**_sb_headers(), "Prefer": "count=exact"},
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            content_range = resp.headers.get("Content-Range", "")
+            if "/" in content_range:
+                return int(content_range.split("/")[1])
+            return len(resp.json())
+    except Exception as e:
+        print(f"[chat-limit] get_daily_chat_count error: {e}")
+    return 0
+
+
+def insert_chat_usage(user_id: str):
+    """Record one chat message for this user in chat_usage."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return
+    try:
+        requests.post(
+            f"{SUPABASE_URL}/rest/v1/chat_usage",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json={"user_id": user_id},
+            timeout=5,
+        )
+    except Exception as e:
+        print(f"[chat-limit] insert_chat_usage error: {e}")
+
+
+def process_referral_bonus(user_id: str, referral_code: str):
+    """On a user's first portfolio analysis, give the referrer +5 bonus messages (max 25 bonus)."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id or not referral_code:
+        return
+    try:
+        # Check if this user has already been counted as a referral
+        chk = requests.get(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}&select=referral_credited",
+            headers=_sb_headers(), timeout=5,
+        )
+        if chk.status_code != 200:
+            return
+        rows = chk.json()
+        if not rows or rows[0].get("referral_credited"):
+            return  # already credited or user not found
+
+        # Find referrer: referral_code is first 8 hex chars of their UUID (without dashes)
+        ref_prefix = f"{referral_code[:8]}-"  # UUID starts with "XXXXXXXX-"
+        ref_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=ilike.{ref_prefix}%&select=id,bonus_messages_per_day",
+            headers=_sb_headers(), timeout=5,
+        )
+        if ref_resp.status_code != 200:
+            return
+        ref_rows = ref_resp.json()
+        if not ref_rows:
+            return
+        referrer_id = ref_rows[0]["id"]
+        if referrer_id == user_id:
+            return  # self-referral guard
+
+        current_bonus = int(ref_rows[0].get("bonus_messages_per_day") or 0)
+        new_bonus = min(current_bonus + 5, 25)
+
+        # Increment referrer bonus
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{referrer_id}",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json={"bonus_messages_per_day": new_bonus, "updated_at": datetime.now(timezone.utc).isoformat()},
+            timeout=5,
+        )
+        # Mark referred user as credited
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json={"referral_credited": True, "updated_at": datetime.now(timezone.utc).isoformat()},
+            timeout=5,
+        )
+        print(f"[referral] credited referrer {referrer_id} +5 bonus (total: {new_bonus}) for new user {user_id}")
+    except Exception as e:
+        print(f"[referral] process_referral_bonus error: {e}")
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list = []
     portfolio_context: dict = {}
     user_goals: dict = {}
     market_context: str = ""
+    user_id: str | None = None
 
 
 @app.post("/chat")
 def chat(req: ChatRequest, request: Request):
-    ip = request.client.host if request.client else "unknown"
-    if check_rate_limit(ip, "chat", 20, 3600):
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
+    # Daily limit check (per-user via Supabase); fall back to IP rate limit for unauthenticated
+    if req.user_id:
+        daily_limit = get_daily_chat_limit(req.user_id)
+        daily_count = get_daily_chat_count(req.user_id)
+        if daily_count >= daily_limit:
+            raise HTTPException(
+                status_code=429,
+                detail="Daily message limit reached. Invite a friend to get +5 more messages per day.",
+            )
+    else:
+        ip = request.client.host if request.client else "unknown"
+        if check_rate_limit(ip, "chat", 20, 3600):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
     try:
         import anthropic
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -808,7 +944,11 @@ RESPONSE RULES:
             system=system,
             messages=messages,
         )
-        return {"reply": response.content[0].text}
+        reply = response.content[0].text
+        # Record usage for daily limit tracking
+        if req.user_id:
+            insert_chat_usage(req.user_id)
+        return {"reply": reply}
     except HTTPException:
         raise
     except Exception as e:
