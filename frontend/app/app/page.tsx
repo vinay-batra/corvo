@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
   GraduationCap, MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
-  Sun, Moon, CandlestickChart, Command, Sparkles,
+  Sun, Moon, CandlestickChart, Sparkles,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
 import InfoModal from "../../components/InfoModal";
@@ -417,7 +417,6 @@ export default function AppPage() {
   const [sidePrices, setSidePrices] = useState<Record<string, { price: number; change_pct: number }>>({});
   const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
-  const [currencyOpen, setCurrencyOpen] = useState(false);
   const S = useS();
 
   useEffect(() => {
@@ -913,34 +912,6 @@ export default function AppPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            {/* Currency selector */}
-            <div style={{ position: "relative" }}>
-              <button onClick={() => setCurrencyOpen(o => !o)}
-                style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text2)", display: "flex", alignItems: "center", gap: 4, transition: "background 0.15s", flexShrink: 0, fontFamily: "var(--font-mono)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                {CURRENCY_SYMBOLS[currency]}{currency} <span style={{ fontSize: 8 }}>▾</span>
-              </button>
-              <AnimatePresence>
-                {currencyOpen && (
-                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 100, boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
-                    {CURRENCIES.map(c => (
-                      <button key={c} onClick={() => { setCurrency(c); setCurrencyOpen(false); }}
-                        style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: c === currency ? "var(--bg3)" : "transparent", border: "none", cursor: "pointer", fontSize: 12, color: c === currency ? "var(--text)" : "var(--text2)", fontFamily: "var(--font-mono)", display: "flex", gap: 6 }}
-                        onMouseEnter={e => { if (c !== currency) e.currentTarget.style.background = "var(--bg3)"; }}
-                        onMouseLeave={e => { if (c !== currency) e.currentTarget.style.background = "transparent"; }}>
-                        <span style={{ color: "#c9a84c", width: 16 }}>{CURRENCY_SYMBOLS[c]}</span>{c}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            {/* Command palette hint */}
-            <IconBtn onClick={() => setPaletteOpen(true)} title="Command palette (⌘K)">
-              <Command size={14} />
-            </IconBtn>
             {/* Alerts bell */}
             <button onClick={() => setShowAlerts(true)} title="Alerts"
               style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s" }}
