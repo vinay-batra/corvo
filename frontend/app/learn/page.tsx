@@ -1580,11 +1580,16 @@ export default function LearnPage() {
                 <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase" }}>Financial Arcade</p>
               </div>
               <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Learn by doing</h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 40 }}>
+              <motion.div
+                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 40 }}
+                initial="hidden" animate="visible"
+                variants={{ visible: { transition: { staggerChildren: 0.07 } } }}>
                 {ARCADE_GAMES.map(g => {
                   const GIcon = g.Icon;
                   return (
-                    <button key={g.id} onClick={() => { setActiveGame(g.id); setActiveSection("game"); }}
+                    <motion.button
+                      variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                      key={g.id} onClick={() => { setActiveGame(g.id); setActiveSection("game"); }}
                       style={{ padding: "16px 18px", background: "var(--card-bg)", border: `0.5px solid ${g.color}33`, borderRadius: 14, cursor: "pointer", textAlign: "left", transition: "all 0.2s", position: "relative", overflow: "hidden" }}
                       onMouseEnter={e => { e.currentTarget.style.background = `${g.color}0d`; e.currentTarget.style.borderColor = `${g.color}66`; e.currentTarget.style.boxShadow = `0 0 0 1px ${g.color}33`; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "var(--card-bg)"; e.currentTarget.style.borderColor = `${g.color}33`; e.currentTarget.style.boxShadow = "none"; }}>
@@ -1599,10 +1604,10 @@ export default function LearnPage() {
                       </div>
                       <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 4 }}>{g.title}</p>
                       <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.5 }}>{g.desc}</p>
-                    </button>
+                    </motion.button>
                   );
                 })}
-              </div>
+              </motion.div>
 
               {/* Lessons */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
@@ -1610,7 +1615,10 @@ export default function LearnPage() {
                 <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase" }}>Lessons</p>
               </div>
               <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Core concepts</h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <motion.div
+                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+                initial="hidden" animate="visible"
+                variants={{ visible: { transition: { staggerChildren: 0.08 } } }}>
                 {LESSONS.map((l, idx) => {
                   const prog = lessonProgress[l.id] ?? [];
                   const isMastered = prog.length >= l.quiz.length;
@@ -1618,7 +1626,9 @@ export default function LearnPage() {
                   const isLocked   = idx > 0 && !completed.includes(LESSONS[idx - 1].id) && (lessonProgress[LESSONS[idx - 1].id]?.length ?? 0) < LESSONS[idx - 1].quiz.length;
                   const borderColor = isMastered ? "rgba(167,139,250,0.35)" : isStarted ? "rgba(76,175,125,0.3)" : "var(--border)";
                   return (
-                    <div key={l.id} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                    <motion.div key={l.id}
+                      variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+                      style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                       <button
                         onClick={() => { if (!isLocked) { setActiveLesson(l); setActiveSection("lesson"); } }}
                         disabled={isLocked}
@@ -1649,10 +1659,10 @@ export default function LearnPage() {
                           <BrainCircuit size={13} color={AMBER} strokeWidth={1.5} /> AI Practice
                         </button>
                       )}
-                    </div>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
 
               <Leaderboard myPoints={learnPoints} />
             </motion.div>

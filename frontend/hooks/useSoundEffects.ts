@@ -4,7 +4,9 @@ const STORAGE_KEY = "corvo_sound_effects";
 
 function isEnabled(): boolean {
   if (typeof window === "undefined") return false;
-  return localStorage.getItem(STORAGE_KEY) === "true";
+  const stored = localStorage.getItem(STORAGE_KEY);
+  // Default ON if never set
+  return stored === null ? true : stored === "true";
 }
 
 // Singleton AudioContext — reused across calls to avoid hitting the limit
@@ -64,23 +66,28 @@ export function useSoundEffects() {
     playTone(800, 0.03, "sine", 0.08);
   }
 
-  /** Frequency sweep whoosh — for tab switches */
+  /** Smooth whoosh — for tab switches */
   function whoosh() {
-    console.log("[sound] playing sound: whoosh", "enabled:", isEnabled());
     if (!isEnabled()) return;
     const ac = getCtx();
     if (!ac) return;
     const osc = ac.createOscillator();
+    const filter = ac.createBiquadFilter();
     const gain = ac.createGain();
-    osc.connect(gain);
+    osc.connect(filter);
+    filter.connect(gain);
     gain.connect(ac.destination);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(800, ac.currentTime);
     osc.type = "sine";
-    osc.frequency.setValueAtTime(400, ac.currentTime);
-    osc.frequency.linearRampToValueAtTime(200, ac.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.06, ac.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.18);
+    osc.frequency.setValueAtTime(200, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ac.currentTime + 0.15);
+    // Quick attack (10ms), then decay to 0 over 140ms
+    gain.gain.setValueAtTime(0, ac.currentTime);
+    gain.gain.linearRampToValueAtTime(0.15, ac.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.15);
     osc.start(ac.currentTime);
-    osc.stop(ac.currentTime + 0.2);
+    osc.stop(ac.currentTime + 0.16);
   }
 
   /** Two-tone chime — for analysis completion */

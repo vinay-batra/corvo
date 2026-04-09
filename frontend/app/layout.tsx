@@ -8,6 +8,16 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Corvo — Portfolio Intelligence",
     description: "AI-powered portfolio analysis. Sharpe ratio, Monte Carlo simulation, health score, and AI chat for your investments.",
+    url: "https://corvo.capital",
+    siteName: "Corvo",
+    images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630, alt: "Corvo — Portfolio Intelligence" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Corvo — Portfolio Intelligence",
+    description: "AI-powered portfolio analysis. Sharpe ratio, Monte Carlo simulation, health score, and AI chat for your investments.",
+    images: ["https://corvo.capital/og-image.png"],
   },
 };
 

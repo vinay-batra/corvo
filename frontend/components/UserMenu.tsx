@@ -9,9 +9,11 @@ interface UserMenuProps {
   onEmailPrefs?: () => void;
   onReferral?: () => void;
   onSettings?: () => void;
+  avatarUrl?: string | null;
+  displayName?: string;
 }
 
-export default function UserMenu({ onEmailPrefs, onReferral, onSettings }: UserMenuProps) {
+export default function UserMenu({ onEmailPrefs, onReferral, onSettings, avatarUrl, displayName }: UserMenuProps) {
   const [user, setUser] = useState<any>(null);
   const [open, setOpen] = useState(false);
 
@@ -29,16 +31,23 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings }: UserM
       onMouseLeave={e => { (e.target as any).style.background = "transparent"; }}>LOG IN</a>
   );
 
+  const label = displayName || user.email?.split("@")[0] || "";
+  const initials = label[0]?.toUpperCase() || "?";
+
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setOpen(!open)}
         style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}
         onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"}
         onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-        <div style={{ width: 24, height: 24, borderRadius: "50%", background: C.amber2, border: "1px solid rgba(201,168,76,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.amber, fontWeight: 700 }}>
-          {user.email?.[0]?.toUpperCase()}
-        </div>
-        <span style={{ fontSize: 12, color: C.cream2 }}>{user.email?.split("@")[0]}</span>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="Avatar" style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(201,168,76,0.35)", flexShrink: 0 }} />
+        ) : (
+          <div style={{ width: 24, height: 24, borderRadius: "50%", background: C.amber2, border: "1px solid rgba(201,168,76,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.amber, fontWeight: 700, flexShrink: 0 }}>
+            {initials}
+          </div>
+        )}
+        <span style={{ fontSize: 12, color: C.cream2 }}>{label}</span>
       </button>
 
       <AnimatePresence>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import Cropper from "react-easy-crop";
 import { supabase } from "../../lib/supabase";
 import { SOUND_KEY } from "../../hooks/useSoundEffects";
 
@@ -46,7 +47,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   );
 }
 
-export default function SettingsPage({ onClose }: { onClose?: () => void }) {
+export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: () => void; onProfileSaved?: (profile: { displayName: string; avatarUrl: string | null }) => void }) {
   const [user, setUser]               = useState<any>(null);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl]     = useState<string | null>(null);
@@ -54,6 +55,12 @@ export default function SettingsPage({ onClose }: { onClose?: () => void }) {
   const [profileSaved, setProfileSaved]   = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Crop modal state
+  const [cropSrc, setCropSrc]       = useState<string | null>(null);
+  const [crop, setCrop]             = useState({ x: 0, y: 0 });
+  const [zoom, setZoom]             = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   // Preferences (localStorage)
   const [period, setPeriod]       = useState("1y");
@@ -82,7 +89,7 @@ export default function SettingsPage({ onClose }: { onClose?: () => void }) {
       setUser(user);
 
       // Load profile
-      const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url").eq("user_id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
       if (profile) { setDisplayName(profile.display_name || ""); setAvatarUrl(profile.avatar_url || null); }
 
       // Load email prefs
@@ -104,23 +111,64 @@ export default function SettingsPage({ onClose }: { onClose?: () => void }) {
   const saveProfile = async () => {
     if (!user) return;
     setSavingProfile(true);
-    await supabase.from("profiles").upsert({ user_id: user.id, display_name: displayName, updated_at: new Date().toISOString() });
+    await supabase.from("profiles").upsert({ id: user.id, display_name: displayName, updated_at: new Date().toISOString() }, { onConflict: "id" });
     setSavingProfile(false); setProfileSaved(true); setTimeout(() => setProfileSaved(false), 1500);
+    onProfileSaved?.({ displayName, avatarUrl });
   };
 
-  const handleAvatarUpload = async (file: File) => {
-    if (!user) return;
+  // Canvas crop utility
+  const getCroppedImg = async (imageSrc: string, pixelCrop: { x: number; y: number; width: number; height: number }): Promise<Blob | null> => {
+    const image = new Image();
+    image.src = imageSrc;
+    await new Promise<void>(resolve => { image.onload = () => resolve(); });
+    const canvas = document.createElement("canvas");
+    const size = Math.min(pixelCrop.width, pixelCrop.height);
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, size, size);
+    return new Promise(resolve => canvas.toBlob(blob => resolve(blob), "image/jpeg", 0.85));
+  };
+
+  const onCropComplete = useCallback((_: any, croppedPixels: any) => {
+    setCroppedAreaPixels(croppedPixels);
+  }, []);
+
+  const handleCropSave = async () => {
+    if (!cropSrc || !croppedAreaPixels || !user) return;
+    setCropSrc(null);
     setAvatarLoading(true);
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${user.id}/avatar.${ext}`;
-    const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+    const blob = await getCroppedImg(cropSrc, croppedAreaPixels);
+    if (!blob) { setAvatarLoading(false); return; }
+    // Compress if > 500KB by reducing quality
+    let finalBlob = blob;
+    if (blob.size > 500 * 1024) {
+      const img = new Image();
+      img.src = cropSrc;
+      await new Promise<void>(resolve => { img.onload = () => resolve(); });
+      const canvas = document.createElement("canvas");
+      canvas.width = 400; canvas.height = 400;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, croppedAreaPixels.x, croppedAreaPixels.y, croppedAreaPixels.width, croppedAreaPixels.height, 0, 0, 400, 400);
+      finalBlob = await new Promise(resolve => canvas.toBlob(b => resolve(b!), "image/jpeg", 0.75));
+    }
+    const path = `${user.id}/avatar.jpg`;
+    const { error } = await supabase.storage.from("avatars").upload(path, finalBlob, { upsert: true, contentType: "image/jpeg" });
     if (!error) {
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-      const url = data.publicUrl;
-      await supabase.from("profiles").upsert({ user_id: user.id, avatar_url: url, updated_at: new Date().toISOString() });
+      const url = `${data.publicUrl}?t=${Date.now()}`;
+      await supabase.from("profiles").upsert({ id: user.id, avatar_url: url, updated_at: new Date().toISOString() }, { onConflict: "id" });
       setAvatarUrl(url);
+      onProfileSaved?.({ displayName, avatarUrl: url });
     }
     setAvatarLoading(false);
+  };
+
+  const onFileSelect = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = e => { setCrop({ x: 0, y: 0 }); setZoom(1); setCropSrc(e.target?.result as string); };
+    reader.readAsDataURL(file);
   };
 
   const savePref = (key: string, val: string) => localStorage.setItem(key, val);
@@ -232,7 +280,7 @@ export default function SettingsPage({ onClose }: { onClose?: () => void }) {
               </button>
               <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 5 }}>JPG, PNG, WEBP · max 2MB</p>
               <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
-                onChange={e => { if (e.target.files?.[0]) handleAvatarUpload(e.target.files[0]); e.target.value = ""; }} />
+                onChange={e => { if (e.target.files?.[0]) onFileSelect(e.target.files[0]); e.target.value = ""; }} />
             </div>
           </div>
           {/* Display name */}
@@ -272,18 +320,13 @@ export default function SettingsPage({ onClose }: { onClose?: () => void }) {
               {BENCHMARKS.map(b => <option key={b.ticker} value={b.ticker}>{b.label}</option>)}
             </select>
           </Row>
-          <Row label="Currency">
-            <select value={currency} onChange={e => { setCurrency(e.target.value); savePref("corvo_currency", e.target.value); }} style={selectStyle}>
-              {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Row>
           <Row label="Theme" desc="Dark mode affects the app interface">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12, color: "var(--text3)" }}>{dark ? "Dark" : "Light"}</span>
               <Toggle on={dark} onChange={toggleTheme} />
             </div>
           </Row>
-          <Row label="Sound Effects" desc="Subtle audio feedback on interactions (off by default)">
+          <Row label="Sound Effects" desc="Subtle whoosh on tab switches and audio feedback on interactions (on by default)">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12, color: "var(--text3)" }}>{soundEnabled ? "On" : "Off"}</span>
               <Toggle on={soundEnabled} onChange={() => {
@@ -326,6 +369,51 @@ export default function SettingsPage({ onClose }: { onClose?: () => void }) {
           </div>
         </Section>
       </main>
+
+      {/* Avatar crop modal */}
+      <AnimatePresence>
+        {cropSrc && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <motion.div initial={{ opacity: 0, y: 10, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 420 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 16 }}>Crop photo</div>
+              {/* Crop area */}
+              <div style={{ position: "relative", width: "100%", height: 300, borderRadius: 10, overflow: "hidden", background: "#000" }}>
+                <Cropper
+                  image={cropSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              </div>
+              {/* Zoom slider */}
+              <div style={{ marginTop: 18, marginBottom: 20 }}>
+                <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 8 }}>Zoom</div>
+                <input type="range" min={0.5} max={3} step={0.05} value={zoom}
+                  onChange={e => setZoom(Number(e.target.value))}
+                  style={{ width: "100%", accentColor: "#c9a84c", cursor: "pointer" }} />
+              </div>
+              {/* Buttons */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setCropSrc(null)}
+                  style={{ flex: 1, padding: 10, fontSize: 13, borderRadius: 9, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>
+                  Cancel
+                </button>
+                <button onClick={handleCropSave}
+                  style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 600, borderRadius: 9, border: "none", background: "#c9a84c", color: "#0a0e14", cursor: "pointer" }}>
+                  Save photo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete confirm modal */}
       <AnimatePresence>

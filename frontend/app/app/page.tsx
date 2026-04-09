@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
   MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
-  Sun, Moon, CandlestickChart, Sparkles,
+  Sun, Moon, CandlestickChart, Sparkles, BookOpen,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
 import InfoModal from "../../components/InfoModal";
@@ -50,6 +51,7 @@ const TABS = [
   { id: "compare",   label: "Compare",    Icon: Eye,              href: null },
   { id: "news",      label: "News",       Icon: Newspaper,        href: null },
   { id: "watchlist", label: "Watchlist",  Icon: Eye,              href: null },
+  { id: "learn",     label: "Learn",      Icon: BookOpen,         href: "/learn" },
   { id: "ai",        label: "AI Chat",    Icon: MessageSquare,    href: null },
 ] as const;
 
@@ -148,10 +150,10 @@ function Spinner() {
   );
 }
 
-function Empty() {
+function Empty({ onPreset }: { onPreset?: (a: { ticker: string; weight: number }[]) => void }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 400, gap: 20, textAlign: "center" }}>
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 400, gap: 24, textAlign: "center", padding: "40px 0" }}>
       <motion.img
         src="/corvo-logo.svg"
         alt="Corvo"
@@ -162,14 +164,28 @@ function Empty() {
         style={{ opacity: 0.7 }}
       />
       <div>
-        <p style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.3px", color: "var(--text)", marginBottom: 8 }}>Enter your portfolio to get started</p>
-        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7 }}>Add tickers on the left, then click Analyze</p>
+        <p style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.3px", color: "var(--text)", marginBottom: 8 }}>Analyze your first portfolio</p>
+        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7 }}>Add tickers on the left, or start with a preset below</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, maxWidth: 520, width: "100%" }}>
+        {PRESETS.map(p => (
+          <button key={p.label} onClick={() => onPreset?.(p.assets)}
+            style={{ padding: "16px 18px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 12, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; e.currentTarget.style.background = "var(--bg3)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{p.label}</p>
+            <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.6 }}>
+              {p.assets.map(a => `${a.ticker} ${Math.round(a.weight * 100)}%`).join(" · ")}
+            </p>
+          </button>
+        ))}
       </div>
     </motion.div>
   );
 }
 
 const COMPARE_COLORS = ["#c9a84c", "#b47ee0", "#5cb88a", "#e05c5c"];
+const ComparePlot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 // ── Portfolio Comparison ──────────────────────────────────────────────────────
 function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: { assets: { ticker: string; weight: number }[]; period: string; benchmark: string; benchmarkLabel: string; currentData: any }) {
@@ -238,11 +254,69 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
     { key: "max_drawdown",        label: "Max Drawdown",   fmt: (v: number) => `${(v*100).toFixed(1)}%`,   positive: false },
   ];
 
+  // Normalize value 0–100 for radar
+  const normalize = (val: number, min: number, max: number) => max === min ? 50 : Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+
+  const radarData = active.length >= 2 ? (() => {
+    const dims = [
+      { label: "Return",       vals: active.map(p => (p.result.portfolio_return || 0) * 100) },
+      { label: "Sharpe",       vals: active.map(p => (p.result.sharpe_ratio || 0)) },
+      { label: "Stability",    vals: active.map(p => 100 - (p.result.portfolio_volatility || 0) * 100) },
+      { label: "Resilience",   vals: active.map(p => 100 - Math.abs((p.result.max_drawdown || 0) * 100)) },
+      { label: "Diversif.",    vals: active.map(p => Math.min(100, (p.tickers.length / 8) * 100)) },
+    ];
+    return active.map((p, pi) => {
+      const scores = dims.map(d => {
+        const min = Math.min(...d.vals); const max = Math.max(...d.vals);
+        return normalize(d.vals[pi], min, max);
+      });
+      return {
+        type: "scatterpolar" as const,
+        r: [...scores, scores[0]],
+        theta: [...dims.map(d => d.label), dims[0].label],
+        fill: "toself",
+        name: p.name,
+        line: { color: COMPARE_COLORS[pi % COMPARE_COLORS.length], width: 1.5 },
+        fillcolor: COMPARE_COLORS[pi % COMPARE_COLORS.length] + "22",
+      };
+    });
+  })() : [];
+
+  const overlapData = active.length >= 2 ? (() => {
+    const sets = active.map(p => new Set<string>(p.tickers));
+    const result: { a: string; b: string; shared: string[]; unique_a: string[]; unique_b: string[] }[] = [];
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        result.push({
+          a: active[i].name, b: active[j].name,
+          shared: (Array.from(sets[i]) as string[]).filter((t: string) => sets[j].has(t)),
+          unique_a: (Array.from(sets[i]) as string[]).filter((t: string) => !sets[j].has(t)),
+          unique_b: (Array.from(sets[j]) as string[]).filter((t: string) => !sets[i].has(t)),
+        });
+      }
+    }
+    return result;
+  })() : [];
+
   return (
     <div>
-      {savedPortfolios.length > 0 ? (
-        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginBottom: 12 }}>
-          <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Add saved portfolios to compare</p>
+      {/* Header + portfolio selector */}
+      <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 20px", background: "var(--card-bg)", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: savedPortfolios.length > 0 || active.length > 0 ? 12 : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+            <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Comparison</span>
+            <InfoModal title="Portfolio Comparison" sections={[{ label: "How it works", text: "Add multiple saved portfolios to compare their risk, return, and Sharpe ratio side by side. Save a portfolio first from the Dashboard." }]} />
+            {active.length > 0 && <span style={{ fontSize: 9, color: "var(--text3)" }}>· {active.length} portfolio{active.length !== 1 ? "s" : ""} · {period.toUpperCase()} · vs {benchmarkLabel}</span>}
+          </div>
+          {active.length >= 2 && (
+            <button onClick={generateAiInsight} disabled={aiLoading}
+              style={{ padding: "5px 12px", fontSize: 10, borderRadius: 6, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.06)", color: "#c9a84c", cursor: aiLoading ? "default" : "pointer", letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 5 }}>
+              {aiLoading ? "Analyzing…" : <><Sparkles size={10} /> AI Insight</>}
+            </button>
+          )}
+        </div>
+        {savedPortfolios.length > 0 ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {savedPortfolios.map(p => (
               <button key={p.id} onClick={() => toggleSelect(p.id, p)}
@@ -251,12 +325,8 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
               </button>
             ))}
           </div>
-        </div>
-      ) : (
-        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "24px 26px", background: "var(--card-bg)", marginBottom: 12 }}>
-          <p style={{ fontSize: 9, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>How to compare portfolios</p>
-          <p style={{ fontSize: 15, fontWeight: 500, color: "var(--text)", marginBottom: 20 }}>No saved portfolios yet</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
             {[
               { n: "1", title: "Build a portfolio", desc: "Add tickers and weights in the left sidebar." },
               { n: "2", title: "Analyze it", desc: "Click Analyze (or press ↵) to run the full analysis." },
@@ -272,69 +342,122 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {active.length > 0 && (
         <>
-          <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, background: "var(--card-bg)", overflow: "hidden", marginBottom: 12 }}>
-            <div style={{ padding: "14px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
-                <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Side-by-Side · {period.toUpperCase()} · vs {benchmarkLabel}</span>
-              </div>
-              {active.length >= 2 && (
-                <button onClick={generateAiInsight} disabled={aiLoading}
-                  style={{ padding: "5px 12px", fontSize: 10, borderRadius: 6, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.06)", color: "#c9a84c", cursor: aiLoading ? "default" : "pointer", letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 5 }}>
-                  {aiLoading ? "Analyzing…" : <><Sparkles size={10} /> AI Insight</>}
-                </button>
-              )}
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
-                    <th style={{ padding: "12px 20px", textAlign: "left", fontSize: 10, letterSpacing: 1, color: "var(--text3)", fontWeight: 500 }}>Metric</th>
-                    {active.map((p, pi) => (
-                      <th key={p.id} style={{ padding: "12px 20px", textAlign: "right", fontSize: 12, color: COMPARE_COLORS[pi % COMPARE_COLORS.length], fontWeight: 600, minWidth: 120 }}>
-                        {p.name}
-                        <div style={{ fontSize: 9, color: "var(--text3)", fontWeight: 400, marginTop: 2 }}>{p.tickers.slice(0, 3).join(", ")}{p.tickers.length > 3 ? "…" : ""}</div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {metrics.map((m, mi) => {
-                    const vals = active.map(p => p.result[m.key] ?? 0);
+          {/* Side-by-side metric cards */}
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(active.length, 4)}, 1fr)`, gap: 10, marginBottom: 12 }}>
+            {active.map((p, pi) => {
+              const color = COMPARE_COLORS[pi % COMPARE_COLORS.length];
+              return (
+                <div key={p.id} style={{ border: `0.5px solid ${color}44`, borderRadius: 12, overflow: "hidden", background: "var(--card-bg)" }}>
+                  <div style={{ padding: "12px 16px", background: `${color}10`, borderBottom: `0.5px solid ${color}22` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color, marginBottom: 2 }}>{p.name}</div>
+                    <div style={{ fontSize: 9, color: "var(--text3)" }}>{p.tickers.slice(0, 4).join(" · ")}{p.tickers.length > 4 ? ` +${p.tickers.length - 4}` : ""}</div>
+                  </div>
+                  {metrics.map((m) => {
+                    const vals = active.map(q => q.result[m.key] ?? 0);
                     const best = m.positive ? Math.max(...vals) : Math.min(...vals);
+                    const val = p.result[m.key] ?? 0;
+                    const isBest = val === best;
                     return (
-                      <tr key={m.key} style={{ borderBottom: mi < metrics.length - 1 ? "0.5px solid var(--border)" : "none" }}>
-                        <td style={{ padding: "13px 20px", fontSize: 12, color: "var(--text2)" }}>{m.label}</td>
-                        {active.map((p, pi) => {
-                          const val = p.result[m.key] ?? 0;
-                          const isBest = val === best;
-                          return (
-                            <td key={p.id} style={{ padding: "13px 20px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: isBest ? 600 : 400, color: isBest ? COMPARE_COLORS[pi % COMPARE_COLORS.length] : "var(--text3)" }}>
-                              {m.fmt(val)}{isBest && <span style={{ marginLeft: 5, fontSize: 9 }}>★</span>}
-                            </td>
-                          );
-                        })}
-                      </tr>
+                      <div key={m.key} style={{ padding: "9px 16px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 11, color: "var(--text3)" }}>{m.label}</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: isBest ? 700 : 400, color: isBest ? color : "var(--text2)" }}>
+                          {m.fmt(val)}{isBest && <span style={{ marginLeft: 4, fontSize: 8 }}>★</span>}
+                        </span>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                  <div style={{ padding: "10px 16px" }}>
+                    <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 5, letterSpacing: 1 }}>SHARPE SCORE</div>
+                    <div style={{ height: 3, background: "var(--bg3)", borderRadius: 2, marginBottom: 4 }}>
+                      <div style={{ width: `${Math.min(100, Math.max(0, ((p.result.sharpe_ratio || 0) / 3) * 100))}%`, height: "100%", background: color, borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color, fontWeight: 600 }}>{(p.result.sharpe_ratio || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* AI insight panel */}
-          {aiInsight && (
+          {/* Radar + Overlap grid */}
+          {active.length >= 2 && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+              <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+                  <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Radar Comparison</span>
+                </div>
+                <ComparePlot
+                  data={radarData}
+                  layout={{
+                    polar: {
+                      bgcolor: "transparent",
+                      radialaxis: { visible: true, range: [0, 100], gridcolor: "rgba(255,255,255,0.06)", tickfont: { size: 8, color: "rgba(232,224,204,0.3)" }, showticklabels: false },
+                      angularaxis: { gridcolor: "rgba(255,255,255,0.06)", tickfont: { size: 9, color: "rgba(232,224,204,0.5)" } },
+                    },
+                    paper_bgcolor: "transparent",
+                    plot_bgcolor: "transparent",
+                    showlegend: true,
+                    legend: { font: { size: 10, color: "rgba(232,224,204,0.6)" }, bgcolor: "transparent" },
+                    margin: { t: 10, b: 10, l: 30, r: 30 },
+                    height: 260,
+                  }}
+                  config={{ displayModeBar: false, responsive: true }}
+                  style={{ width: "100%" }}
+                />
+              </div>
+              <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                  <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+                  <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Holding Overlap</span>
+                </div>
+                {overlapData.map((ov, i) => (
+                  <div key={i} style={{ marginBottom: i < overlapData.length - 1 ? 16 : 0 }}>
+                    <p style={{ fontSize: 11, color: "var(--text2)", marginBottom: 8 }}>{ov.a} vs {ov.b}</p>
+                    {ov.shared.length > 0 && (
+                      <div style={{ marginBottom: 8 }}>
+                        <p style={{ fontSize: 9, letterSpacing: 1, color: "var(--text3)", marginBottom: 5 }}>SHARED ({ov.shared.length})</p>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                          {ov.shared.map(t => <span key={t} style={{ padding: "2px 8px", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, borderRadius: 4, background: "rgba(201,168,76,0.1)", color: "#c9a84c", border: "0.5px solid rgba(201,168,76,0.2)" }}>{t}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {[{ label: ov.a, tickers: ov.unique_a, ci: 0 }, { label: ov.b, tickers: ov.unique_b, ci: 1 }].map(col => (
+                        <div key={col.label}>
+                          <p style={{ fontSize: 9, letterSpacing: 1, color: COMPARE_COLORS[col.ci], marginBottom: 5 }}>ONLY {col.label.toUpperCase()}</p>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {col.tickers.length > 0 ? col.tickers.map(t => <span key={t} style={{ padding: "2px 6px", fontSize: 9, fontFamily: "var(--font-mono)", borderRadius: 4, background: "var(--bg3)", color: "var(--text2)" }}>{t}</span>) : <span style={{ fontSize: 10, color: "var(--text3)" }}>—</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {ov.shared.length === 0 && <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>No holdings in common — highly independent portfolios.</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* AI insight */}
+          {(aiInsight || aiLoading) && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               style={{ border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 12, padding: "16px 18px", background: "rgba(201,168,76,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
               <Sparkles size={14} color="#c9a84c" style={{ flexShrink: 0, marginTop: 2 }} />
-              <div>
+              <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 9, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase", marginBottom: 6 }}>AI Comparison Insight</p>
-                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{aiInsight}</p>
+                {aiLoading ? (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <div style={{ width: 10, height: 10, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                    <span style={{ fontSize: 12, color: "var(--text3)" }}>Comparing portfolios…</span>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{aiInsight}</p>
+                )}
               </div>
             </motion.div>
           )}
@@ -385,6 +508,86 @@ function useCurrency() {
   return { currency, rate, setCurrency };
 }
 
+// ── Push notification prompt ───────────────────────────────────────────────────
+const NOTIF_ASKED_KEY = "corvo_notif_asked";
+const VAPID_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
+  const [loading, setLoading] = useState(false);
+
+  const enable = async () => {
+    setLoading(true);
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { localStorage.setItem(NOTIF_ASKED_KEY, "denied"); onDismiss(); return; }
+
+      // Register service worker
+      const reg = await navigator.serviceWorker.register("/sw.js");
+
+      // Get VAPID public key from backend
+      const keyRes = await fetch(`${VAPID_API}/push/vapid-public-key`);
+      if (!keyRes.ok) throw new Error("VAPID key unavailable");
+      const { public_key } = await keyRes.json();
+
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(public_key),
+      });
+
+      // Get user id from supabase
+      const { supabase } = await import("../../lib/supabase");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await fetch(`${VAPID_API}/push/subscribe`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: user.id, subscription: sub.toJSON() }),
+        });
+      }
+      localStorage.setItem(NOTIF_ASKED_KEY, "granted");
+    } catch (e) {
+      console.error("Push subscription failed:", e);
+    }
+    setLoading(false);
+    onDismiss();
+  };
+
+  const dismiss = () => { localStorage.setItem(NOTIF_ASKED_KEY, "later"); onDismiss(); };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+      style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 800, width: "min(380px, calc(100vw - 32px)", background: "var(--card-bg)", border: "0.5px solid rgba(201,168,76,0.3)", borderRadius: 14, padding: "16px 18px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", display: "flex", gap: 14, alignItems: "flex-start" }}>
+      <span style={{ fontSize: 20, flexShrink: 0 }}>🔔</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>Enable price alerts</p>
+        <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.55, marginBottom: 12 }}>
+          Get notified when your stocks move. Enable browser notifications to stay on top of your alerts.
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={enable} disabled={loading}
+            style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: "#c9a84c", color: "#0a0e14", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+            {loading ? "Enabling…" : "Enable"}
+          </button>
+          <button onClick={dismiss}
+            style={{ padding: "8px 12px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
+            Maybe later
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(base64);
+  const buf = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i);
+  return buf.buffer as ArrayBuffer;
+}
+
 export default function AppPage() {
   const [assets, setAssets]               = useState<{ ticker: string; weight: number }[]>([]);
   const [period, setPeriod]               = useState("1y");
@@ -418,8 +621,13 @@ export default function AppPage() {
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
   const [sidePrices, setSidePrices] = useState<Record<string, { price: number; change_pct: number }>>({});
+  const [flashingTickers, setFlashingTickers] = useState<Set<string>>(new Set());
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [userId, setUserId]         = useState<string | null>(null);
+  const [navProfile, setNavProfile] = useState<{ displayName: string; avatarUrl: string | null }>({ displayName: "", avatarUrl: null });
   const referralCodeRef             = useRef<string>("");
+  const [shareToast, setShareToast] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
   const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
   const S = useS();
@@ -488,6 +696,10 @@ export default function AppPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
+
+      // Load nav profile (avatar + display name)
+      const { data: navP } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
+      if (navP) setNavProfile({ displayName: navP.display_name || "", avatarUrl: navP.avatar_url || null });
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -564,6 +776,60 @@ export default function AppPage() {
 
   const handleAnalyzeRef = useRef(handleAnalyze);
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
+
+  // ── Live price refresh every 5 seconds ──────────────────────────────────────
+  const fetchLivePrices = useCallback(async () => {
+    const valid = assets.filter(a => a.ticker && a.weight > 0);
+    if (!valid.length) return;
+    const API_LP = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    try {
+      const r = await fetch(`${API_LP}/watchlist-data?tickers=${valid.map(a => a.ticker).join(",")}`);
+      const d = await r.json();
+      const map: Record<string, { price: number; change_pct: number }> = {};
+      (d.results || []).forEach((s: any) => { if (s?.ticker && s.price) map[s.ticker] = { price: s.price, change_pct: s.change_pct ?? 0 }; });
+      setSidePrices(prev => {
+        const changed = Object.keys(map).filter(t => prev[t] && Math.abs(prev[t].price - map[t].price) > 0.001);
+        if (changed.length > 0) {
+          setFlashingTickers(new Set(changed));
+          setTimeout(() => setFlashingTickers(new Set()), 600);
+        }
+        return map;
+      });
+    } catch {}
+  }, [assets]);
+
+  useEffect(() => {
+    if (!data || !assets.length) return;
+    const id = setInterval(fetchLivePrices, 5000);
+    return () => clearInterval(id);
+  }, [data, assets, fetchLivePrices]);
+
+  // ── Show notification prompt once after login ────────────────────────────────
+  useEffect(() => {
+    if (!userId) return;
+    if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) return;
+    const asked = localStorage.getItem(NOTIF_ASKED_KEY);
+    if (!asked) setTimeout(() => setShowNotifPrompt(true), 3000);
+  }, [userId]);
+
+  const sharePortfolio = () => {
+    if (!assets.length) return;
+    const encoded = btoa(JSON.stringify(assets));
+    const url = `${window.location.origin}/app?portfolio=${encoded}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShareToast(true);
+      setTimeout(() => setShareToast(false), 2500);
+    }).catch(() => {});
+  };
+
+  const isPortfolioSaved = (() => {
+    if (!assets.length) return false;
+    try {
+      const saved = JSON.parse(localStorage.getItem("corvo_saved_portfolios") || "[]");
+      const currentTickers = assets.map(a => a.ticker).sort().join(",");
+      return saved.some((p: any) => (p.tickers || p.assets?.map((a: any) => a.ticker) || []).sort().join(",") === currentTickers);
+    } catch { return false; }
+  })();
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       // Cmd+K / Ctrl+K → command palette
@@ -674,8 +940,10 @@ export default function AppPage() {
           onClick={handleAnalyze}
           disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
           animate={analyzeComplete ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+          whileHover={!loading && assets.some(a => a.ticker && a.weight > 0) ? { scale: 1.02 } : {}}
+          whileTap={!loading && assets.some(a => a.ticker && a.weight > 0) ? { scale: 0.97 } : {}}
           transition={{ duration: 0.35 }}
-          style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : "var(--text)", color: loading ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
+          style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : assets.some(a => a.ticker && a.weight > 0) ? "var(--text)" : "var(--bg3)", color: loading || !assets.some(a => a.ticker && a.weight > 0) ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: loading || !assets.some(a => a.ticker && a.weight > 0) ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
           {loading ? "Analyzing..." : "Analyze"}
         </motion.button>
       </div>
@@ -721,14 +989,23 @@ export default function AppPage() {
       {/* Live price strip */}
       {Object.keys(sidePrices).length > 0 && (
         <div style={{ padding: "8px 14px", borderTop: "0.5px solid var(--border)" }}>
-          <div style={{ fontSize: 8, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 5 }}>Live Prices</div>
+          <style>{`
+            @keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
+            @keyframes priceFlash{0%{color:#c9a84c}100%{color:inherit}}
+            .price-flash{animation:priceFlash 0.6s ease-out forwards}
+          `}</style>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#5cb88a", animation: "livePulse 2s ease-in-out infinite" }} />
+            <span style={{ fontSize: 8, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Live</span>
+          </div>
           {assets.filter(a => a.ticker && sidePrices[a.ticker]).map(a => {
             const s = sidePrices[a.ticker];
             const pos = (s?.change_pct ?? 0) >= 0;
+            const flashing = flashingTickers.has(a.ticker);
             return (
               <div key={a.ticker} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0" }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--text2)" }}>{a.ticker}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: pos ? "#5cb88a" : "#e05c5c" }}>
+                <span className={flashing ? "price-flash" : undefined} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: flashing ? "#c9a84c" : pos ? "#5cb88a" : "#e05c5c", transition: "color 0.3s" }}>
                   ${s.price.toFixed(2)} <span style={{ fontSize: 9 }}>{pos ? "+" : ""}{s.change_pct.toFixed(2)}%</span>
                 </span>
               </div>
@@ -828,21 +1105,25 @@ export default function AppPage() {
           .c-topbar{display:none!important}
           .c-mob-bar{display:flex!important}
           .c-mob-tabs{display:flex!important}
-          .c-metrics{grid-template-columns:repeat(2,1fr)!important}
+          .c-metrics{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
           .c-bgrid{grid-template-columns:1fr!important}
           .c-risk-grid{grid-template-columns:1fr!important}
-          .c-content{padding:12px!important}
+          .c-content{padding:12px 10px!important}
           .c-mob-analyze{display:flex!important}
-          .c-ai-tab{height:calc(100dvh - 140px)!important}
+          .c-ai-tab{height:calc(100dvh - 136px)!important}
+          .c-mob-add{display:flex!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
           .c-mob-tabs{display:none!important}
           .c-mob-drawer{display:none!important}
           .c-mob-analyze{display:none!important}
+          .c-mob-add{display:none!important}
         }
-        .c-mob-tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch}
+        .c-mob-tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
         .c-mob-tabs::-webkit-scrollbar{display:none}
+        /* Analyze button pulse while loading */
+        .c-mob-analyze[data-loading=true]{animation:analyze-ring 1.2s ease-out infinite}
       `}</style>
 
       {/* Desktop sidebar — collapsible */}
@@ -957,7 +1238,15 @@ export default function AppPage() {
               </button>
             )}
             <ExportPDF data={data} assets={assets} />
-            <UserMenu onEmailPrefs={() => setShowEmailPrefs(true)} onReferral={() => setShowReferral(true)} onSettings={() => setShowSettings(true)} />
+            {data && (
+              <button onClick={() => setShowShareCard(true)} title="Share portfolio"
+                style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text2)", display: "flex", alignItems: "center", gap: 5, transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                ↗ Share
+              </button>
+            )}
+            <UserMenu onEmailPrefs={() => setShowEmailPrefs(true)} onReferral={() => setShowReferral(true)} onSettings={() => setShowSettings(true)} avatarUrl={navProfile.avatarUrl} displayName={navProfile.displayName} />
           </div>
         </header>
 
@@ -984,7 +1273,7 @@ export default function AppPage() {
           </AnimatePresence>
           <AnimatePresence mode="wait">
             {activeTab === "stocks" ? (
-              <motion.div key="stocks" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+              <motion.div key="stocks" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 {compareMode ? (
                   <>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -1013,11 +1302,13 @@ export default function AppPage() {
                 )}
               </motion.div>
             ) : !data && !loading ? (
-              <motion.div key="empty" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}><Empty /></motion.div>
+              <motion.div key="empty" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                <Empty onPreset={(a) => setAssets(a.map(x => ({ ...x, weight: Math.round(x.weight * 100) })))} />
+              </motion.div>
             ) : loading ? (
-              <motion.div key="loading" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
+              <motion.div key="loading" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
             ) : activeTab === "overview" ? (
-              <motion.div key="overview" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+              <motion.div key="overview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <motion.div
                   className="c-metrics"
                   style={S.metricsGrid}
@@ -1083,37 +1374,49 @@ export default function AppPage() {
                 <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} style={{ marginTop: 12 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
                   <Card><CardHeader title="Allocation" /><Breakdown assets={assets} /></Card>
                 </motion.div>
+                {data && !isPortfolioSaved && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 0" }}>
+                    <span style={{ fontSize: 12, color: "var(--text3)" }}>Want to compare this later?</span>
+                    <button
+                      onClick={() => {
+                        const el = document.querySelector("[data-save-trigger]") as HTMLElement | null;
+                        if (el) el.click();
+                      }}
+                      style={{ fontSize: 12, color: "#c9a84c", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
+                      Save this portfolio →
+                    </button>
+                  </motion.div>
+                )}
                 <PortfolioHistory />
               </motion.div>
             ) : activeTab === "risk" ? (
-              <motion.div key="risk" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+              <motion.div key="risk" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <div className="c-risk-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Drawdown" sections={[{label:"Plain English",text:"Shows the biggest loss from a peak to a trough in your portfolio over the selected period."},{label:"Example",text:"A -20% drawdown means your portfolio fell from $100K to $80K before recovering."},{label:"What's Good",text:"Drawdowns under 15% are generally considered manageable for long-term investors. Deeper troughs signal higher risk."}]} /><DrawdownChart assets={assets} period={period} /></Card>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Correlation" sections={[{label:"Plain English",text:"Shows how your assets move in relation to each other. A value of 1.0 means they move in perfect lockstep."},{label:"Example",text:"AAPL and MSFT often have correlation near 0.8 — when one drops, the other usually does too."},{label:"What's Good",text:"Aim for correlations below 0.5 between your major holdings. Low correlation = real diversification."}]} /><CorrelationHeatmap assets={assets} period={period} /></Card>
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (
-              <motion.div key="simulate" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+              <motion.div key="simulate" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Card><TooltipCardHeader title="Monte Carlo Simulation" sections={[
-                  { label: "Plain English", text: "Runs thousands of random future scenarios based on your portfolio's historical returns and volatility to estimate a range of outcomes." },
-                  { label: "Example", text: "With 1,000 simulations, 90% of paths might end between $8,000 and $28,000 from a $10,000 start over 10 years." },
-                  { label: "What's Good", text: "A wide band means high uncertainty. A tight upward band is ideal. The median (50th percentile) path is a realistic central estimate." },
+                  { label: "What it shows", text: "Monte Carlo simulation runs 300 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes — not guarantees." },
                 ]} /><MonteCarloChart assets={assets} period={period} /></Card>
               </motion.div>
             ) : activeTab === "compare" ? (
-              <motion.div key="compare" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+              <motion.div key="compare" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <CompareTab assets={assets} period={period} benchmark={benchmark} benchmarkLabel={benchLabel} currentData={data} />
               </motion.div>
             ) : activeTab === "news" ? (
-              <motion.div key="news" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                <Card><CardHeader title="Market News" /><NewsFeed assets={assets} /></Card>
+              <motion.div key="news" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                <Card><TooltipCardHeader title="Market News" sections={[{ label: "How it works", text: "Live news fetched for every ticker in your portfolio. Sentiment badges (Positive / Negative / Neutral) are determined by headline analysis." }]} /><NewsFeed assets={assets} /></Card>
               </motion.div>
             ) : activeTab === "watchlist" ? (
-              <motion.div key="watchlist" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+              <motion.div key="watchlist" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Watchlist />
               </motion.div>
             ) : activeTab === "ai" ? (
-              <motion.div key="ai" className="c-ai-tab" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}
+              <motion.div key="ai" className="c-ai-tab" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}
                 style={{ height: "calc(100vh - 96px)", display: "flex", flexDirection: "column" }}>
                 <AiChat data={data} assets={assets} goals={goals} />
               </motion.div>
@@ -1122,6 +1425,15 @@ export default function AppPage() {
         </main>
       </div>
 
+      {/* Mobile: Add Tickers button (bottom-left) */}
+      <motion.button
+        className="c-mob-add"
+        onClick={() => setSidebarOpen(true)}
+        initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
+        style={{ position: "fixed", bottom: 80, left: 16, zIndex: 149, padding: "12px 18px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-body)", background: "var(--card-bg)", color: "var(--text2)", border: "0.5px solid var(--border2)", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)", display: "none", alignItems: "center", gap: 6 }}>
+        <PanelLeftOpen size={13} /> Tickers
+      </motion.button>
+
       {/* Mobile floating Analyze button */}
       <motion.button
         className="c-mob-analyze"
@@ -1129,7 +1441,7 @@ export default function AppPage() {
         disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
         animate={analyzeComplete ? { scale: [1, 1.08, 1] } : { scale: 1 }}
         transition={{ duration: 0.35 }}
-        style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 150, padding: "13px 40px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "var(--bg3)" : "var(--text)", color: loading ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 24, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.3)", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
+        style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 150, padding: "13px 40px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "var(--bg3)" : assets.some(a => a.ticker && a.weight > 0) ? "var(--text)" : "var(--bg3)", color: loading || !assets.some(a => a.ticker && a.weight > 0) ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 24, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.3)", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none", display: "none" }}>
         {loading ? "Analyzing..." : "Analyze"}
       </motion.button>
 
@@ -1151,9 +1463,10 @@ export default function AppPage() {
       <AnimatePresence>
         {showSettings && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0, x: "100%" }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: "100%" }}
+            transition={{ type: "spring", damping: 32, stiffness: 280 }}
             style={{ position: "fixed", inset: 0, zIndex: 490, background: "var(--bg)", overflowY: "auto" }}>
-            <SettingsPage onClose={() => setShowSettings(false)} />
+            <SettingsPage onClose={() => setShowSettings(false)} onProfileSaved={(p) => setNavProfile({ displayName: p.displayName, avatarUrl: p.avatarUrl })} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1204,6 +1517,63 @@ export default function AppPage() {
         currentData={data}
         onApply={(a) => { setAssets(a); setWhatIfOpen(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
       />
+
+      {/* Share card modal */}
+      <AnimatePresence>
+        {showShareCard && data && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowShareCard(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 510, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <motion.div initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 16 }} transition={{ duration: 0.2 }}
+              onClick={e => e.stopPropagation()}
+              style={{ background: "#0a0e14", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 16, padding: "28px 32px", maxWidth: 400, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "#c9a84c", fontWeight: 700 }}>CORVO</span>
+              </div>
+              <p style={{ fontSize: 11, letterSpacing: 2, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 16 }}>Portfolio Snapshot</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+                {[
+                  { label: "Return", value: data.portfolio_return != null ? `${(data.portfolio_return * 100).toFixed(1)}%` : "—" },
+                  { label: "Sharpe", value: data.sharpe_ratio != null ? data.sharpe_ratio.toFixed(2) : "—" },
+                  { label: "Volatility", value: data.portfolio_volatility != null ? `${(data.portfolio_volatility * 100).toFixed(1)}%` : "—" },
+                  { label: "Max Drawdown", value: data.max_drawdown != null ? `${(data.max_drawdown * 100).toFixed(1)}%` : "—" },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "12px 14px" }}>
+                    <p style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 4 }}>{label}</p>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "#e8e0cc" }}>{value}</p>
+                  </div>
+                ))}
+              </div>
+              <p style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginBottom: 16 }}>
+                {assets.slice(0, 3).map(a => `${a.ticker} ${Math.round(a.weight)}%`).join("  ·  ")}
+                {assets.length > 3 ? `  +${assets.length - 3} more` : ""}
+              </p>
+              <button onClick={sharePortfolio}
+                style={{ width: "100%", padding: "11px", background: "#c9a84c", border: "none", borderRadius: 8, color: "#0a0e14", fontSize: 12, fontWeight: 700, letterSpacing: 1, cursor: "pointer", transition: "opacity 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
+                Copy shareable link
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Share toast */}
+      <AnimatePresence>
+        {shareToast && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
+            style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", background: "#5cb88a", color: "#0a0e14", padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, zIndex: 999, pointerEvents: "none", whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
+            ✓ Link copied to clipboard
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Push notification prompt */}
+      <AnimatePresence>
+        {showNotifPrompt && <NotificationPrompt onDismiss={() => setShowNotifPrompt(false)} />}
+      </AnimatePresence>
 
     </div>
   );

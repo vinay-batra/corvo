@@ -97,6 +97,68 @@ function Reveal({ children, delay = 0, y = 40, style = {} }: any) {
   );
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+function EmailCapture() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+
+  const submit = async () => {
+    if (!email.trim() || status !== "idle") return;
+    setStatus("loading");
+    try {
+      const res = await fetch(`${API_URL}/notify-me`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (res.ok) { setStatus("done"); } else { setStatus("error"); }
+    } catch { setStatus("error"); }
+  };
+
+  return (
+    <section className="sr" style={{ position: "relative", zIndex: 1, padding: "0 56px 100px" }}>
+      <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
+        <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Stay in the loop</p>
+        <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 14 }}>
+          Get early access updates
+        </h2>
+        <p style={{ fontSize: 14, color: "rgba(232,224,204,0.4)", marginBottom: 32, lineHeight: 1.7, fontWeight: 300 }}>
+          New features, market insights, and portfolio tips — straight to your inbox.
+        </p>
+        {status === "done" ? (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.25)", borderRadius: 12, padding: "16px 28px" }}>
+            <span style={{ fontSize: 16, color: "#5cb88a" }}>✓</span>
+            <span style={{ fontSize: 14, color: "#5cb88a", fontWeight: 500 }}>{"You're on the list!"}</span>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 10, maxWidth: 440, margin: "0 auto" }}>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && submit()}
+              placeholder="your@email.com"
+              style={{ flex: 1, padding: "13px 18px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#e8e0cc", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+              onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
+              onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
+            />
+            <button onClick={submit} disabled={status === "loading"}
+              style={{ padding: "13px 24px", background: "#c9a84c", border: "none", borderRadius: 10, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, transition: "opacity 0.2s", whiteSpace: "nowrap", flexShrink: 0 }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
+              {status === "loading" ? "..." : "Notify Me"}
+            </button>
+          </div>
+        )}
+        {status === "error" && (
+          <p style={{ fontSize: 12, color: "#e05c5c", marginTop: 12 }}>Something went wrong. Try again.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function FeatureCard({ icon, title, desc, delay }: { icon: string; title: string; desc: string; delay: number }) {
   const [hov, setHov] = useState(false);
   const { ref, visible } = useReveal(0.1);
@@ -420,6 +482,9 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* EMAIL CAPTURE */}
+      <EmailCapture />
+
       {/* TESTIMONIALS */}
       <section ref={testimonialsRef} className="sr" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -528,7 +593,6 @@ export default function Landing() {
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
             <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</a>
             <a href="/terms"   style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</a>
-            <a href="/learn"   style={{ fontSize: 11, color: "rgba(201,168,76,0.4)", textDecoration: "none" }}>Learn</a>
             <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>GitHub</a>
           </div>
         </div>
