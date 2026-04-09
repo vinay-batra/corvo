@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { fetchMonteCarlo } from "../lib/api";
+import InfoModal from "./InfoModal";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
@@ -28,24 +29,11 @@ function StatCard({ label, value, color, desc, delay }: { label: string; value: 
   );
 }
 
-function MonteCarloTooltip() {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="tooltip-root" style={{ display: "inline-flex", alignItems: "center" }}
-      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
-      <button style={{ background: "none", border: "none", cursor: "pointer", color: C.cream3, display: "flex", alignItems: "center", padding: 2 }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
-        </svg>
-      </button>
-      {show && (
-        <div className="tooltip-box" style={{ minWidth: 240 }}>
-          Simulates thousands of possible future portfolio paths using your historical return and volatility. The amber band is the median; outer bands show the 5th–95th percentile range.
-        </div>
-      )}
-    </div>
-  );
-}
+const MC_INFO_SECTIONS = [
+  { label: "Plain English", text: "Runs 300 simulated future portfolio paths based on your historical returns and volatility. Each path represents one possible year for your money." },
+  { label: "Example", text: "A $10,000 portfolio with 15% annual return and 20% volatility might end up anywhere from $8,000 to $18,000 after one year. The amber line is the most likely outcome." },
+  { label: "What's Good", text: "A tight range of outcomes means lower risk and more predictable returns. A wide spread means high uncertainty — your portfolio could go either way." },
+];
 
 export default function MonteCarloChart({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);
@@ -71,7 +59,7 @@ export default function MonteCarloChart({ assets, period }: { assets: any[]; per
         <p style={{ fontSize: 13, color: C.cream3, lineHeight: 1.75, maxWidth: 560, fontWeight: 300 }}>
           300 simulated futures for your portfolio over the next 252 trading days (1 year).
         </p>
-        <MonteCarloTooltip />
+        <InfoModal title="Monte Carlo Simulation" sections={MC_INFO_SECTIONS} />
       </div>
 
       {/* Percentile stat cards */}

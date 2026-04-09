@@ -99,7 +99,7 @@ function LevelBadge({ xp }: { xp: number }) {
   );
 }
 
-function LearnHeader({ xp, streak, displayName, avatarUrl }: { xp: number; streak: number; displayName: string; avatarUrl: string | null }) {
+function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: number; streak: number; displayName: string; avatarUrl: string | null; loading?: boolean }) {
   const lvl = getLevel(xp); const nxt = getNextLevel(xp); const pct = getProgressPct(xp);
   return (
     <div style={{ background: "var(--bg2)", borderBottom: "0.5px solid var(--border)" }}>
@@ -112,8 +112,10 @@ function LearnHeader({ xp, streak, displayName, avatarUrl }: { xp: number; strea
         <Link href="/app" style={{ fontSize: 12, color: "var(--text3)", textDecoration: "none" }}>← Analyzer</Link>
       </nav>
 
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "14px 28px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        {avatarUrl ? (
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "14px 28px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        {loading ? (
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)", flexShrink: 0 }} />
+        ) : avatarUrl ? (
           <img src={avatarUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "0.5px solid var(--border2)", flexShrink: 0 }} />
         ) : (
           <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${AMBER}22`, border: `0.5px solid ${AMBER}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: AMBER, flexShrink: 0 }}>
@@ -122,23 +124,38 @@ function LearnHeader({ xp, streak, displayName, avatarUrl }: { xp: number; strea
         )}
 
         <div style={{ flex: 1, minWidth: 160 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <LevelBadge xp={xp} />
-            <span style={{ fontSize: 11, color: "var(--text2)" }}>
-              {xp} XP{nxt ? <span style={{ color: "var(--text3)" }}> · {nxt.min - xp} to {nxt.name}</span> : " · Max level!"}
-            </span>
-          </div>
-          <div style={{ height: 5, background: "var(--track)", borderRadius: 3, overflow: "hidden" }}>
-            <motion.div animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: "easeOut" }}
-              style={{ height: "100%", background: lvl.color, borderRadius: 3 }} />
-          </div>
+          {loading ? (
+            <>
+              <div style={{ height: 14, width: 160, borderRadius: 4, background: "rgba(255,255,255,0.06)", marginBottom: 8 }} />
+              <div style={{ height: 5, background: "var(--track)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ width: "0%", height: "100%", background: "rgba(255,255,255,0.06)", borderRadius: 3 }} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <LevelBadge xp={xp} />
+                <span style={{ fontSize: 11, color: "var(--text2)" }}>
+                  {xp} XP{nxt ? <span style={{ color: "var(--text3)" }}> · {nxt.min - xp} to {nxt.name}</span> : " · Max level!"}
+                </span>
+              </div>
+              <div style={{ height: 5, background: "var(--track)", borderRadius: 3, overflow: "hidden" }}>
+                <motion.div animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: "easeOut" }}
+                  style={{ height: "100%", background: lvl.color, borderRadius: 3 }} />
+              </div>
+            </>
+          )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: streak > 0 ? "rgba(249,115,22,0.1)" : "var(--bg3)", border: `0.5px solid ${streak > 0 ? "rgba(249,115,22,0.3)" : "var(--border)"}`, flexShrink: 0 }}>
-          <Flame size={14} color={streak > 0 ? "#f97316" : "var(--text3)"} fill={streak > 0 ? "#f97316" : "none"} />
-          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: streak > 0 ? "#f97316" : "var(--text3)" }}>{streak}</span>
-          <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>day{streak !== 1 ? "s" : ""}</span>
-        </div>
+        {loading ? (
+          <div style={{ width: 80, height: 30, borderRadius: 20, background: "rgba(255,255,255,0.06)", flexShrink: 0 }} />
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: streak > 0 ? "rgba(249,115,22,0.1)" : "var(--bg3)", border: `0.5px solid ${streak > 0 ? "rgba(249,115,22,0.3)" : "var(--border)"}`, flexShrink: 0 }}>
+            <Flame size={14} color={streak > 0 ? "#f97316" : "var(--text3)"} fill={streak > 0 ? "#f97316" : "none"} />
+            <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: streak > 0 ? "#f97316" : "var(--text3)" }}>{streak}</span>
+            <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>day{streak !== 1 ? "s" : ""}</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1198,6 +1215,7 @@ export default function LearnPage() {
   const [xpToast, setXpToast]     = useState<number | null>(null);
   const [userId, setUserId]       = useState<string | null>(null);
   const [learnPoints, setLearnPoints] = useState(0);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   // Daily challenge — 3 questions, +25 XP each
   type DailyQ = { question: string; options: string[]; correct: number; explanation: string };
@@ -1261,7 +1279,15 @@ export default function LearnPage() {
 
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setProfileLoading(false);
+        if (checkLocalDaily()) {
+          setDailyCompleted(true);
+        } else {
+          fetchDailyQuestion();
+        }
+        return;
+      }
       setUserId(user.id);
 
       const { data: profile } = await supabase
@@ -1289,13 +1315,14 @@ export default function LearnPage() {
           fetchDailyQuestion();
         }
       } else {
-        // Not logged in — use localStorage only
         if (checkLocalDaily()) {
           setDailyCompleted(true);
         } else {
           fetchDailyQuestion();
         }
       }
+
+      setProfileLoading(false);
 
       const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", user.id).single();
       if (ls) setLearnPoints(ls.total_points ?? 0);
@@ -1420,9 +1447,9 @@ export default function LearnPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
-      <LearnHeader xp={xp} streak={streak} displayName={displayName} avatarUrl={avatarUrl} />
+      <LearnHeader xp={xp} streak={streak} displayName={displayName} avatarUrl={avatarUrl} loading={profileLoading} />
 
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "36px 24px" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 24px" }}>
         <AnimatePresence mode="wait">
 
           {/* ── Home ── */}

@@ -88,6 +88,7 @@ export default function Watchlist() {
   const [alerts, setAlerts]         = useState<Alert[]>([]);
   const [notifGranted, setNotifGranted] = useState(false);
   const [userId, setUserId]         = useState<string | null>(null);
+  const [validating, setValidating] = useState(false);
   const userIdRef = useRef<string | null>(null);
   const { requestPermission, isGranted, notify } = usePushNotifications();
   const alertCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -233,11 +234,26 @@ export default function Watchlist() {
     }
   };
 
-  const add = () => {
+  const add = async () => {
     const ticker = input.trim().toUpperCase();
     if (!ticker) return;
     if (items.find(i => i.ticker === ticker)) { setError(`${ticker} is already in your watchlist`); return; }
     setError("");
+    setValidating(true);
+    try {
+      const r = await fetch(`${API_URL}/stock/${encodeURIComponent(ticker)}`);
+      const d = await r.json();
+      if (!d || !d.price || d.price === 0) {
+        setError(`"${ticker}" not found — check the symbol and try again`);
+        setValidating(false);
+        return;
+      }
+    } catch {
+      setError(`"${ticker}" not found — check the symbol and try again`);
+      setValidating(false);
+      return;
+    }
+    setValidating(false);
     const next = [...items, { ticker, addedAt: new Date().toISOString() }];
     save(next);
     setInput("");
@@ -274,9 +290,9 @@ export default function Watchlist() {
             placeholder="Add ticker, e.g. TSLA"
             style={{ flex: 1, padding: "9px 12px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
           />
-          <button onClick={add}
-            style={{ padding: "9px 18px", background: "var(--text)", border: "none", borderRadius: 8, color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
-            + Add
+          <button onClick={add} disabled={validating}
+            style={{ padding: "9px 18px", background: "var(--text)", border: "none", borderRadius: 8, color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: validating ? "default" : "pointer", flexShrink: 0, opacity: validating ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
+            {validating ? <><div style={{ width: 10, height: 10, border: "1.5px solid rgba(0,0,0,0.2)", borderTopColor: "var(--bg)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />Checking</> : "+ Add"}
           </button>
           {items.length > 0 && (
             <button onClick={() => fetchData(items.map(i => i.ticker))}
@@ -332,7 +348,7 @@ export default function Watchlist() {
                   {/* Price row */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                     <div>
-                      {s?.price != null ? (
+                      {s?.price != null && s.price > 0 ? (
                         <>
                           <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5 }}>
                             ${s.price.toFixed(2)}
@@ -343,6 +359,8 @@ export default function Watchlist() {
                             </div>
                           )}
                         </>
+                      ) : s && !loadingAll ? (
+                        <div style={{ fontSize: 11, color: "#e05c5c" }}>Ticker not found</div>
                       ) : (
                         <div style={{ fontSize: 11, color: "var(--text3)" }}>{loadingAll ? "Loading…" : "—"}</div>
                       )}
