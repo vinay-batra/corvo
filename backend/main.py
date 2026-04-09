@@ -11,6 +11,9 @@ import json
 import requests
 from datetime import datetime, timezone
 import time
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 
 SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
@@ -36,6 +39,14 @@ def check_rate_limit(ip: str, endpoint: str, max_requests: int, window_seconds: 
     timestamps.append(now)
     RATE_LIMITS[key] = timestamps
     return False
+
+if os.getenv("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        integrations=[StarletteIntegration(), FastApiIntegration()],
+        traces_sample_rate=0.1,
+        environment=os.getenv("ENVIRONMENT", "production"),
+    )
 
 app = FastAPI(title="Corvo API", version="1.0.0")
 
