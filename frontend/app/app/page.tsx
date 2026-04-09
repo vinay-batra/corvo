@@ -107,9 +107,9 @@ function useS() {
     logoSub:    { fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
     section:    { padding: "10px 14px", borderBottom: "0.5px solid var(--border)" },
     label:      { fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 8 },
-    main:       { flex: 1, display: "flex", flexDirection: "column" as const, overflow: "hidden", background: "var(--bg)", minWidth: 0 },
+    main:       { flex: 1, display: "flex", flexDirection: "column" as const, background: "var(--bg)", minWidth: 0, overflow: "hidden" },
     topbar:     { height: 48, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: "var(--bg)", gap: 8 },
-    content:    { flex: 1, overflowY: "auto" as const, padding: "20px 24px" },
+    content:    { flex: 1, overflowY: "auto" as const, overflowX: "hidden" as const, padding: "20px 24px" },
     card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 12, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px var(--border)" } as React.CSSProperties,
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
     cardAccent: { width: 2, height: 14, background: "var(--text)", borderRadius: 1 },
@@ -414,6 +414,7 @@ export default function AppPage() {
   const tourNeededRef                           = useRef<boolean>(false);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
+  const [sidePrices, setSidePrices] = useState<Record<string, { price: number; change_pct: number }>>({});
   const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
   const [currencyOpen, setCurrencyOpen] = useState(false);
@@ -521,6 +522,16 @@ export default function AppPage() {
       setAnalyzeComplete(true);
       sound.success();
       setTimeout(() => setAnalyzeComplete(false), 600);
+      // Fetch live prices for the sidebar strip
+      const API_URL_PRICES = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      fetch(`${API_URL_PRICES}/watchlist-data?tickers=${valid.map(a => a.ticker).join(",")}`)
+        .then(r => r.json())
+        .then(d => {
+          const map: Record<string, { price: number; change_pct: number }> = {};
+          (d.results || []).forEach((s: any) => { if (s?.ticker && s.price) map[s.ticker] = { price: s.price, change_pct: s.change_pct ?? 0 }; });
+          setSidePrices(map);
+        })
+        .catch(() => {});
     } catch (e) {
       console.error(e);
       setErrorMsg("Analysis failed — server may be temporarily unavailable.");
@@ -685,6 +696,25 @@ export default function AppPage() {
         <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
       </div>
 
+      {/* Live price strip */}
+      {Object.keys(sidePrices).length > 0 && (
+        <div style={{ padding: "8px 14px", borderTop: "0.5px solid var(--border)" }}>
+          <div style={{ fontSize: 8, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 5 }}>Live Prices</div>
+          {assets.filter(a => a.ticker && sidePrices[a.ticker]).map(a => {
+            const s = sidePrices[a.ticker];
+            const pos = (s?.change_pct ?? 0) >= 0;
+            return (
+              <div key={a.ticker} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--text2)" }}>{a.ticker}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: pos ? "#5cb88a" : "#e05c5c" }}>
+                  ${s.price.toFixed(2)} <span style={{ fontSize: 9 }}>{pos ? "+" : ""}{s.change_pct.toFixed(2)}%</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
     </>
   );
 
@@ -796,10 +826,10 @@ export default function AppPage() {
       {/* Desktop sidebar — collapsible */}
       <motion.aside
         className="c-sidebar"
-        animate={{ width: sidebarCollapsed ? 0 : 244 }}
+        animate={{ width: sidebarCollapsed ? 0 : 300 }}
         transition={{ type: "spring", damping: 30, stiffness: 260 }}
         style={{ flexShrink: 0, borderRight: sidebarCollapsed ? "none" : "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden" }}>
-        <SidebarInner />
+        {SidebarInner()}
       </motion.aside>
 
       {/* Mobile drawer */}
@@ -812,7 +842,7 @@ export default function AppPage() {
             <motion.div initial={{ x: -260 }} animate={{ x: 0 }} exit={{ x: -260 }} transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="c-mob-drawer"
               style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: "var(--bg2)", borderRight: "0.5px solid var(--border)", zIndex: 201, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-              <SidebarInner />
+              {SidebarInner()}
             </motion.div>
           </>
         )}
