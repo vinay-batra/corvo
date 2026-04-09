@@ -1212,6 +1212,8 @@ export default function LearnPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [completed, setCompleted] = useState<string[]>([]);
   const [lessonProgress, setLessonProgress] = useState<Record<string, number[]>>({});
+  const [gameXpAwarded, setGameXpAwarded] = useState<string[]>([]);
+  const [gameAlreadyAwardedMsg, setGameAlreadyAwardedMsg] = useState(false);
   const [xpToast, setXpToast]     = useState<number | null>(null);
   const [userId, setUserId]       = useState<string | null>(null);
   const [learnPoints, setLearnPoints] = useState(0);
@@ -1305,7 +1307,10 @@ export default function LearnPage() {
             try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(profile.lessons_completed)); } catch {}
           }
           if (profile.lesson_progress && typeof profile.lesson_progress === "object") {
-            setLessonProgress(profile.lesson_progress as Record<string, number[]>);
+            const lp = profile.lesson_progress as Record<string, any>;
+            setLessonProgress(lp as Record<string, number[]>);
+            const gameAwarded = Array.isArray(lp.game_xp_awarded) ? lp.game_xp_awarded as string[] : [];
+            setGameXpAwarded(gameAwarded);
           }
           if (profile.last_daily_challenge === today || checkLocalDaily()) {
             setDailyCompleted(true);
@@ -1380,6 +1385,26 @@ export default function LearnPage() {
       ),
     ]);
   }, [userId, displayName]);
+
+  const handleGameXP = useCallback(async (gameId: string, amount: number) => {
+    if (gameXpAwarded.includes(gameId)) {
+      setGameAlreadyAwardedMsg(true);
+      setTimeout(() => setGameAlreadyAwardedMsg(false), 3500);
+      return;
+    }
+    await awardXP(amount);
+    const updated = [...gameXpAwarded, gameId];
+    setGameXpAwarded(updated);
+    if (userId) {
+      const { data: profile } = await supabase.from("profiles").select("lesson_progress").eq("id", userId).single();
+      const dbLp = (profile?.lesson_progress as Record<string, any>) || {};
+      await supabase.from("profiles").upsert({
+        id: userId,
+        lesson_progress: { ...dbLp, game_xp_awarded: updated },
+        updated_at: new Date().toISOString(),
+      });
+    }
+  }, [gameXpAwarded, awardXP, userId]);
 
   const handleLessonXP = async (amount: number, lessonId: string, updatedProgress: number[]) => {
     const newProgress = { ...lessonProgress, [lessonId]: updatedProgress };
@@ -1687,13 +1712,18 @@ export default function LearnPage() {
                         <p style={{ fontSize: 11, color: "var(--text3)" }}>+{meta.xp} XP · {meta.difficulty}</p>
                       </div>
                     </div>
-                    {activeGame === "sharpe-game"    && <SharpGame onXP={n => awardXP(n)} />}
-                    {activeGame === "crash-sim"      && <CrashSimulator onXP={n => awardXP(n)} />}
-                    {activeGame === "options-game"   && <OptionsGame onXP={n => awardXP(n)} />}
-                    {activeGame === "inflation-game" && <InflationGame onXP={n => awardXP(n)} />}
-                    {activeGame === "fed-game"       && <FedGame onXP={n => awardXP(n)} />}
-                    {activeGame === "builder-game"   && <BuilderChallenge onXP={n => awardXP(n)} />}
-                    {activeGame === "valuation-game" && <ValuationShowdown onXP={n => awardXP(n)} />}
+                    {gameAlreadyAwardedMsg && (
+                      <div style={{ background: "#c9a84c18", border: "0.5px solid #c9a84c55", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#c9a84c" }}>
+                        You&apos;ve already earned XP for this game. Play again for practice!
+                      </div>
+                    )}
+                    {activeGame === "sharpe-game"    && <SharpGame onXP={n => handleGameXP("sharpe-game", n)} />}
+                    {activeGame === "crash-sim"      && <CrashSimulator onXP={n => handleGameXP("crash-sim", n)} />}
+                    {activeGame === "options-game"   && <OptionsGame onXP={n => handleGameXP("options-game", n)} />}
+                    {activeGame === "inflation-game" && <InflationGame onXP={n => handleGameXP("inflation-game", n)} />}
+                    {activeGame === "fed-game"       && <FedGame onXP={n => handleGameXP("fed-game", n)} />}
+                    {activeGame === "builder-game"   && <BuilderChallenge onXP={n => handleGameXP("builder-game", n)} />}
+                    {activeGame === "valuation-game" && <ValuationShowdown onXP={n => handleGameXP("valuation-game", n)} />}
                   </div>
                 );
               })()}
