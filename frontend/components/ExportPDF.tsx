@@ -345,7 +345,7 @@ export default function ExportPDF({ data, assets, goals }: Props) {
       if (mode === "jspdf") {
         await buildJsPDF(data, assets, goals);
       } else {
-        // AI narrative + HTML print
+        // AI narrative PDF from backend (ReportLab)
         const res = await fetch(`${API_URL}/generate-report`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -363,15 +363,14 @@ export default function ExportPDF({ data, assets, goals }: Props) {
             user_goals: goals ?? {},
           }),
         });
-        const result = await res.json();
-        if (result.analysis) {
-          const html = buildAiReport(result.analysis, data, assets);
-          const blob = new Blob([html], { type: "text/html" });
-          const url = URL.createObjectURL(blob);
-          const win = window.open(url, "_blank");
-          if (win) win.onload = () => setTimeout(() => win.print(), 800);
-          URL.revokeObjectURL(url);
-        }
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `corvo_${assets.map((a: any) => a.ticker).join("-")}_report.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
       }
     } catch (e) {
       console.error("Export failed:", e);

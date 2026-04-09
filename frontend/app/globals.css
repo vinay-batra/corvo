@@ -156,3 +156,44 @@ input::placeholder { color: var(--text3); }
 .mi-btn:hover  { transform: scale(1.02); }
 .mi-btn:active { transform: scale(0.97); }
 
+/* ── Mobile responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Typography scale-down */
+  h1 { font-size: clamp(18px, 5vw, 24px) !important; }
+  h2 { font-size: clamp(16px, 4.5vw, 22px) !important; }
+  h3 { font-size: clamp(14px, 4vw, 18px) !important; }
+
+  /* Charts: prevent overflow */
+  .js-plotly-plot, .plotly, [class*="plot"] {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+  .js-plotly-plot .main-svg { max-width: 100% !important; }
+
+  /* Monte Carlo stat grid: 1 column on mobile */
+  .mc-stat-grid { grid-template-columns: 1fr !important; }
+
+  /* Metric cards: already handled by .c-metrics but also responsive font */
+  .c-metrics .metric-number { font-size: 20px !important; }
+
+  /* Touch targets: all interactive elements min 44px tall */
+  button, a[role="button"] { min-height: 36px; }
+  .c-mob-tabs button, .c-mob-tabs a { min-height: 44px !important; padding: 10px 12px !important; font-size: 12px !important; }
+
+  /* Mobile tab bar: no text overflow, smooth scroll */
+  .c-mob-tabs { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+
+  /* Card padding reduction */
+  [class*="card"], [style*="borderRadius: 12"] { padding: 14px !important; }
+
+  /* AI chat full height on mobile */
+  .c-ai-tab { height: calc(100dvh - 136px) !important; }
+
+  /* Share card modal padding */
+  [data-share-modal] { padding: 20px !important; }
+}
+
+/* ── Page transition wrapper ── */
+.page-fade-enter  { opacity: 0; transform: translateY(8px); }
+.page-fade-active { opacity: 1; transform: translateY(0); transition: opacity 300ms, transform 300ms; }
+

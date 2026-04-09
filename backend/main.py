@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
+import asyncio
 import numpy as np
 import yfinance as yf
 import pandas as pd
@@ -15,8 +17,11 @@ import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 
-SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
+SUPABASE_URL         = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+VAPID_PRIVATE_KEY    = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_PUBLIC_KEY     = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_CLAIMS_EMAIL   = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:alerts@corvo.capital")
 
 # Startup env check — visible in Railway logs
 print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', '')[:6] + '...)' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
@@ -48,7 +53,17 @@ if os.getenv("SENTRY_DSN"):
         environment=os.getenv("ENVIRONMENT", "production"),
     )
 
-app = FastAPI(title="Corvo API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app_: FastAPI):
+    task = asyncio.create_task(price_alert_loop())
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+app = FastAPI(title="Corvo API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -634,6 +649,9 @@ class ReportRequest(BaseModel):
 
 @app.post("/generate-report")
 def generate_report(req: ReportRequest, request: Request):
+    from fastapi.responses import StreamingResponse
+    import io
+
     ip = request.client.host if request.client else "unknown"
     if check_rate_limit(ip, "generate-report", 10, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
@@ -665,14 +683,13 @@ def generate_report(req: ReportRequest, request: Request):
             if age:
                 goals_text = f"\n\nInvestor Profile: Age {age}, Goal: {goal}, Risk tolerance: {risk}, Timeline: {timeline} years."
 
-        # Individual stock performance
         stock_perf = ""
         if ind_returns:
             stock_perf = "\n\nIndividual stock returns (annualized):\n" + "\n".join(
                 f"- {t}: {r*100:+.1f}%" for t, r in ind_returns.items()
             )
 
-        prompt = f"""You are a senior portfolio analyst at a top-tier investment firm. Write a comprehensive, professional portfolio analysis report for the following portfolio.
+        prompt = f"""You are a senior portfolio analyst. Write a professional portfolio analysis report.
 
 Portfolio: {", ".join(f"{t} ({w:.1%})" for t, w in zip(tickers, weights))}
 Period: {period}
@@ -681,37 +698,206 @@ Annualized Volatility: {vol:.2%}
 Sharpe Ratio: {sharpe:.2f}
 Max Drawdown: {dd:.2%}{stock_perf}{goals_text}
 
-Write a full analysis report with these sections:
-
+Write a full analysis with these sections:
 ## Executive Summary
-A 2-3 sentence overview of portfolio performance and key takeaway.
-
 ## Performance Analysis
-Detailed analysis of returns vs risk. Comment on whether the return justifies the volatility. Reference specific numbers.
-
 ## Risk Assessment
-Analyze the volatility and max drawdown. What does this mean for the investor? Is this portfolio suitable for their risk tolerance?
-
-## Portfolio Composition Analysis
-Analyze the allocation. Is it well-diversified? Are there concentration risks? Comment on individual holdings if performance data is available.
-
+## Portfolio Composition
 ## Strengths
-3-4 bullet points of what this portfolio does well.
-
 ## Areas for Improvement
-3-4 bullet points of specific actionable improvements.
-
 ## Conclusion
-A clear, direct recommendation. Should the investor hold, rebalance, or make changes?
 
-Write in a professional but accessible tone. Be specific — reference actual numbers throughout. Use bullet points (- item) for lists. Keep it thorough but concise — aim for 500-700 words total. Do not include any disclaimers or caveats within the analysis itself."""
+Be specific with numbers. Use bullet points (- item) for lists. 500-700 words total."""
 
         response = client.messages.create(
             model="claude-sonnet-4-5",
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}]
         )
-        return {"analysis": response.content[0].text}
+        analysis_text = response.content[0].text
+
+        # ── Build PDF with ReportLab ──────────────────────────────────────────
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import mm
+        from reportlab.lib.colors import HexColor, white, black
+        from reportlab.platypus import (
+            SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+        )
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+
+        BG      = HexColor("#0a0a0a")
+        CARD_BG = HexColor("#1a1a1a")
+        AMBER   = HexColor("#c9a84c")
+        WHITE   = HexColor("#ffffff")
+        BODY    = HexColor("#cccccc")
+        DIM     = HexColor("#666666")
+        RED     = HexColor("#e05c5c")
+        GREEN   = HexColor("#5cb88a")
+        BORDER  = HexColor("#2a2a2a")
+
+        buf = io.BytesIO()
+        W, H = A4  # 595 x 842 pt
+
+        def make_doc():
+            return SimpleDocTemplate(
+                buf, pagesize=A4,
+                leftMargin=24*mm, rightMargin=24*mm,
+                topMargin=20*mm, bottomMargin=20*mm,
+                title="Corvo Portfolio Report",
+            )
+
+        now_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
+        ticker_str = " · ".join(tickers) if tickers else "Portfolio"
+
+        S_TITLE   = ParagraphStyle("title",   fontName="Helvetica-Bold",   fontSize=28, textColor=AMBER,   spaceAfter=4)
+        S_SUB     = ParagraphStyle("sub",     fontName="Helvetica",        fontSize=9,  textColor=DIM,     spaceAfter=2, leading=13)
+        S_SECTION = ParagraphStyle("section", fontName="Helvetica-Bold",   fontSize=11, textColor=AMBER,   spaceBefore=16, spaceAfter=6, leading=14)
+        S_BODY    = ParagraphStyle("body",    fontName="Helvetica",        fontSize=11, textColor=BODY,    spaceAfter=5, leading=16)
+        S_BULLET  = ParagraphStyle("bullet",  fontName="Helvetica",        fontSize=11, textColor=BODY,    spaceAfter=4, leading=16, leftIndent=14, firstLineIndent=-10)
+        S_LABEL   = ParagraphStyle("label",   fontName="Helvetica-Bold",   fontSize=8,  textColor=DIM,     leading=11, spaceAfter=1)
+        S_VALUE   = ParagraphStyle("value",   fontName="Helvetica-Bold",   fontSize=18, leading=22)
+        S_FOOTER  = ParagraphStyle("footer",  fontName="Helvetica",        fontSize=8,  textColor=DIM,     alignment=TA_CENTER)
+
+        # Metric color
+        def metric_color(key: str, val: float) -> HexColor:
+            if key == "return":  return GREEN if val >= 0 else RED
+            if key == "sharpe":  return GREEN if val >= 1 else AMBER if val >= 0 else RED
+            if key == "dd":      return RED
+            return WHITE
+
+        # Draw dark page background + amber left bar on every page
+        def on_page(canvas, doc):
+            canvas.saveState()
+            canvas.setFillColor(BG)
+            canvas.rect(0, 0, W, H, fill=1, stroke=0)
+            canvas.setFillColor(AMBER)
+            canvas.rect(0, 0, 4, H, fill=1, stroke=0)
+            # Footer
+            canvas.setFont("Helvetica", 8)
+            canvas.setFillColor(DIM)
+            footer = "Generated by Corvo · corvo.capital · Not financial advice"
+            canvas.drawCentredString(W / 2, 14*mm, footer)
+            canvas.drawRightString(W - 24*mm, 14*mm, f"Page {doc.page}")
+            canvas.restoreState()
+
+        story = []
+
+        # ── Header ──────────────────────────────────────────────────────────
+        story.append(Paragraph("CORVO", S_TITLE))
+        story.append(Paragraph("Portfolio Intelligence Report", S_SUB))
+        story.append(Spacer(1, 2*mm))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=AMBER))
+        story.append(Spacer(1, 4*mm))
+        story.append(Paragraph(f"<b>{ticker_str}</b>", ParagraphStyle("tickers", fontName="Helvetica-Bold", fontSize=14, textColor=WHITE, spaceAfter=3)))
+        story.append(Paragraph(f"Generated {now_str}  ·  Period: {period.upper()}", S_SUB))
+        story.append(Spacer(1, 6*mm))
+
+        # ── Metric cards (2×2 table) ─────────────────────────────────────────
+        total_w = weights if weights else [1.0] * len(tickers)
+        wsum = sum(total_w) or 1
+        norm_w = [w / wsum for w in total_w]
+
+        ret_color = metric_color("return", ret)
+        sh_color  = metric_color("sharpe", sharpe)
+
+        def metric_cell(label: str, value: str, color: HexColor):
+            return [
+                Paragraph(f'<font color="#{color.hexval()[2:]}">{value}</font>',
+                          ParagraphStyle("mv", fontName="Helvetica-Bold", fontSize=18, textColor=color, leading=22)),
+                Paragraph(label.upper(),
+                          ParagraphStyle("ml", fontName="Helvetica-Bold", fontSize=7, textColor=DIM, leading=10)),
+            ]
+
+        ret_sign = "+" if ret >= 0 else ""
+        metric_data = [
+            [metric_cell("Annual Return", f"{ret_sign}{ret*100:.2f}%", ret_color),
+             metric_cell("Volatility",   f"{vol*100:.2f}%", WHITE)],
+            [metric_cell("Sharpe Ratio", f"{sharpe:.2f}", sh_color),
+             metric_cell("Max Drawdown", f"{dd*100:.2f}%", RED)],
+        ]
+
+        col_w = (W - 48*mm) / 2
+        metric_table = Table(metric_data, colWidths=[col_w, col_w], rowHeights=[18*mm, 18*mm])
+        metric_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), CARD_BG),
+            ("BOX",        (0, 0), (0, 0),  0.5, BORDER),
+            ("BOX",        (1, 0), (1, 0),  0.5, BORDER),
+            ("BOX",        (0, 1), (0, 1),  0.5, BORDER),
+            ("BOX",        (1, 1), (1, 1),  0.5, BORDER),
+            ("LEFTPADDING",  (0, 0), (-1, -1), 14),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 14),
+            ("TOPPADDING",   (0, 0), (-1, -1), 10),
+            ("BOTTOMPADDING",(0, 0), (-1, -1), 8),
+            ("ROWBACKGROUNDS", (0, 0), (-1, -1), [CARD_BG]),
+            ("ROUNDEDCORNERS", (0, 0), (-1, -1), [4]),
+        ]))
+        story.append(metric_table)
+        story.append(Spacer(1, 5*mm))
+
+        # ── Allocation bar ───────────────────────────────────────────────────
+        story.append(HRFlowable(width="100%", thickness=0.3, color=BORDER))
+        story.append(Paragraph("PORTFOLIO ALLOCATION", S_SECTION))
+        for i, (ticker, w) in enumerate(zip(tickers, norm_w)):
+            story.append(Paragraph(
+                f'<font color="#c9a84c"><b>{ticker}</b></font>'
+                f'<font color="#666666">{"&nbsp;" * 4}</font>'
+                f'<font color="#cccccc">{w*100:.1f}%</font>',
+                ParagraphStyle("alloc", fontName="Helvetica", fontSize=11, textColor=BODY, spaceAfter=4, leading=14)
+            ))
+
+        # Individual returns (if any)
+        if ind_returns:
+            story.append(Spacer(1, 3*mm))
+            story.append(HRFlowable(width="100%", thickness=0.3, color=BORDER))
+            story.append(Paragraph("INDIVIDUAL PERFORMANCE", S_SECTION))
+            sorted_ret = sorted(ind_returns.items(), key=lambda x: -x[1])
+            for t, r in sorted_ret:
+                rv = r * 100
+                col = "#5cb88a" if rv >= 0 else "#e05c5c"
+                sign = "+" if rv >= 0 else ""
+                story.append(Paragraph(
+                    f'<font color="#c9a84c"><b>{t}</b></font>'
+                    f'<font color="#666666">{"&nbsp;" * 4}</font>'
+                    f'<font color="{col}">{sign}{rv:.1f}%</font>',
+                    ParagraphStyle("iret", fontName="Helvetica", fontSize=11, textColor=BODY, spaceAfter=4, leading=14)
+                ))
+
+        # ── AI Analysis ──────────────────────────────────────────────────────
+        story.append(Spacer(1, 3*mm))
+        story.append(HRFlowable(width="100%", thickness=0.3, color=BORDER))
+        story.append(Paragraph("AI ANALYSIS", S_SECTION))
+
+        # Parse the analysis text into paragraphs
+        for line in analysis_text.split("\n"):
+            stripped = line.strip()
+            if not stripped:
+                story.append(Spacer(1, 2*mm))
+                continue
+            if stripped.startswith("## "):
+                text = stripped[3:]
+                story.append(Spacer(1, 2*mm))
+                story.append(Paragraph(text.upper(), S_SECTION))
+                story.append(HRFlowable(width="100%", thickness=0.3, color=AMBER))
+                story.append(Spacer(1, 1*mm))
+            elif stripped.startswith("- ") or stripped.startswith("• "):
+                text = stripped[2:].replace("**", "")
+                story.append(Paragraph(f"▸  {text}", S_BULLET))
+            else:
+                text = stripped.replace("**", "")
+                story.append(Paragraph(text, S_BODY))
+
+        doc = make_doc()
+        doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
+
+        buf.seek(0)
+        filename = f"corvo_{'_'.join(tickers[:4])}_report.pdf"
+        return StreamingResponse(
+            buf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1236,6 +1422,31 @@ def send_welcome_email(req: WelcomeEmailRequest):
         return {"ok": False, "error": str(e)}
 
 
+# ── Notify-me (email capture) ─────────────────────────────────────────────────
+class NotifyMeRequest(BaseModel):
+    email: str
+
+@app.post("/notify-me")
+def notify_me(req: NotifyMeRequest):
+    """Add an email to the notify_list table (upsert, ignore duplicates)."""
+    email = req.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Invalid email")
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
+    if sb_url and sb_key:
+        try:
+            requests.post(
+                f"{sb_url}/rest/v1/notify_list",
+                headers={**_sb_headers(sb_key), "Prefer": "resolution=ignore-duplicates"},
+                json={"email": email},
+                timeout=5,
+            )
+        except Exception as e:
+            print(f"[notify-me] Supabase insert failed: {e}")
+    return {"ok": True}
+
+
 # ── Stock detail endpoint ──────────────────────────────────────────────────────
 @app.get("/stock/{ticker}")
 def stock_detail(ticker: str, request: Request):
@@ -1512,3 +1723,203 @@ def unsubscribe(user_id: str = ""):
   </div>
 </body>
 </html>""", status_code=200)
+
+
+# ── Push Notification Endpoints ───────────────────────────────────────────────
+
+class PushSubscribeRequest(BaseModel):
+    user_id: str
+    subscription: dict
+
+
+@app.get("/push/vapid-public-key")
+def get_vapid_public_key():
+    if not VAPID_PUBLIC_KEY:
+        raise HTTPException(status_code=503, detail="Push notifications not configured")
+    return {"public_key": VAPID_PUBLIC_KEY}
+
+
+@app.post("/push/subscribe")
+def push_subscribe(req: PushSubscribeRequest):
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=503, detail="Supabase not configured")
+    try:
+        # Upsert by matching endpoint to avoid duplicate subscriptions
+        endpoint = req.subscription.get("endpoint", "")
+        # Delete old entry for this endpoint, then insert fresh
+        requests.delete(
+            f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{req.user_id}&subscription->>endpoint=eq.{endpoint}",
+            headers=_sb_headers(), timeout=5,
+        )
+        resp = requests.post(
+            f"{SUPABASE_URL}/rest/v1/push_subscriptions",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json={"user_id": req.user_id, "subscription": req.subscription},
+            timeout=5,
+        )
+        if resp.status_code not in (200, 201):
+            print(f"[push] subscribe insert failed: {resp.status_code} {resp.text}")
+            raise HTTPException(status_code=500, detail="Failed to save subscription")
+        return {"status": "subscribed"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[push] subscribe error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _send_push(subscription: dict, title: str, body: str) -> bool:
+    """Send a push notification to a single subscription. Returns True on success."""
+    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        return False
+    try:
+        from pywebpush import webpush, WebPushException
+        webpush(
+            subscription_info=subscription,
+            data=json.dumps({"title": title, "body": body}),
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={"sub": VAPID_CLAIMS_EMAIL},
+        )
+        return True
+    except Exception as e:
+        print(f"[push] send error: {e}")
+        return False
+
+
+def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, threshold: float):
+    """Send price alert email via Resend."""
+    resend_key = os.environ.get("RESEND_API_KEY", "")
+    from_email = os.environ.get("RESEND_FROM_EMAIL", "alerts@corvo.capital")
+    if not resend_key or not to_email:
+        return
+    subject = f"Price Alert: {ticker} has {'dropped' if condition == 'drops' else 'risen'} {threshold}%"
+    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="background:#0a0e14;color:#e8e0cc;font-family:Courier New,monospace;padding:40px;margin:0">
+  <div style="max-width:480px;margin:0 auto">
+    <div style="font-size:22px;font-weight:900;letter-spacing:8px;color:#c9a84c;margin-bottom:4px">CORVO</div>
+    <div style="font-size:8px;letter-spacing:3px;color:rgba(232,224,204,0.35);margin-bottom:32px">PRICE ALERT</div>
+    <div style="background:#111827;border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:24px">
+      <div style="font-size:11px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;margin-bottom:8px">Alert Triggered</div>
+      <div style="font-size:28px;font-weight:700;color:#e8e0cc;margin-bottom:4px">{ticker}</div>
+      <div style="font-size:16px;color:rgba(232,224,204,0.7);margin-bottom:20px">
+        Current price: <strong style="color:#c9a84c">${price:.2f}</strong>
+      </div>
+      <div style="font-size:13px;color:rgba(232,224,204,0.6);line-height:1.7">
+        Your alert triggered because {ticker} {'dropped' if condition == 'drops' else 'rose'} by more than {threshold}%.
+      </div>
+    </div>
+    <div style="margin-top:28px;font-size:10px;color:rgba(232,224,204,0.25);text-align:center">
+      corvo.capital · Not financial advice
+    </div>
+  </div>
+</body></html>"""
+    try:
+        requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
+            json={"from": from_email, "to": [to_email], "subject": subject, "html": html},
+            timeout=10,
+        )
+    except Exception as e:
+        print(f"[push] alert email error: {e}")
+
+
+async def check_price_alerts():
+    """Check all untriggered price alerts against current prices."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return
+    try:
+        # Fetch all untriggered price alerts
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/price_alerts?triggered=eq.false&type=eq.price&select=id,user_id,ticker,condition,threshold",
+            headers=_sb_headers(), timeout=10,
+        )
+        if resp.status_code != 200:
+            return
+        alerts = resp.json()
+        if not alerts:
+            return
+
+        # Group by ticker to minimize API calls
+        ticker_alerts: dict[str, list[dict]] = {}
+        for a in alerts:
+            t = a.get("ticker", "").upper()
+            if t:
+                ticker_alerts.setdefault(t, []).append(a)
+
+        for ticker, ticker_alert_list in ticker_alerts.items():
+            try:
+                # Get current price via yfinance (1-day data, last close)
+                df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
+                if df.empty:
+                    continue
+                current_price = float(df["Close"].iloc[-1])
+
+                # Get reference price (close from previous day)
+                df_prev = yf.download(ticker, period="5d", progress=False, auto_adjust=True)
+                if df_prev.empty or len(df_prev) < 2:
+                    continue
+                prev_close = float(df_prev["Close"].iloc[-2])
+                if prev_close <= 0:
+                    continue
+                pct_change = ((current_price - prev_close) / prev_close) * 100
+
+                for alert in ticker_alert_list:
+                    condition = alert["condition"]  # "drops" or "rises"
+                    threshold = float(alert["threshold"])
+                    triggered = (
+                        (condition == "drops" and pct_change <= -threshold) or
+                        (condition == "rises" and pct_change >= threshold)
+                    )
+                    if not triggered:
+                        continue
+
+                    alert_id = alert["id"]
+                    user_id = alert["user_id"]
+
+                    # Mark as triggered
+                    requests.patch(
+                        f"{SUPABASE_URL}/rest/v1/price_alerts?id=eq.{alert_id}",
+                        headers={**_sb_headers(), "Prefer": "return=minimal"},
+                        json={"triggered": True, "triggered_at": datetime.now(timezone.utc).isoformat()},
+                        timeout=5,
+                    )
+
+                    notif_title = "Corvo Price Alert"
+                    notif_body = f"{ticker} has {'dropped' if condition == 'drops' else 'risen'} {threshold}% — now at ${current_price:.2f}"
+
+                    # Send push to all subscriptions for this user
+                    subs_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                        headers=_sb_headers(), timeout=5,
+                    )
+                    if subs_resp.status_code == 200:
+                        for row in subs_resp.json():
+                            _send_push(row["subscription"], notif_title, notif_body)
+
+                    # Send email alert
+                    user_resp = requests.get(
+                        f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                        headers=_sb_headers(), timeout=5,
+                    )
+                    if user_resp.status_code == 200:
+                        email = user_resp.json().get("email", "")
+                        if email:
+                            _send_alert_email(email, ticker, current_price, condition, threshold)
+
+                    print(f"[alerts] triggered: {ticker} {condition} {threshold}% for user {user_id}")
+            except Exception as e:
+                print(f"[alerts] error checking {ticker}: {e}")
+    except Exception as e:
+        print(f"[alerts] check_price_alerts error: {e}")
+
+
+async def price_alert_loop():
+    """Background loop: check price alerts every 60 seconds."""
+    print("[alerts] background price alert checker started")
+    while True:
+        try:
+            await check_price_alerts()
+        except Exception as e:
+            print(f"[alerts] loop error: {e}")
+        await asyncio.sleep(60)

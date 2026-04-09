@@ -141,7 +141,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <span style={{ fontSize: 8, letterSpacing: 2.5, color: C.cream3, textTransform: "uppercase" }}>Saved</span>
-        <button onClick={() => setShowSave(s => !s)} style={{ fontSize: 9, letterSpacing: 1, color: C.amber, background: "none", border: "none", cursor: "pointer" }}>+ Save</button>
+        <button data-save-trigger onClick={() => setShowSave(s => !s)} style={{ fontSize: 9, letterSpacing: 1, color: C.amber, background: "none", border: "none", cursor: "pointer" }}>+ Save</button>
       </div>
       <AnimatePresence>
         {showSave && (
