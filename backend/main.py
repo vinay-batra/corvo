@@ -55,13 +55,15 @@ if os.getenv("SENTRY_DSN"):
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
-    task = asyncio.create_task(price_alert_loop())
+    alert_task = asyncio.create_task(price_alert_loop())
+    brief_task  = asyncio.create_task(morning_brief_loop())
     yield
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    for t in (alert_task, brief_task):
+        t.cancel()
+        try:
+            await t
+        except asyncio.CancelledError:
+            pass
 
 app = FastAPI(title="Corvo API", version="1.0.0", lifespan=lifespan)
 
@@ -1935,22 +1937,35 @@ def push_subscribe(req: PushSubscribeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def _send_push(subscription: dict, title: str, body: str) -> bool:
-    """Send a push notification to a single subscription. Returns True on success."""
+def _send_push(subscription: dict, title: str, body: str, icon: str = "", url: str = "") -> str:
+    """
+    Send a push notification. Returns:
+      "ok"   — delivered
+      "dead" — subscription is expired/gone (410/404); safe to delete
+      "err"  — transient error; keep the subscription
+    """
     if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
-        return False
+        return "err"
     try:
         from pywebpush import webpush, WebPushException
+        payload: dict = {"title": title, "body": body}
+        if icon:
+            payload["icon"] = icon
+        if url:
+            payload["url"] = url
         webpush(
             subscription_info=subscription,
-            data=json.dumps({"title": title, "body": body}),
+            data=json.dumps(payload),
             vapid_private_key=VAPID_PRIVATE_KEY,
             vapid_claims={"sub": VAPID_CLAIMS_EMAIL},
         )
-        return True
+        return "ok"
     except Exception as e:
+        status = getattr(getattr(e, "response", None), "status_code", None)
+        if status in (404, 410):
+            return "dead"
         print(f"[push] send error: {e}")
-        return False
+        return "err"
 
 
 def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, threshold: float):
@@ -2391,6 +2406,180 @@ def portfolio_tax_loss(
         "losses": losses,
         "total_harvestable_loss": round(total_harvestable, 2),
     }
+
+
+# ── Morning Market Brief Push ──────────────────────────────────────────────────
+
+_BRIEF_INDICES = ["SPY", "QQQ", "IWM", "DIA"]
+_BRIEF_MOVERS  = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOGL"]
+
+
+def _brief_one_day_change(ticker: str) -> float:
+    """Return 1-day percentage change for a ticker."""
+    try:
+        hist = yf.Ticker(ticker).history(period="2d")
+        if len(hist) >= 2:
+            prev, curr = float(hist["Close"].iloc[-2]), float(hist["Close"].iloc[-1])
+            return round((curr - prev) / prev * 100, 2)
+    except Exception:
+        pass
+    return 0.0
+
+
+def _brief_fetch_indices() -> dict[str, float]:
+    return {t: _brief_one_day_change(t) for t in _BRIEF_INDICES}
+
+
+def _brief_fetch_movers() -> list[dict]:
+    try:
+        data = yf.download(_BRIEF_MOVERS, period="2d", auto_adjust=True, progress=False)
+        volumes = data["Volume"].iloc[-1].dropna()
+        top5 = volumes.nlargest(5).index.tolist()
+        return [{"ticker": t, "change": _brief_one_day_change(t), "volume": int(volumes[t])} for t in top5]
+    except Exception:
+        return [{"ticker": t, "change": _brief_one_day_change(t), "volume": 0} for t in _BRIEF_MOVERS[:5]]
+
+
+def _brief_generate(indices: dict[str, float], movers: list[dict]) -> str:
+    """Call Claude to write a concise market brief."""
+    import anthropic as _anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return ""
+    client = _anthropic.Anthropic(api_key=api_key)
+    index_lines  = "\n".join([f"  {t}: {v:+.2f}%" for t, v in indices.items()])
+    mover_lines  = "\n".join([f"  {m['ticker']}: {m['change']:+.2f}% (vol {m['volume']:,})" for m in movers])
+    prompt = (
+        "You are a market analyst. Write a concise daily market brief in exactly 3 paragraphs:\n\n"
+        f"INDEX PERFORMANCE (1-day):\n{index_lines}\n\n"
+        f"TOP 5 MOST ACTIVE STOCKS:\n{mover_lines}\n\n"
+        "Paragraph 1: Overall market mood.\n"
+        "Paragraph 2: Notable movers.\n"
+        "Paragraph 3: One forward-looking insight.\n"
+        "Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff."
+    )
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=400,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.content[0].text.strip()
+
+
+def _brief_push_body(brief: str, indices: dict[str, float]) -> str:
+    """Build the push notification body: first sentence + SPY/QQQ snapshot."""
+    first_sentence = brief.split(".")[0].strip() + "." if brief else "Markets are open."
+    spy  = indices.get("SPY", 0.0)
+    qqq  = indices.get("QQQ", 0.0)
+    index_note = f"  SPY {spy:+.2f}%  ·  QQQ {qqq:+.2f}%"
+    return f"{first_sentence}\n{index_note}"
+
+
+async def send_morning_brief() -> dict:
+    """
+    Generate AI market brief and push to all subscribers.
+    Returns a summary dict (sent, failed, removed, skipped).
+    """
+    print("[morning-brief] generating market brief…")
+    try:
+        indices = await asyncio.get_event_loop().run_in_executor(None, _brief_fetch_indices)
+        movers  = await asyncio.get_event_loop().run_in_executor(None, _brief_fetch_movers)
+        brief   = await asyncio.get_event_loop().run_in_executor(None, _brief_generate, indices, movers)
+    except Exception as e:
+        print(f"[morning-brief] data fetch/generate error: {e}")
+        return {"error": str(e)}
+
+    if not brief:
+        print("[morning-brief] no brief generated (API key missing?)")
+        return {"skipped": "no brief"}
+
+    title = "📈 Morning Market Brief"
+    body  = _brief_push_body(brief, indices)
+    icon  = "https://corvo.capital/corvo-logo.png"
+    url   = "https://corvo.capital/app"
+
+    # Fetch all push subscriptions
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        print("[morning-brief] Supabase not configured — skipping push")
+        return {"skipped": "supabase not configured", "brief": brief}
+
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/push_subscriptions?select=id,user_id,subscription",
+            headers=_sb_headers(),
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            print(f"[morning-brief] failed to fetch subscriptions: {resp.status_code}")
+            return {"error": f"supabase {resp.status_code}"}
+        rows = resp.json()
+    except Exception as e:
+        print(f"[morning-brief] supabase fetch error: {e}")
+        return {"error": str(e)}
+
+    sent = failed = removed = 0
+    dead_ids: list[str] = []
+
+    for row in rows:
+        sub = row.get("subscription", {})
+        row_id = row.get("id")
+        result = _send_push(sub, title, body, icon=icon, url=url)
+        if result == "ok":
+            sent += 1
+        elif result == "dead":
+            failed += 1
+            if row_id:
+                dead_ids.append(str(row_id))
+        else:
+            failed += 1
+
+    # Prune dead subscriptions
+    for dead_id in dead_ids:
+        try:
+            requests.delete(
+                f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                headers=_sb_headers(),
+                timeout=5,
+            )
+            removed += 1
+        except Exception:
+            pass
+
+    print(f"[morning-brief] done — sent={sent} failed={failed} removed={removed}")
+    return {"sent": sent, "failed": failed, "removed": removed, "brief_preview": brief[:120]}
+
+
+def _seconds_until_9am_et() -> float:
+    """Return seconds until the next 9:00 AM US/Eastern, minimum 60 s."""
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now_et = datetime.now(ZoneInfo("America/New_York"))
+    target = now_et.replace(hour=9, minute=0, second=0, microsecond=0)
+    if now_et >= target:
+        target += timedelta(days=1)
+    return max((target - now_et).total_seconds(), 60.0)
+
+
+async def morning_brief_loop():
+    """Background task: fire market brief push at 9am ET every day."""
+    print("[morning-brief] scheduler started")
+    while True:
+        wait = _seconds_until_9am_et()
+        print(f"[morning-brief] sleeping {wait/3600:.2f}h until 9am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_morning_brief()
+        except Exception as e:
+            print(f"[morning-brief] loop error: {e}")
+        # Sleep 60 s after firing so we don't re-trigger within the same minute
+        await asyncio.sleep(60)
+
+
+@app.get("/push/test-brief")
+async def test_morning_brief():
+    """Manually trigger the morning market brief push (for testing)."""
+    result = await send_morning_brief()
+    return result
 
 
 async def price_alert_loop():
