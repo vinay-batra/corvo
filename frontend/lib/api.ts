@@ -46,3 +46,47 @@ export async function fetchNews(assets: any[]) {
   const res = await fetch(`${API_URL}/news?tickers=${tickers}`);
   return res.json();
 }
+
+export async function fetchMarketBrief(force = false) {
+  const res = await fetch(`${API_URL}/market-brief${force ? "?force=true" : ""}`);
+  return res.json();
+}
+
+export async function fetchSectors(assets: any[]) {
+  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
+  const tickers = normalized.map(a => a.ticker).join(",");
+  const weights = normalized.map(a => a.weight).join(",");
+  const res = await fetch(`${API_URL}/portfolio/sectors?tickers=${tickers}&weights=${weights}`);
+  return res.json();
+}
+
+export async function importPortfolioCsv(file: File): Promise<{ tickers: string[]; weights: number[]; detected_format: string; error?: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_URL}/portfolio/import-csv`, { method: "POST", body: form });
+  return res.json();
+}
+
+export async function fetchDividends(assets: any[], portfolioValue = 10000) {
+  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
+  const tickers = normalized.map(a => a.ticker).join(",");
+  const weights = normalized.map(a => a.weight).join(",");
+  const res = await fetch(
+    `${API_URL}/portfolio/dividends?tickers=${tickers}&weights=${weights}&portfolio_value=${portfolioValue}`
+  );
+  return res.json();
+}
+
+export async function fetchTaxLoss(assets: any[], portfolioValue = 10000) {
+  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
+  const tickers = normalized.map(a => a.ticker).join(",");
+  const weights = normalized.map(a => a.weight).join(",");
+  const purchasePrices = normalized.map(a => a.purchasePrice != null ? a.purchasePrice : "").join(",");
+  const res = await fetch(
+    `${API_URL}/portfolio/tax-loss?tickers=${tickers}&weights=${weights}&purchase_prices=${purchasePrices}&portfolio_value=${portfolioValue}`
+  );
+  return res.json();
+}

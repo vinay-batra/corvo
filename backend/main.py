@@ -451,6 +451,133 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     }
 
 
+_sectors_cache: dict[str, tuple[dict, float]] = {}
+
+@app.get("/portfolio/sectors")
+def portfolio_sectors(tickers: str = "AAPL", weights: str = "", request: Request = None):
+    """Return sector exposure aggregated by weight. Cached per ticker+weight combo for 1 hour."""
+    cache_key = f"{tickers}|{weights}"
+    if cache_key in _sectors_cache:
+        cached_result, cached_ts = _sectors_cache[cache_key]
+        if time.time() - cached_ts < 3600:
+            return cached_result
+
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {"sectors": {}}
+
+    weight_list: list[float] = []
+    if weights:
+        try:
+            weight_list = [float(w) for w in weights.split(",")]
+        except ValueError:
+            weight_list = []
+
+    if len(weight_list) != len(ticker_list):
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+
+    total = sum(weight_list)
+    if total <= 0:
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+        total = 1.0
+    normalized_weights = [w / total for w in weight_list]
+
+    sector_map: dict[str, float] = {}
+    for ticker, weight in zip(ticker_list, normalized_weights):
+        try:
+            info = yf.Ticker(ticker).info
+            sector = info.get("sector") or "Other"
+        except Exception:
+            sector = "Other"
+        sector_map[sector] = sector_map.get(sector, 0.0) + weight
+
+    result = {"sectors": sector_map}
+    _sectors_cache[cache_key] = (result, time.time())
+    return result
+
+
+_dividends_cache: dict[str, tuple[dict, float]] = {}
+
+@app.get("/portfolio/dividends")
+def portfolio_dividends(
+    tickers: str = "AAPL",
+    weights: str = "",
+    portfolio_value: float = 10000.0,
+    request: Request = None,
+):
+    """Return dividend info per ticker plus aggregated annual income estimate."""
+    cache_key = f"{tickers}|{weights}|{portfolio_value}"
+    if cache_key in _dividends_cache:
+        cached_result, cached_ts = _dividends_cache[cache_key]
+        if time.time() - cached_ts < 3600:
+            return cached_result
+
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {"holdings": [], "total_annual_income": 0.0, "next_ex_div_date": None}
+
+    weight_list: list[float] = []
+    if weights:
+        try:
+            weight_list = [float(w) for w in weights.split(",")]
+        except ValueError:
+            weight_list = []
+
+    if len(weight_list) != len(ticker_list):
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+
+    total = sum(weight_list)
+    if total <= 0:
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+        total = 1.0
+    normalized_weights = [w / total for w in weight_list]
+
+    holdings = []
+    for ticker, weight in zip(ticker_list, normalized_weights):
+        try:
+            info = yf.Ticker(ticker).info
+        except Exception:
+            info = {}
+
+        raw_yield = info.get("dividendYield")
+        div_yield = safe_float(raw_yield) * 100 if raw_yield is not None else None  # as %
+
+        # ex-dividend date: yfinance returns Unix timestamp or None
+        ex_div_ts = info.get("exDividendDate")
+        ex_div_date: str | None = None
+        if ex_div_ts:
+            try:
+                ex_div_date = datetime.fromtimestamp(int(ex_div_ts), tz=timezone.utc).strftime("%Y-%m-%d")
+            except Exception:
+                ex_div_date = None
+
+        alloc_value = portfolio_value * weight
+        annual_income = round(alloc_value * safe_float(raw_yield), 2) if raw_yield else 0.0
+
+        holdings.append({
+            "ticker": ticker,
+            "weight": round(weight, 4),
+            "dividend_yield": round(div_yield, 2) if div_yield is not None else None,
+            "annual_income": annual_income,
+            "ex_div_date": ex_div_date,
+        })
+
+    total_annual_income = round(sum(h["annual_income"] for h in holdings), 2)
+
+    # Next upcoming ex-div date across all paying tickers
+    upcoming = [h["ex_div_date"] for h in holdings if h["ex_div_date"]]
+    upcoming.sort()
+    next_ex_div_date = upcoming[0] if upcoming else None
+
+    result = {
+        "holdings": holdings,
+        "total_annual_income": total_annual_income,
+        "next_ex_div_date": next_ex_div_date,
+    }
+    _dividends_cache[cache_key] = (result, time.time())
+    return result
+
+
 @app.get("/news")
 def news(tickers: str = "AAPL"):
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
@@ -2108,6 +2235,162 @@ def get_portfolio_history(portfolio_id: str, user_id: str = ""):
         return {"snapshots": []}
 
     return {"snapshots": resp.json()}
+
+
+# ── Tax Loss Harvesting ────────────────────────────────────────────────────────
+
+# Sector → list of replacement tickers (wash-sale-safe: different enough from common holdings)
+_SECTOR_REPLACEMENTS: dict[str, list[str]] = {
+    "Technology": ["VGT", "SOXX", "IGV", "FTEC", "SMH"],
+    "Communication Services": ["VOX", "IYZ", "FCOM"],
+    "Consumer Cyclical": ["VCR", "XLY", "IEDI"],
+    "Consumer Defensive": ["VDC", "XLP", "FSTA"],
+    "Healthcare": ["VHT", "IYH", "FHLC", "XLV"],
+    "Financials": ["VFH", "XLF", "KBWB", "IYF"],
+    "Energy": ["VDE", "XLE", "IYE", "FENY"],
+    "Industrials": ["VIS", "XLI", "IYJ", "FIND"],
+    "Basic Materials": ["VAW", "XLB", "IYM"],
+    "Real Estate": ["VNQ", "IYR", "XLRE"],
+    "Utilities": ["VPU", "XLU", "IDU"],
+}
+_DEFAULT_REPLACEMENTS = ["VTI", "ITOT", "SCHB", "IVV", "VOO"]
+
+
+def _get_sector(ticker: str) -> str:
+    try:
+        info = yf.Ticker(ticker).info
+        return info.get("sector") or "Other"
+    except Exception:
+        return "Other"
+
+
+def _get_current_price(ticker: str) -> float | None:
+    try:
+        hist = yf.Ticker(ticker).history(period="2d")
+        if not hist.empty:
+            return float(hist["Close"].iloc[-1])
+    except Exception:
+        pass
+    return None
+
+
+def _pick_replacement(ticker: str, sector: str, portfolio_tickers: set[str]) -> str:
+    """Pick a replacement ticker that is not in the portfolio (wash-sale safe)."""
+    candidates = _SECTOR_REPLACEMENTS.get(sector, _DEFAULT_REPLACEMENTS)
+    # Never suggest the original ticker or anything already held
+    for c in candidates:
+        if c.upper() not in portfolio_tickers and c.upper() != ticker.upper():
+            return c
+    # Fallback to broad market ETF not already held
+    for c in _DEFAULT_REPLACEMENTS:
+        if c.upper() not in portfolio_tickers:
+            return c
+    return "VTI"
+
+
+def _generate_tlh_reasoning(ticker: str, replacement: str, sector: str, loss_pct: float, portfolio_value: float, loss_dollars: float) -> str:
+    """Use Claude to explain the tax loss harvesting suggestion."""
+    try:
+        import anthropic
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            return f"Sell {ticker} to realize the loss, then buy {replacement} to maintain {sector} exposure while respecting the wash-sale rule."
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = (
+            f"A portfolio holds {ticker} (sector: {sector}) which is down {abs(loss_pct):.1f}% "
+            f"(${abs(loss_dollars):,.0f} loss on a ${portfolio_value:,.0f} portfolio). "
+            f"The suggested replacement is {replacement}. "
+            f"In 1-2 concise sentences, explain why selling {ticker} and buying {replacement} is a smart tax loss harvesting move. "
+            f"Mention the wash-sale rule, the similar market exposure, and the tax benefit. Be direct and specific."
+        )
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=120,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content[0].text.strip()
+    except Exception:
+        return f"Sell {ticker} to realize the {abs(loss_pct):.1f}% loss, then buy {replacement} to maintain {sector} sector exposure. Wait 31 days to repurchase {ticker} to avoid the wash-sale rule."
+
+
+@app.get("/portfolio/tax-loss")
+def portfolio_tax_loss(
+    tickers: str = "AAPL",
+    weights: str = "",
+    purchase_prices: str = "",
+    portfolio_value: float = 10000.0,
+):
+    """
+    For each ticker, compare current price vs purchase price.
+    For tickers at a loss, suggest a wash-sale-safe replacement and AI reasoning.
+    Returns: { losses: [{ticker, loss_pct, loss_dollars, suggested_replacement, reasoning}], total_harvestable_loss }
+    """
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {"losses": [], "total_harvestable_loss": 0.0}
+
+    weight_list: list[float] = []
+    if weights:
+        try:
+            weight_list = [float(w) for w in weights.split(",")]
+        except ValueError:
+            weight_list = []
+    if len(weight_list) != len(ticker_list):
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+    total_w = sum(weight_list) or 1.0
+    normalized_weights = [w / total_w for w in weight_list]
+
+    purchase_price_list: list[float | None] = []
+    if purchase_prices:
+        for p in purchase_prices.split(","):
+            try:
+                val = float(p.strip())
+                purchase_price_list.append(val if val > 0 else None)
+            except ValueError:
+                purchase_price_list.append(None)
+    while len(purchase_price_list) < len(ticker_list):
+        purchase_price_list.append(None)
+
+    portfolio_tickers = set(ticker_list)
+    losses = []
+    total_harvestable = 0.0
+
+    for ticker, weight, purchase_price in zip(ticker_list, normalized_weights, purchase_price_list):
+        if purchase_price is None:
+            continue
+        current_price = _get_current_price(ticker)
+        if current_price is None:
+            continue
+        loss_pct = (current_price - purchase_price) / purchase_price * 100
+        if loss_pct >= 0:
+            continue  # Not at a loss
+
+        alloc_value = portfolio_value * weight
+        loss_dollars = alloc_value * (loss_pct / 100)
+        total_harvestable += loss_dollars
+
+        sector = _get_sector(ticker)
+        replacement = _pick_replacement(ticker, sector, portfolio_tickers)
+        reasoning = _generate_tlh_reasoning(ticker, replacement, sector, loss_pct, alloc_value, loss_dollars)
+
+        losses.append({
+            "ticker": ticker,
+            "loss_pct": round(loss_pct, 2),
+            "loss_dollars": round(loss_dollars, 2),
+            "current_price": round(current_price, 2),
+            "purchase_price": round(purchase_price, 2),
+            "suggested_replacement": replacement,
+            "sector": sector,
+            "reasoning": reasoning,
+        })
+
+    # Sort by largest loss first
+    losses.sort(key=lambda x: x["loss_dollars"])
+
+    return {
+        "losses": losses,
+        "total_harvestable_loss": round(total_harvestable, 2),
+    }
 
 
 async def price_alert_loop():

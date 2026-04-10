@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { importPortfolioCsv } from "../lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const C = { amber: "#c9a84c", cream: "#e8e0cc", cream3: "rgba(232,224,204,0.25)", border: "rgba(255,255,255,0.07)", navy4: "#161c26" };
@@ -116,7 +117,7 @@ function localSearch(q: string): { ticker: string; name: string; type: string; e
   ).slice(0, 8);
 }
 
-interface Asset { ticker: string; weight: number; }
+interface Asset { ticker: string; weight: number; purchasePrice?: number; }
 interface Result { ticker: string; name: string; exchange: string; type: string; }
 interface Props {
   assets: Asset[];
@@ -135,9 +136,15 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const [names, setNames] = useState<Record<string,string>>({});
   const [importLoading, setImportLoading] = useState(false);
   const [importError, setImportError] = useState("");
+  const [showCsvModal, setShowCsvModal] = useState(false);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [csvError, setCsvError] = useState("");
+  const [csvPreview, setCsvPreview] = useState<{ tickers: string[]; weights: number[]; detected_format: string } | null>(null);
+  const [csvDragOver, setCsvDragOver] = useState(false);
   const blurT = useRef<Record<number,ReturnType<typeof setTimeout>>>({});
   const searchT = useRef<Record<number,ReturnType<typeof setTimeout>>>({});
   const fileRef = useRef<HTMLInputElement>(null);
+  const csvFileRef = useRef<HTMLInputElement>(null);
 
   const search = useCallback(async (i: number, q: string) => {
     if (!q) { setResults(p => ({...p,[i]:[]})); return; }
@@ -167,6 +174,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   }, []);
 
   const updateWeight = (i: number, v: number) => { const n=[...assets]; n[i]={...n[i],weight:v}; update(n); };
+  const updatePurchasePrice = (i: number, v: string) => { const n=[...assets]; n[i]={...n[i],purchasePrice:v===''?undefined:parseFloat(v)||undefined}; update(n); };
   const updateTicker = (i: number, v: string) => {
     setQuery(p=>({...p,[i]:v}));
     const n=[...assets]; n[i]={...n[i],ticker:v.toUpperCase()}; update(n);
@@ -195,6 +203,29 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     setImportLoading(false);
   };
 
+  const handleCsvFile = async (file: File) => {
+    if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
+      setCsvError("Please upload a .csv file.");
+      return;
+    }
+    setCsvLoading(true); setCsvError(""); setCsvPreview(null);
+    try {
+      const result = await importPortfolioCsv(file);
+      if (result.error) { setCsvError(result.error); }
+      else { setCsvPreview(result); }
+    } catch { setCsvError("Upload failed. Please try again."); }
+    setCsvLoading(false);
+  };
+
+  const confirmCsvImport = () => {
+    if (!csvPreview) return;
+    const newAssets = csvPreview.tickers.map((t, i) => ({ ticker: t, weight: csvPreview.weights[i] }));
+    update(newAssets.slice(0, 20));
+    setShowCsvModal(false);
+    setCsvPreview(null);
+    setCsvError("");
+  };
+
   const total = assets.reduce((s,a)=>s+a.weight,0);
   const balanced = Math.abs(total-1)<0.01;
 
@@ -207,9 +238,13 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         <div style={{display:"flex",gap:5,alignItems:"center"}}>
           <button onClick={()=>fileRef.current?.click()} disabled={importLoading}
             style={{padding:"3px 8px",fontSize:9,background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:5,cursor:"pointer",color:C.cream3,letterSpacing:0.5}}>
-            {importLoading?"...":"↑ Import"}
+            {importLoading?"...":"↑ Screenshot"}
           </button>
           <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
+          <button onClick={()=>{setShowCsvModal(true);setCsvPreview(null);setCsvError("");}}
+            style={{padding:"3px 8px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.5}}>
+            ↑ CSV
+          </button>
           <span onClick={!balanced?equalize:undefined}
             style={{fontSize:9,padding:"2px 7px",border:`1px solid ${!balanced?"rgba(201,168,76,0.3)":C.border}`,borderRadius:4,cursor:balanced?"default":"pointer",color:!balanced?C.amber:C.cream3,background:"rgba(255,255,255,0.03)",fontFamily:"Space Mono,monospace"}}>
             {(total*100).toFixed(0)}%
@@ -272,6 +307,13 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   onInput={e=>updateWeight(i,parseFloat((e.target as HTMLInputElement).value))}
                   style={{width:"100%",height:2,appearance:"none" as any,background:`linear-gradient(90deg,${C.amber} ${a.weight*100}%,rgba(255,255,255,0.08) ${a.weight*100}%)`,borderRadius:1,outline:"none",cursor:"pointer"}}/>
               </div>
+              <div style={{paddingLeft:9,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
+                <span style={{fontSize:8,color:"rgba(232,224,204,0.25)",letterSpacing:1.5,textTransform:"uppercase",flexShrink:0}}>Avg Cost $</span>
+                <input type="number" min="0" step="0.01" placeholder="optional"
+                  value={a.purchasePrice ?? ""}
+                  onChange={e=>updatePurchasePrice(i,e.target.value)}
+                  style={{width:70,padding:"3px 5px",background:"rgba(255,255,255,0.03)",border:`1px solid rgba(255,255,255,0.06)`,borderRadius:4,color:"rgba(232,224,204,0.5)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"left"}}/>
+              </div>
             </motion.div>
           );
         })}
@@ -289,6 +331,124 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         )}
       </div>
 
+      {/* ── CSV Import Modal ─────────────────────────────────────── */}
+      <AnimatePresence>
+        {showCsvModal&&(
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+            style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
+            onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}>
+            <motion.div initial={{scale:0.94,y:10}} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
+              style={{background:"#141413",border:"0.5px solid rgba(255,255,255,0.09)",borderRadius:16,width:"100%",maxWidth:460,boxShadow:"0 24px 80px rgba(0,0,0,0.55)",overflow:"hidden"}}
+              onClick={e=>e.stopPropagation()}>
+
+              {/* Header */}
+              <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div>
+                  <div style={{fontSize:8,letterSpacing:2.5,color:"rgba(232,224,204,0.3)",textTransform:"uppercase",marginBottom:4}}>Portfolio</div>
+                  <div style={{fontSize:14,fontWeight:600,color:"var(--text)"}}>Import from CSV</div>
+                </div>
+                <button onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}
+                  style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.3)",fontSize:16,lineHeight:1,padding:4}}
+                  onMouseEnter={e=>e.currentTarget.style.color="rgba(255,255,255,0.7)"}
+                  onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}>✕</button>
+              </div>
+
+              <div style={{padding:"16px 20px 20px"}}>
+                {/* Supported brokerages */}
+                {!csvPreview&&(
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontSize:8,letterSpacing:2,color:"rgba(232,224,204,0.3)",textTransform:"uppercase",marginBottom:8}}>Supported Exports</div>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      {["Fidelity","Schwab","Robinhood","Any CSV"].map(b=>(
+                        <span key={b} style={{fontSize:9,padding:"3px 8px",background:"rgba(201,168,76,0.07)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:4,color:C.amber,letterSpacing:0.5}}>{b}</span>
+                      ))}
+                    </div>
+                    <div style={{marginTop:8,fontSize:9,color:"rgba(232,224,204,0.3)",lineHeight:1.6}}>
+                      Export holdings as CSV from your brokerage account, then upload the file below.
+                      Any CSV with Symbol + Quantity or Value columns will work.
+                    </div>
+                  </div>
+                )}
+
+                {/* Drop zone — only shown when no preview yet */}
+                {!csvPreview&&(
+                  <div
+                    onDragOver={e=>{e.preventDefault();setCsvDragOver(true);}}
+                    onDragLeave={()=>setCsvDragOver(false)}
+                    onDrop={e=>{e.preventDefault();setCsvDragOver(false);const f=e.dataTransfer.files[0];if(f)handleCsvFile(f);}}
+                    onClick={()=>csvFileRef.current?.click()}
+                    style={{border:`1.5px dashed ${csvDragOver?"rgba(201,168,76,0.6)":"rgba(201,168,76,0.2)"}`,borderRadius:10,padding:"28px 20px",textAlign:"center",cursor:"pointer",background:csvDragOver?"rgba(201,168,76,0.04)":"rgba(255,255,255,0.01)",transition:"all 0.15s",marginBottom:4}}>
+                    {csvLoading?(
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+                        <div style={{width:18,height:18,border:"2px solid rgba(201,168,76,0.2)",borderTopColor:C.amber,borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>
+                        <span style={{fontSize:10,color:"rgba(232,224,204,0.4)"}}>Parsing CSV…</span>
+                      </div>
+                    ):(
+                      <>
+                        <div style={{fontSize:22,marginBottom:8,opacity:0.5}}>📂</div>
+                        <div style={{fontSize:11,color:"var(--text)",marginBottom:4}}>Drop your CSV here</div>
+                        <div style={{fontSize:9,color:"rgba(232,224,204,0.35)"}}>or click to browse</div>
+                      </>
+                    )}
+                  </div>
+                )}
+                <input ref={csvFileRef} type="file" accept=".csv,text/csv" style={{display:"none"}}
+                  onChange={e=>{if(e.target.files?.[0])handleCsvFile(e.target.files[0]);e.target.value="";}}/>
+
+                {/* Error */}
+                {csvError&&(
+                  <div style={{marginTop:8,padding:"9px 12px",background:"rgba(224,92,92,0.08)",border:"1px solid rgba(224,92,92,0.2)",borderRadius:8,fontSize:10,color:"#e05c5c"}}>
+                    {csvError}
+                  </div>
+                )}
+
+                {/* Preview */}
+                {csvPreview&&(
+                  <div>
+                    {/* Format badge */}
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                      <span style={{fontSize:8,letterSpacing:2,color:"rgba(232,224,204,0.3)",textTransform:"uppercase"}}>Detected</span>
+                      <span style={{fontSize:9,padding:"3px 9px",background:"rgba(201,168,76,0.1)",border:"1px solid rgba(201,168,76,0.3)",borderRadius:4,color:C.amber,letterSpacing:0.5}}>{csvPreview.detected_format}</span>
+                      <span style={{fontSize:9,color:"rgba(232,224,204,0.3)"}}>· {csvPreview.tickers.length} holdings</span>
+                    </div>
+
+                    {/* Table */}
+                    <div style={{border:"0.5px solid rgba(255,255,255,0.07)",borderRadius:8,overflow:"hidden",marginBottom:14}}>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr auto",padding:"6px 12px",background:"rgba(255,255,255,0.03)",borderBottom:"0.5px solid rgba(255,255,255,0.06)"}}>
+                        <span style={{fontSize:8,letterSpacing:2,color:"rgba(232,224,204,0.3)",textTransform:"uppercase"}}>Ticker</span>
+                        <span style={{fontSize:8,letterSpacing:2,color:"rgba(232,224,204,0.3)",textTransform:"uppercase"}}>Weight</span>
+                      </div>
+                      <div style={{maxHeight:200,overflowY:"auto"}}>
+                        {csvPreview.tickers.map((t,i)=>(
+                          <div key={t} style={{display:"grid",gridTemplateColumns:"1fr auto",padding:"7px 12px",borderBottom:i<csvPreview.tickers.length-1?"0.5px solid rgba(255,255,255,0.05)":"none",alignItems:"center"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:7}}>
+                              <div style={{width:4,height:4,borderRadius:"50%",background:DOTS[i%DOTS.length],flexShrink:0}}/>
+                              <span style={{fontFamily:"Space Mono,monospace",fontSize:11,color:C.amber,fontWeight:700}}>{t}</span>
+                            </div>
+                            <span style={{fontFamily:"Space Mono,monospace",fontSize:10,color:"var(--text)"}}>{(csvPreview.weights[i]*100).toFixed(1)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>{setCsvPreview(null);setCsvError("");}}
+                        style={{flex:1,padding:"8px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,color:"rgba(232,224,204,0.5)",fontSize:10,cursor:"pointer",letterSpacing:0.5}}>
+                        Re-upload
+                      </button>
+                      <button onClick={confirmCsvImport}
+                        style={{flex:2,padding:"8px",background:C.amber,border:"none",borderRadius:8,color:"#0d0d0c",fontSize:11,fontWeight:600,cursor:"pointer",letterSpacing:0.5}}>
+                        Import {csvPreview.tickers.length} Holdings
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
