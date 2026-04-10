@@ -379,32 +379,46 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
       </div>
       {/* Divider + PDF Reports section */}
       <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "24px 0" }} />
-      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-        {/* Mini PDF document graphic */}
-        <div style={{ flexShrink: 0, background: "rgba(8,11,16,0.7)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 10, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 5, width: 82, position: "relative" }}>
-          {/* Corvo mark in top-right */}
-          <div style={{ position: "absolute", top: 7, right: 8 }}>
-            <svg width="10" height="10" viewBox="0 0 64 64" fill="none">
-              <circle cx="32" cy="32" r="29" fill="#c9a84c" opacity="0.7" />
-              <path d="M46 14 C38 9 28 9 20 14 C12 19 8 25 8 32 C8 39 12 45 20 50 C28 55 38 55 46 50 L46 44 C40 48 33 49 27 46 C20 43 17 38 17 32 C17 26 20 21 27 18 C33 15 40 16 46 20 Z" fill="#0a0e14" />
+      <div style={{ display: "flex", gap: 16, alignItems: "center", background: "rgba(201,168,76,0.03)", borderRadius: 14, padding: "14px 12px", border: "1px solid rgba(201,168,76,0.08)", position: "relative", overflow: "hidden" }}>
+        {/* Ambient glow */}
+        <div style={{ position: "absolute", bottom: -30, left: -20, width: 120, height: 120, background: "radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)", pointerEvents: "none", borderRadius: "50%" }} />
+        {/* Mini PDF document */}
+        <div style={{ flexShrink: 0, background: "rgba(6,9,14,0.9)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 10, padding: "10px 11px 8px", display: "flex", flexDirection: "column", gap: 0, width: 108, position: "relative", boxShadow: "0 4px 24px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(201,168,76,0.1)", animation: "fadein 0.8s ease both" }}>
+          {/* Header row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+            <span style={{ fontSize: 5.5, fontFamily: "Space Mono,monospace", fontWeight: 700, letterSpacing: 1.2, color: "#c9a84c", textTransform: "uppercase" }}>Portfolio Report</span>
+            <svg width="9" height="9" viewBox="0 0 64 64" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="32" cy="32" r="29" fill="#c9a84c" opacity="0.85" />
+              <path d="M46 14 C38 9 28 9 20 14 C12 19 8 25 8 32 C8 39 12 45 20 50 C28 55 38 55 46 50 L46 44 C40 48 33 49 27 46 C20 43 17 38 17 32 C17 26 20 21 27 18 C33 15 40 16 46 20 Z" fill="#06090e" />
             </svg>
           </div>
-          {/* Content lines */}
-          <div style={{ height: 2, background: "rgba(201,168,76,0.5)", borderRadius: 1, width: "55%" }} />
-          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1 }} />
-          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1, width: "80%" }} />
-          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1, width: "65%" }} />
-          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1 }} />
-          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1, width: "75%" }} />
-          {/* Download arrow at bottom */}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2v8M5 7l3 3 3-3" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
-              <path d="M3 13h10" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+          {/* Sparkline */}
+          <div style={{ background: "rgba(201,168,76,0.04)", borderRadius: 5, padding: "5px 5px 3px", marginBottom: 8 }}>
+            <svg width="100%" height="26" viewBox="0 0 86 26" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="pdfGrd" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M0,22 C10,20 18,16 28,11 C38,6 48,4 58,3 C68,2 76,4 86,1 L86,26 L0,26Z" fill="url(#pdfGrd)" />
+              <path d="M0,22 C10,20 18,16 28,11 C38,6 48,4 58,3 C68,2 76,4 86,1" fill="none" stroke="#c9a84c" strokeWidth="1.2" />
             </svg>
           </div>
+          {/* Metric rows with shimmer */}
+          {[
+            { label: "Sharpe", value: "0.66", color: "#e8e0cc" },
+            { label: "Return", value: "+18.4%", color: "#c9a84c" },
+            { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
+          ].map((m, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none", animation: `fadein 0.6s ease ${0.2 + i * 0.15}s both` }}>
+              <span style={{ fontSize: 7, color: "rgba(232,224,204,0.35)", fontFamily: "Space Mono,monospace" }}>{m.label}</span>
+              <span style={{ fontSize: 7.5, fontWeight: 700, color: m.color, fontFamily: "Space Mono,monospace", background: "linear-gradient(90deg, transparent 0%, rgba(201,168,76,0.08) 50%, transparent 100%)", backgroundSize: "200% 100%", animation: `shimmer ${3 + i * 0.7}s linear infinite`, WebkitBackgroundClip: "text" }}>{m.value}</span>
+            </div>
+          ))}
         </div>
-        <div>
+        {/* Text */}
+        <div style={{ position: "relative", zIndex: 1 }}>
           <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 5 }}>PDF Reports</p>
           <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 5, letterSpacing: -0.3 }}>Export & share</p>
           <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65 }}>Generate a full portfolio report in one click.</p>
@@ -573,6 +587,7 @@ export default function Landing() {
           .stats-grid{grid-template-columns:1fr 1fr!important}
           .footer-inner{flex-direction:column!important;gap:12px!important;text-align:center!important}
         }
+        .x-social-link:hover{color:#c9a84c!important}
       `}</style>
 
       {/* Fixed grid bg */}
@@ -923,6 +938,11 @@ export default function Landing() {
             <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</a>
             <a href="/terms" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</a>
             <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>GitHub</a>
+            <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="x-social-link" style={{ color: "rgba(232,224,204,0.2)", textDecoration: "none", display: "flex", alignItems: "center" }}>
+              <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"/>
+              </svg>
+            </a>
           </div>
         </div>
       </footer>
