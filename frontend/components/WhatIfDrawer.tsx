@@ -48,6 +48,13 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
     }
   }, [open, assets]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   const runAnalysis = async (assetList: Asset[]) => {
     const valid = assetList.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;

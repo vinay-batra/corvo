@@ -239,7 +239,6 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
       await supabase.auth.signOut();
       window.location.href = "/";
     } catch (err) {
-      console.error("Account deletion failed:", err);
       alert(`Deletion failed: ${err instanceof Error ? err.message : String(err)}`);
       setDeleting(false);
     }

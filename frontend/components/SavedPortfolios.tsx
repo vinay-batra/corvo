@@ -84,7 +84,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
       const u = authData.user ?? null;
       setUser(u);
       fetchPortfolios(u);
-    });
+    }).catch(() => fetchPortfolios(null));
   }, []);
 
   // Auto-save history snapshot when analysis data arrives

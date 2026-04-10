@@ -336,8 +336,8 @@ export default function Watchlist() {
       const map: Record<string, StockData> = {};
       ((d.results ?? []) as StockData[]).forEach(s => { if (s?.ticker) map[s.ticker] = s; });
       setStockData(prev => ({ ...prev, ...map }));
-    } catch (e) {
-      console.warn("[Watchlist] fetchData failed:", e);
+    } catch {
+      // silently ignore — watchlist will show stale or empty prices
     }
     setLoadingAll(false);
   }, []);

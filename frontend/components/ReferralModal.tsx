@@ -14,13 +14,21 @@ export default function ReferralModal({ onClose }: Props) {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const ref = user.id.replace(/-/g, "").slice(0, 8);
-        setReferralLink(`https://corvo.capital/app?ref=${ref}`);
-      }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const ref = user.id.replace(/-/g, "").slice(0, 8);
+          setReferralLink(`https://corvo.capital/app?ref=${ref}`);
+        }
+      } catch {}
     })();
   }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const copy = async () => {
     try {

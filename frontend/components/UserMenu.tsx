@@ -18,7 +18,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, avatarU
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => setUser(data.user)).catch(() => {});
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user ?? null));
     return () => subscription.unsubscribe();
   }, []);
