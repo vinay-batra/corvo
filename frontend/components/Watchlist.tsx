@@ -6,13 +6,71 @@ import StockDetail from "./StockDetail";
 import InfoModal from "./InfoModal";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { supabase } from "../lib/supabase";
+import { posthog } from "../lib/posthog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const STORAGE_KEY = "corvo_watchlist";
 const LISTS_KEY = "corvo_watchlist_lists";
 const ALERTS_KEY = "corvo_watchlist_alerts";
 
-const LIST_ICONS = ["📈", "📉", "💎", "🚀", "🏦", "⚡", "🎯", "💰", "🌍", "🔥"];
+function FolderIcon({ size = 12, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M1.5 4.5v8c0 .83.67 1.5 1.5 1.5h10c.83 0 1.5-.67 1.5-1.5V6c0-.83-.67-1.5-1.5-1.5H8.5L7 3H3C2.17 3 1.5 3.67 1.5 4.5z" stroke={color} strokeWidth="1.25" fill="none" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function PencilIcon({ size = 11, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M11 2l3 3-8 8H3v-3L11 2z" stroke={color} strokeWidth="1.3" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+const WATCH_TICKERS: { ticker: string; name: string; type: string }[] = [
+  { ticker: "AAPL",    name: "Apple Inc.",               type: "EQUITY" },
+  { ticker: "MSFT",    name: "Microsoft Corp.",           type: "EQUITY" },
+  { ticker: "NVDA",    name: "NVIDIA Corp.",              type: "EQUITY" },
+  { ticker: "GOOGL",   name: "Alphabet Inc.",             type: "EQUITY" },
+  { ticker: "AMZN",    name: "Amazon.com Inc.",           type: "EQUITY" },
+  { ticker: "META",    name: "Meta Platforms Inc.",       type: "EQUITY" },
+  { ticker: "TSLA",    name: "Tesla Inc.",                type: "EQUITY" },
+  { ticker: "BRK-B",   name: "Berkshire Hathaway B",     type: "EQUITY" },
+  { ticker: "JPM",     name: "JPMorgan Chase & Co.",      type: "EQUITY" },
+  { ticker: "V",       name: "Visa Inc.",                 type: "EQUITY" },
+  { ticker: "JNJ",     name: "Johnson & Johnson",         type: "EQUITY" },
+  { ticker: "NFLX",    name: "Netflix Inc.",              type: "EQUITY" },
+  { ticker: "AMD",     name: "Advanced Micro Devices",    type: "EQUITY" },
+  { ticker: "INTC",    name: "Intel Corp.",               type: "EQUITY" },
+  { ticker: "KO",      name: "Coca-Cola Co.",             type: "EQUITY" },
+  { ticker: "PG",      name: "Procter & Gamble Co.",      type: "EQUITY" },
+  { ticker: "DIS",     name: "Walt Disney Co.",           type: "EQUITY" },
+  { ticker: "BA",      name: "Boeing Co.",                type: "EQUITY" },
+  { ticker: "GS",      name: "Goldman Sachs Group",       type: "EQUITY" },
+  { ticker: "UBER",    name: "Uber Technologies",         type: "EQUITY" },
+  { ticker: "SPY",     name: "SPDR S&P 500 ETF",         type: "ETF" },
+  { ticker: "QQQ",     name: "Invesco QQQ Trust",         type: "ETF" },
+  { ticker: "IWM",     name: "iShares Russell 2000 ETF",  type: "ETF" },
+  { ticker: "VTI",     name: "Vanguard Total Stock Mkt",  type: "ETF" },
+  { ticker: "VOO",     name: "Vanguard S&P 500 ETF",      type: "ETF" },
+  { ticker: "GLD",     name: "SPDR Gold Shares",          type: "ETF" },
+  { ticker: "BND",     name: "Vanguard Total Bond Mkt",   type: "ETF" },
+  { ticker: "SCHD",    name: "Schwab US Dividend Equity", type: "ETF" },
+  { ticker: "ARKK",    name: "ARK Innovation ETF",        type: "ETF" },
+  { ticker: "BTC-USD", name: "Bitcoin",                   type: "CRYPTOCURRENCY" },
+  { ticker: "ETH-USD", name: "Ethereum",                  type: "CRYPTOCURRENCY" },
+  { ticker: "SOL-USD", name: "Solana",                    type: "CRYPTOCURRENCY" },
+];
+
+const TICKER_TYPE_LABELS: Record<string, string> = { EQUITY: "Stock", ETF: "ETF", CRYPTOCURRENCY: "Crypto", MUTUALFUND: "Fund", INDEX: "Index" };
+
+function localTickerSearch(q: string) {
+  if (!q) return [];
+  const upper = q.toUpperCase();
+  return WATCH_TICKERS.filter(t => t.ticker.startsWith(upper) || t.name.toUpperCase().includes(upper)).slice(0, 6);
+}
 
 interface WatchList { id: string; name: string; icon: string; tickers: string[] }
 interface WatchItem { ticker: string; addedAt: string; listId: string }
@@ -89,7 +147,10 @@ export default function Watchlist() {
   const [items, setItems] = useState<WatchItem[]>([]);
   const [stockData, setStockData] = useState<Record<string, StockData>>({});
   const [loadingAll, setLoadingAll] = useState(false);
-  const [input, setInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ ticker: string; name: string; type: string }[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchBusy, setSearchBusy] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [alertFor, setAlertFor] = useState<string | null>(null);
@@ -100,17 +161,18 @@ export default function Watchlist() {
   // Creating a new list
   const [creatingList, setCreatingList] = useState(false);
   const [newListName, setNewListName] = useState("");
-  const [newListIcon, setNewListIcon] = useState("📈");
   // Rename/edit list
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [editIcon, setEditIcon] = useState("📈");
-  // Context menu
-  const [ctxMenu, setCtxMenu] = useState<{ listId: string; x: number; y: number } | null>(null);
+  // List switcher
+  const [switcherOpen, setSwitcherOpen] = useState(false);
 
   const userIdRef = useRef<string | null>(null);
   const { requestPermission, isGranted, notify } = usePushNotifications();
   const alertCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
+  const switcherRef = useRef<HTMLDivElement>(null);
 
   // Initialize lists and items — from Supabase if logged in, localStorage otherwise
   useEffect(() => {
@@ -281,8 +343,8 @@ export default function Watchlist() {
     }
   };
 
-  const add = async () => {
-    const ticker = input.trim().toUpperCase();
+  const add = async (directTicker?: string) => {
+    const ticker = (directTicker ?? searchQuery).trim().toUpperCase();
     if (!ticker || !activeListId) return;
     if (activeItems.find(i => i.ticker === ticker)) { setError(`${ticker} is already in this list`); return; }
     setError("");
@@ -297,8 +359,11 @@ export default function Watchlist() {
     setValidating(false);
     const newItem: WatchItem = { ticker, addedAt: new Date().toISOString(), listId: activeListId };
     saveItems([...items, newItem]);
-    setInput("");
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchOpen(false);
     fetchData([ticker]);
+    posthog.capture("watchlist_item_added", { ticker });
     if (userId) {
       try {
         await supabase.from("watchlist_items").insert({ user_id: userId, list_id: activeListId, ticker, added_at: newItem.addedAt });
@@ -322,15 +387,14 @@ export default function Watchlist() {
   const createList = async () => {
     if (!newListName.trim()) return;
     const newId = userId ? crypto.randomUUID() : genId();
-    const newList: WatchList = { id: newId, name: newListName.trim(), icon: newListIcon, tickers: [] };
+    const newList: WatchList = { id: newId, name: newListName.trim(), icon: "", tickers: [] };
     saveLists([...lists, newList]);
     setActiveListId(newList.id);
     setCreatingList(false);
     setNewListName("");
-    setNewListIcon("📈");
     if (userId) {
       try {
-        await supabase.from("watchlist_lists").insert({ id: newList.id, user_id: userId, name: newList.name, icon: newList.icon });
+        await supabase.from("watchlist_lists").insert({ id: newList.id, user_id: userId, name: newList.name, icon: "" });
       } catch {}
     }
   };
@@ -341,43 +405,62 @@ export default function Watchlist() {
     saveLists(next);
     saveItems(items.filter(i => i.listId !== id));
     if (activeListId === id) setActiveListId(next[0].id);
-    setCtxMenu(null);
+    setSwitcherOpen(false);
     if (userId) {
       try {
-        // ON DELETE CASCADE on watchlist_items removes the items automatically
         await supabase.from("watchlist_lists").delete().eq("id", id).eq("user_id", userId);
       } catch {}
     }
   };
 
-  const startRename = (list: WatchList) => {
-    setEditingListId(list.id);
-    setEditName(list.name);
-    setEditIcon(list.icon);
-    setCtxMenu(null);
+  const startRename = (listId: string, name: string) => {
+    setActiveListId(listId);
+    setEditingListId(listId);
+    setEditName(name);
+    setSwitcherOpen(false);
   };
 
   const saveRename = async () => {
     if (!editName.trim() || !editingListId) return;
     const listId = editingListId;
     const newName = editName.trim();
-    const newIcon = editIcon;
-    saveLists(lists.map(l => l.id === listId ? { ...l, name: newName, icon: newIcon } : l));
+    saveLists(lists.map(l => l.id === listId ? { ...l, name: newName } : l));
     setEditingListId(null);
     if (userId) {
       try {
-        await supabase.from("watchlist_lists").update({ name: newName, icon: newIcon }).eq("id", listId).eq("user_id", userId);
+        await supabase.from("watchlist_lists").update({ name: newName }).eq("id", listId).eq("user_id", userId);
       } catch {}
     }
   };
 
-  // Close context menu on outside click
+  // Close switcher + search on outside click
   useEffect(() => {
-    if (!ctxMenu) return;
-    const handler = () => setCtxMenu(null);
-    window.addEventListener("click", handler);
-    return () => window.removeEventListener("click", handler);
-  }, [ctxMenu]);
+    const handler = (e: MouseEvent) => {
+      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) setSwitcherOpen(false);
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) setSearchOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const runSearch = useCallback((q: string) => {
+    if (!q) { setSearchResults([]); setSearchOpen(false); return; }
+    const local = localTickerSearch(q);
+    if (local.length > 0) { setSearchResults(local); setSearchOpen(true); }
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(async () => {
+      setSearchBusy(true);
+      try {
+        const r = await fetch(`${API_URL}/search-ticker?q=${encodeURIComponent(q)}`);
+        const d = await r.json();
+        const api = (d.results || []) as { ticker: string; name: string; type: string }[];
+        const apiSet = new Set(api.map((x: any) => x.ticker));
+        const merged = [...api, ...local.filter(l => !apiSet.has(l.ticker))].slice(0, 6);
+        if (merged.length > 0) { setSearchResults(merged); setSearchOpen(true); }
+      } catch {}
+      setSearchBusy(false);
+    }, 300);
+  }, []);
 
   if (selected) return <StockDetail ticker={selected} onBack={() => setSelected(null)} />;
 
@@ -391,117 +474,152 @@ export default function Watchlist() {
           <InfoModal title="Watchlist" sections={[{ label: "How it works", text: "Track any stocks you care about. Add tickers, set price alerts, and click any card for the full stock detail view. Create multiple named lists to organize your watchlist." }]} />
         </div>
 
-        {/* List pills */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-          {lists.map(list => (
-            <div key={list.id} style={{ position: "relative" }}>
-              {editingListId === list.id ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 20 }}>
-                  {/* Icon picker */}
-                  <div style={{ position: "relative" }}>
-                    <button onClick={e => { e.stopPropagation(); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: 0 }}>{editIcon}</button>
-                    <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 100, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, padding: 6, display: "flex", flexWrap: "wrap", gap: 4, width: 160 }}>
-                      {LIST_ICONS.map(ic => (
-                        <button key={ic} onClick={() => setEditIcon(ic)}
-                          style={{ width: 28, height: 28, fontSize: 14, background: editIcon === ic ? "var(--bg3)" : "transparent", border: "none", borderRadius: 6, cursor: "pointer" }}>
-                          {ic}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <input
-                    autoFocus value={editName} onChange={e => setEditName(e.target.value)}
-                    onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); saveRename(); } if (e.key === "Escape") setEditingListId(null); }}
-                    style={{ width: 80, padding: "2px 4px", background: "transparent", border: "none", color: "var(--text)", fontSize: 12, outline: "none" }}
-                  />
-                  <button onClick={saveRename} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0 }}>✓</button>
-                  <button onClick={() => setEditingListId(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0 }}>✕</button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setActiveListId(list.id)}
-                  onContextMenu={e => { e.preventDefault(); setCtxMenu({ listId: list.id, x: e.clientX, y: e.clientY }); }}
-                  style={{ padding: "5px 12px", fontSize: 12, borderRadius: 20, cursor: "pointer", transition: "all 0.15s", background: activeListId === list.id ? "var(--text)" : "transparent", border: `0.5px solid ${activeListId === list.id ? "var(--text)" : "var(--border2)"}`, color: activeListId === list.id ? "var(--bg)" : "var(--text2)", display: "flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ fontSize: 12 }}>{list.icon}</span>
-                  {list.name}
-                  {items.filter(i => i.listId === list.id).length > 0 && (
-                    <span style={{ fontSize: 9, opacity: 0.6 }}>{items.filter(i => i.listId === list.id).length}</span>
-                  )}
-                </button>
-              )}
-            </div>
-          ))}
-
-          {/* New list button */}
-          {creatingList ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 20 }}>
-              {/* Icon picker for new list */}
-              <div style={{ position: "relative" }}>
-                <button onClick={e => e.stopPropagation()} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: 0 }}>{newListIcon}</button>
-                <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 100, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, padding: 6, display: "flex", flexWrap: "wrap", gap: 4, width: 160 }}>
-                  {LIST_ICONS.map(ic => (
-                    <button key={ic} onClick={() => setNewListIcon(ic)}
-                      style={{ width: 28, height: 28, fontSize: 14, background: newListIcon === ic ? "var(--bg3)" : "transparent", border: "none", borderRadius: 6, cursor: "pointer" }}>
-                      {ic}
-                    </button>
-                  ))}
-                </div>
+        {/* List switcher dropdown */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <div ref={switcherRef} style={{ position: "relative", flex: 1 }}>
+            {editingListId === activeListId ? (
+              /* Inline rename */
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 11px", background: "var(--bg3)", border: "0.5px solid rgba(201,168,76,0.4)", borderRadius: 9 }}>
+                <FolderIcon size={13} color="#c9a84c" />
+                <input
+                  autoFocus value={editName} onChange={e => setEditName(e.target.value)}
+                  onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); saveRename(); } if (e.key === "Escape") setEditingListId(null); }}
+                  style={{ flex: 1, padding: 0, background: "transparent", border: "none", color: "var(--text)", fontSize: 13, fontWeight: 500, outline: "none" }}
+                />
+                <button onClick={saveRename} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
+                <button onClick={() => setEditingListId(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0, lineHeight: 1 }}>✕</button>
               </div>
-              <input
-                autoFocus value={newListName} onChange={e => setNewListName(e.target.value)}
-                onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); createList(); } if (e.key === "Escape") { setCreatingList(false); setNewListName(""); } }}
-                placeholder="List name…"
-                style={{ width: 90, padding: "2px 4px", background: "transparent", border: "none", color: "var(--text)", fontSize: 12, outline: "none" }}
-              />
-              <button onClick={createList} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0 }}>✓</button>
-              <button onClick={() => { setCreatingList(false); setNewListName(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0 }}>✕</button>
-            </div>
-          ) : (
-            <button onClick={() => setCreatingList(true)}
-              style={{ width: 28, height: 28, borderRadius: "50%", border: "0.5px solid var(--border2)", background: "transparent", cursor: "pointer", color: "var(--text3)", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--text)"; e.currentTarget.style.color = "var(--text)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.color = "var(--text3)"; }}>
-              +
-            </button>
-          )}
+            ) : (
+              /* Switcher trigger */
+              <button
+                className="switcher-trigger"
+                onClick={() => setSwitcherOpen(o => !o)}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 11px", background: "var(--bg3)", border: `0.5px solid ${switcherOpen ? "rgba(201,168,76,0.3)" : "var(--border2)"}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}>
+                <FolderIcon size={13} color="var(--text3)" />
+                <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {activeList?.name ?? "Watchlist"}
+                </span>
+                {activeItems.length > 0 && (
+                  <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0 }}>{activeItems.length} {activeItems.length === 1 ? "asset" : "assets"}</span>
+                )}
+                <span className="pencil-reveal" style={{ opacity: 0, transition: "opacity 0.15s", display: "flex", alignItems: "center" }}
+                  onClick={e => { e.stopPropagation(); if (activeList) startRename(activeList.id, activeList.name); }}
+                  title="Rename list">
+                  <PencilIcon size={11} color="var(--text3)" />
+                </span>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0, color: "var(--text3)", transform: switcherOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+                  <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )}
 
-          {loadingAll && <div style={{ width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite", marginLeft: 4 }} />}
+            {/* Dropdown */}
+            <AnimatePresence>
+              {switcherOpen && editingListId !== activeListId && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  transition={{ duration: 0.12 }}
+                  style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+                  {lists.map(list => {
+                    const count = items.filter(i => i.listId === list.id).length;
+                    const isActive = list.id === activeListId;
+                    return (
+                      <div key={list.id}
+                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "pointer", background: isActive ? "rgba(201,168,76,0.05)" : "transparent", transition: "background 0.1s", borderBottom: "0.5px solid var(--border)" }}
+                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--bg3)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isActive ? "rgba(201,168,76,0.05)" : "transparent"; }}
+                        onClick={() => { setActiveListId(list.id); setSwitcherOpen(false); }}>
+                        <FolderIcon size={12} color={isActive ? "#c9a84c" : "var(--text3)"} />
+                        <span style={{ flex: 1, fontSize: 12, color: isActive ? "var(--text)" : "var(--text2)", fontWeight: isActive ? 500 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{list.name}</span>
+                        {count > 0 && <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0 }}>{count} {count === 1 ? "asset" : "assets"}</span>}
+                        <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                          <button onClick={e => { e.stopPropagation(); startRename(list.id, list.name); }}
+                            style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.1s, background 0.1s" }}
+                            onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--bg3)"; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}>
+                            <PencilIcon size={10} />
+                          </button>
+                          {lists.length > 1 && (
+                            <button onClick={e => { e.stopPropagation(); deleteList(list.id); }}
+                              style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent", cursor: "pointer", color: "rgba(224,92,92,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, transition: "color 0.1s, background 0.1s" }}
+                              onMouseEnter={e => { e.currentTarget.style.color = "#e05c5c"; e.currentTarget.style.background = "rgba(224,92,92,0.06)"; }}
+                              onMouseLeave={e => { e.currentTarget.style.color = "rgba(224,92,92,0.4)"; e.currentTarget.style.background = "transparent"; }}>
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Create new list */}
+                  {creatingList ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px" }} onClick={e => e.stopPropagation()}>
+                      <FolderIcon size={12} color="var(--text3)" />
+                      <input
+                        autoFocus value={newListName} onChange={e => setNewListName(e.target.value)}
+                        onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); createList(); } if (e.key === "Escape") { setCreatingList(false); setNewListName(""); } }}
+                        placeholder="List name…"
+                        style={{ flex: 1, padding: "2px 0", background: "transparent", border: "none", color: "var(--text)", fontSize: 12, outline: "none" }}
+                      />
+                      <button onClick={createList} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
+                      <button onClick={() => { setCreatingList(false); setNewListName(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={e => { e.stopPropagation(); setCreatingList(true); }}
+                      style={{ width: "100%", padding: "9px 12px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", fontSize: 12, color: "var(--text3)", display: "flex", alignItems: "center", gap: 8, transition: "background 0.1s, color 0.1s" }}
+                      onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--bg3)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}>
+                      <span style={{ fontSize: 15, lineHeight: 1, color: "var(--text3)" }}>+</span> New list
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {loadingAll && <div style={{ width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0 }} />}
         </div>
 
-        {/* Context menu */}
-        <AnimatePresence>
-          {ctxMenu && (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              onClick={e => e.stopPropagation()}
-              style={{ position: "fixed", left: ctxMenu.x, top: ctxMenu.y, zIndex: 500, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, padding: 4, minWidth: 130, boxShadow: "var(--shadow)" }}>
-              <button onClick={() => { const l = lists.find(l => l.id === ctxMenu.listId); if (l) startRename(l); }}
-                style={{ display: "block", width: "100%", padding: "7px 12px", textAlign: "left", fontSize: 12, color: "var(--text2)", background: "transparent", border: "none", borderRadius: 6, cursor: "pointer" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                ✎ Rename
-              </button>
-              {lists.length > 1 && (
-                <button onClick={() => deleteList(ctxMenu.listId)}
-                  style={{ display: "block", width: "100%", padding: "7px 12px", textAlign: "left", fontSize: 12, color: "#e05c5c", background: "transparent", border: "none", borderRadius: 6, cursor: "pointer" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(224,92,92,0.08)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                  ✕ Delete list
-                </button>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Add ticker search */}
+        <div style={{ display: "flex", gap: 8, marginBottom: error ? 0 : 0 }}>
+          <div ref={searchWrapRef} style={{ flex: 1, position: "relative" }}>
+            <input
+              value={searchQuery}
+              onChange={e => { const v = e.target.value; setSearchQuery(v); setError(""); runSearch(v); }}
+              onFocus={() => { if (searchQuery && searchResults.length > 0) setSearchOpen(true); }}
+              onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { add(); setSearchOpen(false); } if (e.key === "Escape") setSearchOpen(false); }}
+              placeholder={`Add ticker to ${activeList?.name ?? "list"}…`}
+              style={{ width: "100%", padding: "9px 12px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none", boxSizing: "border-box" }}
+            />
+            {searchBusy && <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 11, height: 11, border: "1.5px solid rgba(201,168,76,0.25)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
 
-        {/* Add ticker input */}
-        <div style={{ display: "flex", gap: 8, marginTop: 12, marginBottom: error ? 8 : 0 }}>
-          <input
-            value={input}
-            onChange={e => { setInput(e.target.value.toUpperCase()); setError(""); }}
-            onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") add(); }}
-            placeholder={`Add ticker to ${activeList?.icon ?? ""} ${activeList?.name ?? "list"}…`}
-            style={{ flex: 1, padding: "9px 12px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
-          />
-          <button onClick={add} disabled={validating}
+            <AnimatePresence>
+              {searchOpen && searchResults.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.1 }}
+                  style={{ position: "absolute", left: 0, right: 0, top: "calc(100% + 4px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 300, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
+                  {searchResults.map((r, i) => (
+                    <div key={r.ticker}
+                      onMouseDown={e => { e.preventDefault(); add(r.ticker); }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", cursor: "pointer", borderBottom: i < searchResults.length - 1 ? "0.5px solid var(--border)" : "none", transition: "background 0.1s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <div>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "#c9a84c" }}>{r.ticker}</span>
+                        <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>{r.name}</span>
+                      </div>
+                      <span style={{ fontSize: 8, padding: "2px 5px", borderRadius: 3, background: "rgba(201,168,76,0.12)", color: "#c9a84c", letterSpacing: 0.5, flexShrink: 0 }}>
+                        {TICKER_TYPE_LABELS[r.type] || r.type}
+                      </span>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <button onClick={() => { add(); setSearchOpen(false); }} disabled={validating}
             style={{ padding: "9px 18px", background: "var(--text)", border: "none", borderRadius: 8, color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: validating ? "default" : "pointer", flexShrink: 0, opacity: validating ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
             {validating ? <><div style={{ width: 10, height: 10, border: "1.5px solid rgba(0,0,0,0.2)", borderTopColor: "var(--bg)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />Checking</> : "+ Add"}
           </button>
@@ -518,7 +636,7 @@ export default function Watchlist() {
       {/* Stock cards */}
       {activeItems.length === 0 ? (
         <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "48px 24px", background: "var(--card-bg)", textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 10 }}>{activeList?.icon ?? "◉"}</div>
+          <div style={{ marginBottom: 10, opacity: 0.3 }}><FolderIcon size={32} color="var(--text)" /></div>
           <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 6 }}>{activeList?.name ?? "Watchlist"} is empty</p>
           <p style={{ fontSize: 12, color: "var(--text3)" }}>Add tickers above to track them here</p>
         </div>
@@ -624,7 +742,10 @@ export default function Watchlist() {
           />
         )}
       </AnimatePresence>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .switcher-trigger:hover .pencil-reveal { opacity: 1 !important; }
+      `}</style>
     </div>
   );
 }

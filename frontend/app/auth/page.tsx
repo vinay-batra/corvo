@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
+import { posthog } from "../../lib/posthog";
 
 const C = {
   navy: "#0a0e14", navy2: "#0d1117", navy3: "#111620",
@@ -46,6 +47,7 @@ function AuthForm() {
       const { data: signUpData, error } = await supabase.auth.signUp({ email, password });
       if (error) setError(error.message);
       else {
+        posthog.capture("signup_completed", { method: "email_password" });
         setSuccess("Check your email to confirm your account.");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const userId = signUpData.user?.id ?? null;

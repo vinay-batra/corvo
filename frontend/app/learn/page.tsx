@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { posthog } from "../../lib/posthog";
 import {
   BrainCircuit,
   Swords,
@@ -1411,7 +1412,10 @@ export default function LearnPage() {
     setLessonProgress(newProgress);
 
     const lesson = LESSONS.find(l => l.id === lessonId);
-    if (lesson && updatedProgress.length >= lesson.quiz.length) markComplete(lessonId);
+    if (lesson && updatedProgress.length >= lesson.quiz.length) {
+      markComplete(lessonId);
+      posthog.capture("learn_lesson_completed", { lesson: lesson.title, xp_earned: amount });
+    }
 
     if (userId) {
       const { data: profile } = await supabase
@@ -1655,7 +1659,7 @@ export default function LearnPage() {
                       variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
                       style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                       <button
-                        onClick={() => { if (!isLocked) { setActiveLesson(l); setActiveSection("lesson"); } }}
+                        onClick={() => { if (!isLocked) { setActiveLesson(l); setActiveSection("lesson"); posthog.capture("learn_lesson_started", { lesson: l.title }); } }}
                         disabled={isLocked}
                         style={{ padding: "18px", background: "var(--card-bg)", border: `0.5px solid ${borderColor}`, borderRadius: isMastered ? "14px 14px 0 0" : 14, cursor: isLocked ? "not-allowed" : "pointer", textAlign: "left", transition: "all 0.15s", opacity: isLocked ? 0.55 : 1 }}
                         onMouseEnter={e => { if (!isLocked) { e.currentTarget.style.borderColor = `${AMBER}44`; e.currentTarget.style.background = "var(--bg2)"; } }}
