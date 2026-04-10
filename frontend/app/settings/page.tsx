@@ -78,6 +78,16 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
   // Sound effects (localStorage)
   const [soundEnabled, setSoundEnabled] = useState(false);
 
+  // Referrals
+  const [referralData, setReferralData] = useState<{
+    referral_count: number;
+    bonus_messages_earned: number;
+    referral_link: string;
+    referred_emails: string[];
+  } | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting]                   = useState(false);
@@ -95,6 +105,15 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
       // Load email prefs
       const { data: prefs } = await supabase.from("email_preferences").select("*").eq("user_id", user.id).single();
       if (prefs) { setWeeklyDigest(prefs.weekly_digest); setPriceAlerts(prefs.price_alerts); setNewsSummary(prefs.news_summary); }
+
+      // Load referrals
+      setReferralLoading(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      fetch(`${apiUrl}/referrals?user_id=${user.id}`)
+        .then(r => r.json())
+        .then(data => setReferralData(data))
+        .catch(() => {})
+        .finally(() => setReferralLoading(false));
 
       // Load localStorage prefs
       setPeriod(localStorage.getItem("corvo_period") || "1y");
@@ -213,6 +232,22 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
       alert(`Deletion failed: ${err instanceof Error ? err.message : String(err)}`);
       setDeleting(false);
     }
+  };
+
+  const copyReferralLink = () => {
+    if (!referralData?.referral_link) return;
+    navigator.clipboard.writeText(referralData.referral_link).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1800);
+    });
+  };
+
+  const shareOnX = () => {
+    if (!user) return;
+    const tweet = encodeURIComponent(
+      `I've been using Corvo for portfolio analytics — way better than Yahoo Finance. Try it free: corvo.capital?ref=${user.id} @corvocapital`
+    );
+    window.open(`https://x.com/intent/tweet?text=${tweet}`, "_blank", "noopener");
   };
 
   const initials = (displayName || user?.email || "?")[0]?.toUpperCase();
@@ -355,6 +390,98 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
               {notifSaved ? "✓ Saved" : notifLoading ? "Saving…" : "Save Notifications"}
             </button>
           </div>
+        </Section>
+
+        {/* REFERRALS */}
+        <Section title="Referrals">
+          {referralLoading ? (
+            <div style={{ padding: "20px 0", display: "flex", alignItems: "center", gap: 8, color: "var(--text3)", fontSize: 13 }}>
+              <div style={{ width: 14, height: 14, border: "2px solid var(--border2)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              Loading…
+            </div>
+          ) : (
+            <>
+              {/* Stats row */}
+              <div style={{ display: "flex", gap: 12, padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
+                <div style={{ flex: 1, background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", border: "0.5px solid var(--border)" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "#c9a84c", fontFamily: "var(--font-mono)" }}>
+                    {referralData?.referral_count ?? 0}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Referrals completed</div>
+                </div>
+                <div style={{ flex: 1, background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", border: "0.5px solid var(--border)" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "#c9a84c", fontFamily: "var(--font-mono)" }}>
+                    +{referralData?.bonus_messages_earned ?? 0}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Bonus messages earned</div>
+                </div>
+              </div>
+
+              {/* Progress toward next bonus */}
+              {(() => {
+                const count = referralData?.referral_count ?? 0;
+                const bonus = referralData?.bonus_messages_earned ?? 0;
+                const capped = bonus >= 40;
+                const nextMilestone = capped ? 8 : Math.ceil((count + 1));
+                const progress = capped ? 100 : ((count % 1 === 0 ? count : 0) / nextMilestone) * 100;
+                const remaining = capped ? 0 : 1 - (count % 1);
+                return (
+                  <div style={{ padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, color: "var(--text2)" }}>
+                        {capped ? "Max bonus reached (40 messages)" : `${count} / ${count + 1} referrals → next +5 messages`}
+                      </span>
+                      <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>{bonus}/40</span>
+                    </div>
+                    <div style={{ height: 5, borderRadius: 3, background: "var(--border)", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${Math.min((bonus / 40) * 100, 100)}%`, background: capped ? "#5cb88a" : "#c9a84c", borderRadius: 3, transition: "width 0.6s ease" }} />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Referral link */}
+              <div style={{ padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
+                <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 8 }}>Your referral link</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontFamily: "var(--font-mono)", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                    {referralData?.referral_link ?? `https://corvo.capital/app?ref=${user?.id ?? "…"}`}
+                  </div>
+                  <button onClick={copyReferralLink}
+                    style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: linkCopied ? "#5cb88a" : "#c9a84c", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s", whiteSpace: "nowrap" as const, flexShrink: 0 }}>
+                    {linkCopied ? "✓ Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Share on X */}
+              <div style={{ padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
+                <button onClick={shareOnX}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 16px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text)", cursor: "pointer", transition: "border-color 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  Share on X
+                </button>
+              </div>
+
+              {/* Referred emails list */}
+              {(referralData?.referred_emails?.length ?? 0) > 0 && (
+                <div style={{ paddingTop: 14 }}>
+                  <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 1.5, textTransform: "uppercase" as const, marginBottom: 10 }}>Referred users</div>
+                  <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
+                    {referralData!.referred_emails.map((email, i) => (
+                      <div key={i} style={{ fontSize: 12, color: "var(--text2)", fontFamily: "var(--font-mono)", padding: "6px 10px", background: "var(--bg2)", borderRadius: 7, border: "0.5px solid var(--border)" }}>
+                        {email}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </Section>
 
         {/* DANGER ZONE */}

@@ -479,6 +479,48 @@ async def import_portfolio_csv(file: UploadFile = File(...)):
         return {"error": str(exc), "tickers": [], "weights": [], "detected_format": "Unknown"}
 
 
+# ── Referrals ─────────────────────────────────────────────────────────────────
+
+BONUS_PER_REFERRAL = 5
+BONUS_CAP = 40
+
+def _mask_email(email: str) -> str:
+    if "@" not in email:
+        return email
+    local, domain = email.split("@", 1)
+    return local[0] + "***@" + domain
+
+@app.get("/referrals")
+def get_referrals(user_id: str):
+    supabase_url = os.environ.get("SUPABASE_URL", "")
+    supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    referral_link = f"https://corvo.capital/app?ref={user_id}"
+
+    if not supabase_url or not supabase_key:
+        return {"referral_count": 0, "bonus_messages_earned": 0, "referral_link": referral_link, "referred_emails": []}
+
+    try:
+        r = _requests.get(
+            f"{supabase_url}/rest/v1/referrals",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"},
+            params={"referrer_id": f"eq.{user_id}", "select": "referred_email,completed"},
+            timeout=10,
+        )
+        r.raise_for_status()
+        rows = r.json()
+        completed_count = sum(1 for row in rows if row.get("completed"))
+        bonus = min(completed_count * BONUS_PER_REFERRAL, BONUS_CAP)
+        return {
+            "referral_count": completed_count,
+            "bonus_messages_earned": bonus,
+            "referral_link": referral_link,
+            "referred_emails": [_mask_email(row["referred_email"]) for row in rows],
+        }
+    except Exception as e:
+        print(f"[referrals] error: {e}")
+        return {"referral_count": 0, "bonus_messages_earned": 0, "referral_link": referral_link, "referred_emails": []}
+
+
 # ── Email endpoints ────────────────────────────────────────────────────────────
 
 from pydantic import BaseModel
