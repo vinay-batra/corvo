@@ -500,8 +500,28 @@ export default function Landing() {
     fetch(`${API_URL}/stats`).then(r => r.json()).then(d => { if (d.user_count) setLiveUserCount(d.user_count); }).catch(() => {});
   }, []);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Corvo",
+    url: "https://corvo.capital",
+    description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+    applicationCategory: "FinanceApplication",
+    operatingSystem: "Web",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    featureList: [
+      "Monte Carlo simulation",
+      "Sharpe ratio & portfolio health score",
+      "AI-powered portfolio chat",
+      "Real-time price alerts",
+      "Watchlist tracking",
+      "PDF portfolio reports",
+    ],
+  };
+
   return (
     <div ref={containerRef} style={{ height: "100vh", overflowY: "auto", overflowX: "hidden", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <ParticleCanvas />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
