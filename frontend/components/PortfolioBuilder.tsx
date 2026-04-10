@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { importPortfolioCsv } from "../lib/api";
+import { posthog } from "../lib/posthog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const C = { amber: "#c9a84c", cream: "#e8e0cc", cream3: "rgba(232,224,204,0.25)", border: "rgba(255,255,255,0.07)", navy4: "#161c26" };
@@ -221,6 +222,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     if (!csvPreview) return;
     const newAssets = csvPreview.tickers.map((t, i) => ({ ticker: t, weight: csvPreview.weights[i] }));
     update(newAssets.slice(0, 20));
+    posthog.capture("csv_import_used", { ticker_count: newAssets.length, detected_format: csvPreview.detected_format });
     setShowCsvModal(false);
     setCsvPreview(null);
     setCsvError("");

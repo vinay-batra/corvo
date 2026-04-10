@@ -553,7 +553,7 @@ export default function Landing() {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-    sb.auth.getSession().then(({ data: { session } }) => { if (session) setLoggedIn(true); });
+    sb.auth.getSession().then(({ data: { session } }) => { if (session) setLoggedIn(true); }).catch(() => {});
     fetch(`${API_URL}/stats`).then(r => r.json()).then(d => { if (d.user_count) setLiveUserCount(d.user_count); }).catch(() => {});
   }, []);
 

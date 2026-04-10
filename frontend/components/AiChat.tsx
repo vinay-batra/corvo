@@ -178,13 +178,15 @@ export default function AiChat({ data, assets, goals: goalsProp }: {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUserId(data.user.id);
-        const ref = data.user.id.replace(/-/g, "").slice(0, 8);
-        setReferralLink(`https://corvo.capital/app?ref=${ref}`);
-      }
-    });
+    supabase.auth.getUser()
+      .then(({ data }) => {
+        if (data.user) {
+          setUserId(data.user.id);
+          const ref = data.user.id.replace(/-/g, "").slice(0, 8);
+          setReferralLink(`https://corvo.capital/app?ref=${ref}`);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const goals = goalsProp || (() => {

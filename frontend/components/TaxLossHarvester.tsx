@@ -1,8 +1,9 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { fetchTaxLoss } from "../lib/api";
+import { posthog } from "../lib/posthog";
 
 interface LossEntry {
   ticker: string;
@@ -83,6 +84,15 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
   const [data, setData] = useState<TaxLossData | null>(null);
   const [loading, setLoading] = useState(false);
   const [noPurchasePrices, setNoPurchasePrices] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const viewTracked = useRef(false);
+
+  useEffect(() => {
+    if (!viewTracked.current) {
+      posthog.capture("tax_loss_card_viewed");
+      viewTracked.current = true;
+    }
+  }, []);
 
   useEffect(() => {
     if (!assets.length) return;
@@ -93,9 +103,11 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
       return;
     }
     setNoPurchasePrices(false);
+    setFetchError(false);
     setLoading(true);
     fetchTaxLoss(assets, 10000)
       .then((res) => setData(res ?? null))
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [assets]);
 
@@ -152,18 +164,15 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
       </div>
 
       {loading ? (
-        <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              border: "2px solid var(--border-mid)",
-              borderTopColor: "#c9a84c",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-            }}
-          />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[90, 70, 80].map((w, i) => (
+            <div key={i} style={{ height: 13, width: `${w}%`, borderRadius: 4, background: "rgba(255,255,255,0.06)", animation: "tlhPulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
+          ))}
+          <style>{`@keyframes tlhPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
+        </div>
+      ) : fetchError ? (
+        <div style={{ height: 100, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, color: "var(--text-muted)", fontSize: 12, textAlign: "center" }}>
+          <p style={{ color: "rgba(224,92,92,0.8)" }}>Unable to load data — server may be temporarily unavailable.</p>
         </div>
       ) : noPurchasePrices ? (
         <div

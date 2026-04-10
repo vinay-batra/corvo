@@ -922,14 +922,13 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => setUser(data.user)).catch(() => {});
     (async () => {
       const { data, error } = await supabase
         .from("learn_scores")
         .select("display_name,total_points")
         .order("total_points", { ascending: false })
         .limit(10);
-      if (error) console.error("Leaderboard error:", error.message, error.code);
       if (!error && data) setEntries(data.map((r: any, i: number) => ({ ...r, rank: i + 1 })));
       setLoading(false);
     })();
