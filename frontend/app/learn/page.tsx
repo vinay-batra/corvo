@@ -104,7 +104,7 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
   const lvl = getLevel(xp); const nxt = getNextLevel(xp); const pct = getProgressPct(xp);
   return (
     <div style={{ background: "var(--bg2)", borderBottom: "0.5px solid var(--border)" }}>
-      <nav style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", borderBottom: "0.5px solid var(--border)" }}>
+      <nav style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", borderBottom: "0.5px solid var(--border)" }}>
         <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
           <img src="/corvo-logo.svg" width={24} height={20} alt="Corvo" />
           <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
@@ -113,7 +113,7 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
         <Link href="/app" style={{ fontSize: 12, color: "var(--text3)", textDecoration: "none" }}>← Analyzer</Link>
       </nav>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "14px 28px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+      <div className="c-learn-header" style={{ maxWidth: 1200, margin: "0 auto", padding: "14px 28px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         {loading ? (
           <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)", flexShrink: 0 }} />
         ) : avatarUrl ? (
@@ -124,7 +124,7 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
           </div>
         )}
 
-        <div style={{ flex: 1, minWidth: 160 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           {loading ? (
             <>
               <div style={{ height: 14, width: 160, borderRadius: 4, background: "rgba(255,255,255,0.06)", marginBottom: 8 }} />
@@ -1478,7 +1478,7 @@ export default function LearnPage() {
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
       <LearnHeader xp={xp} streak={streak} displayName={displayName} avatarUrl={avatarUrl} loading={profileLoading} />
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 24px" }}>
+      <div className="c-learn-content" style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 24px" }}>
         <AnimatePresence mode="wait">
 
           {/* ── Home ── */}
@@ -1614,6 +1614,7 @@ export default function LearnPage() {
               </div>
               <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Learn by doing</h2>
               <motion.div
+                className="c-arcade-grid"
                 style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 40 }}
                 initial="hidden" animate="visible"
                 variants={{ visible: { transition: { staggerChildren: 0.07 } } }}>
@@ -1649,6 +1650,7 @@ export default function LearnPage() {
               </div>
               <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Core concepts</h2>
               <motion.div
+                className="c-lesson-grid"
                 style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
                 initial="hidden" animate="visible"
                 variants={{ visible: { transition: { staggerChildren: 0.08 } } }}>

@@ -1318,7 +1318,7 @@ export default function AppPage() {
           .c-sidebar{display:none!important}
           .c-topbar{display:none!important}
           .c-mob-bar{display:flex!important}
-          .c-mob-tabs{display:flex!important}
+          .c-mob-tabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important}
           .c-metrics{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
           .c-bgrid{grid-template-columns:1fr!important}
           .c-risk-grid{grid-template-columns:1fr!important}

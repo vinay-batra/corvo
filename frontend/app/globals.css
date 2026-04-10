@@ -178,10 +178,15 @@ input::placeholder { color: var(--text3); }
 
   /* Touch targets: all interactive elements min 44px tall */
   button, a[role="button"] { min-height: 36px; }
-  .c-mob-tabs button, .c-mob-tabs a { min-height: 44px !important; padding: 10px 12px !important; font-size: 12px !important; }
+  .c-mob-tabs button, .c-mob-tabs a { min-height: 44px !important; padding: 10px 14px !important; font-size: 12px !important; }
 
-  /* Mobile tab bar: no text overflow, smooth scroll */
-  .c-mob-tabs { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  /* Mobile tab bar: no wrapping, horizontal scroll */
+  .c-mob-tabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
 
   /* Card padding reduction */
   [class*="card"], [style*="borderRadius: 12"] { padding: 14px !important; }
@@ -191,6 +196,43 @@ input::placeholder { color: var(--text3); }
 
   /* Share card modal padding */
   [data-share-modal] { padding: 20px !important; }
+
+  /* ── Grids: single column on mobile ── */
+  .c-lesson-grid,
+  .c-arcade-grid { grid-template-columns: 1fr !important; }
+
+  .c-watchlist-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Watchlist sparkline: hidden on mobile ── */
+  .c-sparkline-hide { display: none !important; }
+
+  /* ── Bottom-sheet modals ── */
+  .c-modal-backdrop-mobile {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .c-modal-sheet {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* ── Learn page: tighter padding ── */
+  .c-learn-content { padding: 20px 16px !important; }
+  .c-learn-header  { padding: 10px 16px !important; }
+
+  /* ── Market brief: stack index pills vertically ── */
+  .c-market-pills {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 5px !important;
+  }
+
+  /* ── Notifications prompt: stack on mobile ── */
+  .c-notif-prompt { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+  .c-notif-prompt button { width: 100% !important; margin-left: 0 !important; }
 }
 
 /* ── Page transition wrapper ── */
