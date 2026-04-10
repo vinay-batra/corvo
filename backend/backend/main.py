@@ -37,8 +37,8 @@ from chat import chat_with_claude, parse_portfolio_from_image
 app = FastAPI()
 
 # Startup env check — visible in Railway logs
-print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', '')[:6] + '...)' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
-print(f"[startup] RESEND_FROM_EMAIL: {os.environ.get('RESEND_FROM_EMAIL', 'NOT SET')}")
+print(f"[startup] RESEND_API_KEY: {'SET' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
+print(f"[startup] RESEND_FROM_EMAIL: {'SET' if os.environ.get('RESEND_FROM_EMAIL') else 'NOT SET'}")
 
 app.add_middleware(
     CORSMiddleware,

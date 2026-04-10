@@ -648,8 +648,9 @@ function PortfolioPerformanceTrend({
 
       {/* Body */}
       {loading ? (
-        <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 16, height: 16, border: "1.5px solid var(--border2)", borderTopColor: "var(--text)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "6px 0" }}>
+          <div style={{ height: 120, borderRadius: 6, background: "var(--bg3)", animation: "pulse 1.5s ease-in-out infinite" }} />
+          <div style={{ height: 11, width: "40%", borderRadius: 4, background: "var(--bg3)", animation: "pulse 1.5s ease-in-out infinite" }} />
         </div>
       ) : history.length === 0 ? (
         <div style={{ textAlign: "center", padding: "24px 16px 16px" }}>
@@ -819,7 +820,7 @@ export default function AppPage() {
       setData(null);
       fetchPortfolio(demoAssets, "1y", "^GSPC")
         .then((result: any) => { setData(result); setActiveTab("overview"); })
-        .catch((e: any) => console.error(e))
+        .catch(() => { setErrorMsg("Demo failed to load — please try again."); })
         .finally(() => setLoading(false));
     }
 
@@ -1368,7 +1369,7 @@ export default function AppPage() {
       <div style={S.main}>
         {/* Mobile top bar */}
         <div className="c-mob-bar" style={{ height: 48, borderBottom: "0.5px solid var(--border)", alignItems: "center", justifyContent: "space-between", padding: "0 14px", background: "var(--bg)", flexShrink: 0 }}>
-          <button onClick={() => setSidebarOpen(true)} style={{ width: 32, height: 32, background: "none", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button aria-label="Open sidebar" onClick={() => setSidebarOpen(true)} style={{ width: 32, height: 32, background: "none", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <PanelLeftOpen size={15} />
           </button>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
@@ -1430,7 +1431,7 @@ export default function AppPage() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
             {/* Alerts bell */}
-            <button onClick={() => setShowAlerts(true)} title="Alerts"
+            <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
               style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s" }}
               onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
@@ -1716,6 +1717,7 @@ export default function AppPage() {
               localStorage.setItem("corvo_tour_completed", "true");
               localStorage.removeItem("corvo_onboarding_skipped");
               setShowSetupBanner(false);
+              posthog.capture("onboarding_completed", { tickers_added: builtAssets.length });
               if (builtAssets.length > 0) {
                 setAssets(builtAssets.map(a => ({ ...a, weight: Math.round(a.weight * 100) > 0 ? Math.round(a.weight * 100) : a.weight })));
               }

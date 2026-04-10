@@ -1,9 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchMarketBrief } from "../lib/api";
 import { RefreshCw } from "lucide-react";
+import { posthog } from "../lib/posthog";
 
 const C = { amber: "#c9a84c", green: "#4caf7d", red: "#e05c5c" };
 const HOUR_MS = 60 * 60 * 1000;
@@ -51,6 +52,7 @@ export default function MarketBrief() {
   const [data, setData] = useState<BriefData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const viewTracked = useRef(false);
 
   const load = useCallback(async (force = false) => {
     if (force) setRefreshing(true);
@@ -58,6 +60,10 @@ export default function MarketBrief() {
     try {
       const result = await fetchMarketBrief(force);
       setData(result);
+      if (!viewTracked.current && result?.brief) {
+        posthog.capture("market_brief_viewed");
+        viewTracked.current = true;
+      }
     } catch {
       // silently fail — don't break the dashboard
     } finally {

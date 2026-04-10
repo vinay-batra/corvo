@@ -184,6 +184,17 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
     setAvatarLoading(false);
   };
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (cropSrc) setCropSrc(null);
+        if (showDeleteConfirm) setShowDeleteConfirm(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cropSrc, showDeleteConfirm]);
+
   const onFileSelect = (file: File) => {
     const reader = new FileReader();
     reader.onload = e => { setCrop({ x: 0, y: 0 }); setZoom(1); setCropSrc(e.target?.result as string); };
@@ -236,10 +247,12 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
 
   const copyReferralLink = () => {
     if (!referralData?.referral_link) return;
-    navigator.clipboard.writeText(referralData.referral_link).then(() => {
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 1800);
-    });
+    navigator.clipboard.writeText(referralData.referral_link)
+      .then(() => {
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 1800);
+      })
+      .catch(() => {});
   };
 
   const shareOnX = () => {

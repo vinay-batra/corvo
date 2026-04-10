@@ -181,11 +181,13 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const uid = data.user?.id ?? null;
-      setUserId(uid);
-      fetchAlerts(uid);
-    });
+    supabase.auth.getUser()
+      .then(({ data }) => {
+        const uid = data.user?.id ?? null;
+        setUserId(uid);
+        fetchAlerts(uid);
+      })
+      .catch(() => fetchAlerts(null));
   }, []);
 
   const fetchAlerts = async (uid: string | null) => {

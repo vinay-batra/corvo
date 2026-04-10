@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { posthog } from "../lib/posthog";
 
 const DISMISSED_KEY = "corvo-install-dismissed";
 
@@ -41,7 +42,10 @@ export default function InstallBanner() {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") dismiss();
+      if (outcome === "accepted") {
+        posthog.capture("pwa_installed");
+        dismiss();
+      }
     }
     // iOS: user reads the instructions and taps Share → Add to Home Screen manually
   };
