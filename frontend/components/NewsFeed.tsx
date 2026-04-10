@@ -125,9 +125,17 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
       })()}
 
       {loading ? (
-        <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "24px 0" }}>
-          <div style={{ width: 18, height: 18, border: "1.5px solid var(--border)", borderTopColor: "var(--text)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <span style={{ fontSize: 12, color: "var(--text3)" }}>Fetching latest news...</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ padding: "12px 14px", border: "0.5px solid var(--border)", borderRadius: 10, display: "flex", gap: 10 }}>
+              <div style={{ width: 40, height: 16, borderRadius: 4, background: "var(--bg3)", animation: "nfPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ height: 13, width: "80%", borderRadius: 4, background: "var(--bg3)", animation: "nfPulse 1.5s ease-in-out infinite" }} />
+                <div style={{ height: 11, width: "60%", borderRadius: 4, background: "var(--bg3)", animation: "nfPulse 1.5s ease-in-out infinite", animationDelay: "0.1s" }} />
+              </div>
+            </div>
+          ))}
+          <style>{`@keyframes nfPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
         </div>
       ) : articles.length === 0 ? (
         <p style={{ fontSize: 12, color: "var(--text3)", padding: "32px 0", textAlign: "center" }}>

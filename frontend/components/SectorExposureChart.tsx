@@ -29,12 +29,15 @@ const SectorExposureChart = memo(function SectorExposureChart({
 }) {
   const [data, setData] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (!assets.length) return;
     setLoading(true);
+    setFetchError(false);
     fetchSectors(assets)
       .then((res) => setData(res?.sectors ?? null))
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [assets]);
 
@@ -102,25 +105,18 @@ const SectorExposureChart = memo(function SectorExposureChart({
       </div>
 
       {loading ? (
-        <div
-          style={{
-            height: 260,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              border: "2px solid var(--border-mid)",
-              borderTopColor: "#c9a84c",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-            }}
-          />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "10px 0" }}>
+          <div style={{ height: 160, borderRadius: 8, background: "rgba(255,255,255,0.06)", animation: "secPulse 1.5s ease-in-out infinite" }} />
+          <div style={{ display: "flex", gap: 8 }}>
+            {[60, 45, 70, 50].map((w, i) => (
+              <div key={i} style={{ height: 10, width: `${w}px`, borderRadius: 4, background: "rgba(255,255,255,0.06)", animation: "secPulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.1}s` }} />
+            ))}
+          </div>
+          <style>{`@keyframes secPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
+        </div>
+      ) : fetchError ? (
+        <div style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, color: "var(--text-muted)", fontSize: 12, textAlign: "center" }}>
+          <p style={{ color: "rgba(224,92,92,0.8)" }}>Unable to load sector data — server may be temporarily unavailable.</p>
         </div>
       ) : data && labels.length ? (
         <Plot

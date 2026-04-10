@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 const C = {
@@ -32,6 +32,12 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
   });
   const [focused, setFocused] = useState<string | null>(null);
   const set = (k: keyof Goals, v: string) => setForm(p => ({ ...p, [k]: v }));
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const inputStyle = (k: string): React.CSSProperties => ({
     width: "100%", padding: "10px 12px",

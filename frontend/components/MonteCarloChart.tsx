@@ -18,11 +18,13 @@ const C = {
 const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (!assets.length) return;
     setLoading(true);
-    fetchMonteCarlo(assets, period).then(setData).finally(() => setLoading(false));
+    setFetchError(false);
+    fetchMonteCarlo(assets, period).then(setData).catch(() => setFetchError(true)).finally(() => setLoading(false));
   }, [assets, period]);
 
   const days = data ? Array.from({ length: data.horizon }, (_, i) => i + 1) : [];
@@ -66,6 +68,10 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
         <div style={{ height: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
           <div style={{ width: 26, height: 26, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: C.amber, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
           <p style={{ fontSize: 10, letterSpacing: 2.5, color: C.cream3, textTransform: "uppercase" }}>Running 300 simulations...</p>
+        </div>
+      ) : fetchError ? (
+        <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: C.cream3, fontSize: 12, textAlign: "center" }}>
+          <p style={{ color: "rgba(224,92,92,0.8)" }}>Unable to run simulation — server may be temporarily unavailable.</p>
         </div>
       ) : data ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>

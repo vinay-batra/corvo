@@ -554,8 +554,8 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
         });
       }
       localStorage.setItem(NOTIF_ASKED_KEY, "granted");
-    } catch (e) {
-      console.error("Push subscription failed:", e);
+    } catch {
+      // silently ignore — push subscription is non-critical
     }
     setLoading(false);
     onDismiss();
@@ -928,8 +928,7 @@ export default function AppPage() {
           } catch { setSavedPortfolioId(null); }
         })();
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
       setErrorMsg("Analysis failed — server may be temporarily unavailable.");
       errorDismissRef.current = setTimeout(() => setErrorMsg(null), 10000);
     }

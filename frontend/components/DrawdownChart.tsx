@@ -11,12 +11,15 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (!assets.length) return;
     setLoading(true);
+    setFetchError(false);
     fetchDrawdown(assets, period)
       .then(setData)
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [assets, period]);
 
@@ -45,9 +48,14 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
       </div>
 
       {loading ? (
-        <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 28, height: 28, border: "2px solid var(--border-mid)", borderTopColor: "var(--red)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "6px 0" }}>
+          <div style={{ height: 180, borderRadius: 6, background: "rgba(255,255,255,0.06)", animation: "ddPulse 1.5s ease-in-out infinite" }} />
+          <div style={{ height: 11, width: "30%", borderRadius: 4, background: "rgba(255,255,255,0.06)", animation: "ddPulse 1.5s ease-in-out infinite" }} />
+          <style>{`@keyframes ddPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
+        </div>
+      ) : fetchError ? (
+        <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 12, textAlign: "center" }}>
+          <p style={{ color: "rgba(224,92,92,0.8)" }}>Unable to load drawdown data — server may be temporarily unavailable.</p>
         </div>
       ) : data ? (
         <Plot

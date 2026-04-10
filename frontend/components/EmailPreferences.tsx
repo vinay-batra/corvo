@@ -46,6 +46,12 @@ export default function EmailPreferences({ onClose, autoDisableDigest }: Props) 
     }
   }, [loading, autoDisableDigest]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const toggle = (key: keyof Prefs) => setPrefs(p => ({ ...p, [key]: !p[key] }));
 
   const save = async () => {

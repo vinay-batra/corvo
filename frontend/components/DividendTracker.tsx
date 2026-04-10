@@ -37,12 +37,15 @@ function daysUntil(dateStr: string | null): number | null {
 const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[] }) {
   const [data, setData] = useState<DividendData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (!assets.length) return;
     setLoading(true);
+    setFetchError(false);
     fetchDividends(assets, 10000)
       .then((res) => setData(res ?? null))
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [assets]);
 
@@ -111,18 +114,15 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
       </div>
 
       {loading ? (
-        <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              border: "2px solid var(--border-mid)",
-              borderTopColor: "#c9a84c",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-            }}
-          />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[100, 85, 90, 75].map((w, i) => (
+            <div key={i} style={{ height: 13, width: `${w}%`, borderRadius: 4, background: "rgba(255,255,255,0.06)", animation: "divPulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
+          ))}
+          <style>{`@keyframes divPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
+        </div>
+      ) : fetchError ? (
+        <div style={{ height: 100, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, color: "var(--text-muted)", fontSize: 12, textAlign: "center" }}>
+          <p style={{ color: "rgba(224,92,92,0.8)" }}>Unable to load dividend data — server may be temporarily unavailable.</p>
         </div>
       ) : data ? (
         <div style={{ overflowX: "auto" }}>

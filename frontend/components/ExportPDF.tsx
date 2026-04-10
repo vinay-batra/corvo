@@ -372,8 +372,8 @@ export default function ExportPDF({ data, assets, goals }: Props) {
         a.click();
         URL.revokeObjectURL(url);
       }
-    } catch (e) {
-      console.error("Export failed:", e);
+    } catch {
+      // silently ignore — user can try again
     } finally {
       setLoading(false);
     }
