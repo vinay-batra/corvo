@@ -421,7 +421,15 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
         <div style={{ position: "relative", zIndex: 1 }}>
           <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 5 }}>PDF Reports</p>
           <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 5, letterSpacing: -0.3 }}>Export & share</p>
-          <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65 }}>Generate a full portfolio report in one click.</p>
+          <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65, marginBottom: 10 }}>Generate a full portfolio report in one click.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, animation: `fadein 0.5s ease ${0.3 + i * 0.12}s both` }}>
+                <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
+                <span style={{ fontSize: 11, color: "rgba(232,224,204,0.4)" }}>{item}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </BentoCard>
