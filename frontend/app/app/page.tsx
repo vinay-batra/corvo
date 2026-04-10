@@ -649,11 +649,10 @@ function PortfolioPerformanceTrend({
       ) : history.length === 0 ? (
         <div style={{ textAlign: "center", padding: "24px 16px 16px" }}>
           <p style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", marginBottom: 8, letterSpacing: "-0.3px", lineHeight: 1.3 }}>
-            Your performance tracking starts today
+            Building your history
           </p>
           <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, marginBottom: 20, maxWidth: 400, margin: "0 auto 20px" }}>
-            Analyze this portfolio daily to build your performance history.{" "}
-            Come back tomorrow to see your first trend.
+            Daily snapshots are saved automatically. Analyze now to capture today's baseline.
           </p>
           <button onClick={onAnalyze}
             style={{ padding: "8px 22px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: AMBER, color: "#0a0e14", cursor: "pointer", letterSpacing: 0.5, transition: "opacity 0.15s" }}
@@ -663,11 +662,16 @@ function PortfolioPerformanceTrend({
           </button>
         </div>
       ) : hasOneSnapshot ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 8px", justifyContent: "center" }}>
-          <CheckCircle2 size={18} style={{ color: AMBER, flexShrink: 0 }} />
-          <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6 }}>
-            First snapshot saved!{" "}
-            <span style={{ color: "var(--text3)" }}>Analyze again tomorrow to see your trend line.</span>
+        <div style={{ padding: "16px 8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: "var(--text2)", fontWeight: 500 }}>Building your history</span>
+            <span style={{ fontSize: 10, color: "var(--text3)" }}>Day 1</span>
+          </div>
+          <div style={{ height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden", marginBottom: 10 }}>
+            <div style={{ width: "14%", height: "100%", background: AMBER, borderRadius: 2 }} />
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.6 }}>
+            First snapshot saved. Trend chart appears tomorrow with a second data point — snapshots are collected automatically each day.
           </p>
         </div>
       ) : (
@@ -756,6 +760,7 @@ export default function AppPage() {
   const [perfHistory, setPerfHistory] = useState<PerfSnapshot[]>([]);
   const [perfRange, setPerfRange] = useState<PerfRange>("ALL");
   const [perfLoading, setPerfLoading] = useState(false);
+  const autoSnapshotAttemptedRef = useRef<string | null>(null);
   const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
   const S = useS();
@@ -967,6 +972,37 @@ export default function AppPage() {
       .catch(() => setPerfHistory([]))
       .finally(() => setPerfLoading(false));
   }, [savedPortfolioId, userId]);
+
+  // ── Auto-snapshot on dashboard load (once per portfolio per session) ──────────
+  useEffect(() => {
+    if (!savedPortfolioId || !userId || perfLoading) return;
+    if (autoSnapshotAttemptedRef.current === savedPortfolioId) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const hasToday = perfHistory.some(s => s.date?.slice(0, 10) === today);
+    autoSnapshotAttemptedRef.current = savedPortfolioId;
+    if (hasToday) return;
+    const valid = assets.filter(a => a.ticker && a.weight > 0);
+    if (!valid.length) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    fetch(`${apiUrl}/portfolio/snapshot`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        portfolio_id: savedPortfolioId,
+        tickers: valid.map(a => a.ticker).join(","),
+        weights: valid.map(a => a.weight).join(","),
+      }),
+    }).then(r => {
+      if (r.ok) {
+        fetch(`${apiUrl}/portfolio/history?portfolio_id=${savedPortfolioId}&user_id=${userId}`)
+          .then(r => r.json())
+          .then(d => setPerfHistory(d.snapshots || []))
+          .catch(() => {});
+      }
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedPortfolioId, userId, perfLoading]);
 
   // ── Show notification prompt once after login ────────────────────────────────
   useEffect(() => {
