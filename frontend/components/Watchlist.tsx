@@ -139,9 +139,11 @@ function AlertModal({ ticker, onSave, onClose }: { ticker: string; onSave: (a: A
   const [dir, setDir] = useState<"above" | "below">("above");
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="c-modal-backdrop-mobile"
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={onClose}>
       <motion.div initial={{ scale: 0.94, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 12 }}
+        className="c-modal-sheet"
         style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, padding: "24px", width: "100%", maxWidth: 340 }}
         onClick={e => e.stopPropagation()}>
         <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Set Price Alert — {ticker}</p>
@@ -692,6 +694,7 @@ export default function Watchlist() {
         </div>
       ) : (
         <motion.div
+          className="c-watchlist-grid"
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}
           initial="hidden" animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.06 } } }}>
@@ -743,7 +746,7 @@ export default function Watchlist() {
                         <div style={{ fontSize: 11, color: "var(--text3)" }}>{loadingAll ? "Loading…" : "—"}</div>
                       )}
                     </div>
-                    {s?.sparkline && s.sparkline.length > 1 && <Sparkline data={s.sparkline} positive={pos} />}
+                    {s?.sparkline && s.sparkline.length > 1 && <span className="c-sparkline-hide"><Sparkline data={s.sparkline} positive={pos} /></span>}
                   </div>
                 </motion.div>
               );
@@ -754,10 +757,10 @@ export default function Watchlist() {
 
       {/* Notifications prompt */}
       {!notifGranted && (
-        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "12px 16px", background: "var(--card-bg)", marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="c-notif-prompt" style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "12px 16px", background: "var(--card-bg)", marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 12, color: "var(--text2)" }}>Get browser alerts when price targets are hit</span>
           <button onClick={async () => { const ok = await requestPermission(); setNotifGranted(ok); }}
-            style={{ padding: "6px 14px", fontSize: 11, borderRadius: 8, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.08)", color: "#c9a84c", cursor: "pointer", flexShrink: 0, marginLeft: 12 }}>
+            style={{ padding: "6px 14px", fontSize: 11, borderRadius: 8, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.08)", color: "#c9a84c", cursor: "pointer", flexShrink: 0, marginLeft: 12, minHeight: 44 }}>
             Enable Notifications
           </button>
         </div>

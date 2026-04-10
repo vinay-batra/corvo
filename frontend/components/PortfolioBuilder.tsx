@@ -283,7 +283,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                             onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                             <div>
                               <div style={{fontFamily:"Space Mono,monospace",fontSize:11,color:C.amber,fontWeight:700}}>{r.ticker}</div>
-                              <div style={{fontSize:10,color:C.cream3,maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+                              <div style={{fontSize:10,color:C.cream3,maxWidth:"min(140px,40vw)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
                             </div>
                             <span style={{fontSize:8,background:"rgba(201,168,76,0.1)",color:C.amber,padding:"2px 6px",borderRadius:3,border:"1px solid rgba(201,168,76,0.2)"}}>{TYPE_LABELS[r.type]||r.type}</span>
                           </div>
@@ -312,7 +312,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 <input type="number" min="0" step="0.01" placeholder="optional"
                   value={a.purchasePrice ?? ""}
                   onChange={e=>updatePurchasePrice(i,e.target.value)}
-                  style={{width:70,padding:"3px 5px",background:"rgba(255,255,255,0.03)",border:`1px solid rgba(255,255,255,0.06)`,borderRadius:4,color:"rgba(232,224,204,0.5)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"left"}}/>
+                  style={{flex:"1 1 60px",minWidth:0,maxWidth:80,padding:"3px 5px",background:"rgba(255,255,255,0.03)",border:`1px solid rgba(255,255,255,0.06)`,borderRadius:4,color:"rgba(232,224,204,0.5)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"left"}}/>
               </div>
             </motion.div>
           );
@@ -335,9 +335,11 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       <AnimatePresence>
         {showCsvModal&&(
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+            className="c-modal-backdrop-mobile"
             style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
             onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}>
             <motion.div initial={{scale:0.94,y:10}} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
+              className="c-modal-sheet"
               style={{background:"#141413",border:"0.5px solid rgba(255,255,255,0.09)",borderRadius:16,width:"100%",maxWidth:460,boxShadow:"0 24px 80px rgba(0,0,0,0.55)",overflow:"hidden"}}
               onClick={e=>e.stopPropagation()}>
 
