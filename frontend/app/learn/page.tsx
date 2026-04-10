@@ -1324,7 +1324,11 @@ export default function LearnPage() {
         }
 
         const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", user.id).single();
-        if (ls) setLearnPoints(ls.total_points ?? 0);
+        if (ls) {
+          setLearnPoints(ls.total_points ?? 0);
+          // If profiles.xp is missing but learn_scores has points, use that as XP
+          if (!profile?.xp && ls.total_points > 0) setXp(ls.total_points);
+        }
       } finally {
         setProfileLoading(false);
       }
@@ -1743,6 +1747,7 @@ export default function LearnPage() {
                   onBack={() => setActiveSection("home")}
                   onXP={(amount, updatedProg) => handleLessonXP(amount, activeLesson.id, updatedProg)}
                   progress={lessonProgress[activeLesson.id] ?? []}
+                  onAIPractice={() => { setActivePracticeLesson(activeLesson); setActiveSection("ai-practice"); }}
                 />
               </div>
             </motion.div>
@@ -1808,11 +1813,12 @@ export default function LearnPage() {
 }
 
 // ── Lesson View ───────────────────────────────────────────────────────────────
-function LessonView({ lesson, onBack, onXP, progress }: {
+function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
   lesson: Lesson;
   onBack: () => void;
   onXP: (amount: number, updatedProgress: number[]) => void;
   progress: number[];
+  onAIPractice?: () => void;
 }) {
   const isMastered = progress.length >= lesson.quiz.length;
   const [mode, setMode] = useState<"read" | "quiz">("read");
@@ -1908,6 +1914,12 @@ function LessonView({ lesson, onBack, onXP, progress }: {
               style={{ width: "100%", padding: "12px", background: AMBER, border: "none", borderRadius: 10, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: 0.5 }}>
               Take Quiz · +{lesson.xpReward} XP
             </button>
+            {isMastered && onAIPractice && (
+              <button onClick={onAIPractice}
+                style={{ marginTop: 8, width: "100%", padding: "11px", background: `${AMBER}12`, border: `0.5px solid ${AMBER}44`, borderRadius: 10, color: AMBER, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                <BrainCircuit size={14} strokeWidth={1.5} /> AI Generate Questions
+              </button>
+            )}
           </motion.div>
         )}
 
@@ -1985,6 +1997,12 @@ function LessonView({ lesson, onBack, onXP, progress }: {
               <>
                 <p style={{ fontSize: 20, fontWeight: 600, color: "#a78bfa", marginBottom: 6 }}>Lesson Mastered</p>
                 <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>All questions answered correctly. No more XP available from this lesson.</p>
+                {onAIPractice && (
+                  <button onClick={onAIPractice}
+                    style={{ marginBottom: 12, padding: "10px 22px", background: `${AMBER}12`, border: `0.5px solid ${AMBER}44`, borderRadius: 9, color: AMBER, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}>
+                    <BrainCircuit size={14} strokeWidth={1.5} /> AI Generate Questions
+                  </button>
+                )}
               </>
             ) : (
               <>

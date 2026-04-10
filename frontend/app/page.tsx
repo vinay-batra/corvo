@@ -379,12 +379,30 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
       </div>
       {/* Divider + PDF Reports section */}
       <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "24px 0" }} />
-      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 2v8M5 7l3 3 3-3" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M3 12h10" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+        {/* Mini PDF document graphic */}
+        <div style={{ flexShrink: 0, background: "rgba(8,11,16,0.7)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 10, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 5, width: 82, position: "relative" }}>
+          {/* Corvo mark in top-right */}
+          <div style={{ position: "absolute", top: 7, right: 8 }}>
+            <svg width="10" height="10" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="29" fill="#c9a84c" opacity="0.7" />
+              <path d="M46 14 C38 9 28 9 20 14 C12 19 8 25 8 32 C8 39 12 45 20 50 C28 55 38 55 46 50 L46 44 C40 48 33 49 27 46 C20 43 17 38 17 32 C17 26 20 21 27 18 C33 15 40 16 46 20 Z" fill="#0a0e14" />
+            </svg>
+          </div>
+          {/* Content lines */}
+          <div style={{ height: 2, background: "rgba(201,168,76,0.5)", borderRadius: 1, width: "55%" }} />
+          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1 }} />
+          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1, width: "80%" }} />
+          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1, width: "65%" }} />
+          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1 }} />
+          <div style={{ height: 1.5, background: "rgba(232,224,204,0.12)", borderRadius: 1, width: "75%" }} />
+          {/* Download arrow at bottom */}
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 4 }}>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2v8M5 7l3 3 3-3" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+              <path d="M3 13h10" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+            </svg>
+          </div>
         </div>
         <div>
           <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 5 }}>PDF Reports</p>
