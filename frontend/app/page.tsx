@@ -625,6 +625,12 @@ export default function Landing() {
           )}
           <Link href="/app?demo=true" className="ghost" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c", textDecoration: "none", fontWeight: 500 }}>Try demo →</Link>
         </motion.div>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.5 }}
+          style={{ marginBottom: 60 }}>
+          <a href="https://www.producthunt.com/products/corvo?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-corvo" target="_blank" rel="noopener noreferrer">
+            <img alt="Corvo - AI-powered portfolio analysis for real investors | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1120194&theme=dark&t=1775786806638" />
+          </a>
+        </motion.div>
 
         {/* Dashboard preview */}
         <div style={{ animation: "fadein 1s cubic-bezier(0.16,1,0.3,1) 0.8s both, float 7s ease-in-out 2.5s infinite", width: "min(920px,92vw)", position: "relative" }}>
