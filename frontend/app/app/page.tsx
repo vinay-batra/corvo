@@ -364,7 +364,8 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                     const vals = active.map(q => q.result[m.key] ?? 0);
                     const best = m.positive ? Math.max(...vals) : Math.min(...vals);
                     const val = p.result[m.key] ?? 0;
-                    const isBest = val === best;
+                    const allEqual = vals.every(v => v === vals[0]);
+                    const isBest = !allEqual && val === best;
                     return (
                       <div key={m.key} style={{ padding: "9px 16px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 11, color: "var(--text3)" }}>{m.label}</span>
@@ -588,14 +589,13 @@ const PERF_RANGES = ["1W", "1M", "3M", "ALL"] as const;
 type PerfRange = typeof PERF_RANGES[number];
 
 function PortfolioPerformanceTrend({
-  history, range, setRange, loading, portfolioName, onAnalyze,
+  history, range, setRange, loading, portfolioName,
 }: {
   history: PerfSnapshot[];
   range: PerfRange;
   setRange: (r: PerfRange) => void;
   loading: boolean;
   portfolioName: string;
-  onAnalyze: () => void;
 }) {
   const AMBER = "#c9a84c";
   const filtered = (() => {
@@ -651,15 +651,9 @@ function PortfolioPerformanceTrend({
           <p style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", marginBottom: 8, letterSpacing: "-0.3px", lineHeight: 1.3 }}>
             Building your history
           </p>
-          <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, marginBottom: 20, maxWidth: 400, margin: "0 auto 20px" }}>
-            Daily snapshots are saved automatically. Analyze now to capture today's baseline.
+          <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, maxWidth: 400, margin: "0 auto" }}>
+            Today's snapshot is being captured automatically. Check back tomorrow to see your first trend.
           </p>
-          <button onClick={onAnalyze}
-            style={{ padding: "8px 22px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: AMBER, color: "#0a0e14", cursor: "pointer", letterSpacing: 0.5, transition: "opacity 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
-            Analyze Now
-          </button>
         </div>
       ) : hasOneSnapshot ? (
         <div style={{ padding: "16px 8px" }}>
@@ -1003,6 +997,37 @@ export default function AppPage() {
     }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedPortfolioId, userId, perfLoading]);
+
+  // ── Background snapshot for ALL saved portfolios once per session ───────────
+  const allSnapshotFiredRef = useRef(false);
+  useEffect(() => {
+    if (!userId || allSnapshotFiredRef.current) return;
+    allSnapshotFiredRef.current = true;
+    const today = new Date().toISOString().slice(0, 10);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    (async () => {
+      try {
+        const savedRaw = localStorage.getItem("corvo_saved_portfolios");
+        const localPfs: any[] = savedRaw ? JSON.parse(savedRaw) : [];
+        const { data: dbPfs } = await supabase.from("portfolios").select("id,tickers,assets").eq("user_id", userId);
+        const allPfs = [...(dbPfs || []).map((p: any) => ({ id: p.id, assets: p.assets || [] })), ...localPfs.map((p: any) => ({ id: p.id, assets: p.assets || [] }))];
+        const uniqueIds = new Set<string>();
+        for (const pf of allPfs) {
+          if (!pf.id || uniqueIds.has(pf.id) || !pf.assets?.length) continue;
+          uniqueIds.add(pf.id);
+          const { data: hist } = await supabase.from("portfolio_snapshots").select("date").eq("portfolio_id", pf.id).eq("user_id", userId).gte("date", today).limit(1);
+          if (hist && hist.length > 0) continue;
+          const valid = pf.assets.filter((a: any) => a.ticker && a.weight > 0);
+          if (!valid.length) continue;
+          fetch(`${apiUrl}/portfolio/snapshot`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, portfolio_id: pf.id, tickers: valid.map((a: any) => a.ticker).join(","), weights: valid.map((a: any) => a.weight).join(",") }),
+          }).catch(() => {});
+        }
+      } catch {}
+    })();
+  }, [userId]);
 
   // ── Show notification prompt once after login ────────────────────────────────
   useEffect(() => {
@@ -1480,16 +1505,6 @@ export default function AppPage() {
             ) : !data && !loading ? (
               <motion.div key="empty" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Empty onPreset={(a) => setAssets(a.map(x => ({ ...x, weight: Math.round(x.weight * 100) })))} />
-                {savedPortfolioId && (
-                  <PortfolioPerformanceTrend
-                    history={perfHistory}
-                    range={perfRange}
-                    setRange={setPerfRange}
-                    loading={perfLoading}
-                    portfolioName={savedPortfolioName}
-                    onAnalyze={handleAnalyze}
-                  />
-                )}
               </motion.div>
             ) : loading ? (
               <motion.div key="loading" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
@@ -1517,19 +1532,6 @@ export default function AppPage() {
                     <PerformanceChart data={data} />
                   </Card>
                 </motion.div>
-                {/* Portfolio Performance — prominent, full-width, before AI insights */}
-                {savedPortfolioId && (
-                  <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} transition={{ duration: 0.2 }}>
-                    <PortfolioPerformanceTrend
-                      history={perfHistory}
-                      range={perfRange}
-                      setRange={setPerfRange}
-                      loading={perfLoading}
-                      portfolioName={savedPortfolioName}
-                      onAnalyze={handleAnalyze}
-                    />
-                  </motion.div>
-                )}
                 <motion.div
                   className="c-bgrid"
                   style={{ ...S.bottomGrid }}
@@ -1588,6 +1590,17 @@ export default function AppPage() {
                   </motion.div>
                 )}
                 <PortfolioHistory />
+                {savedPortfolioId && (
+                  <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} transition={{ duration: 0.2 }}>
+                    <PortfolioPerformanceTrend
+                      history={perfHistory}
+                      range={perfRange}
+                      setRange={setPerfRange}
+                      loading={perfLoading}
+                      portfolioName={savedPortfolioName}
+                    />
+                  </motion.div>
+                )}
               </motion.div>
             ) : activeTab === "risk" ? (
               <motion.div key="risk" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
