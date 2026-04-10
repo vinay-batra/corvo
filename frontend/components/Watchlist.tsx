@@ -13,19 +13,50 @@ const STORAGE_KEY = "corvo_watchlist";
 const LISTS_KEY = "corvo_watchlist_lists";
 const ALERTS_KEY = "corvo_watchlist_alerts";
 
-function FolderIcon({ size = 12, color = "currentColor" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-      <path d="M1.5 4.5v8c0 .83.67 1.5 1.5 1.5h10c.83 0 1.5-.67 1.5-1.5V6c0-.83-.67-1.5-1.5-1.5H8.5L7 3H3C2.17 3 1.5 3.67 1.5 4.5z" stroke={color} strokeWidth="1.25" fill="none" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
 function PencilIcon({ size = 11, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
       <path d="M11 2l3 3-8 8H3v-3L11 2z" stroke={color} strokeWidth="1.3" strokeLinejoin="round"/>
     </svg>
+  );
+}
+
+// ── List icon set ─────────────────────────────────────────────────────────────
+const LIST_ICON_KEYS = ["folder", "star", "chart", "home", "globe", "bolt", "heart", "shield"] as const;
+type ListIconKey = typeof LIST_ICON_KEYS[number];
+
+function ListIcon({ iconKey, size = 12, color = "currentColor" }: { iconKey: string; size?: number; color?: string }) {
+  const s = { flexShrink: 0 as const };
+  switch (iconKey) {
+    case "star":
+      return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={s}><path d="M8 2l1.8 3.6 4 .6-2.9 2.8.7 4L8 11l-3.6 1.9.7-4L2.2 6.2l4-.6L8 2z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/></svg>;
+    case "chart":
+      return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={s}><rect x="1.5" y="8" width="3" height="6" rx="0.8" stroke={color} strokeWidth="1.2"/><rect x="6.5" y="4" width="3" height="10" rx="0.8" stroke={color} strokeWidth="1.2"/><rect x="11.5" y="1.5" width="3" height="12.5" rx="0.8" stroke={color} strokeWidth="1.2"/></svg>;
+    case "home":
+      return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={s}><path d="M2 7l6-5 6 5v7a1 1 0 01-1 1H3a1 1 0 01-1-1V7z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/><path d="M6 14V9h4v5" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/></svg>;
+    case "globe":
+      return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={s}><circle cx="8" cy="8" r="6" stroke={color} strokeWidth="1.2"/><path d="M8 2c-2 2-2 8 0 12M8 2c2 2 2 8 0 12M2 8h12" stroke={color} strokeWidth="1.2"/></svg>;
+    case "bolt":
+      return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={s}><path d="M9.5 1.5L4 9h5l-2.5 5.5 7-8H8.5l1-5z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/></svg>;
+    case "heart":
+      return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={s}><path d="M8 13.5S2 9.5 2 5.5A3.5 3.5 0 018 3.1 3.5 3.5 0 0114 5.5c0 4-6 8-6 8z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/></svg>;
+    case "shield":
+      return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={s}><path d="M8 1.5l5.5 2v4c0 3.5-2.5 5.5-5.5 7-3-1.5-5.5-3.5-5.5-7v-4L8 1.5z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/></svg>;
+    default: // folder
+      return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={s}><path d="M1.5 4.5v8c0 .83.67 1.5 1.5 1.5h10c.83 0 1.5-.67 1.5-1.5V6c0-.83-.67-1.5-1.5-1.5H8.5L7 3H3C2.17 3 1.5 3.67 1.5 4.5z" stroke={color} strokeWidth="1.25" fill="none" strokeLinejoin="round"/></svg>;
+  }
+}
+
+function IconPicker({ value, onChange }: { value: string; onChange: (k: string) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 4 }}>
+      {LIST_ICON_KEYS.map(k => (
+        <button key={k} onClick={() => onChange(k)}
+          style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${value === k ? "rgba(201,168,76,0.5)" : "var(--border)"}`, background: value === k ? "rgba(201,168,76,0.1)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.1s" }}>
+          <ListIcon iconKey={k} size={12} color={value === k ? "#c9a84c" : "var(--text3)"} />
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -161,9 +192,11 @@ export default function Watchlist() {
   // Creating a new list
   const [creatingList, setCreatingList] = useState(false);
   const [newListName, setNewListName] = useState("");
+  const [newListIcon, setNewListIcon] = useState<string>("folder");
   // Rename/edit list
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editIcon, setEditIcon] = useState<string>("folder");
   // List switcher
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
@@ -348,15 +381,18 @@ export default function Watchlist() {
     if (!ticker || !activeListId) return;
     if (activeItems.find(i => i.ticker === ticker)) { setError(`${ticker} is already in this list`); return; }
     setError("");
-    setValidating(true);
-    try {
-      const r = await fetch(`${API_URL}/stock/${encodeURIComponent(ticker)}`);
-      const d = await r.json();
-      if (!d || !d.price || d.price === 0) { setError(`"${ticker}" not found — check the symbol and try again`); setValidating(false); return; }
-    } catch {
-      setError(`"${ticker}" not found — check the symbol and try again`); setValidating(false); return;
+    // Dropdown selections bypass validation — ticker is already confirmed via search API or local list
+    if (!directTicker) {
+      setValidating(true);
+      try {
+        const r = await fetch(`${API_URL}/stock/${encodeURIComponent(ticker)}`);
+        const d = await r.json();
+        if (!d || !d.price || d.price === 0) { setError(`"${ticker}" not found — check the symbol and try again`); setValidating(false); return; }
+      } catch {
+        setError(`"${ticker}" not found — check the symbol and try again`); setValidating(false); return;
+      }
+      setValidating(false);
     }
-    setValidating(false);
     const newItem: WatchItem = { ticker, addedAt: new Date().toISOString(), listId: activeListId };
     saveItems([...items, newItem]);
     setSearchQuery("");
@@ -387,14 +423,15 @@ export default function Watchlist() {
   const createList = async () => {
     if (!newListName.trim()) return;
     const newId = userId ? crypto.randomUUID() : genId();
-    const newList: WatchList = { id: newId, name: newListName.trim(), icon: "", tickers: [] };
+    const newList: WatchList = { id: newId, name: newListName.trim(), icon: newListIcon, tickers: [] };
     saveLists([...lists, newList]);
     setActiveListId(newList.id);
     setCreatingList(false);
     setNewListName("");
+    setNewListIcon("folder");
     if (userId) {
       try {
-        await supabase.from("watchlist_lists").insert({ id: newList.id, user_id: userId, name: newList.name, icon: "" });
+        await supabase.from("watchlist_lists").insert({ id: newList.id, user_id: userId, name: newList.name, icon: newListIcon });
       } catch {}
     }
   };
@@ -413,10 +450,11 @@ export default function Watchlist() {
     }
   };
 
-  const startRename = (listId: string, name: string) => {
+  const startRename = (listId: string, name: string, icon: string) => {
     setActiveListId(listId);
     setEditingListId(listId);
     setEditName(name);
+    setEditIcon(icon || "folder");
     setSwitcherOpen(false);
   };
 
@@ -424,11 +462,12 @@ export default function Watchlist() {
     if (!editName.trim() || !editingListId) return;
     const listId = editingListId;
     const newName = editName.trim();
-    saveLists(lists.map(l => l.id === listId ? { ...l, name: newName } : l));
+    const newIcon = editIcon;
+    saveLists(lists.map(l => l.id === listId ? { ...l, name: newName, icon: newIcon } : l));
     setEditingListId(null);
     if (userId) {
       try {
-        await supabase.from("watchlist_lists").update({ name: newName }).eq("id", listId).eq("user_id", userId);
+        await supabase.from("watchlist_lists").update({ name: newName, icon: newIcon }).eq("id", listId).eq("user_id", userId);
       } catch {}
     }
   };
@@ -479,38 +518,46 @@ export default function Watchlist() {
           <div ref={switcherRef} style={{ position: "relative", flex: 1 }}>
             {editingListId === activeListId ? (
               /* Inline rename */
-              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 11px", background: "var(--bg3)", border: "0.5px solid rgba(201,168,76,0.4)", borderRadius: 9 }}>
-                <FolderIcon size={13} color="#c9a84c" />
-                <input
-                  autoFocus value={editName} onChange={e => setEditName(e.target.value)}
-                  onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); saveRename(); } if (e.key === "Escape") setEditingListId(null); }}
-                  style={{ flex: 1, padding: 0, background: "transparent", border: "none", color: "var(--text)", fontSize: 13, fontWeight: 500, outline: "none" }}
-                />
-                <button onClick={saveRename} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
-                <button onClick={() => setEditingListId(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0, lineHeight: 1 }}>✕</button>
+              <div style={{ background: "var(--bg3)", border: "0.5px solid rgba(201,168,76,0.4)", borderRadius: 9, padding: "10px 12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <ListIcon iconKey={editIcon} size={14} color="#c9a84c" />
+                  <input
+                    autoFocus value={editName} onChange={e => setEditName(e.target.value)}
+                    onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); saveRename(); } if (e.key === "Escape") setEditingListId(null); }}
+                    style={{ flex: 1, padding: 0, background: "transparent", border: "none", color: "var(--text)", fontSize: 13, fontWeight: 500, outline: "none" }}
+                  />
+                  <button onClick={saveRename} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
+                  <button onClick={() => setEditingListId(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0, lineHeight: 1 }}>✕</button>
+                </div>
+                <IconPicker value={editIcon} onChange={setEditIcon} />
               </div>
             ) : (
-              /* Switcher trigger */
-              <button
-                className="switcher-trigger"
-                onClick={() => setSwitcherOpen(o => !o)}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 11px", background: "var(--bg3)", border: `0.5px solid ${switcherOpen ? "rgba(201,168,76,0.3)" : "var(--border2)"}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}>
-                <FolderIcon size={13} color="var(--text3)" />
-                <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {activeList?.name ?? "Watchlist"}
-                </span>
-                {activeItems.length > 0 && (
-                  <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0 }}>{activeItems.length} {activeItems.length === 1 ? "asset" : "assets"}</span>
-                )}
-                <span className="pencil-reveal" style={{ opacity: 0, transition: "opacity 0.15s", display: "flex", alignItems: "center" }}
-                  onClick={e => { e.stopPropagation(); if (activeList) startRename(activeList.id, activeList.name); }}
-                  title="Rename list">
-                  <PencilIcon size={11} color="var(--text3)" />
-                </span>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0, color: "var(--text3)", transform: switcherOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
-                  <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
+              /* Switcher trigger + rename button */
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  className="switcher-trigger"
+                  onClick={() => setSwitcherOpen(o => !o)}
+                  style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "8px 11px", background: "var(--bg3)", border: `0.5px solid ${switcherOpen ? "rgba(201,168,76,0.3)" : "var(--border2)"}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}>
+                  <ListIcon iconKey={activeList?.icon || "folder"} size={13} color="var(--text3)" />
+                  <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {activeList?.name ?? "Watchlist"}
+                  </span>
+                  {activeItems.length > 0 && (
+                    <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0 }}>{activeItems.length} {activeItems.length === 1 ? "asset" : "assets"}</span>
+                  )}
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0, color: "var(--text3)", transform: switcherOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+                    <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => { if (activeList) startRename(activeList.id, activeList.name, activeList.icon); }}
+                  title="Rename list"
+                  style={{ height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: "pointer", color: "var(--text3)", fontSize: 11, flexShrink: 0, transition: "all 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; e.currentTarget.style.color = "var(--text)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.color = "var(--text3)"; }}>
+                  <PencilIcon size={11} /> <span style={{ letterSpacing: 0.2 }}>Rename</span>
+                </button>
+              </div>
             )}
 
             {/* Dropdown */}
@@ -529,11 +576,11 @@ export default function Watchlist() {
                         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--bg3)"; }}
                         onMouseLeave={e => { e.currentTarget.style.background = isActive ? "rgba(201,168,76,0.05)" : "transparent"; }}
                         onClick={() => { setActiveListId(list.id); setSwitcherOpen(false); }}>
-                        <FolderIcon size={12} color={isActive ? "#c9a84c" : "var(--text3)"} />
+                        <ListIcon iconKey={list.icon || "folder"} size={12} color={isActive ? "#c9a84c" : "var(--text3)"} />
                         <span style={{ flex: 1, fontSize: 12, color: isActive ? "var(--text)" : "var(--text2)", fontWeight: isActive ? 500 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{list.name}</span>
                         {count > 0 && <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0 }}>{count} {count === 1 ? "asset" : "assets"}</span>}
                         <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                          <button onClick={e => { e.stopPropagation(); startRename(list.id, list.name); }}
+                          <button onClick={e => { e.stopPropagation(); startRename(list.id, list.name, list.icon); }}
                             style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.1s, background 0.1s" }}
                             onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--bg3)"; }}
                             onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}>
@@ -553,16 +600,19 @@ export default function Watchlist() {
                   })}
                   {/* Create new list */}
                   {creatingList ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px" }} onClick={e => e.stopPropagation()}>
-                      <FolderIcon size={12} color="var(--text3)" />
-                      <input
-                        autoFocus value={newListName} onChange={e => setNewListName(e.target.value)}
-                        onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); createList(); } if (e.key === "Escape") { setCreatingList(false); setNewListName(""); } }}
-                        placeholder="List name…"
-                        style={{ flex: 1, padding: "2px 0", background: "transparent", border: "none", color: "var(--text)", fontSize: 12, outline: "none" }}
-                      />
-                      <button onClick={createList} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
-                      <button onClick={() => { setCreatingList(false); setNewListName(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0, lineHeight: 1 }}>✕</button>
+                    <div style={{ padding: "10px 12px" }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                        <ListIcon iconKey={newListIcon} size={12} color="var(--text3)" />
+                        <input
+                          autoFocus value={newListName} onChange={e => setNewListName(e.target.value)}
+                          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); createList(); } if (e.key === "Escape") { setCreatingList(false); setNewListName(""); } }}
+                          placeholder="List name…"
+                          style={{ flex: 1, padding: "2px 0", background: "transparent", border: "none", color: "var(--text)", fontSize: 12, outline: "none" }}
+                        />
+                        <button onClick={createList} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
+                        <button onClick={() => { setCreatingList(false); setNewListName(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0, lineHeight: 1 }}>✕</button>
+                      </div>
+                      <IconPicker value={newListIcon} onChange={setNewListIcon} />
                     </div>
                   ) : (
                     <button onClick={e => { e.stopPropagation(); setCreatingList(true); }}
@@ -636,7 +686,7 @@ export default function Watchlist() {
       {/* Stock cards */}
       {activeItems.length === 0 ? (
         <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "48px 24px", background: "var(--card-bg)", textAlign: "center" }}>
-          <div style={{ marginBottom: 10, opacity: 0.3 }}><FolderIcon size={32} color="var(--text)" /></div>
+          <div style={{ marginBottom: 10, opacity: 0.3 }}><ListIcon iconKey={activeList?.icon || "folder"} size={32} color="var(--text)" /></div>
           <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 6 }}>{activeList?.name ?? "Watchlist"} is empty</p>
           <p style={{ fontSize: 12, color: "var(--text3)" }}>Add tickers above to track them here</p>
         </div>
