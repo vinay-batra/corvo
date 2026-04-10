@@ -3,16 +3,30 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { Suspense } from "react";
 import PostHogProvider from "@/components/PosthogProvider";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import InstallBanner from "@/components/InstallBanner";
 
 export const metadata: Metadata = {
   title: "Corvo — Free Portfolio Analytics & AI Investing Tools",
   description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Corvo",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon.svg", type: "image/svg+xml" },
     ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180" },
+      { url: "/icon-192.png", sizes: "192x192" },
+    ],
   },
   openGraph: {
     title: "Corvo — Free Portfolio Analytics & AI Investing Tools",
@@ -33,13 +47,18 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" style={{ background: "#0a0e14" }}>
-<body style={{ margin: 0, background: "#0d1117" }}>
+      <head>
+        <meta name="theme-color" content="#1a1a1a" />
+      </head>
+      <body style={{ margin: 0, background: "#0d1117" }}>
         <Suspense>
           <PostHogProvider>
             {children}
           </PostHogProvider>
         </Suspense>
         <Analytics />
+        <ServiceWorkerRegistrar />
+        <InstallBanner />
       </body>
     </html>
   );

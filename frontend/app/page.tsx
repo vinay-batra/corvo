@@ -377,48 +377,65 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
           </div>
         </div>
       </div>
-      {/* Divider + PDF Reports section */}
-      <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "24px 0" }} />
-      <div style={{ display: "flex", gap: 16, alignItems: "center", background: "rgba(201,168,76,0.03)", borderRadius: 14, padding: "14px 12px", border: "1px solid rgba(201,168,76,0.08)", position: "relative", overflow: "hidden" }}>
-        {/* Ambient glow */}
-        <div style={{ position: "absolute", bottom: -30, left: -20, width: 120, height: 120, background: "radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)", pointerEvents: "none", borderRadius: "50%" }} />
-        {/* Mini PDF document */}
-        <div style={{ flexShrink: 0, background: "rgba(6,9,14,0.9)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 10, padding: "10px 11px 8px", display: "flex", flexDirection: "column", gap: 0, width: 108, position: "relative", boxShadow: "0 4px 24px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(201,168,76,0.1)", animation: "fadein 0.8s ease both" }}>
-          {/* Header row */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-            <span style={{ fontSize: 5.5, fontFamily: "Space Mono,monospace", fontWeight: 700, letterSpacing: 1.2, color: "#c9a84c", textTransform: "uppercase" }}>Portfolio Report</span>
-            <svg width="9" height="9" viewBox="0 0 64 64" fill="none" style={{ flexShrink: 0 }}>
+      {/* PDF Reports section — vertical stack, bleeds edge-to-edge */}
+      <div style={{ margin: "24px -28px -28px", overflow: "hidden" }}>
+        {/* Top: full-width dark PDF preview */}
+        <div style={{ background: "#06090e", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          {/* Subtle grid lines */}
+          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
+            {[30, 60, 90, 120].map(y => (
+              <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
+            ))}
+            {[80, 160, 240, 320].map(x => (
+              <line key={x} x1={x} y1="0" x2={x} y2="150" stroke="rgba(201,168,76,0.05)" strokeWidth="0.5" />
+            ))}
+          </svg>
+          {/* Ambient glow */}
+          <div style={{ position: "absolute", bottom: -20, right: -20, width: 140, height: 140, background: "radial-gradient(ellipse, rgba(201,168,76,0.08) 0%, transparent 70%)", pointerEvents: "none", borderRadius: "50%" }} />
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, position: "relative", zIndex: 1 }}>
+            <span style={{ fontSize: 7.5, fontFamily: "Space Mono,monospace", fontWeight: 700, letterSpacing: 1.8, color: "#c9a84c", textTransform: "uppercase" }}>Portfolio Report</span>
+            <svg width="13" height="13" viewBox="0 0 64 64" fill="none" style={{ flexShrink: 0 }}>
               <circle cx="32" cy="32" r="29" fill="#c9a84c" opacity="0.85" />
               <path d="M46 14 C38 9 28 9 20 14 C12 19 8 25 8 32 C8 39 12 45 20 50 C28 55 38 55 46 50 L46 44 C40 48 33 49 27 46 C20 43 17 38 17 32 C17 26 20 21 27 18 C33 15 40 16 46 20 Z" fill="#06090e" />
             </svg>
           </div>
-          {/* Sparkline */}
-          <div style={{ background: "rgba(201,168,76,0.04)", borderRadius: 5, padding: "5px 5px 3px", marginBottom: 8 }}>
-            <svg width="100%" height="26" viewBox="0 0 86 26" preserveAspectRatio="none">
+          {/* Chart */}
+          <div style={{ position: "relative", zIndex: 1, marginBottom: 10 }}>
+            <svg width="100%" height="72" viewBox="0 0 360 72" preserveAspectRatio="none">
               <defs>
-                <linearGradient id="pdfGrd" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.25" />
+                <linearGradient id="pdfChartGrd" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.28" />
                   <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              <path d="M0,22 C10,20 18,16 28,11 C38,6 48,4 58,3 C68,2 76,4 86,1 L86,26 L0,26Z" fill="url(#pdfGrd)" />
-              <path d="M0,22 C10,20 18,16 28,11 C38,6 48,4 58,3 C68,2 76,4 86,1" fill="none" stroke="#c9a84c" strokeWidth="1.2" />
+              {[18, 36, 54].map(y => (
+                <line key={y} x1="0" y1={y} x2="360" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
+              ))}
+              <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2 L360,72 L0,72Z" fill="url(#pdfChartGrd)" />
+              <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2" fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              {([[0,64],[85,47],[160,20],[250,9],[360,2]] as [number,number][]).map(([x,y], i) => (
+                <circle key={i} cx={x} cy={y} r="2.5" fill="#c9a84c" opacity="0.9" />
+              ))}
             </svg>
           </div>
-          {/* Metric rows with shimmer */}
-          {[
-            { label: "Sharpe", value: "0.66", color: "#e8e0cc" },
-            { label: "Return", value: "+18.4%", color: "#c9a84c" },
-            { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
-          ].map((m, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none", animation: `fadein 0.6s ease ${0.2 + i * 0.15}s both` }}>
-              <span style={{ fontSize: 7, color: "rgba(232,224,204,0.35)", fontFamily: "Space Mono,monospace" }}>{m.label}</span>
-              <span style={{ fontSize: 7.5, fontWeight: 700, color: m.color, fontFamily: "Space Mono,monospace", background: "linear-gradient(90deg, transparent 0%, rgba(201,168,76,0.08) 50%, transparent 100%)", backgroundSize: "200% 100%", animation: `shimmer ${3 + i * 0.7}s linear infinite`, WebkitBackgroundClip: "text" }}>{m.value}</span>
-            </div>
-          ))}
+          {/* 4 stats */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, position: "relative", zIndex: 1 }}>
+            {[
+              { label: "Sharpe", value: "0.66", color: "#e8e0cc" },
+              { label: "Return", value: "+18.4%", color: "#c9a84c" },
+              { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
+              { label: "Volatility", value: "12.1%", color: "#e8e0cc" },
+            ].map((stat, i) => (
+              <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
+                <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
+                <p style={{ fontSize: 9, fontWeight: 700, color: stat.color, fontFamily: "Space Mono,monospace" }}>{stat.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        {/* Text */}
-        <div style={{ position: "relative", zIndex: 1 }}>
+        {/* Bottom: text content */}
+        <div style={{ padding: "16px 28px 28px" }}>
           <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 5 }}>PDF Reports</p>
           <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 5, letterSpacing: -0.3 }}>Export & share</p>
           <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65, marginBottom: 10 }}>Generate a full portfolio report in one click.</p>

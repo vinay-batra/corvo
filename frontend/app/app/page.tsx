@@ -37,6 +37,7 @@ import ExportPDF from "../../components/ExportPDF";
 import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
+import OnboardingModal from "../../components/OnboardingModal";
 import { fetchPortfolio } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 import AlertsPanel from "../../components/AlertsPanel";
@@ -726,6 +727,8 @@ export default function AppPage() {
   const [goals, setGoals]                 = useState<any>(null);
   const [showGoals, setShowGoals]         = useState(false);
   const [showTour, setShowTour]           = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSetupBanner, setShowSetupBanner] = useState(false);
   const [showProfile, setShowProfile]     = useState(false);
   const [showSettings, setShowSettings]   = useState(false);
   const [benchOpen, setBenchOpen]         = useState(false);
@@ -822,6 +825,12 @@ export default function AppPage() {
 
     // Check onboarding status — Supabase is the source of truth; localStorage is a fallback
     (async () => {
+      // Show setup banner if user previously skipped onboarding
+      if (localStorage.getItem("corvo_onboarding_skipped") === "true" &&
+          localStorage.getItem("corvo_setup_banner_dismissed") !== "true") {
+        setShowSetupBanner(true);
+      }
+
       // Belt-and-suspenders: skip entirely if tour was already completed this browser session
       if (localStorage.getItem("corvo_tour_completed") === "true") return;
 
@@ -862,10 +871,10 @@ export default function AppPage() {
         }
       }
 
-      // Always show goals modal first, unless demo mode or shared portfolio
+      // Show onboarding modal for new users, unless demo mode or shared portfolio
       const params2 = new URLSearchParams(window.location.search);
       if (!params2.get("portfolio") && params2.get("demo") !== "true") {
-        setShowGoals(true);
+        setShowOnboarding(true);
       }
     })();
   }, []);
@@ -1457,6 +1466,34 @@ export default function AppPage() {
 
         {/* Content */}
         <main className="c-content" style={S.content}>
+          {/* Setup banner (shown when user skipped onboarding) */}
+          <AnimatePresence>
+            {showSetupBanner && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                style={{ border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(201,168,76,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ color: "#c9a84c", fontSize: 13, flexShrink: 0 }}>◎</span>
+                  <span style={{ fontSize: 13, color: "rgba(232,224,204,0.65)", lineHeight: 1.4 }}>
+                    Complete your setup — add your portfolio to unlock AI insights and risk analysis.
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <button onClick={() => { setShowSetupBanner(false); setShowOnboarding(true); }}
+                    style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "#c9a84c", border: "none", color: "#0a0e14", cursor: "pointer", transition: "opacity 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
+                    Complete Setup
+                  </button>
+                  <button onClick={() => { setShowSetupBanner(false); localStorage.setItem("corvo_setup_banner_dismissed", "true"); }}
+                    style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "rgba(201,168,76,0.1)", color: "rgba(232,224,204,0.4)", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    ✕
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Error banner */}
           <AnimatePresence>
             {errorMsg && (
@@ -1671,6 +1708,39 @@ export default function AppPage() {
         {loading ? "Analyzing..." : "Analyze"}
       </motion.button>
 
+      <AnimatePresence>
+        {showOnboarding && (
+          <OnboardingModal
+            onComplete={async (builtAssets) => {
+              setShowOnboarding(false);
+              localStorage.setItem("corvo_tour_completed", "true");
+              localStorage.removeItem("corvo_onboarding_skipped");
+              setShowSetupBanner(false);
+              if (builtAssets.length > 0) {
+                setAssets(builtAssets.map(a => ({ ...a, weight: Math.round(a.weight * 100) > 0 ? Math.round(a.weight * 100) : a.weight })));
+              }
+              tourNeededRef.current = false;
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                const { data: xpRow } = await supabase.from("profiles").select("xp").eq("id", user.id).single();
+                await supabase.from("profiles").upsert({
+                  id: user.id,
+                  onboarding_completed: true,
+                  xp: (xpRow?.xp || 0) + 100,
+                  updated_at: new Date().toISOString(),
+                });
+              }
+            }}
+            onSkip={() => {
+              setShowOnboarding(false);
+              localStorage.setItem("corvo_onboarding_skipped", "true");
+              if (localStorage.getItem("corvo_setup_banner_dismissed") !== "true") {
+                setShowSetupBanner(true);
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} />}
       </AnimatePresence>
