@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { posthog } from "@/lib/posthog";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -799,6 +800,7 @@ export default function AppPage() {
 
     // Demo mode
     if (params.get("demo") === "true") {
+      posthog.capture("demo_mode_started");
       const demoAssets = [
         { ticker: "SPY", weight: 40 },
         { ticker: "QQQ", weight: 30 },
@@ -882,6 +884,7 @@ export default function AppPage() {
       setActiveTab("overview");
       setAnalyzeComplete(true);
       sound.success();
+      posthog.capture("portfolio_analyzed", { ticker_count: valid.length, tickers: valid.map(a => a.ticker) });
       setTimeout(() => setAnalyzeComplete(false), 600);
       // Fire-and-forget: snapshot for saved portfolios (logged-in users only)
       if (userId) {

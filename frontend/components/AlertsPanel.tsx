@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
+import { posthog } from "../lib/posthog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -211,6 +212,8 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
     const t = parseFloat(threshold);
     if (isNaN(t) || t <= 0) return;
     if (tab === "price" && !ticker.trim()) return;
+
+    posthog.capture("alert_created", { alert_type: tab, condition });
 
     const newAlert: Alert = {
       id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`,

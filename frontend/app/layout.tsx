@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
+import { Suspense } from "react";
+import PostHogProvider from "@/components/PosthogProvider";
 
 export const metadata: Metadata = {
   title: "Corvo — Portfolio Intelligence",
@@ -28,7 +30,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body style={{ margin: 0, background: "#0d1117" }}>
-        {children}
+        <Suspense>
+          <PostHogProvider>
+            {children}
+          </PostHogProvider>
+        </Suspense>
         <Analytics />
       </body>
     </html>

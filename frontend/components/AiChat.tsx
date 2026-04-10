@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
+import { posthog } from "../lib/posthog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -222,6 +223,7 @@ export default function AiChat({ data, assets, goals: goalsProp }: {
   const send = async (text?: string) => {
     const msg = text || input.trim();
     if (!msg || loading) return;
+    posthog.capture("chat_message_sent");
     setInput("");
     const userMsg: Message = { role: "user", content: msg };
     const nextHistory = [...messages, userMsg];
