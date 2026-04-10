@@ -5,20 +5,27 @@ import { Suspense } from "react";
 import PostHogProvider from "@/components/PosthogProvider";
 
 export const metadata: Metadata = {
-  title: "Corvo — Portfolio Intelligence",
-  description: "AI-powered portfolio analysis. Sharpe ratio, Monte Carlo simulation, health score, and AI chat for your investments.",
+  title: "Corvo — Free Portfolio Analytics & AI Investing Tools",
+  description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
   openGraph: {
-    title: "Corvo — Portfolio Intelligence",
-    description: "AI-powered portfolio analysis. Sharpe ratio, Monte Carlo simulation, health score, and AI chat for your investments.",
+    title: "Corvo — Free Portfolio Analytics & AI Investing Tools",
+    description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
     url: "https://corvo.capital",
     siteName: "Corvo",
-    images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630, alt: "Corvo — Portfolio Intelligence" }],
+    images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630, alt: "Corvo — Free Portfolio Analytics & AI Investing Tools" }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Corvo — Portfolio Intelligence",
-    description: "AI-powered portfolio analysis. Sharpe ratio, Monte Carlo simulation, health score, and AI chat for your investments.",
+    title: "Corvo — Free Portfolio Analytics & AI Investing Tools",
+    description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
     images: ["https://corvo.capital/og-image.png"],
   },
 };
@@ -26,10 +33,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" style={{ background: "#0a0e14" }}>
-      <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-      </head>
-      <body style={{ margin: 0, background: "#0d1117" }}>
+<body style={{ margin: 0, background: "#0d1117" }}>
         <Suspense>
           <PostHogProvider>
             {children}
