@@ -42,7 +42,12 @@ print(f"[startup] RESEND_FROM_EMAIL: {'SET' if os.environ.get('RESEND_FROM_EMAIL
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://corvo.capital",
+        "https://www.corvo.capital",
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -109,7 +114,7 @@ Paragraph 3: One forward-looking insight for investors to watch in the coming se
 Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff.
 IMPORTANT: Never use em dashes (the — character) in your response. Use commas, colons, or rewrite sentences naturally instead."""
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=400,
         messages=[{"role": "user", "content": prompt}],
     )

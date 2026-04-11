@@ -68,9 +68,16 @@ async def lifespan(app_: FastAPI):
 
 app = FastAPI(title="Corvo API", version="1.0.0", lifespan=lifespan)
 
+_ALLOWED_ORIGINS = [
+    "https://corvo.capital",
+    "https://www.corvo.capital",
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -127,9 +134,38 @@ def get_prices(tickers, period="1y"):
         return None
 
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration_ms = round((time.time() - start) * 1000)
+    print(f"[{request.method}] {request.url.path} → {response.status_code} ({duration_ms}ms)")
+    return response
+
+
 @app.get("/")
 def root():
     return {"status": "ok", "service": "Corvo API"}
+
+
+@app.get("/health")
+def health():
+    """Health check — verifies Supabase connectivity."""
+    supabase_ok = False
+    if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        try:
+            resp = requests.get(
+                f"{SUPABASE_URL}/rest/v1/profiles?select=id&limit=1",
+                headers=_sb_headers(),
+                timeout=5,
+            )
+            supabase_ok = resp.status_code in (200, 206)
+        except Exception:
+            supabase_ok = False
+    return {
+        "status": "ok",
+        "supabase": "connected" if supabase_ok else "unavailable",
+    }
 
 
 @app.get("/docs-check")
@@ -212,6 +248,14 @@ def portfolio(
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers provided")
+    if len(tickers_list) > 30:
+        raise HTTPException(status_code=400, detail="Too many tickers (max 30)")
+    import re as _re
+    for t in tickers_list:
+        if not _re.match(r'^[\^A-Z0-9.\-=]{1,12}$', t):
+            raise HTTPException(status_code=400, detail=f"Invalid ticker format: {t}")
+    if period not in ("1mo", "3mo", "6mo", "1y", "2y", "3y", "5y", "10y", "ytd", "max"):
+        raise HTTPException(status_code=400, detail="Invalid period")
 
     # Parse weights
     if weights:
@@ -1238,9 +1282,16 @@ class ChatRequest(BaseModel):
     market_context: str = ""
     user_id: str | None = None
 
+    def validate_message(self):
+        if not self.message or not self.message.strip():
+            raise HTTPException(status_code=400, detail="Message cannot be empty")
+        if len(self.message) > 4000:
+            raise HTTPException(status_code=400, detail="Message too long (max 4000 characters)")
+
 
 @app.post("/chat")
 def chat(req: ChatRequest, request: Request):
+    req.validate_message()
     # Daily limit check (per-user via Supabase); fall back to IP rate limit for unauthenticated
     if req.user_id:
         daily_limit = get_daily_chat_limit(req.user_id)
@@ -1655,13 +1706,11 @@ def notify_me(req: NotifyMeRequest):
     email = req.email.strip().lower()
     if not email or "@" not in email:
         raise HTTPException(status_code=400, detail="Invalid email")
-    sb_url = os.environ.get("SUPABASE_URL", "")
-    sb_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
-    if sb_url and sb_key:
+    if SUPABASE_URL and SUPABASE_SERVICE_KEY:
         try:
             requests.post(
-                f"{sb_url}/rest/v1/notify_list",
-                headers={**_sb_headers(sb_key), "Prefer": "resolution=ignore-duplicates"},
+                f"{SUPABASE_URL}/rest/v1/notify_list",
+                headers={**_sb_headers(), "Prefer": "resolution=ignore-duplicates"},
                 json={"email": email},
                 timeout=5,
             )
@@ -2572,7 +2621,7 @@ def _generate_tlh_reasoning(ticker: str, replacement: str, sector: str, loss_pct
             f"Mention the wash-sale rule, the similar market exposure, and the tax benefit. Be direct and specific."
         )
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=120,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -2712,7 +2761,7 @@ def _brief_generate(indices: dict[str, float], movers: list[dict]) -> str:
         "Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff."
     )
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=400,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -2835,6 +2884,38 @@ async def test_morning_brief():
     return result
 
 
+# ── Market Brief HTTP endpoint (cached) ───────────────────────────────────────
+_market_brief_cache: dict = {}
+_BRIEF_TTL = 3600  # 1 hour
+
+
+@app.get("/market-brief")
+async def market_brief_endpoint(force: bool = False):
+    """Return AI-generated daily market brief, cached 1 hour. Used by the frontend."""
+    now = time.time()
+    cached = _market_brief_cache.get("data")
+    if not force and cached and (now - _market_brief_cache.get("ts", 0)) < _BRIEF_TTL:
+        return cached
+
+    try:
+        loop = asyncio.get_event_loop()
+        indices = await loop.run_in_executor(None, _brief_fetch_indices)
+        movers  = await loop.run_in_executor(None, _brief_fetch_movers)
+        brief   = await loop.run_in_executor(None, _brief_generate, indices, movers)
+        generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        result = {
+            "brief": brief,
+            "generated_at": generated_at,
+            "indices": {k: safe_float(v) for k, v in indices.items()},
+            "movers": movers,
+        }
+        _market_brief_cache["data"] = result
+        _market_brief_cache["ts"] = now
+        return result
+    except Exception as e:
+        return {"error": str(e), "brief": "", "generated_at": "", "indices": {}, "movers": []}
+
+
 async def price_alert_loop():
     """Background loop: check price alerts every 60 seconds."""
     print("[alerts] background price alert checker started")
@@ -2919,7 +3000,7 @@ def _generate_digest_summary(display_name: str, portfolio_blocks: list[dict]) ->
             "Never use em dashes (the — character). Use commas, colons, or rewrite naturally."
         )
         resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=300,
             messages=[{"role": "user", "content": prompt}],
         )
