@@ -322,7 +322,7 @@ export default function AboutPage() {
           <span style={{ color: "#c9a84c" }}>serious about their money.</span>
         </h1>
         <p style={{ position: "relative", zIndex: 1, fontSize: 17, color: "rgba(232,224,204,0.45)", lineHeight: 1.85, fontWeight: 300, maxWidth: 640, animation: "fadein 0.9s cubic-bezier(0.16,1,0.3,1) 0.35s both" }}>
-          Corvo started as a frustration with existing tools — Bloomberg costs $24k/year, Yahoo Finance
+          Corvo started as a frustration with existing tools. Bloomberg costs $24k/year, Yahoo Finance
           {" hasn't"} changed in a decade, and Robinhood gives you a chart and nothing else.
         </p>
       </section>
@@ -342,13 +342,13 @@ export default function AboutPage() {
               delay={0}
               icon={<IconTransparency />}
               title="Transparency"
-              desc="No ads, no data selling, no conflicts of interest. We make money when you find value in the product — not by monetizing your information."
+              desc="No ads, no data selling, no conflicts of interest. We make money when you find value in the product, not by monetizing your information."
             />
             <ValueCard
               delay={0.12}
               icon={<IconIntelligence />}
               title="Intelligence"
-              desc="AI that actually understands your portfolio. Not a generic chatbot — an analyst that knows your exact holdings, risk exposure, and goals."
+              desc="AI that actually understands your portfolio. Not a generic chatbot, but an analyst that knows your exact holdings, risk exposure, and goals."
             />
             <ValueCard
               delay={0.24}
@@ -371,10 +371,10 @@ export default function AboutPage() {
           </Reveal>
           <div className="about-product-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
             <div>
-              <TimelineStep n="01" title="Enter your portfolio" desc="Add your holdings by ticker and weight — no brokerage login, no OAuth, no sensitive credentials. Your data stays yours." delay={0} />
+              <TimelineStep n="01" title="Enter your portfolio" desc="Add your holdings by ticker and weight. No brokerage login, no OAuth, no sensitive credentials. Your data stays yours." delay={0} />
               <TimelineStep n="02" title="Instant analytics" desc="Sharpe ratio, volatility, max drawdown, beta, correlation heatmap, and a 0–100 health score computed in seconds using real market data." delay={0.1} />
               <TimelineStep n="03" title="Monte Carlo simulation" desc="Run 300 forward paths based on your actual volatility and correlations. See your 10th, 50th, and 90th percentile outcomes over any horizon." delay={0.2} />
-              <TimelineStep n="04" title="Ask the AI" desc="Chat with an AI analyst that knows your exact portfolio. Ask about risk, diversification, rebalancing — get institutional-quality answers." delay={0.3} />
+              <TimelineStep n="04" title="Ask the AI" desc="Chat with an AI analyst that knows your exact portfolio. Ask about risk, diversification, or rebalancing and get institutional-quality answers." delay={0.3} />
               <TimelineStep n="05" title="Stay informed" desc="Price alerts, a weekly portfolio digest, daily market briefs, and a learning module that teaches you the finance behind the numbers." delay={0.4} isLast />
             </div>
             <Reveal delay={0.15} style={{ position: "sticky", top: 80 }}>
@@ -420,9 +420,9 @@ export default function AboutPage() {
             </h2>
           </Reveal>
           <div className="about-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", border: "1px solid rgba(201,168,76,0.08)", borderRadius: 20, overflow: "hidden", background: "rgba(255,255,255,0.012)" }}>
-            <StatItem target={liveUserCount ?? 1200} suffix="+" label="Users" delay={0} borderRight />
-            <StatItem target={4800} suffix="+" label="Portfolios Analyzed" delay={0.12} borderRight />
-            <StatItem target={32000} suffix="+" label="AI Insights Generated" delay={0.24} />
+            <StatItem target={liveUserCount ?? 847} suffix="+" label="Users" delay={0} borderRight />
+            <StatItem target={5500} suffix="+" label="Portfolios Analyzed" delay={0.12} borderRight />
+            <StatItem target={17000} suffix="+" label="AI Insights Generated" delay={0.24} />
           </div>
         </div>
       </section>

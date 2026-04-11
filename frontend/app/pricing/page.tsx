@@ -220,11 +220,11 @@ const PRO_EXTRAS = [
 const FAQS = [
   {
     q: "Is Corvo really free?",
-    a: "Yes — 100% free during the beta period. No credit card required, no trial period, no hidden fees. You get full access to all current features just by signing up.",
+    a: "Yes, 100% free during the beta period. No credit card required, no trial period, no hidden fees. You get full access to all current features just by signing up.",
   },
   {
     q: "When will Pro launch, and how much will it cost?",
-    a: "We're still working out the exact pricing. We'll offer early-bird pricing to everyone on the waitlist — typically 30–50% off the regular rate, locked in forever.",
+    a: "We're still working out the exact pricing. We'll offer early-bird pricing to everyone on the waitlist, typically 30–50% off the regular rate, locked in forever.",
   },
   {
     q: "Will my free account be grandfathered in?",
@@ -232,11 +232,11 @@ const FAQS = [
   },
   {
     q: "What payment methods will you accept?",
-    a: "We plan to accept all major credit cards via Stripe. No long-term contracts — cancel anytime.",
+    a: "We plan to accept all major credit cards via Stripe. No long-term contracts, cancel anytime.",
   },
   {
     q: "Is there a student or non-profit discount?",
-    a: "We plan to offer discounts for students and non-profits. Join the waitlist and mention your situation — we'll reach out when it's ready.",
+    a: "We plan to offer discounts for students and non-profits. Join the waitlist and mention your situation; we'll reach out when it's ready.",
   },
 ];
 
@@ -492,7 +492,7 @@ export default function PricingPage() {
             marginBottom: 12,
             letterSpacing: 0.2,
           }}>
-            Free during beta — Pro coming soon
+            Free during beta. Pro coming soon.
           </p>
 
           <p style={{

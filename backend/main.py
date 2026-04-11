@@ -3034,8 +3034,8 @@ def _build_digest_html(display_name: str, user_id: str, portfolio_blocks: list[d
         ret_color = "#5cb88a" if (ret is not None and ret >= 0) else "#e05c5c"
         ret_str = f"{ret:+.2f}%" if ret is not None else "N/A"
         best_str = f"{best:+.2f}%" if best is not None else "N/A"
-        worst_str = f"{worst:+.2f}%" if worst is not None else "—"
-        sharpe_str = str(sharpe) if sharpe is not None else "—"
+        worst_str = f"{worst:+.2f}%" if worst is not None else "N/A"
+        sharpe_str = str(sharpe) if sharpe is not None else "N/A"
         ticker_str = "  ·  ".join(tickers[:6]) + ("  +" + str(len(tickers) - 6) + " more" if len(tickers) > 6 else "")
 
         stats_cells = ""
@@ -3095,7 +3095,7 @@ def _build_digest_html(display_name: str, user_id: str, portfolio_blocks: list[d
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Your Weekly Portfolio Digest — Corvo</title>
+  <title>Your Weekly Portfolio Digest | Corvo</title>
 </head>
 <body style="margin:0;padding:0;background-color:{bg};">
   <table width="100%" cellpadding="0" cellspacing="0" border="0"
