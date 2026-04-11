@@ -4,6 +4,8 @@ import { memo, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { fetchSectors } from "../lib/api";
+import ErrorState from "./ErrorState";
+import EmptyState from "./EmptyState";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
@@ -30,6 +32,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
   const [data, setData] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!assets.length) return;
@@ -39,7 +42,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
       .then((res) => setData(res?.sectors ?? null))
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
-  }, [assets]);
+  }, [assets, retryCount]);
 
   const labels = data ? Object.keys(data) : [];
   const values = data ? Object.values(data) : [];
@@ -115,9 +118,11 @@ const SectorExposureChart = memo(function SectorExposureChart({
           <style>{`@keyframes secPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
         </div>
       ) : fetchError ? (
-        <div style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, color: "var(--text-muted)", fontSize: 12, textAlign: "center" }}>
-          <p style={{ color: "rgba(224,92,92,0.8)" }}>Unable to load sector data — server may be temporarily unavailable.</p>
-        </div>
+        <ErrorState
+          message="Unable to load sector data. The server may be temporarily unavailable."
+          onRetry={() => setRetryCount(c => c + 1)}
+          minHeight={260}
+        />
       ) : data && labels.length ? (
         <Plot
           data={[
@@ -189,18 +194,12 @@ const SectorExposureChart = memo(function SectorExposureChart({
           style={{ width: "100%", height: 260 }}
         />
       ) : !loading ? (
-        <div
-          style={{
-            height: 260,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--text-muted)",
-            fontSize: 12,
-          }}
-        >
-          No sector data available
-        </div>
+        <EmptyState
+          icon="◯"
+          title="No sector data available"
+          message="Sector classifications could not be loaded for the current holdings."
+          minHeight={260}
+        />
       ) : null}
     </motion.div>
   );

@@ -19,6 +19,7 @@ interface Props {
 const LivePriceStrip = memo(function LivePriceStrip({ assets, active }: Props) {
   const [prices, setPrices] = useState<PriceMap>({});
   const [flashing, setFlashing] = useState<Set<string>>(new Set());
+  const [flashDir, setFlashDir] = useState<Record<string, "up" | "down">>({});
 
   // Keep latest assets available inside the interval without restarting it
   const assetsRef = useRef(assets);
@@ -45,8 +46,11 @@ const LivePriceStrip = memo(function LivePriceStrip({ assets, active }: Props) {
           t => prev[t] && Math.abs(prev[t].price - map[t].price) > 0.001
         );
         if (changed.length > 0) {
+          const dirs: Record<string, "up" | "down"> = {};
+          changed.forEach(t => { dirs[t] = map[t].price > (prev[t]?.price ?? map[t].price) ? "up" : "down"; });
+          setFlashDir(d => ({ ...d, ...dirs }));
           setFlashing(new Set(changed));
-          setTimeout(() => setFlashing(new Set()), 600);
+          setTimeout(() => setFlashing(new Set()), 700);
         }
         return map;
       });
@@ -67,8 +71,10 @@ const LivePriceStrip = memo(function LivePriceStrip({ assets, active }: Props) {
     <div style={{ padding: "8px 14px", borderTop: "0.5px solid var(--border)" }}>
       <style>{`
         @keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
-        @keyframes priceFlash{0%{color:#c9a84c}100%{color:inherit}}
-        .price-flash{animation:priceFlash 0.6s ease-out forwards}
+        @keyframes priceFlashUp{0%{color:#4caf7d;background:rgba(76,175,125,0.12)}100%{color:inherit;background:transparent}}
+        @keyframes priceFlashDown{0%{color:#e05c5c;background:rgba(224,92,92,0.12)}100%{color:inherit;background:transparent}}
+        .price-flash-up{animation:priceFlashUp 0.7s ease-out forwards;border-radius:4px;padding:0 2px}
+        .price-flash-down{animation:priceFlashDown 0.7s ease-out forwards;border-radius:4px;padding:0 2px}
       `}</style>
       <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
         <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#5cb88a", animation: "livePulse 2s ease-in-out infinite" }} />
@@ -84,8 +90,8 @@ const LivePriceStrip = memo(function LivePriceStrip({ assets, active }: Props) {
               {a.ticker}
             </span>
             <span
-              className={isFlashing ? "price-flash" : undefined}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isFlashing ? "#c9a84c" : pos ? "#5cb88a" : "#e05c5c", transition: "color 0.3s" }}
+              className={isFlashing ? (flashDir[a.ticker] === "up" ? "price-flash-up" : "price-flash-down") : undefined}
+              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: pos ? "#5cb88a" : "#e05c5c", transition: "color 0.3s" }}
             >
               ${s.price.toFixed(2)}{" "}
               <span style={{ fontSize: 9 }}>{pos ? "+" : ""}{s.change_pct.toFixed(2)}%</span>

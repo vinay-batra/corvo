@@ -102,11 +102,12 @@ INDEX PERFORMANCE (1-day):
 TOP 5 MOST ACTIVE STOCKS (1-day change):
 {mover_lines}
 
-Paragraph 1: Overall market mood — are indices up or down, what's the tone?
-Paragraph 2: Notable movers — highlight the most interesting stocks and why they stand out.
+Paragraph 1: Overall market mood. Are indices up or down, what is the tone?
+Paragraph 2: Notable movers. Highlight the most interesting stocks and why they stand out.
 Paragraph 3: One forward-looking insight for investors to watch in the coming sessions.
 
-Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff."""
+Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff.
+IMPORTANT: Never use em dashes (the — character) in your response. Use commas, colons, or rewrite sentences naturally instead."""
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=400,
@@ -542,7 +543,7 @@ def send_welcome_email(req: WelcomeEmailRequest):
         r = _requests.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={"from": RESEND_FROM, "to": [req.email], "subject": "Welcome to Corvo", "html": "<p>Welcome to Corvo — your portfolio intelligence platform.</p>"},
+            json={"from": RESEND_FROM, "to": [req.email], "subject": "Welcome to Corvo", "html": "<p>Welcome to Corvo, your portfolio intelligence platform.</p>"},
             timeout=10,
         )
         r.raise_for_status()
@@ -568,7 +569,7 @@ def test_email(email: str = ""):
         r = _requests.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={"from": RESEND_FROM, "to": [target], "subject": "Corvo — Test Email", "html": "<p>Corvo test email. Resend is working.</p>"},
+            json={"from": RESEND_FROM, "to": [target], "subject": "Corvo: Test Email", "html": "<p>Corvo test email. Resend is working.</p>"},
             timeout=10,
         )
         data = r.json()

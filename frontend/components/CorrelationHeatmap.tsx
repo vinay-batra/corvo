@@ -4,6 +4,8 @@ import { memo, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { fetchCorrelation } from "../lib/api";
+import ErrorState from "./ErrorState";
+import EmptyState from "./EmptyState";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
@@ -12,6 +14,7 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (assets.length < 2) return;
@@ -21,13 +24,18 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
       .then(setData)
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
-  }, [assets, period]);
+  }, [assets, period, retryCount]);
 
   if (assets.length < 2) {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "22px 24px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
-        <p style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: 2, textTransform: "uppercase" }}>Add 2+ assets to see correlation</p>
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "22px 24px" }}>
+        <EmptyState
+          icon="⊞"
+          title="Add 2+ assets to see correlation"
+          message="Correlation analysis requires at least two holdings to compare."
+          minHeight={160}
+        />
       </motion.div>
     );
   }
@@ -48,9 +56,11 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
           <style>{`@keyframes corrPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
         </div>
       ) : fetchError ? (
-        <div style={{ height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 12, textAlign: "center" }}>
-          <p style={{ color: "rgba(224,92,92,0.8)" }}>Unable to load correlation data — server may be temporarily unavailable.</p>
-        </div>
+        <ErrorState
+          message="Unable to load correlation data. The server may be temporarily unavailable."
+          onRetry={() => setRetryCount(c => c + 1)}
+          minHeight={240}
+        />
       ) : data ? (
         <Plot
           data={[{

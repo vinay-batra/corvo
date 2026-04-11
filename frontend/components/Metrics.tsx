@@ -13,7 +13,7 @@ function Num({ value, fmt }: { value: number; fmt: (v: number) => string }) {
     if (!inView) return;
     const start = performance.now();
     const go = (now: number) => {
-      const p = Math.min((now-start)/900,1);
+      const p = Math.min((now-start)/1200,1);
       setD(value*(1-Math.pow(1-p,3)));
       if(p<1) requestAnimationFrame(go);
     };
@@ -31,6 +31,27 @@ const EXPLAINERS = [
 
 export function Metrics({ data, currency = "USD", rate = 1 }: { data: any; currency?: string; rate?: number }) {
   const [modal, setModal] = useState<number|null>(null);
+  const modalIdRef = useRef(`metrics-modal-${Math.random().toString(36).slice(2)}`);
+
+  useEffect(() => {
+    const handleOtherOpen = (e: Event) => {
+      if ((e as CustomEvent).detail?.id !== modalIdRef.current) setModal(null);
+    };
+    window.addEventListener("corvo:modal-open", handleOtherOpen);
+    return () => window.removeEventListener("corvo:modal-open", handleOtherOpen);
+  }, []);
+
+  useEffect(() => {
+    if (modal === null) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setModal(null); };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [modal]);
+
+  const openMetricModal = (i: number) => {
+    window.dispatchEvent(new CustomEvent("corvo:modal-open", { detail: { id: modalIdRef.current } }));
+    setModal(i);
+  };
   const sharpe = data.portfolio_volatility>0?(data.portfolio_return-0.04)/data.portfolio_volatility:0;
   const items = [
     { label: "Return",       value: data.portfolio_return,     fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: data.portfolio_return<0, bar: null },
@@ -48,7 +69,7 @@ export function Metrics({ data, currency = "USD", rate = 1 }: { data: any; curre
             <p style={{fontSize:8,letterSpacing:2.5,color:"var(--text3)",textTransform:"uppercase"}}>
               {label}{i===0&&currency!=="USD"?<span style={{marginLeft:4,color:C.amber,letterSpacing:1}}> · {currency}</span>:null}
             </p>
-            <button onClick={()=>setModal(i)} style={{width:16,height:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
+            <button onClick={()=>openMetricModal(i)} style={{width:16,height:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
               onMouseEnter={e=>{e.currentTarget.style.background=C.amber;e.currentTarget.style.color="#0a0e14";}}
               onMouseLeave={e=>{e.currentTarget.style.background="var(--bg3)";e.currentTarget.style.color="var(--text3)";}}>?</button>
           </div>
@@ -69,7 +90,7 @@ export function Metrics({ data, currency = "USD", rate = 1 }: { data: any; curre
             style={{position:"fixed",inset:0,background:"rgba(10,14,20,0.8)",backdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
             <motion.div initial={{opacity:0,scale:0.95,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0}}
               onClick={e=>e.stopPropagation()}
-              style={{background:"var(--card-bg)",border:"0.5px solid var(--border2)",borderRadius:16,padding:28,maxWidth:400,width:"100%",position:"relative"}}>
+              style={{background:"var(--card-bg)",border:"0.5px solid var(--border2)",borderRadius:16,padding:28,maxWidth:400,width:"100%",maxHeight:"90vh",overflowY:"auto",position:"relative"}}>
               <button onClick={()=>setModal(null)} style={{position:"absolute",top:14,right:14,background:"var(--bg3)",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:11,color:"var(--text3)"}}>✕</button>
               <p style={{fontSize:8,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>About</p>
               <h3 style={{fontSize:18,fontWeight:500,color:"var(--text)",marginBottom:18}}>{EXPLAINERS[modal].title}</h3>

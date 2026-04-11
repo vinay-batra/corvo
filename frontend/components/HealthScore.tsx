@@ -3,23 +3,22 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
-const C = { amber: "#c9a84c" };
-
 function Ring({ score, size=96 }: { score:number; size?:number }) {
   const r=(size-12)/2, circ=2*Math.PI*r, offset=circ-(score/100)*circ;
   const label = score>=75?"Excellent":score>=50?"Good":score>=25?"Fair":"Weak";
+  const ringColor = score>=75?"#4caf7d":score>=50?"#c9a84c":"#e05c5c";
   return (
     <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
       <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--track)" strokeWidth={6}/>
-        <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={C.amber} strokeWidth={6}
+        <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={ringColor} strokeWidth={6}
           strokeLinecap="round" strokeDasharray={circ}
           initial={{strokeDashoffset:circ}} animate={{strokeDashoffset:offset}}
           transition={{duration:1.5,ease:"easeOut",delay:0.2}}/>
       </svg>
       <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
         <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.8}}
-          style={{fontFamily:"Space Mono,monospace",fontSize:20,fontWeight:700,color:"var(--text)",letterSpacing:-1,lineHeight:1}}>{score}</motion.p>
+          style={{fontFamily:"Space Mono,monospace",fontSize:20,fontWeight:700,color:ringColor,letterSpacing:-1,lineHeight:1}}>{score}</motion.p>
         <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:1}}
           style={{fontSize:8,letterSpacing:1,color:"var(--text3)",textTransform:"uppercase",marginTop:2}}>{label}</motion.p>
       </div>
@@ -34,7 +33,7 @@ function Bar({ label, value, max, delay }: { label:string; value:number; max:num
       <span style={{fontSize:10,color:"var(--text3)",width:66,flexShrink:0}}>{label}</span>
       <div style={{flex:1,height:2,background:"var(--track)",borderRadius:1,overflow:"hidden"}}>
         <motion.div initial={{width:0}} animate={{width:`${pct*100}%`}} transition={{duration:1,delay,ease:"easeOut"}}
-          style={{height:"100%",background:C.amber,borderRadius:1}}/>
+          style={{height:"100%",background:"#c9a84c",borderRadius:1}}/>
       </div>
       <motion.span initial={{opacity:0}} animate={{opacity:1}} transition={{delay:delay+0.4}}
         style={{fontSize:10,fontFamily:"Space Mono,monospace",color:"var(--text3)",width:22,textAlign:"right"}}>{Math.round(pct*100)}</motion.span>

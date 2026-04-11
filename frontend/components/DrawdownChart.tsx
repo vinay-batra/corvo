@@ -4,6 +4,7 @@ import { memo, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { fetchDrawdown } from "../lib/api";
+import ErrorState from "./ErrorState";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
@@ -12,6 +13,7 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!assets.length) return;
@@ -21,7 +23,7 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
       .then(setData)
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
-  }, [assets, period]);
+  }, [assets, period, retryCount]);
 
   return (
     <motion.div
@@ -54,9 +56,11 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
           <style>{`@keyframes ddPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
         </div>
       ) : fetchError ? (
-        <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 12, textAlign: "center" }}>
-          <p style={{ color: "rgba(224,92,92,0.8)" }}>Unable to load drawdown data — server may be temporarily unavailable.</p>
-        </div>
+        <ErrorState
+          message="Unable to load drawdown data. The server may be temporarily unavailable."
+          onRetry={() => setRetryCount(c => c + 1)}
+          minHeight={220}
+        />
       ) : data ? (
         <Plot
           data={[{

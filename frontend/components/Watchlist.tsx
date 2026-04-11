@@ -146,7 +146,7 @@ function AlertModal({ ticker, onSave, onClose }: { ticker: string; onSave: (a: A
         className="c-modal-sheet"
         style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, padding: "24px", width: "100%", maxWidth: 340 }}
         onClick={e => e.stopPropagation()}>
-        <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Set Price Alert — {ticker}</p>
+        <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Set Price Alert: {ticker}</p>
         <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
           {(["above", "below"] as const).map(d => (
             <button key={d} onClick={() => setDir(d)}
@@ -389,9 +389,9 @@ export default function Watchlist() {
       try {
         const r = await fetch(`${API_URL}/stock/${encodeURIComponent(ticker)}`);
         const d = await r.json();
-        if (!d || !d.price || d.price === 0) { setError(`"${ticker}" not found — check the symbol and try again`); setValidating(false); return; }
+        if (!d || !d.price || d.price === 0) { setError(`"${ticker}" not found. Check the symbol and try again`); setValidating(false); return; }
       } catch {
-        setError(`"${ticker}" not found — check the symbol and try again`); setValidating(false); return;
+        setError(`"${ticker}" not found. Check the symbol and try again`); setValidating(false); return;
       }
       setValidating(false);
     }
@@ -713,7 +713,7 @@ export default function Watchlist() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                     <div>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{item.ticker}</div>
-                      <div style={{ fontSize: 10, color: "var(--text3)", maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s?.name || "—"}</div>
+                      <div style={{ fontSize: 10, color: "var(--text3)", maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s?.name || "N/A"}</div>
                     </div>
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                       <button onClick={e => { e.stopPropagation(); setAlertFor(item.ticker); }}
@@ -743,7 +743,7 @@ export default function Watchlist() {
                       ) : s && !loadingAll ? (
                         <div style={{ fontSize: 11, color: "#e05c5c" }}>Ticker not found</div>
                       ) : (
-                        <div style={{ fontSize: 11, color: "var(--text3)" }}>{loadingAll ? "Loading…" : "—"}</div>
+                        <div style={{ fontSize: 11, color: "var(--text3)" }}>{loadingAll ? "Loading…" : "N/A"}</div>
                       )}
                     </div>
                     {s?.sparkline && s.sparkline.length > 1 && <span className="c-sparkline-hide"><Sparkline data={s.sparkline} positive={pos} /></span>}
@@ -774,7 +774,7 @@ export default function Watchlist() {
             {alerts.map((a, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "var(--bg3)", borderRadius: 8 }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text)", fontWeight: 700 }}>{a.ticker}</span>
-                <span style={{ fontSize: 11, color: "var(--text2)" }}>Price {a.direction ?? "—"} ${a.targetPrice != null ? a.targetPrice.toFixed(2) : "—"}</span>
+                <span style={{ fontSize: 11, color: "var(--text2)" }}>Price {a.direction ?? "N/A"} ${a.targetPrice != null ? a.targetPrice.toFixed(2) : "N/A"}</span>
                 <button onClick={() => saveAlerts(alerts.filter((_, idx) => idx !== i))}
                   style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 12, padding: "0 4px" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}

@@ -86,6 +86,110 @@ function XPToast({ amount, onDone }: { amount: number; onDone: () => void }) {
   );
 }
 
+// ── Animation Styles ─────────────────────────────────────────────────────────
+function AnimStyles() {
+  return (
+    <style>{`
+      @keyframes xpShimmer {
+        0% { transform: translateX(-150%); }
+        100% { transform: translateX(150%); }
+      }
+      @keyframes flicker {
+        0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        20% { transform: scale(1.08) rotate(-3deg); opacity: 0.92; }
+        40% { transform: scale(0.95) rotate(2deg); opacity: 1; }
+        60% { transform: scale(1.05) rotate(-2deg); opacity: 0.96; }
+        80% { transform: scale(0.98) rotate(3deg); opacity: 1; }
+      }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        15% { transform: translateX(-7px); }
+        30% { transform: translateX(7px); }
+        45% { transform: translateX(-5px); }
+        60% { transform: translateX(5px); }
+        75% { transform: translateX(-3px); }
+        90% { transform: translateX(3px); }
+      }
+      @keyframes flashGreen {
+        0% { box-shadow: none; }
+        25% { box-shadow: 0 0 0 3px rgba(76,175,125,0.45); }
+        100% { box-shadow: none; }
+      }
+      @keyframes flashRed {
+        0% { box-shadow: none; }
+        25% { box-shadow: 0 0 0 3px rgba(224,92,92,0.45); }
+        100% { box-shadow: none; }
+      }
+      .anim-shake { animation: shake 0.5s ease-out; }
+      .anim-flash-green { animation: flashGreen 0.65s ease-out; }
+      .anim-flash-red { animation: flashRed 0.65s ease-out; }
+    `}</style>
+  );
+}
+
+// ── Animated Flame ────────────────────────────────────────────────────────────
+function AnimatedFlame({ streak }: { streak: number }) {
+  const lit = streak > 0;
+  const intense = streak > 7;
+  const color = lit ? "#f97316" : "var(--text3)";
+  const sz = intense ? 18 : 14;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      animation: lit ? "flicker 2.4s ease-in-out infinite" : "none",
+      transformOrigin: "50% 100%",
+      filter: intense ? "drop-shadow(0 0 5px rgba(249,115,22,0.7))" : lit ? "drop-shadow(0 0 2px rgba(249,115,22,0.35))" : "none",
+    }}>
+      <Flame size={sz} color={color} fill={lit ? color : "none"} />
+    </span>
+  );
+}
+
+// ── Level-Up Modal ────────────────────────────────────────────────────────────
+function LevelUpModal({ levelName, color, onDone }: { levelName: string; color: string; onDone: () => void }) {
+  const fired = useRef(false);
+  useEffect(() => {
+    if (fired.current) return;
+    fired.current = true;
+    (async () => {
+      try {
+        const confetti = (await import("canvas-confetti")).default;
+        confetti({ particleCount: 130, spread: 85, origin: { y: 0.5 }, colors: [color, "#ffffff", AMBER, "#a78bfa"] });
+      } catch {}
+    })();
+    const t = setTimeout(onDone, 3200);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000 }}
+      onClick={onDone}
+    >
+      <motion.div
+        initial={{ scale: 0.45, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        style={{ background: "var(--bg2)", border: `1.5px solid ${color}55`, borderRadius: 22, padding: "40px 52px", textAlign: "center", maxWidth: 340 }}
+        onClick={e => e.stopPropagation()}
+      >
+        <motion.div
+          initial={{ rotate: -200, scale: 0 }} animate={{ rotate: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 15, delay: 0.1 }}
+          style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}
+        >
+          <div style={{ width: 68, height: 68, borderRadius: "50%", background: `${color}1e`, border: `2px solid ${color}66`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Trophy size={32} color={color} />
+          </div>
+        </motion.div>
+        <p style={{ fontSize: 10, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8 }}>Level Up!</p>
+        <p style={{ fontSize: 26, fontWeight: 700, color, marginBottom: 10, fontFamily: "Space Mono, monospace" }}>{levelName}</p>
+        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.55 }}>You've reached a new level. Keep learning!</p>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ── Header ────────────────────────────────────────────────────────────────────
 function LevelBadge({ xp }: { xp: number }) {
   const lvl = getLevel(xp);
@@ -140,9 +244,11 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
                   {xp} XP{nxt ? <span style={{ color: "var(--text3)" }}> · {nxt.min - xp} to {nxt.name}</span> : " · Max level!"}
                 </span>
               </div>
-              <div style={{ height: 5, background: "var(--track)", borderRadius: 3, overflow: "hidden" }}>
-                <motion.div animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: "easeOut" }}
-                  style={{ height: "100%", background: lvl.color, borderRadius: 3 }} />
+              <div style={{ height: 5, background: "var(--track)", borderRadius: 3, overflow: "hidden", position: "relative" }}>
+                <motion.div animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: "easeOut" }}
+                  style={{ height: "100%", background: lvl.color, borderRadius: 3, position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)", animation: "xpShimmer 2.2s ease-in-out infinite", willChange: "transform" }} />
+                </motion.div>
               </div>
             </>
           )}
@@ -152,7 +258,7 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
           <div style={{ width: 80, height: 30, borderRadius: 20, background: "rgba(255,255,255,0.06)", flexShrink: 0 }} />
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: streak > 0 ? "rgba(249,115,22,0.1)" : "var(--bg3)", border: `0.5px solid ${streak > 0 ? "rgba(249,115,22,0.3)" : "var(--border)"}`, flexShrink: 0 }}>
-            <Flame size={14} color={streak > 0 ? "#f97316" : "var(--text3)"} fill={streak > 0 ? "#f97316" : "none"} />
+            <AnimatedFlame streak={streak} />
             <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: streak > 0 ? "#f97316" : "var(--text3)" }}>{streak}</span>
             <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>day{streak !== 1 ? "s" : ""}</span>
           </div>
@@ -164,11 +270,11 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
 
 // ── Game 1: Guess the Sharpe Ratio ───────────────────────────────────────────
 const SHARPE_ROUNDS = [
-  { portfolio: "AAPL 50% + MSFT 50%", ret: 18.2, vol: 22.1, answer: 0.64, hint: "Two big tech stocks — correlated, decent return." },
-  { portfolio: "SPY 100%",             ret: 10.8, vol: 15.3, answer: 0.44, hint: "The S&P 500 index — diversified, moderate volatility." },
-  { portfolio: "BTC 50% + ETH 50%",   ret: 42.1, vol: 68.4, answer: 0.56, hint: "Crypto — high returns, extremely volatile." },
-  { portfolio: "GLD 50% + TLT 50%",   ret: 5.2,  vol: 12.8, answer: 0.09, hint: "Gold + bonds — defensive, low return." },
-  { portfolio: "TSLA 40% + NVDA 60%", ret: 31.4, vol: 54.2, answer: 0.51, hint: "High-growth tech — big swings both ways." },
+  { portfolio: "AAPL 50% + MSFT 50%", ret: 18.2, vol: 22.1, answer: 0.64, hint: "Two big tech stocks, correlated, decent return." },
+  { portfolio: "SPY 100%",             ret: 10.8, vol: 15.3, answer: 0.44, hint: "The S&P 500 index: diversified, moderate volatility." },
+  { portfolio: "BTC 50% + ETH 50%",   ret: 42.1, vol: 68.4, answer: 0.56, hint: "Crypto: high returns, extremely volatile." },
+  { portfolio: "GLD 50% + TLT 50%",   ret: 5.2,  vol: 12.8, answer: 0.09, hint: "Gold + bonds: defensive, low return." },
+  { portfolio: "TSLA 40% + NVDA 60%", ret: 31.4, vol: 54.2, answer: 0.51, hint: "High-growth tech: big swings both ways." },
 ];
 
 function SharpGame({ onXP }: { onXP: (n: number) => void }) {
@@ -217,7 +323,7 @@ function SharpGame({ onXP }: { onXP: (n: number) => void }) {
       </div>
       <p style={{ fontSize: 22, fontWeight: 500, color: "var(--text)", marginBottom: 8 }}>{finalScore} / {SHARPE_ROUNDS.length}</p>
       <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 22, lineHeight: 1.6 }}>
-        {finalScore >= 4 ? "Excellent! Great intuition for risk-adjusted returns." : finalScore >= 2 ? "Good effort! Keep practicing." : "Sharpe intuition takes time — keep at it."}
+        {finalScore >= 4 ? "Excellent! Great intuition for risk-adjusted returns." : finalScore >= 2 ? "Good effort! Keep practicing." : "Sharpe intuition takes time. Keep at it."}
       </p>
       {finalScore >= 3 && <p style={{ fontSize: 12, color: AMBER, marginBottom: 16 }}>+20 XP for winning!</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 22 }}>
@@ -343,7 +449,7 @@ function BuilderChallenge({ onXP }: { onXP: (n: number) => void }) {
       ) : (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: score >= 2 ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${score >= 2 ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
-            <p style={{ fontSize: 14, fontWeight: 500, color: score >= 2 ? GREEN : RED, marginBottom: 5 }}>{score >= 2 ? "Well done!" : "Not quite"} — {score}/3 correct</p>
+            <p style={{ fontSize: 14, fontWeight: 500, color: score >= 2 ? GREEN : RED, marginBottom: 5 }}>{score >= 2 ? "Well done!" : "Not quite"}, {score}/3 correct</p>
             <p style={{ fontSize: 12, color: "var(--text3)" }}>Best picks: <span style={{ color: AMBER, fontFamily: "Space Mono, monospace" }}>{current.correct.join(", ")}</span></p>
             <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>{current.hint}</p>
           </div>
@@ -375,7 +481,7 @@ const LESSONS = [
         "Excess return  =  Return − Risk-free rate  =  12% − 4%  =  8%",
         "Sharpe ratio   =  Excess return ÷ Volatility  =  8% ÷ 20%  =  0.40",
       ],
-      answer: "Sharpe = 0.40 — acceptable, but there's room to improve.",
+      answer: "Sharpe = 0.40: acceptable, but there's room to improve.",
     },
     quiz: [
       { q: "What does a Sharpe ratio of exactly 0 mean?", options: ["Great risk-adjusted return", "No return above the risk-free rate", "Maximum possible volatility", "Perfect diversification"], correct: 1 },
@@ -411,16 +517,16 @@ const LESSONS = [
     id: "diversification", title: "Diversification vs Correlation", iconKey: "diversification", time: "4 min",
     xpReward: 50,
     content: [
-      { type: "text", text: "Holding many stocks doesn't automatically mean you're diversified. True diversification requires assets that don't move together — measured by correlation." },
+      { type: "text", text: "Holding many stocks doesn't automatically mean you're diversified. True diversification requires assets that don't move together, measured by correlation." },
       { type: "formula", text: "Correlation ranges from −1 (perfect inverse) to +1 (perfect positive)" },
-      { type: "list", items: ["AAPL vs MSFT: ~0.85 (highly correlated)", "SPY vs GLD: ~0.05 (near zero — good diversifier)", "SPY vs TLT: ~−0.30 (negative — bonds often rise when stocks fall)", "BTC vs stocks: ~0.40 (mild, increasing over time)"] },
-      { type: "text", text: "The ideal portfolio combines assets with low or negative correlations — the free lunch of investing." },
+      { type: "list", items: ["AAPL vs MSFT: ~0.85 (highly correlated)", "SPY vs GLD: ~0.05 (near zero, good diversifier)", "SPY vs TLT: ~−0.30 (negative: bonds often rise when stocks fall)", "BTC vs stocks: ~0.40 (mild, increasing over time)"] },
+      { type: "text", text: "The ideal portfolio combines assets with low or negative correlations, the free lunch of investing." },
     ],
     example: {
       problem: "You hold AAPL and want to add a second asset. Which one diversifies your portfolio better?",
       steps: [
-        "AAPL vs MSFT correlation: +0.85 — both drop heavily in tech selloffs",
-        "AAPL vs GLD correlation:  +0.03 — gold is nearly uncorrelated with tech",
+        "AAPL vs MSFT correlation: +0.85, both drop heavily in tech selloffs",
+        "AAPL vs GLD correlation:  +0.03, gold is nearly uncorrelated with tech",
         "Lower correlation → less portfolio risk for the same expected return",
       ],
       answer: "Add GLD. Near-zero correlation with AAPL provides genuine diversification.",
@@ -437,7 +543,7 @@ const LESSONS = [
     content: [
       { type: "text", text: "Monte Carlo simulation runs thousands of possible future scenarios using historical return data. Corvo runs 300 paths." },
       { type: "list", items: ["Uses historical mean return and volatility", "Randomly samples returns based on a statistical distribution", "Runs each scenario forward over time", "The spread of outcomes shows your uncertainty range"] },
-      { type: "text", text: "The wider the cone, the more uncertain your future. A volatile portfolio has a huge range — you might be up 300% or down 60%." },
+      { type: "text", text: "The wider the cone, the more uncertain your future. A volatile portfolio has a huge range: you might be up 300% or down 60%." },
       { type: "text", text: "Use the 10th percentile (bottom of the cone) as a stress-test: can you afford that outcome?" },
     ],
     example: {
@@ -447,7 +553,7 @@ const LESSONS = [
         "Portfolio A: high volatility (40%) → a wide spread of outcomes over time",
         "Portfolio B: low volatility (12%) → a narrow, more predictable cone",
       ],
-      answer: "Portfolio A has the wider cone — higher volatility means more uncertainty about future value.",
+      answer: "Portfolio A has the wider cone: higher volatility means more uncertainty about future value.",
     },
     quiz: [
       { q: "What does a wider cone in a Monte Carlo simulation indicate?", options: ["Lower returns", "More uncertainty about future outcomes", "Better expected performance", "Lower risk"], correct: 1 },
@@ -459,16 +565,16 @@ const LESSONS = [
     id: "bonds", title: "Bonds & Interest Rates", iconKey: "bonds", time: "4 min",
     xpReward: 50,
     content: [
-      { type: "text", text: "Bonds are loans you make to governments or corporations. In return, they pay you interest (the coupon) and return your principal at maturity. Bond prices and interest rates move in opposite directions — this is the most important rule in fixed income." },
+      { type: "text", text: "Bonds are loans you make to governments or corporations. In return, they pay you interest (the coupon) and return your principal at maturity. Bond prices and interest rates move in opposite directions. This is the most important rule in fixed income." },
       { type: "formula", text: "Bond Price ↑ when Interest Rates ↓  ·  Bond Price ↓ when Interest Rates ↑" },
       { type: "text", text: "Yield is the effective return you earn on a bond given today's price. When a bond's price falls below its face value, the yield rises above the coupon rate." },
-      { type: "list", items: ["Duration: measures how sensitive a bond is to rate changes", "A 10-year bond has higher duration (more sensitive) than a 2-year bond", "Rising rates hurt long-duration bonds more than short-duration ones", "Yield curve: normally upward sloping — longer maturities pay more"] },
+      { type: "list", items: ["Duration: measures how sensitive a bond is to rate changes", "A 10-year bond has higher duration (more sensitive) than a 2-year bond", "Rising rates hurt long-duration bonds more than short-duration ones", "Yield curve: normally upward sloping, longer maturities pay more"] },
       { type: "text", text: "A duration of 7 means a 1% rise in rates reduces the bond's price by approximately 7%. This is why long-term bonds are riskier in rising-rate environments." },
     ],
     example: {
       problem: "You hold a 10-year Treasury bond with a 4% coupon. Interest rates rise from 4% to 5%.",
       steps: [
-        "Your bond pays 4% but new bonds now offer 5% — nobody wants to pay face value for yours",
+        "Your bond pays 4% but new bonds now offer 5%, nobody wants to pay face value for yours",
         "Duration of ~8 means a 1% rate rise → approx. −8% price decline",
         "Your $10,000 bond is now worth roughly $9,200 on the open market",
       ],
@@ -486,10 +592,10 @@ const LESSONS = [
     id: "options", title: "Options Basics", iconKey: "options", time: "4 min",
     xpReward: 50,
     content: [
-      { type: "text", text: "An option is a contract giving you the right — but not the obligation — to buy or sell an asset at a predetermined price (the strike price) before a set date (expiry)." },
+      { type: "text", text: "An option is a contract giving you the right (but not the obligation) to buy or sell an asset at a predetermined price (the strike price) before a set date (expiry)." },
       { type: "formula", text: "Call = right to BUY  ·  Put = right to SELL  ·  Premium = price you pay for the option" },
-      { type: "list", items: ["Call option: profits when stock rises above the strike price", "Put option: profits when stock falls below the strike price", "In the money (ITM): exercising the option has intrinsic value", "Out of the money (OTM): exercising would result in a loss — let it expire worthless", "Time decay: options lose value as expiry approaches (all else equal)"] },
-      { type: "text", text: "Intrinsic value for a call = Stock Price − Strike Price (if positive). For a put = Strike Price − Stock Price (if positive). Options also carry time value — the extra premium for the chance things move your way before expiry." },
+      { type: "list", items: ["Call option: profits when stock rises above the strike price", "Put option: profits when stock falls below the strike price", "In the money (ITM): exercising the option has intrinsic value", "Out of the money (OTM): exercising would result in a loss; let it expire worthless", "Time decay: options lose value as expiry approaches (all else equal)"] },
+      { type: "text", text: "Intrinsic value for a call = Stock Price − Strike Price (if positive). For a put = Strike Price − Stock Price (if positive). Options also carry time value, the extra premium for the chance things move your way before expiry." },
     ],
     example: {
       problem: "You buy a call option on AAPL with a $180 strike price, paying a $5 premium. At expiry, AAPL is at $195.",
@@ -512,7 +618,7 @@ const LESSONS = [
     id: "taxes", title: "Tax Efficiency", iconKey: "taxes", time: "4 min",
     xpReward: 50,
     content: [
-      { type: "text", text: "How and when you sell investments matters almost as much as what you invest in. Taxes can silently erode returns — tax-efficient investing keeps more money compounding for you." },
+      { type: "text", text: "How and when you sell investments matters almost as much as what you invest in. Taxes can silently erode returns; tax-efficient investing keeps more money compounding for you." },
       { type: "formula", text: "Short-term gain (held < 1 year): taxed as ordinary income  ·  Long-term gain (held ≥ 1 year): taxed at 0%, 15%, or 20%" },
       { type: "list", items: ["Long-term capital gains rates are significantly lower than ordinary income tax rates", "Tax-loss harvesting: sell a losing position to realize a loss that offsets gains", "The wash-sale rule: you cannot buy the same (or substantially identical) security within 30 days before/after the loss sale", "Tax-deferred accounts (401k, IRA): gains grow untaxed until withdrawal", "Index funds and ETFs are more tax-efficient than actively managed funds (lower turnover)"] },
       { type: "text", text: "Asset location matters: hold high-turnover assets in tax-deferred accounts and buy-and-hold assets in taxable accounts to minimize your annual tax bill." },
@@ -539,9 +645,9 @@ const LESSONS = [
     id: "valuation", title: "Stock Valuation", iconKey: "valuation", time: "4 min",
     xpReward: 50,
     content: [
-      { type: "text", text: "Stock valuation is about determining what a company is actually worth — its intrinsic value — and comparing that to the market price. A stock trading below intrinsic value is considered undervalued (a potential buy); above intrinsic value is overvalued." },
+      { type: "text", text: "Stock valuation is about determining what a company is actually worth (its intrinsic value) and comparing that to the market price. A stock trading below intrinsic value is considered undervalued (a potential buy); above intrinsic value is overvalued." },
       { type: "formula", text: "P/E Ratio = Price Per Share ÷ Earnings Per Share (EPS)" },
-      { type: "list", items: ["P/E of 15 = investors pay $15 for every $1 of annual earnings", "Low P/E: cheaper stock, but could signal low growth expectations", "High P/E: investors expect strong future growth (e.g., tech stocks often trade at 30–50x)", "Forward P/E uses next year's estimated earnings — more forward-looking"] },
+      { type: "list", items: ["P/E of 15 = investors pay $15 for every $1 of annual earnings", "Low P/E: cheaper stock, but could signal low growth expectations", "High P/E: investors expect strong future growth (e.g., tech stocks often trade at 30–50x)", "Forward P/E uses next year's estimated earnings, more forward-looking"] },
       { type: "text", text: "Discounted Cash Flow (DCF) is the gold standard of valuation. You project future cash flows, then discount them back to today's value using a required rate of return. The sum of those discounted flows is the intrinsic value." },
       { type: "formula", text: "Intrinsic Value = Sum of (Future Cash Flows ÷ (1 + Discount Rate)^Year)" },
     ],
@@ -550,9 +656,9 @@ const LESSONS = [
       steps: [
         "Company A P/E  =  $50 ÷ $2.50  =  20x",
         "Company B P/E  =  $80 ÷ $5.33  =  15x",
-        "Company B trades at a lower multiple — cheaper per dollar of earnings",
+        "Company B trades at a lower multiple, cheaper per dollar of earnings",
       ],
-      answer: "Company B is cheaper on P/E (15x vs 20x). But always check why — lower P/E can mean lower growth, not just a better bargain.",
+      answer: "Company B is cheaper on P/E (15x vs 20x). But always check why: lower P/E can mean lower growth, not just a better bargain.",
     },
     quiz: [
       { q: "A P/E ratio of 25 means investors pay $25 for every:", options: ["$25 of revenue", "$1 of annual earnings", "$1 of book value", "$25 of dividends"], correct: 1 },
@@ -602,28 +708,64 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
   const [done, setDone] = useState(false);
 
   const difficulty = getAIDifficulty(xp);
+  const todayUTC = new Date().toISOString().split("T")[0];
+  const cacheKey = `corvo_ai_practice_${lesson.id}_${difficulty}`;
+  const prevCacheKey = `corvo_ai_practice_prev_${lesson.id}_${difficulty}`;
 
-  const fetchQuestions = useCallback(async () => {
+  const fetchQuestions = useCallback(async (forceRefresh = false) => {
+    // Check local cache for today's questions first (unless forcing refresh)
+    if (!forceRefresh) {
+      try {
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) {
+          const { date, data } = JSON.parse(raw);
+          if (date === todayUTC && Array.isArray(data) && data.length > 0) {
+            setQuestions(data);
+            return;
+          }
+        }
+      } catch {}
+    }
+
     setLoading(true);
     setError(null);
     setQuestions(null);
     setQi(0); setSelected(null); setAnswered(false); setResults([]); setDone(false);
+
+    // Gather previous questions to exclude
+    let excludePrevious: string[] = [];
+    try {
+      const prevRaw = localStorage.getItem(prevCacheKey);
+      if (prevRaw) {
+        const prev = JSON.parse(prevRaw);
+        if (Array.isArray(prev.data)) {
+          excludePrevious = prev.data.slice(0, 5).map((q: AIQuestion) => q.question);
+        }
+      }
+    } catch {}
+
     try {
       const res = await fetch(`${API_URL}/generate-questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: lesson.title, difficulty, count: 5 }),
+        body: JSON.stringify({ topic: lesson.title, difficulty, count: 5, exclude_previous: excludePrevious }),
       });
       if (res.status === 429) { setError("Rate limit reached. Try again in an hour."); setLoading(false); return; }
       if (!res.ok) { setError("Failed to generate questions. Please try again."); setLoading(false); return; }
-      const data = await res.json();
-      setQuestions(data.questions ?? []);
+      const apiData = await res.json();
+      const qs: AIQuestion[] = apiData.questions ?? [];
+      setQuestions(qs);
+      // Cache for today and save as "previous" for tomorrow
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ date: todayUTC, data: qs }));
+        localStorage.setItem(prevCacheKey, JSON.stringify({ date: todayUTC, data: qs }));
+      } catch {}
     } catch {
       setError("Network error. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
-  }, [lesson.title, difficulty]);
+  }, [lesson.title, difficulty, cacheKey, prevCacheKey, todayUTC]);
 
   useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
 
@@ -656,7 +798,7 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
       <AlertCircle size={36} color={RED} style={{ marginBottom: 12 }} />
       <p style={{ fontSize: 14, color: RED, marginBottom: 20 }}>{error}</p>
       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-        <button onClick={fetchQuestions} style={{ padding: "10px 20px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Retry</button>
+        <button onClick={() => fetchQuestions(true)} style={{ padding: "10px 20px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Retry</button>
         <button onClick={onBack} style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>Back</button>
       </div>
     </div>
@@ -681,7 +823,7 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
           ))}
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-          <button onClick={fetchQuestions} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => fetchQuestions(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             <RefreshCw size={14} /> Generate New Set
           </button>
           <button onClick={onBack} style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>Back</button>
@@ -726,7 +868,7 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
           </button>
         </motion.div>
       )}
-      <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 12, textAlign: "center" }}>AI Practice — no XP awarded</p>
+      <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 12, textAlign: "center" }}>AI Practice, no XP awarded</p>
     </motion.div>
   );
 }
@@ -948,7 +1090,7 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
       {loading ? (
         <p style={{ fontSize: 12, color: "var(--text3)" }}>Loading...</p>
       ) : entries.length === 0 ? (
-        <p style={{ fontSize: 12, color: "var(--text3)" }}>No scores yet — be the first!</p>
+        <p style={{ fontSize: 12, color: "var(--text3)" }}>No scores yet. Be the first!</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {entries.map(e => {
@@ -982,9 +1124,9 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
 // ── Arcade Game: Market Crash Simulator ─────────────────────────────────────
 const CRASH_SCENARIOS = [
   { name: "2008 Financial Crisis", clue: "Lehman Brothers collapsed, banks froze credit, housing market imploded.", answer: 2, options: ["-18%", "-32%", "-57%", "-71%"], correct: 2, explanation: "The S&P 500 fell ~57% from its 2007 peak to March 2009 trough." },
-  { name: "COVID Crash 2020",      clue: "Global pandemic declared, economies locked down overnight.", answer: 1, options: ["-15%", "-34%", "-50%", "-60%"], correct: 1, explanation: "The S&P 500 dropped 34% in just 33 days — fastest bear market ever." },
+  { name: "COVID Crash 2020",      clue: "Global pandemic declared, economies locked down overnight.", answer: 1, options: ["-15%", "-34%", "-50%", "-60%"], correct: 1, explanation: "The S&P 500 dropped 34% in just 33 days, the fastest bear market ever." },
   { name: "Dot-com Bust 2000–02",  clue: "Tech valuations collapsed after years of speculative excess.", answer: 2, options: ["-20%", "-35%", "-49%", "-65%"], correct: 2, explanation: "S&P 500 fell 49%. Nasdaq dropped 78% from peak to trough." },
-  { name: "2022 Rate Hike Cycle",  clue: "Fed raised rates at fastest pace since the 1980s to fight 8% inflation.", answer: 1, options: ["-10%", "-25%", "-40%", "-55%"], correct: 1, explanation: "S&P 500 fell 25.4% in 2022 — worst year since 2008." },
+  { name: "2022 Rate Hike Cycle",  clue: "Fed raised rates at fastest pace since the 1980s to fight 8% inflation.", answer: 1, options: ["-10%", "-25%", "-40%", "-55%"], correct: 1, explanation: "S&P 500 fell 25.4% in 2022, the worst year since 2008." },
 ];
 function CrashSimulator({ onXP }: { onXP: (n: number) => void }) {
   const [qi, setQi] = useState(0); const [sel, setSel] = useState<number|null>(null); const [done, setDone] = useState(false); const [score, setScore] = useState(0); const [awarded, setAwarded] = useState(false);
@@ -1030,8 +1172,8 @@ function CrashSimulator({ onXP }: { onXP: (n: number) => void }) {
 const OPTIONS_QS = [
   { desc: "You buy a call option: Strike $150, Premium $8, Stock at expiry: $165", options: ["-$800", "+$700", "+$1,500", "+$300"], correct: 1, explanation: "Profit = (165-150-8) × 100 = $700. You exercise the option and net $7/share." },
   { desc: "You buy a put option: Strike $100, Premium $5, Stock at expiry: $88", options: ["+$700", "-$500", "+$1,200", "+$500"], correct: 0, explanation: "Profit = (100-88-5) × 100 = $700. You sell at $100 what's worth $88." },
-  { desc: "You buy a call option: Strike $200, Premium $15, Stock at expiry: $205", options: ["-$1,000", "+$500", "+$1,500", "-$500"], correct: 3, explanation: "Profit = (205-200-15) × 100 = -$1,000 — wait, the net is -$10/share = -$1,000. Actually: (205-200) = 5, minus $15 premium = -$10/share × 100 = -$1,000. Loss!" },
-  { desc: "You buy a put option: Strike $50, Premium $3, Stock at expiry: $50", options: ["+$300", "-$300", "+$150", "$0"], correct: 1, explanation: "Stock is at strike — option expires worthless. You lose the $3 × 100 = $300 premium." },
+  { desc: "You buy a call option: Strike $200, Premium $15, Stock at expiry: $205", options: ["-$1,000", "+$500", "+$1,500", "-$500"], correct: 3, explanation: "Profit = (205-200-15) × 100 = -$1,000. The net is -$10/share = -$1,000. Actually: (205-200) = 5, minus $15 premium = -$10/share × 100 = -$1,000. Loss!" },
+  { desc: "You buy a put option: Strike $50, Premium $3, Stock at expiry: $50", options: ["+$300", "-$300", "+$150", "$0"], correct: 1, explanation: "Stock is at strike, option expires worthless. You lose the $3 × 100 = $300 premium." },
 ];
 function OptionsGame({ onXP }: { onXP: (n: number) => void }) {
   const [qi, setQi] = useState(0); const [sel, setSel] = useState<number|null>(null); const [done, setDone] = useState(false); const [score, setScore] = useState(0); const [awarded, setAwarded] = useState(false);
@@ -1103,7 +1245,7 @@ function InflationGame({ onXP }: { onXP: (n: number) => void }) {
 const FED_SCENARIOS = [
   { year: "June 2022", inflation: "8.6%", unemployment: "3.6%", correct: 0, options: ["Raise +75bps", "Hold", "Cut -25bps", "Raise +25bps"], actualAction: "Raised +75bps", why: "Inflation at 40-year high. Fed prioritized price stability over growth risk with the largest hike since 1994." },
   { year: "March 2020", inflation: "2.3%", unemployment: "4.4% (rising)", correct: 2, options: ["Raise +50bps", "Hold", "Cut -100bps", "Cut -25bps"], actualAction: "Cut -100bps to near zero", why: "COVID caused sudden economic collapse. Emergency cut to near-zero + QE to support the economy." },
-  { year: "December 2019", inflation: "2.3%", unemployment: "3.5%", correct: 1, options: ["Raise +25bps", "Hold", "Cut -25bps", "Raise +50bps"], actualAction: "Held rates steady", why: "Economy was healthy with low inflation near target and full employment — no urgency to move." },
+  { year: "December 2019", inflation: "2.3%", unemployment: "3.5%", correct: 1, options: ["Raise +25bps", "Hold", "Cut -25bps", "Raise +50bps"], actualAction: "Held rates steady", why: "Economy was healthy with low inflation near target and full employment, no urgency to move." },
   { year: "September 2024", inflation: "2.5%", unemployment: "4.2%", correct: 2, options: ["Raise +25bps", "Hold", "Cut -50bps", "Cut -25bps"], actualAction: "Cut -50bps", why: "Inflation was falling toward target. Labor market softening. Fed began easing cycle with a larger-than-expected cut." },
 ];
 function FedGame({ onXP }: { onXP: (n: number) => void }) {
@@ -1145,9 +1287,9 @@ function FedGame({ onXP }: { onXP: (n: number) => void }) {
 
 // ── Arcade Game: Stock Valuation Showdown ────────────────────────────────────
 const VALUATION_ROUNDS = [
-  { a: { name: "Company A", pe: 12, eps: 5.2, growth: "8%" }, b: { name: "Company B", pe: 28, eps: 2.1, growth: "5%" }, winner: 0, reason: "Company A has a much lower P/E with higher EPS and faster growth — significantly more undervalued." },
-  { a: { name: "Company A", pe: 35, eps: 8.0, growth: "22%" }, b: { name: "Company B", pe: 15, eps: 3.5, growth: "4%" }, winner: 0, reason: "Company A's high growth rate justifies the premium. PEG ratio (P/E ÷ growth) is ~1.6 vs B's 3.75 — A is cheaper on a growth-adjusted basis." },
-  { a: { name: "Company A", pe: 18, eps: 4.0, growth: "10%" }, b: { name: "Company B", pe: 22, eps: 6.5, growth: "12%" }, winner: 1, reason: "Company B has higher EPS, slightly more growth, and only a small P/E premium — better value overall." },
+  { a: { name: "Company A", pe: 12, eps: 5.2, growth: "8%" }, b: { name: "Company B", pe: 28, eps: 2.1, growth: "5%" }, winner: 0, reason: "Company A has a much lower P/E with higher EPS and faster growth, significantly more undervalued." },
+  { a: { name: "Company A", pe: 35, eps: 8.0, growth: "22%" }, b: { name: "Company B", pe: 15, eps: 3.5, growth: "4%" }, winner: 0, reason: "Company A's high growth rate justifies the premium. PEG ratio (P/E ÷ growth) is ~1.6 vs B's 3.75, so A is cheaper on a growth-adjusted basis." },
+  { a: { name: "Company A", pe: 18, eps: 4.0, growth: "10%" }, b: { name: "Company B", pe: 22, eps: 6.5, growth: "12%" }, winner: 1, reason: "Company B has higher EPS, slightly more growth, and only a small P/E premium, better value overall." },
 ];
 function ValuationShowdown({ onXP }: { onXP: (n: number) => void }) {
   const [round, setRound] = useState(0); const [sel, setSel] = useState<number|null>(null); const [done, setDone] = useState(false); const [score, setScore] = useState(0); const [awarded, setAwarded] = useState(false);
@@ -1165,7 +1307,7 @@ function ValuationShowdown({ onXP }: { onXP: (n: number) => void }) {
   );
   return (
     <div>
-      <p style={{ fontSize: 9, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 12 }}>Round {round+1}/{VALUATION_ROUNDS.length} — Which is more undervalued?</p>
+      <p style={{ fontSize: 9, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 12 }}>Round {round+1}/{VALUATION_ROUNDS.length}: Which is more undervalued?</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: sel !== null ? 14 : 0 }}>
         {[q.a, q.b].map((co, i) => {
           const picked = sel === i; const correct = i === q.winner; const show = sel !== null;
@@ -1192,9 +1334,9 @@ const ARCADE_GAMES = [
   { id: "sharpe-game",   title: "Guess the Sharpe",       desc: "Calculate Sharpe ratios from real portfolio data.",                color: AMBER,     Icon: Target,       xp: 20, difficulty: "Medium" },
   { id: "crash-sim",     title: "Market Crash Simulator", desc: "Guess how far markets fell in famous historical crashes.",         color: "#e05c5c",  Icon: TrendingDown, xp: 15, difficulty: "Easy"   },
   { id: "options-game",  title: "Options P&L Calculator", desc: "Calculate profit/loss on calls and puts at expiry.",               color: "#a78bfa",  Icon: Calculator,   xp: 15, difficulty: "Medium" },
-  { id: "inflation-game",title: "Inflation Impact",       desc: "Real vs nominal returns — does your money keep up?",              color: "#b47ee0",  Icon: Percent,      xp: 10, difficulty: "Easy"   },
+  { id: "inflation-game",title: "Inflation Impact",       desc: "Real vs nominal returns: does your money keep up?",              color: "#b47ee0",  Icon: Percent,      xp: 10, difficulty: "Easy"   },
   { id: "fed-game",      title: "Fed Rate Decision",      desc: "Given macro indicators, what should the Fed do?",                 color: "#4caf7d",  Icon: Building2,    xp: 15, difficulty: "Hard"   },
-  { id: "builder-game",  title: "Portfolio Challenge",    desc: "Pick assets to hit a specific goal — maximize Sharpe or diversify.",color: "#f97316",  Icon: BarChart2,    xp: 20, difficulty: "Easy"   },
+  { id: "builder-game",  title: "Portfolio Challenge",    desc: "Pick assets to hit a specific goal: maximize Sharpe or diversify.",color: "#f97316",  Icon: BarChart2,    xp: 20, difficulty: "Easy"   },
   { id: "valuation-game",title: "Stock Valuation Showdown",desc: "Pick the more undervalued stock given P/E, EPS, and growth rate.", color: AMBER,     Icon: GitCompare,   xp: 20, difficulty: "Hard"   },
 ] as const;
 
@@ -1215,6 +1357,8 @@ export default function LearnPage() {
   const [gameXpAwarded, setGameXpAwarded] = useState<string[]>([]);
   const [gameAlreadyAwardedMsg, setGameAlreadyAwardedMsg] = useState(false);
   const [xpToast, setXpToast]     = useState<number | null>(null);
+  const [levelUpInfo, setLevelUpInfo] = useState<{ name: string; color: string } | null>(null);
+  const [dailyFlash, setDailyFlash] = useState<"correct" | "wrong" | null>(null);
   const [userId, setUserId]       = useState<string | null>(null);
   const [learnPoints, setLearnPoints] = useState(0);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -1228,7 +1372,10 @@ export default function LearnPage() {
   const [dailySelected, setDailySelected]       = useState<number | null>(null);
   const [dailyShowResult, setDailyShowResult]   = useState(false);
   const [midnightCountdown, setMidnightCountdown] = useState("");
-  const LS_DAILY_KEY = "corvo_daily_challenge";
+  // LS keys: _done = completion marker; _qs = cached questions for today; _prev = yesterday's for exclusion
+  const LS_DAILY_DONE_KEY = "corvo_daily_challenge";
+  const LS_DAILY_QS_KEY   = "corvo_daily_questions";
+  const LS_DAILY_PREV_KEY = "corvo_daily_questions_prev";
 
   // Countdown to midnight UTC
   useEffect(() => {
@@ -1248,29 +1395,64 @@ export default function LearnPage() {
 
   const today = new Date().toISOString().split("T")[0];
 
+  // Returns true if user already completed today's challenge
   const checkLocalDaily = () => {
     try {
-      const raw = localStorage.getItem("corvo_daily_challenge");
+      const raw = localStorage.getItem(LS_DAILY_DONE_KEY);
       if (!raw) return false;
       const { date } = JSON.parse(raw);
       return date === today;
     } catch { return false; }
   };
 
+  // Load cached questions for today; returns true if found
+  const loadCachedDailyQuestions = (): boolean => {
+    try {
+      const raw = localStorage.getItem(LS_DAILY_QS_KEY);
+      if (!raw) return false;
+      const { date, questions } = JSON.parse(raw);
+      if (date !== today || !Array.isArray(questions) || questions.length === 0) return false;
+      setDailyQuestions(questions);
+      setDailyIdx(0);
+      setDailySelected(null);
+      setDailyShowResult(false);
+      return true;
+    } catch { return false; }
+  };
+
   const fetchDailyQuestion = async () => {
     setDailyLoading(true);
     try {
+      // Gather previous questions to exclude repetition
+      let excludePrevious: string[] = [];
+      try {
+        const prevRaw = localStorage.getItem(LS_DAILY_PREV_KEY);
+        if (prevRaw) {
+          const prev = JSON.parse(prevRaw);
+          if (Array.isArray(prev.questions)) {
+            excludePrevious = prev.questions.slice(0, 5).map((q: DailyQ) => q.question);
+          }
+        }
+      } catch {}
+
       const res = await fetch(`${API_URL}/generate-questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: "investing", difficulty: "beginner", count: 3 }),
+        body: JSON.stringify({ topic: "investing", difficulty: "beginner", count: 3, exclude_previous: excludePrevious }),
       });
       const d = await res.json();
       if (Array.isArray(d.questions) && d.questions.length > 0) {
-        setDailyQuestions(d.questions.slice(0, 3));
+        const questions = d.questions.slice(0, 3) as DailyQ[];
+        setDailyQuestions(questions);
         setDailyIdx(0);
         setDailySelected(null);
         setDailyShowResult(false);
+        // Cache questions for today (so reload on same day reuses them)
+        try {
+          localStorage.setItem(LS_DAILY_QS_KEY, JSON.stringify({ date: today, questions }));
+          // Save as "previous" for tomorrow's exclusion
+          localStorage.setItem(LS_DAILY_PREV_KEY, JSON.stringify({ date: today, questions }));
+        } catch {}
       }
     } catch {}
     setDailyLoading(false);
@@ -1283,8 +1465,11 @@ export default function LearnPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          if (checkLocalDaily()) setDailyCompleted(true);
-          else fetchDailyQuestion();
+          if (checkLocalDaily()) {
+            setDailyCompleted(true);
+          } else if (!loadCachedDailyQuestions()) {
+            fetchDailyQuestion();
+          }
           return;
         }
         setUserId(user.id);
@@ -1295,11 +1480,20 @@ export default function LearnPage() {
           .eq("id", user.id)
           .single();
 
+        // ── Streak reset: if last activity was more than 1 day ago, streak is broken
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+        const lastDate  = profile?.last_activity_date ?? null;
+        let currentStreak = profile?.streak ?? 0;
+        if (lastDate !== null && lastDate !== today && lastDate !== yesterday) {
+          currentStreak = 0;
+          await supabase.from("profiles").update({ streak: 0, updated_at: new Date().toISOString() }).eq("id", user.id);
+        }
+
         // Set all profile display values before clearing the loading skeleton
         setDisplayName(profile?.display_name || user.email?.split("@")[0] || "");
         setAvatarUrl(profile?.avatar_url || null);
         setXp(profile?.xp ?? 0);
-        setStreak(profile?.streak ?? 0);
+        setStreak(currentStreak);
 
         if (profile) {
           if (Array.isArray(profile.lessons_completed) && profile.lessons_completed.length > 0) {
@@ -1312,14 +1506,18 @@ export default function LearnPage() {
             const gameAwarded = Array.isArray(lp.game_xp_awarded) ? lp.game_xp_awarded as string[] : [];
             setGameXpAwarded(gameAwarded);
           }
+          // Daily challenge: check completion, then cached questions, then fetch fresh
           if (profile.last_daily_challenge === today || checkLocalDaily()) {
             setDailyCompleted(true);
-          } else {
+          } else if (!loadCachedDailyQuestions()) {
             fetchDailyQuestion();
           }
         } else {
-          if (checkLocalDaily()) setDailyCompleted(true);
-          else fetchDailyQuestion();
+          if (checkLocalDaily()) {
+            setDailyCompleted(true);
+          } else if (!loadCachedDailyQuestions()) {
+            fetchDailyQuestion();
+          }
         }
 
         const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", user.id).single();
@@ -1347,7 +1545,16 @@ export default function LearnPage() {
     if (amount <= 0) return;
     setXpToast(amount);
 
-    if (!userId) { setXp(prev => prev + amount); return; }
+    if (!userId) {
+      setXp(prev => {
+        const prevLevel = getLevel(prev);
+        const newXpVal = prev + amount;
+        const newLevel = getLevel(newXpVal);
+        if (newLevel.name !== prevLevel.name) setLevelUpInfo({ name: newLevel.name, color: newLevel.color });
+        return newXpVal;
+      });
+      return;
+    }
 
     const today     = new Date().toISOString().split("T")[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
@@ -1375,6 +1582,9 @@ export default function LearnPage() {
     const newXp  = prevXp + amount + dailyBonus;
     const newPts = prevPts + amount;
     setXp(newXp);
+    const prevLevel = getLevel(prevXp);
+    const newLevel  = getLevel(newXp);
+    if (newLevel.name !== prevLevel.name) setLevelUpInfo({ name: newLevel.name, color: newLevel.color });
     setStreak(newStreak);
     setLearnPoints(newPts);
 
@@ -1449,7 +1659,14 @@ export default function LearnPage() {
     if (!q) return;
     setDailySelected(optionIdx);
     setDailyShowResult(true);
-    if (optionIdx === q.correct) {
+    const correct = optionIdx === q.correct;
+    setDailyFlash(correct ? "correct" : "wrong");
+    setTimeout(() => setDailyFlash(null), 700);
+    if (correct) {
+      try {
+        const confetti = (await import("canvas-confetti")).default;
+        confetti({ particleCount: 45, spread: 55, origin: { y: 0.45 }, scalar: 0.85, colors: [AMBER, GREEN, "#ffffff"] });
+      } catch {}
       await awardXP(25);
     }
   };
@@ -1463,7 +1680,7 @@ export default function LearnPage() {
     } else {
       // All 3 done — mark complete
       setDailyCompleted(true);
-      try { localStorage.setItem("corvo_daily_challenge", JSON.stringify({ date: today })); } catch {}
+      try { localStorage.setItem(LS_DAILY_DONE_KEY, JSON.stringify({ date: today })); } catch {}
       if (userId) {
         await supabase.from("profiles").update({ last_daily_challenge: today }).eq("id", userId);
       }
@@ -1475,6 +1692,7 @@ export default function LearnPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
+      <AnimStyles />
       <LearnHeader xp={xp} streak={streak} displayName={displayName} avatarUrl={avatarUrl} loading={profileLoading} />
 
       <div className="c-learn-content" style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 24px" }}>
@@ -1515,7 +1733,7 @@ export default function LearnPage() {
                   {!dailyCompleted && dailyQuestions.length > 0 && (() => {
                     const q = dailyQuestions[dailyIdx];
                     return (
-                      <div>
+                      <div className={dailyFlash === "correct" ? "anim-flash-green" : dailyFlash === "wrong" ? "anim-flash-red" : ""} style={{ borderRadius: 10 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                           <span style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 1 }}>Question {dailyIdx + 1} of {dailyQuestions.length}</span>
                           <div style={{ display: "flex", gap: 4 }}>
@@ -1536,10 +1754,12 @@ export default function LearnPage() {
                               if (isCorrect) { bg = "rgba(76,175,125,0.12)"; border = "rgba(76,175,125,0.4)"; color = GREEN; }
                               else if (isSelected && !isCorrect) { bg = "rgba(224,92,92,0.1)"; border = "rgba(224,92,92,0.4)"; color = RED; }
                             }
+                            const isWrongSelected = dailyShowResult && isSelected && !isCorrect;
                             return (
                               <button key={i} onClick={() => { if (!dailyShowResult) submitDailyChallenge(i); }}
                                 disabled={dailyShowResult}
-                                style={{ textAlign: "left", padding: "10px 14px", borderRadius: 10, border: `0.5px solid ${border}`, background: bg, color, fontSize: 13, cursor: dailyShowResult ? "default" : "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: 8 }}>
+                                className={isWrongSelected ? "anim-shake" : ""}
+                                style={{ textAlign: "left", padding: "10px 14px", borderRadius: 10, border: `0.5px solid ${border}`, background: bg, color, fontSize: 13, cursor: dailyShowResult ? "default" : "pointer", transition: "background 0.2s, border-color 0.2s, color 0.2s", display: "flex", alignItems: "center", gap: 8 }}>
                                 <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, width: 16, flexShrink: 0 }}>{String.fromCharCode(65 + i)}</span>
                                 {opt}
                               </button>
@@ -1809,6 +2029,17 @@ export default function LearnPage() {
       <AnimatePresence>
         {xpToast !== null && <XPToast amount={xpToast} onDone={() => setXpToast(null)} />}
       </AnimatePresence>
+
+      {/* Level-Up Modal */}
+      <AnimatePresence>
+        {levelUpInfo && (
+          <LevelUpModal
+            levelName={levelUpInfo.name}
+            color={levelUpInfo.color}
+            onDone={() => setLevelUpInfo(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1830,6 +2061,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
   const [quizDone, setQuizDone] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
   const [updatedProgressForDone, setUpdatedProgressForDone] = useState<number[]>([]);
+  const [wrongShake, setWrongShake] = useState<number | null>(null);
 
   const enterQuiz = () => {
     setMode("quiz"); setQi(-1); setSelected(null); setAnswered(false);
@@ -1844,6 +2076,10 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
     const correct = idx === q!.correct;
     setSelected(idx); setAnswered(true);
     setQuizResults(prev => { const n = [...prev]; n[qi] = correct; return n; });
+    if (!correct) {
+      setWrongShake(idx);
+      setTimeout(() => setWrongShake(null), 550);
+    }
   };
 
   const nextQ = () => {
@@ -1972,7 +2208,8 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
                 }
                 return (
                   <button key={oi} onClick={() => answer(oi)}
-                    style={{ padding: "12px 16px", background: bg, border: `0.5px solid ${border}`, borderRadius: 10, color, fontSize: 13, textAlign: "left", cursor: answered ? "default" : "pointer", pointerEvents: answered ? "none" : "auto", transition: "all 0.15s", fontWeight: isSelected || (answered && isCorrect) ? 500 : 400 }}>
+                    className={wrongShake === oi ? "anim-shake" : ""}
+                    style={{ padding: "12px 16px", background: bg, border: `0.5px solid ${border}`, borderRadius: 10, color, fontSize: 13, textAlign: "left", cursor: answered ? "default" : "pointer", pointerEvents: answered ? "none" : "auto", transition: "background 0.2s, border-color 0.2s, color 0.2s", fontWeight: isSelected || (answered && isCorrect) ? 500 : 400 }}>
                     {opt}
                   </button>
                 );
@@ -1990,9 +2227,19 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
         {mode === "quiz" && quizDone && (
           <motion.div key="done" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
-              {updatedProgressForDone.length >= lesson.quiz.length
-                ? <CheckCircle2 size={52} color={GREEN} />
-                : <BookOpen size={52} color="var(--text3)" />}
+              {updatedProgressForDone.length >= lesson.quiz.length ? (
+                <motion.div
+                  initial={{ scale: 0, rotate: -40 }} animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 16, delay: 0.05 }}
+                  style={{ filter: "drop-shadow(0 0 8px rgba(76,175,125,0.5))" }}
+                >
+                  <CheckCircle2 size={52} color={GREEN} />
+                </motion.div>
+              ) : (
+                <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 18 }}>
+                  <BookOpen size={52} color="var(--text3)" />
+                </motion.div>
+              )}
             </div>
             {updatedProgressForDone.length >= lesson.quiz.length ? (
               <>
@@ -2012,7 +2259,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
                 </p>
                 {xpEarned > 0
                   ? <p style={{ fontSize: 13, color: GREEN, marginBottom: 20 }}>+{xpEarned} XP for {updatedProgressForDone.filter(i => !progress.includes(i)).length} newly correct answer{updatedProgressForDone.filter(i => !progress.includes(i)).length !== 1 ? "s" : ""}!</p>
-                  : <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>No new questions answered correctly — no XP awarded.</p>
+                  : <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 20 }}>No new questions answered correctly. No XP awarded.</p>
                 }
               </>
             )}

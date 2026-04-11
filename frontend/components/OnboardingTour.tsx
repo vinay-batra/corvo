@@ -13,7 +13,7 @@ type StepNum = 1 | 2 | 3;
 const STEPS: Record<StepNum, { targetId: string; text: string; nextLabel: string; isLast: boolean }> = {
   1: {
     targetId: "tour-ticker-area",
-    text: "Start by adding a ticker — type AAPL or MSFT and set its weight",
+    text: "Start by adding a ticker: type AAPL or MSFT and set its weight",
     nextLabel: "Got it →",
     isLast: false,
   },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Section {
@@ -17,11 +17,33 @@ interface InfoModalProps {
 
 export default function InfoModal({ title, sections, children }: InfoModalProps) {
   const [open, setOpen] = useState(false);
+  const idRef = useRef(`info-modal-${Math.random().toString(36).slice(2)}`);
+
+  useEffect(() => {
+    const handleOtherOpen = (e: Event) => {
+      if ((e as CustomEvent).detail?.id !== idRef.current) setOpen(false);
+    };
+    window.addEventListener("corvo:modal-open", handleOtherOpen);
+    return () => window.removeEventListener("corvo:modal-open", handleOtherOpen);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [open]);
+
+  const openModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.dispatchEvent(new CustomEvent("corvo:modal-open", { detail: { id: idRef.current } }));
+    setOpen(true);
+  };
 
   return (
     <>
       <span
-        onClick={e => { e.stopPropagation(); setOpen(true); }}
+        onClick={openModal}
         style={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }}
       >
         {children ?? (
@@ -51,7 +73,7 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
               initial={{ scale: 0.94, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 12 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               onClick={e => e.stopPropagation()}
-              style={{ width: "100%", maxWidth: 480, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.5)" }}
+              style={{ width: "100%", maxWidth: 480, maxHeight: "90vh", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column" }}
             >
               {/* Header */}
               <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -69,7 +91,7 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
               </div>
 
               {/* Sections */}
-              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1 }}>
                 {sections.map((s, i) => (
                   <div key={i}>
                     <p style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>{s.label}</p>

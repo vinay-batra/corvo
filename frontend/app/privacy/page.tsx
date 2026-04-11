@@ -63,10 +63,10 @@ export default function PrivacyPage() {
         <h2 style={S.h2}>3. Third-Party Services</h2>
         <p style={S.p}>We use the following third-party services to operate Corvo:</p>
         <ul style={S.ul}>
-          <li style={S.li}><strong>Supabase</strong> — database, authentication, and file storage. Your data is stored in Supabase-managed infrastructure.</li>
-          <li style={S.li}><strong>Yahoo Finance (via yfinance)</strong> — market price data. Only ticker symbols you enter are sent to this service.</li>
-          <li style={S.li}><strong>Anthropic Claude</strong> — AI chat and report generation. Portfolio context is sent to generate responses. Anthropic's data retention policies apply.</li>
-          <li style={S.li}><strong>Resend</strong> — email delivery for digest and alert emails.</li>
+          <li style={S.li}><strong>Supabase</strong>: database, authentication, and file storage. Your data is stored in Supabase-managed infrastructure.</li>
+          <li style={S.li}><strong>Yahoo Finance (via yfinance)</strong>: market price data. Only ticker symbols you enter are sent to this service.</li>
+          <li style={S.li}><strong>Anthropic Claude</strong>: AI chat and report generation. Portfolio context is sent to generate responses. Anthropic's data retention policies apply.</li>
+          <li style={S.li}><strong>Resend</strong>: email delivery for digest and alert emails.</li>
         </ul>
 
         <h2 style={S.h2}>4. Data Retention</h2>

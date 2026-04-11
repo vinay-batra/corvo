@@ -338,7 +338,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
             {[
               { n: "1", title: "Build a portfolio", desc: "Add tickers and weights in the left sidebar." },
               { n: "2", title: "Analyze it", desc: "Click Analyze (or press ↵) to run the full analysis." },
-              { n: "3", title: "Save it", desc: "Use the Save button in the sidebar — it works without an account." },
+              { n: "3", title: "Save it", desc: "Use the Save button in the sidebar, it works without an account." },
               { n: "4", title: "Compare side by side", desc: "Return here to select saved portfolios and compare key metrics." },
             ].map(step => (
               <div key={step.n} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
@@ -440,12 +440,12 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                         <div key={col.label}>
                           <p style={{ fontSize: 9, letterSpacing: 1, color: COMPARE_COLORS[col.ci], marginBottom: 5 }}>ONLY {col.label.toUpperCase()}</p>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                            {col.tickers.length > 0 ? col.tickers.map(t => <span key={t} style={{ padding: "2px 6px", fontSize: 9, fontFamily: "var(--font-mono)", borderRadius: 4, background: "var(--bg3)", color: "var(--text2)" }}>{t}</span>) : <span style={{ fontSize: 10, color: "var(--text3)" }}>—</span>}
+                            {col.tickers.length > 0 ? col.tickers.map(t => <span key={t} style={{ padding: "2px 6px", fontSize: 9, fontFamily: "var(--font-mono)", borderRadius: 4, background: "var(--bg3)", color: "var(--text2)" }}>{t}</span>) : <span style={{ fontSize: 10, color: "var(--text3)" }}>N/A</span>}
                           </div>
                         </div>
                       ))}
                     </div>
-                    {ov.shared.length === 0 && <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>No holdings in common — highly independent portfolios.</p>}
+                    {ov.shared.length === 0 && <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>No holdings in common. Highly independent portfolios.</p>}
                   </div>
                 ))}
               </div>
@@ -671,7 +671,7 @@ function PortfolioPerformanceTrend({
             <div style={{ width: "14%", height: "100%", background: AMBER, borderRadius: 2 }} />
           </div>
           <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.6 }}>
-            First snapshot saved. Trend chart appears tomorrow with a second data point — snapshots are collected automatically each day.
+            First snapshot saved. Trend chart appears tomorrow with a second data point. Snapshots are collected automatically each day.
           </p>
         </div>
       ) : (
@@ -820,7 +820,7 @@ export default function AppPage() {
       setData(null);
       fetchPortfolio(demoAssets, "1y", "^GSPC")
         .then((result: any) => { setData(result); setActiveTab("overview"); })
-        .catch(() => { setErrorMsg("Demo failed to load — please try again."); })
+        .catch(() => { setErrorMsg("Demo failed to load. Please try again."); })
         .finally(() => setLoading(false));
     }
 
@@ -929,7 +929,7 @@ export default function AppPage() {
         })();
       }
     } catch {
-      setErrorMsg("Analysis failed — server may be temporarily unavailable.");
+      setErrorMsg("Analysis failed. Server may be temporarily unavailable.");
       errorDismissRef.current = setTimeout(() => setErrorMsg(null), 10000);
     }
     setLoading(false);
@@ -1465,7 +1465,7 @@ export default function AppPage() {
         </header>
 
         {/* Content */}
-        <main className="c-content" style={S.content}>
+        <main className="c-content page-fadein" style={S.content}>
           {/* Setup banner (shown when user skipped onboarding) */}
           <AnimatePresence>
             {showSetupBanner && (
@@ -1475,7 +1475,7 @@ export default function AppPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ color: "#c9a84c", fontSize: 13, flexShrink: 0 }}>◎</span>
                   <span style={{ fontSize: 13, color: "rgba(232,224,204,0.65)", lineHeight: 1.4 }}>
-                    Complete your setup — add your portfolio to unlock AI insights and risk analysis.
+                    Complete your setup: add your portfolio to unlock AI insights and risk analysis.
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
@@ -1528,7 +1528,7 @@ export default function AppPage() {
                     <StockCompare />
                   </>
                 ) : stockTicker ? (
-                  <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} />
+                  <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} onSelectTicker={t => setStockTicker(t)} />
                 ) : (
                   <>
                     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
@@ -1552,7 +1552,7 @@ export default function AppPage() {
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} style={{ marginBottom: 12 }}>
-                  <Card><CardHeader title="Today's Market Brief" /><MarketBrief /></Card>
+                  <Card><div style={S.cardHeader}><div style={S.cardAccent} /><span style={S.cardTitle}>{"Today's Market Brief"}</span><span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 8 }}>{new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span></div><MarketBrief /></Card>
                 </motion.div>
                 <motion.div
                   className="c-metrics"
@@ -1650,11 +1650,11 @@ export default function AppPage() {
               <motion.div key="risk" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <div className="c-risk-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Drawdown" sections={[{label:"Plain English",text:"Shows the biggest loss from a peak to a trough in your portfolio over the selected period."},{label:"Example",text:"A -20% drawdown means your portfolio fell from $100K to $80K before recovering."},{label:"What's Good",text:"Drawdowns under 15% are generally considered manageable for long-term investors. Deeper troughs signal higher risk."}]} /><DrawdownChart assets={assets} period={period} /></Card>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Correlation" sections={[{label:"Plain English",text:"Shows how your assets move in relation to each other. A value of 1.0 means they move in perfect lockstep."},{label:"Example",text:"AAPL and MSFT often have correlation near 0.8 — when one drops, the other usually does too."},{label:"What's Good",text:"Aim for correlations below 0.5 between your major holdings. Low correlation = real diversification."}]} /><CorrelationHeatmap assets={assets} period={period} /></Card>
+                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Correlation" sections={[{label:"Plain English",text:"Shows how your assets move in relation to each other. A value of 1.0 means they move in perfect lockstep."},{label:"Example",text:"AAPL and MSFT often have correlation near 0.8: when one drops, the other usually does too."},{label:"What's Good",text:"Aim for correlations below 0.5 between your major holdings. Low correlation = real diversification."}]} /><CorrelationHeatmap assets={assets} period={period} /></Card>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Sector Exposure" sections={[{label:"Plain English",text:"Shows how your portfolio weight is distributed across market sectors, aggregated from each holding's sector classification."},{label:"Example",text:"If AAPL and MSFT together make up 70% of your portfolio, Technology will show 70% exposure."},{label:"What's Good",text:"A diversified portfolio spreads across 4+ sectors. Heavy concentration in one sector amplifies both gains and losses."}]} /><SectorExposureChart assets={assets} /></Card>
                 </div>
                 <div style={{ marginTop: 12 }}>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and a $10,000 portfolio value."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your $10k portfolio, you'd earn ~$90/year from it."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days — you must own the stock before that date to receive the dividend."}]} /><DividendTracker assets={assets} /></Card>
+                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and a $10,000 portfolio value."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your $10k portfolio, you'd earn ~$90/year from it."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days. You must own the stock before that date to receive the dividend."}]} /><DividendTracker assets={assets} /></Card>
                 </div>
                 <div style={{ marginTop: 12 }}>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} /></Card>
@@ -1663,7 +1663,7 @@ export default function AppPage() {
             ) : activeTab === "simulate" ? (
               <motion.div key="simulate" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Card><TooltipCardHeader title="Monte Carlo Simulation" sections={[
-                  { label: "What it shows", text: "Monte Carlo simulation runs 300 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes — not guarantees." },
+                  { label: "What it shows", text: "Monte Carlo simulation runs 300 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
                 ]} /><MonteCarloChart assets={assets} period={period} /></Card>
               </motion.div>
             ) : activeTab === "compare" ? (
@@ -1834,10 +1834,10 @@ export default function AppPage() {
               <p style={{ fontSize: 11, letterSpacing: 2, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 16 }}>Portfolio Snapshot</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
                 {[
-                  { label: "Return", value: data.portfolio_return != null ? `${(data.portfolio_return * 100).toFixed(1)}%` : "—" },
-                  { label: "Sharpe", value: data.sharpe_ratio != null ? data.sharpe_ratio.toFixed(2) : "—" },
-                  { label: "Volatility", value: data.portfolio_volatility != null ? `${(data.portfolio_volatility * 100).toFixed(1)}%` : "—" },
-                  { label: "Max Drawdown", value: data.max_drawdown != null ? `${(data.max_drawdown * 100).toFixed(1)}%` : "—" },
+                  { label: "Return", value: data.portfolio_return != null ? `${(data.portfolio_return * 100).toFixed(1)}%` : "N/A" },
+                  { label: "Sharpe", value: data.sharpe_ratio != null ? data.sharpe_ratio.toFixed(2) : "N/A" },
+                  { label: "Volatility", value: data.portfolio_volatility != null ? `${(data.portfolio_volatility * 100).toFixed(1)}%` : "N/A" },
+                  { label: "Max Drawdown", value: data.max_drawdown != null ? `${(data.max_drawdown * 100).toFixed(1)}%` : "N/A" },
                 ].map(({ label, value }) => (
                   <div key={label} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "12px 14px" }}>
                     <p style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 4 }}>{label}</p>

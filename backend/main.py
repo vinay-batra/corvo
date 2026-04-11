@@ -441,6 +441,12 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     # Sample paths (20)
     sample_paths = [safe_list(paths[i].tolist()) for i in range(min(20, simulations))]
 
+    # Risk metrics
+    ruin_threshold = -0.5
+    ruin_probability = float(np.mean(final_vals < ruin_threshold))
+    worst_5pct_mask = final_vals <= p5
+    expected_shortfall = float(np.mean(final_vals[worst_5pct_mask])) if worst_5pct_mask.any() else p5
+
     return {
         "horizon": horizon,
         "simulations": simulations,
@@ -451,7 +457,58 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         "final_p95": p95,
         "bands": pct_bands,
         "sample_paths": sample_paths,
+        "ruin_probability": ruin_probability,
+        "expected_shortfall": expected_shortfall,
     }
+
+
+class MonteCarloInsightRequest(BaseModel):
+    positive_prob: int
+    p5: float
+    p50: float
+    p95: float
+    ruin_probability: float
+    expected_shortfall: float
+    simulations: int = 300
+
+
+@app.post("/montecarlo/insight")
+def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "montecarlo-insight", 15, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    ruin_pct = round(req.ruin_probability * 100, 1)
+    es_pct = round(req.expected_shortfall * 100, 1)
+    p5_pct = round(req.p5 * 100, 1)
+    p50_pct = round(req.p50 * 100, 1)
+    p95_pct = round(req.p95 * 100, 1)
+
+    prompt = (
+        f"A portfolio was simulated {req.simulations} times over 1 year. Results: "
+        f"{req.positive_prob}% of simulations ended with positive returns. "
+        f"Median outcome: {p50_pct:+.1f}%. "
+        f"Worst 5% of scenarios: below {p5_pct:.1f}% (average of worst 5%: {es_pct:.1f}%). "
+        f"Best 5% of scenarios: above {p95_pct:+.1f}%. "
+        f"Probability of losing more than 50%: {ruin_pct:.1f}%. "
+        f"Write 2-3 plain English sentences for the investor. Start with 'Based on {req.simulations} simulations'. "
+        f"Be direct and specific. No markdown, no bullet points, no disclaimers."
+    )
+
+    resp = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=200,
+        system="You are a plain-English financial analyst. Write concise, jargon-free summaries for retail investors.",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return {"insight": resp.content[0].text.strip()}
 
 
 _sectors_cache: dict[str, tuple[dict, float]] = {}
@@ -543,7 +600,8 @@ def portfolio_dividends(
             info = {}
 
         raw_yield = info.get("dividendYield")
-        div_yield = safe_float(raw_yield) * 100 if raw_yield is not None else None  # as %
+        # Return as decimal (e.g. 0.0082 = 0.82%) — frontend multiplies by 100 for display
+        div_yield_decimal = safe_float(raw_yield) if raw_yield is not None else None
 
         # ex-dividend date: yfinance returns Unix timestamp or None
         ex_div_ts = info.get("exDividendDate")
@@ -554,15 +612,33 @@ def portfolio_dividends(
             except Exception:
                 ex_div_date = None
 
+        # Dividend frequency: estimate from trailingAnnualDividendRate / dividendRate
+        frequency: str | None = None
+        div_rate = safe_float(info.get("dividendRate"))
+        trailing_rate = safe_float(info.get("trailingAnnualDividendRate"))
+        if div_rate and div_rate > 0 and trailing_rate and trailing_rate > 0:
+            freq_count = round(trailing_rate / div_rate)
+            if freq_count <= 1:
+                frequency = "Annual"
+            elif freq_count == 2:
+                frequency = "Semi-Annual"
+            elif freq_count == 4:
+                frequency = "Quarterly"
+            elif freq_count == 12:
+                frequency = "Monthly"
+            else:
+                frequency = f"{freq_count}x/yr"
+
         alloc_value = portfolio_value * weight
         annual_income = round(alloc_value * safe_float(raw_yield), 2) if raw_yield else 0.0
 
         holdings.append({
             "ticker": ticker,
             "weight": round(weight, 4),
-            "dividend_yield": round(div_yield, 2) if div_yield is not None else None,
+            "dividend_yield": round(div_yield_decimal, 6) if div_yield_decimal is not None else None,
             "annual_income": annual_income,
             "ex_div_date": ex_div_date,
+            "frequency": frequency,
         })
 
     total_annual_income = round(sum(h["annual_income"] for h in holdings), 2)
@@ -1227,13 +1303,13 @@ def chat(req: ChatRequest, request: Request):
 
         investor_profile = ""
         if profile_lines:
-            investor_profile = "\n\nINVESTOR PROFILE (from onboarding — always consider this in your answers):\n" + "\n".join(f"• {l}" for l in profile_lines)
+            investor_profile = "\n\nINVESTOR PROFILE (from onboarding, always consider this in your answers):\n" + "\n".join(f"• {l}" for l in profile_lines)
 
         benchmark_text = f"\n- Benchmark Return: {benchmark_return:.2%}" if benchmark_return is not None else ""
         health_text = f"\n- Portfolio Health Score: {health_score}/100" if health_score is not None else ""
         market_text = f"\n\nREAL-TIME MARKET PRICES (fetched seconds ago):\n{req.market_context}" if req.market_context else ""
 
-        system = f"""You are Corvo AI, a personal portfolio analyst who knows this investor deeply. You have their full financial profile from onboarding and always tailor advice specifically to their situation — their age, goals, risk tolerance, and timeline.
+        system = f"""You are Corvo AI, a personal portfolio analyst who knows this investor deeply. You have their full financial profile from onboarding and always tailor advice specifically to their situation: their age, goals, risk tolerance, and timeline.
 
 CURRENT PORTFOLIO:
 - Holdings: {', '.join(f"{t} ({w:.1%})" for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"}
@@ -1244,12 +1320,13 @@ CURRENT PORTFOLIO:
 - Period: {period}{benchmark_text}{health_text}{market_text}{investor_profile}
 
 RESPONSE RULES:
-• Be concise and direct — max 180 words
+• Be concise and direct, max 180 words
 • Use bullet points (•) for lists
 • Always reference specific numbers from the portfolio
 • When the investor has a profile, reference their goals/age/timeline in your answer
 • If they ask about risk, factor in their stated risk tolerance
-• Plain text only — no markdown headers or bold"""
+• Plain text only, no markdown headers or bold
+• Never use em dashes (the character —). Use commas, colons, or rewrite naturally."""
 
         messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
         messages.append({"role": "user", "content": req.message})
@@ -1277,6 +1354,7 @@ class GenerateQuestionsRequest(BaseModel):
     difficulty: str = "beginner"
     count: int = 5
     previously_wrong: list[str] = []
+    exclude_previous: list[str] = []  # Previous question text to avoid repeating
 
 
 @app.post("/generate-questions")
@@ -1302,10 +1380,15 @@ def generate_questions(req: GenerateQuestionsRequest, request: Request):
             f"{', '.join(req.previously_wrong)}."
         )
 
+    exclude_clause = ""
+    if req.exclude_previous:
+        sample = "; ".join(req.exclude_previous[:5])
+        exclude_clause = f" Do NOT reuse or closely paraphrase any of these questions from yesterday: {sample}."
+
     system = "You are a financial education expert. Return ONLY valid JSON, no other text, no markdown fences."
     prompt = (
         f"Generate {count} multiple choice questions about {req.topic} at {req.difficulty} level."
-        f"{wrong_clause} "
+        f"{wrong_clause}{exclude_clause} "
         f"Return ONLY a JSON array, no other text:\n"
         f'[{{"question": "...", "options": ["A","B","C","D"], "correct": 0, "explanation": "..."}}]'
     )
@@ -1587,6 +1670,20 @@ def notify_me(req: NotifyMeRequest):
     return {"ok": True}
 
 
+SECTOR_PEERS: dict[str, list[str]] = {
+    "Technology": ["AAPL","MSFT","NVDA","GOOGL","META","AMD","INTC","ORCL","CRM","ADBE","QCOM","TXN","IBM","NOW","INTU"],
+    "Financial Services": ["JPM","BAC","GS","MS","WFC","C","AXP","V","MA","BRK-B","SCHW"],
+    "Healthcare": ["JNJ","PFE","MRK","ABBV","LLY","TMO","UNH","AMGN","BMY","GILD","ISRG","REGN"],
+    "Consumer Cyclical": ["AMZN","TSLA","HD","MCD","NKE","SBUX","TGT","COST","LOW","F","GM","BKNG","CMG"],
+    "Communication Services": ["GOOGL","META","NFLX","DIS","T","VZ","CMCSA"],
+    "Industrials": ["BA","CAT","GE","MMM","HON","UPS","FDX","RTX","DE"],
+    "Consumer Defensive": ["WMT","PG","KO","PEP","MO","PM","CL"],
+    "Energy": ["XOM","CVX","COP","OXY","SLB","EOG"],
+    "Utilities": ["NEE","DUK","SO","D"],
+    "Real Estate": ["AMT","PLD","CCI","EQIX","SPG"],
+    "Basic Materials": ["LIN","APD","SHW","FCX","NEM","DOW"],
+}
+
 # ── Stock detail endpoint ──────────────────────────────────────────────────────
 @app.get("/stock/{ticker}")
 def stock_detail(ticker: str, request: Request):
@@ -1649,6 +1746,54 @@ def stock_detail(ticker: str, request: Request):
         rev_growth_raw = si("revenueGrowth", None)
         profit_margin_raw = si("profitMargins", None)
         insider_raw = si("heldPercentInsiders", None)
+        gross_margin_raw = si("grossMargins", None)
+        op_margin_raw = si("operatingMargins", None)
+
+        # Analyst breakdown from recommendations DataFrame
+        analyst_buy = analyst_hold = analyst_sell = None
+        try:
+            recs = t.recommendations
+            if recs is not None and not recs.empty:
+                latest = recs.iloc[-1]
+                analyst_buy = int(latest.get("strongBuy", 0)) + int(latest.get("buy", 0))
+                analyst_hold = int(latest.get("hold", 0))
+                analyst_sell = int(latest.get("sell", 0)) + int(latest.get("strongSell", 0))
+        except Exception:
+            pass
+
+        # EPS history for earnings calendar
+        eps_current = si("trailingEps", None)
+        eps_forward = si("forwardEps", None)
+
+        # Similar stocks from same sector
+        sector = info.get("sector") or ""
+        similar_stocks: list = []
+        if sector and sector in SECTOR_PEERS:
+            peers = [p for p in SECTOR_PEERS[sector] if p != ticker][:6]
+            if peers:
+                try:
+                    ph = yf.download(peers if len(peers) > 1 else peers[0],
+                                     period="2d", interval="1d", progress=False, auto_adjust=True)
+                    closes = ph["Close"] if "Close" in ph.columns else ph
+                    for peer in peers:
+                        try:
+                            if hasattr(closes, "columns") and peer in closes.columns:
+                                vals = closes[peer].dropna().values
+                            elif not hasattr(closes, "columns"):
+                                vals = closes.dropna().values
+                            else:
+                                continue
+                            if len(vals) >= 2:
+                                price = float(vals[-1])
+                                prev = float(vals[-2])
+                                chg = round((price - prev) / prev * 100, 2) if prev else 0.0
+                                similar_stocks.append({"ticker": peer, "price": round(price, 2), "change_pct": chg})
+                            elif len(vals) == 1:
+                                similar_stocks.append({"ticker": peer, "price": round(float(vals[-1]), 2), "change_pct": 0.0})
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
 
         return {
             "ticker": ticker,
@@ -1659,7 +1804,8 @@ def stock_detail(ticker: str, request: Request):
             "market_cap": si("marketCap", 0),
             "pe_ratio": _round(si("trailingPE", None), 2),
             "forward_pe": _round(si("forwardPE", None), 2),
-            "eps": si("trailingEps", None),
+            "eps": eps_current,
+            "eps_forward": eps_forward,
             "dividend_yield": _round(divi_raw * 100, 2) if divi_raw is not None else None,
             "week52_high": si("fiftyTwoWeekHigh", None),
             "week52_low": si("fiftyTwoWeekLow", None),
@@ -1670,16 +1816,30 @@ def stock_detail(ticker: str, request: Request):
             "revenue": si("totalRevenue", None),
             "net_income": si("netIncomeToCommon", None),
             "analyst_rating": analyst_rating,
-            "sector": info.get("sector") or "",
+            "analyst_buy": analyst_buy,
+            "analyst_hold": analyst_hold,
+            "analyst_sell": analyst_sell,
+            "num_analysts": _round(si("numberOfAnalystOpinions", None), 0),
+            "target_mean": _round(si("targetMeanPrice", None), 2),
+            "target_high": _round(si("targetHighPrice", None), 2),
+            "target_low": _round(si("targetLowPrice", None), 2),
+            "sector": sector,
             "industry": info.get("industry") or "",
             "chart_1d": chart_1d,
-            # — new fields —
+            # financials
             "earnings_date": earnings_date,
             "revenue_growth": _round(rev_growth_raw * 100, 1) if rev_growth_raw is not None else None,
             "profit_margin": _round(profit_margin_raw * 100, 1) if profit_margin_raw is not None else None,
+            "gross_margin": _round(gross_margin_raw * 100, 1) if gross_margin_raw is not None else None,
+            "operating_margin": _round(op_margin_raw * 100, 1) if op_margin_raw is not None else None,
             "debt_to_equity": _round(si("debtToEquity", None), 2),
+            "current_ratio": _round(si("currentRatio", None), 2),
+            "free_cashflow": si("freeCashflow", None),
             "short_ratio": _round(si("shortRatio", None), 2),
             "insider_ownership": _round(insider_raw * 100, 1) if insider_raw is not None else None,
+            "similar_stocks": similar_stocks,
+            "bid": _round(si("bid", None), 2),
+            "ask": _round(si("ask", None), 2),
         }
     except Exception as e:
         print(f"Stock detail error for {ticker}: {e}")
@@ -1702,10 +1862,21 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
         t = yf.Ticker(ticker)
         hist = t.history(period=p, interval=interval)
         if hist.empty:
-            return {"dates": [], "prices": []}
+            return {"dates": [], "prices": [], "opens": [], "highs": [], "lows": [], "volumes": []}
+        vols = []
+        if "Volume" in hist.columns:
+            for v in hist["Volume"].tolist():
+                try:
+                    vols.append(int(v) if v is not None else 0)
+                except Exception:
+                    vols.append(0)
         return {
             "dates": [str(ts) for ts in hist.index],
             "prices": safe_list(hist["Close"].tolist()),
+            "opens": safe_list(hist["Open"].tolist()) if "Open" in hist.columns else [],
+            "highs": safe_list(hist["High"].tolist()) if "High" in hist.columns else [],
+            "lows": safe_list(hist["Low"].tolist()) if "Low" in hist.columns else [],
+            "volumes": vols,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1815,7 +1986,7 @@ def test_email(email: str = ""):
             json={
                 "from": "Corvo <hello@corvo.capital>",
                 "to": [target],
-                "subject": "Corvo — Test Email",
+                "subject": "Corvo: Test Email",
                 "html": "<p>This is a Corvo test email. Resend is working correctly.</p>",
             },
             timeout=10,
@@ -1867,7 +2038,7 @@ def unsubscribe(user_id: str = ""):
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Unsubscribed — Corvo</title>
+  <title>Unsubscribed | Corvo</title>
   <style>
     body {{ margin: 0; padding: 0; background: #0a0a0a; color: #e8e0cc;
             font-family: Arial, sans-serif; display: flex; align-items: center;
@@ -2069,7 +2240,7 @@ async def check_price_alerts():
                     )
 
                     notif_title = "Corvo Price Alert"
-                    notif_body = f"{ticker} has {'dropped' if condition == 'drops' else 'risen'} {threshold}% — now at ${current_price:.2f}"
+                    notif_body = f"{ticker} has {'dropped' if condition == 'drops' else 'risen'} {threshold}%, now at ${current_price:.2f}"
 
                     # Send push to all subscriptions for this user
                     subs_resp = requests.get(
@@ -2251,6 +2422,87 @@ def get_portfolio_history(portfolio_id: str, user_id: str = ""):
         return {"snapshots": []}
 
     return {"snapshots": resp.json()}
+
+
+@app.get("/portfolio/calc-history")
+def calc_portfolio_history(tickers: str, weights: str, period: str = "max"):
+    """
+    Compute historical portfolio cumulative returns from yfinance data.
+    Used as a fallback when portfolio_snapshots are not yet available.
+    """
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {"dates": [], "cumulative_returns": []}
+
+    try:
+        w_list = [float(w) for w in weights.split(",")]
+    except Exception:
+        w_list = [1.0 / len(ticker_list)] * len(ticker_list)
+
+    if len(w_list) != len(ticker_list):
+        w_list = [1.0 / len(ticker_list)] * len(ticker_list)
+
+    total = sum(w_list)
+    if total > 0:
+        w_list = [w / total for w in w_list]
+
+    period_map = {
+        "1W": "7d", "1M": "1mo", "3M": "3mo", "6M": "6mo",
+        "1Y": "1y", "All": "max", "max": "max",
+    }
+    yf_period = period_map.get(period, "max")
+
+    try:
+        raw = yf.download(
+            ticker_list if len(ticker_list) > 1 else ticker_list[0],
+            period=yf_period,
+            auto_adjust=True,
+            progress=False,
+        )
+        if raw is None or raw.empty:
+            return {"dates": [], "cumulative_returns": []}
+
+        if isinstance(raw.columns, pd.MultiIndex):
+            lvl0 = raw.columns.get_level_values(0)
+            close_df = raw["Close"] if "Close" in lvl0 else raw["Adj Close"]
+        else:
+            close_df = raw[["Close"]].rename(columns={"Close": ticker_list[0]})
+
+        close_df = close_df.dropna(how="all")
+
+        if len(ticker_list) == 1:
+            col_name = ticker_list[0] if ticker_list[0] in close_df.columns else close_df.columns[0]
+            series = close_df[col_name].dropna()
+            if len(series) < 2:
+                return {"dates": [], "cumulative_returns": []}
+            port_value = series / series.iloc[0]
+        else:
+            port_value = None
+            avail_total = 0.0
+            for t, w in zip(ticker_list, w_list):
+                if t not in close_df.columns:
+                    continue
+                col = close_df[t].dropna()
+                if len(col) < 2:
+                    continue
+                norm = col / col.iloc[0]
+                port_value = norm * w if port_value is None else port_value.add(norm * w, fill_value=0)
+                avail_total += w
+            if port_value is None or avail_total == 0:
+                return {"dates": [], "cumulative_returns": []}
+            if avail_total < 1.0:
+                port_value = port_value / avail_total
+
+        port_value = port_value.dropna()
+        if len(port_value) < 2:
+            return {"dates": [], "cumulative_returns": []}
+
+        cum_returns = [round(float(v) - 1.0, 6) for v in port_value.values]
+        dates = [str(d.date()) if hasattr(d, "date") else str(d)[:10] for d in port_value.index]
+        return {"dates": dates, "cumulative_returns": cum_returns}
+
+    except Exception:
+        return {"dates": [], "cumulative_returns": []}
 
 
 # ── Tax Loss Harvesting ────────────────────────────────────────────────────────
@@ -2660,10 +2912,11 @@ def _generate_digest_summary(display_name: str, portfolio_blocks: list[dict]) ->
             f"You are a personal financial analyst writing a weekly portfolio digest for {name_str}.\n\n"
             f"Portfolio performance this week:\n" + "\n".join(pf_lines) + "\n\n"
             "Write exactly 2 paragraphs:\n"
-            "Paragraph 1: Summarise overall performance for the week — highlight the key return, "
+            "Paragraph 1: Summarise overall performance for the week: highlight the key return, "
             "what drove it, and compare good vs bad days.\n"
-            "Paragraph 2: One forward-looking observation — a risk, opportunity, or rebalancing thought.\n"
-            "Be direct, specific, and concise. Max 60 words per paragraph. No bullet points. No preamble."
+            "Paragraph 2: One forward-looking observation: a risk, opportunity, or rebalancing thought.\n"
+            "Be direct, specific, and concise. Max 60 words per paragraph. No bullet points. No preamble. "
+            "Never use em dashes (the — character). Use commas, colons, or rewrite naturally."
         )
         resp = client.messages.create(
             model="claude-sonnet-4-20250514",
@@ -2698,8 +2951,8 @@ def _build_digest_html(display_name: str, user_id: str, portfolio_blocks: list[d
         tickers = pf.get("tickers", [])
 
         ret_color = "#5cb88a" if (ret is not None and ret >= 0) else "#e05c5c"
-        ret_str = f"{ret:+.2f}%" if ret is not None else "—"
-        best_str = f"{best:+.2f}%" if best is not None else "—"
+        ret_str = f"{ret:+.2f}%" if ret is not None else "N/A"
+        best_str = f"{best:+.2f}%" if best is not None else "N/A"
         worst_str = f"{worst:+.2f}%" if worst is not None else "—"
         sharpe_str = str(sharpe) if sharpe is not None else "—"
         ticker_str = "  ·  ".join(tickers[:6]) + ("  +" + str(len(tickers) - 6) + " more" if len(tickers) > 6 else "")
