@@ -6,6 +6,7 @@ import PostHogProvider from "@/components/PosthogProvider";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallBanner from "@/components/InstallBanner";
 import { ToastProvider } from "@/components/Toast";
+import ParticleCanvas from "@/components/ParticleCanvas";
 
 export const metadata: Metadata = {
   title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#1a1a1a" />
       </head>
       <body style={{ margin: 0, background: "#0d1117" }}>
+        <ParticleCanvas />
         <Suspense>
           <PostHogProvider>
             <ToastProvider>
