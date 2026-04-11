@@ -105,7 +105,8 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
   ];
 
   const totalW = whatIfAssets.reduce((s, a) => s + a.weight, 0);
-  const balanced = Math.abs(totalW - 1) < 0.01;
+  const normalizedPct = (i: number) =>
+    totalW > 0 ? (whatIfAssets[i].weight / totalW) * 100 : 0;
 
   return (
     <AnimatePresence>
@@ -186,9 +187,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLORS.whatif }} />
                     <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text)" }}>What-If Scenario</span>
-                    <span style={{ fontSize: 10, color: !balanced ? "#c9a84c" : "var(--text3)" }}>
-                      {(totalW * 100).toFixed(0)}%
-                    </span>
+                    <span style={{ fontSize: 10, color: "var(--text3)" }}>100%</span>
                   </div>
                   <div style={{ border: "0.5px solid rgba(91,156,246,0.3)", borderRadius: 10, padding: "12px 14px", background: "rgba(91,156,246,0.03)", marginBottom: 12 }}>
                     {whatIfAssets.map((a, i) => (
@@ -205,6 +204,9 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                             style={{ width: 44, padding: "4px 4px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 5, color: "var(--text)", fontSize: 11, fontFamily: "var(--font-mono)", outline: "none", textAlign: "center" }}
                           />
                           <span style={{ fontSize: 10, color: "var(--text3)" }}>%</span>
+                          <span style={{ fontSize: 10, color: COLORS.whatif, fontFamily: "var(--font-mono)", minWidth: 34, textAlign: "right" }}>
+                            →{normalizedPct(i).toFixed(0)}%
+                          </span>
                           <button onClick={() => removeAsset(i)}
                             style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 12 }}
                             onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}

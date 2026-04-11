@@ -45,7 +45,7 @@ export default function TermsPage() {
 
         <h2 style={S.h2}>2. Not Financial Advice</h2>
         <p style={S.p}>
-          <strong>IMPORTANT DISCLAIMER:</strong> Corvo is not a licensed financial advisor, broker, or investment adviser. Nothing on this platform — including portfolio metrics, health scores, AI chat responses, generated reports, or any other content — constitutes financial, investment, legal, or tax advice.
+          <strong>IMPORTANT DISCLAIMER:</strong> Corvo is not a licensed financial advisor, broker, or investment adviser. Nothing on this platform (including portfolio metrics, health scores, AI chat responses, generated reports, or any other content) constitutes financial, investment, legal, or tax advice.
         </p>
         <p style={S.p}>
           All analysis is based on historical data and mathematical models. Past performance does not guarantee future results. Market data may be delayed or inaccurate. Always consult a qualified, licensed financial professional before making any investment decisions.

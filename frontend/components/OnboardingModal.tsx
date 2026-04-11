@@ -137,7 +137,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
                 Welcome to Corvo
               </h2>
               <p style={{ fontSize: 14, color: C.cream3, marginBottom: 32, lineHeight: 1.7 }}>
-                Your AI-powered portfolio intelligence platform — analyze risk, track performance, and grow smarter.
+                Your AI-powered portfolio intelligence platform: analyze risk, track performance, and grow smarter.
               </p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 32 }}>

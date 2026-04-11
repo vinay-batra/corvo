@@ -7,7 +7,7 @@ import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallBanner from "@/components/InstallBanner";
 
 export const metadata: Metadata = {
-  title: "Corvo — Free Portfolio Analytics & AI Investing Tools",
+  title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
   description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -29,16 +29,16 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "Corvo — Free Portfolio Analytics & AI Investing Tools",
+    title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
     description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
     url: "https://corvo.capital",
     siteName: "Corvo",
-    images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630, alt: "Corvo — Free Portfolio Analytics & AI Investing Tools" }],
+    images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630, alt: "Corvo: Free Portfolio Analytics & AI Investing Tools" }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Corvo — Free Portfolio Analytics & AI Investing Tools",
+    title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
     description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
     images: ["https://corvo.capital/og-image.png"],
   },
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" style={{ background: "#0a0e14" }}>
+    <html lang="en" data-theme="dark" style={{ background: "#0a0e14" }}>
       <head>
         <meta name="theme-color" content="#1a1a1a" />
       </head>

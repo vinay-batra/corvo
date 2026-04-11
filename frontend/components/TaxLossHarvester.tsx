@@ -3,6 +3,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { fetchTaxLoss } from "../lib/api";
+import ErrorState from "./ErrorState";
 import { posthog } from "../lib/posthog";
 
 interface LossEntry {
@@ -85,6 +86,7 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
   const [loading, setLoading] = useState(false);
   const [noPurchasePrices, setNoPurchasePrices] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const viewTracked = useRef(false);
 
   useEffect(() => {
@@ -109,7 +111,7 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
       .then((res) => setData(res ?? null))
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
-  }, [assets]);
+  }, [assets, retryCount]);
 
   return (
     <motion.div
@@ -171,9 +173,11 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
           <style>{`@keyframes tlhPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
         </div>
       ) : fetchError ? (
-        <div style={{ height: 100, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, color: "var(--text-muted)", fontSize: 12, textAlign: "center" }}>
-          <p style={{ color: "rgba(224,92,92,0.8)" }}>Unable to load data — server may be temporarily unavailable.</p>
-        </div>
+        <ErrorState
+          message="Unable to load tax loss data. The server may be temporarily unavailable."
+          onRetry={() => setRetryCount(c => c + 1)}
+          minHeight={100}
+        />
       ) : noPurchasePrices ? (
         <div
           style={{

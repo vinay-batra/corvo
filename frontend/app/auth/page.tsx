@@ -250,7 +250,7 @@ function AuthForm() {
           magicSent ? (
             <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
               style={{ marginTop: 10, padding: "10px 12px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 8, fontSize: 12, color: C.amber, textAlign: "center" }}>
-              Check your email — magic link sent.
+              Check your email. Magic link sent.
             </motion.div>
           ) : (
             <button onClick={handleMagicLink} disabled={loading}

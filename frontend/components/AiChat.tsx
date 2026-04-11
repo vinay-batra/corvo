@@ -247,7 +247,7 @@ export default function AiChat({ data, assets, goals: goalsProp }: {
             })
           );
           const lines = priceResults.filter(Boolean);
-          if (lines.length > 0) market_context = `Current prices — ${lines.join(", ")}`;
+          if (lines.length > 0) market_context = `Current prices: ${lines.join(", ")}`;
         } catch {}
       }
 
@@ -384,7 +384,7 @@ export default function AiChat({ data, assets, goals: goalsProp }: {
                   try { await navigator.clipboard.writeText(referralLink); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
                 }}
                 style={{ width: "100%", padding: "10px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: copied ? "#5cb88a" : "#c9a84c", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s" }}>
-                {copied ? "✓ Link copied!" : "Invite a Friend — Copy Link"}
+                {copied ? "✓ Link copied!" : "Invite a Friend: Copy Link"}
               </button>
             )}
           </div>

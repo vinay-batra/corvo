@@ -257,7 +257,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
   const shareOnX = () => {
     if (!user) return;
     const tweet = encodeURIComponent(
-      `I've been using Corvo for portfolio analytics — way better than Yahoo Finance. Try it free: corvo.capital?ref=${user.id} @corvocapital`
+      `I've been using Corvo for portfolio analytics. Way better than Yahoo Finance. Try it free: corvo.capital?ref=${user.id} @corvocapital`
     );
     window.open(`https://x.com/intent/tweet?text=${tweet}`, "_blank", "noopener");
   };
@@ -343,7 +343,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
             </div>
           </div>
           <Row label="Email" desc="Managed by your auth provider">
-            <span style={{ fontSize: 13, color: "var(--text3)" }}>{user?.email || "—"}</span>
+            <span style={{ fontSize: 13, color: "var(--text3)" }}>{user?.email || "N/A"}</span>
           </Row>
           <Row label="Member since">
             <span style={{ fontSize: 13, color: "var(--text3)" }}>{memberSince}</span>

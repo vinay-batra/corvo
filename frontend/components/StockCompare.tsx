@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 
@@ -9,6 +9,80 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const PALETTE = ["#c9a84c", "#b47ee0", "#5cb88a", "#e05c5c"];
 const MAX = 4;
+const AMBER = "#c9a84c";
+
+const COMMON_TICKERS: { ticker: string; name: string; type: string }[] = [
+  { ticker:"AAPL",    name:"Apple Inc.",                type:"EQUITY" },
+  { ticker:"MSFT",    name:"Microsoft Corp.",           type:"EQUITY" },
+  { ticker:"NVDA",    name:"NVIDIA Corp.",              type:"EQUITY" },
+  { ticker:"GOOGL",   name:"Alphabet Inc.",             type:"EQUITY" },
+  { ticker:"AMZN",    name:"Amazon.com Inc.",           type:"EQUITY" },
+  { ticker:"META",    name:"Meta Platforms Inc.",       type:"EQUITY" },
+  { ticker:"TSLA",    name:"Tesla Inc.",                type:"EQUITY" },
+  { ticker:"BRK-B",   name:"Berkshire Hathaway B",     type:"EQUITY" },
+  { ticker:"JPM",     name:"JPMorgan Chase & Co.",      type:"EQUITY" },
+  { ticker:"LLY",     name:"Eli Lilly and Co.",         type:"EQUITY" },
+  { ticker:"V",       name:"Visa Inc.",                 type:"EQUITY" },
+  { ticker:"UNH",     name:"UnitedHealth Group",        type:"EQUITY" },
+  { ticker:"XOM",     name:"Exxon Mobil Corp.",         type:"EQUITY" },
+  { ticker:"MA",      name:"Mastercard Inc.",           type:"EQUITY" },
+  { ticker:"AVGO",    name:"Broadcom Inc.",             type:"EQUITY" },
+  { ticker:"ORCL",    name:"Oracle Corp.",              type:"EQUITY" },
+  { ticker:"HD",      name:"Home Depot Inc.",           type:"EQUITY" },
+  { ticker:"COST",    name:"Costco Wholesale",          type:"EQUITY" },
+  { ticker:"WMT",     name:"Walmart Inc.",              type:"EQUITY" },
+  { ticker:"JNJ",     name:"Johnson & Johnson",         type:"EQUITY" },
+  { ticker:"BAC",     name:"Bank of America Corp.",     type:"EQUITY" },
+  { ticker:"NFLX",    name:"Netflix Inc.",              type:"EQUITY" },
+  { ticker:"ABBV",    name:"AbbVie Inc.",               type:"EQUITY" },
+  { ticker:"PG",      name:"Procter & Gamble Co.",      type:"EQUITY" },
+  { ticker:"KO",      name:"Coca-Cola Co.",             type:"EQUITY" },
+  { ticker:"CVX",     name:"Chevron Corp.",             type:"EQUITY" },
+  { ticker:"AMD",     name:"Advanced Micro Devices",    type:"EQUITY" },
+  { ticker:"MRK",     name:"Merck & Co.",               type:"EQUITY" },
+  { ticker:"ADBE",    name:"Adobe Inc.",                type:"EQUITY" },
+  { ticker:"QCOM",    name:"Qualcomm Inc.",             type:"EQUITY" },
+  { ticker:"CRM",     name:"Salesforce Inc.",           type:"EQUITY" },
+  { ticker:"TXN",     name:"Texas Instruments",         type:"EQUITY" },
+  { ticker:"NKE",     name:"Nike Inc.",                 type:"EQUITY" },
+  { ticker:"PEP",     name:"PepsiCo Inc.",              type:"EQUITY" },
+  { ticker:"TMO",     name:"Thermo Fisher Scientific",  type:"EQUITY" },
+  { ticker:"INTC",    name:"Intel Corp.",               type:"EQUITY" },
+  { ticker:"GS",      name:"Goldman Sachs Group",       type:"EQUITY" },
+  { ticker:"IBM",     name:"IBM Corp.",                 type:"EQUITY" },
+  { ticker:"GE",      name:"GE Aerospace",              type:"EQUITY" },
+  { ticker:"CAT",     name:"Caterpillar Inc.",          type:"EQUITY" },
+  { ticker:"DIS",     name:"Walt Disney Co.",           type:"EQUITY" },
+  { ticker:"BA",      name:"Boeing Co.",                type:"EQUITY" },
+  { ticker:"WFC",     name:"Wells Fargo & Co.",         type:"EQUITY" },
+  { ticker:"MS",      name:"Morgan Stanley",            type:"EQUITY" },
+  { ticker:"T",       name:"AT&T Inc.",                 type:"EQUITY" },
+  { ticker:"VZ",      name:"Verizon Communications",    type:"EQUITY" },
+  { ticker:"F",       name:"Ford Motor Co.",            type:"EQUITY" },
+  { ticker:"GM",      name:"General Motors Co.",        type:"EQUITY" },
+  { ticker:"SBUX",    name:"Starbucks Corp.",           type:"EQUITY" },
+  { ticker:"SPY",     name:"SPDR S&P 500 ETF",         type:"ETF" },
+  { ticker:"QQQ",     name:"Invesco QQQ Trust",         type:"ETF" },
+  { ticker:"IWM",     name:"iShares Russell 2000 ETF",  type:"ETF" },
+  { ticker:"VTI",     name:"Vanguard Total Stock Mkt",  type:"ETF" },
+  { ticker:"VOO",     name:"Vanguard S&P 500 ETF",      type:"ETF" },
+  { ticker:"GLD",     name:"SPDR Gold Shares",          type:"ETF" },
+  { ticker:"ARKK",    name:"ARK Innovation ETF",        type:"ETF" },
+  { ticker:"SCHD",    name:"Schwab US Dividend Equity", type:"ETF" },
+  { ticker:"TLT",     name:"iShares 20+ Year Treasury", type:"ETF" },
+  { ticker:"BTC-USD", name:"Bitcoin",                   type:"CRYPTO" },
+  { ticker:"ETH-USD", name:"Ethereum",                  type:"CRYPTO" },
+];
+
+function localSearch(q: string): { ticker: string; name: string; type: string }[] {
+  if (!q) return [];
+  const upper = q.toUpperCase();
+  return COMMON_TICKERS.filter(t =>
+    t.ticker.startsWith(upper) || t.name.toUpperCase().includes(upper)
+  ).slice(0, 8);
+}
+
+interface SearchResult { ticker: string; name: string; type: string; }
 
 interface StockInfo {
   ticker: string;
@@ -26,22 +100,47 @@ interface StockInfo {
 }
 
 function fmt(v: number | null, prefix = "", suffix = "", decimals = 2): string {
-  if (v == null || isNaN(v)) return "—";
+  if (v == null || isNaN(v)) return "N/A";
   if (prefix === "$" && Math.abs(v) >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
   if (prefix === "$" && Math.abs(v) >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
   return `${prefix}${v.toFixed(decimals)}${suffix}`;
 }
 
 export default function StockCompare() {
-  const [tickers, setTickers]   = useState<string[]>([]);
-  const [input, setInput]       = useState("");
-  const [stocks, setStocks]     = useState<Record<string, StockInfo>>({});
-  const [loading, setLoading]   = useState<Record<string, boolean>>({});
-  const [error, setError]       = useState("");
+  const [tickers, setTickers] = useState<string[]>([]);
+  const [stocks, setStocks]   = useState<Record<string, StockInfo>>({});
+  const [stockLoading, setStockLoading] = useState<Record<string, boolean>>({});
+  const [error, setError]     = useState("");
+
+  const [inputValue, setInputValue]       = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching]         = useState(false);
+  const [dropdownOpen, setDropdownOpen]   = useState(false);
+  const blurTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const search = useCallback(async (q: string) => {
+    if (!q) { setSearchResults([]); return; }
+    const local = localSearch(q);
+    if (local.length > 0) setSearchResults(local);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`${API_URL}/search-ticker?q=${encodeURIComponent(q)}`);
+        const d = await res.json();
+        const api: SearchResult[] = (d.results || []).map((r: any) => ({ ticker: r.ticker, name: r.name, type: r.type || "EQUITY" }));
+        const apiSet = new Set(api.map(r => r.ticker));
+        const merged = [...api, ...local.filter(l => !apiSet.has(l.ticker))].slice(0, 8);
+        setSearchResults(merged.length > 0 ? merged : local);
+      } catch { /* keep local */ }
+      setSearching(false);
+    }, 300);
+  }, []);
 
   const fetchStock = async (ticker: string, color: string) => {
-    if (stocks[ticker] || loading[ticker]) return;
-    setLoading(p => ({ ...p, [ticker]: true }));
+    if (stocks[ticker] || stockLoading[ticker]) return;
+    setStockLoading(p => ({ ...p, [ticker]: true }));
     try {
       const [infoRes, histRes] = await Promise.all([
         fetch(`${API_URL}/stock/${encodeURIComponent(ticker)}`),
@@ -49,6 +148,9 @@ export default function StockCompare() {
       ]);
       const info = await infoRes.json();
       const hist = await histRes.json();
+      const history: { t: string; p: number }[] =
+        hist.history ||
+        (hist.dates || []).map((t: string, i: number) => ({ t, p: (hist.prices || [])[i] ?? 0 }));
       setStocks(p => ({
         ...p,
         [ticker]: {
@@ -62,30 +164,36 @@ export default function StockCompare() {
           beta: info.beta ?? null,
           week52_high: info.week52_high ?? null,
           week52_low: info.week52_low ?? null,
-          history: hist.history || [],
+          history,
           color,
         },
       }));
     } catch {}
-    setLoading(p => ({ ...p, [ticker]: false }));
+    setStockLoading(p => ({ ...p, [ticker]: false }));
   };
 
-  const add = () => {
-    const t = input.trim().toUpperCase();
+  const addTicker = (ticker: string) => {
+    const t = ticker.trim().toUpperCase();
     if (!t) return;
     if (tickers.includes(t)) { setError(`${t} already added`); return; }
     if (tickers.length >= MAX) { setError(`Max ${MAX} tickers`); return; }
     setError("");
     const color = PALETTE[tickers.length];
     setTickers(prev => [...prev, t]);
-    setInput("");
+    setInputValue("");
+    setSearchResults([]);
+    setDropdownOpen(false);
     fetchStock(t, color);
+  };
+
+  const selectResult = (r: SearchResult) => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    addTicker(r.ticker);
   };
 
   const remove = (t: string) => {
     setTickers(prev => {
       const next = prev.filter(x => x !== t);
-      // Re-assign colors
       next.forEach((ticker, i) => {
         setStocks(p => p[ticker] ? { ...p, [ticker]: { ...p[ticker], color: PALETTE[i] } } : p);
       });
@@ -93,7 +201,6 @@ export default function StockCompare() {
     });
   };
 
-  // Build normalized chart data (base 100)
   const chartData = tickers
     .map(t => stocks[t])
     .filter(Boolean)
@@ -101,6 +208,7 @@ export default function StockCompare() {
       const hist = s.history;
       if (!hist.length) return null;
       const base = hist[0].p;
+      if (!base) return null;
       return {
         x: hist.map((h: any) => h.t),
         y: hist.map((h: any) => ((h.p - base) / base) * 100),
@@ -113,7 +221,6 @@ export default function StockCompare() {
     })
     .filter(Boolean);
 
-  // Correlation matrix
   const corrMatrix = tickers.map(t1 =>
     tickers.map(t2 => {
       const h1 = stocks[t1]?.history?.map((h: any) => h.p) ?? [];
@@ -131,55 +238,84 @@ export default function StockCompare() {
   );
 
   const statsRows = [
-    { label: "Price",      fn: (s: StockInfo) => fmt(s.price, "$") },
-    { label: "Mkt Cap",    fn: (s: StockInfo) => fmt(s.market_cap, "$") },
-    { label: "P/E",        fn: (s: StockInfo) => fmt(s.pe_ratio, "", "×") },
-    { label: "EPS",        fn: (s: StockInfo) => fmt(s.eps, "$") },
-    { label: "Beta",       fn: (s: StockInfo) => fmt(s.beta) },
-    { label: "52W High",   fn: (s: StockInfo) => fmt(s.week52_high, "$") },
-    { label: "52W Low",    fn: (s: StockInfo) => fmt(s.week52_low, "$") },
-    { label: "Change",     fn: (s: StockInfo) => fmt(s.change_pct, "", "%") },
+    { label: "Price",    fn: (s: StockInfo) => fmt(s.price, "$") },
+    { label: "Mkt Cap",  fn: (s: StockInfo) => fmt(s.market_cap, "$") },
+    { label: "P/E",      fn: (s: StockInfo) => fmt(s.pe_ratio, "", "x") },
+    { label: "EPS",      fn: (s: StockInfo) => fmt(s.eps, "$") },
+    { label: "Beta",     fn: (s: StockInfo) => fmt(s.beta) },
+    { label: "52W High", fn: (s: StockInfo) => fmt(s.week52_high, "$") },
+    { label: "52W Low",  fn: (s: StockInfo) => fmt(s.week52_low, "$") },
+    { label: "Change",   fn: (s: StockInfo) => fmt(s.change_pct, "", "%") },
   ];
+
+  const anyLoading = Object.values(stockLoading).some(Boolean);
 
   return (
     <div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      {/* Add ticker bar */}
       <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "14px 16px", background: "var(--card-bg)", marginBottom: 14 }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1 }}>
+        {tickers.length > 0 && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
             {tickers.map((t, i) => (
               <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 6, background: PALETTE[i] + "18", border: `0.5px solid ${PALETTE[i]}55`, fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700, color: PALETTE[i] }}>
                 {t}
-                <button onClick={() => remove(t)} style={{ background: "none", border: "none", cursor: "pointer", color: PALETTE[i], fontSize: 12, padding: 0, lineHeight: 1 }}>✕</button>
+                <button onClick={() => remove(t)} style={{ background: "none", border: "none", cursor: "pointer", color: PALETTE[i], fontSize: 12, padding: 0, lineHeight: 1, opacity: 0.7 }}>x</button>
               </span>
             ))}
           </div>
-          {tickers.length < MAX && (
-            <div style={{ display: "flex", gap: 6 }}>
-              <input value={input} onChange={e => { setInput(e.target.value.toUpperCase()); setError(""); }}
-                onKeyDown={e => e.key === "Enter" && add()}
-                placeholder="Add ticker…"
-                style={{ width: 110, padding: "7px 10px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12, fontFamily: "var(--font-mono)", outline: "none" }}
+        )}
+
+        {tickers.length < MAX && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ position: "relative", flex: 1, zIndex: 50 }}>
+              <input
+                value={inputValue}
+                onChange={e => { setInputValue(e.target.value.toUpperCase()); setError(""); search(e.target.value); }}
+                onFocus={() => { setDropdownOpen(true); if (inputValue) search(inputValue); }}
+                onBlur={() => { blurTimer.current = setTimeout(() => setDropdownOpen(false), 180); }}
+                onKeyDown={e => { if (e.key === "Enter" && inputValue) addTicker(inputValue); if (e.key === "Escape") setDropdownOpen(false); }}
+                placeholder="Search ticker or company name..."
+                style={{ width: "100%", padding: "8px 12px", background: "var(--bg3)", border: `0.5px solid ${dropdownOpen && inputValue ? AMBER + "66" : "var(--border)"}`, borderRadius: 8, color: "var(--text)", fontSize: 12, fontFamily: "var(--font-mono)", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
               />
-              <button onClick={add}
-                style={{ padding: "7px 14px", background: "var(--text)", border: "none", borderRadius: 8, color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                Add
-              </button>
+              {searching && <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
+              <AnimatePresence>
+                {dropdownOpen && searchResults.length > 0 && (
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, zIndex: 100, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                    {searchResults.map((r, idx) => (
+                      <div key={idx}
+                        onMouseDown={e => { e.preventDefault(); if (blurTimer.current) clearTimeout(blurTimer.current); selectResult(r); }}
+                        style={{ padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: idx < searchResults.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none", transition: "background 0.1s" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(201,168,76,0.06)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        <div>
+                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: AMBER, fontWeight: 700 }}>{r.ticker}</div>
+                          <div style={{ fontSize: 10, color: "var(--text3)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
+                        </div>
+                        <span style={{ fontSize: 8, background: "rgba(201,168,76,0.1)", color: AMBER, padding: "2px 6px", borderRadius: 3, border: "1px solid rgba(201,168,76,0.2)", flexShrink: 0 }}>
+                          {r.type === "EQUITY" ? "Stock" : r.type === "ETF" ? "ETF" : r.type === "CRYPTO" ? "Crypto" : r.type}
+                        </span>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          )}
-          {Object.values(loading).some(Boolean) && (
-            <div style={{ width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-          )}
-        </div>
+            <button onClick={() => addTicker(inputValue)}
+              style={{ padding: "8px 16px", background: "var(--text)", border: "none", borderRadius: 8, color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+              Add
+            </button>
+            {anyLoading && <div style={{ width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0 }} />}
+          </div>
+        )}
+
         {error && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 8 }}>{error}</p>}
-        {tickers.length === 0 && <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>Add up to 4 tickers to compare their performance, stats, and correlation.</p>}
+        {tickers.length === 0 && <p style={{ fontSize: 12, color: "var(--text3)", marginTop: tickers.length < MAX ? 8 : 0 }}>Search and add up to 4 tickers to compare performance, stats, and correlation.</p>}
       </div>
 
       {tickers.length >= 2 && chartData.length >= 2 && (
         <>
-          {/* Normalized chart */}
           <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginBottom: 14 }}>
             <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Normalized Performance (Base 100, 1Y)</p>
             <Plot
@@ -199,7 +335,6 @@ export default function StockCompare() {
             />
           </div>
 
-          {/* Stats table */}
           <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, background: "var(--card-bg)", overflow: "hidden", marginBottom: 14 }}>
             <div style={{ padding: "12px 16px", borderBottom: "0.5px solid var(--border)" }}>
               <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Side-by-Side Stats</p>
@@ -222,7 +357,7 @@ export default function StockCompare() {
                         const s = stocks[t];
                         return (
                           <td key={t} style={{ padding: "10px 16px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12, color: PALETTE[i] }}>
-                            {loading[t] ? "…" : s ? row.fn(s) : "—"}
+                            {stockLoading[t] ? "..." : s ? row.fn(s) : "-"}
                           </td>
                         );
                       })}
@@ -233,24 +368,17 @@ export default function StockCompare() {
             </div>
           </div>
 
-          {/* Correlation heatmap */}
-          {tickers.length >= 2 && corrMatrix[0][0] !== null && (
+          {corrMatrix[0][0] !== null && (
             <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
               <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Correlation (1Y Daily Returns)</p>
               <Plot
                 data={[{
-                  z: corrMatrix,
-                  x: tickers, y: tickers,
-                  type: "heatmap",
-                  colorscale: [
-                    [0, "rgba(224,92,92,0.8)"],
-                    [0.5, "rgba(30,30,40,0.9)"],
-                    [1, "rgba(201,168,76,0.9)"],
-                  ],
+                  z: corrMatrix, x: tickers, y: tickers, type: "heatmap",
+                  colorscale: [[0,"rgba(224,92,92,0.8)"],[0.5,"rgba(30,30,40,0.9)"],[1,"rgba(201,168,76,0.9)"]],
                   zmin: -1, zmax: 1,
-                  text: corrMatrix.map(row => row.map(v => v != null ? v.toFixed(2) : "—")),
+                  text: corrMatrix.map(row => row.map(v => v != null ? v.toFixed(2) : "-")),
                   texttemplate: "%{text}",
-                  hovertemplate: "%{x} × %{y}: %{z:.2f}<extra></extra>",
+                  hovertemplate: "%{x} x %{y}: %{z:.2f}<extra></extra>",
                   showscale: true,
                 } as any]}
                 layout={{
