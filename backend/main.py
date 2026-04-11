@@ -1534,7 +1534,7 @@ def get_email_html(display_name=None, email_type="welcome", user_id=None):
     features = [
         ("&#x1F4CA;", "Portfolio Analysis", "Sharpe ratio, Monte Carlo simulations, drawdown charts, and a health score for your holdings."),
         ("&#x1F916;", "AI Insights", "Ask questions about your portfolio and get real-time answers with live market context."),
-        ("&#x1F393;", "Financial Education", "Lessons, quizzes, and mini-games that teach real investing concepts &mdash; with XP and leaderboards."),
+        ("&#x1F393;", "Financial Education", "Lessons, quizzes, and mini-games that teach real investing concepts, complete with XP and leaderboards."),
     ]
 
     feature_rows = ""
