@@ -763,6 +763,8 @@ export default function AppPage() {
   const [perfRange, setPerfRange] = useState<PerfRange>("ALL");
   const [perfLoading, setPerfLoading] = useState(false);
   const autoSnapshotAttemptedRef = useRef<string | null>(null);
+  const contentRef = useRef<HTMLElement | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
   const S = useS();
@@ -1070,26 +1072,55 @@ export default function AppPage() {
   })();
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Cmd+K / Ctrl+K → command palette
+      // Cmd+K / Ctrl+K or "/" → command palette
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setPaletteOpen(o => !o);
         return;
       }
-      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
       const tag = (document.activeElement as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+      if (e.key === "/" && !isTyping && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setPaletteOpen(true);
+        return;
+      }
+      // ESC → close any open modal/drawer
+      if (e.key === "Escape") {
+        if (paletteOpen) { setPaletteOpen(false); return; }
+        if (stockTicker) { setStockTicker(null); return; }
+        if (whatIfOpen) { setWhatIfOpen(false); return; }
+        if (showGoals) { setShowGoals(false); return; }
+        if (showProfile) { setShowProfile(false); return; }
+        if (showSettings) { setShowSettings(false); return; }
+        if (showAlerts) { setShowAlerts(false); return; }
+        if (showEmailPrefs) { setShowEmailPrefs(false); return; }
+        if (showReferral) { setShowReferral(false); return; }
+        if (showShareCard) { setShowShareCard(false); return; }
+        return;
+      }
+      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
+      if (isTyping) return;
       handleAnalyzeRef.current();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [paletteOpen, stockTicker, whatIfOpen, showGoals, showProfile, showSettings, showAlerts, showEmailPrefs, showReferral, showShareCard]);
 
   // Unlock Web Audio API on first user interaction
   useEffect(() => {
     const unlock = () => { unlockAudio(); window.removeEventListener("click", unlock, true); };
     window.addEventListener("click", unlock, true);
     return () => window.removeEventListener("click", unlock, true);
+  }, []);
+
+  // Back-to-top visibility
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const onScroll = () => setShowBackToTop(el.scrollTop > 400);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
   const exportCSV = () => {
@@ -1465,7 +1496,7 @@ export default function AppPage() {
         </header>
 
         {/* Content */}
-        <main className="c-content page-fadein" style={S.content}>
+        <main ref={contentRef} className="c-content page-fadein" style={S.content}>
           {/* Setup banner (shown when user skipped onboarding) */}
           <AnimatePresence>
             {showSetupBanner && (
@@ -1874,6 +1905,15 @@ export default function AppPage() {
       <AnimatePresence>
         {showNotifPrompt && <NotificationPrompt onDismiss={() => setShowNotifPrompt(false)} />}
       </AnimatePresence>
+
+      {/* Back to top */}
+      <button
+        className={`back-to-top${showBackToTop ? " visible" : ""}`}
+        onClick={() => contentRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="Back to top"
+        title="Back to top">
+        ↑
+      </button>
 
     </div>
   );

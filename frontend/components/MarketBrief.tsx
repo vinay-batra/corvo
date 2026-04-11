@@ -67,7 +67,6 @@ export default function MarketBrief() {
     try {
       const result = await fetchMarketBrief(force);
       if (result?.error && !result?.brief) {
-        console.error("[MarketBrief] API returned error:", result.error);
         setLoadError(result.error || "Failed to load market brief.");
         setData(null);
       } else {
@@ -77,8 +76,7 @@ export default function MarketBrief() {
           viewTracked.current = true;
         }
       }
-    } catch (err) {
-      console.error("[MarketBrief] fetchMarketBrief failed:", err);
+    } catch {
       setLoadError("Could not connect to the server. Check your connection and try again.");
     } finally {
       setLoading(false);

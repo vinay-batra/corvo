@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import PostHogProvider from "@/components/PosthogProvider";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallBanner from "@/components/InstallBanner";
+import { ToastProvider } from "@/components/Toast";
 
 export const metadata: Metadata = {
   title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
@@ -53,7 +54,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ margin: 0, background: "#0d1117" }}>
         <Suspense>
           <PostHogProvider>
-            {children}
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </PostHogProvider>
         </Suspense>
         <Analytics />

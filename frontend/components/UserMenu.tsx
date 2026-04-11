@@ -23,7 +23,12 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, avatarU
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => { await supabase.auth.signOut(); window.location.href = "/"; };
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    // Clear session-state flags so they reset properly on next login
+    ["corvo_tour_completed", "corvo_onboarding_skipped", "corvo_setup_banner_dismissed", "corvo_pending_referral"].forEach(k => localStorage.removeItem(k));
+    window.location.href = "/";
+  };
 
   if (!user) return (
     <a href="/auth" style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, letterSpacing: 1, background: "transparent", border: `1px solid rgba(201,168,76,0.3)`, color: C.amber, textDecoration: "none", transition: "all 0.2s", fontWeight: 500 }}
