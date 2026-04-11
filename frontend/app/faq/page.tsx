@@ -11,7 +11,7 @@ const SECTIONS = [
     items: [
       {
         q: "What is Corvo?",
-        a: "Corvo is an AI-powered portfolio analytics platform built for retail investors. Think Bloomberg-quality insights — Sharpe ratio, drawdown analysis, Monte Carlo simulations, sector exposure — without the five-figure price tag. Enter your tickers, get institutional-grade analysis in seconds.",
+        a: "Corvo is an AI-powered portfolio analytics platform built for retail investors. Think Bloomberg-quality insights: Sharpe ratio, drawdown analysis, Monte Carlo simulations, sector exposure, without the five-figure price tag. Enter your tickers, get institutional-grade analysis in seconds.",
       },
       {
         q: "Is Corvo free?",
@@ -36,19 +36,19 @@ const SECTIONS = [
     items: [
       {
         q: "How does the AI analysis work?",
-        a: "Corvo uses Claude AI to analyze your portfolio's risk profile, diversification, and performance characteristics against market benchmarks. The AI reads your actual holdings and weights — so its insights are specific to your portfolio, not generic market commentary.",
+        a: "Corvo uses Claude AI to analyze your portfolio's risk profile, diversification, and performance characteristics against market benchmarks. The AI reads your actual holdings and weights, so its insights are specific to your portfolio, not generic market commentary.",
       },
       {
         q: "What is the Sharpe ratio?",
-        a: "The Sharpe ratio measures risk-adjusted return — how much return you're earning per unit of risk taken. A Sharpe above 1.0 is generally considered good; above 2.0 is excellent. A negative Sharpe means you'd be better off in a risk-free asset like T-bills.",
+        a: "The Sharpe ratio measures risk-adjusted return: how much return you're earning per unit of risk taken. A Sharpe above 1.0 is generally considered good; above 2.0 is excellent. A negative Sharpe means you'd be better off in a risk-free asset like T-bills.",
       },
       {
         q: "What is Monte Carlo simulation?",
-        a: "Corvo runs 300 forward simulations of your portfolio's possible outcomes based on each holding's historical volatility and correlation. You'll see a range of projected values — best case, median, and worst case — giving you a realistic picture of what to expect over your chosen time horizon.",
+        a: "Corvo runs 300 forward simulations of your portfolio's possible outcomes based on each holding's historical volatility and correlation. You'll see a range of projected values, including the best case, median, and worst case, giving you a realistic picture of what to expect over your chosen time horizon.",
       },
       {
         q: "How accurate are the AI insights?",
-        a: "AI insights are educational and informational only — not financial advice. They're based on historical data and statistical models. Markets are unpredictable, and past performance never guarantees future results. Always consult a qualified financial advisor before making investment decisions.",
+        a: "AI insights are educational and informational only, not financial advice. They're based on historical data and statistical models. Markets are unpredictable, and past performance never guarantees future results. Always consult a qualified financial advisor before making investment decisions.",
       },
       {
         q: "How does the Learn page work?",
@@ -65,7 +65,7 @@ const SECTIONS = [
     items: [
       {
         q: "How many AI chat messages do I get?",
-        a: "Free accounts get 15 AI chat messages per day. You can earn up to 40 daily messages by referring friends — each successful referral adds extra daily quota. Pro subscribers get unlimited messages.",
+        a: "Free accounts get 15 AI chat messages per day. You can earn up to 40 daily messages by referring friends, with each successful referral adding extra daily quota. Pro subscribers get unlimited messages.",
       },
       {
         q: "Can I ask the AI anything?",
@@ -74,7 +74,7 @@ const SECTIONS = [
     ],
   },
   {
-    category: "Pro — Coming Soon",
+    category: "Pro: Coming Soon",
     items: [
       {
         q: "What is Corvo Pro?",
@@ -82,7 +82,7 @@ const SECTIONS = [
       },
       {
         q: "When is Pro launching?",
-        a: "Soon. We're finishing the final features before launch. Join the waitlist from the homepage to get notified the moment Pro is available — and to lock in early-bird pricing before the public launch.",
+        a: "Soon. We're finishing the final features before launch. Join the waitlist from the homepage to get notified the moment Pro is available, and to lock in early-bird pricing before the public launch.",
       },
     ],
   },

@@ -34,10 +34,6 @@ function ParticleCanvas() {
         if (p.x > canvas.width) p.x = 0;
         if (p.y < 0) p.y = canvas.height;
         if (p.y > canvas.height) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(201,168,76,0.4)";
-        ctx.fill();
         for (let j = i + 1; j < N; j++) {
           const q = particles[j];
           const dx = p.x - q.x, dy = p.y - q.y;
@@ -556,7 +552,7 @@ function TickerTape() {
   }, []);
   const doubled = [...items, ...items];
   return (
-    <div style={{ position: "sticky", top: 58, zIndex: 99, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "hidden", background: "rgba(10,14,20,0.88)", backdropFilter: "blur(12px)" }}>
+    <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "hidden", background: "rgba(10,14,20,0.88)" }}>
       <div style={{ display: "flex", gap: 48, animation: "ticker 32s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
         {doubled.map((item, i) => {
           const up = item.change_pct >= 0;
@@ -985,7 +981,7 @@ export default function Landing() {
       </div>
 
       {/* NAV */}
-      <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid || mobileMenuOpen ? "rgba(10,14,20,0.96)" : "transparent", backdropFilter: navSolid || mobileMenuOpen ? "blur(16px)" : "none", borderBottom: navSolid || mobileMenuOpen ? "1px solid rgba(201,168,76,0.07)" : "none", transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
+      <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: "rgba(10,14,20,0.96)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(201,168,76,0.07)", transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
@@ -1201,9 +1197,9 @@ export default function Landing() {
       <section style={{ position: "relative", zIndex: 1 }}>
         <div style={{ background: "rgba(10,14,20,0.7)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(201,168,76,0.08)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
           <div className="stats-grid" style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
-            <StatItem target={liveUserCount ?? 2400} suffix="+" label="Active Users" delay={0} borderRight />
-            <StatItem target={18000} suffix="+" label="Portfolios Analyzed" delay={0.1} borderRight />
-            <StatItem target={340000} suffix="+" label="AI Insights Generated" delay={0.2} borderRight />
+            <StatItem target={liveUserCount ?? 847} suffix="+" label="Active Users" delay={0} borderRight />
+            <StatItem target={5500} suffix="+" label="Portfolios Analyzed" delay={0.1} borderRight />
+            <StatItem target={17000} suffix="+" label="AI Insights Generated" delay={0.2} borderRight />
             <StatItem target={1} suffix="s" label="Avg Analysis Time" delay={0.3} />
           </div>
         </div>
@@ -1217,7 +1213,7 @@ export default function Landing() {
               <div key={idx} style={{ width: 32, height: 32, borderRadius: "50%", background: u.c + "22", border: `2px solid ${u.c}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: u.c, marginLeft: idx === 0 ? 0 : -10, zIndex: 5 - idx, position: "relative" }}>{u.i}</div>
             ))}
           </div>
-          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", letterSpacing: 0.2 }}>Join <span style={{ color: "#c9a84c", fontWeight: 600 }}>{liveUserCount ? `${liveUserCount.toLocaleString()}+` : "2,400+"}</span> investors already using Corvo</p>
+          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", letterSpacing: 0.2 }}>Join <span style={{ color: "#c9a84c", fontWeight: 600 }}>{liveUserCount ? `${liveUserCount.toLocaleString()}+` : "847+"}</span> investors already using Corvo</p>
         </div>
       </div>
 
@@ -1395,16 +1391,16 @@ export default function Landing() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
             <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
+            <span style={{ fontSize: 11, color: "rgba(232,224,204,0.15)", marginLeft: 8 }}>© 2026 Corvo.</span>
           </div>
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", textAlign: "center" }}>© 2026 Corvo. All rights reserved.</p>
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-            <a href="/about" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>About</a>
-            <a href="/pricing" style={{ fontSize: 11, color: "rgba(201,168,76,0.5)", textDecoration: "none" }}>Pricing</a>
-            <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</a>
-            <a href="/terms" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</a>
-            <a href="/faq" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>FAQ</a>
-            <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>GitHub</a>
-            <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="x-social-link" style={{ color: "rgba(232,224,204,0.2)", textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+            <a href="/about" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>About</a>
+            <a href="/pricing" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Pricing</a>
+            <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Privacy</a>
+            <a href="/terms" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Terms</a>
+            <a href="/faq" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>FAQ</a>
+            <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>GitHub</a>
+            <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="x-social-link" style={{ color: "rgba(232,224,204,0.35)", textDecoration: "none", display: "flex", alignItems: "center", transition: "color 0.2s" }}>
               <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"/>
               </svg>
