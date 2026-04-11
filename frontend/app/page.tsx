@@ -1021,10 +1021,6 @@ export default function Landing() {
 
       {/* HERO */}
       <section style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "110px 24px 70px" }}>
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
-          <div style={{ position: "absolute", top: "-30%", left: "-20%", width: "80%", height: "80%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(201,168,76,0.08) 0%, transparent 70%)", animation: "heroGrad 18s ease infinite", backgroundSize: "300% 300%", filter: "blur(40px)" }} />
-          <div style={{ position: "absolute", bottom: "-20%", right: "-15%", width: "70%", height: "70%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(180,140,50,0.06) 0%, transparent 70%)", animation: "heroGrad 24s ease infinite reverse", backgroundSize: "300% 300%", filter: "blur(60px)" }} />
-        </div>
         <AnimatedHeroChart />
         <div style={{ position: "relative", zIndex: 1, animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 24, marginBottom: 36, background: "rgba(201,168,76,0.06)" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
