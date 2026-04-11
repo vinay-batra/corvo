@@ -412,7 +412,7 @@ function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon:
   const hiddenTransform = dir === "left" ? "translateX(-32px)" : dir === "right" ? "translateX(32px)" : "translateY(28px)";
   return (
     <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateX(0) translateY(0)" : hiddenTransform, transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s`, textAlign: "center", padding: "0 28px", position: "relative", zIndex: 1 }}>
-      <div style={{ width: 68, height: 68, borderRadius: 20, background: "rgba(201,168,76,0.07)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 0 32px rgba(201,168,76,0.06)" }}>{icon}</div>
+      <div style={{ width: 80, height: 80, borderRadius: 22, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.22)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 0 40px rgba(201,168,76,0.18), 0 0 80px rgba(201,168,76,0.08)" }}>{icon}</div>
       <p style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, color: "rgba(201,168,76,0.4)", letterSpacing: 2, marginBottom: 12 }}>{n}</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 10, letterSpacing: -0.4 }}>{title}</h3>
       <p style={{ fontSize: 13, color: "rgba(232,224,204,0.38)", lineHeight: 1.85, fontWeight: 300, maxWidth: 230, margin: "0 auto" }}>{desc}</p>
@@ -425,7 +425,7 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
   const { ref, visible } = useReveal(0.1);
   return (
     <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0) scale(1)" : "translateY(24px) scale(0.94)", transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s`, padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}>
-      <p style={{ fontFamily: "Space Mono,monospace", fontSize: 52, color: "#c9a84c", lineHeight: 0.75, marginBottom: 18, opacity: 0.55 }}>"</p>
+      <p style={{ fontFamily: "Georgia,serif", fontSize: 72, color: "#c9a84c", lineHeight: 0.75, marginBottom: 18, opacity: 0.7 }}>"</p>
       <p style={{ fontSize: 14, color: "rgba(232,224,204,0.65)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, flex: 1 }}>{text}</p>
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 18 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{name}</p>
@@ -1011,7 +1011,7 @@ export default function Landing() {
 
         <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.9, type: "spring", damping: 20, stiffness: 200 }}
-          style={{ display: "flex", gap: 12, marginBottom: 80, flexWrap: "wrap", justifyContent: "center" }}>
+          style={{ display: "flex", gap: 12, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
           {loggedIn ? (
             <Link href="/app" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Go to Dashboard →</Link>
           ) : (
@@ -1020,7 +1020,7 @@ export default function Landing() {
           <Link href="/app?demo=true" className="ghost" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c", textDecoration: "none", fontWeight: 500 }}>Try demo →</Link>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.5 }}
-          style={{ marginBottom: 60 }}>
+          style={{ marginBottom: 32 }}>
           <a href="https://www.producthunt.com/products/corvo?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-corvo" target="_blank" rel="noopener noreferrer">
             <img alt="Corvo - AI-powered portfolio analysis for real investors | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1120194&theme=dark&t=1775786806638" />
           </a>
@@ -1108,7 +1108,7 @@ export default function Landing() {
       </section>
 
       {/* SOCIAL PROOF */}
-      <div style={{ position: "relative", zIndex: 1, padding: "28px 56px", display: "flex", justifyContent: "center" }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "20px 56px", display: "flex", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ display: "flex" }}>
             {[{ i: "M", c: "#c9a84c" }, { i: "S", c: "#5cb88a" }, { i: "J", c: "#c9a84c" }, { i: "A", c: "#e05c5c" }, { i: "R", c: "#5cb88a" }].map((u, idx) => (
@@ -1120,9 +1120,9 @@ export default function Landing() {
       </div>
 
       {/* ─── FEATURE SHOWCASE — BENTO GRID ─── */}
-      <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "80px 56px 120px" }}>
+      <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "64px 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 64 }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>What Corvo Does</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,44px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1 }}>Everything your portfolio<br />actually needs</h2>
           </Reveal>
@@ -1138,16 +1138,16 @@ export default function Landing() {
       </section>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 80 }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 60 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>How It Works</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,44px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2 }}>Up and running in 60 seconds</h2>
           </Reveal>
           <div style={{ position: "relative" }}>
             {/* Animated connecting line */}
-            <div className="how-line" style={{ position: "absolute", top: 34, left: "20%", right: "20%", height: 1, zIndex: 0, overflow: "hidden", background: "rgba(201,168,76,0.08)" }}>
-              <div style={{ height: "100%", background: "linear-gradient(90deg, #c9a84c 0%, rgba(201,168,76,0.3) 50%, #c9a84c 100%)", animation: "shimmer 3s linear infinite", backgroundSize: "200% 100%" }} />
+            <div className="how-line" style={{ position: "absolute", top: 40, left: "20%", right: "20%", height: 2, zIndex: 0, overflow: "hidden", background: "rgba(201,168,76,0.15)" }}>
+              <div style={{ height: "100%", background: "linear-gradient(90deg, transparent, #c9a84c 20%, rgba(201,168,76,0.6) 50%, #c9a84c 80%, transparent)", animation: "shimmer 3s linear infinite", backgroundSize: "200% 100%" }} />
             </div>
             <div className="how-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 0, position: "relative", zIndex: 1 }}>
               <HowStep n="01" icon={<HowIconSearch />} title="Add your tickers" desc="Search any stock, ETF, or crypto. Or screenshot your brokerage and we'll import it automatically." delay={0} dir="left" />
@@ -1159,9 +1159,9 @@ export default function Landing() {
       </section>
 
       {/* ─── COMPARISON TABLE ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 56 }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 44 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Why Corvo</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1 }}>The only tool built<br />for serious investors</h2>
           </Reveal>
@@ -1211,7 +1211,7 @@ export default function Landing() {
       </section>
 
       {/* ─── INTERACTIVE DEMO CTA ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", background: "rgba(255,255,255,0.014)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 24, overflow: "hidden", position: "relative" }}>
           <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.018) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.018) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
           <div style={{ position: "absolute", top: "-30%", right: "-10%", width: "50%", height: "150%", background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 60%)", pointerEvents: "none" }} />
@@ -1235,9 +1235,9 @@ export default function Landing() {
       </section>
 
       {/* ─── TESTIMONIALS ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 60 }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Investor Stories</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>What investors are saying</h2>
           </Reveal>
@@ -1250,7 +1250,7 @@ export default function Landing() {
       </section>
 
       {/* ─── "BLOOMBERG-SERIOUS" TAGLINE ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 140px" }}>
+      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "40px 56px 80px" }}>
         <Reveal>
           <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", marginBottom: 28 }}>Our philosophy</p>
