@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import confetti from "canvas-confetti";
 
 /* ── Palette ── */
 const C = {
@@ -583,63 +584,85 @@ function useCountUpCta(target: number, active: boolean, duration = 2000) {
   return val;
 }
 
-function Step6Panel({ active }: { active: boolean }) {
-  const users = useCountUpCta(12400, active, 2000);
-  const portfolios = useCountUpCta(48000, active, 2200);
-  const free = useCountUpCta(100, active, 1200);
+function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onRestart?: () => void }) {
+  const firedRef = useRef(false);
 
-  const stats = [
-    { value: users.toLocaleString() + "+", label: "Active investors" },
-    { value: portfolios.toLocaleString() + "+", label: "Portfolios analyzed" },
-    { value: free + "%", label: "Free forever" },
+  useEffect(() => {
+    if (!active || firedRef.current) return;
+    firedRef.current = true;
+    const fire = (ratio: number, opts: confetti.Options) =>
+      confetti({ origin: { y: 0.6 }, particleCount: Math.floor(200 * ratio), colors: ["#c9a84c", "#e8e0cc", "#5cb88a", "#ffffff"], ...opts });
+    const t = setTimeout(() => {
+      fire(0.25, { spread: 26, startVelocity: 55 });
+      fire(0.2, { spread: 60 });
+      fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+      fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+      fire(0.1, { spread: 120, startVelocity: 45 });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [active]);
+
+  const completedSteps = [
+    { icon: "📁", title: "Portfolio Builder" },
+    { icon: "🤖", title: "AI Insights" },
+    { icon: "🎲", title: "Monte Carlo Simulation" },
+    { icon: "👁️", title: "Watchlist & Alerts" },
+    { icon: "🎓", title: "Learn" },
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", gap: 28, position: "relative", zIndex: 1 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", gap: 20, position: "relative", zIndex: 1, padding: "0 24px" }}>
       <ParticleCanvas />
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 520 }}>
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}>
-          <img src="/corvo-logo.svg" width={52} height={42} alt="Corvo" style={{ marginBottom: 16 }} />
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🎉</div>
         </motion.div>
         <motion.h2 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          style={{ fontSize: "clamp(22px, 4vw, 36px)", fontWeight: 700, color: C.cream, margin: "0 0 10px", lineHeight: 1.2, fontFamily: "'Space Mono', monospace" }}>
-          You&apos;ve seen what Corvo can do
+          style={{ fontSize: "clamp(20px, 3.5vw, 32px)", fontWeight: 700, color: C.cream, margin: "0 0 8px", lineHeight: 1.2, fontFamily: "'Space Mono', monospace" }}>
+          Tour complete!
         </motion.h2>
-        <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-          style={{ fontSize: 15, color: C.cream2, margin: "0 0 28px" }}>
-          Join thousands of investors already using Corvo
+        <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          style={{ fontSize: 14, color: C.cream2, margin: "0 0 20px" }}>
+          You&apos;re ready to analyze your real portfolio
         </motion.p>
 
-        {/* Stats */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-          style={{ display: "flex", gap: 28, justifyContent: "center", marginBottom: 32 }}>
-          {stats.map(s => (
-            <div key={s.label} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 26, fontWeight: 700, color: C.amber, fontFamily: "'Space Mono', monospace" }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: C.cream3, marginTop: 3 }}>{s.label}</div>
-            </div>
-          ))}
+        {/* Completion checklist */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 18px", marginBottom: 20, textAlign: "left" }}>
+          <p style={{ fontSize: 9, letterSpacing: 1.5, color: C.amber, textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>Here&apos;s what you explored</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {completedSteps.map((s, i) => (
+              <motion.div key={i} initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.07 }}
+                style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 18, height: 18, borderRadius: "50%", background: C.greenBg, border: `1px solid rgba(76,175,125,0.35)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 9, color: C.green, fontWeight: 700 }}>✓</span>
+                </div>
+                <span style={{ fontSize: 13 }}>{s.icon}</span>
+                <span style={{ fontSize: 12, color: C.cream2 }}>{s.title}</span>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
 
-        {/* Buttons */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
-          style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+        {/* CTAs */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
+          style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href="/auth"
-            style={{ padding: "14px 32px", background: C.amber, borderRadius: 12, color: C.bg, fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.3, display: "inline-block", transition: "opacity 0.2s" }}
+            style={{ padding: "13px 28px", background: C.amber, borderRadius: 12, color: C.bg, fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.3, display: "inline-block", transition: "opacity 0.2s" }}
             onMouseEnter={e => (e.currentTarget.style.opacity = "0.88")}
             onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
-            Get Started Free
+            Create Free Account
           </Link>
-          <Link href="/"
-            style={{ padding: "14px 32px", background: "transparent", border: `1px solid ${C.border2}`, borderRadius: 12, color: C.cream2, fontSize: 14, fontWeight: 500, textDecoration: "none", display: "inline-block", transition: "border-color 0.2s" }}
+          <button onClick={onRestart}
+            style={{ padding: "13px 28px", background: "transparent", border: `1px solid ${C.border2}`, borderRadius: 12, color: C.cream2, fontSize: 14, fontWeight: 500, cursor: "pointer", transition: "border-color 0.2s", fontFamily: "inherit" }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = C.amber)}
             onMouseLeave={e => (e.currentTarget.style.borderColor = C.border2)}>
-            Back to Home
-          </Link>
+            Take the tour again
+          </button>
         </motion.div>
 
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
-          style={{ marginTop: 20, fontSize: 11, color: C.cream3 }}>
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}
+          style={{ marginTop: 16, fontSize: 11, color: C.cream3 }}>
           No credit card required · Free forever · Cancel anytime
         </motion.p>
       </div>
@@ -750,12 +773,17 @@ export default function DemoPage() {
           </span>
         </div>
 
-        {/* Skip */}
-        <Link href="/" style={{ fontSize: 11, color: C.cream3, textDecoration: "none", letterSpacing: 0.5, transition: "color 0.2s", flexShrink: 0 }}
-          onMouseEnter={e => (e.currentTarget.style.color = C.amber)}
-          onMouseLeave={e => (e.currentTarget.style.color = C.cream3)}>
-          Skip tour ×
-        </Link>
+        {/* Social proof + skip */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+          <span style={{ fontSize: 10, color: C.cream3, whiteSpace: "nowrap" }}>
+            Join <span style={{ color: C.amber, fontWeight: 600 }}>2,847</span> others who have taken the tour
+          </span>
+          <Link href="/" style={{ fontSize: 11, color: C.cream3, textDecoration: "none", letterSpacing: 0.5, transition: "color 0.2s", flexShrink: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.color = C.amber)}
+            onMouseLeave={e => (e.currentTarget.style.color = C.cream3)}>
+            Skip tour ×
+          </Link>
+        </div>
       </div>
 
       {/* ── Main content ── */}
@@ -769,7 +797,7 @@ export default function DemoPage() {
             {isCta ? (
               /* Step 6: full-width CTA */
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <Panel active={step === STEPS.length - 1} />
+                <Step6Panel active={step === STEPS.length - 1} onRestart={() => goTo(0, -1)} />
               </div>
             ) : (
               <>

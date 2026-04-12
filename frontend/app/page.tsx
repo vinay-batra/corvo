@@ -1758,6 +1758,7 @@ export default function Landing() {
           <Link href="/pricing" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Pricing</Link>
           <Link href="/faq" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
           <Link href="/about" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>About</Link>
+          <Link href="/changelog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
           <Link href="/app?demo=true" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Demo</Link>
         </div>
         {/* Right side */}
@@ -1819,6 +1820,7 @@ export default function Landing() {
           <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Pricing</Link>
           <Link href="/faq" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>FAQ</Link>
           <Link href="/about" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>About</Link>
+          <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Changelog</Link>
           <Link href="/app?demo=true" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Demo</Link>
           {loggedIn ? (
             <>
@@ -2214,6 +2216,7 @@ export default function Landing() {
             <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Privacy</a>
             <a href="/terms" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Terms</a>
             <a href="/faq" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>FAQ</a>
+            <a href="/changelog" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Changelog</a>
             <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>GitHub</a>
             <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="x-social-link" style={{ color: "rgba(232,224,204,0.35)", textDecoration: "none", display: "flex", alignItems: "center", transition: "color 0.2s" }}>
               <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
