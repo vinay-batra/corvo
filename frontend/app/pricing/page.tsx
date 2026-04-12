@@ -370,6 +370,211 @@ function PricingCard({
   );
 }
 
+/* ─── ROI Counter ─── */
+function useCounter(target: number, visible: boolean, duration = 1800) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!visible) return;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      setCount(Math.floor(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [visible, target, duration]);
+  return count;
+}
+
+/* ─── ROI Calculator ─── */
+function RoiCalculator() {
+  const { ref, visible } = useReveal(0.1);
+  const bloombergAnnual = useCounter(24000, visible, 2000);
+  const compoundGain = useCounter(35000, visible, 2200);
+
+  const rows = [
+    { label: "Bloomberg Terminal", monthly: "$2,000/mo", annual: "$24,000/yr", color: "#e05c5c", strikethrough: true },
+    { label: "Yahoo Finance Pro", monthly: "$25/mo", annual: "$300/yr", color: "rgba(232,224,204,0.35)", strikethrough: false },
+    { label: "Corvo", monthly: "$0", annual: "$0/yr", color: "#5cb88a", strikethrough: false },
+  ];
+
+  return (
+    <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 20, padding: "40px 36px", overflow: "hidden", position: "relative" }}>
+          {/* Ambient */}
+          <div style={{ position: "absolute", top: -40, right: -40, width: 240, height: 240, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(224,92,92,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
+
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 12 }}>The Bloomberg Math</p>
+          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(20px,3vw,30px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1, marginBottom: 32, lineHeight: 1.2 }}>
+            What are you really paying<br />for analytics?
+          </h2>
+
+          {/* Comparison rows */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
+            {rows.map((r, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", background: i === 2 ? "rgba(92,184,138,0.06)" : "rgba(255,255,255,0.025)", border: `1px solid ${i === 0 ? "rgba(224,92,92,0.2)" : i === 2 ? "rgba(92,184,138,0.2)" : "rgba(255,255,255,0.05)"}`, borderRadius: 12, opacity: visible ? 1 : 0, transform: visible ? "translateX(0)" : "translateX(-20px)", transition: `opacity 0.6s ease ${0.15 + i * 0.12}s, transform 0.6s ease ${0.15 + i * 0.12}s` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, color: "rgba(232,224,204,0.7)", fontWeight: 500 }}>{r.label}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 20, textAlign: "right" as const }}>
+                  <span style={{ fontSize: 12, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace" }}>{r.monthly}</span>
+                  <span style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: r.color, textDecoration: r.strikethrough ? "line-through" : "none", opacity: r.strikethrough ? 0.8 : 1 }}>
+                    {i === 0 ? `$${bloombergAnnual.toLocaleString()}/yr` : r.annual}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Insight */}
+          <div style={{ background: "rgba(92,184,138,0.05)", border: "1px solid rgba(92,184,138,0.15)", borderRadius: 14, padding: "20px 24px", opacity: visible ? 1 : 0, transition: "opacity 0.7s ease 0.5s" }}>
+            <p style={{ fontSize: 14, color: "rgba(232,224,204,0.75)", lineHeight: 1.75 }}>
+              {"That's "}
+              <span style={{ fontFamily: "Space Mono,monospace", color: "#5cb88a", fontWeight: 700 }}>${bloombergAnnual.toLocaleString()}</span>
+              {" back in your portfolio every year. Compounded over 10 years at 8% returns, that's "}
+              <span style={{ fontFamily: "Space Mono,monospace", color: "#5cb88a", fontWeight: 700 }}>${compoundGain.toLocaleString()}+</span>
+              {" in additional wealth — just from not paying for Bloomberg."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Founding Member Section ─── */
+function FoundingMemberSection() {
+  const { ref, visible } = useReveal(0.1);
+  return (
+    <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: 20, padding: "44px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+          {/* Glow */}
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 60%)", pointerEvents: "none" }} />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 20, marginBottom: 20 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
+              <span style={{ fontSize: 10, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase" }}>Limited Spots</span>
+            </div>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,34px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 14, lineHeight: 1.2 }}>
+              Be a founding member
+            </h2>
+            <p style={{ fontSize: 14, color: "rgba(232,224,204,0.45)", lineHeight: 1.8, maxWidth: 480, margin: "0 auto 12px", fontWeight: 300 }}>
+              Pro is coming soon. Founding members lock in <strong style={{ color: "#c9a84c", fontWeight: 600 }}>50% off forever</strong>. Join the waitlist now before the price is set.
+            </p>
+            <p style={{ fontSize: 12, color: "rgba(201,168,76,0.55)", marginBottom: 32 }}>
+              127 people already on the waitlist
+            </p>
+            <div style={{ maxWidth: 440, margin: "0 auto" }}>
+              <WaitlistCapture />
+            </div>
+            <p style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", marginTop: 16 }}>
+              No spam. Founding pricing is locked at signup, forever.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Feature Vote Section ─── */
+const FEATURE_DEFS = [
+  { id: "ai-chat", label: "Unlimited AI Chat", desc: "No daily message caps, ever", icon: "✦" },
+  { id: "options", label: "Options Chain", desc: "Live options flow & Greeks", icon: "◈" },
+  { id: "tax-docs", label: "Tax Documents", desc: "Automated gain/loss PDF reports", icon: "◎" },
+  { id: "mobile", label: "Mobile App", desc: "Native iOS & Android apps", icon: "◷" },
+  { id: "brokerage", label: "Brokerage Connect", desc: "Auto-sync holdings from brokers", icon: "⊞" },
+  { id: "social", label: "Social Sharing", desc: "Share portfolio insights & wins", icon: "◬" },
+];
+
+function FeatureVoteSection() {
+  const { ref, visible } = useReveal(0.1);
+  const [votes, setVotes] = useState<Record<string, number>>({});
+  const [voted, setVoted] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("corvo_feature_votes");
+      const storedVoted = localStorage.getItem("corvo_feature_voted");
+      if (stored) setVotes(JSON.parse(stored));
+      if (storedVoted) setVoted(JSON.parse(storedVoted));
+    } catch {}
+  }, []);
+
+  const handleVote = (id: string) => {
+    if (voted[id]) return;
+    const newVotes = { ...votes, [id]: (votes[id] ?? 0) + 1 };
+    const newVoted = { ...voted, [id]: true };
+    setVotes(newVotes);
+    setVoted(newVoted);
+    try {
+      localStorage.setItem("corvo_feature_votes", JSON.stringify(newVotes));
+      localStorage.setItem("corvo_feature_voted", JSON.stringify(newVoted));
+    } catch {}
+  };
+
+  const sorted = [...FEATURE_DEFS].sort((a, b) => (votes[b.id] ?? 0) - (votes[a.id] ?? 0));
+
+  return (
+    <section style={{ position: "relative", zIndex: 1, padding: "0 24px 100px" }}>
+      <div style={{ maxWidth: 880, margin: "0 auto" }}>
+        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)" }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 12 }}>Roadmap</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,32px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 10 }}>
+              Shape what we build next
+            </h2>
+            <p style={{ fontSize: 14, color: "rgba(232,224,204,0.35)", fontWeight: 300 }}>
+              Most requested features get built first. Vote for what matters to you.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+            {sorted.map((f, i) => {
+              const voteCount = votes[f.id] ?? 0;
+              const hasVoted = voted[f.id] ?? false;
+              return (
+                <div key={f.id} style={{ background: "rgba(255,255,255,0.018)", border: `1px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 14, padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: `opacity 0.6s ease ${i * 0.07}s, transform 0.6s ease ${i * 0.07}s`, position: "relative", overflow: "hidden" }}>
+                  {hasVoted && <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />}
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#c9a84c", flexShrink: 0 }}>
+                        {f.icon}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "#e8e0cc", marginBottom: 3 }}>{f.label}</p>
+                        <p style={{ fontSize: 11, color: "rgba(232,224,204,0.35)" }}>{f.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleVote(f.id)}
+                    disabled={hasVoted}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: hasVoted ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: 8, cursor: hasVoted ? "default" : "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
+                    onMouseEnter={e => { if (!hasVoted) (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.08)"; }}
+                    onMouseLeave={e => { if (!hasVoted) (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <span style={{ fontSize: 13, color: hasVoted ? "#c9a84c" : "rgba(232,224,204,0.4)" }}>{hasVoted ? "▲" : "△"}</span>
+                    <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: hasVoted ? "#c9a84c" : "rgba(232,224,204,0.4)" }}>{voteCount}</span>
+                    <span style={{ fontSize: 11, color: hasVoted ? "rgba(201,168,76,0.7)" : "rgba(232,224,204,0.3)" }}>{hasVoted ? "voted" : "upvote"}</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <p style={{ textAlign: "center", fontSize: 11, color: "rgba(232,224,204,0.2)", marginTop: 24 }}>
+            Votes are anonymous and stored locally. Results inform our roadmap.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function PricingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const [navSolid, setNavSolid] = useState(false);
@@ -507,8 +712,11 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {/* ROI CALCULATOR */}
+      <RoiCalculator />
+
       {/* PRICING CARDS */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 100px" }}>
+      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
         <div
           className="pricing-cards"
           style={{
@@ -524,6 +732,12 @@ export default function PricingPage() {
           <PricingCard isPro={true} delay={0.12} />
         </div>
       </section>
+
+      {/* FOUNDING MEMBER */}
+      <FoundingMemberSection />
+
+      {/* FEATURE VOTING */}
+      <FeatureVoteSection />
 
       {/* FAQ */}
       <section style={{ position: "relative", zIndex: 1, padding: "0 24px 100px" }}>
