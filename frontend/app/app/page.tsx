@@ -67,7 +67,6 @@ const TABS = [
   { id: "news",       label: "News",       Icon: Newspaper,        href: null },
   { id: "watchlist",  label: "Watchlist",  Icon: Eye,              href: null },
   { id: "learn",      label: "Learn",      Icon: BookOpen,         href: "/learn" },
-  { id: "ai",         label: "AI Chat",    Icon: MessageSquare,    href: null },
 ] as const;
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
@@ -795,6 +794,7 @@ export default function AppPage() {
   const tourNeededRef                           = useRef<boolean>(false);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [userId, setUserId]         = useState<string | null>(null);
   const [navProfile, setNavProfile] = useState<{ displayName: string; avatarUrl: string | null }>({ displayName: "", avatarUrl: null });
@@ -1151,9 +1151,15 @@ export default function AppPage() {
       }
       // Tab keyboard shortcuts (D, R, S, C, N, W, A) when not typing
       if (!isTyping && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        if (e.key.toLowerCase() === "a") {
+          e.preventDefault();
+          setChatOpen(v => !v);
+          sound.whoosh();
+          return;
+        }
         const navMap: Record<string, string> = {
           d: "overview", r: "risk", s: "simulate",
-          c: "compare", n: "news", w: "watchlist", a: "ai",
+          c: "compare", n: "news", w: "watchlist",
         };
         if (navMap[e.key.toLowerCase()]) {
           e.preventDefault();
@@ -1524,14 +1530,13 @@ export default function AppPage() {
                   {isActive && (
                     <motion.span
                       layoutId="tab-indicator"
-                      style={{ position: "absolute", inset: 0, borderRadius: 8, background: "var(--bg3)", border: "0.5px solid var(--border2)", zIndex: 0 }}
+                      style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: 2, borderRadius: 1, background: "#c9a84c", zIndex: 0 }}
                       transition={{ type: "spring", damping: 30, stiffness: 300 }}
                     />
                   )}
                   <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 5 }}>
                     <TabIcon size={12} />
                     {tab.label}
-                    {tab.id === "ai" && <span style={{ padding: "1px 5px", background: "var(--text)", color: "var(--bg)", borderRadius: 4, fontSize: 8, letterSpacing: 1 }}>AI</span>}
                   </span>
                 </>
               );
@@ -1546,7 +1551,7 @@ export default function AppPage() {
               style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 5, transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
               onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-              <kbd style={{ padding: "1px 5px", background: "var(--bg3)", borderRadius: 4, fontSize: 10, fontFamily: "mono", border: "0.5px solid var(--border2)" }}>?</kbd>
+              <kbd style={{ padding: "1px 5px", background: "var(--bg3)", borderRadius: 4, fontSize: 10, fontFamily: "mono", border: "0.5px solid var(--border2)" }}>⌘</kbd>
             </button>
             {/* Right panel toggle */}
             <button onClick={() => setRightPanelOpen(o => !o)} title="Market panel" aria-label="Toggle market panel"
@@ -1718,7 +1723,7 @@ export default function AppPage() {
                     input.click();
                   }}
                   onSetAlert={() => setShowAlerts(true)}
-                  onAskAI={() => setActiveTab("ai")}
+                  onAskAI={() => setChatOpen(true)}
                 />
                 <motion.div
                   className="c-metrics"
@@ -1765,7 +1770,7 @@ export default function AppPage() {
                     },
                     {
                       title: "AI Insights",
-                      content: <AiInsights data={data} assets={assets} onAskAi={() => setActiveTab("ai")} />,
+                      content: <AiInsights data={data} assets={assets} onAskAi={() => setChatOpen(true)} />,
                       sections: [
                         { label: "Plain English", text: "AI-generated observations about your portfolio's risk, diversification, and performance characteristics." },
                         { label: "Example", text: "The AI might flag that 3 of your 4 holdings are in the same sector, increasing concentration risk." },
@@ -1865,21 +1870,45 @@ export default function AppPage() {
 
       </div>{/* end S.main outer row */}
 
-      {/* AI Chat — full-screen overlay */}
-      {activeTab === "ai" && (
+      {/* AI Chat — slide-in panel */}
+      {chatOpen && (
         <AiChat
           data={data}
           assets={assets}
           goals={goals}
-          onClose={() => setActiveTab("overview")}
+          onClose={() => setChatOpen(false)}
         />
       )}
+
+      {/* Floating AI Chat button */}
+      <motion.button
+        onClick={() => setChatOpen(v => !v)}
+        title="AI Chat (A)"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.5, type: "spring", damping: 20 }}
+        style={{
+          position: "fixed", bottom: 28, right: 24, zIndex: 250,
+          width: 52, height: 52, borderRadius: "50%",
+          background: chatOpen ? "var(--bg3)" : "#c9a84c",
+          border: chatOpen ? "1px solid var(--border2)" : "none",
+          cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: chatOpen ? "none" : "0 4px 20px rgba(201,168,76,0.35)",
+          transition: "background 0.2s, box-shadow 0.2s, border 0.2s",
+        }}
+        onMouseEnter={e => { if (!chatOpen) e.currentTarget.style.background = "#d4b05a"; }}
+        onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.background = "#c9a84c"; }}
+      >
+        <MessageSquare size={20} color={chatOpen ? "var(--text2)" : "#0a0e14"} />
+      </motion.button>
 
       {/* Mobile bottom navigation */}
       <MobileBottomNav
         activeTab={activeTab}
         onTabChange={id => { setActiveTab(id); sound.whoosh(); }}
         onProfile={() => setShowProfile(true)}
+        onAiChat={() => { setChatOpen(v => !v); sound.whoosh(); }}
       />
 
       {/* Mobile: Add Tickers button (bottom-left) */}
