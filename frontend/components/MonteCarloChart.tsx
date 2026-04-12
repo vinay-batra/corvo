@@ -242,6 +242,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: "100%", height: 300 }}
           />
+          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.3)", textAlign: "right", margin: "2px 0 0" }}>Double-click chart to reset zoom</p>
 
           {/* AI insight box */}
           {positiveProb !== null && (

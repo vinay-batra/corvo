@@ -757,6 +757,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
                 config={{ displayModeBar: false, responsive: true, scrollZoom: true }}
                 style={{ width: "100%", height: 248 }}
               />
+              <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "right", margin: "2px 0 0", opacity: 0.6 }}>Double-click chart to reset zoom</p>
             </motion.div>
           </AnimatePresence>
         ) : (
@@ -863,14 +864,14 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
 
       {/* ── Financial Metrics ───────────────────────────────────────────────── */}
       <Card title="Financial Metrics" style={{ marginBottom: 10 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-          <div>
+        <div style={{ display: "flex", gap: 0 }}>
+          <div style={{ width: "50%", paddingRight: 16, borderRight: "0.5px solid var(--border)" }}>
             <Row label="Gross Margin"     value={info.gross_margin != null ? `${info.gross_margin.toFixed(1)}%` : "-"} />
             <Row label="Op. Margin"       value={info.operating_margin != null ? `${info.operating_margin.toFixed(1)}%` : "-"} />
             <Row label="Profit Margin"    value={info.profit_margin != null ? `${info.profit_margin.toFixed(1)}%` : "-"} />
             <Row label="Revenue Growth"   value={info.revenue_growth != null ? `${info.revenue_growth.toFixed(1)}%` : "-"} color={info.revenue_growth != null ? (info.revenue_growth >= 0 ? GREEN : RED) : undefined} />
           </div>
-          <div>
+          <div style={{ width: "50%", paddingLeft: 16 }}>
             <Row label="Debt/Equity"      value={fmt(info.debt_to_equity, "", "", 2)} />
             <Row label="Current Ratio"    value={fmt(info.current_ratio, "", "", 2)} />
             <Row label="Free Cash Flow"   value={fmt(info.free_cashflow, "$")} />
