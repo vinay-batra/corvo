@@ -387,6 +387,48 @@ export default function FaqPage() {
         </motion.div>
       </section>
 
+      {/* Loom Video Embed */}
+      <motion.section
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px 64px" }}
+      >
+        <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", textAlign: "center", marginBottom: 14 }}>
+          Video Walkthrough
+        </p>
+        <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1, textAlign: "center", marginBottom: 28 }}>
+          See Corvo in 2 minutes
+        </h2>
+        {/* TODO: Replace YOUR_LOOM_ID below with the actual Loom video ID once recorded */}
+        <div style={{
+          background: "rgba(8,11,16,0.9)",
+          border: "1px solid rgba(201,168,76,0.22)",
+          borderRadius: 16,
+          overflow: "hidden",
+          boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)",
+          position: "relative",
+          paddingTop: "56.25%", /* 16:9 aspect ratio */
+        }}>
+          <iframe
+            src="https://www.loom.com/embed/YOUR_LOOM_ID"
+            allowFullScreen
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              border: "none",
+            }}
+            title="Corvo product walkthrough"
+          />
+        </div>
+        <p style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textAlign: "center", marginTop: 12 }}>
+          No sound required · 2 min · No signup needed to watch
+        </p>
+      </motion.section>
+
       {/* Content */}
       <main
         style={{
@@ -445,7 +487,7 @@ export default function FaqPage() {
           )}
         </AnimatePresence>
 
-        {/* CTA */}
+        {/* Still have questions? */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -480,7 +522,7 @@ export default function FaqPage() {
               marginBottom: 12,
             }}
           >
-            Chat with our AI
+            We&apos;re here to help
           </h2>
           <p
             style={{
@@ -494,26 +536,41 @@ export default function FaqPage() {
             }}
           >
             Ask anything about your portfolio, investing concepts, or how Corvo
-            works. The AI has answers.
+            works. The AI has answers — or reach us directly.
           </p>
-          <Link
-            href="/app"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "12px 28px",
-              background: "#c9a84c",
-              borderRadius: 10,
-              color: "#0a0e14",
-              fontSize: 13,
-              fontWeight: 700,
-              textDecoration: "none",
-              letterSpacing: 0.3,
-            }}
-          >
-            Open AI Chat →
-          </Link>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+            <Link
+              href="/app"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "12px 28px",
+                background: "#c9a84c",
+                borderRadius: 10,
+                color: "#0a0e14",
+                fontSize: 13,
+                fontWeight: 700,
+                textDecoration: "none",
+                letterSpacing: 0.3,
+              }}
+            >
+              Ask our AI →
+            </Link>
+            <a
+              href="mailto:hello@corvo.capital"
+              style={{
+                fontSize: 12,
+                color: "rgba(232,224,204,0.35)",
+                textDecoration: "none",
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")}
+              onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}
+            >
+              or email us at hello@corvo.capital
+            </a>
+          </div>
         </motion.div>
       </main>
 
