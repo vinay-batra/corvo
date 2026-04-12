@@ -550,7 +550,6 @@ interface TeaserResult {
 }
 
 function StockTeaserSection() {
-  const { ref, visible } = useReveal(0.1);
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<TeaserResult | null>(null);
   const [cardVisible, setCardVisible] = useState(false);
@@ -606,14 +605,14 @@ function StockTeaserSection() {
   return (
     <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
       <div style={{ maxWidth: 780, margin: "0 auto" }}>
-        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1)", textAlign: "center", marginBottom: 40 }}>
+        <FadeUp style={{ textAlign: "center", marginBottom: 40 }}>
           <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Interactive Preview</p>
           <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1, marginBottom: 12 }}>Try it right now</h2>
           <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", fontWeight: 300 }}>Search any stock and see what Corvo finds</p>
-        </div>
+        </FadeUp>
 
         {/* Search bar */}
-        <div style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.9s cubic-bezier(0.16,1,0.3,1) 0.15s, transform 0.9s cubic-bezier(0.16,1,0.3,1) 0.15s", display: "flex", gap: 10, maxWidth: 540, margin: "0 auto 28px" }}>
+        <FadeUp delay={0.15} style={{ display: "flex", gap: 10, maxWidth: 540, margin: "0 auto 28px" }}>
           <div style={{ flex: 1, position: "relative" }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", opacity: 0.3, pointerEvents: "none" }}>
               <circle cx="6.5" cy="6.5" r="4.5" stroke="#e8e0cc" strokeWidth="1.4"/><line x1="10" y1="10" x2="14" y2="14" stroke="#e8e0cc" strokeWidth="1.4" strokeLinecap="round"/>
@@ -637,10 +636,10 @@ function StockTeaserSection() {
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#c9a84c"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}>
             {loading ? "…" : "Analyze →"}
           </button>
-        </div>
+        </FadeUp>
 
         {/* Suggestion chips */}
-        <div style={{ opacity: visible ? 1 : 0, transition: "opacity 0.9s cubic-bezier(0.16,1,0.3,1) 0.25s", display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
+        <FadeUp delay={0.25} style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
           {["AAPL", "MSFT", "NVDA", "TSLA", "SPY", "BTC-USD"].map(t => (
             <button key={t} onClick={() => handleSearch(t)} disabled={loading}
               style={{ padding: "5px 12px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 20, fontSize: 10, color: "rgba(201,168,76,0.7)", fontFamily: "Space Mono,monospace", cursor: loading ? "wait" : "pointer", letterSpacing: 0.5, transition: "all 0.2s" }}
@@ -649,7 +648,7 @@ function StockTeaserSection() {
               {t}
             </button>
           ))}
-        </div>
+        </FadeUp>
 
         {/* Loading skeleton */}
         {loading && (
@@ -751,16 +750,12 @@ function StockTeaserSection() {
 
 /* ─── Visual Comparison Section ─── */
 function VisualComparisonSection() {
-  const leftReveal = useReveal(0.15);
-  const rightReveal = useReveal(0.15);
-  const captionReveal = useReveal(0.2);
-
   return (
     <div style={{ marginBottom: 64 }}>
       {/* Side-by-side panels */}
       <div style={{ display: "flex", gap: 0, alignItems: "stretch", maxWidth: 960, margin: "0 auto 28px", position: "relative" }}>
         {/* Bloomberg side */}
-        <div ref={leftReveal.ref} style={{ flex: 1, opacity: leftReveal.visible ? 1 : 0, transform: leftReveal.visible ? "translateX(0)" : "translateX(-40px)", transition: "opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1)", borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid rgba(0,200,0,0.15)", borderRight: "none" }}>
+        <SlideIn direction="left" style={{ flex: 1, borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid rgba(0,200,0,0.15)", borderRight: "none" }}>
           <div style={{ background: "#0a0a00", height: "100%", padding: "22px 20px 20px", fontFamily: "monospace", position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(0,200,0,0.2)", paddingBottom: 10, marginBottom: 14 }}>
               <span style={{ fontSize: 9, color: "rgba(0,200,0,0.9)", letterSpacing: 2, textTransform: "uppercase" }}>BLOOMBERG TERMINAL</span>
@@ -793,7 +788,7 @@ function VisualComparisonSection() {
             </div>
             <div style={{ position: "absolute", top: 0, right: 0, width: "30%", height: "100%", background: "repeating-linear-gradient(0deg, transparent, transparent 11px, rgba(0,200,0,0.03) 11px, rgba(0,200,0,0.03) 12px)", pointerEvents: "none" }} />
           </div>
-        </div>
+        </SlideIn>
 
         {/* VS divider */}
         <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", background: "rgba(10,14,20,1)", position: "relative", zIndex: 2 }}>
@@ -803,7 +798,7 @@ function VisualComparisonSection() {
         </div>
 
         {/* Corvo side */}
-        <div ref={rightReveal.ref} style={{ flex: 1, opacity: rightReveal.visible ? 1 : 0, transform: rightReveal.visible ? "translateX(0)" : "translateX(40px)", transition: "opacity 0.85s cubic-bezier(0.16,1,0.3,1) 0.08s, transform 0.85s cubic-bezier(0.16,1,0.3,1) 0.08s", borderRadius: "0 16px 16px 0", overflow: "hidden", border: "1px solid rgba(201,168,76,0.2)", borderLeft: "none" }}>
+        <SlideIn direction="right" delay={0.08} style={{ flex: 1, borderRadius: "0 16px 16px 0", overflow: "hidden", border: "1px solid rgba(201,168,76,0.2)", borderLeft: "none" }}>
           <div style={{ background: "#080b10", height: "100%", padding: "22px 20px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(201,168,76,0.1)", paddingBottom: 10, marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -837,15 +832,15 @@ function VisualComparisonSection() {
               <p style={{ fontSize: 10, color: "rgba(232,224,204,0.6)", lineHeight: 1.6 }}>Strong cash flow and buyback program supports price stability.</p>
             </div>
           </div>
-        </div>
+        </SlideIn>
       </div>
 
       {/* Caption */}
-      <div ref={captionReveal.ref} style={{ textAlign: "center", opacity: captionReveal.visible ? 1 : 0, transform: captionReveal.visible ? "translateY(0)" : "translateY(12px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s, transform 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s" }}>
+      <FadeUp delay={0.2} style={{ textAlign: "center" }}>
         <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(14px,2.5vw,20px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -0.5 }}>
           Same intelligence. <span style={{ color: "#c9a84c" }}>Zero cost.</span>
         </p>
-      </div>
+      </FadeUp>
     </div>
   );
 }
@@ -1215,6 +1210,7 @@ function EmailCaptureBottom() {
   };
   return (
     <section style={{ position: "relative", zIndex: 1, padding: "100px 56px" }}>
+      <FadeUp>
       <div style={{
         maxWidth: 700, margin: "0 auto", textAlign: "center",
         background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.12)",
@@ -1251,6 +1247,7 @@ function EmailCaptureBottom() {
         {status === "error" && <p style={{ fontSize: 12, color: "#e05c5c", marginTop: 12 }}>Something went wrong. Try again.</p>}
         <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", marginTop: 18 }}>No spam. Unsubscribe at any time.</p>
       </div>
+      </FadeUp>
     </section>
   );
 }
@@ -1777,7 +1774,7 @@ export default function Landing() {
       <FeaturedInBar />
 
       {/* SOCIAL PROOF */}
-      <div style={{ position: "relative", zIndex: 1, padding: "20px 56px", display: "flex", justifyContent: "center" }}>
+      <FadeUp style={{ position: "relative", zIndex: 1, padding: "20px 56px", display: "flex", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ display: "flex" }}>
             {[{ i: "M", c: "#c9a84c" }, { i: "S", c: "#5cb88a" }, { i: "J", c: "#c9a84c" }, { i: "A", c: "#e05c5c" }, { i: "R", c: "#5cb88a" }].map((u, idx) => (
@@ -1786,7 +1783,7 @@ export default function Landing() {
           </div>
           <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", letterSpacing: 0.2 }}>Join <span style={{ color: "#c9a84c", fontWeight: 600 }}>{liveUserCount ? `${liveUserCount.toLocaleString()}+` : "847+"}</span> investors already using Corvo</p>
         </div>
-      </div>
+      </FadeUp>
 
       {/* ─── FEATURE SHOWCASE — BENTO GRID ─── */}
       <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "64px 56px 96px" }}>
@@ -1991,6 +1988,7 @@ export default function Landing() {
 
       {/* FOOTER */}
       <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 56px" }}>
+        <FadeUp>
         <div className="footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
@@ -2011,6 +2009,7 @@ export default function Landing() {
             </a>
           </div>
         </div>
+        </FadeUp>
       </footer>
     </div>
   );
