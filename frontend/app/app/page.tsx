@@ -211,6 +211,8 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [aiInsight, setAiInsight] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(false);
+  const insightKeyRef = useRef<string>("");
 
   useEffect(() => {
     try {
@@ -218,6 +220,33 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
       if (raw) setSavedPortfolios(JSON.parse(raw));
     } catch {}
   }, []);
+
+  useEffect(() => {
+    const activeNow = [
+      { id: "__current__", name: "Current", result: currentData },
+      ...savedPortfolios
+        .filter(p => selected.includes(p.id) && results[p.id])
+        .map(p => ({ id: p.id, name: p.name, result: results[p.id] })),
+    ].filter(p => p.result);
+    if (activeNow.length < 2) return;
+    const key = activeNow.map(p => p.id).sort().join(",");
+    if (key === insightKeyRef.current) return;
+    insightKeyRef.current = key;
+    setAiLoading(true); setAiInsight(""); setAiError(false);
+    const summary = activeNow.map(p => `${p.name}: Return ${((p.result.portfolio_return||0)*100).toFixed(1)}%, Sharpe ${(p.result.sharpe_ratio||0).toFixed(2)}, Volatility ${((p.result.portfolio_volatility||0)*100).toFixed(1)}%, Drawdown ${((p.result.max_drawdown||0)*100).toFixed(1)}%`).join(" | ");
+    fetch(`${API_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `Compare these portfolios and give a clear 2-3 sentence recommendation on which is better and why: ${summary}. Focus on risk-adjusted returns and max drawdown.`,
+        history: [],
+        portfolio_context: {},
+      }),
+    })
+      .then(r => r.json())
+      .then(d => { setAiInsight(d.reply || ""); setAiLoading(false); })
+      .catch(() => { setAiError(true); setAiLoading(false); });
+  }, [selected, results, currentData, savedPortfolios]);
 
   const analyzePortfolio = async (portfolio: any) => {
     if (results[portfolio.id] || loading[portfolio.id]) return;
@@ -244,7 +273,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
 
   const generateAiInsight = async () => {
     if (active.length < 2) return;
-    setAiLoading(true); setAiInsight("");
+    setAiLoading(true); setAiInsight(""); setAiError(false);
     try {
       const summary = active.map(p => `${p.name}: Return ${((p.result.portfolio_return||0)*100).toFixed(1)}%, Sharpe ${(p.result.sharpe_ratio||0).toFixed(2)}, Volatility ${((p.result.portfolio_volatility||0)*100).toFixed(1)}%, Drawdown ${((p.result.max_drawdown||0)*100).toFixed(1)}%`).join(" | ");
       const res = await fetch(`${API_URL}/chat`, {
@@ -258,7 +287,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
       });
       const d = await res.json();
       setAiInsight(d.reply || "");
-    } catch {}
+    } catch { setAiError(true); }
     setAiLoading(false);
   };
 
@@ -324,12 +353,6 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
             <InfoModal title="Portfolio Comparison" sections={[{ label: "How it works", text: "Add multiple saved portfolios to compare their risk, return, and Sharpe ratio side by side. Save a portfolio first from the Dashboard." }]} />
             {active.length > 0 && <span style={{ fontSize: 9, color: "var(--text3)" }}>· {active.length} portfolio{active.length !== 1 ? "s" : ""} · {period.toUpperCase()} · vs {benchmarkLabel}</span>}
           </div>
-          {active.length >= 2 && (
-            <button onClick={generateAiInsight} disabled={aiLoading}
-              style={{ padding: "5px 12px", fontSize: 10, borderRadius: 6, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.06)", color: "#c9a84c", cursor: aiLoading ? "default" : "pointer", letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 5 }}>
-              {aiLoading ? "Analyzing…" : <><Sparkles size={10} /> AI Insight</>}
-            </button>
-          )}
         </div>
         {savedPortfolios.length > 0 ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -459,17 +482,31 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
             </div>
           )}
 
-          {/* AI insight */}
-          {(aiInsight || aiLoading) && (
+          {/* AI insight — auto-generated */}
+          {active.length >= 2 && (aiInsight || aiLoading || aiError) && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               style={{ border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 12, padding: "16px 18px", background: "rgba(201,168,76,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
               <Sparkles size={14} color="#c9a84c" style={{ flexShrink: 0, marginTop: 2 }} />
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 9, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase", marginBottom: 6 }}>AI Comparison Insight</p>
+                <p style={{ fontSize: 9, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase", marginBottom: 8 }}>AI Comparison Insight</p>
                 {aiLoading ? (
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <div style={{ width: 10, height: 10, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-                    <span style={{ fontSize: 12, color: "var(--text3)" }}>Comparing portfolios…</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                    {[100, 88, 72].map((w, i) => (
+                      <div key={i} style={{ height: 12, width: `${w}%`, borderRadius: 4, background: "rgba(201,168,76,0.08)", animation: "pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
+                    ))}
+                    <style>{`@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.9}}`}</style>
+                  </div>
+                ) : aiError ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 12, color: "var(--text3)" }}>Could not generate insight.</span>
+                    <button
+                      onClick={generateAiInsight}
+                      style={{ fontSize: 11, color: "#c9a84c", background: "none", border: "0.5px solid rgba(201,168,76,0.3)", borderRadius: 5, padding: "3px 9px", cursor: "pointer" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.08)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
+                    >
+                      Retry
+                    </button>
                   </div>
                 ) : (
                   <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{aiInsight}</p>
@@ -1638,12 +1675,10 @@ export default function AppPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <div style={S.cardAccent} />
                     <span style={S.cardTitle}>All Positions</span>
-                    <span style={{ fontSize: 10, color: "var(--text3)" }}>· {assets.filter(a => a.ticker && a.weight > 0).length} holdings</span>
                   </div>
-                  <p style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>Unified view across your portfolio · click any row to open stock detail</p>
+                  <p style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>All saved portfolios · click any row to open stock detail</p>
                 </div>
                 <PositionsTab
-                  assets={assets}
                   onSelectTicker={t => { setStockTicker(t); setActiveTab("stocks"); }}
                 />
               </motion.div>
