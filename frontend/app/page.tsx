@@ -104,20 +104,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /* ─── Stat Item (extracted to avoid hook-in-loop) ─── */
 function StatItem({ target, suffix, label, delay, borderRight }: { target: number; suffix: string; label: string; delay: number; borderRight?: boolean }) {
-  const { ref, visible } = useReveal(0.3);
   return (
-    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(24px)", transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s`, textAlign: "center", padding: "44px 20px", borderRight: borderRight ? "1px solid rgba(201,168,76,0.08)" : "none" }}>
+    <FadeUp delay={delay} style={{ textAlign: "center", padding: "44px 20px", borderRight: borderRight ? "1px solid rgba(201,168,76,0.08)" : "none" }}>
       <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(32px,3.5vw,48px)", fontWeight: 700, color: "#c9a84c", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>
         <Counter target={target} suffix={suffix} />
       </p>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "rgba(232,224,204,0.25)", textTransform: "uppercase" }}>{label}</p>
-    </div>
+    </FadeUp>
   );
 }
 
 /* ─── Bento Card base ─── */
 function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
-  const { ref: revealRef, visible } = useReveal(0.06);
   const cardRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -137,13 +135,19 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
   };
   const { gridArea, ...restStyle } = style as any;
   return (
-    <div ref={revealRef} style={{ gridArea, height: "100%", position: "relative", opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: `opacity 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s` }}>
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
+      style={{ gridArea, height: "100%", position: "relative" }}
+    >
       <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
         style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
         {children}
       </div>
       <div ref={glowRef} style={{ position: "absolute", inset: 0, borderRadius: 20, pointerEvents: "none", opacity: 0, transition: "opacity 0.3s ease", zIndex: 2 }} />
-    </div>
+    </motion.div>
   );
 }
 
@@ -872,30 +876,40 @@ const HowIconTarget = () => (
 
 /* ─── How It Works step ─── */
 function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon: React.ReactNode; title: string; desc: string; delay: number; dir?: "left" | "right" | "up" }) {
-  const { ref, visible } = useReveal(0.1);
-  const hiddenTransform = dir === "left" ? "translateX(-32px)" : dir === "right" ? "translateX(32px)" : "translateY(28px)";
+  const initial = dir === "left" ? { opacity: 0, x: -32, y: 0 } : dir === "right" ? { opacity: 0, x: 32, y: 0 } : { opacity: 0, x: 0, y: 28 };
   return (
-    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateX(0) translateY(0)" : hiddenTransform, transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s`, textAlign: "center", padding: "0 28px", position: "relative", zIndex: 1 }}>
+    <motion.div
+      initial={initial}
+      whileInView={{ opacity: 1, x: 0, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
+      style={{ textAlign: "center", padding: "0 28px", position: "relative", zIndex: 1 }}
+    >
       <div style={{ width: 80, height: 80, borderRadius: 22, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.22)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 0 40px rgba(201,168,76,0.18), 0 0 80px rgba(201,168,76,0.08)" }}>{icon}</div>
       <p style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, color: "rgba(201,168,76,0.4)", letterSpacing: 2, marginBottom: 12 }}>{n}</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 10, letterSpacing: -0.4 }}>{title}</h3>
       <p style={{ fontSize: 13, color: "rgba(232,224,204,0.38)", lineHeight: 1.85, fontWeight: 300, maxWidth: 230, margin: "0 auto" }}>{desc}</p>
-    </div>
+    </motion.div>
   );
 }
 
 /* ─── Testimonial Card ─── */
 function TestimonialCard({ text, name, role, delay }: { text: string; name: string; role: string; delay: number }) {
-  const { ref, visible } = useReveal(0.1);
   return (
-    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0) scale(1)" : "translateY(24px) scale(0.94)", transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s`, padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}>
+    <motion.div
+      initial={{ opacity: 0, y: 24, scale: 0.94 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
+      style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}
+    >
       <p style={{ fontFamily: "Georgia,serif", fontSize: 72, color: "#c9a84c", lineHeight: 0.75, marginBottom: 18, opacity: 0.7 }}>"</p>
       <p style={{ fontSize: 14, color: "rgba(232,224,204,0.65)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, flex: 1 }}>{text}</p>
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 18 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{name}</p>
         <p style={{ fontSize: 11, color: "rgba(232,224,204,0.28)", marginTop: 3 }}>{role}</p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -991,19 +1005,16 @@ function HeroMetricCard({ label, value, color, animDelay, style }: { label: stri
 
 /* ─── Animated Table Row ─── */
 function AnimatedTableRow({ children, delay }: { children: React.ReactNode; delay: number }) {
-  const ref = useRef<HTMLTableRowElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.1 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
   return (
-    <tr ref={ref} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", opacity: visible ? 1 : 0, transform: visible ? "translateX(0)" : "translateX(-20px)", transition: `opacity 0.5s ease ${delay}s, transform 0.5s ease ${delay}s` }}>
+    <motion.tr
+      initial={{ opacity: 0, x: -20 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.5, ease: ANIM_EASE, delay }}
+      style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}
+    >
       {children}
-    </tr>
+    </motion.tr>
   );
 }
 
@@ -1246,7 +1257,6 @@ function EmailCaptureBottom() {
 
 /* ─── Featured In Bar ─── */
 function FeaturedInBar() {
-  const { ref, visible } = useReveal(0.1);
   const platforms = [
     {
       name: "Product Hunt",
@@ -1295,26 +1305,38 @@ function FeaturedInBar() {
     },
   ];
   return (
-    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(16px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(201,168,76,0.07)", background: "rgba(8,11,16,0.6)" }}>
+    <FadeUp style={{ position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(201,168,76,0.07)", background: "rgba(8,11,16,0.6)" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
         <span style={{ fontSize: 9, letterSpacing: 3, color: "rgba(201,168,76,0.45)", textTransform: "uppercase", flexShrink: 0 }}>As Seen On</span>
         <div style={{ width: 1, height: 20, background: "rgba(201,168,76,0.1)", flexShrink: 0 }} />
         {platforms.map((p, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(10px)", transition: `opacity 0.6s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.08}s, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.08}s` }}>
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6, ease: ANIM_EASE, delay: 0.1 + i * 0.08 }}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}
+          >
             {p.icon}
             <span style={{ fontSize: 12, color: "rgba(232,224,204,0.45)", fontWeight: 500, letterSpacing: 0.2 }}>{p.name}</span>
-          </div>
+          </motion.div>
         ))}
       </div>
-    </div>
+    </FadeUp>
   );
 }
 
 /* ─── Trust Card ─── */
 function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title: string; desc: string; delay: number }) {
-  const { ref, visible } = useReveal(0.1);
   return (
-    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(24px)", transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s`, background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 16 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
+      style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 16 }}
+    >
       <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.18)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(201,168,76,0.1)" }}>
         {icon}
       </div>
@@ -1322,7 +1344,7 @@ function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title:
         <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 8, letterSpacing: -0.3 }}>{title}</p>
         <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.75, fontWeight: 300 }}>{desc}</p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
