@@ -547,6 +547,7 @@ interface TeaserResult {
   volatility: string;
   insight: string;
   isLive: boolean;
+  sparkline?: number[];
 }
 
 function StockTeaserSection() {
@@ -570,10 +571,20 @@ function StockTeaserSection() {
     const fallback = STOCK_DATA[key];
 
     try {
-      const res = await fetch(`${API_URL}/stock/${key}`);
-      if (!res.ok) throw new Error("not ok");
-      const data = await res.json();
-
+      const [stockRes, histRes] = await Promise.allSettled([
+        fetch(`${API_URL}/stock/${key}`),
+        fetch(`${API_URL}/stock/${key}/history?period=7d`),
+      ]);
+      if (stockRes.status === "rejected" || !stockRes.value.ok) throw new Error("not ok");
+      const data = await stockRes.value.json();
+      let sparkline: number[] | undefined;
+      if (histRes.status === "fulfilled" && histRes.value.ok) {
+        const hist = await histRes.value.json();
+        const prices: number[] = (hist.prices ?? hist.history ?? hist.data ?? []).map((p: { close?: number; price?: number } | number) =>
+          typeof p === "number" ? p : (p.close ?? p.price ?? 0)
+        ).filter((v: number) => v > 0);
+        if (prices.length >= 2) sparkline = prices.slice(-14);
+      }
       const peRaw = data.pe_ratio as number | null;
       setResult({
         name: data.name || fallback?.name || key,
@@ -585,6 +596,7 @@ function StockTeaserSection() {
         volatility: fallback?.volatility ?? "—",
         insight: fallback?.insight ?? `${data.name || key} data loaded live from market.`,
         isLive: true,
+        sparkline,
       });
     } catch {
       // Silently fall back to hardcoded data
@@ -696,12 +708,17 @@ function StockTeaserSection() {
                       </span>
                     )}
                   </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, lineHeight: 1.1 }}>{result.price}</p>
-                    {result.changePct != null && (
-                      <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", fontWeight: 600, color: result.changePct >= 0 ? "#5cb88a" : "#e05c5c" }}>
-                        {result.changePct >= 0 ? "+" : ""}{result.changePct.toFixed(2)}%
-                      </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, lineHeight: 1.1 }}>{result.price}</p>
+                      {result.changePct != null && (
+                        <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", fontWeight: 600, color: result.changePct >= 0 ? "#5cb88a" : "#e05c5c" }}>
+                          {result.changePct >= 0 ? "+" : ""}{result.changePct.toFixed(2)}%
+                        </span>
+                      )}
+                    </div>
+                    {result.sparkline && result.sparkline.length >= 2 && (
+                      <SparklineChart prices={result.sparkline} positive={(result.changePct ?? 0) >= 0} />
                     )}
                   </div>
                 </div>
@@ -1324,6 +1341,147 @@ function FeaturedInBar() {
   );
 }
 
+/* ─── Sparkline Chart ─── */
+function SparklineChart({ prices, positive }: { prices: number[]; positive: boolean }) {
+  const w = 80, h = 32;
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const range = max - min || 1;
+  const pts = prices.map((p, i) => {
+    const x = (i / (prices.length - 1)) * w;
+    const y = h - ((p - min) / range) * h * 0.85 - h * 0.075;
+    return `${x},${y}`;
+  }).join(" ");
+  const color = positive ? "#5cb88a" : "#e05c5c";
+  const fillId = `sf-${positive ? "g" : "r"}`;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ flexShrink: 0 }}>
+      <defs>
+        <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polyline points={`${pts} ${w},${h} 0,${h}`} fill={`url(#${fillId})`} stroke="none" />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/* ─── Portfolio Growth Calculator ─── */
+function GrowthCalculatorSection() {
+  const [principal, setPrincipal] = React.useState(25000);
+  const [monthly, setMonthly] = React.useState(500);
+
+  const project = (years: number) => {
+    const r = 0.08 / 12;
+    const n = years * 12;
+    const fv = principal * Math.pow(1 + r, n) + monthly * ((Math.pow(1 + r, n) - 1) / r);
+    return fv;
+  };
+
+  const fmt = (v: number) =>
+    v >= 1_000_000
+      ? `$${(v / 1_000_000).toFixed(2)}M`
+      : `$${Math.round(v).toLocaleString()}`;
+
+  const milestones = [5, 10, 20, 30];
+  const values = milestones.map(y => project(y));
+  const maxVal = values[values.length - 1];
+
+  return (
+    <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Portfolio Calculator</p>
+          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 12 }}>See your money grow</h2>
+          <p style={{ fontSize: 15, color: "rgba(232,224,204,0.38)", fontWeight: 300 }}>Adjust the inputs and watch your portfolio project forward</p>
+        </Reveal>
+
+        <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 20, padding: "40px 48px", boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}>
+          {/* Sliders */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, marginBottom: 44 }}>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                <p style={{ fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.4)", textTransform: "uppercase" }}>Starting Portfolio</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -0.5 }}>${principal.toLocaleString()}</p>
+              </div>
+              <input type="range" min={1000} max={500000} step={1000} value={principal}
+                onChange={e => setPrincipal(Number(e.target.value))}
+                style={{ width: "100%", accentColor: "#c9a84c", cursor: "pointer", height: 4 }} />
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                <span style={{ fontSize: 9, color: "rgba(232,224,204,0.2)" }}>$1K</span>
+                <span style={{ fontSize: 9, color: "rgba(232,224,204,0.2)" }}>$500K</span>
+              </div>
+            </div>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                <p style={{ fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.4)", textTransform: "uppercase" }}>Monthly Contribution</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -0.5 }}>${monthly.toLocaleString()}</p>
+              </div>
+              <input type="range" min={0} max={5000} step={50} value={monthly}
+                onChange={e => setMonthly(Number(e.target.value))}
+                style={{ width: "100%", accentColor: "#c9a84c", cursor: "pointer", height: 4 }} />
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                <span style={{ fontSize: 9, color: "rgba(232,224,204,0.2)" }}>$0</span>
+                <span style={{ fontSize: 9, color: "rgba(232,224,204,0.2)" }}>$5K/mo</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Stat outputs */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 44 }}>
+            {[
+              { label: "10-Year Projection", value: fmt(project(10)), sublabel: "at 8% avg annual return" },
+              { label: "30-Year Projection", value: fmt(project(30)), sublabel: "at 8% avg annual return" },
+            ].map(({ label, value, sublabel }) => (
+              <div key={label} style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 12, padding: "20px 24px" }}>
+                <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 8 }}>{label}</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, marginBottom: 4 }}>{value}</p>
+                <p style={{ fontSize: 10, color: "rgba(232,224,204,0.25)" }}>{sublabel}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Bar chart */}
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-end", height: 120 }}>
+              {milestones.map((yr, i) => {
+                const pct = (values[i] / maxVal) * 100;
+                return (
+                  <div key={yr} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                    <p style={{ fontSize: 9, fontFamily: "Space Mono,monospace", color: "#c9a84c", letterSpacing: -0.3 }}>{fmt(values[i])}</p>
+                    <div style={{ width: "100%", position: "relative", height: 80 }}>
+                      <div style={{
+                        position: "absolute", bottom: 0, left: 0, right: 0,
+                        height: `${pct}%`,
+                        background: `linear-gradient(to top, rgba(201,168,76,0.7), rgba(201,168,76,0.2))`,
+                        borderRadius: "6px 6px 2px 2px",
+                        transition: "height 0.5s cubic-bezier(0.16,1,0.3,1)",
+                        boxShadow: "0 0 16px rgba(201,168,76,0.15)",
+                      }} />
+                    </div>
+                    <p style={{ fontSize: 9, color: "rgba(232,224,204,0.35)", letterSpacing: 0.5 }}>{yr}yr</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Disclaimer + CTA */}
+          <p style={{ fontSize: 10, color: "rgba(232,224,204,0.25)", lineHeight: 1.7, marginBottom: 24, textAlign: "center" as const }}>
+            These are estimates based on historical S&amp;P 500 average returns. Corvo runs 300 Monte Carlo simulations for your actual portfolio.
+          </p>
+          <div style={{ textAlign: "center" as const }}>
+            <Link href="/app" className="cta cta-shimmer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 32px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", letterSpacing: 0.2 }}>
+              Run real Monte Carlo on my portfolio →
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Trust Card ─── */
 function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title: string; desc: string; delay: number }) {
   return (
@@ -1416,6 +1574,7 @@ export default function Landing() {
   const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{ displayName: string; avatarUrl: string | null; initials: string } | null>(null);
 
   useEffect(() => {
@@ -1459,6 +1618,17 @@ export default function Landing() {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [userMenuOpen]);
+
+  useEffect(() => {
+    if (!changelogOpen) return;
+    const close = (e: MouseEvent) => {
+      const menu = document.getElementById("changelog-dropdown");
+      const btn = document.getElementById("changelog-btn");
+      if (menu && !menu.contains(e.target as Node) && btn && !btn.contains(e.target as Node)) setChangelogOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [changelogOpen]);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -1537,10 +1707,50 @@ export default function Landing() {
       </div>
       {/* NAV */}
       <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "rgba(10,14,20,0.97)" : "rgba(10,14,20,0.6)", backdropFilter: "blur(20px)", borderBottom: navSolid ? "1px solid rgba(201,168,76,0.1)" : "1px solid rgba(201,168,76,0.04)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "#e8e0cc" }}>CORVO</span>
+        {/* Logo + What's New */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
+            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "#e8e0cc" }}>CORVO</span>
+          </div>
+          <div style={{ position: "relative" }}>
+            <button
+              id="changelog-btn"
+              onClick={e => { e.stopPropagation(); setChangelogOpen(v => !v); }}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 20, cursor: "pointer", transition: "all 0.2s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.14)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.08)"; }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite", flexShrink: 0 }} />
+              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(201,168,76,0.85)", fontFamily: "Space Mono,monospace", textTransform: "uppercase" as const }}>What&apos;s New</span>
+            </button>
+            {changelogOpen && (
+              <div id="changelog-dropdown" style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, width: 280, background: "rgba(13,17,23,0.98)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, padding: "10px", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.7)", zIndex: 200 }}>
+                <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", padding: "4px 8px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", marginBottom: 6 }}>Recent updates</p>
+                {[
+                  { label: "AI Market Brief", desc: "Daily AI-generated market summary" },
+                  { label: "Sector Exposure", desc: "Portfolio sector breakdown chart" },
+                  { label: "Dividend Tracker", desc: "Estimated annual income" },
+                  { label: "Tax Loss Harvesting", desc: "AI-powered suggestions" },
+                  { label: "CSV Import", desc: "Import from Fidelity, Schwab, Robinhood" },
+                ].map(({ label, desc }) => (
+                  <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px", borderRadius: 8, transition: "background 0.15s", cursor: "default" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <span style={{ flexShrink: 0, marginTop: 2, fontSize: 7, fontWeight: 700, letterSpacing: 0.5, color: "#0a0e14", background: "#5cb88a", padding: "2px 5px", borderRadius: 4 }}>NEW</span>
+                    <div>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "#e8e0cc", marginBottom: 2 }}>{label}</p>
+                      <p style={{ fontSize: 10, color: "rgba(232,224,204,0.4)", lineHeight: 1.4 }}>{desc}</p>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: 6, paddingTop: 8, paddingLeft: 8 }}>
+                  <a href="/changelog" style={{ fontSize: 11, color: "rgba(201,168,76,0.7)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "rgba(201,168,76,0.7)")}>View full changelog →</a>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         {/* Desktop nav links */}
         <div className="nav-links" style={{ display: "flex", gap: 2, alignItems: "center" }}>
@@ -1971,6 +2181,10 @@ export default function Landing() {
           </div>
         </Reveal>
       </section>
+
+
+      {/* ─── PORTFOLIO GROWTH CALCULATOR ─── */}
+      <GrowthCalculatorSection />
 
       {/* ─── SECURITY / TRUST ─── */}
       <SecurityTrustSection />
