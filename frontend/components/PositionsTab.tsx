@@ -2,97 +2,202 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, ChevronDown, DollarSign } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const LOCAL_KEY = "corvo_saved_portfolios";
 
-type SortKey = "ticker" | "weight" | "value" | "change1d" | "change7d" | "sector";
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type SortKey = "ticker" | "company" | "weight" | "value" | "change1d" | "change7d" | "sector";
 type SortDir = "asc" | "desc";
 
-interface Position {
-  ticker: string;
-  company: string;
-  weight: number;
-  value: number | null;
-  change1d: number | null;
-  change7d: number | null;
-  sector: string;
+interface SavedPortfolio {
+  id: string;
+  name: string;
+  assets: { ticker: string; weight: number; purchasePrice?: number }[];
 }
 
 interface LiveData {
   ticker: string;
+  name: string;
+  sector: string;
   price: number;
-  change_pct: number;
-  name?: string;
-  sector?: string;
+  change_pct: number | null;
+  sparkline: number[];
 }
 
-function Pill({ value, suffix = "%" }: { value: number | null; suffix?: string }) {
+interface PositionRow {
+  ticker: string;
+  company: string;
+  sector: string;
+  portfolioId: string;
+  portfolioName: string;
+  weightFrac: number;   // 0–1 within that portfolio
+  value: number | null;
+  change1d: number | null;
+  change7d: number | null;
+}
+
+// ── Small helpers ─────────────────────────────────────────────────────────────
+
+function Pill({ value }: { value: number | null }) {
   if (value === null) return <span style={{ color: "var(--text3)", fontSize: 11 }}>—</span>;
   const pos = value >= 0;
   return (
     <span style={{
-      display: "inline-flex", alignItems: "center", gap: 3,
+      display: "inline-flex", alignItems: "center", gap: 2,
       padding: "2px 7px", borderRadius: 5, fontSize: 11, fontWeight: 600,
       background: pos ? "rgba(76,175,125,0.1)" : "rgba(224,92,92,0.1)",
       color: pos ? "#4caf7d" : "#e05c5c",
     }}>
-      {pos ? "+" : ""}{value.toFixed(2)}{suffix}
+      {pos ? "+" : ""}{value.toFixed(2)}%
     </span>
   );
 }
 
-function SortIcon({ col, active, dir }: { col: string; active: boolean; dir: SortDir }) {
-  if (!active) return <ArrowUpDown size={11} style={{ color: "var(--text3)", opacity: 0.5 }} />;
-  return dir === "asc"
-    ? <ArrowUp size={11} style={{ color: "#c9a84c" }} />
-    : <ArrowDown size={11} style={{ color: "#c9a84c" }} />;
+function SortTh({
+  label, sortKey, active, dir, onClick, style = {},
+}: {
+  label: string; sortKey: string; active: boolean; dir: SortDir;
+  onClick: () => void; style?: React.CSSProperties;
+}) {
+  return (
+    <th
+      onClick={onClick}
+      style={{
+        padding: "8px 12px", fontSize: 10, letterSpacing: 1.5,
+        color: "var(--text3)", textTransform: "uppercase" as const,
+        textAlign: "left", background: "var(--bg2)",
+        position: "sticky" as const, top: 0,
+        cursor: "pointer", userSelect: "none" as const,
+        borderBottom: "0.5px solid var(--border)", fontWeight: 600,
+        whiteSpace: "nowrap" as const, ...style,
+      }}
+    >
+      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        {label}
+        {active
+          ? (dir === "asc" ? <ArrowUp size={11} style={{ color: "#c9a84c" }} /> : <ArrowDown size={11} style={{ color: "#c9a84c" }} />)
+          : <ArrowUpDown size={11} style={{ color: "var(--text3)", opacity: 0.4 }} />}
+      </span>
+    </th>
+  );
 }
 
+function Skeleton({ w = "100%", h = 14 }: { w?: string | number; h?: number }) {
+  return (
+    <div style={{ width: w, height: h, borderRadius: 4, background: "var(--bg3)", animation: "pulse 1.4s ease-in-out infinite" }} />
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function PositionsTab({
-  assets,
-  portfolioValue,
   onSelectTicker,
 }: {
-  assets: { ticker: string; weight: number; purchasePrice?: number }[];
-  portfolioValue?: number;
   onSelectTicker: (t: string) => void;
 }) {
+  // Portfolio value input
+  const [portfolioValue, setPortfolioValue] = useState(10000);
+  const [pvInput, setPvInput] = useState("10000");
+
+  // Saved portfolios
+  const [savedPortfolios, setSavedPortfolios] = useState<SavedPortfolio[]>([]);
+  const [portfoliosLoading, setPortfoliosLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<"all" | string>("all");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Live market data
   const [liveData, setLiveData] = useState<Record<string, LiveData>>({});
-  const [loading, setLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("weight");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [liveLoading, setLiveLoading] = useState(false);
   const [flashSet, setFlashSet] = useState<Set<string>>(new Set());
   const prevPrices = useRef<Record<string, number>>({});
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const valid = assets.filter(a => a.ticker && a.weight > 0);
-  const total = valid.reduce((s, a) => s + a.weight, 0) || 1;
+  // Table
+  const [sortKey, setSortKey] = useState<SortKey>("weight");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const fetchLiveData = useCallback(async () => {
-    if (!valid.length) return;
+  // ── Load saved portfolios ──────────────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      setPortfoliosLoading(true);
+      const portfolios: SavedPortfolio[] = [];
+
+      // localStorage (works for logged-out users too)
+      try {
+        const raw = localStorage.getItem(LOCAL_KEY);
+        if (raw) {
+          const parsed: any[] = JSON.parse(raw);
+          parsed.forEach(p => {
+            if (p.id && p.name && Array.isArray(p.assets) && p.assets.length > 0) {
+              portfolios.push({ id: p.id, name: p.name, assets: p.assets });
+            }
+          });
+        }
+      } catch {}
+
+      // Supabase (logged-in users)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: pfs } = await supabase
+            .from("portfolios")
+            .select("id,name,assets")
+            .eq("user_id", user.id);
+          if (pfs) {
+            pfs.forEach((p: any) => {
+              // Skip duplicates already in localStorage
+              if (portfolios.some(lp => lp.id === p.id)) return;
+              const assets: SavedPortfolio["assets"] = Array.isArray(p.assets)
+                ? p.assets.filter((a: any) => a.ticker && a.weight > 0)
+                : [];
+              if (assets.length > 0) portfolios.push({ id: p.id, name: p.name || "Untitled", assets });
+            });
+          }
+        }
+      } catch {}
+
+      setSavedPortfolios(portfolios);
+      setPortfoliosLoading(false);
+    })();
+  }, []);
+
+  // ── Derive all unique tickers across selection ─────────────────────────────
+  const activePortfolios = selectedId === "all"
+    ? savedPortfolios
+    : savedPortfolios.filter(p => p.id === selectedId);
+
+  const allTickers = [...new Set(activePortfolios.flatMap(p => p.assets.map(a => a.ticker)))];
+
+  // ── Fetch live data ────────────────────────────────────────────────────────
+  const tickersKey = allTickers.join(",");
+
+  const fetchLive = useCallback(async () => {
+    if (!allTickers.length) return;
     try {
-      const tickers = valid.map(a => a.ticker).join(",");
-      const r = await fetch(`${API_URL}/watchlist-data?tickers=${tickers}`);
+      const r = await fetch(`${API_URL}/watchlist-data?tickers=${tickersKey}`);
       const d = await r.json();
       const map: Record<string, LiveData> = {};
       (d.results || []).forEach((s: any) => {
-        if (s?.ticker) map[s.ticker] = {
+        if (!s?.ticker) return;
+        map[s.ticker] = {
           ticker: s.ticker,
+          name: s.name ?? s.ticker,
+          sector: s.sector ?? "Other",
           price: s.price ?? 0,
           change_pct: s.change_pct ?? null,
-          name: s.name ?? s.ticker,
-          sector: s.sector ?? "—",
+          sparkline: s.sparkline ?? [],
         };
       });
 
-      // Flash changed prices
+      // Flash tickers whose prices changed
       const flashed = new Set<string>();
       Object.keys(map).forEach(t => {
         const prev = prevPrices.current[t];
-        if (prev !== undefined && Math.abs(prev - map[t].price) > 0.001) {
-          flashed.add(t);
-        }
+        if (prev !== undefined && Math.abs(prev - map[t].price) > 0.001) flashed.add(t);
         prevPrices.current[t] = map[t].price;
       });
       if (flashed.size > 0) {
@@ -102,35 +207,62 @@ export default function PositionsTab({
 
       setLiveData(map);
     } catch {}
-  }, [valid.map(a => a.ticker).join(",")]);
+  }, [tickersKey]);
 
   useEffect(() => {
-    setLoading(true);
-    fetchLiveData().finally(() => setLoading(false));
-    intervalRef.current = setInterval(fetchLiveData, 10000);
+    if (!allTickers.length) return;
+    setLiveLoading(true);
+    fetchLive().finally(() => setLiveLoading(false));
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(fetchLive, 10000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [fetchLiveData]);
+  }, [fetchLive]);
 
-  const positions: Position[] = valid.map(a => {
-    const live = liveData[a.ticker];
-    const weightFrac = a.weight / total;
-    const val = (portfolioValue && live?.price) ? portfolioValue * weightFrac : null;
-    return {
-      ticker: a.ticker,
-      company: live?.name ?? a.ticker,
-      weight: weightFrac * 100,
-      value: val,
-      change1d: live?.change_pct ?? null,
-      change7d: null, // would need separate 7-day endpoint
-      sector: live?.sector ?? "—",
-    };
+  // ── Build position rows ────────────────────────────────────────────────────
+  function build7dChange(sparkline: number[]): number | null {
+    if (sparkline.length < 2) return null;
+    const first = sparkline[0];
+    const last = sparkline[sparkline.length - 1];
+    if (!first) return null;
+    return ((last - first) / first) * 100;
+  }
+
+  const allRows: PositionRow[] = activePortfolios.flatMap(p => {
+    const total = p.assets.reduce((s, a) => s + a.weight, 0) || 1;
+    return p.assets
+      .filter(a => a.ticker && a.weight > 0)
+      .map(a => {
+        const live = liveData[a.ticker];
+        const wFrac = a.weight / total;
+        return {
+          ticker: a.ticker,
+          company: live?.name ?? a.ticker,
+          sector: live?.sector ?? "—",
+          portfolioId: p.id,
+          portfolioName: p.name,
+          weightFrac: wFrac,
+          value: portfolioValue * wFrac,
+          change1d: live?.change_pct ?? null,
+          change7d: live ? build7dChange(live.sparkline) : null,
+        };
+      });
   });
 
-  const sorted = [...positions].sort((x, y) => {
-    let a: any = x[sortKey];
-    let b: any = y[sortKey];
-    if (a === null) a = sortDir === "asc" ? Infinity : -Infinity;
-    if (b === null) b = sortDir === "asc" ? Infinity : -Infinity;
+  // ── Sort ──────────────────────────────────────────────────────────────────
+  const sorted = [...allRows].sort((x, y) => {
+    let a: any, b: any;
+    switch (sortKey) {
+      case "ticker":   a = x.ticker;      b = y.ticker;      break;
+      case "company":  a = x.company;     b = y.company;     break;
+      case "weight":   a = x.weightFrac;  b = y.weightFrac;  break;
+      case "value":    a = x.value;       b = y.value;       break;
+      case "change1d": a = x.change1d;    b = y.change1d;    break;
+      case "change7d": a = x.change7d;    b = y.change7d;    break;
+      case "sector":   a = x.sector;      b = y.sector;      break;
+      default:         a = x.weightFrac;  b = y.weightFrac;
+    }
+    if (a === null || a === undefined) a = sortDir === "asc" ? Infinity : -Infinity;
+    if (b === null || b === undefined) b = sortDir === "asc" ? Infinity : -Infinity;
     if (typeof a === "string") return sortDir === "asc" ? a.localeCompare(b) : b.localeCompare(a);
     return sortDir === "asc" ? a - b : b - a;
   });
@@ -140,150 +272,351 @@ export default function PositionsTab({
     else { setSortKey(key); setSortDir("desc"); }
   };
 
-  const colStyle: React.CSSProperties = {
-    padding: "8px 12px", fontSize: 10, letterSpacing: 1.5, color: "var(--text3)",
-    textTransform: "uppercase", textAlign: "left", background: "var(--bg2)",
-    position: "sticky", top: 0, cursor: "pointer", userSelect: "none",
-    borderBottom: "0.5px solid var(--border)", fontWeight: 600,
-    whiteSpace: "nowrap",
-  };
+  // ── Best / worst across ALL visible rows ──────────────────────────────────
+  const withChange = sorted.filter(r => r.change1d !== null);
+  const best  = withChange.length ? withChange.reduce((b, r) => (r.change1d! > b.change1d!) ? r : b) : null;
+  const worst = withChange.length ? withChange.reduce((w, r) => (r.change1d! < w.change1d!) ? r : w) : null;
 
-  const bestIdx = sorted.reduce((bi, r, i) => (r.change1d ?? -Infinity) > (sorted[bi]?.change1d ?? -Infinity) ? i : bi, 0);
-  const worstIdx = sorted.reduce((bi, r, i) => (r.change1d ?? Infinity) < (sorted[bi]?.change1d ?? Infinity) ? i : bi, 0);
+  // ── Group by portfolio (for "All" view) ───────────────────────────────────
+  const showPortfolioCol = selectedId === "all" && savedPortfolios.length > 1;
 
+  // Group sorted rows by portfolio for the group-header display
+  type Group = { portfolio: SavedPortfolio; rows: PositionRow[] };
+  const groups: Group[] = activePortfolios.map(p => ({
+    portfolio: p,
+    rows: sorted.filter(r => r.portfolioId === p.id),
+  }));
+
+  // For a single portfolio: just show flat rows. For "All": grouped.
+  const useGrouped = selectedId === "all" && savedPortfolios.length > 1;
+
+  // ── Selected portfolio label ───────────────────────────────────────────────
+  const selectedLabel = selectedId === "all"
+    ? `All Portfolios (${savedPortfolios.length})`
+    : (savedPortfolios.find(p => p.id === selectedId)?.name ?? "Portfolio");
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
       <style>{`
-        @keyframes flashGreen{0%,100%{background:transparent}40%{background:rgba(76,175,125,0.12)}}
-        @keyframes flashRed{0%,100%{background:transparent}40%{background:rgba(224,92,92,0.12)}}
-        .pos-row-flash-up{animation:flashGreen 0.8s ease-out}
-        .pos-row-flash-down{animation:flashRed 0.8s ease-out}
-        .pos-row:hover td{background:var(--bg3)!important}
+        @keyframes flashGreen{0%,100%{background:transparent}50%{background:rgba(76,175,125,0.14)}}
+        @keyframes flashRed  {0%,100%{background:transparent}50%{background:rgba(224,92,92,0.14)}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .pos-flash-up  td{animation:flashGreen .8s ease-out!important}
+        .pos-flash-down td{animation:flashRed   .8s ease-out!important}
+        .pos-row:hover td{background:rgba(255,255,255,0.025)!important}
       `}</style>
 
-      {/* Best / worst performer pills */}
-      {!loading && sorted.length > 0 && (
-        <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-          {sorted[bestIdx]?.change1d !== null && (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 12px", background: "rgba(76,175,125,0.07)", border: "0.5px solid rgba(76,175,125,0.22)", borderRadius: 20 }}>
-              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(76,175,125,0.7)", textTransform: "uppercase" }}>Best today</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4caf7d", fontFamily: "Space Mono, monospace" }}>{sorted[bestIdx].ticker}</span>
-              <Pill value={sorted[bestIdx].change1d} />
+      {/* ── Controls row ─────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+
+        {/* Portfolio selector */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setDropdownOpen(o => !o)}
+            style={{
+              display: "flex", alignItems: "center", gap: 7,
+              padding: "7px 12px", fontSize: 12, fontWeight: 500,
+              border: "0.5px solid var(--border2)", borderRadius: 9,
+              background: "var(--card-bg)", color: "var(--text)",
+              cursor: "pointer", whiteSpace: "nowrap",
+            }}
+          >
+            <span>{portfoliosLoading ? "Loading…" : selectedLabel}</span>
+            <ChevronDown size={12} style={{ color: "var(--text3)", transform: dropdownOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
+          </button>
+          {dropdownOpen && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 50,
+              background: "var(--card-bg)", border: "0.5px solid var(--border2)",
+              borderRadius: 10, overflow: "hidden", minWidth: 200,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+            }}>
+              {[{ id: "all" as const, name: `All Portfolios (${savedPortfolios.length})` }, ...savedPortfolios.map(p => ({ id: p.id, name: p.name }))].map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => { setSelectedId(opt.id); setDropdownOpen(false); }}
+                  style={{
+                    width: "100%", textAlign: "left", padding: "9px 14px",
+                    fontSize: 12, border: "none", cursor: "pointer",
+                    background: selectedId === opt.id ? "var(--bg3)" : "transparent",
+                    color: selectedId === opt.id ? "var(--text)" : "var(--text2)",
+                    borderBottom: "0.5px solid var(--border)",
+                    transition: "background .1s",
+                  }}
+                  onMouseEnter={e => { if (selectedId !== opt.id) e.currentTarget.style.background = "var(--bg3)"; }}
+                  onMouseLeave={e => { if (selectedId !== opt.id) e.currentTarget.style.background = "transparent"; }}
+                >
+                  {opt.name}
+                </button>
+              ))}
             </div>
           )}
-          {sorted[worstIdx]?.change1d !== null && worstIdx !== bestIdx && (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 12px", background: "rgba(224,92,92,0.07)", border: "0.5px solid rgba(224,92,92,0.22)", borderRadius: 20 }}>
-              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(224,92,92,0.7)", textTransform: "uppercase" }}>Worst today</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#e05c5c", fontFamily: "Space Mono, monospace" }}>{sorted[worstIdx].ticker}</span>
-              <Pill value={sorted[worstIdx].change1d} />
-            </div>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 20, marginLeft: "auto" }}>
-            <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Live</span>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4caf7d", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
-            <span style={{ fontSize: 10, color: "var(--text3)" }}>Updates every 10s</span>
+        </div>
+
+        {/* Portfolio value input */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0, border: "0.5px solid var(--border2)", borderRadius: 9, overflow: "hidden", background: "var(--card-bg)" }}>
+          <span style={{ padding: "7px 10px", fontSize: 12, color: "var(--text3)", borderRight: "0.5px solid var(--border)", background: "var(--bg2)", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+            <DollarSign size={11} /> Portfolio Value
+          </span>
+          <input
+            value={pvInput}
+            onChange={e => {
+              setPvInput(e.target.value);
+              const n = parseFloat(e.target.value.replace(/,/g, ""));
+              if (!isNaN(n) && n > 0) setPortfolioValue(n);
+            }}
+            onBlur={() => setPvInput(portfolioValue.toLocaleString("en-US"))}
+            style={{
+              width: 110, padding: "7px 10px", fontSize: 12,
+              background: "transparent", border: "none", color: "var(--text)",
+              outline: "none", fontFamily: "Space Mono, monospace",
+            }}
+          />
+        </div>
+
+        {/* Live indicator */}
+        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 20, marginLeft: "auto" }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4caf7d", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
+          <span style={{ fontSize: 10, color: "var(--text3)" }}>Live · updates every 10s</span>
+        </div>
+      </div>
+
+      {/* Close dropdown when clicking outside */}
+      {dropdownOpen && (
+        <div onClick={() => setDropdownOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />
+      )}
+
+      {/* ── Empty state ──────────────────────────────────────────────────── */}
+      {!portfoliosLoading && savedPortfolios.length === 0 && (
+        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "48px 32px", textAlign: "center" }}>
+          <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>No saved portfolios yet</p>
+          <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, maxWidth: 380, margin: "0 auto 20px" }}>
+            Build a portfolio in the sidebar, run analysis, then save it to track your positions here.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 300, margin: "0 auto", fontSize: 12, color: "var(--text3)", textAlign: "left" }}>
+            {["Add tickers + weights in the left sidebar", "Click Analyze (or press ↵)", "Click Save portfolio"].map((step, i) => (
+              <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <span style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(201,168,76,0.12)", border: "0.5px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ lineHeight: 1.6 }}>{step}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
-        {loading && !positions.length ? (
-          <div style={{ padding: 40, textAlign: "center" }}>
-            <div style={{ width: 20, height: 20, border: "1.5px solid var(--border2)", borderTopColor: "var(--text)", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
-            <p style={{ fontSize: 12, color: "var(--text3)" }}>Loading positions…</p>
-          </div>
-        ) : positions.length === 0 ? (
-          <div style={{ padding: "32px 24px", textAlign: "center" }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>No positions yet</p>
-            <p style={{ fontSize: 12, color: "var(--text3)" }}>Add tickers in the sidebar to see your holdings here.</p>
-          </div>
-        ) : (
+      {/* ── Loading skeleton ─────────────────────────────────────────────── */}
+      {(portfoliosLoading || (liveLoading && allRows.length === 0 && savedPortfolios.length > 0)) && (
+        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+          {[...Array(5)].map((_, i) => (
+            <div key={i} style={{ display: "flex", gap: 16, padding: "13px 16px", borderBottom: "0.5px solid var(--border)", alignItems: "center" }}>
+              <Skeleton w={48} h={14} />
+              <Skeleton w={140} h={12} />
+              <Skeleton w={60} h={12} />
+              <Skeleton w={70} h={12} />
+              <Skeleton w={60} h={12} />
+              <Skeleton w={80} h={20} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Best / worst pills ───────────────────────────────────────────── */}
+      {!portfoliosLoading && !liveLoading && allRows.length > 0 && (best || worst) && (
+        <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+          {best && best.change1d !== null && (
+            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 12px", background: "rgba(76,175,125,0.07)", border: "0.5px solid rgba(76,175,125,0.22)", borderRadius: 20 }}>
+              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(76,175,125,0.7)", textTransform: "uppercase" }}>Best today</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#4caf7d", fontFamily: "Space Mono, monospace" }}>{best.ticker}</span>
+              <Pill value={best.change1d} />
+            </div>
+          )}
+          {worst && worst.change1d !== null && worst.ticker !== best?.ticker && (
+            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 12px", background: "rgba(224,92,92,0.07)", border: "0.5px solid rgba(224,92,92,0.22)", borderRadius: 20 }}>
+              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(224,92,92,0.7)", textTransform: "uppercase" }}>Worst today</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#e05c5c", fontFamily: "Space Mono, monospace" }}>{worst.ticker}</span>
+              <Pill value={worst.change1d} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Table ────────────────────────────────────────────────────────── */}
+      {!portfoliosLoading && savedPortfolios.length > 0 && (
+        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  {([
-                    { key: "ticker", label: "Ticker" },
-                    { key: "company", label: "Company" },
-                    { key: "weight", label: "Weight" },
-                    { key: "value", label: "Value" },
-                    { key: "change1d", label: "1D Change" },
-                    { key: "sector", label: "Sector" },
-                  ] as { key: SortKey; label: string }[]).map(col => (
-                    <th key={col.key} onClick={() => toggleSort(col.key)} style={colStyle}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        {col.label}
-                        <SortIcon col={col.key} active={sortKey === col.key} dir={sortDir} />
-                      </span>
+                  <SortTh label="Ticker"   sortKey="ticker"   active={sortKey==="ticker"}   dir={sortDir} onClick={() => toggleSort("ticker")} />
+                  <SortTh label="Company"  sortKey="company"  active={sortKey==="company"}  dir={sortDir} onClick={() => toggleSort("company")} />
+                  {showPortfolioCol && (
+                    <th style={{ padding: "8px 12px", fontSize: 10, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", textAlign: "left", background: "var(--bg2)", position: "sticky", top: 0, borderBottom: "0.5px solid var(--border)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                      Portfolio
                     </th>
-                  ))}
-                  <th style={{ ...colStyle, cursor: "default" }} />
+                  )}
+                  <SortTh label="Weight"   sortKey="weight"   active={sortKey==="weight"}   dir={sortDir} onClick={() => toggleSort("weight")} />
+                  <SortTh label="Value"    sortKey="value"    active={sortKey==="value"}    dir={sortDir} onClick={() => toggleSort("value")} />
+                  <SortTh label="1D"       sortKey="change1d" active={sortKey==="change1d"} dir={sortDir} onClick={() => toggleSort("change1d")} />
+                  <SortTh label="7D"       sortKey="change7d" active={sortKey==="change7d"} dir={sortDir} onClick={() => toggleSort("change7d")} />
+                  <SortTh label="Sector"   sortKey="sector"   active={sortKey==="sector"}   dir={sortDir} onClick={() => toggleSort("sector")} />
+                  <th style={{ padding: "8px 12px", background: "var(--bg2)", borderBottom: "0.5px solid var(--border)", position: "sticky", top: 0, width: 28 }} />
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((pos, i) => {
-                  const flashing = flashSet.has(pos.ticker);
-                  const flashClass = flashing && pos.change1d !== null
-                    ? (pos.change1d >= 0 ? "pos-row-flash-up" : "pos-row-flash-down")
-                    : "";
-                  return (
-                    <motion.tr
-                      key={pos.ticker}
-                      className={`pos-row ${flashClass}`}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04 }}
-                      onClick={() => onSelectTicker(pos.ticker)}
-                      style={{ cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
-                    >
-                      <td style={{ padding: "11px 12px" }}>
-                        <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "#c9a84c" }}>
-                          {pos.ticker}
-                        </span>
-                      </td>
-                      <td style={{ padding: "11px 12px" }}>
-                        <span style={{ fontSize: 12, color: "var(--text2)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
-                          {pos.company}
-                        </span>
-                      </td>
-                      <td style={{ padding: "11px 12px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ width: 40, height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${Math.min(pos.weight, 100)}%`, background: "#c9a84c", borderRadius: 2 }} />
-                          </div>
-                          <span style={{ fontSize: 12, color: "var(--text)", fontFamily: "Space Mono, monospace" }}>
-                            {pos.weight.toFixed(1)}%
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "11px 12px" }}>
-                        <span style={{ fontSize: 12, color: pos.value ? "var(--text)" : "var(--text3)", fontFamily: pos.value ? "Space Mono, monospace" : undefined }}>
-                          {pos.value ? `$${pos.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "—"}
-                        </span>
-                      </td>
-                      <td style={{ padding: "11px 12px" }}>
-                        <Pill value={pos.change1d} />
-                      </td>
-                      <td style={{ padding: "11px 12px" }}>
-                        <span style={{ fontSize: 11, color: "var(--text3)", background: "var(--bg3)", padding: "2px 8px", borderRadius: 4 }}>
-                          {pos.sector}
-                        </span>
-                      </td>
-                      <td style={{ padding: "11px 12px" }}>
-                        <ExternalLink size={12} style={{ color: "var(--text3)" }} />
-                      </td>
-                    </motion.tr>
-                  );
-                })}
+                {useGrouped ? (
+                  // ── Grouped view ──────────────────────────────────────────
+                  groups.map(({ portfolio, rows }) => {
+                    if (rows.length === 0) return null;
+                    const groupValue = rows.reduce((s, r) => s + (r.value ?? 0), 0);
+                    return (
+                      <>
+                        {/* Group header */}
+                        <tr key={`hdr-${portfolio.id}`}>
+                          <td colSpan={showPortfolioCol ? 9 : 8} style={{
+                            padding: "8px 14px",
+                            background: "rgba(201,168,76,0.04)",
+                            borderBottom: "0.5px solid var(--border)",
+                            borderTop: "0.5px solid var(--border)",
+                          }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", letterSpacing: 0.3 }}>{portfolio.name}</span>
+                              <span style={{ fontSize: 10, color: "var(--text3)" }}>{rows.length} holdings</span>
+                              <span style={{ fontSize: 10, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>
+                                ${groupValue.toLocaleString("en-US", { maximumFractionDigits: 0 })} total
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        {/* Rows for this group */}
+                        {rows.map((row, i) => (
+                          <PositionRowEl
+                            key={`${portfolio.id}-${row.ticker}`}
+                            row={row}
+                            i={i}
+                            flashSet={flashSet}
+                            showPortfolioCol={showPortfolioCol}
+                            onSelectTicker={onSelectTicker}
+                          />
+                        ))}
+                      </>
+                    );
+                  })
+                ) : (
+                  // ── Flat view ─────────────────────────────────────────────
+                  sorted.map((row, i) => (
+                    <PositionRowEl
+                      key={`${row.portfolioId}-${row.ticker}`}
+                      row={row}
+                      i={i}
+                      flashSet={flashSet}
+                      showPortfolioCol={false}
+                      onSelectTicker={onSelectTicker}
+                    />
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 10, textAlign: "right" }}>
-        Click any row to open detailed stock view · 1D change is real-time
+        Click any row to open detailed stock view · Value = portfolio value × weight · 7D computed from closing prices
       </p>
     </div>
+  );
+}
+
+// ── Row sub-component ─────────────────────────────────────────────────────────
+
+function PositionRowEl({
+  row, i, flashSet, showPortfolioCol, onSelectTicker,
+}: {
+  row: PositionRow;
+  i: number;
+  flashSet: Set<string>;
+  showPortfolioCol: boolean;
+  onSelectTicker: (t: string) => void;
+}) {
+  const flashing = flashSet.has(row.ticker);
+  const flashClass = flashing && row.change1d !== null
+    ? (row.change1d >= 0 ? "pos-flash-up" : "pos-flash-down")
+    : "";
+
+  return (
+    <motion.tr
+      className={`pos-row ${flashClass}`}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(i * 0.03, 0.3) }}
+      onClick={() => onSelectTicker(row.ticker)}
+      style={{ cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
+    >
+      {/* Ticker */}
+      <td style={{ padding: "11px 12px" }}>
+        <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "#c9a84c" }}>
+          {row.ticker}
+        </span>
+      </td>
+
+      {/* Company */}
+      <td style={{ padding: "11px 12px" }}>
+        <span style={{ fontSize: 12, color: "var(--text2)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+          {row.company}
+        </span>
+      </td>
+
+      {/* Portfolio col (only in "All" view) */}
+      {showPortfolioCol && (
+        <td style={{ padding: "11px 12px" }}>
+          <span style={{ fontSize: 11, color: "var(--text3)", background: "var(--bg3)", padding: "2px 8px", borderRadius: 4, whiteSpace: "nowrap" }}>
+            {row.portfolioName}
+          </span>
+        </td>
+      )}
+
+      {/* Weight */}
+      <td style={{ padding: "11px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 40, height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
+            <div style={{ height: "100%", width: `${Math.min(row.weightFrac * 100, 100)}%`, background: "#c9a84c", borderRadius: 2 }} />
+          </div>
+          <span style={{ fontSize: 12, color: "var(--text)", fontFamily: "Space Mono, monospace", whiteSpace: "nowrap" }}>
+            {(row.weightFrac * 100).toFixed(1)}%
+          </span>
+        </div>
+      </td>
+
+      {/* Value */}
+      <td style={{ padding: "11px 12px" }}>
+        <span style={{ fontSize: 12, color: "var(--text)", fontFamily: "Space Mono, monospace", whiteSpace: "nowrap" }}>
+          ${(row.value ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+        </span>
+      </td>
+
+      {/* 1D change */}
+      <td style={{ padding: "11px 12px" }}>
+        <Pill value={row.change1d} />
+      </td>
+
+      {/* 7D change */}
+      <td style={{ padding: "11px 12px" }}>
+        <Pill value={row.change7d} />
+      </td>
+
+      {/* Sector */}
+      <td style={{ padding: "11px 12px" }}>
+        <span style={{ fontSize: 11, color: "var(--text3)", background: "var(--bg3)", padding: "2px 8px", borderRadius: 4, whiteSpace: "nowrap" }}>
+          {row.sector}
+        </span>
+      </td>
+
+      {/* Row action */}
+      <td style={{ padding: "11px 12px" }}>
+        <ExternalLink size={12} style={{ color: "var(--text3)" }} />
+      </td>
+    </motion.tr>
   );
 }

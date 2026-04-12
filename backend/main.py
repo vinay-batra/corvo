@@ -1390,14 +1390,29 @@ RESPONSE RULES:
         )
         reply = response.content[0].text
         # Record usage for daily limit tracking
+        messages_used_now = daily_count + 1 if req.user_id else None
         if req.user_id:
             insert_chat_usage(req.user_id)
-        return {"reply": reply}
+        return {
+            "reply": reply,
+            "messages_used": messages_used_now,
+            "messages_limit": daily_limit if req.user_id else None,
+        }
     except HTTPException:
         raise
     except Exception as e:
         print(f"Chat error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/chat/usage")
+def chat_usage(user_id: str = ""):
+    """Return daily message usage for the authenticated user."""
+    if not user_id:
+        return {"messages_used": 0, "messages_limit": BASE_DAILY_CHAT_LIMIT}
+    limit = get_daily_chat_limit(user_id)
+    count = get_daily_chat_count(user_id)
+    return {"messages_used": count, "messages_limit": limit}
 
 
 class GenerateQuestionsRequest(BaseModel):
@@ -2060,6 +2075,7 @@ def watchlist_data(tickers: str, request: Request):
             change = current_price - prev_close
             change_pct = (change / prev_close * 100) if prev_close else 0.0
             name = info.get("longName") or info.get("shortName") or ticker
+            sector = info.get("sector") or "Other"
 
             # 7-day sparkline (daily closes)
             hist = t.history(period="7d", interval="1d")
@@ -2068,6 +2084,7 @@ def watchlist_data(tickers: str, request: Request):
             results.append({
                 "ticker": ticker,
                 "name": name,
+                "sector": sector,
                 "price": round(current_price, 2),
                 "change": round(change, 2),
                 "change_pct": round(change_pct, 2),
