@@ -79,6 +79,291 @@ interface StockInfo {
   similar_stocks: { ticker: string; price: number; change_pct: number }[];
 }
 
+// ── Options Chain ─────────────────────────────────────────────────────────────
+interface OptionContract {
+  strike: number;
+  lastPrice: number | null;
+  bid: number | null;
+  ask: number | null;
+  volume: number;
+  openInterest: number;
+  impliedVolatility: number | null;
+  inTheMoney: boolean;
+}
+interface OptionsData {
+  ticker: string;
+  current_price: number;
+  expiration_dates: string[];
+  selected_date: string;
+  calls: OptionContract[];
+  puts: OptionContract[];
+}
+
+function calcMaxPain(calls: OptionContract[], puts: OptionContract[]): number | null {
+  const strikeSet = new Set([...calls.map(c => c.strike), ...puts.map(p => p.strike)]);
+  const strikes = Array.from(strikeSet).sort((a, b) => a - b);
+  if (!strikes.length) return null;
+  let minPain = Infinity, maxPainStrike = strikes[0];
+  for (const k of strikes) {
+    let pain = 0;
+    for (const c of calls)  pain += Math.max(k - c.strike, 0) * c.openInterest;
+    for (const p of puts)   pain += Math.max(p.strike - k, 0) * p.openInterest;
+    if (pain < minPain) { minPain = pain; maxPainStrike = k; }
+  }
+  return maxPainStrike;
+}
+
+function fmtOpt(n: number | null | undefined): string {
+  if (n === null || n === undefined || isNaN(n as number)) return "-";
+  return n.toFixed(2);
+}
+
+function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: number }) {
+  const [data, setData]           = useState<OptionsData | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+  const [selDate, setSelDate]     = useState<string>("");
+  const [dateLoading, setDateLoading] = useState(false);
+  const [tooltip, setTooltip]     = useState(false);
+
+  // Initial load
+  useEffect(() => {
+    setLoading(true); setError(null);
+    fetch(`${API_URL}/options/${ticker}`)
+      .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.detail || "No options data"); }); return r.json(); })
+      .then(d => { setData(d); setSelDate(d.selected_date); })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [ticker]);
+
+  // Expiry date change
+  const changeDate = async (date: string) => {
+    if (date === selDate || !data) return;
+    setSelDate(date); setDateLoading(true);
+    try {
+      const r = await fetch(`${API_URL}/options/${ticker}?date=${date}`);
+      if (!r.ok) { const e = await r.json(); throw new Error(e.detail); }
+      const d: OptionsData = await r.json();
+      setData(d);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setDateLoading(false);
+    }
+  };
+
+  if (loading) return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
+      {[80, 32, 220, 220].map((h, i) => (
+        <div key={i} style={{ height: h, borderRadius: 10, background: "var(--bg3)", animation: "sdPulse 1.5s ease-in-out infinite" }} />
+      ))}
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ padding: "32px 0", textAlign: "center" }}>
+      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(224,92,92,0.1)", border: "0.5px solid rgba(224,92,92,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+      </div>
+      <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 6 }}>No options available</p>
+      <p style={{ fontSize: 11, color: "var(--text3)", maxWidth: 280, margin: "0 auto" }}>{error}</p>
+      <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 8, opacity: 0.6 }}>Options are not available for crypto, some ETFs, and unlisted securities.</p>
+    </div>
+  );
+
+  if (!data) return null;
+
+  const livePrice = currentPrice || data.current_price;
+  const maxPain = calcMaxPain(data.calls, data.puts);
+
+  // ATM = strike closest to current price
+  const allStrikes = Array.from(new Set([...data.calls.map(c => c.strike), ...data.puts.map(p => p.strike)])).sort((a, b) => a - b);
+  const atmStrike = allStrikes.reduce((best, s) => Math.abs(s - livePrice) < Math.abs(best - livePrice) ? s : best, allStrikes[0] ?? livePrice);
+
+  const tableHeader = ["Strike", "Last", "Bid", "Ask", "Vol", "OI", "IV %", "ITM"];
+  const colW = ["72px", "52px", "52px", "52px", "56px", "62px", "52px", "36px"];
+
+  const renderTable = (contracts: OptionContract[], side: "calls" | "puts") => {
+    const isCall = side === "calls";
+    const itmBg  = isCall ? "rgba(76,175,125,0.06)"  : "rgba(224,92,92,0.06)";
+    const itmBdr = isCall ? "rgba(76,175,125,0.18)"  : "rgba(224,92,92,0.18)";
+    const atmBg  = isCall ? "rgba(201,168,76,0.1)"   : "rgba(201,168,76,0.1)";
+    const hdrCol = isCall ? GREEN : RED;
+    if (!contracts.length) return <p style={{ fontSize: 11, color: "var(--text3)", padding: "16px 0" }}>No data</p>;
+    return (
+      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 460, fontSize: 11 }}>
+          <thead>
+            <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
+              {tableHeader.map((h, i) => (
+                <th key={h} style={{ padding: "6px 8px", textAlign: i === 0 ? "left" : "right", fontSize: 8, letterSpacing: 1.5, color: i === 0 ? hdrCol : "var(--text3)", textTransform: "uppercase", fontWeight: 600, width: colW[i], whiteSpace: "nowrap" }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {contracts.map((c, i) => {
+              const isAtm = c.strike === atmStrike;
+              const rowBg = isAtm ? atmBg : c.inTheMoney ? itmBg : "transparent";
+              const rowBdr = isAtm ? `0.5px solid ${AMBER}55` : c.inTheMoney ? `0.5px solid ${itmBdr}` : "none";
+              return (
+                <tr key={i} style={{ background: rowBg, outline: rowBdr !== "none" ? rowBdr : undefined, outlineOffset: "-0.5px" }}>
+                  <td style={{ padding: "5px 8px", fontFamily: "Space Mono, monospace", fontWeight: isAtm ? 700 : 600, color: isAtm ? AMBER : "var(--text)", fontSize: 11 }}>
+                    ${c.strike.toFixed(2)}{isAtm && <span style={{ fontSize: 7, color: AMBER, marginLeft: 4, letterSpacing: 0.5 }}>ATM</span>}
+                  </td>
+                  <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: "var(--text2)", fontSize: 10 }}>{fmtOpt(c.lastPrice)}</td>
+                  <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: "var(--text2)", fontSize: 10 }}>{fmtOpt(c.bid)}</td>
+                  <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: "var(--text2)", fontSize: 10 }}>{fmtOpt(c.ask)}</td>
+                  <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: c.volume > 0 ? "var(--text2)" : "var(--text3)", fontSize: 10 }}>{c.volume > 0 ? c.volume.toLocaleString() : "-"}</td>
+                  <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: c.openInterest > 0 ? "var(--text2)" : "var(--text3)", fontSize: 10 }}>{c.openInterest > 0 ? c.openInterest.toLocaleString() : "-"}</td>
+                  <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: c.impliedVolatility != null && c.impliedVolatility > 50 ? AMBER : "var(--text2)", fontSize: 10 }}>{c.impliedVolatility != null ? `${c.impliedVolatility.toFixed(1)}%` : "-"}</td>
+                  <td style={{ padding: "5px 8px", textAlign: "center" }}>
+                    {c.inTheMoney ? <span style={{ fontSize: 9, color: isCall ? GREEN : RED, fontWeight: 700 }}>✓</span> : <span style={{ fontSize: 9, color: "var(--text3)", opacity: 0.4 }}>–</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Controls bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "12px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Expiry</span>
+            <div style={{ position: "relative" }}>
+              <select
+                value={selDate}
+                onChange={e => changeDate(e.target.value)}
+                disabled={dateLoading}
+                style={{ padding: "5px 28px 5px 10px", background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 7, color: "var(--text)", fontSize: 11, fontFamily: "Space Mono, monospace", cursor: "pointer", appearance: "none", outline: "none", opacity: dateLoading ? 0.6 : 1 }}
+              >
+                {data.expiration_dates.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+              <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", fontSize: 8, color: "var(--text3)" }}>▼</span>
+            </div>
+          </div>
+          {dateLoading && <div style={{ width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Underlying</span>
+          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: AMBER }}>${livePrice.toFixed(2)}</span>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: "flex", gap: 16, paddingLeft: 2 }}>
+        {[["ATM", AMBER, "At the money"], ["ITM ✓", GREEN, "In the money (calls)"], ["ITM ✓", RED, "In the money (puts)"]].map(([label, color, title], i) => (
+          <div key={i} title={title as string} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "default" }}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: color as string, opacity: 0.8 }} />
+            <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>{label as string}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Tables */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ border: "0.5px solid rgba(76,175,125,0.2)", borderRadius: 10, padding: "12px 10px", background: "rgba(76,175,125,0.02)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <div style={{ width: 2, height: 10, background: GREEN, borderRadius: 1 }} />
+            <p style={{ fontSize: 8, letterSpacing: 2, color: GREEN, textTransform: "uppercase", margin: 0, fontWeight: 600 }}>Calls</p>
+            <span style={{ fontSize: 9, color: "var(--text3)", marginLeft: 4 }}>{data.calls.length} contracts</span>
+          </div>
+          {dateLoading ? <div style={{ height: 180, borderRadius: 8, background: "var(--bg3)", animation: "sdPulse 1.5s ease-in-out infinite" }} /> : renderTable(data.calls, "calls")}
+        </div>
+        <div style={{ border: "0.5px solid rgba(224,92,92,0.2)", borderRadius: 10, padding: "12px 10px", background: "rgba(224,92,92,0.02)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <div style={{ width: 2, height: 10, background: RED, borderRadius: 1 }} />
+            <p style={{ fontSize: 8, letterSpacing: 2, color: RED, textTransform: "uppercase", margin: 0, fontWeight: 600 }}>Puts</p>
+            <span style={{ fontSize: 9, color: "var(--text3)", marginLeft: 4 }}>{data.puts.length} contracts</span>
+          </div>
+          {dateLoading ? <div style={{ height: 180, borderRadius: 8, background: "var(--bg3)", animation: "sdPulse 1.5s ease-in-out infinite" }} /> : renderTable(data.puts, "puts")}
+        </div>
+      </div>
+
+      {/* Max Pain */}
+      <div style={{ border: "0.5px solid var(--border)", borderRadius: 10, padding: "14px 16px", background: "var(--card-bg)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <div style={{ width: 2, height: 12, background: AMBER, borderRadius: 1, flexShrink: 0 }} />
+          <p style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>Max Pain</p>
+          <div style={{ position: "relative", display: "inline-block", marginLeft: 4 }}>
+            <button
+              onMouseEnter={() => setTooltip(true)}
+              onMouseLeave={() => setTooltip(false)}
+              style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--bg3)", border: "0.5px solid var(--border2)", color: "var(--text3)", fontSize: 9, cursor: "default", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+            >?</button>
+            {tooltip && (
+              <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", width: 220, padding: "8px 12px", background: "#0d1117", border: "0.5px solid var(--border2)", borderRadius: 8, fontSize: 11, color: "var(--text2)", lineHeight: 1.5, zIndex: 100, pointerEvents: "none", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+                The price at which option sellers (market makers) lose the least. Often acts as a gravitational pull on the underlying price as expiry approaches.
+              </div>
+            )}
+          </div>
+        </div>
+        {maxPain != null ? (
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 4 }}>Max Pain Strike</div>
+              <div style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: AMBER, letterSpacing: -0.5 }}>${maxPain.toFixed(2)}</div>
+            </div>
+            {livePrice > 0 && (
+              <div>
+                <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 4 }}>Distance from Current</div>
+                <div style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 600, color: Math.abs(maxPain - livePrice) / livePrice < 0.02 ? GREEN : "var(--text2)" }}>
+                  {maxPain >= livePrice ? "+" : ""}{((maxPain - livePrice) / livePrice * 100).toFixed(2)}%
+                  <span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 6 }}>(${Math.abs(maxPain - livePrice).toFixed(2)})</span>
+                </div>
+              </div>
+            )}
+            <div>
+              <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 4 }}>Expiry</div>
+              <div style={{ fontFamily: "Space Mono, monospace", fontSize: 13, color: "var(--text2)" }}>{selDate}</div>
+            </div>
+          </div>
+        ) : (
+          <p style={{ fontSize: 11, color: "var(--text3)" }}>Not enough data to calculate</p>
+        )}
+        {/* Max pain bar vis */}
+        {maxPain != null && allStrikes.length > 1 && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ position: "relative", height: 6, background: "var(--bg3)", borderRadius: 3, overflow: "hidden" }}>
+              {/* current price marker */}
+              {livePrice > 0 && (() => {
+                const lo = allStrikes[0], hi = allStrikes[allStrikes.length - 1];
+                const pct = hi > lo ? Math.max(0, Math.min((livePrice - lo) / (hi - lo) * 100, 100)) : 50;
+                const mpPct = hi > lo ? Math.max(0, Math.min((maxPain - lo) / (hi - lo) * 100, 100)) : 50;
+                return (
+                  <>
+                    <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${Math.min(pct, mpPct)}%`, background: "var(--bg3)" }} />
+                    <div style={{ position: "absolute", left: `${Math.min(pct, mpPct)}%`, top: 0, height: "100%", width: `${Math.abs(mpPct - pct)}%`, background: `${AMBER}44` }} />
+                    <div style={{ position: "absolute", top: "50%", transform: "translate(-50%, -50%)", left: `${pct}%`, width: 10, height: 10, borderRadius: "50%", background: "var(--text2)", border: "1.5px solid var(--bg)" }} />
+                    <div style={{ position: "absolute", top: "50%", transform: "translate(-50%, -50%)", left: `${mpPct}%`, width: 12, height: 12, borderRadius: "50%", background: AMBER, border: "2px solid var(--bg)", boxShadow: `0 0 6px ${AMBER}88` }} />
+                  </>
+                );
+              })()}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 9, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>
+              <span>${allStrikes[0].toFixed(0)}</span>
+              <div style={{ display: "flex", gap: 12 }}>
+                <span style={{ color: "var(--text2)" }}>● Current ${livePrice.toFixed(2)}</span>
+                <span style={{ color: AMBER }}>● Max Pain ${maxPain.toFixed(2)}</span>
+              </div>
+              <span>${allStrikes[allStrikes.length - 1].toFixed(0)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   ticker: string;
   onBack: () => void;
@@ -96,6 +381,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const [histLows, setHistLows]       = useState<number[]>([]);
   const [histVolumes, setHistVolumes] = useState<number[]>([]);
   const [histLoading, setHistLoading] = useState(false);
+  const [activeTab, setActiveTab]     = useState<"overview" | "options">("overview");
   const [inWatchlist, setInWatchlist] = useState(false);
   const [livePrice, setLivePrice]     = useState<number | null>(null);
   const [priceFlash, setPriceFlash]   = useState<"up" | "down" | null>(null);
@@ -384,6 +670,22 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
         </div>
       </div>
 
+      {/* ── Tab bar ─────────────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: 3, marginBottom: 10, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 9, padding: 3, width: "fit-content" }}>
+        {(["overview", "options"] as const).map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            style={{ padding: "6px 16px", fontSize: 11, fontWeight: 500, borderRadius: 7, border: "none", cursor: "pointer", transition: "all 0.15s", background: activeTab === tab ? (tab === "options" ? `${AMBER}18` : "var(--bg3)") : "transparent", color: activeTab === tab ? (tab === "options" ? AMBER : "var(--text)") : "var(--text3)", letterSpacing: 0.2 }}>
+            {tab === "overview" ? "Overview" : "Options Chain"}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Options tab ──────────────────────────────────────────────────────── */}
+      {activeTab === "options" && <OptionsChain ticker={info.ticker} currentPrice={currentPrice} />}
+
+      {/* ── Overview tab content ─────────────────────────────────────────────── */}
+      {activeTab === "overview" && <>
+
       {/* ── 52-Week Range Bar ───────────────────────────────────────────────── */}
       {info.week52_low != null && info.week52_high != null && (
         <div style={{ border: "0.5px solid var(--border)", borderRadius: 10, padding: "12px 16px", background: "var(--card-bg)", marginBottom: 10 }}>
@@ -605,6 +907,8 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       <Card title="Recent News">
         <NewsSection ticker={info.ticker} />
       </Card>
+
+      </>}
     </motion.div>
   );
 }
