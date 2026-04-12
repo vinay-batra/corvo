@@ -6,20 +6,21 @@ import { LayoutDashboard, Eye, MessageSquare, BookOpen, User } from "lucide-reac
 const AMBER = "#c9a84c";
 
 const NAV_ITEMS = [
-  { id: "overview", label: "Dashboard", Icon: LayoutDashboard, href: null },
-  { id: "watchlist", label: "Watchlist", Icon: Eye, href: null },
-  { id: "ai", label: "AI Chat", Icon: MessageSquare, href: null },
-  { id: "learn", label: "Learn", Icon: BookOpen, href: "/learn" },
-  { id: "profile", label: "Profile", Icon: User, href: null },
+  { id: "overview",  label: "Dashboard", Icon: LayoutDashboard, href: null },
+  { id: "watchlist", label: "Watchlist", Icon: Eye,             href: null },
+  { id: "ai",        label: "AI Chat",   Icon: MessageSquare,   href: null },
+  { id: "learn",     label: "Learn",     Icon: BookOpen,        href: "/learn" },
+  { id: "profile",   label: "Profile",   Icon: User,            href: null },
 ] as const;
 
 interface Props {
   activeTab: string;
   onTabChange: (id: string) => void;
   onProfile: () => void;
+  onAiChat?: () => void;
 }
 
-export default function MobileBottomNav({ activeTab, onTabChange, onProfile }: Props) {
+export default function MobileBottomNav({ activeTab, onTabChange, onProfile, onAiChat }: Props) {
   return (
     <nav
       className="c-mob-bottom-nav"
@@ -84,8 +85,8 @@ export default function MobileBottomNav({ activeTab, onTabChange, onProfile }: P
         }
 
         return (
-          <button key={item.id} onClick={() => onTabChange(item.id)} style={style}>
-            {isActive && (
+          <button key={item.id} onClick={() => item.id === "ai" && onAiChat ? onAiChat() : onTabChange(item.id)} style={style}>
+            {isActive && item.id !== "ai" && (
               <span style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 24, height: 2, background: AMBER, borderRadius: "0 0 2px 2px" }} />
             )}
             <item.Icon size={20} />
