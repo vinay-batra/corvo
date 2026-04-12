@@ -710,19 +710,27 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
   const difficulty = getAIDifficulty(xp);
   const todayUTC = new Date().toISOString().split("T")[0];
   const cacheKey = `corvo_ai_practice_${lesson.id}_${difficulty}`;
+  const dateCacheKey = `corvo_ai_practice_date_${lesson.id}_${difficulty}`;
   const prevCacheKey = `corvo_ai_practice_prev_${lesson.id}_${difficulty}`;
 
   const fetchQuestions = useCallback(async (forceRefresh = false) => {
     // Check local cache for today's questions first (unless forcing refresh)
     if (!forceRefresh) {
       try {
-        const raw = localStorage.getItem(cacheKey);
-        if (raw) {
-          const { date, data } = JSON.parse(raw);
-          if (date === todayUTC && Array.isArray(data) && data.length > 0) {
-            setQuestions(data);
-            return;
+        const storedDate = localStorage.getItem(dateCacheKey);
+        console.log("AI Practice stored date:", storedDate, "today date:", todayUTC, "match?", storedDate === todayUTC);
+        if (storedDate === todayUTC) {
+          const raw = localStorage.getItem(cacheKey);
+          if (raw) {
+            const data = JSON.parse(raw);
+            if (Array.isArray(data) && data.length > 0) {
+              setQuestions(data);
+              return;
+            }
           }
+        } else {
+          localStorage.removeItem(cacheKey);
+          localStorage.removeItem(dateCacheKey);
         }
       } catch {}
     }
@@ -757,7 +765,8 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
       setQuestions(qs);
       // Cache for today and save as "previous" for tomorrow
       try {
-        localStorage.setItem(cacheKey, JSON.stringify({ date: todayUTC, data: qs }));
+        localStorage.setItem(dateCacheKey, todayUTC);
+        localStorage.setItem(cacheKey, JSON.stringify(qs));
         localStorage.setItem(prevCacheKey, JSON.stringify({ date: todayUTC, data: qs }));
       } catch {}
     } catch {
@@ -1372,8 +1381,9 @@ export default function LearnPage() {
   const [dailySelected, setDailySelected]       = useState<number | null>(null);
   const [dailyShowResult, setDailyShowResult]   = useState(false);
   const [midnightCountdown, setMidnightCountdown] = useState("");
-  // LS keys: _done = completion marker; _qs = cached questions for today; _prev = yesterday's for exclusion
+  // LS keys: _done = completion marker; _date = today's UTC date string; _qs = cached questions for today; _prev = yesterday's for exclusion
   const LS_DAILY_DONE_KEY = "corvo_daily_challenge";
+  const LS_DAILY_DATE_KEY = "corvo_daily_questions_date";
   const LS_DAILY_QS_KEY   = "corvo_daily_questions";
   const LS_DAILY_PREV_KEY = "corvo_daily_questions_prev";
 
@@ -1408,10 +1418,17 @@ export default function LearnPage() {
   // Load cached questions for today; returns true if found
   const loadCachedDailyQuestions = (): boolean => {
     try {
+      const storedDate = localStorage.getItem(LS_DAILY_DATE_KEY);
+      console.log("stored date:", storedDate, "today date:", today, "match?", storedDate === today);
+      if (storedDate !== today) {
+        localStorage.removeItem(LS_DAILY_QS_KEY);
+        localStorage.removeItem(LS_DAILY_DATE_KEY);
+        return false;
+      }
       const raw = localStorage.getItem(LS_DAILY_QS_KEY);
       if (!raw) return false;
-      const { date, questions } = JSON.parse(raw);
-      if (date !== today || !Array.isArray(questions) || questions.length === 0) return false;
+      const questions = JSON.parse(raw);
+      if (!Array.isArray(questions) || questions.length === 0) return false;
       setDailyQuestions(questions);
       setDailyIdx(0);
       setDailySelected(null);
@@ -1449,7 +1466,8 @@ export default function LearnPage() {
         setDailyShowResult(false);
         // Cache questions for today (so reload on same day reuses them)
         try {
-          localStorage.setItem(LS_DAILY_QS_KEY, JSON.stringify({ date: today, questions }));
+          localStorage.setItem(LS_DAILY_DATE_KEY, today);
+          localStorage.setItem(LS_DAILY_QS_KEY, JSON.stringify(questions));
           // Save as "previous" for tomorrow's exclusion
           localStorage.setItem(LS_DAILY_PREV_KEY, JSON.stringify({ date: today, questions }));
         } catch {}
