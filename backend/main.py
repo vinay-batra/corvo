@@ -1931,6 +1931,71 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+_options_cache: dict[str, tuple[dict, float]] = {}
+
+@app.get("/options/{ticker}")
+def get_options_chain(ticker: str, date: str = None, request: Request = None):
+    """Fetch options chain for a ticker. Cached 15 min per (ticker, date)."""
+    if request:
+        ip = request.client.host if request.client else "unknown"
+        if check_rate_limit(ip, "options", 30, 3600):
+            raise HTTPException(status_code=429, detail="Rate limit: 30 requests/hr")
+
+    ticker = ticker.upper().strip()
+    cache_key = f"{ticker}|{date or ''}"
+    if cache_key in _options_cache:
+        cached, ts = _options_cache[cache_key]
+        if time.time() - ts < 900:   # 15-minute TTL
+            return cached
+
+    try:
+        t = yf.Ticker(ticker)
+        expiry_dates: list[str] = list(t.options)
+        if not expiry_dates:
+            raise HTTPException(status_code=404, detail="No options available for this ticker")
+
+        # Resolve which expiry to load
+        selected = date if (date and date in expiry_dates) else expiry_dates[0]
+
+        info = t.info or {}
+        current_price = safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0) or 0.0
+
+        chain = t.option_chain(selected)
+
+        def _process(df) -> list[dict]:
+            rows = []
+            for _, row in df.iterrows():
+                iv = safe_float(row.get("impliedVolatility"))
+                rows.append({
+                    "strike":           safe_float(row.get("strike")) or 0.0,
+                    "lastPrice":        safe_float(row.get("lastPrice")),
+                    "bid":              safe_float(row.get("bid")),
+                    "ask":              safe_float(row.get("ask")),
+                    "volume":           int(row.get("volume") or 0),
+                    "openInterest":     int(row.get("openInterest") or 0),
+                    "impliedVolatility": round(iv * 100, 2) if iv is not None else None,
+                    "inTheMoney":       bool(row.get("inTheMoney", False)),
+                })
+            return sorted(rows, key=lambda r: r["strike"])
+
+        result = {
+            "ticker":           ticker,
+            "current_price":    round(current_price, 4),
+            "expiration_dates": expiry_dates,
+            "selected_date":    selected,
+            "calls":            _process(chain.calls),
+            "puts":             _process(chain.puts),
+        }
+        _options_cache[cache_key] = (result, time.time())
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Options error for {ticker}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 _stats_cache: dict = {"user_count": 847, "ts": 0.0}
 
 @app.get("/stats")
@@ -2708,6 +2773,206 @@ def portfolio_tax_loss(
         "losses": losses,
         "total_harvestable_loss": round(total_harvestable, 2),
     }
+
+
+# ── Portfolio Share Image ─────────────────────────────────────────────────────
+
+@app.get("/portfolio/share-image")
+def portfolio_share_image(
+    tickers: str = "AAPL,MSFT",
+    weights: str = "50,50",
+    ret: float = 18.4,
+    sharpe: float = 1.92,
+    health: int = 78,
+    drawdown: float = -14.2,
+):
+    """Generate a 1200x630 OG-style portfolio card image."""
+    from fastapi.responses import StreamingResponse
+    import io
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Pillow not installed")
+
+    W, H = 1200, 630
+    BG       = (10, 14, 20)
+    AMBER    = (201, 168, 76)
+    AMBER_DIM = (201, 168, 76, 40)
+    CREAM    = (232, 224, 204)
+    CREAM_DIM = (232, 224, 204, 100)
+    GREEN    = (92, 184, 138)
+    RED      = (224, 92, 92)
+    CARD_BG  = (255, 255, 255, 12)
+
+    img = Image.new("RGBA", (W, H), (*BG, 255))
+    draw = ImageDraw.Draw(img, "RGBA")
+
+    # ── Grid lines ──
+    for x in range(0, W, 80):
+        draw.line([(x, 0), (x, H)], fill=(201, 168, 76, 15), width=1)
+    for y in range(0, H, 80):
+        draw.line([(0, y), (W, y)], fill=(201, 168, 76, 15), width=1)
+
+    # ── Ambient glow (top-left radial) ──
+    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow, "RGBA")
+    for r in range(300, 0, -1):
+        alpha = int(18 * (1 - r / 300))
+        gd.ellipse([-r + 160, -r + 100, r + 160, r + 100], fill=(201, 168, 76, alpha))
+    img = Image.alpha_composite(img, glow)
+    draw = ImageDraw.Draw(img, "RGBA")
+
+    # ── Fonts ──
+    def try_font(path, size):
+        try:
+            return ImageFont.truetype(path, size)
+        except Exception:
+            return ImageFont.load_default()
+
+    FONT_PATHS = [
+        "/System/Library/Fonts/Helvetica.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    ]
+    MONO_PATHS = [
+        "/System/Library/Fonts/SFNSMono.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+    ]
+    fp = next((p for p in FONT_PATHS if os.path.exists(p)), None)
+    mp = next((p for p in MONO_PATHS if os.path.exists(p)), None)
+
+    font_tiny   = try_font(fp, 18)  if fp else ImageFont.load_default()
+    font_small  = try_font(fp, 22)  if fp else ImageFont.load_default()
+    font_med    = try_font(fp, 28)  if fp else ImageFont.load_default()
+    font_large  = try_font(mp, 88)  if mp else ImageFont.load_default()
+    font_xl     = try_font(mp, 110) if mp else ImageFont.load_default()
+    font_label  = try_font(mp, 17)  if mp else ImageFont.load_default()
+    font_ticker = try_font(mp, 20)  if mp else ImageFont.load_default()
+
+    # ── Top bar ──
+    # Logo (text stand-in since we can't easily render SVG)
+    draw.text((52, 44), "◈  CORVO", font=font_med, fill=AMBER)
+    label_text = "PORTFOLIO ANALYSIS"
+    bbox = draw.textbbox((0, 0), label_text, font=font_tiny)
+    lw = bbox[2] - bbox[0]
+    draw.text((W - 52 - lw, 49), label_text, font=font_tiny, fill=(201, 168, 76, 180))
+
+    # ── Divider ──
+    draw.line([(52, 96), (W - 52, 96)], fill=(255, 255, 255, 18), width=1)
+
+    # ── Big return number (center) ──
+    ret_sign = "+" if ret >= 0 else ""
+    ret_color = GREEN if ret >= 0 else RED
+    ret_str = f"{ret_sign}{ret:.1f}%"
+    bbox = draw.textbbox((0, 0), ret_str, font=font_xl)
+    tw = bbox[2] - bbox[0]
+    draw.text(((W - tw) // 2, 148), ret_str, font=font_xl, fill=ret_color)
+
+    # Sub-label under return
+    sub_label = "PORTFOLIO RETURN"
+    bbox = draw.textbbox((0, 0), sub_label, font=font_label)
+    slw = bbox[2] - bbox[0]
+    draw.text(((W - slw) // 2, 270), sub_label, font=font_label, fill=(201, 168, 76, 140))
+
+    # ── Stat pills (Sharpe | Health | Drawdown) ──
+    stats = [
+        ("SHARPE RATIO", f"{sharpe:.2f}"),
+        ("HEALTH SCORE", f"{health}/100"),
+        ("MAX DRAWDOWN", f"{drawdown:.1f}%"),
+    ]
+    pill_w, pill_h = 280, 88
+    total_pills = len(stats) * pill_w + (len(stats) - 1) * 20
+    pill_x_start = (W - total_pills) // 2
+    pill_y = 322
+
+    for i, (label, val) in enumerate(stats):
+        px = pill_x_start + i * (pill_w + 20)
+        # Pill background
+        draw.rounded_rectangle([px, pill_y, px + pill_w, pill_y + pill_h], radius=12, fill=(255, 255, 255, 10), outline=(255, 255, 255, 22), width=1)
+        # Label
+        bbox = draw.textbbox((0, 0), label, font=font_label)
+        lw2 = bbox[2] - bbox[0]
+        draw.text((px + (pill_w - lw2) // 2, pill_y + 14), label, font=font_label, fill=(201, 168, 76, 140))
+        # Value
+        bbox = draw.textbbox((0, 0), val, font=font_med)
+        vw = bbox[2] - bbox[0]
+        val_color = CREAM
+        if label == "MAX DRAWDOWN":
+            val_color = RED
+        elif label == "HEALTH SCORE":
+            val_color = GREEN if health >= 70 else AMBER
+        draw.text((px + (pill_w - vw) // 2, pill_y + 40), val, font=font_med, fill=val_color)
+
+    # ── Divider before tickers ──
+    draw.line([(52, 450), (W - 52, 450)], fill=(255, 255, 255, 14), width=1)
+
+    # ── Ticker pills ──
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    weight_list_raw = [w.strip() for w in weights.split(",") if w.strip()]
+    try:
+        wts = [float(w) for w in weight_list_raw]
+        total_w = sum(wts) or 1
+        wts = [w / total_w * 100 for w in wts]
+    except Exception:
+        wts = [100 / len(ticker_list)] * len(ticker_list)
+
+    # Layout tickers
+    pill_gap = 12
+    ticker_y = 476
+    # Measure all pills first
+    pill_sizes = []
+    for t, w in zip(ticker_list, wts):
+        text = f"{t}  {w:.0f}%"
+        bbox = draw.textbbox((0, 0), text, font=font_ticker)
+        tw2 = bbox[2] - bbox[0]
+        pill_sizes.append((text, tw2 + 28))
+
+    # Wrap into rows if needed
+    MAX_ROW_W = W - 104
+    rows: list[list[tuple[str, int]]] = []
+    cur_row: list[tuple[str, int]] = []
+    cur_row_w = 0
+    for item in pill_sizes:
+        if cur_row_w + item[1] + (pill_gap if cur_row else 0) > MAX_ROW_W:
+            if cur_row:
+                rows.append(cur_row)
+            cur_row = [item]
+            cur_row_w = item[1]
+        else:
+            cur_row_w += item[1] + (pill_gap if cur_row else 0)
+            cur_row.append(item)
+    if cur_row:
+        rows.append(cur_row)
+    rows = rows[:2]  # max 2 rows
+
+    for row_idx, row in enumerate(rows):
+        row_total_w = sum(s for _, s in row) + pill_gap * (len(row) - 1)
+        rx = (W - row_total_w) // 2
+        ry = ticker_y + row_idx * 46
+        for text, pw in row:
+            # pill bg
+            draw.rounded_rectangle([rx, ry, rx + pw, ry + 34], radius=8, fill=(201, 168, 76, 18), outline=(201, 168, 76, 55), width=1)
+            bbox = draw.textbbox((0, 0), text, font=font_ticker)
+            th = bbox[3] - bbox[1]
+            draw.text((rx + 14, ry + (34 - th) // 2 - 1), text, font=font_ticker, fill=AMBER)
+            rx += pw + pill_gap
+
+    # ── Watermark ──
+    wmark = "Analyzed with Corvo  —  corvo.capital"
+    bbox = draw.textbbox((0, 0), wmark, font=font_small)
+    wmw = bbox[2] - bbox[0]
+    draw.text(((W - wmw) // 2, H - 46), wmark, font=font_small, fill=(201, 168, 76, 120))
+
+    # ── Export ──
+    final = img.convert("RGB")
+    buf = io.BytesIO()
+    final.save(buf, format="PNG", optimize=True)
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png", headers={
+        "Cache-Control": "no-cache",
+        "Content-Disposition": 'inline; filename="portfolio-card.png"',
+    })
 
 
 # ── Morning Market Brief Push ──────────────────────────────────────────────────
