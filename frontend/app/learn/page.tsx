@@ -1370,7 +1370,7 @@ export default function LearnPage() {
   const [dailyFlash, setDailyFlash] = useState<"correct" | "wrong" | null>(null);
   const [userId, setUserId]       = useState<string | null>(null);
   const [learnPoints, setLearnPoints] = useState(0);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileReady, setProfileReady] = useState(false);
 
   // Daily challenge — 3 questions, +25 XP each
   type DailyQ = { question: string; options: string[]; correct: number; explanation: string };
@@ -1480,6 +1480,7 @@ export default function LearnPage() {
     try { setCompleted(JSON.parse(localStorage.getItem(COMPLETED_KEY) || "[]")); } catch {}
 
     (async () => {
+      setProfileReady(false);
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -1545,7 +1546,7 @@ export default function LearnPage() {
           if (!profile?.xp && ls.total_points > 0) setXp(ls.total_points);
         }
       } finally {
-        setProfileLoading(false);
+        setProfileReady(true);
       }
     })();
   }, []);
@@ -1711,7 +1712,7 @@ export default function LearnPage() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
       <AnimStyles />
-      <LearnHeader xp={xp} streak={streak} displayName={displayName} avatarUrl={avatarUrl} loading={profileLoading} />
+      <LearnHeader xp={xp} streak={streak} displayName={displayName} avatarUrl={avatarUrl} loading={!profileReady} />
 
       <div className="c-learn-content" style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 24px" }}>
         <AnimatePresence mode="wait">
