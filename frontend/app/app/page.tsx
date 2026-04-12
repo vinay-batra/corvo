@@ -51,17 +51,23 @@ import EmailPreferences from "../../components/EmailPreferences";
 import ReferralModal from "../../components/ReferralModal";
 import SettingsPage from "../settings/page";
 import ShareImageModal from "../../components/ShareImageModal";
+import GreetingBar from "../../components/GreetingBar";
+import KeyboardShortcutsModal from "../../components/KeyboardShortcutsModal";
+import PositionsTab from "../../components/PositionsTab";
+import RightPanel from "../../components/RightPanel";
+import MobileBottomNav from "../../components/MobileBottomNav";
 
 const TABS = [
-  { id: "overview",  label: "Dashboard",  Icon: LayoutDashboard,  href: null },
-  { id: "stocks",    label: "Stocks",     Icon: CandlestickChart, href: null },
-  { id: "risk",      label: "Risk",       Icon: ShieldAlert,      href: null },
-  { id: "simulate",  label: "Simulations",Icon: FlaskConical,     href: null },
-  { id: "compare",   label: "Compare",    Icon: Eye,              href: null },
-  { id: "news",      label: "News",       Icon: Newspaper,        href: null },
-  { id: "watchlist", label: "Watchlist",  Icon: Eye,              href: null },
-  { id: "learn",     label: "Learn",      Icon: BookOpen,         href: "/learn" },
-  { id: "ai",        label: "AI Chat",    Icon: MessageSquare,    href: null },
+  { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
+  { id: "positions",  label: "Positions",  Icon: CandlestickChart, href: null },
+  { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
+  { id: "risk",       label: "Risk",       Icon: ShieldAlert,      href: null },
+  { id: "simulate",   label: "Simulations",Icon: FlaskConical,     href: null },
+  { id: "compare",    label: "Compare",    Icon: Eye,              href: null },
+  { id: "news",       label: "News",       Icon: Newspaper,        href: null },
+  { id: "watchlist",  label: "Watchlist",  Icon: Eye,              href: null },
+  { id: "learn",      label: "Learn",      Icon: BookOpen,         href: "/learn" },
+  { id: "ai",         label: "AI Chat",    Icon: MessageSquare,    href: null },
 ] as const;
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
@@ -758,6 +764,9 @@ export default function AppPage() {
   const referralCodeRef             = useRef<string>("");
   const [shareToast, setShareToast] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
   const [perfHistory, setPerfHistory] = useState<PerfSnapshot[]>([]);
@@ -1071,6 +1080,17 @@ export default function AppPage() {
       return saved.some((p: any) => (p.tickers || p.assets?.map((a: any) => a.ticker) || []).sort().join(",") === currentTickers);
     } catch { return false; }
   })();
+  // Load watchlist tickers for right panel
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("corvo_watchlist");
+      if (raw) {
+        const arr = JSON.parse(raw);
+        setWatchlistTickers((Array.isArray(arr) ? arr : []).map((e: any) => typeof e === "string" ? e : e.ticker).filter(Boolean));
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       // Cmd+K / Ctrl+K or "/" → command palette
@@ -1086,8 +1106,28 @@ export default function AppPage() {
         setPaletteOpen(true);
         return;
       }
+      // "?" → keyboard shortcuts modal
+      if (e.key === "?" && !isTyping) {
+        e.preventDefault();
+        setShowHelpModal(h => !h);
+        return;
+      }
+      // Tab keyboard shortcuts (D, R, S, C, N, W, A) when not typing
+      if (!isTyping && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        const navMap: Record<string, string> = {
+          d: "overview", r: "risk", s: "simulate",
+          c: "compare", n: "news", w: "watchlist", a: "ai",
+        };
+        if (navMap[e.key.toLowerCase()]) {
+          e.preventDefault();
+          setActiveTab(navMap[e.key.toLowerCase()]);
+          sound.whoosh();
+          return;
+        }
+      }
       // ESC → close any open modal/drawer
       if (e.key === "Escape") {
+        if (showHelpModal) { setShowHelpModal(false); return; }
         if (paletteOpen) { setPaletteOpen(false); return; }
         if (stockTicker) { setStockTicker(null); return; }
         if (whatIfOpen) { setWhatIfOpen(false); return; }
@@ -1106,7 +1146,7 @@ export default function AppPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [paletteOpen, stockTicker, whatIfOpen, showGoals, showProfile, showSettings, showAlerts, showEmailPrefs, showReferral, showShareCard]);
+  }, [paletteOpen, stockTicker, whatIfOpen, showGoals, showProfile, showSettings, showAlerts, showEmailPrefs, showReferral, showShareCard, showHelpModal]);
 
   // Unlock Web Audio API on first user interaction
   useEffect(() => {
@@ -1354,10 +1394,11 @@ export default function AppPage() {
           .c-metrics{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
           .c-bgrid{grid-template-columns:1fr!important}
           .c-risk-grid{grid-template-columns:1fr!important}
-          .c-content{padding:12px 10px!important}
+          .c-content{padding:12px 10px!important;padding-bottom:80px!important}
           .c-mob-analyze{display:flex!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
           .c-mob-add{display:flex!important}
+          .c-mob-bottom-nav{display:flex!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
@@ -1365,6 +1406,7 @@ export default function AppPage() {
           .c-mob-drawer{display:none!important}
           .c-mob-analyze{display:none!important}
           .c-mob-add{display:none!important}
+          .c-mob-bottom-nav{display:none!important}
         }
         .c-mob-tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
         .c-mob-tabs::-webkit-scrollbar{display:none}
@@ -1397,7 +1439,8 @@ export default function AppPage() {
         )}
       </AnimatePresence>
 
-      <div style={S.main}>
+      <div style={{ ...S.main, flexDirection: "row" as const }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, minWidth: 0, overflow: "hidden" }}>
         {/* Mobile top bar */}
         <div className="c-mob-bar" style={{ height: 48, borderBottom: "0.5px solid var(--border)", alignItems: "center", justifyContent: "space-between", padding: "0 14px", background: "var(--bg)", flexShrink: 0 }}>
           <button aria-label="Open sidebar" onClick={() => setSidebarOpen(true)} style={{ width: 32, height: 32, background: "none", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1461,6 +1504,20 @@ export default function AppPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {/* Keyboard shortcuts hint */}
+            <button onClick={() => setShowHelpModal(true)} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
+              style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 5, transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+              <kbd style={{ padding: "1px 5px", background: "var(--bg3)", borderRadius: 4, fontSize: 10, fontFamily: "mono", border: "0.5px solid var(--border2)" }}>?</kbd>
+            </button>
+            {/* Right panel toggle */}
+            <button onClick={() => setRightPanelOpen(o => !o)} title="Market panel" aria-label="Toggle market panel"
+              style={{ height: 32, padding: "0 10px", borderRadius: 8, border: `0.5px solid ${rightPanelOpen ? "rgba(201,168,76,0.4)" : "var(--border)"}`, background: rightPanelOpen ? "rgba(201,168,76,0.06)" : "transparent", cursor: "pointer", fontSize: 11, color: rightPanelOpen ? "#c9a84c" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
+              onMouseEnter={e => { if (!rightPanelOpen) { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}}
+              onMouseLeave={e => { if (!rightPanelOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
+              ⚡ Live
+            </button>
             {/* Alerts bell */}
             <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
               style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s" }}
@@ -1575,6 +1632,21 @@ export default function AppPage() {
                   </>
                 )}
               </motion.div>
+            ) : activeTab === "positions" ? (
+              <motion.div key="positions" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <div style={S.cardAccent} />
+                    <span style={S.cardTitle}>All Positions</span>
+                    <span style={{ fontSize: 10, color: "var(--text3)" }}>· {assets.filter(a => a.ticker && a.weight > 0).length} holdings</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>Unified view across your portfolio · click any row to open stock detail</p>
+                </div>
+                <PositionsTab
+                  assets={assets}
+                  onSelectTicker={t => { setStockTicker(t); setActiveTab("stocks"); }}
+                />
+              </motion.div>
             ) : !data && !loading ? (
               <motion.div key="empty" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Empty onPreset={(a) => setAssets(a.map(x => ({ ...x, weight: Math.round(x.weight * 100) })))} />
@@ -1583,16 +1655,48 @@ export default function AppPage() {
               <motion.div key="loading" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} style={{ marginBottom: 12 }}>
-                  <Card><div style={S.cardHeader}><div style={S.cardAccent} /><span style={S.cardTitle}>{"Today's Market Brief"}</span><span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 8 }}>{new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span></div><MarketBrief /></Card>
-                </motion.div>
+                {/* Greeting + portfolio pulse + quick actions */}
+                <GreetingBar
+                  displayName={navProfile.displayName}
+                  portfolioData={data}
+                  assets={assets}
+                  onAddPortfolio={() => setSidebarOpen(true)}
+                  onImportCSV={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = ".csv";
+                    input.onchange = async (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (!file) return;
+                      try {
+                        const { importPortfolioCsv } = await import("../../lib/api");
+                        const result = await importPortfolioCsv(file);
+                        if (result?.tickers?.length && result?.weights?.length) {
+                          const total = result.weights.reduce((s: number, w: number) => s + w, 0) || 1;
+                          setAssets(result.tickers.map((t: string, i: number) => ({
+                            ticker: t,
+                            weight: Math.round((result.weights[i] / total) * 100),
+                          })));
+                        }
+                      } catch {}
+                    };
+                    input.click();
+                  }}
+                  onSetAlert={() => setShowAlerts(true)}
+                  onAskAI={() => setActiveTab("ai")}
+                />
                 <motion.div
                   className="c-metrics"
                   style={S.metricsGrid}
                   initial="hidden"
                   animate="visible"
                   variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
-                  <Metrics data={data} currency={currency} rate={rate} />
+                  <Metrics
+                    data={data}
+                    currency={currency}
+                    rate={rate}
+                    sparklineValues={(data.portfolio_cumulative || data.growth || []).slice(-14)}
+                  />
                 </motion.div>
                 <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
                   <Card>
@@ -1710,15 +1814,38 @@ export default function AppPage() {
               <motion.div key="watchlist" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Watchlist />
               </motion.div>
-            ) : activeTab === "ai" ? (
-              <motion.div key="ai" className="c-ai-tab" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}
-                style={{ height: "calc(100vh - 96px)", display: "flex", flexDirection: "column" }}>
-                <AiChat data={data} assets={assets} goals={goals} />
-              </motion.div>
             ) : null}
           </AnimatePresence>
         </main>
-      </div>
+      </div>{/* end inner flex column */}
+
+      {/* Right panel — market brief, live movers, events */}
+      <RightPanel
+        open={rightPanelOpen}
+        onClose={() => setRightPanelOpen(false)}
+        watchlistTickers={watchlistTickers}
+        holdingTickers={assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker)}
+        onSelectTicker={t => { setStockTicker(t); setActiveTab("stocks"); }}
+      />
+
+      </div>{/* end S.main outer row */}
+
+      {/* AI Chat — full-screen overlay */}
+      {activeTab === "ai" && (
+        <AiChat
+          data={data}
+          assets={assets}
+          goals={goals}
+          onClose={() => setActiveTab("overview")}
+        />
+      )}
+
+      {/* Mobile bottom navigation */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        onTabChange={id => { setActiveTab(id); sound.whoosh(); }}
+        onProfile={() => setShowProfile(true)}
+      />
 
       {/* Mobile: Add Tickers button (bottom-left) */}
       <motion.button
@@ -1838,6 +1965,9 @@ export default function AppPage() {
         onToggleDark={toggleDark}
         dark={dark}
       />
+
+      {/* Keyboard shortcuts modal */}
+      <KeyboardShortcutsModal open={showHelpModal} onClose={() => setShowHelpModal(false)} />
 
       {/* What-If drawer */}
       <WhatIfDrawer
