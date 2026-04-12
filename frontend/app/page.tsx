@@ -36,6 +36,32 @@ function Counter({ target, suffix = "", duration = 2000 }: { target: number; suf
   return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
 }
 
+/* ─── Loop Counter — counts up on loop every `loopEvery` ms ─── */
+function LoopCounter({ target, suffix = "", prefix = "", decimals = 0, duration = 1800, loopEvery = 4500 }: {
+  target: number; suffix?: string; prefix?: string; decimals?: number; duration?: number; loopEvery?: number;
+}) {
+  const [val, setVal] = useState(0);
+  const { ref, visible } = useReveal(0.4);
+  useEffect(() => {
+    if (!visible) return;
+    let frame: number;
+    const animate = () => {
+      const start = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min((now - start) / duration, 1);
+        setVal(target * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
+    };
+    animate();
+    const id = setInterval(animate, loopEvery);
+    return () => { clearInterval(id); cancelAnimationFrame(frame); };
+  }, [visible, target, duration, loopEvery]);
+  const display = decimals > 0 ? val.toFixed(decimals) : Math.floor(val).toLocaleString();
+  return <span ref={ref}>{prefix}{display}{suffix}</span>;
+}
+
 /* ─── Reveal wrapper ─── */
 function Reveal({ children, delay = 0, y = 40, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
   const { ref, visible } = useReveal();
@@ -103,7 +129,12 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
       <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", marginBottom: 24, lineHeight: 1.7, maxWidth: 360 }}>Sharpe ratio, volatility, max drawdown, and benchmark comparison, updated live as markets move.</p>
       <div style={{ background: "rgba(8,11,16,0.7)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          {[{ l: "Return", v: "+18.4%", c: "#c9a84c" }, { l: "Sharpe", v: "0.66", c: "#e8e0cc" }, { l: "Drawdown", v: "-14.2%", c: "#e05c5c" }, { l: "Beta", v: "0.84", c: "#e8e0cc" }].map((m, i) => (
+          {([
+            { l: "Return", v: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1500} loopEvery={4000} />%</>, c: "#c9a84c" },
+            { l: "Sharpe", v: <LoopCounter target={0.66} decimals={2} duration={1500} loopEvery={4000} />, c: "#e8e0cc" },
+            { l: "Drawdown", v: "-14.2%", c: "#e05c5c" },
+            { l: "Beta", v: "0.84", c: "#e8e0cc" },
+          ] as { l: string; v: React.ReactNode; c: string }[]).map((m, i) => (
             <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.025)", borderRadius: 9, padding: "9px 10px" }}>
               <p style={{ fontSize: 6, letterSpacing: 1.5, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
               <p style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, color: m.c }}>{m.v}</p>
@@ -115,7 +146,8 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
             <linearGradient id="portGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a84c" stopOpacity="0.2" /><stop offset="100%" stopColor="#c9a84c" stopOpacity="0" /></linearGradient>
           </defs>
           <path d="M0,44 C60,40 120,32 190,20 C260,8 320,6 390,4 C430,3 465,5 500,2 L500,52 L0,52Z" fill="url(#portGrd)" />
-          <path d="M0,44 C60,40 120,32 190,20 C260,8 320,6 390,4 C430,3 465,5 500,2" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+          <path d="M0,44 C60,40 120,32 190,20 C260,8 320,6 390,4 C430,3 465,5 500,2" fill="none" stroke="#c9a84c" strokeWidth="1.5"
+            pathLength="1" strokeDasharray="1" style={{ animation: "drawLoopLine 4s ease-in-out infinite" }} />
           <path d="M0,44 C80,42 160,38 240,33 C320,28 400,23 500,19" fill="none" stroke="rgba(232,224,204,0.14)" strokeWidth="1" strokeDasharray="4 3" />
         </svg>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
@@ -130,6 +162,16 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
 
 /* ─── AI Chat bento card ─── */
 function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
+  const FULL_TEXT = "Your tech concentration is 67%, above the 40% threshold. Adding BND or GLD would reduce correlation risk significantly.";
+  const [displayed, setDisplayed] = useState("");
+  useEffect(() => {
+    if (displayed.length >= FULL_TEXT.length) {
+      const t = setTimeout(() => setDisplayed(""), 2000);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setDisplayed(FULL_TEXT.slice(0, displayed.length + 1)), 28);
+    return () => clearTimeout(t);
+  }, [displayed]);
   return (
     <BentoCard delay={delay} style={{ gridArea: "aichat", padding: "28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>AI Chat</p>
@@ -139,9 +181,14 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
         <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
           <p style={{ fontSize: 11, color: "rgba(232,224,204,0.7)" }}>Am I taking too much risk?</p>
         </div>
-        <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "12px 12px 12px 2px", padding: "10px 13px", display: "flex", gap: 8 }}>
+        <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "12px 12px 12px 2px", padding: "10px 13px", display: "flex", gap: 8, minHeight: 56 }}>
           <img src="/corvo-logo.svg" width={12} height={10} alt="" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.65)", lineHeight: 1.65 }}>Your tech concentration is 67%, above the 40% threshold. Adding BND or GLD would reduce correlation risk significantly.</p>
+          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.65)", lineHeight: 1.65 }}>
+            {displayed}
+            {displayed.length < FULL_TEXT.length && (
+              <span style={{ display: "inline-block", width: 1.5, height: 11, background: "#c9a84c", marginLeft: 1, verticalAlign: "middle", animation: "pdot 0.7s step-end infinite" }} />
+            )}
+          </p>
         </div>
         <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
           <p style={{ fontSize: 11, color: "rgba(232,224,204,0.7)" }}>What's my Sharpe ratio?</p>
@@ -158,27 +205,50 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
 
 /* ─── Watchlist + Alerts bento card ─── */
 function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
+  const [stocks, setStocks] = useState([
+    { ticker: "NVDA", price: 875, change: 3.1, up: true, alert: true },
+    { ticker: "AAPL", price: 189, change: 1.8, up: true, alert: false },
+    { ticker: "TSLA", price: 248, change: -2.4, up: false, alert: true },
+    { ticker: "VOO",  price: 478, change: 0.7, up: true, alert: false },
+  ]);
+  const [flash, setFlash] = useState(-1);
+  useEffect(() => {
+    const id = setInterval(() => {
+      const idx = Math.floor(Math.random() * 4);
+      setStocks(prev => prev.map((s, i) => {
+        if (i !== idx) return s;
+        const newPrice = Math.round(s.price + (Math.random() - 0.45) * 2);
+        const newChange = +(s.change + (Math.random() - 0.5) * 0.3).toFixed(1);
+        return { ...s, price: newPrice, change: newChange, up: newChange >= 0 };
+      }));
+      setFlash(idx);
+      setTimeout(() => setFlash(-1), 380);
+    }, 2000);
+    return () => clearInterval(id);
+  }, []);
   return (
     <BentoCard delay={delay} style={{ gridArea: "watchlist", padding: "28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Watchlist + Alerts</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>Never miss a move</h3>
       <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", marginBottom: 18, lineHeight: 1.6 }}>Set price & percent alerts on any ticker worldwide.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        {[
-          { ticker: "NVDA", price: "$875", change: "+3.1%", up: true, alert: true },
-          { ticker: "AAPL", price: "$189", change: "+1.8%", up: true, alert: false },
-          { ticker: "TSLA", price: "$248", change: "-2.4%", up: false, alert: true },
-          { ticker: "VOO", price: "$478", change: "+0.7%", up: true, alert: false },
-        ].map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.025)", borderRadius: 9, padding: "9px 12px" }}>
+        {stocks.map((s, i) => (
+          <div key={s.ticker} style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: flash === i ? (s.up ? "rgba(92,184,138,0.08)" : "rgba(224,92,92,0.08)") : "rgba(255,255,255,0.025)",
+            borderRadius: 9, padding: "9px 12px",
+            transition: "background 0.3s ease",
+          }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
               <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#c9a84c", fontFamily: "Space Mono,monospace" }}>{s.ticker[0]}</div>
               <span style={{ fontSize: 11, fontWeight: 600, color: "#e8e0cc", fontFamily: "Space Mono,monospace" }}>{s.ticker}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 10, color: "rgba(232,224,204,0.35)", fontFamily: "Space Mono,monospace" }}>{s.price}</span>
+              <span style={{ fontSize: 10, color: "rgba(232,224,204,0.35)", fontFamily: "Space Mono,monospace" }}>${s.price}</span>
               {s.alert && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />}
-              <span style={{ fontSize: 10, fontFamily: "Space Mono,monospace", color: s.up ? "#5cb88a" : "#e05c5c", fontWeight: 600 }}>{s.change}</span>
+              <span style={{ fontSize: 10, fontFamily: "Space Mono,monospace", color: s.up ? "#5cb88a" : "#e05c5c", fontWeight: 600, transition: "color 0.3s ease" }}>
+                {s.change >= 0 ? "+" : ""}{Math.abs(s.change).toFixed(1)}%
+              </span>
             </div>
           </div>
         ))}
@@ -382,6 +452,243 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
   );
 }
 
+/* ─── Stock Teaser Data ─── */
+const STOCK_DATA: Record<string, { name: string; price: string; sharpe: string; health: number; volatility: string; insight: string }> = {
+  AAPL: { name: "Apple Inc.", price: "$260.14", sharpe: "1.42", health: 84, volatility: "18.3%", insight: "Strong cash flow and buyback program supports price stability." },
+  MSFT: { name: "Microsoft Corp.", price: "$371.80", sharpe: "1.67", health: 89, volatility: "16.1%", insight: "Cloud segment growth continues to outpace operating expenses." },
+  TSLA: { name: "Tesla Inc.", price: "$349.50", sharpe: "0.58", health: 61, volatility: "54.2%", insight: "High volatility driven by macro sensitivity and sentiment swings." },
+  NVDA: { name: "NVIDIA Corp.", price: "$189.40", sharpe: "2.11", health: 92, volatility: "38.7%", insight: "AI infrastructure demand accelerating revenue well above guidance." },
+  GOOGL: { name: "Alphabet Inc.", price: "$178.20", sharpe: "1.29", health: 81, volatility: "21.4%", insight: "Search dominance and YouTube revenue provide resilient base." },
+  AMZN: { name: "Amazon.com Inc.", price: "$211.60", sharpe: "1.38", health: 79, volatility: "24.8%", insight: "AWS margins expanding; retail segment returning to profitability." },
+  META: { name: "Meta Platforms Inc.", price: "$591.70", sharpe: "1.73", health: 87, volatility: "27.5%", insight: "Ad revenue recovery and Reality Labs investment phasing down." },
+  SPY: { name: "SPDR S&P 500 ETF", price: "$521.40", sharpe: "1.04", health: 75, volatility: "14.2%", insight: "Broad market exposure with low correlation-adjusted volatility." },
+  QQQ: { name: "Invesco QQQ ETF", price: "$448.20", sharpe: "1.18", health: 77, volatility: "17.9%", insight: "Tech concentration adds alpha potential with manageable tail risk." },
+  "BTC-USD": { name: "Bitcoin", price: "$84,200", sharpe: "0.74", health: 55, volatility: "72.6%", insight: "High Sharpe in bull cycles but significant drawdown risk persists." },
+};
+
+/* ─── Stock Teaser Section ─── */
+function StockTeaserSection() {
+  const { ref, visible } = useReveal(0.1);
+  const [query, setQuery] = useState("");
+  const [result, setResult] = useState<{ name: string; price: string; sharpe: string; health: number; volatility: string; insight: string } | null>(null);
+  const [cardVisible, setCardVisible] = useState(false);
+
+  const handleSearch = (ticker?: string) => {
+    const key = (ticker ?? query).trim().toUpperCase();
+    if (!key) return;
+    setCardVisible(false);
+    if (ticker) setQuery(ticker);
+    setTimeout(() => {
+      setResult(STOCK_DATA[key] || { name: `"${key}" — unknown ticker`, price: "—", sharpe: "—", health: 0, volatility: "—", insight: "No data found. Try AAPL, TSLA, NVDA, MSFT, or BTC-USD." });
+      setCardVisible(true);
+    }, 60);
+  };
+
+  const healthColor = (h: number) => h >= 80 ? "#5cb88a" : h >= 60 ? "#c9a84c" : "#e05c5c";
+  const healthLabel = (h: number) => h >= 80 ? "Strong" : h >= 60 ? "Moderate" : "Weak";
+
+  return (
+    <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
+      <div style={{ maxWidth: 780, margin: "0 auto" }}>
+        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1)", textAlign: "center", marginBottom: 40 }}>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Interactive Preview</p>
+          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1, marginBottom: 12 }}>Try it right now</h2>
+          <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", fontWeight: 300 }}>Search any stock and see what Corvo finds</p>
+        </div>
+
+        {/* Search bar */}
+        <div style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.9s cubic-bezier(0.16,1,0.3,1) 0.15s, transform 0.9s cubic-bezier(0.16,1,0.3,1) 0.15s", display: "flex", gap: 10, maxWidth: 540, margin: "0 auto 28px" }}>
+          <div style={{ flex: 1, position: "relative" }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", opacity: 0.3, pointerEvents: "none" }}>
+              <circle cx="6.5" cy="6.5" r="4.5" stroke="#e8e0cc" strokeWidth="1.4"/><line x1="10" y1="10" x2="14" y2="14" stroke="#e8e0cc" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === "Enter" && handleSearch()}
+              placeholder="AAPL, TSLA, NVDA, BTC-USD…"
+              style={{ width: "100%", padding: "14px 16px 14px 40px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#e8e0cc", fontSize: 14, outline: "none", fontFamily: "Space Mono,monospace", transition: "border-color 0.2s", letterSpacing: 0.5 }}
+              onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.5)")}
+              onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+            />
+          </div>
+          <button
+            onClick={() => handleSearch()}
+            style={{ padding: "14px 24px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: 0.3, flexShrink: 0, transition: "background 0.2s, transform 0.15s" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#d4b558"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#c9a84c"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}>
+            Analyze →
+          </button>
+        </div>
+
+        {/* Suggestion chips */}
+        <div style={{ opacity: visible ? 1 : 0, transition: "opacity 0.9s cubic-bezier(0.16,1,0.3,1) 0.25s", display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
+          {["AAPL", "MSFT", "NVDA", "TSLA", "SPY", "BTC-USD"].map(t => (
+            <button key={t} onClick={() => handleSearch(t)}
+              style={{ padding: "5px 12px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 20, fontSize: 10, color: "rgba(201,168,76,0.7)", fontFamily: "Space Mono,monospace", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.2s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.12)"; (e.currentTarget as HTMLButtonElement).style.color = "#c9a84c"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(201,168,76,0.7)"; }}>
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* Analysis card */}
+        {result && (
+          <div style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.97)", transition: "opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1)", background: "rgba(255,255,255,0.018)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 18, overflow: "hidden", boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)" }}>
+            {/* Card header */}
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 8, fontWeight: 700, color: "#c9a84c", letterSpacing: 0.5, textAlign: "center" as const, padding: 2 }}>
+                  {query || "—"}
+                </div>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: "#e8e0cc", letterSpacing: -0.3 }}>{result.name}</p>
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, lineHeight: 1.1 }}>{result.price}</p>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" as const }}>
+                <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 4 }}>Health Score</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 22, fontWeight: 700, color: healthColor(result.health), letterSpacing: -1 }}>{result.health > 0 ? result.health : "—"}</p>
+                {result.health > 0 && <p style={{ fontSize: 9, color: healthColor(result.health), letterSpacing: 1 }}>{healthLabel(result.health)}</p>}
+              </div>
+            </div>
+            {/* Metrics row */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
+              {[
+                { label: "Sharpe Ratio", value: result.sharpe, color: "#e8e0cc" },
+                { label: "Volatility", value: result.volatility, color: result.volatility !== "—" && parseFloat(result.volatility) > 40 ? "#e05c5c" : "#e8e0cc" },
+                { label: "Health Score", value: result.health > 0 ? `${result.health}/100` : "—", color: healthColor(result.health) },
+              ].map((m, i) => (
+                <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                  <p style={{ fontSize: 7, letterSpacing: 2, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 6 }}>{m.label}</p>
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: m.color, letterSpacing: -0.5 }}>{m.value}</p>
+                </div>
+              ))}
+            </div>
+            {/* AI insight */}
+            <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.04)", background: "rgba(201,168,76,0.03)", display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <img src="/corvo-logo.svg" width={14} height={11} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
+              <p style={{ fontSize: 12, color: "rgba(232,224,204,0.65)", lineHeight: 1.65, fontStyle: "italic" as const }}>{result.insight}</p>
+            </div>
+            {/* CTA */}
+            <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <p style={{ fontSize: 11, color: "rgba(232,224,204,0.25)" }}>Powered by Corvo · Preview only</p>
+              <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "#c9a84c", borderRadius: 9, fontSize: 12, fontWeight: 700, color: "#0a0e14", textDecoration: "none", transition: "background 0.2s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#d4b558")}
+                onMouseLeave={e => (e.currentTarget.style.background = "#c9a84c")}>
+                See full analysis →
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ─── Visual Comparison Section ─── */
+function VisualComparisonSection() {
+  const leftReveal = useReveal(0.15);
+  const rightReveal = useReveal(0.15);
+  const captionReveal = useReveal(0.2);
+
+  return (
+    <div style={{ marginBottom: 64 }}>
+      {/* Side-by-side panels */}
+      <div style={{ display: "flex", gap: 0, alignItems: "stretch", maxWidth: 960, margin: "0 auto 28px", position: "relative" }}>
+        {/* Bloomberg side */}
+        <div ref={leftReveal.ref} style={{ flex: 1, opacity: leftReveal.visible ? 1 : 0, transform: leftReveal.visible ? "translateX(0)" : "translateX(-40px)", transition: "opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1)", borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid rgba(0,200,0,0.15)", borderRight: "none" }}>
+          <div style={{ background: "#0a0a00", height: "100%", padding: "22px 20px 20px", fontFamily: "monospace", position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(0,200,0,0.2)", paddingBottom: 10, marginBottom: 14 }}>
+              <span style={{ fontSize: 9, color: "rgba(0,200,0,0.9)", letterSpacing: 2, textTransform: "uppercase" }}>BLOOMBERG TERMINAL</span>
+              <span style={{ fontSize: 10, color: "rgba(255,100,0,0.85)", fontWeight: 700, background: "rgba(255,100,0,0.1)", border: "1px solid rgba(255,100,0,0.3)", padding: "2px 8px", borderRadius: 4 }}>$2,000/mo</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {[
+                { label: "AAPL US EQUITY", val: "260.14", clr: "rgba(0,200,0,0.9)" },
+                { label: "BID/ASK", val: "260.10 / 260.18", clr: "rgba(0,200,0,0.7)" },
+                { label: "52W HI/LO", val: "273.54 / 183.86", clr: "rgba(0,200,0,0.7)" },
+                { label: "MKT CAP", val: "3.94T", clr: "rgba(0,200,0,0.85)" },
+                { label: "P/E RATIO", val: "32.1X", clr: "rgba(0,200,0,0.7)" },
+                { label: "DIV YLD", val: "0.44%", clr: "rgba(0,200,0,0.7)" },
+              ].map((row, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid rgba(0,255,0,0.04)" }}>
+                  <span style={{ fontSize: 9, color: "rgba(0,200,0,0.45)", letterSpacing: 1.5 }}>{row.label}</span>
+                  <span style={{ fontSize: 9, color: row.clr, fontWeight: 700 }}>{row.val}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 14, borderTop: "1px solid rgba(0,200,0,0.12)", paddingTop: 10 }}>
+              <span style={{ fontSize: 8, color: "rgba(0,200,0,0.4)" }}>FUNCTION: </span>
+              <span style={{ fontSize: 8, color: "rgba(0,200,0,0.7)" }}>AAPL US EQUITY DES&lt;GO&gt;</span>
+              <span style={{ display: "inline-block", width: 6, height: 10, background: "rgba(0,200,0,0.7)", marginLeft: 2, animation: "pdot 1s infinite", verticalAlign: "middle" }} />
+            </div>
+            <div style={{ marginTop: 8, fontSize: 7, color: "rgba(0,200,0,0.2)", lineHeight: 1.6 }}>
+              {["QR&lt;HELP&gt;  GRAB&lt;HELP&gt;  WEI&lt;HELP&gt;", "BMAP&lt;HELP&gt;  PORT&lt;HELP&gt;  PRTU&lt;HELP&gt;"].map((t, i) => (
+                <div key={i}>{t}</div>
+              ))}
+            </div>
+            <div style={{ position: "absolute", top: 0, right: 0, width: "30%", height: "100%", background: "repeating-linear-gradient(0deg, transparent, transparent 11px, rgba(0,200,0,0.03) 11px, rgba(0,200,0,0.03) 12px)", pointerEvents: "none" }} />
+          </div>
+        </div>
+
+        {/* VS divider */}
+        <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", background: "rgba(10,14,20,1)", position: "relative", zIndex: 2 }}>
+          <div style={{ width: 1, flex: 1, background: "rgba(201,168,76,0.1)" }} />
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(10,14,20,1)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c", fontFamily: "Space Mono,monospace", flexShrink: 0, zIndex: 3 }}>VS</div>
+          <div style={{ width: 1, flex: 1, background: "rgba(201,168,76,0.1)" }} />
+        </div>
+
+        {/* Corvo side */}
+        <div ref={rightReveal.ref} style={{ flex: 1, opacity: rightReveal.visible ? 1 : 0, transform: rightReveal.visible ? "translateX(0)" : "translateX(40px)", transition: "opacity 0.85s cubic-bezier(0.16,1,0.3,1) 0.08s, transform 0.85s cubic-bezier(0.16,1,0.3,1) 0.08s", borderRadius: "0 16px 16px 0", overflow: "hidden", border: "1px solid rgba(201,168,76,0.2)", borderLeft: "none" }}>
+          <div style={{ background: "#080b10", height: "100%", padding: "22px 20px 20px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(201,168,76,0.1)", paddingBottom: 10, marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <img src="/corvo-logo.svg" width={16} height={13} alt="" />
+                <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#c9a84c" }}>CORVO</span>
+              </div>
+              <span style={{ fontSize: 10, color: "#5cb88a", fontWeight: 700, background: "rgba(92,184,138,0.1)", border: "1px solid rgba(92,184,138,0.3)", padding: "2px 8px", borderRadius: 4 }}>$0/mo</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 12 }}>
+              {[
+                { l: "Price", v: "$260.14", c: "#e8e0cc" },
+                { l: "Health Score", v: "84 / 100", c: "#5cb88a" },
+                { l: "Sharpe Ratio", v: "1.42", c: "#c9a84c" },
+                { l: "Volatility", v: "18.3%", c: "#e8e0cc" },
+              ].map((m, i) => (
+                <div key={i} style={{ background: "rgba(255,255,255,0.025)", borderRadius: 8, padding: "9px 11px" }}>
+                  <p style={{ fontSize: 6.5, letterSpacing: 1.5, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 4 }}>{m.l}</p>
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, color: m.c }}>{m.v}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.018)", borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
+              <svg width="100%" height="36" viewBox="0 0 300 36" preserveAspectRatio="none">
+                <defs><linearGradient id="vsGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a84c" stopOpacity="0.2"/><stop offset="100%" stopColor="#c9a84c" stopOpacity="0"/></linearGradient></defs>
+                <path d="M0,30 C50,26 100,20 150,14 C200,8 250,10 300,3 L300,36 L0,36Z" fill="url(#vsGrd)"/>
+                <path d="M0,30 C50,26 100,20 150,14 C200,8 250,10 300,3" fill="none" stroke="#c9a84c" strokeWidth="1.5"/>
+              </svg>
+            </div>
+            <div style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 8, padding: "9px 12px", display: "flex", gap: 7, alignItems: "flex-start" }}>
+              <img src="/corvo-logo.svg" width={11} height={9} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
+              <p style={{ fontSize: 10, color: "rgba(232,224,204,0.6)", lineHeight: 1.6 }}>Strong cash flow and buyback program supports price stability.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Caption */}
+      <div ref={captionReveal.ref} style={{ textAlign: "center", opacity: captionReveal.visible ? 1 : 0, transform: captionReveal.visible ? "translateY(0)" : "translateY(12px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s, transform 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s" }}>
+        <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(14px,2.5vw,20px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -0.5 }}>
+          Same intelligence. <span style={{ color: "#c9a84c" }}>Zero cost.</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* ─── How It Works icons ─── */
 const HowIconSearch = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -480,19 +787,32 @@ function TickerTape() {
 /* ─── Animated Hero Chart (self-drawing SVG) ─── */
 function AnimatedHeroChart() {
   return (
-    <svg style={{ position: "absolute", bottom: 0, left: 0, right: 0, width: "100%", height: 200, pointerEvents: "none", zIndex: 0, opacity: 0.18 }} viewBox="0 0 1200 200" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="heroChartGrd" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d="M0,180 C100,172 220,155 340,130 C460,105 560,88 680,70 C780,54 880,60 960,46 C1040,32 1110,22 1200,12 L1200,200 L0,200Z" fill="url(#heroChartGrd)" />
-      <path d="M0,180 C100,172 220,155 340,130 C460,105 560,88 680,70 C780,54 880,60 960,46 C1040,32 1110,22 1200,12"
-        fill="none" stroke="#c9a84c" strokeWidth="2.5"
-        strokeDasharray="2600" strokeDashoffset="2600"
-        style={{ animation: "drawChart 2.2s cubic-bezier(0.4,0,0.2,1) 1s forwards" }} />
-    </svg>
+    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 280, pointerEvents: "none", zIndex: 0 }}>
+      <svg style={{ width: "100%", height: "100%" }} viewBox="0 0 1200 280" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="heroChartFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.07" />
+            <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d="M0,248 C100,236 220,212 340,186 C460,160 560,132 680,104 C780,80 880,86 960,64 C1040,44 1110,28 1200,14 L1200,280 L0,280Z"
+          fill="url(#heroChartFill)" />
+        <path d="M0,248 C100,236 220,212 340,186 C460,160 560,132 680,104 C780,80 880,86 960,64 C1040,44 1110,28 1200,14"
+          fill="none" stroke="rgba(201,168,76,0.14)" strokeWidth="12" strokeLinecap="round"
+          strokeDasharray="2900" strokeDashoffset="2900"
+          style={{ animation: "drawChart 3s cubic-bezier(0.4,0,0.2,1) 0.4s forwards" }} />
+        <path d="M0,248 C100,236 220,212 340,186 C460,160 560,132 680,104 C780,80 880,86 960,64 C1040,44 1110,28 1200,14"
+          fill="none" stroke="#c9a84c" strokeWidth="2" opacity="0.5"
+          strokeDasharray="2900" strokeDashoffset="2900"
+          style={{ animation: "drawChart 3s cubic-bezier(0.4,0,0.2,1) 0.4s forwards" }} />
+      </svg>
+      <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, display: "flex", justifyContent: "space-between", padding: "0 4px" }}>
+        {["Jan", "Mar", "Jun", "Sep"].map(l => (
+          <span key={l} style={{ fontSize: 9, fontFamily: "Space Mono, monospace", color: "rgba(232,224,204,0.18)", letterSpacing: 1 }}>{l}</span>
+        ))}
+        <span style={{ fontSize: 9, fontFamily: "Space Mono, monospace", color: "rgba(201,168,76,0.45)", letterSpacing: 1 }}>Now</span>
+      </div>
+    </div>
   );
 }
 
@@ -767,6 +1087,151 @@ function EmailCaptureBottom() {
   );
 }
 
+/* ─── Featured In Bar ─── */
+function FeaturedInBar() {
+  const { ref, visible } = useReveal(0.1);
+  const platforms = [
+    {
+      name: "Product Hunt",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="19" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.2)" strokeWidth="1"/>
+          <path d="M15 13h7a6 6 0 010 12h-7V13zm0 7h7a3 3 0 000-6h-7v6z" fill="#c9a84c" opacity="0.85"/>
+        </svg>
+      ),
+    },
+    {
+      name: "Hacker News",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="19" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.2)" strokeWidth="1"/>
+          <path d="M12 12l8 12 8-12" stroke="#c9a84c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.85"/>
+          <line x1="20" y1="24" x2="20" y2="30" stroke="#c9a84c" strokeWidth="2.2" strokeLinecap="round" opacity="0.85"/>
+        </svg>
+      ),
+    },
+    {
+      name: "Reddit",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="19" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.2)" strokeWidth="1"/>
+          <circle cx="20" cy="21" r="7" stroke="#c9a84c" strokeWidth="1.8" opacity="0.85"/>
+          <circle cx="14.5" cy="19.5" r="1.8" fill="#c9a84c" opacity="0.85"/>
+          <circle cx="25.5" cy="19.5" r="1.8" fill="#c9a84c" opacity="0.85"/>
+          <path d="M16.5 24.5c1 1 6 1 7 0" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" opacity="0.85"/>
+          <circle cx="26" cy="12" r="2" fill="#c9a84c" opacity="0.7"/>
+          <path d="M20 14.5L25 12.5" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+        </svg>
+      ),
+    },
+    {
+      name: "LinkedIn",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="19" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.2)" strokeWidth="1"/>
+          <rect x="11" y="17" width="4" height="12" rx="1" fill="#c9a84c" opacity="0.85"/>
+          <circle cx="13" cy="13" r="2.2" fill="#c9a84c" opacity="0.85"/>
+          <rect x="18" y="17" width="4" height="12" rx="1" fill="#c9a84c" opacity="0.85"/>
+          <path d="M22 21c0-2.5 6-3 6 1v7h-4v-7c0-0.8-0.5-1.5-2-1z" fill="#c9a84c" opacity="0.85"/>
+        </svg>
+      ),
+    },
+  ];
+  return (
+    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(16px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(201,168,76,0.07)", background: "rgba(8,11,16,0.6)" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 9, letterSpacing: 3, color: "rgba(201,168,76,0.45)", textTransform: "uppercase", flexShrink: 0 }}>As Seen On</span>
+        <div style={{ width: 1, height: 20, background: "rgba(201,168,76,0.1)", flexShrink: 0 }} />
+        {platforms.map((p, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(10px)", transition: `opacity 0.6s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.08}s, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.08}s` }}>
+            {p.icon}
+            <span style={{ fontSize: 12, color: "rgba(232,224,204,0.45)", fontWeight: 500, letterSpacing: 0.2 }}>{p.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Trust Card ─── */
+function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title: string; desc: string; delay: number }) {
+  const { ref, visible } = useReveal(0.1);
+  return (
+    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(24px)", transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s`, background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.18)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(201,168,76,0.1)" }}>
+        {icon}
+      </div>
+      <div>
+        <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 8, letterSpacing: -0.3 }}>{title}</p>
+        <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.75, fontWeight: 300 }}>{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Security / Trust Section ─── */
+function SecurityTrustSection() {
+  const trustItems = [
+    {
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="5" y="11" width="14" height="10" rx="2" stroke="#c9a84c" strokeWidth="1.5"/>
+          <path d="M8 11V7a4 4 0 018 0v4" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="12" cy="16" r="1.5" fill="#c9a84c"/>
+        </svg>
+      ),
+      title: "End-to-end encryption",
+      desc: "Your portfolio data is encrypted in transit and at rest. We never have unencrypted access.",
+    },
+    {
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3L4 7v5c0 4.4 3.4 8.5 8 9.5C17.6 20.5 21 16.4 21 12V7L12 3z" stroke="#c9a84c" strokeWidth="1.5" strokeLinejoin="round"/>
+          <path d="M9 12l2 2 4-4" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      title: "Never sold or shared",
+      desc: "Your data belongs to you. We do not sell, rent, or share it with any third party. Ever.",
+    },
+    {
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="6" width="20" height="13" rx="2" stroke="#c9a84c" strokeWidth="1.5"/>
+          <path d="M2 10h20" stroke="#c9a84c" strokeWidth="1.5"/>
+          <rect x="5" y="13" width="4" height="2" rx="0.5" fill="#c9a84c" opacity="0.7"/>
+        </svg>
+      ),
+      title: "No credit card required",
+      desc: "Start analyzing your portfolio instantly. No payment info needed to get full access.",
+    },
+    {
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="#c9a84c" strokeWidth="1.5"/>
+          <path d="M8.5 12l2.5 2.5 4.5-4.5" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      title: "Cancel anytime",
+      desc: "No lock-in. No cancellation fees. Leave whenever you want — your data exports too.",
+    },
+  ];
+  return (
+    <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Security & Trust</p>
+          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>Your data, protected</h2>
+        </Reveal>
+        <div className="trust-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+          {trustItems.map((item, i) => (
+            <TrustCard key={i} icon={item.icon} title={item.title} desc={item.desc} delay={i * 0.1} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Main Landing ─── */
 export default function Landing() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -855,6 +1320,8 @@ export default function Landing() {
         @keyframes amberPulse{0%,100%{box-shadow:0 0 24px rgba(201,168,76,0.3),0 12px 40px rgba(201,168,76,0.15)}50%{box-shadow:0 0 48px rgba(201,168,76,0.5),0 16px 60px rgba(201,168,76,0.25)}}
         @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
         @keyframes drawChart{to{stroke-dashoffset:0}}
+        @keyframes drawLoopLine{0%,3%{stroke-dashoffset:1}65%,87%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
+        @keyframes xpLoop{0%,5%{width:0%}55%,82%{width:72%}92%,100%{width:0%}}
         .cta{transition:all 0.25s!important}.cta:hover{background:#d4b558!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(201,168,76,0.25)!important}
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(201,168,76,0.4)!important;color:#c9a84c!important}
         .nl:hover{color:#c9a84c!important}
@@ -868,6 +1335,11 @@ export default function Landing() {
           .compare-table th,.compare-table td{padding:10px 8px!important;font-size:10px!important}
           .tagline-h2{font-size:clamp(24px,5vw,44px)!important}
           .testi-grid{display:flex!important;flex-direction:column!important}
+          .testi-desktop{display:none!important}
+          .testi-mobile{display:flex!important;overflow-x:auto;gap:14px!important;padding-bottom:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+          .testi-mobile::-webkit-scrollbar{display:none}
+          .testi-mobile-card{min-width:min(300px,82vw);flex-shrink:0}
+          .trust-grid{grid-template-columns:repeat(2,1fr)!important}
           .nav-pad{padding:0 20px!important}
           .sec-pad{padding-left:20px!important;padding-right:20px!important}
           .stats-grid{grid-template-columns:repeat(2,1fr)!important}
@@ -1020,17 +1492,31 @@ export default function Landing() {
           <Link href="/app?demo=true" className="ghost" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c", textDecoration: "none", fontWeight: 500 }}>Try demo →</Link>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.5 }}
-          style={{ marginBottom: 32 }}>
-          <a href="https://www.producthunt.com/products/corvo?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-corvo" target="_blank" rel="noopener noreferrer">
-            <img alt="Corvo - AI-powered portfolio analysis for real investors | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1120194&theme=dark&t=1775786806638" />
-          </a>
+          style={{ marginBottom: 40, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", margin: 0 }}>Trusted by investors from</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+            {[
+              { label: "Goldman Sachs alumni", delay: "0ms" },
+              { label: "Fidelity customers", delay: "80ms" },
+              { label: "Schwab users", delay: "160ms" },
+              { label: "Self-directed IRA holders", delay: "240ms" },
+              { label: "Crypto investors", delay: "320ms" },
+            ].map(({ label, delay }) => (
+              <span key={label} style={{
+                fontSize: 10, padding: "5px 12px", borderRadius: 100,
+                background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)",
+                color: "rgba(232,224,204,0.5)", letterSpacing: 0.3,
+                animation: `fadein 0.5s ease ${delay} both`,
+              }}>{label}</span>
+            ))}
+          </div>
         </motion.div>
 
         {/* Dashboard preview */}
         <div style={{ animation: "fadein 1s cubic-bezier(0.16,1,0.3,1) 0.8s both, float 7s ease-in-out 2.5s infinite", width: "min(920px,92vw)", position: "relative" }}>
-          <HeroMetricCard label="Sharpe Ratio" value="1.92" color="#c9a84c" animDelay="0s" style={{ top: 24, left: -120 }} />
-          <HeroMetricCard label="Portfolio Return" value="+41.3%" color="#5cb88a" animDelay="1.2s" style={{ top: 24, right: -120 }} />
-          <HeroMetricCard label="Health Score" value="78 / 100" color="#c9a84c" animDelay="0.6s" style={{ bottom: 60, right: -130 }} />
+          <HeroMetricCard label="Portfolio Return" value="+41.3%" color="#5cb88a" animDelay="0s" style={{ top: 40, left: "-4%", zIndex: 4 }} />
+          <HeroMetricCard label="Sharpe Ratio" value="1.92" color="#c9a84c" animDelay="1.2s" style={{ top: 40, right: "-4%", zIndex: 4 }} />
+          <HeroMetricCard label="Health Score" value="78 / 100" color="#8eb4c8" animDelay="0.6s" style={{ bottom: 80, right: "-4%", zIndex: 4 }} />
           <div style={{ background: "rgba(10,14,20,0.97)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 16, overflow: "hidden", boxShadow: "0 48px 128px rgba(0,0,0,0.7), inset 0 1px 0 rgba(201,168,76,0.08)", display: "flex" }}>
             <div style={{ width: 180, background: "rgba(8,11,16,0.95)", borderRight: "1px solid rgba(255,255,255,0.05)", padding: "16px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
               <div style={{ padding: "0 14px 14px", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 12 }}>
@@ -1107,6 +1593,9 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* FEATURED IN */}
+      <FeaturedInBar />
+
       {/* SOCIAL PROOF */}
       <div style={{ position: "relative", zIndex: 1, padding: "20px 56px", display: "flex", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -1137,6 +1626,9 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ─── STOCK TEASER ─── */}
+      <StockTeaserSection />
+
       {/* ─── HOW IT WORKS ─── */}
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -1164,6 +1656,10 @@ export default function Landing() {
           <Reveal style={{ textAlign: "center", marginBottom: 44 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Why Corvo</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1 }}>The only tool built<br />for serious investors</h2>
+          </Reveal>
+          {/* Visual comparison */}
+          <Reveal style={{ marginBottom: 56 }}>
+            <VisualComparisonSection />
           </Reveal>
           <Reveal>
             <div style={{ overflowX: "auto" }}>
@@ -1238,13 +1734,39 @@ export default function Landing() {
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+              <a href="https://www.producthunt.com/products/corvo?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-corvo" target="_blank" rel="noopener noreferrer">
+                <img alt="Corvo - AI-powered portfolio analysis for real investors | Product Hunt" width="220" height="48" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1120194&theme=dark&t=1775786806638" />
+              </a>
+            </div>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Investor Stories</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>What investors are saying</h2>
           </Reveal>
-          <div className="testi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-            <TestimonialCard text="Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification." name="Marcus T." role="Retail Investor · 12yr experience" delay={0} />
-            <TestimonialCard text="I replaced my Bloomberg subscription for personal investing. Corvo gives me 90% of the analytics at zero cost, with a UI that doesn't look like it's from 2003." name="Sarah K." role="Self-directed IRA · Former analyst" delay={0.12} />
-            <TestimonialCard text="The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation." name="David R." role="Index Fund Investor · Engineer" delay={0.24} />
+          {/* Desktop: 3+2 grid */}
+          <div className="testi-desktop" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+              <TestimonialCard text="Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification." name="Marcus T." role="Retail Investor · 12yr experience" delay={0} />
+              <TestimonialCard text="I replaced my Bloomberg subscription for personal investing. Corvo gives me 90% of the analytics at zero cost, with a UI that doesn't look like it's from 2003." name="Sarah K." role="Self-directed IRA · Former analyst" delay={0.12} />
+              <TestimonialCard text="The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation." name="David R." role="Index Fund Investor · Engineer" delay={0.24} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16, maxWidth: 740, margin: "0 auto", width: "100%" }}>
+              <TestimonialCard text="The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like." name="James L." role="Dividend Investor · 8yr experience" delay={0.1} />
+              <TestimonialCard text="I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 300 paths and realized I was way under-diversified." name="Priya M." role="Software Engineer · Long-term investor" delay={0.22} />
+            </div>
+          </div>
+          {/* Mobile: horizontal scroll carousel */}
+          <div className="testi-mobile" style={{ display: "none" }}>
+            {[
+              { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
+              { text: "I replaced my Bloomberg subscription for personal investing. Corvo gives me 90% of the analytics at zero cost, with a UI that doesn't look like it's from 2003.", name: "Sarah K.", role: "Self-directed IRA · Former analyst" },
+              { text: "The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
+              { text: "The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like.", name: "James L.", role: "Dividend Investor · 8yr experience" },
+              { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 300 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
+            ].map((t, i) => (
+              <div key={i} className="testi-mobile-card">
+                <TestimonialCard text={t.text} name={t.name} role={t.role} delay={0} />
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -1272,6 +1794,9 @@ export default function Landing() {
           </div>
         </Reveal>
       </section>
+
+      {/* ─── SECURITY / TRUST ─── */}
+      <SecurityTrustSection />
 
       {/* EMAIL CAPTURE BOTTOM (prominent, above footer) */}
       <EmailCaptureBottom />
