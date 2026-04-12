@@ -1759,6 +1759,7 @@ export default function Landing() {
           <Link href="/faq" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
           <Link href="/about" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>About</Link>
           <Link href="/changelog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
+          <Link href="/blog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Blog</Link>
           <Link href="/app?demo=true" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Demo</Link>
         </div>
         {/* Right side */}
@@ -1820,6 +1821,7 @@ export default function Landing() {
           <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Pricing</Link>
           <Link href="/faq" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>FAQ</Link>
           <Link href="/about" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>About</Link>
+          <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Blog</Link>
           <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Changelog</Link>
           <Link href="/app?demo=true" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Demo</Link>
           {loggedIn ? (
@@ -2216,6 +2218,7 @@ export default function Landing() {
             <span style={{ fontSize: 11, color: "rgba(232,224,204,0.15)", marginLeft: 8 }}>© 2026 Corvo. All rights reserved.</span>
           </div>
           <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+            <a href="/blog" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Blog</a>
             <a href="/about" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>About</a>
             <a href="/pricing" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Pricing</a>
             <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Privacy</a>
