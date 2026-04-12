@@ -1,0 +1,298 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+
+const EASE = [0.25, 0.1, 0.25, 1] as const;
+
+function FadeUp({ children, delay = 0, y = 28, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6, ease: EASE, delay }}
+      style={style}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+const FEATURES: [string, boolean, boolean][] = [
+  ["AI-Powered Portfolio Chat",           true,  false],
+  ["Monte Carlo Retirement Simulation",   true,  false],
+  ["Sharpe Ratio & Risk Metrics",         true,  false],
+  ["Portfolio Health Score (A–F grade)",  true,  false],
+  ["Correlation Heatmap",                 true,  false],
+  ["Benchmark Comparison (S&P 500 etc.)", true,  true],
+  ["Custom Price & % Alerts",             true,  true],
+  ["Sector Exposure Analysis",            true,  true],
+  ["Dividend Tracker",                    true,  true],
+  ["Tax Loss Harvesting Suggestions",     true,  false],
+  ["Learn & Earn Gamification",           true,  false],
+  ["Screenshot Import",                   true,  false],
+  ["Ad-Free Experience",                  true,  false],
+  ["CSV Import",                          true,  false],
+  ["Max Drawdown Analysis",               true,  false],
+  ["Free to Use (no Premium tier)",       true,  false],
+];
+
+export default function YahooFinanceComparePage() {
+  return (
+    <div style={{ background: "#0a0e14", minHeight: "100vh", color: "#e8e0cc", fontFamily: "'Inter',system-ui,sans-serif", overflowX: "hidden" }}>
+      {/* Nav */}
+      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, borderBottom: "1px solid rgba(255,255,255,0.04)", background: "rgba(10,14,20,0.92)", backdropFilter: "blur(12px)", padding: "14px 48px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+          <img src="/corvo-logo.svg" width={18} height={15} alt="Corvo" />
+          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#c9a84c" }}>CORVO</span>
+        </Link>
+        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <Link href="/compare/bloomberg" style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none" }}>vs Bloomberg</Link>
+          <Link href="/compare/robinhood" style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none" }}>vs Robinhood</Link>
+          <Link href="/auth" style={{ padding: "8px 20px", borderRadius: 8, background: "#c9a84c", color: "#0a0e14", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Try Free</Link>
+        </div>
+      </nav>
+
+      {/* ─── HERO ─── */}
+      <section style={{ paddingTop: 140, paddingBottom: 96, paddingLeft: 48, paddingRight: 48, textAlign: "center", position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 800, height: 500, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 65%)", pointerEvents: "none" }} />
+        <FadeUp>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 20 }}>Comparison · Yahoo Finance vs Corvo</p>
+          <h1 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4.5vw,58px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2.5, lineHeight: 1.1, maxWidth: 820, margin: "0 auto 24px" }}>
+            Corvo vs Yahoo Finance:<br />
+            <span style={{ color: "#c9a84c" }}>Which is better for retail investors?</span>
+          </h1>
+          <p style={{ fontSize: "clamp(15px,1.8vw,18px)", color: "rgba(232,224,204,0.5)", maxWidth: 580, margin: "0 auto 44px", lineHeight: 1.8, fontWeight: 300 }}>
+            Yahoo Finance is a great starting point. But when you want real portfolio analytics — AI insights, risk metrics, Monte Carlo simulation — Corvo goes far deeper, completely free.
+          </p>
+          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/auth" style={{ padding: "15px 40px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
+              Try Corvo Free →
+            </Link>
+            <a href="#comparison" style={{ padding: "15px 40px", borderRadius: 12, border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c", fontSize: 14, fontWeight: 500, textDecoration: "none", background: "transparent" }}>
+              See comparison ↓
+            </a>
+          </div>
+          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", marginTop: 18 }}>No credit card · No ads · No paywall</p>
+        </FadeUp>
+
+        {/* Price callout badges */}
+        <FadeUp delay={0.2} style={{ marginTop: 64 }}>
+          <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
+            <div style={{ background: "rgba(110,170,255,0.05)", border: "1px solid rgba(110,170,255,0.18)", borderRadius: 14, padding: "20px 36px", textAlign: "center" }}>
+              <p style={{ fontFamily: "Space Mono,monospace", fontSize: 36, fontWeight: 700, color: "rgba(110,170,255,0.8)", letterSpacing: -2, marginBottom: 4 }}>$25<span style={{ fontSize: 16, fontWeight: 400 }}>/mo</span></p>
+              <p style={{ fontSize: 11, letterSpacing: 1.5, color: "rgba(232,224,204,0.3)", textTransform: "uppercase" }}>Yahoo Finance Plus</p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", fontSize: 22, color: "rgba(232,224,204,0.2)" }}>vs</div>
+            <div style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 14, padding: "20px 36px", textAlign: "center", boxShadow: "0 0 60px rgba(201,168,76,0.06)" }}>
+              <p style={{ fontFamily: "Space Mono,monospace", fontSize: 36, fontWeight: 700, color: "#c9a84c", letterSpacing: -2, marginBottom: 4 }}>$0<span style={{ fontSize: 16, fontWeight: 400, color: "rgba(201,168,76,0.6)" }}>/mo</span></p>
+              <p style={{ fontSize: 11, letterSpacing: 1.5, color: "rgba(201,168,76,0.5)", textTransform: "uppercase" }}>Corvo · Always Free</p>
+            </div>
+          </div>
+        </FadeUp>
+      </section>
+
+      {/* ─── KEY DIFFERENCES ─── */}
+      <section style={{ padding: "0 48px 96px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Key Differences</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>Where Corvo goes further</h2>
+          </FadeUp>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20 }}>
+            {[
+              {
+                icon: "🧠",
+                title: "AI that understands your portfolio",
+                body: "Yahoo Finance shows you data. Corvo's AI synthesizes it — telling you if your tech concentration is too high, what your Sharpe ratio means, and how to rebalance. It knows your exact holdings.",
+              },
+              {
+                icon: "📊",
+                title: "Real risk analytics, not just quotes",
+                body: "Yahoo Finance Premium gives you better charts and screeners. Corvo gives you Sharpe ratio, max drawdown, correlation heatmaps, and Monte Carlo simulation — the analytics that actually matter for your portfolio.",
+              },
+              {
+                icon: "🚫",
+                title: "Zero ads, zero upsells",
+                body: "Yahoo Finance's free tier is ad-heavy. Their paid tier still sells premium data upgrades. Corvo is fully featured from day one — no ads, no paywalls, no upgrade prompts.",
+              },
+            ].map((card, i) => (
+              <FadeUp key={i} delay={i * 0.1}>
+                <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: "32px 28px", position: "relative", overflow: "hidden", height: "100%" }}>
+                  <div style={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
+                  <div style={{ fontSize: 28, marginBottom: 16 }}>{card.icon}</div>
+                  <h3 style={{ fontFamily: "Space Mono,monospace", fontSize: 15, fontWeight: 700, color: "#e8e0cc", marginBottom: 12, letterSpacing: -0.3 }}>{card.title}</h3>
+                  <p style={{ fontSize: 14, color: "rgba(232,224,204,0.45)", lineHeight: 1.75, fontWeight: 300 }}>{card.body}</p>
+                </div>
+              </FadeUp>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FEATURE COMPARISON TABLE ─── */}
+      <section id="comparison" style={{ padding: "0 48px 96px" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Feature Comparison</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>Head-to-head breakdown</h2>
+          </FadeUp>
+          <FadeUp delay={0.1}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 500 }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", borderBottom: "1px solid rgba(201,168,76,0.08)", fontWeight: 400 }}>Feature</th>
+                    <th style={{ padding: "14px 16px", textAlign: "center", fontSize: 11, fontWeight: 700, color: "#c9a84c", borderBottom: "2px solid rgba(201,168,76,0.4)", borderLeft: "1px solid rgba(201,168,76,0.18)", borderRight: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.05)", boxShadow: "0 0 40px rgba(201,168,76,0.04)", width: 130 }}>
+                      Corvo
+                      <span style={{ display: "block", fontSize: 8, letterSpacing: 1.5, color: "rgba(201,168,76,0.5)", fontWeight: 400, marginTop: 2 }}>FREE</span>
+                    </th>
+                    <th style={{ padding: "14px 16px", textAlign: "center", fontSize: 11, fontWeight: 600, color: "rgba(232,224,204,0.3)", borderBottom: "1px solid rgba(201,168,76,0.08)", width: 160 }}>
+                      Yahoo Finance
+                      <span style={{ display: "block", fontSize: 8, letterSpacing: 1, color: "rgba(232,224,204,0.2)", fontWeight: 400, marginTop: 2 }}>Plus ~$25/mo</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {FEATURES.map(([label, corvo, yahoo], ri) => (
+                    <motion.tr
+                      key={ri}
+                      initial={{ opacity: 0, x: -12 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: "-40px" }}
+                      transition={{ duration: 0.4, ease: EASE, delay: ri * 0.04 }}
+                      style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}
+                    >
+                      <td style={{ padding: "13px 20px", fontSize: 13, color: "rgba(232,224,204,0.6)", fontWeight: 300 }}>{label}</td>
+                      <td style={{ padding: "13px 16px", textAlign: "center", borderLeft: "1px solid rgba(201,168,76,0.18)", borderRight: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.03)", fontSize: 15 }}>
+                        {corvo ? <span style={{ color: "#c9a84c", fontWeight: 700 }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.12)" }}>✗</span>}
+                      </td>
+                      <td style={{ padding: "13px 16px", textAlign: "center", fontSize: 14 }}>
+                        {yahoo ? <span style={{ color: "#5cb88a" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.12)" }}>✗</span>}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </FadeUp>
+          <FadeUp delay={0.15} style={{ textAlign: "center", marginTop: 20 }}>
+            <p style={{ fontSize: 12, color: "rgba(232,224,204,0.25)" }}>Yahoo Finance Plus features based on publicly available documentation. Corvo features are live as of 2026.</p>
+          </FadeUp>
+        </div>
+      </section>
+
+      {/* ─── PRICING COMPARISON ─── */}
+      <section style={{ padding: "0 48px 96px" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <FadeUp style={{ textAlign: "center", marginBottom: 56 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Pricing</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>More features. Less cost.</h2>
+          </FadeUp>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 24, alignItems: "center" }}>
+            <FadeUp>
+              <div style={{ background: "rgba(110,170,255,0.03)", border: "1px solid rgba(110,170,255,0.12)", borderRadius: 20, padding: "40px 36px", textAlign: "center" }}>
+                <p style={{ fontSize: 11, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 16 }}>Yahoo Finance Plus</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 52, fontWeight: 700, color: "rgba(110,170,255,0.75)", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>$25</p>
+                <p style={{ fontSize: 13, color: "rgba(232,224,204,0.3)", marginBottom: 24 }}>per month</p>
+                <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10 }}>
+                  {["Stock screeners & filters", "Extended historical data", "Real-time quotes", "Basic portfolio tracking", "Ad-reduced experience (not ad-free)"].map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "rgba(232,224,204,0.25)", fontSize: 12 }}>–</span>
+                      <span style={{ fontSize: 12, color: "rgba(232,224,204,0.4)" }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </FadeUp>
+            <FadeUp delay={0.05}>
+              <div style={{ fontSize: 20, color: "rgba(232,224,204,0.15)", textAlign: "center" }}>vs</div>
+            </FadeUp>
+            <FadeUp delay={0.1}>
+              <div style={{ background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 20, padding: "40px 36px", textAlign: "center", boxShadow: "0 0 80px rgba(201,168,76,0.05)", position: "relative" }}>
+                <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "#c9a84c", color: "#0a0e14", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, padding: "4px 16px", borderRadius: 20, textTransform: "uppercase", whiteSpace: "nowrap" }}>Deeper analytics</div>
+                <p style={{ fontSize: 11, letterSpacing: 2, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", marginBottom: 16 }}>Corvo</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 52, fontWeight: 700, color: "#c9a84c", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>$0</p>
+                <p style={{ fontSize: 13, color: "rgba(201,168,76,0.4)", marginBottom: 24 }}>always free · no credit card</p>
+                <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10 }}>
+                  {["AI portfolio chat", "Monte Carlo simulation", "Sharpe ratio & risk metrics", "Correlation heatmap", "Tax loss harvesting"].map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "#c9a84c", fontSize: 12 }}>✓</span>
+                      <span style={{ fontSize: 12, color: "rgba(232,224,204,0.55)" }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </FadeUp>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── WHY INVESTORS SWITCH ─── */}
+      <section style={{ padding: "0 48px 96px" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Real Stories</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>Why investors upgrade from Yahoo Finance</h2>
+          </FadeUp>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
+            {[
+              { text: "The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like.", name: "James L.", role: "Dividend Investor · 8yr experience" },
+              { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
+              { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 300 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
+            ].map((t, i) => (
+              <FadeUp key={i} delay={i * 0.1}>
+                <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: "28px 24px", position: "relative" }}>
+                  <div style={{ fontSize: 28, color: "rgba(201,168,76,0.2)", fontFamily: "Georgia,serif", lineHeight: 1, marginBottom: 16, fontWeight: 700 }}>"</div>
+                  <p style={{ fontSize: 14, color: "rgba(232,224,204,0.6)", lineHeight: 1.75, fontWeight: 300, marginBottom: 20, fontStyle: "italic" }}>{t.text}</p>
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "#e8e0cc" }}>{t.name}</p>
+                    <p style={{ fontSize: 11, color: "rgba(232,224,204,0.3)", marginTop: 2 }}>{t.role}</p>
+                  </div>
+                </div>
+              </FadeUp>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── CTA ─── */}
+      <section style={{ padding: "0 48px 120px" }}>
+        <FadeUp>
+          <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 24, padding: "72px 48px", boxShadow: "0 0 100px rgba(201,168,76,0.04)", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: "-30%", left: "50%", transform: "translateX(-50%)", width: 400, height: 300, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Ready to Switch?</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,3.5vw,42px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 16, lineHeight: 1.2 }}>
+              It takes 60 seconds.
+            </h2>
+            <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", marginBottom: 44, lineHeight: 1.8, fontWeight: 300 }}>
+              Get the analytics Yahoo Finance doesn't offer — AI insights, Monte Carlo simulation, real risk metrics — all free.
+            </p>
+            <Link href="/auth" style={{ display: "inline-block", padding: "16px 48px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 15, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
+              Get Started Free →
+            </Link>
+            <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", marginTop: 20 }}>No credit card required · Takes 60 seconds to connect your portfolio</p>
+          </div>
+        </FadeUp>
+      </section>
+
+      {/* ─── FOOTER ─── */}
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 48px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img src="/corvo-logo.svg" width={14} height={12} alt="Corvo" style={{ opacity: 0.4 }} />
+            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
+            <span style={{ fontSize: 11, color: "rgba(232,224,204,0.15)", marginLeft: 8 }}>© 2026</span>
+          </div>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            {[["Home", "/"], ["About", "/about"], ["Pricing", "/pricing"], ["FAQ", "/faq"], ["vs Bloomberg", "/compare/bloomberg"], ["vs Robinhood", "/compare/robinhood"]].map(([label, href]) => (
+              <Link key={href} href={href} style={{ fontSize: 11, color: "rgba(232,224,204,0.3)", textDecoration: "none" }}>{label}</Link>
+            ))}
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

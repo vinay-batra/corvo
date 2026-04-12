@@ -2091,6 +2091,11 @@ export default function Landing() {
                 </tbody>
               </table>
             </div>
+            <Reveal delay={0.1} style={{ marginTop: 24, display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+              <Link href="/compare/bloomberg" style={{ fontSize: 12, color: "rgba(201,168,76,0.6)", textDecoration: "none" }}>Corvo vs Bloomberg →</Link>
+              <Link href="/compare/yahoo-finance" style={{ fontSize: 12, color: "rgba(201,168,76,0.6)", textDecoration: "none" }}>Corvo vs Yahoo Finance →</Link>
+              <Link href="/compare/robinhood" style={{ fontSize: 12, color: "rgba(201,168,76,0.6)", textDecoration: "none" }}>Corvo vs Robinhood →</Link>
+            </Reveal>
           </Reveal>
         </div>
       </section>
@@ -2217,6 +2222,9 @@ export default function Landing() {
             <a href="/terms" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Terms</a>
             <a href="/faq" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>FAQ</a>
             <a href="/changelog" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Changelog</a>
+            <a href="/compare/bloomberg" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>vs Bloomberg</a>
+            <a href="/compare/yahoo-finance" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>vs Yahoo Finance</a>
+            <a href="/compare/robinhood" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>vs Robinhood</a>
             <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>GitHub</a>
             <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="x-social-link" style={{ color: "rgba(232,224,204,0.35)", textDecoration: "none", display: "flex", alignItems: "center", transition: "color 0.2s" }}>
               <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">

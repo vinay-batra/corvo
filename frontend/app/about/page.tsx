@@ -569,6 +569,29 @@ export default function AboutPage() {
         </Reveal>
       </section>
 
+      {/* ─── COMPARE LINKS ─── */}
+      <section className="about-section" style={{ position: "relative", zIndex: 1, padding: "0 56px 80px" }}>
+        <Reveal>
+          <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 20 }}>Comparisons</p>
+            <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", marginBottom: 28, lineHeight: 1.8, fontWeight: 300 }}>
+              See how Corvo stacks up against the most popular investing tools.
+            </p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <Link href="/compare/bloomberg" style={{ padding: "10px 24px", borderRadius: 10, border: "1px solid rgba(201,168,76,0.2)", color: "rgba(201,168,76,0.7)", fontSize: 13, textDecoration: "none", transition: "border-color 0.2s, color 0.2s" }}>
+                Corvo vs Bloomberg →
+              </Link>
+              <Link href="/compare/yahoo-finance" style={{ padding: "10px 24px", borderRadius: 10, border: "1px solid rgba(201,168,76,0.2)", color: "rgba(201,168,76,0.7)", fontSize: 13, textDecoration: "none", transition: "border-color 0.2s, color 0.2s" }}>
+                Corvo vs Yahoo Finance →
+              </Link>
+              <Link href="/compare/robinhood" style={{ padding: "10px 24px", borderRadius: 10, border: "1px solid rgba(201,168,76,0.2)", color: "rgba(201,168,76,0.7)", fontSize: 13, textDecoration: "none", transition: "border-color 0.2s, color 0.2s" }}>
+                Corvo vs Robinhood →
+              </Link>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
       {/* ─── GET IN TOUCH ─── */}
       <section className="about-section" style={{ position: "relative", zIndex: 1, padding: "0 56px 100px" }}>
         <Reveal>
@@ -609,6 +632,9 @@ export default function AboutPage() {
             <Link href="/about" style={{ fontSize: 11, color: "#c9a84c", textDecoration: "none" }}>About</Link>
             <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</a>
             <a href="/terms" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</a>
+            <Link href="/compare/bloomberg" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>vs Bloomberg</Link>
+            <Link href="/compare/yahoo-finance" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>vs Yahoo Finance</Link>
+            <Link href="/compare/robinhood" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>vs Robinhood</Link>
             <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>GitHub</a>
             <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" style={{ color: "rgba(232,224,204,0.2)", textDecoration: "none", display: "flex", alignItems: "center" }}>
               <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
