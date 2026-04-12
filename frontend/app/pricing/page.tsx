@@ -795,7 +795,7 @@ export default function PricingPage() {
             borderRadius: 16,
             padding: "18px 32px",
           }}>
-            <span style={{ fontSize: 22 }}>🔒</span>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <div style={{ textAlign: "left" }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 2 }}>
                 100% free during beta
