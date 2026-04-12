@@ -241,6 +241,46 @@ function MockPortfolioCard() {
   );
 }
 
+/* ─── Roadmap status config ─── */
+const ROADMAP_STATUS = {
+  inprogress: { label: "In Progress", bg: "rgba(201,168,76,0.1)",      color: "#c9a84c",                 border: "rgba(201,168,76,0.28)" },
+  soon:       { label: "Coming Soon", bg: "rgba(99,155,220,0.1)",       color: "#7aaee0",                 border: "rgba(99,155,220,0.22)" },
+  planned:    { label: "Planned",     bg: "rgba(255,255,255,0.04)",     color: "rgba(232,224,204,0.38)",  border: "rgba(255,255,255,0.07)" },
+} as const;
+
+/* ─── Roadmap Card ─── */
+function RoadmapCard({ icon, name, desc, status, delay }: {
+  icon: React.ReactNode; name: string; desc: string; status: keyof typeof ROADMAP_STATUS; delay: number;
+}) {
+  const { ref, visible } = useReveal(0.08);
+  const s = ROADMAP_STATUS[status];
+  return (
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(24px)",
+      transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
+      background: "rgba(255,255,255,0.018)",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: 16,
+      padding: "26px 24px 22px",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      <div style={{ position: "absolute", top: -24, right: -24, width: 100, height: 100, background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 16 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(201,168,76,0.07)", border: "1px solid rgba(201,168,76,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {icon}
+        </div>
+        <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: 1.5, padding: "4px 10px", borderRadius: 20, background: s.bg, color: s.color, border: `1px solid ${s.border}`, textTransform: "uppercase", flexShrink: 0, marginTop: 2 }}>
+          {s.label}
+        </span>
+      </div>
+      <h3 style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 7, letterSpacing: -0.2 }}>{name}</h3>
+      <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", lineHeight: 1.7, fontWeight: 300 }}>{desc}</p>
+    </div>
+  );
+}
+
 /* ─── Main About Page ─── */
 export default function AboutPage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -280,6 +320,7 @@ export default function AboutPage() {
           .about-product-grid{display:flex!important;flex-direction:column!important}
           .about-stats-grid{grid-template-columns:repeat(2,1fr)!important}
           .about-values-grid{display:flex!important;flex-direction:column!important}
+          .roadmap-grid{display:flex!important;flex-direction:column!important}
           .nav-pad{padding:0 20px!important}
           .about-section{padding-left:20px!important;padding-right:20px!important}
         }
@@ -384,6 +425,33 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* ─── WHY WE BUILT THIS ─── */}
+      <section className="about-section" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+        <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
+          <Reveal style={{ marginBottom: 56 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Origin</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,3.5vw,42px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>
+              The problem we{"'"}re solving
+            </h2>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <p style={{ fontSize: "clamp(15px,1.6vw,18px)", color: "rgba(232,224,204,0.6)", lineHeight: 1.95, fontWeight: 300, marginBottom: 28 }}>
+              Bloomberg Terminal costs $24,000 a year. Yahoo Finance {"hasn't"} changed since 2008. Robinhood gives you a chart and a buy button. None of them treat retail investors like adults.
+            </p>
+          </Reveal>
+          <Reveal delay={0.16}>
+            <p style={{ fontSize: "clamp(15px,1.6vw,18px)", color: "rgba(232,224,204,0.6)", lineHeight: 1.95, fontWeight: 300, marginBottom: 28 }}>
+              We built Corvo because we were frustrated. Frustrated that institutional-grade analytics were locked behind paywalls. Frustrated that learning about investing meant reading dry textbooks or watching YouTube videos. Frustrated that the tools we had were either too expensive or too shallow.
+            </p>
+          </Reveal>
+          <Reveal delay={0.24}>
+            <p style={{ fontSize: "clamp(16px,1.7vw,20px)", color: "rgba(232,224,204,0.85)", lineHeight: 1.85, fontWeight: 400 }}>
+              Corvo is the tool we wish existed. Powerful enough for serious analysis. Free enough for everyone. Beautiful enough that you actually want to use it.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ─── THE TEAM ─── */}
       <section className="about-section" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
@@ -427,6 +495,52 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* ─── PRODUCT ROADMAP ─── */}
+      <section className="about-section" style={{ position: "relative", zIndex: 1, padding: "0 56px 120px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 64 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Roadmap</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,3.5vw,42px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>
+              {"What we're building next"}
+            </h2>
+          </Reveal>
+          <div className="roadmap-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
+            <RoadmapCard status="inprogress" delay={0} name="Options Chain Viewer"
+              desc="Full options chain with live greeks, open interest, and volume. Built-in scanner highlights unusual activity."
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="2" rx="1" fill="rgba(201,168,76,0.6)"/><rect x="2" y="9" width="16" height="2" rx="1" fill="rgba(201,168,76,0.4)"/><rect x="2" y="15" width="16" height="2" rx="1" fill="rgba(201,168,76,0.4)"/><rect x="6.5" y="2" width="1.5" height="16" rx="0.75" fill="rgba(201,168,76,0.2)"/><rect x="12" y="2" width="1.5" height="16" rx="0.75" fill="rgba(201,168,76,0.2)"/></svg>}
+            />
+            <RoadmapCard status="inprogress" delay={0.08} name="Paper Trading Simulation"
+              desc="Practice trading with live market data and your actual portfolio context. No real money at risk."
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2 14C4 12 6 8 9 7C12 6 14 10 17 8" stroke="rgba(201,168,76,0.7)" strokeWidth="1.4" strokeLinecap="round"/><circle cx="9" cy="7" r="1.6" fill="rgba(201,168,76,0.2)" stroke="rgba(201,168,76,0.7)" strokeWidth="1.2"/><path d="M15 16l3-3-3-3M17 13H9" stroke="rgba(201,168,76,0.6)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            />
+            <RoadmapCard status="soon" delay={0.16} name="AI Stock Summary Cards"
+              desc="One-click AI-generated deep dives on any ticker with fundamentals, sentiment, and price history analysis."
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="11" rx="3" stroke="rgba(201,168,76,0.65)" strokeWidth="1.3"/><path d="M10 2L10.7 6.3L15 7L10.7 7.7L10 12L9.3 7.7L5 7L9.3 6.3Z" fill="rgba(201,168,76,0.55)"/></svg>}
+            />
+            <RoadmapCard status="soon" delay={0.24} name="Brokerage Direct Connect"
+              desc="Sync your real holdings automatically from Fidelity, Schwab, and Interactive Brokers. One click, always up to date."
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="5" cy="10" r="2.5" stroke="rgba(201,168,76,0.65)" strokeWidth="1.3"/><circle cx="15" cy="10" r="2.5" stroke="rgba(201,168,76,0.65)" strokeWidth="1.3"/><path d="M7.5 10h5" stroke="rgba(201,168,76,0.65)" strokeWidth="1.3" strokeLinecap="round" strokeDasharray="2 1.5"/><path d="M5 4V2M15 4V2" stroke="rgba(201,168,76,0.35)" strokeWidth="1.2" strokeLinecap="round"/></svg>}
+            />
+            <RoadmapCard status="soon" delay={0.32} name="Mobile App"
+              desc="Native iOS and Android with real-time alerts, portfolio snapshots, and full AI chat on the go."
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="6" y="2" width="8" height="16" rx="2.5" stroke="rgba(201,168,76,0.65)" strokeWidth="1.3"/><circle cx="10" cy="15.5" r="0.9" fill="rgba(201,168,76,0.6)"/><path d="M8 5h4" stroke="rgba(201,168,76,0.35)" strokeWidth="1.2" strokeLinecap="round"/></svg>}
+            />
+            <RoadmapCard status="planned" delay={0.4} name="Social Portfolio Sharing"
+              desc="Share anonymized portfolio snapshots with the Corvo community. Learn from how others are allocated."
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4.5" r="2" stroke="rgba(201,168,76,0.5)" strokeWidth="1.3"/><circle cx="4" cy="15.5" r="2" stroke="rgba(201,168,76,0.5)" strokeWidth="1.3"/><circle cx="16" cy="15.5" r="2" stroke="rgba(201,168,76,0.5)" strokeWidth="1.3"/><path d="M8.5 6L5.5 13.5M11.5 6L14.5 13.5M6 15.5h8" stroke="rgba(201,168,76,0.3)" strokeWidth="1.2" strokeLinecap="round"/></svg>}
+            />
+            <RoadmapCard status="planned" delay={0.48} name="Tax Document Export"
+              desc="Generate a tax-ready summary of realized gains, losses, and dividend income. Download as CSV or PDF."
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 2H5a1 1 0 00-1 1v14a1 1 0 001 1h10a1 1 0 001-1V6l-3-4z" stroke="rgba(201,168,76,0.5)" strokeWidth="1.3" strokeLinejoin="round"/><path d="M13 2v4h4" stroke="rgba(201,168,76,0.5)" strokeWidth="1.3" strokeLinejoin="round"/><path d="M10 9v5M8 12l2 2 2-2" stroke="rgba(201,168,76,0.5)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            />
+            <RoadmapCard status="planned" delay={0.56} name="Options Strategy Builder"
+              desc="Visual builder for covered calls, spreads, and multi-leg strategies with real-time risk and reward charts."
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2 15C4 15 4 8 7 8C10 8 10 13 13 13C16 13 16 6 18 5" stroke="rgba(201,168,76,0.55)" strokeWidth="1.4" strokeLinecap="round"/><circle cx="7" cy="8" r="1.5" fill="rgba(201,168,76,0.45)"/><circle cx="13" cy="13" r="1.5" fill="rgba(201,168,76,0.45)"/></svg>}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* ─── CTA ─── */}
       <section className="about-section" style={{ position: "relative", zIndex: 1, padding: "0 56px 140px" }}>
         <Reveal>
@@ -451,6 +565,34 @@ export default function AboutPage() {
               </Link>
             </div>
             <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", marginTop: 20 }}>No credit card · No account required for demo</p>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ─── GET IN TOUCH ─── */}
+      <section className="about-section" style={{ position: "relative", zIndex: 1, padding: "0 56px 100px" }}>
+        <Reveal>
+          <div style={{ maxWidth: 480, margin: "0 auto", textAlign: "center" }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 20 }}>Contact</p>
+            <p style={{ fontSize: "clamp(15px,1.5vw,17px)", color: "rgba(232,224,204,0.5)", lineHeight: 1.8, fontWeight: 300, marginBottom: 32 }}>
+              {"We're"} a small team. We read every email.
+            </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 28, flexWrap: "wrap" }}>
+              <a href="mailto:hello@corvo.capital" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#c9a84c", textDecoration: "none", fontFamily: "Space Mono,monospace", letterSpacing: 0.3, transition: "opacity 0.2s" }} onMouseEnter={e => (e.currentTarget.style.opacity = "0.7")} onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.5"/><path d="M2 7l8 5 8-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                hello@corvo.capital
+              </a>
+              <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.08)" }} />
+              <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "rgba(232,224,204,0.4)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.4)")}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                GitHub
+              </a>
+              <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.08)" }} />
+              <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "rgba(232,224,204,0.4)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.4)")}>
+                <svg width="13" height="13" viewBox="0 0 300 300" fill="currentColor"><path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"/></svg>
+                X / Twitter
+              </a>
+            </div>
           </div>
         </Reveal>
       </section>
