@@ -50,6 +50,7 @@ import MarketBrief from "../../components/MarketBrief";
 import EmailPreferences from "../../components/EmailPreferences";
 import ReferralModal from "../../components/ReferralModal";
 import SettingsPage from "../settings/page";
+import ShareImageModal from "../../components/ShareImageModal";
 
 const TABS = [
   { id: "overview",  label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -1852,42 +1853,11 @@ export default function AppPage() {
       {/* Share card modal */}
       <AnimatePresence>
         {showShareCard && data && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setShowShareCard(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 510, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-            <motion.div initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 16 }} transition={{ duration: 0.2 }}
-              onClick={e => e.stopPropagation()}
-              style={{ background: "#0a0e14", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 16, padding: "28px 32px", maxWidth: 400, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "#c9a84c", fontWeight: 700 }}>CORVO</span>
-              </div>
-              <p style={{ fontSize: 11, letterSpacing: 2, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 16 }}>Portfolio Snapshot</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
-                {[
-                  { label: "Return", value: data.portfolio_return != null ? `${(data.portfolio_return * 100).toFixed(1)}%` : "N/A" },
-                  { label: "Sharpe", value: data.sharpe_ratio != null ? data.sharpe_ratio.toFixed(2) : "N/A" },
-                  { label: "Volatility", value: data.portfolio_volatility != null ? `${(data.portfolio_volatility * 100).toFixed(1)}%` : "N/A" },
-                  { label: "Max Drawdown", value: data.max_drawdown != null ? `${(data.max_drawdown * 100).toFixed(1)}%` : "N/A" },
-                ].map(({ label, value }) => (
-                  <div key={label} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "12px 14px" }}>
-                    <p style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 4 }}>{label}</p>
-                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "#e8e0cc" }}>{value}</p>
-                  </div>
-                ))}
-              </div>
-              <p style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginBottom: 16 }}>
-                {assets.slice(0, 3).map(a => `${a.ticker} ${Math.round(a.weight)}%`).join("  ·  ")}
-                {assets.length > 3 ? `  +${assets.length - 3} more` : ""}
-              </p>
-              <button onClick={sharePortfolio}
-                style={{ width: "100%", padding: "11px", background: "#c9a84c", border: "none", borderRadius: 8, color: "#0a0e14", fontSize: 12, fontWeight: 700, letterSpacing: 1, cursor: "pointer", transition: "opacity 0.15s" }}
-                onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-                onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
-                Copy shareable link
-              </button>
-            </motion.div>
-          </motion.div>
+          <ShareImageModal
+            assets={assets}
+            data={data}
+            onClose={() => setShowShareCard(false)}
+          />
         )}
       </AnimatePresence>
 
