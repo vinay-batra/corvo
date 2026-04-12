@@ -29,7 +29,29 @@ const EXPLAINERS = [
   { title: "Max Drawdown", simple: "Biggest drop from peak to trough that happened.", example: "$50k drops to $35k = -30% max drawdown.", good: "Closer to 0% is better. Under 10% very stable." },
 ];
 
-export function Metrics({ data, currency = "USD", rate = 1 }: { data: any; currency?: string; rate?: number }) {
+function Sparkline({ values, positive }: { values: number[]; positive: boolean }) {
+  if (!values || values.length < 2) return null;
+  const W = 64, H = 24;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * W;
+    const y = H - ((v - min) / range) * H;
+    return `${x},${y}`;
+  });
+  const pathD = "M" + pts.join(" L");
+  const fillD = pathD + ` L${W},${H} L0,${H} Z`;
+  const color = positive ? "#4caf7d" : "#e05c5c";
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+      <path d={fillD} fill={color} fillOpacity={0.1} />
+      <path d={pathD} stroke={color} strokeWidth={1.5} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function Metrics({ data, currency = "USD", rate = 1, sparklineValues }: { data: any; currency?: string; rate?: number; sparklineValues?: number[] }) {
   const [modal, setModal] = useState<number|null>(null);
   const modalIdRef = useRef(`metrics-modal-${Math.random().toString(36).slice(2)}`);
 
@@ -73,9 +95,16 @@ export function Metrics({ data, currency = "USD", rate = 1 }: { data: any; curre
               onMouseEnter={e=>{e.currentTarget.style.background=C.amber;e.currentTarget.style.color="#0a0e14";}}
               onMouseLeave={e=>{e.currentTarget.style.background="var(--bg3)";e.currentTarget.style.color="var(--text3)";}}>?</button>
           </div>
-          <p style={{fontFamily:"Space Mono,monospace",fontSize:24,fontWeight:700,letterSpacing:-1,color:neg?C.red:"var(--text)",lineHeight:1}}>
-            <Num value={value} fmt={fmt}/>
-          </p>
+          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:8}}>
+            <p style={{fontFamily:"Space Mono,monospace",fontSize:24,fontWeight:700,letterSpacing:-1,color:neg?C.red:"var(--text)",lineHeight:1}}>
+              <Num value={value} fmt={fmt}/>
+            </p>
+            {sparklineValues && sparklineValues.length >= 2 && i === 0 && (
+              <div style={{marginBottom:2,flexShrink:0}}>
+                <Sparkline values={sparklineValues.slice(-7)} positive={!neg}/>
+              </div>
+            )}
+          </div>
           {bar!==null&&(
             <div style={{marginTop:10,height:2,background:"var(--track)",borderRadius:1,overflow:"hidden"}}>
               <motion.div initial={{width:0}} animate={{width:`${Math.min(bar,1)*100}%`}} transition={{duration:1,delay:i*0.07+0.3}}
