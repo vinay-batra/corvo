@@ -2758,14 +2758,24 @@ def _brief_generate(indices: dict[str, float], movers: list[dict]) -> str:
         "Paragraph 1: Overall market mood.\n"
         "Paragraph 2: Notable movers.\n"
         "Paragraph 3: One forward-looking insight.\n"
-        "Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff."
+        "Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff.\n\n"
+        "FORMATTING RULES — follow these exactly:\n"
+        "- Never use asterisks (*) or double asterisks (**) for bold or any formatting\n"
+        "- Never use em dashes (—) anywhere in the response\n"
+        "- Never use markdown formatting of any kind\n"
+        "- Write in plain prose only\n"
+        "- No bullet points, no headers, no bold, no italics\n"
+        "- Just three clean paragraphs of plain text separated by double newlines"
     )
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=400,
         messages=[{"role": "user", "content": prompt}],
     )
-    return response.content[0].text.strip()
+    raw = response.content[0].text.strip()
+    # Post-process: strip any stray markdown characters
+    cleaned = raw.replace("**", "").replace("*", "").replace("—", ",")
+    return cleaned
 
 
 def _brief_push_body(brief: str, indices: dict[str, float]) -> str:

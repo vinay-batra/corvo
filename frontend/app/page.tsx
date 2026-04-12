@@ -62,14 +62,42 @@ function LoopCounter({ target, suffix = "", prefix = "", decimals = 0, duration 
   return <span ref={ref}>{prefix}{display}{suffix}</span>;
 }
 
-/* ─── Reveal wrapper ─── */
-function Reveal({ children, delay = 0, y = 40, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
-  const { ref, visible } = useReveal();
+/* ─── Animation defaults ─── */
+const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
+
+/* ─── FadeUp — reusable Framer Motion scroll-in ─── */
+function FadeUp({ children, delay = 0, y = 30, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
   return (
-    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : `translateY(${y}px)`, transition: `opacity 0.9s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.9s cubic-bezier(0.16,1,0.3,1) ${delay}s`, ...style }}>
+    <motion.div
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
+      style={style}
+    >
       {children}
-    </div>
+    </motion.div>
   );
+}
+
+/* ─── SlideIn — reusable Framer Motion horizontal slide ─── */
+function SlideIn({ children, direction = "left", delay = 0, style = {} }: { children: React.ReactNode; direction?: "left" | "right"; delay?: number; style?: React.CSSProperties }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: direction === "left" ? -40 : 40 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
+      style={style}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─── Reveal wrapper (delegates to FadeUp) ─── */
+function Reveal({ children, delay = 0, y = 30, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
+  return <FadeUp delay={delay} y={y} style={style}>{children}</FadeUp>;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -505,21 +533,67 @@ const STOCK_DATA: Record<string, { name: string; price: string; sharpe: string; 
 };
 
 /* ─── Stock Teaser Section ─── */
+interface TeaserResult {
+  name: string;
+  price: string;
+  changePct: number | null;
+  sharpe: string;
+  health: number;
+  peRatio: string | null;
+  volatility: string;
+  insight: string;
+  isLive: boolean;
+}
+
 function StockTeaserSection() {
   const { ref, visible } = useReveal(0.1);
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState<{ name: string; price: string; sharpe: string; health: number; volatility: string; insight: string } | null>(null);
+  const [result, setResult] = useState<TeaserResult | null>(null);
   const [cardVisible, setCardVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSearch = (ticker?: string) => {
+  const formatPrice = (price: number): string => {
+    if (price >= 1000) return `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `$${price.toFixed(2)}`;
+  };
+
+  const handleSearch = async (ticker?: string) => {
     const key = (ticker ?? query).trim().toUpperCase();
     if (!key) return;
     setCardVisible(false);
+    setLoading(true);
     if (ticker) setQuery(ticker);
-    setTimeout(() => {
-      setResult(STOCK_DATA[key] || { name: `"${key}" — unknown ticker`, price: "—", sharpe: "—", health: 0, volatility: "—", insight: "No data found. Try AAPL, TSLA, NVDA, MSFT, or BTC-USD." });
+
+    const fallback = STOCK_DATA[key];
+
+    try {
+      const res = await fetch(`${API_URL}/stock/${key}`);
+      if (!res.ok) throw new Error("not ok");
+      const data = await res.json();
+
+      const peRaw = data.pe_ratio as number | null;
+      setResult({
+        name: data.name || fallback?.name || key,
+        price: formatPrice(data.current_price),
+        changePct: typeof data.change_pct === "number" ? data.change_pct : null,
+        sharpe: fallback?.sharpe ?? "—",
+        health: fallback?.health ?? 0,
+        peRatio: peRaw != null ? peRaw.toFixed(1) : null,
+        volatility: fallback?.volatility ?? "—",
+        insight: fallback?.insight ?? `${data.name || key} data loaded live from market.`,
+        isLive: true,
+      });
+    } catch {
+      // Silently fall back to hardcoded data
+      setResult(
+        fallback
+          ? { ...fallback, changePct: null, peRatio: null, isLive: false }
+          : { name: `"${key}" — unknown ticker`, price: "—", changePct: null, sharpe: "—", health: 0, peRatio: null, volatility: "—", insight: "No data found. Try AAPL, TSLA, NVDA, MSFT, or BTC-USD.", isLive: false }
+      );
+    } finally {
+      setLoading(false);
       setCardVisible(true);
-    }, 60);
+    }
   };
 
   const healthColor = (h: number) => h >= 80 ? "#5cb88a" : h >= 60 ? "#c9a84c" : "#e05c5c";
@@ -553,27 +627,55 @@ function StockTeaserSection() {
           </div>
           <button
             onClick={() => handleSearch()}
-            style={{ padding: "14px 24px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: 0.3, flexShrink: 0, transition: "background 0.2s, transform 0.15s" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#d4b558"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+            disabled={loading}
+            style={{ padding: "14px 24px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: loading ? "wait" : "pointer", letterSpacing: 0.3, flexShrink: 0, transition: "background 0.2s, transform 0.15s", opacity: loading ? 0.8 : 1 }}
+            onMouseEnter={e => { if (!loading) { (e.currentTarget as HTMLButtonElement).style.background = "#d4b558"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; } }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#c9a84c"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}>
-            Analyze →
+            {loading ? "…" : "Analyze →"}
           </button>
         </div>
 
         {/* Suggestion chips */}
         <div style={{ opacity: visible ? 1 : 0, transition: "opacity 0.9s cubic-bezier(0.16,1,0.3,1) 0.25s", display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
           {["AAPL", "MSFT", "NVDA", "TSLA", "SPY", "BTC-USD"].map(t => (
-            <button key={t} onClick={() => handleSearch(t)}
-              style={{ padding: "5px 12px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 20, fontSize: 10, color: "rgba(201,168,76,0.7)", fontFamily: "Space Mono,monospace", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.2s" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.12)"; (e.currentTarget as HTMLButtonElement).style.color = "#c9a84c"; }}
+            <button key={t} onClick={() => handleSearch(t)} disabled={loading}
+              style={{ padding: "5px 12px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 20, fontSize: 10, color: "rgba(201,168,76,0.7)", fontFamily: "Space Mono,monospace", cursor: loading ? "wait" : "pointer", letterSpacing: 0.5, transition: "all 0.2s" }}
+              onMouseEnter={e => { if (!loading) { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.12)"; (e.currentTarget as HTMLButtonElement).style.color = "#c9a84c"; } }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(201,168,76,0.7)"; }}>
               {t}
             </button>
           ))}
         </div>
 
+        {/* Loading skeleton */}
+        {loading && (
+          <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 18, overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out infinite" }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ width: 140, height: 12, borderRadius: 4, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out infinite" }} />
+                  <div style={{ width: 80, height: 18, borderRadius: 4, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out 0.15s infinite" }} />
+                </div>
+              </div>
+              <div style={{ width: 60, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out 0.3s infinite" }} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
+              {[0, 0.1, 0.2].map((d, i) => (
+                <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                  <div style={{ width: 60, height: 8, borderRadius: 3, background: "rgba(255,255,255,0.04)", marginBottom: 10, animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
+                  <div style={{ width: 48, height: 20, borderRadius: 4, background: "rgba(255,255,255,0.04)", animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.04)", background: "rgba(201,168,76,0.02)" }}>
+              <div style={{ width: "70%", height: 10, borderRadius: 4, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out 0.2s infinite" }} />
+            </div>
+          </div>
+        )}
+
         {/* Analysis card */}
-        {result && (
+        {!loading && result && (
           <div style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.97)", transition: "opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1)", background: "rgba(255,255,255,0.018)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 18, overflow: "hidden", boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)" }}>
             {/* Card header */}
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -582,12 +684,27 @@ function StockTeaserSection() {
                   {query || "—"}
                 </div>
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 600, color: "#e8e0cc", letterSpacing: -0.3 }}>{result.name}</p>
-                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, lineHeight: 1.1 }}>{result.price}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: "#e8e0cc", letterSpacing: -0.3 }}>{result.name}</p>
+                    {result.isLive && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 7px", background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.2)", borderRadius: 10, fontSize: 8, color: "#5cb88a", letterSpacing: 0.5 }}>
+                        <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#5cb88a", display: "inline-block", animation: "pdot 2s infinite" }} />
+                        LIVE
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, lineHeight: 1.1 }}>{result.price}</p>
+                    {result.changePct != null && (
+                      <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", fontWeight: 600, color: result.changePct >= 0 ? "#5cb88a" : "#e05c5c" }}>
+                        {result.changePct >= 0 ? "+" : ""}{result.changePct.toFixed(2)}%
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div style={{ textAlign: "right" as const }}>
-                <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 4 }}>Health Score</p>
+                <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 4 }}>Health (Est.)</p>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 22, fontWeight: 700, color: healthColor(result.health), letterSpacing: -1 }}>{result.health > 0 ? result.health : "—"}</p>
                 {result.health > 0 && <p style={{ fontSize: 9, color: healthColor(result.health), letterSpacing: 1 }}>{healthLabel(result.health)}</p>}
               </div>
@@ -595,9 +712,11 @@ function StockTeaserSection() {
             {/* Metrics row */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
               {[
-                { label: "Sharpe Ratio", value: result.sharpe, color: "#e8e0cc" },
-                { label: "Volatility", value: result.volatility, color: result.volatility !== "—" && parseFloat(result.volatility) > 40 ? "#e05c5c" : "#e8e0cc" },
-                { label: "Health Score", value: result.health > 0 ? `${result.health}/100` : "—", color: healthColor(result.health) },
+                { label: "Sharpe (Est.)", value: result.sharpe, color: "#e8e0cc" },
+                result.peRatio != null
+                  ? { label: "P/E Ratio", value: result.peRatio, color: "#e8e0cc" }
+                  : { label: "Volatility", value: result.volatility, color: result.volatility !== "—" && parseFloat(result.volatility) > 40 ? "#e05c5c" : "#e8e0cc" },
+                { label: "Health (Est.)", value: result.health > 0 ? `${result.health}/100` : "—", color: healthColor(result.health) },
               ].map((m, i) => (
                 <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
                   <p style={{ fontSize: 7, letterSpacing: 2, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 6 }}>{m.label}</p>
@@ -612,7 +731,7 @@ function StockTeaserSection() {
             </div>
             {/* CTA */}
             <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <p style={{ fontSize: 11, color: "rgba(232,224,204,0.25)" }}>Powered by Corvo · Preview only</p>
+              <p style={{ fontSize: 11, color: "rgba(232,224,204,0.25)" }}>{result.isLive ? "Live market data · Preview only" : "Powered by Corvo · Preview only"}</p>
               <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "#c9a84c", borderRadius: 9, fontSize: 12, fontWeight: 700, color: "#0a0e14", textDecoration: "none", transition: "background 0.2s" }}
                 onMouseEnter={e => (e.currentTarget.style.background = "#d4b558")}
                 onMouseLeave={e => (e.currentTarget.style.background = "#c9a84c")}>
@@ -1358,6 +1477,7 @@ export default function Landing() {
         @keyframes amberPulse{0%,100%{box-shadow:0 0 24px rgba(201,168,76,0.3),0 12px 40px rgba(201,168,76,0.15)}50%{box-shadow:0 0 48px rgba(201,168,76,0.5),0 16px 60px rgba(201,168,76,0.25)}}
         @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
         @keyframes drawChart{to{stroke-dashoffset:0}}
+        @keyframes skeletonPulse{0%,100%{opacity:0.4}50%{opacity:0.9}}
         @keyframes drawLoopLine{0%,3%{stroke-dashoffset:1}65%,87%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
         @keyframes xpLoop{0%,5%{width:0%}55%,82%{width:72%}92%,100%{width:0%}}
         .cta{transition:all 0.25s!important}.cta:hover{background:#d4b558!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(201,168,76,0.25)!important}
