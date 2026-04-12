@@ -139,7 +139,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
       {open && (
         <motion.aside
           initial={{ width: 0, opacity: 0 }}
-          animate={{ width: 264, opacity: 1 }}
+          animate={{ width: 420, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ type: "spring", damping: 28, stiffness: 260 }}
           style={{

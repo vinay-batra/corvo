@@ -44,21 +44,24 @@ export default function KeyboardShortcutsModal({ open, onClose }: Props) {
             onClick={onClose}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 600, backdropFilter: "blur(4px)" }}
           />
+          <div style={{
+            position: "fixed", inset: 0, zIndex: 601,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "16px", pointerEvents: "none",
+          }}>
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             style={{
-              position: "fixed", left: "50%", top: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "min(480px, calc(100vw - 32px))",
+              width: "min(480px, 100%)",
               background: "var(--card-bg)",
               border: "0.5px solid var(--border2)",
               borderRadius: 16,
               padding: "24px 28px",
-              zIndex: 601,
               boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+              pointerEvents: "auto",
             }}
           >
             {/* Header */}
@@ -114,6 +117,7 @@ export default function KeyboardShortcutsModal({ open, onClose }: Props) {
               Press <kbd style={{ padding: "1px 5px", background: "var(--bg3)", borderRadius: 4, fontSize: 10, fontFamily: "mono" }}>?</kbd> anytime to reopen this panel
             </p>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
