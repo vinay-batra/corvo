@@ -261,17 +261,41 @@ function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
 function BentoLearnCard({ delay = 0 }: { delay?: number }) {
   const { ref, visible } = useReveal(0.1);
   const [xp, setXp] = useState(0);
+  const [visChecks, setVisChecks] = useState(0);
   useEffect(() => {
     if (!visible) return;
     let frame: number;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min((now - start) / 1500, 1);
-      setXp(Math.floor(2840 * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) frame = requestAnimationFrame(tick);
+    const animate = () => {
+      const start = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min((now - start) / 1500, 1);
+        setXp(Math.floor(2840 * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
     };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    animate();
+    const id = setInterval(animate, 5000);
+    return () => { clearInterval(id); cancelAnimationFrame(frame); };
+  }, [visible]);
+  useEffect(() => {
+    if (!visible) return;
+    const run = () => {
+      setVisChecks(0);
+      let count = 0;
+      const inner = setInterval(() => {
+        count++;
+        setVisChecks(count);
+        if (count >= 3) clearInterval(inner);
+      }, 500);
+      return inner;
+    };
+    let inner = run();
+    const outer = setInterval(() => {
+      clearInterval(inner);
+      inner = run();
+    }, 5000);
+    return () => { clearInterval(inner); clearInterval(outer); };
   }, [visible]);
   return (
     <BentoCard delay={delay} style={{ gridArea: "learnxp", padding: "28px" }}>
@@ -290,11 +314,19 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
           </div>
         </div>
         <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 12 }}>
-          <div style={{ height: "100%", width: visible ? "72%" : "0%", background: "linear-gradient(90deg, #c9a84c, #f59e0b)", borderRadius: 3, transition: "width 1.5s cubic-bezier(0.16,1,0.3,1) 0.4s" }} />
+          <div style={{ height: "100%", width: "0%", background: "linear-gradient(90deg, #c9a84c, #f59e0b)", borderRadius: 3, animation: visible ? "xpLoop 5s ease-in-out infinite" : "none" }} />
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {["Risk Basics ✓", "Diversification ✓", "Options →"].map((b, i) => (
-            <div key={i} style={{ fontSize: 9, padding: "4px 9px", borderRadius: 6, background: i < 2 ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)", color: i < 2 ? "#c9a84c" : "rgba(232,224,204,0.3)", border: i < 2 ? "1px solid rgba(201,168,76,0.18)" : "1px solid rgba(255,255,255,0.05)" }}>{b}</div>
+            <div key={i} style={{
+              fontSize: 9, padding: "4px 9px", borderRadius: 6,
+              background: i < 2 ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)",
+              color: i < 2 ? "#c9a84c" : "rgba(232,224,204,0.3)",
+              border: i < 2 ? "1px solid rgba(201,168,76,0.18)" : "1px solid rgba(255,255,255,0.05)",
+              opacity: visChecks > i ? 1 : 0,
+              transform: visChecks > i ? "translateY(0)" : "translateY(5px)",
+              transition: "opacity 0.35s ease, transform 0.35s ease",
+            }}>{b}</div>
           ))}
         </div>
       </div>
@@ -356,9 +388,11 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
           </defs>
           <path d="M0,88 C40,82 80,62 130,38 C180,14 230,6 280,2 L280,95 C230,90 180,84 130,78 C80,72 40,74 0,88Z" fill="url(#mcFan)" />
           {["M0,88 C40,80 80,58 130,32 C180,6 230,2 280,1", "M0,88 C40,83 80,64 130,42 C180,20 230,12 280,8", "M0,88 C40,85 80,70 130,52 C180,34 230,24 280,20", "M0,88 C40,84 80,67 130,46 C180,26 230,16 280,12", "M0,88 C40,86 80,74 130,60 C180,46 230,36 280,30"].map((d, i) => (
-            <path key={i} d={d} fill="none" stroke={`rgba(201,168,76,${0.06 + i * 0.02})`} strokeWidth="0.7" />
+            <path key={i} d={d} fill="none" stroke={`rgba(201,168,76,${0.06 + i * 0.02})`} strokeWidth="0.7"
+              pathLength="1" strokeDasharray="1" style={{ animation: `drawLoopLine 5s ease-in-out ${i * 0.25}s infinite` }} />
           ))}
-          <path d="M0,88 C40,84 80,68 130,46 C180,24 230,14 280,10" fill="none" stroke="rgba(201,168,76,0.65)" strokeWidth="2" />
+          <path d="M0,88 C40,84 80,68 130,46 C180,24 230,14 280,10" fill="none" stroke="rgba(201,168,76,0.65)" strokeWidth="2"
+            pathLength="1" strokeDasharray="1" style={{ animation: "drawLoopLine 5s ease-in-out 0.2s infinite" }} />
           <path d="M0,88 C40,86 80,76 130,64 C180,52 230,44 280,40" fill="none" stroke="rgba(224,92,92,0.4)" strokeWidth="1" strokeDasharray="4 3" />
           <path d="M0,88 C40,81 80,59 130,32 C180,5 230,1 280,0" fill="none" stroke="rgba(92,184,138,0.4)" strokeWidth="1" strokeDasharray="4 3" />
           <text x="240" y="8" fontSize="7" fill="rgba(92,184,138,0.7)" fontFamily="monospace">90th</text>
@@ -368,7 +402,9 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
           <div>
             <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 3 }}>Median at Retirement</p>
-            <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1 }}>$2.3M</p>
+            <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1 }}>
+              <LoopCounter prefix="$" target={2.3} decimals={1} suffix="M" duration={2000} loopEvery={5000} />
+            </p>
           </div>
           <div style={{ textAlign: "right" }}>
             <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 3 }}>Paths · Horizon</p>
@@ -412,7 +448,9 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
                 <line key={y} x1="0" y1={y} x2="360" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
               ))}
               <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2 L360,72 L0,72Z" fill="url(#pdfChartGrd)" />
-              <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2" fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2"
+                fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                pathLength="1" strokeDasharray="1" style={{ animation: "drawLoopLine 4.5s ease-in-out infinite" }} />
               {([[0,64],[85,47],[160,20],[250,9],[360,2]] as [number,number][]).map(([x,y], i) => (
                 <circle key={i} cx={x} cy={y} r="2.5" fill="#c9a84c" opacity="0.9" />
               ))}
@@ -420,12 +458,12 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
           </div>
           {/* 4 stats */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, position: "relative", zIndex: 1 }}>
-            {[
-              { label: "Sharpe", value: "0.66", color: "#e8e0cc" },
-              { label: "Return", value: "+18.4%", color: "#c9a84c" },
+            {([
+              { label: "Sharpe", value: <LoopCounter target={0.66} decimals={2} duration={1200} loopEvery={5000} />, color: "#e8e0cc" },
+              { label: "Return", value: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#c9a84c" },
               { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
-              { label: "Volatility", value: "12.1%", color: "#e8e0cc" },
-            ].map((stat, i) => (
+              { label: "Volatility", value: <><LoopCounter target={12.1} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#e8e0cc" },
+            ] as { label: string; value: React.ReactNode; color: string }[]).map((stat, i) => (
               <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
                 <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
                 <p style={{ fontSize: 9, fontWeight: 700, color: stat.color, fontFamily: "Space Mono,monospace" }}>{stat.value}</p>
