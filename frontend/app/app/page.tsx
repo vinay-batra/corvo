@@ -1558,7 +1558,8 @@ export default function AppPage() {
               style={{ height: 32, padding: "0 10px", borderRadius: 8, border: `0.5px solid ${rightPanelOpen ? "rgba(201,168,76,0.4)" : "var(--border)"}`, background: rightPanelOpen ? "rgba(201,168,76,0.06)" : "transparent", cursor: "pointer", fontSize: 11, color: rightPanelOpen ? "#c9a84c" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
               onMouseEnter={e => { if (!rightPanelOpen) { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}}
               onMouseLeave={e => { if (!rightPanelOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
-              ⚡ Live
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
+              Market
             </button>
             {/* Alerts bell */}
             <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
