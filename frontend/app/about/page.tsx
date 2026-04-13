@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -284,16 +286,7 @@ function RoadmapCard({ icon, name, desc, status, delay }: {
 /* ─── Main About Page ─── */
 export default function AboutPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [navSolid, setNavSolid] = useState(false);
   const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onScroll = () => setNavSolid(el.scrollTop > 60);
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
 
   useEffect(() => {
     fetch(`${API_URL}/stats`)
@@ -336,17 +329,7 @@ export default function AboutPage() {
       </div>
 
       {/* ─── NAV ─── */}
-      <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "rgba(10,14,20,0.92)" : "transparent", backdropFilter: navSolid ? "blur(16px)" : "none", borderBottom: navSolid ? "1px solid rgba(201,168,76,0.07)" : "none", transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
-          <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "#e8e0cc" }}>CORVO</span>
-        </Link>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <Link href="/about" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "#c9a84c", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>About</Link>
-          <Link href="/auth" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Log in</Link>
-          <Link href="/auth" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Get Started</Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* ─── HERO ─── */}
       <section style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "120px 24px 80px" }}>
@@ -621,29 +604,7 @@ export default function AboutPage() {
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 56px" }}>
-        <div className="footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
-            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
-          </div>
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", textAlign: "center" }}>© 2026 Corvo. All rights reserved.</p>
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-            <Link href="/about" style={{ fontSize: 11, color: "#c9a84c", textDecoration: "none" }}>About</Link>
-            <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</a>
-            <a href="/terms" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</a>
-            <Link href="/compare/bloomberg" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>vs Bloomberg</Link>
-            <Link href="/compare/yahoo-finance" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>vs Yahoo Finance</Link>
-            <Link href="/compare/robinhood" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>vs Robinhood</Link>
-            <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>GitHub</a>
-            <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" style={{ color: "rgba(232,224,204,0.2)", textDecoration: "none", display: "flex", alignItems: "center" }}>
-              <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66" />
-              </svg>
-            </a>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

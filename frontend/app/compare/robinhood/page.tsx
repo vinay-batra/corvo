@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 const EASE = [0.25, 0.1, 0.25, 1] as const;
 
@@ -43,17 +45,7 @@ export default function RobinhoodComparePage() {
   return (
     <div style={{ background: "#0a0e14", minHeight: "100vh", color: "#e8e0cc", fontFamily: "'Inter',system-ui,sans-serif", overflowX: "hidden" }}>
       {/* Nav */}
-      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, borderBottom: "1px solid rgba(255,255,255,0.04)", background: "rgba(10,14,20,0.92)", backdropFilter: "blur(12px)", padding: "14px 48px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <img src="/corvo-logo.svg" width={18} height={15} alt="Corvo" />
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#c9a84c" }}>CORVO</span>
-        </Link>
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-          <Link href="/compare/bloomberg" style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none" }}>vs Bloomberg</Link>
-          <Link href="/compare/yahoo-finance" style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none" }}>vs Yahoo Finance</Link>
-          <Link href="/auth" style={{ padding: "8px 20px", borderRadius: 8, background: "#c9a84c", color: "#0a0e14", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Try Free</Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* ─── HERO ─── */}
       <section style={{ paddingTop: 140, paddingBottom: 96, paddingLeft: 48, paddingRight: 48, textAlign: "center", position: "relative" }}>
@@ -279,20 +271,7 @@ export default function RobinhoodComparePage() {
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 48px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto", flexWrap: "wrap", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src="/corvo-logo.svg" width={14} height={12} alt="Corvo" style={{ opacity: 0.4 }} />
-            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
-            <span style={{ fontSize: 11, color: "rgba(232,224,204,0.15)", marginLeft: 8 }}>© 2026</span>
-          </div>
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-            {[["Home", "/"], ["About", "/about"], ["Pricing", "/pricing"], ["FAQ", "/faq"], ["vs Bloomberg", "/compare/bloomberg"], ["vs Yahoo Finance", "/compare/yahoo-finance"]].map(([label, href]) => (
-              <Link key={href} href={href} style={{ fontSize: 11, color: "rgba(232,224,204,0.3)", textDecoration: "none" }}>{label}</Link>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

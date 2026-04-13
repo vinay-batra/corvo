@@ -3,6 +3,8 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 /* ─── Data ─── */
 const SECTIONS = [
@@ -202,74 +204,7 @@ export default function FaqPage() {
       }}
     >
       {/* Nav */}
-      <nav
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-          height: 58,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 40px",
-          background: "rgba(10,14,20,0.92)",
-          backdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(201,168,76,0.07)",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            textDecoration: "none",
-          }}
-        >
-          <img src="/corvo-logo.svg" width={24} height={24} alt="Corvo" />
-          <span
-            style={{
-              fontFamily: "Space Mono, monospace",
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: 4,
-              color: "#e8e0cc",
-            }}
-          >
-            CORVO
-          </span>
-        </Link>
-
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <Link
-            href="/auth"
-            style={{
-              padding: "7px 16px",
-              fontSize: 12,
-              color: "rgba(232,224,204,0.4)",
-              textDecoration: "none",
-              letterSpacing: 0.3,
-              transition: "color 0.2s",
-            }}
-          >
-            Log in
-          </Link>
-          <Link
-            href="/auth"
-            style={{
-              padding: "8px 20px",
-              fontSize: 12,
-              fontWeight: 600,
-              background: "#c9a84c",
-              borderRadius: 8,
-              color: "#0a0e14",
-              textDecoration: "none",
-            }}
-          >
-            Get Started
-          </Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <section
@@ -400,26 +335,21 @@ export default function FaqPage() {
         <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1, textAlign: "center", marginBottom: 28 }}>
           See Corvo in 2 minutes
         </h2>
-        {/* TODO: Replace YOUR_LOOM_ID below with the actual Loom video ID once recorded */}
         <div style={{
           background: "rgba(8,11,16,0.9)",
           border: "1px solid rgba(201,168,76,0.22)",
           borderRadius: 16,
           overflow: "hidden",
           boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)",
-          position: "relative",
-          paddingTop: "56.25%", /* 16:9 aspect ratio */
         }}>
           <iframe
-            src="https://www.loom.com/embed/YOUR_LOOM_ID"
+            src="https://www.loom.com/embed/9a1f9818afcd45bbb199b71d6e3d2120"
             allowFullScreen
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
               width: "100%",
-              height: "100%",
+              height: 400,
               border: "none",
+              display: "block",
             }}
             title="Corvo product walkthrough"
           />
@@ -575,80 +505,7 @@ export default function FaqPage() {
       </main>
 
       {/* Footer */}
-      <footer
-        style={{
-          borderTop: "1px solid rgba(255,255,255,0.04)",
-          padding: "26px 40px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            maxWidth: 1100,
-            margin: "0 auto",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img
-              src="/corvo-logo.svg"
-              width={16}
-              height={13}
-              alt="Corvo"
-              style={{ opacity: 0.5 }}
-            />
-            <span
-              style={{
-                fontFamily: "Space Mono, monospace",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 3,
-                color: "rgba(232,224,204,0.2)",
-              }}
-            >
-              CORVO
-            </span>
-          </div>
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)" }}>
-            © 2026 Corvo. All rights reserved.
-          </p>
-          <div style={{ display: "flex", gap: 20 }}>
-            <Link
-              href="/privacy"
-              style={{
-                fontSize: 11,
-                color: "rgba(232,224,204,0.2)",
-                textDecoration: "none",
-              }}
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/terms"
-              style={{
-                fontSize: 11,
-                color: "rgba(232,224,204,0.2)",
-                textDecoration: "none",
-              }}
-            >
-              Terms
-            </Link>
-            <Link
-              href="/faq"
-              style={{
-                fontSize: 11,
-                color: "rgba(232,224,204,0.2)",
-                textDecoration: "none",
-              }}
-            >
-              FAQ
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

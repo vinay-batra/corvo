@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 const LEVEL_NAMES: Record<number, string> = {
   1: "Newcomer", 2: "Analyst", 3: "Investor", 4: "Portfolio Pro",
@@ -68,31 +70,9 @@ export default function AccountPage() {
     <div style={{ minHeight: "100vh", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
-      {/* Header */}
-      <header style={{ height: 52, borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "rgba(10,14,20,0.95)", position: "sticky", top: 0, zIndex: 10, backdropFilter: "blur(12px)" }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.4)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
-          onMouseEnter={e => (e.currentTarget.style.color = "rgba(232,224,204,0.8)")}
-          onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.4)")}>
-          ← Home
-        </Link>
-        <div style={{ width: "0.5px", height: 16, background: "rgba(255,255,255,0.08)" }} />
-        <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#e8e0cc" }}>My Account</span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-          <Link href="/settings" style={{ padding: "6px 14px", fontSize: 12, color: "rgba(232,224,204,0.5)", textDecoration: "none", border: "0.5px solid rgba(255,255,255,0.08)", borderRadius: 7, transition: "all 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; e.currentTarget.style.color = "#e8e0cc"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(232,224,204,0.5)"; }}>
-            Settings
-          </Link>
-          <Link href="/app" style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 7, transition: "opacity 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
-            Go to App →
-          </Link>
-        </div>
-      </header>
+      <PublicNav />
 
-      <main style={{ maxWidth: 560, margin: "0 auto", padding: "40px 24px 80px", animation: "fadein 0.5s ease" }}>
+      <main style={{ maxWidth: 560, margin: "0 auto", padding: "98px 24px 80px", animation: "fadein 0.5s ease" }}>
 
         {/* Avatar + name */}
         <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 36 }}>
@@ -131,7 +111,11 @@ export default function AccountPage() {
               <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 6 }}>Level {level} · {getLevelName(level)}</p>
               <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, lineHeight: 1 }}>{xp.toLocaleString()} <span style={{ fontSize: 13, fontWeight: 400, color: "rgba(232,224,204,0.4)" }}>XP</span></p>
             </div>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>⚡</div>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21L12 18L6.82 21L8 14.14L3 9.27L9.91 8.26L12 2Z" fill="#c9a84c" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           </div>
           <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 8 }}>
             <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #c9a84c, #f59e0b)", borderRadius: 3, transition: "width 0.8s cubic-bezier(0.16,1,0.3,1)" }} />
@@ -174,6 +158,7 @@ export default function AccountPage() {
         </div>
 
       </main>
+      <PublicFooter />
     </div>
   );
 }
