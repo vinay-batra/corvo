@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -97,23 +99,7 @@ export default function ChangelogPage() {
       `}</style>
 
       {/* Nav */}
-      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "0 56px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(10,14,20,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <img src="/corvo-logo.svg" width={20} height={16} alt="Corvo" />
-          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#e8e0cc" }}>CORVO</span>
-        </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <Link href="/" className="nl">Home</Link>
-          <Link href="/about" className="nl">About</Link>
-          <Link href="/pricing" className="nl">Pricing</Link>
-          <Link href="/faq" className="nl">FAQ</Link>
-          <Link href="/auth" style={{ padding: "8px 18px", background: "#c9a84c", borderRadius: 8, fontSize: 12, fontWeight: 700, color: "#0a0e14", textDecoration: "none", marginLeft: 8, transition: "opacity 0.2s" }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
-            Get Started
-          </Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <div style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
@@ -216,32 +202,7 @@ export default function ChangelogPage() {
       </div>
 
       {/* Footer */}
-      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "24px 56px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src="/corvo-logo.svg" width={14} height={11} alt="Corvo" style={{ opacity: 0.4 }} />
-            <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
-            <span style={{ fontSize: 11, color: "rgba(232,224,204,0.15)", marginLeft: 8 }}>© 2026 Corvo. All rights reserved.</span>
-          </div>
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-            {[
-              { label: "About", href: "/about" },
-              { label: "Pricing", href: "/pricing" },
-              { label: "Privacy", href: "/privacy" },
-              { label: "Terms", href: "/terms" },
-              { label: "FAQ", href: "/faq" },
-              { label: "GitHub", href: "https://github.com/vinay-batra/corvo", external: true },
-            ].map(l => (
-              <a key={l.label} href={l.href} {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")}
-                onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>
-                {l.label}
-              </a>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

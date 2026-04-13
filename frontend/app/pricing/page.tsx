@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -577,13 +579,6 @@ function FeatureVoteSection() {
 
 export default function PricingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
-  const [navSolid, setNavSolid] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setNavSolid(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const { ref: faqRef, visible: faqVisible } = useReveal(0.05);
   const { ref: trustRef, visible: trustVisible } = useReveal(0.1);
@@ -607,33 +602,7 @@ export default function PricingPage() {
       `}</style>
 
       {/* NAV */}
-      <nav style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        height: 58,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 56px",
-        background: navSolid ? "rgba(10,14,20,0.92)" : "rgba(10,14,20,0.6)",
-        backdropFilter: "blur(16px)",
-        borderBottom: navSolid ? "1px solid rgba(201,168,76,0.07)" : "1px solid rgba(255,255,255,0.03)",
-        transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)",
-      }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
-          <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "#e8e0cc" }}>CORVO</span>
-        </Link>
-        <div className="nav-links" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <Link href="/pricing" style={{ padding: "7px 16px", fontSize: 12, color: "#c9a84c", textDecoration: "none", letterSpacing: 0.3 }}>Pricing</Link>
-          <Link href="/learn" style={{ padding: "7px 16px", fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none", letterSpacing: 0.3 }}>Learn</Link>
-          <Link href="/auth" style={{ padding: "7px 16px", fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none", letterSpacing: 0.3 }}>Log in</Link>
-          <Link href="/auth" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Get Started</Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* HERO */}
       <section
@@ -829,20 +798,7 @@ export default function PricingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 56px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto", flexWrap: "wrap", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
-            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
-          </div>
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)" }}>© 2026 Corvo. All rights reserved.</p>
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-            <Link href="/pricing" style={{ fontSize: 11, color: "rgba(201,168,76,0.5)", textDecoration: "none" }}>Pricing</Link>
-            <Link href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Privacy</Link>
-            <Link href="/terms" style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textDecoration: "none" }}>Terms</Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

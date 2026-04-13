@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 import confetti from "canvas-confetti";
 
 /* ── Palette ── */
@@ -747,6 +749,8 @@ export default function DemoPage() {
   };
 
   return (
+    <>
+      <PublicNav />
     <div style={{ minHeight: "100vh", background: C.bg2, fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
       <style>{`
         @keyframes blink { 50% { opacity: 0; } }
@@ -755,12 +759,7 @@ export default function DemoPage() {
       `}</style>
 
       {/* ── Top bar ── */}
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, background: `linear-gradient(${C.bg2}, transparent)` }}>
-        {/* Logo */}
-        <a href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", flexShrink: 0 }}>
-          <img src="/corvo-logo.svg" width={24} height={20} alt="" />
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 12, fontWeight: 700, letterSpacing: 3, color: C.cream }}>CORVO</span>
-        </a>
+      <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 50, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, background: `linear-gradient(${C.bg2}, transparent)` }}>
 
         {/* Progress bar */}
         <div style={{ flex: 1, display: "flex", gap: 6, alignItems: "center" }}>
@@ -787,7 +786,7 @@ export default function DemoPage() {
       </div>
 
       {/* ── Main content ── */}
-      <div style={{ flex: 1, display: "flex", alignItems: "stretch", paddingTop: 60, paddingBottom: 80, minHeight: "100vh" }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "stretch", paddingTop: 118, paddingBottom: 80, minHeight: "100vh" }}>
         <AnimatePresence mode="wait" custom={dir}>
           <motion.div key={step} custom={dir} variants={variants}
             initial="enter" animate="center" exit="exit"
@@ -868,5 +867,7 @@ export default function DemoPage() {
       {/* Ambient glow */}
       <div style={{ position: "fixed", top: "30%", left: "50%", transform: "translateX(-50%)", width: 700, height: 500, background: "radial-gradient(ellipse, rgba(201,168,76,0.04) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
     </div>
+      <PublicFooter />
+    </>
   );
 }
