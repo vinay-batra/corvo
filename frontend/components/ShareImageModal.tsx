@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const C = {
-  amber: "#c9a84c",
+  amber: "var(--accent)",
   navy: "#0a0e14",
   navy2: "#0d1117",
   border: "rgba(255,255,255,0.06)",
@@ -175,8 +175,8 @@ export default function ShareImageModal({ assets, data, onClose }: ShareImageMod
           {loading && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ animation: "spin 0.9s linear infinite" }}>
-                <circle cx="14" cy="14" r="11" stroke="rgba(201,168,76,0.18)" strokeWidth="2.5"/>
-                <path d="M14 3 A11 11 0 0 1 25 14" stroke="#c9a84c" strokeWidth="2.5" strokeLinecap="round"/>
+                <circle cx="14" cy="14" r="11" stroke="rgba(184,134,11,0.18)" strokeWidth="2.5"/>
+                <path d="M14 3 A11 11 0 0 1 25 14" stroke="#b8860b" strokeWidth="2.5" strokeLinecap="round"/>
               </svg>
               <p style={{ fontSize: 11, color: C.cream3 }}>Generating image…</p>
             </div>

@@ -15,6 +15,14 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [dark, setDark] = useState(true);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     if (assets.length < 2) return;
@@ -78,21 +86,21 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
             zmax: 1,
             text: data.matrix.map((row: number[]) => row.map((v: number) => v.toFixed(2))),
             texttemplate: "%{text}",
-            textfont: { color: "rgba(226,232,240,0.7)", size: 11 },
+            textfont: { color: dark ? "rgba(226,232,240,0.7)" : "#1a1a1a", size: 11 },
             hovertemplate: "%{y} / %{x}: %{z:.3f}<extra></extra>",
             showscale: true,
             colorbar: {
               thickness: 10,
               len: 0.8,
-              tickcolor: "rgba(226,232,240,0.3)",
-              tickfont: { color: "rgba(226,232,240,0.3)", size: 9 },
+              tickcolor: dark ? "rgba(226,232,240,0.3)" : "rgba(0,0,0,0.3)",
+              tickfont: { color: dark ? "rgba(226,232,240,0.3)" : "#7a7a78", size: 9 },
               outlinecolor: "transparent",
             },
           } as any]}
           layout={{
             paper_bgcolor: "transparent",
             plot_bgcolor: "transparent",
-            font: { color: "rgba(226,232,240,0.5)", family: "Space Grotesk", size: 11 },
+            font: { color: dark ? "rgba(226,232,240,0.5)" : "#4a4a4a", family: "Space Grotesk", size: 11 },
             margin: { t: 8, b: 40, l: 56, r: 60 },
             xaxis: { tickcolor: "transparent", gridcolor: "transparent", linecolor: "transparent" },
             yaxis: { tickcolor: "transparent", gridcolor: "transparent", linecolor: "transparent", autorange: "reversed" },
@@ -100,7 +108,7 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
           config={{ displayModeBar: false, responsive: true }}
           style={{ width: "100%", height: 260 }}
         />
-        <p style={{ fontSize: 11, color: "rgba(226,232,240,0.3)", textAlign: "right", margin: "2px 0 0" }}>Double-click chart to reset zoom</p>
+        <p style={{ fontSize: 11, color: dark ? "rgba(226,232,240,0.3)" : "#7a7a78", textAlign: "right", margin: "2px 0 0" }}>Double-click chart to reset zoom</p>
         </>
       ) : null}
     </motion.div>

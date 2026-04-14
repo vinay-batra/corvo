@@ -3,7 +3,7 @@
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
-const C = { amber: "#c9a84c", red: "#e05c5c" };
+const C = { amber: "var(--accent)", red: "#e05c5c" };
 
 function Num({ value, fmt }: { value: number; fmt: (v: number) => string }) {
   const [d, setD] = useState(0);

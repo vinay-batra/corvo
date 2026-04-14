@@ -12,7 +12,7 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 // Amber-anchored palette that stays readable on dark backgrounds
 const SECTOR_COLORS = [
-  "#c9a84c",
+  "#b8860b",
   "#a86e2e",
   "#e8c97a",
   "#7a6235",
@@ -33,6 +33,14 @@ const SectorExposureChart = memo(function SectorExposureChart({
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [dark, setDark] = useState(true);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!assets.length) return;
@@ -144,7 +152,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
             paper_bgcolor: "transparent",
             plot_bgcolor: "transparent",
             font: {
-              color: "rgba(226,232,240,0.5)",
+              color: dark ? "rgba(226,232,240,0.5)" : "#4a4a4a",
               family: "Space Grotesk, Inter, sans-serif",
               size: 10,
             },
@@ -159,7 +167,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
               font: {
                 family: "Space Grotesk, Inter, sans-serif",
                 size: 10,
-                color: "rgba(226,232,240,0.6)",
+                color: dark ? "rgba(226,232,240,0.6)" : "#4a4a4a",
               },
               bgcolor: "transparent",
               itemclick: false,
@@ -175,7 +183,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
                 showarrow: false,
                 font: {
                   size: 18,
-                  color: "#c9a84c",
+                  color: dark ? "#c9a84c" : "#b8860b",
                   family: "Space Grotesk, Inter, sans-serif",
                 },
                 align: "center",

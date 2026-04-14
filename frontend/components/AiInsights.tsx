@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 
-const C = { amber: "#c9a84c" };
+const C = { amber: "var(--accent)" };
 
 export default function AiInsights({ data, assets, onAskAi }: { data:any; assets:any[]; onAskAi:()=>void }) {
   const [hovered, setHovered] = useState<number|null>(null);
@@ -49,15 +49,15 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
       {insights.map((ins,i)=>(
         <motion.div key={i} initial={{opacity:0,x:-6}} animate={{opacity:1,x:0}} transition={{delay:i*0.08}}
           onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}
-          style={{display:"flex",gap:8,alignItems:"flex-start",padding:"7px 8px",background:hovered===i?"rgba(201,168,76,0.05)":"transparent",border:"1px solid",borderColor:hovered===i?"rgba(201,168,76,0.15)":"transparent",borderRadius:8,transition:"all 0.15s"}}>
-          <div style={{width:18,height:18,borderRadius:"50%",border:`1px solid rgba(201,168,76,0.2)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0,marginTop:1,background:"rgba(201,168,76,0.08)",color:C.amber}}>{ins.icon}</div>
+          style={{display:"flex",gap:8,alignItems:"flex-start",padding:"7px 8px",background:hovered===i?"rgba(184,134,11,0.05)":"transparent",border:"1px solid",borderColor:hovered===i?"rgba(184,134,11,0.15)":"transparent",borderRadius:8,transition:"all 0.15s"}}>
+          <div style={{width:18,height:18,borderRadius:"50%",border:`1px solid rgba(184,134,11,0.2)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0,marginTop:1,background:"rgba(184,134,11,0.08)",color:C.amber}}>{ins.icon}</div>
           <p style={{fontSize:11,color:"var(--text2)",lineHeight:1.55}}>{ins.text}</p>
         </motion.div>
       ))}
 
       {rebalanceSuggestions.length > 0 && (
         <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.3}}
-          style={{marginTop:6,padding:"10px 12px",background:"rgba(201,168,76,0.04)",border:"1px solid rgba(201,168,76,0.12)",borderRadius:8}}>
+          style={{marginTop:6,padding:"10px 12px",background:"rgba(184,134,11,0.04)",border:"1px solid rgba(184,134,11,0.12)",borderRadius:8}}>
           <p style={{fontSize:8,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>Rebalancing</p>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>
             {rebalanceSuggestions.map((s,i)=>(

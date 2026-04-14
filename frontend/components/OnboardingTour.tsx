@@ -116,7 +116,7 @@ export default function OnboardingTour({ assets, dataAvailable, onComplete }: Pr
         height: 0,
         borderTop: "9px solid transparent",
         borderBottom: "9px solid transparent",
-        borderRight: "9px solid #c9a84c",
+        borderRight: "9px solid #b8860b",
       }} />
       <div style={{
         position: "absolute",
@@ -135,7 +135,7 @@ export default function OnboardingTour({ assets, dataAvailable, onComplete }: Pr
         borderTop: "0.5px solid rgba(201,168,76,0.22)",
         borderRight: "0.5px solid rgba(201,168,76,0.22)",
         borderBottom: "0.5px solid rgba(201,168,76,0.22)",
-        borderLeft: "3px solid #c9a84c",
+        borderLeft: "3px solid #b8860b",
         borderRadius: 10,
         padding: "13px 15px",
         boxShadow: "0 6px 28px rgba(0,0,0,0.55)",
@@ -144,7 +144,7 @@ export default function OnboardingTour({ assets, dataAvailable, onComplete }: Pr
         <div style={{
           fontSize: 9,
           letterSpacing: 2,
-          color: "#c9a84c",
+          color: "var(--accent)",
           textTransform: "uppercase",
           marginBottom: 8,
         }}>
@@ -181,10 +181,10 @@ export default function OnboardingTour({ assets, dataAvailable, onComplete }: Pr
               padding: "7px 15px",
               fontSize: 12,
               fontWeight: 600,
-              background: "#c9a84c",
+              background: "#b8860b",
               border: "none",
               borderRadius: 7,
-              color: "#0a0e14",
+              color: "#ffffff",
               cursor: "pointer",
               letterSpacing: 0.3,
             }}

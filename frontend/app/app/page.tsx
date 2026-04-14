@@ -185,7 +185,7 @@ function Empty({ onPreset }: { onPreset?: (a: { ticker: string; weight: number }
         {PRESETS.map(p => (
           <button key={p.label} onClick={() => onPreset?.(p.assets)}
             style={{ padding: "16px 18px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 12, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; e.currentTarget.style.background = "var(--bg3)"; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.background = "var(--bg3)"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{p.label}</p>
             <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.6 }}>
@@ -198,7 +198,7 @@ function Empty({ onPreset }: { onPreset?: (a: { ticker: string; weight: number }
   );
 }
 
-const COMPARE_COLORS = ["#c9a84c", "#b47ee0", "#5cb88a", "#e05c5c"];
+const COMPARE_COLORS = ["#b8860b", "#b47ee0", "#5cb88a", "#e05c5c"];
 const ComparePlot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 // ── Portfolio Comparison ──────────────────────────────────────────────────────
@@ -371,7 +371,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
               { n: "4", title: "Compare side by side", desc: "Return here to select saved portfolios and compare key metrics." },
             ].map(step => (
               <div key={step.n} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                <div style={{ width: 26, height: 26, borderRadius: "50%", border: "0.5px solid rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#c9a84c", flexShrink: 0, fontFamily: "var(--font-mono)" }}>{step.n}</div>
+                <div style={{ width: 26, height: 26, borderRadius: "50%", border: "0.5px solid rgba(184,134,11,0.4)", background: "rgba(184,134,11,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "var(--accent)", flexShrink: 0, fontFamily: "var(--font-mono)" }}>{step.n}</div>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 2 }}>{step.title}</p>
                   <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.55 }}>{step.desc}</p>
@@ -460,7 +460,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                       <div style={{ marginBottom: 8 }}>
                         <p style={{ fontSize: 9, letterSpacing: 1, color: "var(--text3)", marginBottom: 5 }}>SHARED ({ov.shared.length})</p>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                          {ov.shared.map(t => <span key={t} style={{ padding: "2px 8px", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, borderRadius: 4, background: "rgba(201,168,76,0.1)", color: "#c9a84c", border: "0.5px solid rgba(201,168,76,0.2)" }}>{t}</span>)}
+                          {ov.shared.map(t => <span key={t} style={{ padding: "2px 8px", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, borderRadius: 4, background: "rgba(184,134,11,0.1)", color: "var(--accent)", border: "0.5px solid rgba(184,134,11,0.2)" }}>{t}</span>)}
                         </div>
                       </div>
                     )}
@@ -484,14 +484,14 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
           {/* AI insight — auto-generated */}
           {active.length >= 2 && (aiInsight || aiLoading || aiError) && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              style={{ border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 12, padding: "16px 18px", background: "rgba(201,168,76,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <Sparkles size={14} color="#c9a84c" style={{ flexShrink: 0, marginTop: 2 }} />
+              style={{ border: "0.5px solid rgba(184,134,11,0.2)", borderRadius: 12, padding: "16px 18px", background: "rgba(184,134,11,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <Sparkles size={14} color="var(--accent)" style={{ flexShrink: 0, marginTop: 2 }} />
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 9, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase", marginBottom: 8 }}>AI Comparison Insight</p>
+                <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", marginBottom: 8 }}>AI Comparison Insight</p>
                 {aiLoading ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                     {[100, 88, 72].map((w, i) => (
-                      <div key={i} style={{ height: 12, width: `${w}%`, borderRadius: 4, background: "rgba(201,168,76,0.08)", animation: "pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
+                      <div key={i} style={{ height: 12, width: `${w}%`, borderRadius: 4, background: "rgba(184,134,11,0.08)", animation: "pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
                     ))}
                     <style>{`@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.9}}`}</style>
                   </div>
@@ -500,8 +500,8 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                     <span style={{ fontSize: 12, color: "var(--text3)" }}>Could not generate insight.</span>
                     <button
                       onClick={generateAiInsight}
-                      style={{ fontSize: 11, color: "#c9a84c", background: "none", border: "0.5px solid rgba(201,168,76,0.3)", borderRadius: 5, padding: "3px 9px", cursor: "pointer" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.08)"; }}
+                      style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "0.5px solid rgba(184,134,11,0.3)", borderRadius: 5, padding: "3px 9px", cursor: "pointer" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,0.08)"; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
                     >
                       Retry
@@ -609,7 +609,7 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-      style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 800, width: "min(380px, calc(100vw - 32px)", background: "var(--card-bg)", border: "0.5px solid rgba(201,168,76,0.3)", borderRadius: 14, padding: "16px 18px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", display: "flex", gap: 14, alignItems: "flex-start" }}>
+      style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 800, width: "min(380px, calc(100vw - 32px)", background: "var(--card-bg)", border: "0.5px solid rgba(184,134,11,0.3)", borderRadius: 14, padding: "16px 18px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", display: "flex", gap: 14, alignItems: "flex-start" }}>
       <span style={{ fontSize: 20, flexShrink: 0 }}>🔔</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>Enable price alerts</p>
@@ -618,7 +618,7 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
         </p>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={enable} disabled={loading}
-            style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: "#c9a84c", color: "#0a0e14", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+            style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: "var(--accent)", color: "#0a0e14", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
             {loading ? "Enabling…" : "Enable"}
           </button>
           <button onClick={dismiss}
@@ -645,7 +645,7 @@ function PortfolioPerformanceTrend({
   loading: boolean;
   portfolioName: string;
 }) {
-  const AMBER = "#c9a84c";
+  const AMBER = "#b8860b";
   const filtered = (() => {
     if (range === "ALL") return history;
     const cutoff = new Date();
@@ -1428,7 +1428,7 @@ export default function AppPage() {
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-        @keyframes analyze-ring{0%{box-shadow:0 0 0 0 rgba(201,168,76,0.5)}70%{box-shadow:0 0 0 8px rgba(201,168,76,0)}100%{box-shadow:0 0 0 0 rgba(201,168,76,0)}}
+        @keyframes analyze-ring{0%{box-shadow:0 0 0 0 rgba(184,134,11,0.5)}70%{box-shadow:0 0 0 8px rgba(184,134,11,0)}100%{box-shadow:0 0 0 0 rgba(184,134,11,0)}}
         @media(max-width:768px){
           .c-sidebar{display:none!important}
           .c-topbar{display:none!important}
@@ -1530,7 +1530,7 @@ export default function AppPage() {
                   {isActive && (
                     <motion.span
                       layoutId="tab-indicator"
-                      style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: 2, borderRadius: 1, background: "#c9a84c", zIndex: 0 }}
+                      style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: 2, borderRadius: 1, background: "var(--accent)", zIndex: 0 }}
                       transition={{ type: "spring", damping: 30, stiffness: 300 }}
                     />
                   )}
@@ -1555,7 +1555,7 @@ export default function AppPage() {
             </button>
             {/* Right panel toggle */}
             <button onClick={() => setRightPanelOpen(o => !o)} title="Market panel" aria-label="Toggle market panel"
-              style={{ height: 32, padding: "0 10px", borderRadius: 8, border: `0.5px solid ${rightPanelOpen ? "rgba(201,168,76,0.4)" : "var(--border)"}`, background: rightPanelOpen ? "rgba(201,168,76,0.06)" : "transparent", cursor: "pointer", fontSize: 11, color: rightPanelOpen ? "#c9a84c" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
+              style={{ height: 32, padding: "0 10px", borderRadius: 8, border: `0.5px solid ${rightPanelOpen ? "rgba(184,134,11,0.4)" : "var(--border)"}`, background: rightPanelOpen ? "rgba(184,134,11,0.06)" : "transparent", cursor: "pointer", fontSize: 11, color: rightPanelOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
               onMouseEnter={e => { if (!rightPanelOpen) { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}}
               onMouseLeave={e => { if (!rightPanelOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
@@ -1571,7 +1571,7 @@ export default function AppPage() {
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
               </svg>
               {alertCount > 0 && (
-                <span style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: "50%", background: "#c9a84c", border: "1.5px solid var(--bg)" }} />
+                <span style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg)" }} />
               )}
             </button>
             <DarkModeToggle dark={dark} toggle={toggleDark} />
@@ -1603,22 +1603,22 @@ export default function AppPage() {
             {showSetupBanner && (
               <motion.div
                 initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                style={{ border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(201,168,76,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ color: "#c9a84c", fontSize: 13, flexShrink: 0 }}>◎</span>
+                  <span style={{ color: "var(--accent)", fontSize: 13, flexShrink: 0 }}>◎</span>
                   <span style={{ fontSize: 13, color: "rgba(232,224,204,0.65)", lineHeight: 1.4 }}>
                     Complete your setup: add your portfolio to unlock AI insights and risk analysis.
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                   <button onClick={() => { setShowSetupBanner(false); setShowOnboarding(true); }}
-                    style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "#c9a84c", border: "none", color: "#0a0e14", cursor: "pointer", transition: "opacity 0.15s" }}
+                    style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "#0a0e14", cursor: "pointer", transition: "opacity 0.15s" }}
                     onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
                     onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
                     Complete Setup
                   </button>
                   <button onClick={() => { setShowSetupBanner(false); localStorage.setItem("corvo_setup_banner_dismissed", "true"); }}
-                    style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "rgba(201,168,76,0.1)", color: "rgba(232,224,204,0.4)", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "rgba(184,134,11,0.1)", color: "rgba(232,224,204,0.4)", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     ✕
                   </button>
                 </div>
@@ -1805,7 +1805,7 @@ export default function AppPage() {
                         const el = document.querySelector("[data-save-trigger]") as HTMLElement | null;
                         if (el) el.click();
                       }}
-                      style={{ fontSize: 12, color: "#c9a84c", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
+                      style={{ fontSize: 12, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
                       Save this portfolio →
                     </button>
                   </motion.div>
@@ -1891,15 +1891,15 @@ export default function AppPage() {
         style={{
           position: "fixed", bottom: 28, right: 24, zIndex: 250,
           width: 52, height: 52, borderRadius: "50%",
-          background: chatOpen ? "var(--bg3)" : "#c9a84c",
+          background: chatOpen ? "var(--bg3)" : "var(--accent)",
           border: chatOpen ? "1px solid var(--border2)" : "none",
           cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: chatOpen ? "none" : "0 4px 20px rgba(201,168,76,0.35)",
+          boxShadow: chatOpen ? "none" : "0 4px 20px rgba(184,134,11,0.35)",
           transition: "background 0.2s, box-shadow 0.2s, border 0.2s",
         }}
         onMouseEnter={e => { if (!chatOpen) e.currentTarget.style.background = "#d4b05a"; }}
-        onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.background = "#c9a84c"; }}
+        onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.background = "var(--accent)"; }}
       >
         <MessageSquare size={20} color={chatOpen ? "var(--text2)" : "#0a0e14"} />
       </motion.button>

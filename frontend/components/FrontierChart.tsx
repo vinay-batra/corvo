@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 
@@ -7,6 +8,19 @@ import { motion } from "framer-motion";
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 export default function FrontierChart({ data }: { data: any }) {
+  const [dark, setDark] = useState(true);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+  const fc = dark ? "rgba(226,232,240,0.4)" : "#4a4a4a";
+  const fc2 = dark ? "rgba(226,232,240,0.25)" : "#7a7a78";
+  const gc = dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.07)";
+  const lc = dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -68,19 +82,19 @@ export default function FrontierChart({ data }: { data: any }) {
         layout={{
           paper_bgcolor: "transparent",
           plot_bgcolor: "transparent",
-          font: { color: "rgba(226,232,240,0.4)", family: "Space Grotesk", size: 10 },
+          font: { color: fc, family: "Space Grotesk", size: 10 },
           margin: { t: 0, b: 32, l: 48, r: 16 },
           xaxis: {
-            title: { text: "Volatility", font: { size: 9, color: "rgba(226,232,240,0.25)" } },
-            gridcolor: "rgba(255,255,255,0.04)",
-            linecolor: "rgba(255,255,255,0.08)",
+            title: { text: "Volatility", font: { size: 9, color: fc2 } },
+            gridcolor: gc,
+            linecolor: lc,
             tickcolor: "transparent",
             tickformat: ".0%",
           },
           yaxis: {
-            title: { text: "Return", font: { size: 9, color: "rgba(226,232,240,0.25)" } },
-            gridcolor: "rgba(255,255,255,0.04)",
-            linecolor: "rgba(255,255,255,0.08)",
+            title: { text: "Return", font: { size: 9, color: fc2 } },
+            gridcolor: gc,
+            linecolor: lc,
             tickcolor: "transparent",
             tickformat: ".0%",
           },

@@ -104,7 +104,7 @@ export default function BlogPost({ title, date, readTime, category, description,
           </nav>
           <div style={{ marginTop: 32, padding: "20px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 12 }}>
             <p style={{ fontSize: 11, color: "#e8e0cc", fontWeight: 600, marginBottom: 8, lineHeight: 1.4 }}>Analyze your own portfolio</p>
-            <p style={{ fontSize: 10, color: "rgba(232,224,204,0.4)", marginBottom: 14, lineHeight: 1.55 }}>Free Bloomberg-quality analytics in minutes.</p>
+            <p style={{ fontSize: 10, color: "rgba(232,224,204,0.4)", marginBottom: 14, lineHeight: 1.55 }}>Free institutional-grade portfolio analytics.</p>
             <Link href="/auth" style={{ display: "block", textAlign: "center" as const, padding: "9px 16px", background: "#c9a84c", borderRadius: 8, fontSize: 11, fontWeight: 700, color: "#0a0e14", textDecoration: "none" }}>Get started free</Link>
           </div>
         </aside>
@@ -112,7 +112,7 @@ export default function BlogPost({ title, date, readTime, category, description,
 
       {/* Related posts */}
       {related.length > 0 && (
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "64px 56px 0", maxWidth: 1200, margin: "0 auto" }}>
+        <div className="blog-related-pad" style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "64px 56px 0", maxWidth: 1200, margin: "0 auto" }}>
           <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 32 }}>Related Articles</p>
           <div className="blog-cards-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(related.length, 3)},1fr)`, gap: 20, marginBottom: 80 }}>
             {related.map(post => (

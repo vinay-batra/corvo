@@ -492,29 +492,77 @@ const FEATURE_DEFS = [
   { id: "social", label: "Social Sharing", desc: "Share portfolio insights & wins", icon: "◬" },
 ];
 
+// Map feature id → Supabase feature_name
+const FEATURE_NAME_MAP: Record<string, string> = {
+  "ai-chat": "Unlimited AI Chat",
+  "options": "Options Chain",
+  "tax-docs": "Tax Documents",
+  "mobile": "Mobile App",
+  "brokerage": "Brokerage Connect",
+  "social": "Social Sharing",
+};
+
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SB_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
 function FeatureVoteSection() {
   const { ref, visible } = useReveal(0.1);
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [voted, setVoted] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
 
+  // Load real vote counts from Supabase and user's voted state from localStorage
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("corvo_feature_votes");
-      const storedVoted = localStorage.getItem("corvo_feature_voted");
-      if (stored) setVotes(JSON.parse(stored));
-      if (storedVoted) setVoted(JSON.parse(storedVoted));
-    } catch {}
+    async function loadVotes() {
+      try {
+        const res = await fetch(
+          `${SB_URL}/rest/v1/feature_votes?select=feature_name,vote_count`,
+          { headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}` } }
+        );
+        if (res.ok) {
+          const rows: { feature_name: string; vote_count: number }[] = await res.json();
+          const counts: Record<string, number> = {};
+          for (const row of rows) {
+            const id = Object.entries(FEATURE_NAME_MAP).find(([, v]) => v === row.feature_name)?.[0];
+            if (id) counts[id] = row.vote_count;
+          }
+          setVotes(counts);
+        }
+      } catch {}
+      try {
+        const storedVoted = localStorage.getItem("corvo_feature_voted");
+        if (storedVoted) setVoted(JSON.parse(storedVoted));
+      } catch {}
+      setLoading(false);
+    }
+    loadVotes();
   }, []);
 
-  const handleVote = (id: string) => {
+  const handleVote = async (id: string) => {
     if (voted[id]) return;
+    const featureName = FEATURE_NAME_MAP[id];
+    if (!featureName) return;
+
+    // Optimistic update
     const newVotes = { ...votes, [id]: (votes[id] ?? 0) + 1 };
     const newVoted = { ...voted, [id]: true };
     setVotes(newVotes);
     setVoted(newVoted);
     try {
-      localStorage.setItem("corvo_feature_votes", JSON.stringify(newVotes));
       localStorage.setItem("corvo_feature_voted", JSON.stringify(newVoted));
+    } catch {}
+
+    // Persist to Supabase via atomic RPC
+    try {
+      await fetch(`${SB_URL}/rest/v1/rpc/increment_feature_vote`, {
+        method: "POST",
+        headers: {
+          apikey: SB_ANON,
+          Authorization: `Bearer ${SB_ANON}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ p_feature_name: featureName }),
+      });
     } catch {}
   };
 
@@ -560,7 +608,7 @@ function FeatureVoteSection() {
                     onMouseLeave={e => { if (!hasVoted) (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)"; }}
                   >
                     <span style={{ fontSize: 13, color: hasVoted ? "#c9a84c" : "rgba(232,224,204,0.4)" }}>{hasVoted ? "▲" : "△"}</span>
-                    <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: hasVoted ? "#c9a84c" : "rgba(232,224,204,0.4)" }}>{voteCount}</span>
+                    <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: hasVoted ? "#c9a84c" : "rgba(232,224,204,0.4)" }}>{loading ? "…" : voteCount}</span>
                     <span style={{ fontSize: 11, color: hasVoted ? "rgba(201,168,76,0.7)" : "rgba(232,224,204,0.3)" }}>{hasVoted ? "voted" : "upvote"}</span>
                   </button>
                 </div>
@@ -569,7 +617,7 @@ function FeatureVoteSection() {
           </div>
 
           <p style={{ textAlign: "center", fontSize: 11, color: "rgba(232,224,204,0.2)", marginTop: 24 }}>
-            Votes are anonymous and stored locally. Results inform our roadmap.
+            {loading ? "Loading votes…" : "Votes are shared across all users. Results directly inform our roadmap."}
           </p>
         </div>
       </div>
@@ -598,6 +646,7 @@ export default function PricingPage() {
           .pricing-cards { flex-direction: column !important; align-items: center !important; }
           .pricing-cards > * { width: 100% !important; max-width: 420px !important; }
           .nav-links { display: none !important; }
+          .pricing-section { padding-left: 20px !important; padding-right: 20px !important; }
         }
       `}</style>
 
@@ -676,7 +725,7 @@ export default function PricingPage() {
             maxWidth: 440,
             margin: "0 auto",
           }}>
-            No credit card. No trial period. Bloomberg-quality analytics, free.
+            No credit card. No trial period. Institutional-grade analytics, free.
           </p>
         </div>
       </section>

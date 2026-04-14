@@ -66,7 +66,7 @@ function LoopCounter({ target, suffix = "", prefix = "", decimals = 0, duration 
 const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
 
 /* ─── FadeUp — reusable Framer Motion scroll-in ─── */
-function FadeUp({ children, delay = 0, y = 30, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
+function FadeUp({ children, delay = 0, y = 30, style = {}, className }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties; className?: string }) {
   return (
     <motion.div
       initial={{ opacity: 0, y }}
@@ -74,6 +74,7 @@ function FadeUp({ children, delay = 0, y = 30, style = {} }: { children: React.R
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={style}
+      className={className}
     >
       {children}
     </motion.div>
@@ -624,6 +625,7 @@ function StockTeaserSection() {
         </FadeUp>
 
         {/* Search bar */}
+        <div className="stock-search-wrap">
         <FadeUp delay={0.15} style={{ display: "flex", gap: 10, maxWidth: 540, margin: "0 auto 28px" }}>
           <div style={{ flex: 1, position: "relative" }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", opacity: 0.3, pointerEvents: "none" }}>
@@ -649,6 +651,7 @@ function StockTeaserSection() {
             {loading ? "…" : "Analyze →"}
           </button>
         </FadeUp>
+        </div>
 
         {/* Suggestion chips */}
         <FadeUp delay={0.25} style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
@@ -770,40 +773,37 @@ function VisualComparisonSection() {
   return (
     <div style={{ marginBottom: 64 }}>
       {/* Side-by-side panels */}
-      <div style={{ display: "flex", gap: 0, alignItems: "stretch", maxWidth: 960, margin: "0 auto 28px", position: "relative" }}>
-        {/* Bloomberg side */}
-        <SlideIn direction="left" style={{ flex: 1, borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid rgba(0,200,0,0.15)", borderRight: "none" }}>
-          <div style={{ background: "#0a0a00", height: "100%", padding: "22px 20px 20px", fontFamily: "monospace", position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(0,200,0,0.2)", paddingBottom: 10, marginBottom: 14 }}>
-              <span style={{ fontSize: 9, color: "rgba(0,200,0,0.9)", letterSpacing: 2, textTransform: "uppercase" }}>BLOOMBERG TERMINAL</span>
-              <span style={{ fontSize: 10, color: "rgba(255,100,0,0.85)", fontWeight: 700, background: "rgba(255,100,0,0.1)", border: "1px solid rgba(255,100,0,0.3)", padding: "2px 8px", borderRadius: 4 }}>$2,000/mo</span>
+      <div className="vs-panels" style={{ display: "flex", gap: 0, alignItems: "stretch", maxWidth: 960, margin: "0 auto 28px", position: "relative" }}>
+        {/* Yahoo Finance / traditional tools side */}
+        <SlideIn direction="left" style={{ flex: 1, borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid rgba(150,150,150,0.15)", borderRight: "none" }}>
+          <div style={{ background: "#0e0e0e", height: "100%", padding: "22px 20px 20px", fontFamily: "sans-serif", position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 10, marginBottom: 14 }}>
+              <span style={{ fontSize: 9, color: "rgba(150,150,150,0.9)", letterSpacing: 2, textTransform: "uppercase" }}>YAHOO FINANCE</span>
+              <span style={{ fontSize: 10, color: "rgba(180,180,180,0.7)", fontWeight: 600, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", padding: "2px 8px", borderRadius: 4 }}>No insights</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {[
-                { label: "AAPL US EQUITY", val: "260.14", clr: "rgba(0,200,0,0.9)" },
-                { label: "BID/ASK", val: "260.10 / 260.18", clr: "rgba(0,200,0,0.7)" },
-                { label: "52W HI/LO", val: "273.54 / 183.86", clr: "rgba(0,200,0,0.7)" },
-                { label: "MKT CAP", val: "3.94T", clr: "rgba(0,200,0,0.85)" },
-                { label: "P/E RATIO", val: "32.1X", clr: "rgba(0,200,0,0.7)" },
-                { label: "DIV YLD", val: "0.44%", clr: "rgba(0,200,0,0.7)" },
+                { label: "Price", val: "260.14", clr: "rgba(200,200,200,0.9)" },
+                { label: "Change", val: "+1.24 (0.48%)", clr: "rgba(92,184,138,0.7)" },
+                { label: "Volume", val: "48.2M", clr: "rgba(160,160,160,0.7)" },
+                { label: "52W High", val: "273.54", clr: "rgba(160,160,160,0.7)" },
+                { label: "52W Low", val: "183.86", clr: "rgba(160,160,160,0.7)" },
+                { label: "Market Cap", val: "3.94T", clr: "rgba(160,160,160,0.7)" },
               ].map((row, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid rgba(0,255,0,0.04)" }}>
-                  <span style={{ fontSize: 9, color: "rgba(0,200,0,0.45)", letterSpacing: 1.5 }}>{row.label}</span>
-                  <span style={{ fontSize: 9, color: row.clr, fontWeight: 700 }}>{row.val}</span>
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                  <span style={{ fontSize: 9, color: "rgba(120,120,120,0.8)", letterSpacing: 0.5 }}>{row.label}</span>
+                  <span style={{ fontSize: 9, color: row.clr, fontWeight: 600 }}>{row.val}</span>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 14, borderTop: "1px solid rgba(0,200,0,0.12)", paddingTop: 10 }}>
-              <span style={{ fontSize: 8, color: "rgba(0,200,0,0.4)" }}>FUNCTION: </span>
-              <span style={{ fontSize: 8, color: "rgba(0,200,0,0.7)" }}>AAPL US EQUITY DES&lt;GO&gt;</span>
-              <span style={{ display: "inline-block", width: 6, height: 10, background: "rgba(0,200,0,0.7)", marginLeft: 2, animation: "pdot 1s infinite", verticalAlign: "middle" }} />
+            <div style={{ marginTop: 14, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+              <span style={{ fontSize: 8, color: "rgba(120,120,120,0.5)", lineHeight: 1.6 }}>No portfolio health score. No risk analysis. No AI insights. Just a number.</span>
             </div>
-            <div style={{ marginTop: 8, fontSize: 7, color: "rgba(0,200,0,0.2)", lineHeight: 1.6 }}>
-              {["QR&lt;HELP&gt;  GRAB&lt;HELP&gt;  WEI&lt;HELP&gt;", "BMAP&lt;HELP&gt;  PORT&lt;HELP&gt;  PRTU&lt;HELP&gt;"].map((t, i) => (
-                <div key={i}>{t}</div>
+            <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {["Sharpe ratio? —", "Drawdown? —", "Correlation? —", "Monte Carlo? —"].map((t, i) => (
+                <span key={i} style={{ fontSize: 7, color: "rgba(120,120,120,0.35)", background: "rgba(255,255,255,0.03)", padding: "2px 6px", borderRadius: 3 }}>{t}</span>
               ))}
             </div>
-            <div style={{ position: "absolute", top: 0, right: 0, width: "30%", height: "100%", background: "repeating-linear-gradient(0deg, transparent, transparent 11px, rgba(0,200,0,0.03) 11px, rgba(0,200,0,0.03) 12px)", pointerEvents: "none" }} />
           </div>
         </SlideIn>
 
@@ -1226,7 +1226,7 @@ function EmailCaptureBottom() {
     } catch { setStatus("error"); }
   };
   return (
-    <section style={{ position: "relative", zIndex: 1, padding: "100px 56px" }}>
+    <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "80px 56px" }}>
       <FadeUp>
       <div style={{
         maxWidth: 700, margin: "0 auto", textAlign: "center",
@@ -1250,13 +1250,13 @@ function EmailCaptureBottom() {
             <span style={{ fontSize: 15, color: "#5cb88a", fontWeight: 500 }}>{"You're on the list!"}</span>
           </div>
         ) : (
-          <div style={{ display: "flex", gap: 10, maxWidth: 480, margin: "0 auto" }}>
+          <div className="email-cap-row" style={{ display: "flex", gap: 10, maxWidth: 480, margin: "0 auto" }}>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="your@email.com"
-              style={{ flex: 1, padding: "15px 20px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#e8e0cc", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+              style={{ flex: 1, minWidth: 0, padding: "15px 20px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#e8e0cc", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
               onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
               onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")} />
             <button onClick={submit} disabled={status === "loading"} className="cta-shimmer"
-              style={{ padding: "15px 28px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 14, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0 }}>
+              style={{ padding: "15px 28px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 14, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, minHeight: 44 }}>
               {status === "loading" ? "..." : "Subscribe Free"}
             </button>
           </div>
@@ -1319,7 +1319,7 @@ function FeaturedInBar() {
     },
   ];
   return (
-    <FadeUp style={{ position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(201,168,76,0.07)", background: "rgba(8,11,16,0.6)" }}>
+    <FadeUp className="featured-bar" style={{ position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(201,168,76,0.07)", background: "rgba(8,11,16,0.6)" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
         <span style={{ fontSize: 9, letterSpacing: 3, color: "rgba(201,168,76,0.45)", textTransform: "uppercase", flexShrink: 0 }}>As Seen On</span>
         <div style={{ width: 1, height: 20, background: "rgba(201,168,76,0.1)", flexShrink: 0 }} />
@@ -1399,7 +1399,7 @@ function GrowthCalculatorSection() {
 
         <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 20, padding: "40px 48px", boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}>
           {/* Sliders */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, marginBottom: 44 }}>
+          <div className="calc-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, marginBottom: 44 }}>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
                 <p style={{ fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.4)", textTransform: "uppercase" }}>Starting Portfolio</p>
@@ -1429,7 +1429,7 @@ function GrowthCalculatorSection() {
           </div>
 
           {/* Stat outputs */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 44 }}>
+          <div className="calc-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 44 }}>
             {[
               { label: "10-Year Projection", value: fmt(project(10)), sublabel: "at 8% avg annual return" },
               { label: "30-Year Projection", value: fmt(project(30)), sublabel: "at 8% avg annual return" },
@@ -1635,7 +1635,7 @@ export default function Landing() {
     "@type": "WebApplication",
     name: "Corvo",
     url: "https://corvo.capital",
-    description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+    description: "Free institutional-grade portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
@@ -1680,6 +1680,7 @@ export default function Landing() {
           .how-line{display:none!important}
           .demo-grid{display:flex!important;flex-direction:column!important}
           .compare-table th,.compare-table td{padding:10px 8px!important;font-size:10px!important}
+          .compare-table th:first-child,.compare-table td:first-child{position:sticky!important;left:0!important;background:#0a0e14!important;z-index:1!important}
           .tagline-h2{font-size:clamp(24px,5vw,44px)!important}
           .testi-grid{display:flex!important;flex-direction:column!important}
           .testi-desktop{display:none!important}
@@ -1693,10 +1694,30 @@ export default function Landing() {
           .nav-links{display:none!important}
           .hamburger{display:flex!important}
           .nav-user-name{display:none!important}
+          .hero-btns{flex-direction:column!important;align-items:center!important}
+          .hero-btns>*{width:min(300px,80vw)!important;justify-content:center!important;text-align:center!important;display:flex!important;align-items:center!important}
+          .hero-preview-sidebar{display:none!important}
+          .stats-grid>*:nth-child(2n){border-right:none!important}
+          .vs-panels{flex-direction:column!important}
+          .vs-panels>*{flex:none!important;width:100%!important}
+          .vs-panels>*:nth-child(1){border-radius:16px 16px 0 0!important;border-right:1px solid rgba(0,200,0,0.15)!important}
+          .vs-panels>*:nth-child(2){width:100%!important;height:44px!important;flex-direction:row!important}
+          .vs-panels>*:nth-child(2)>div:first-child,.vs-panels>*:nth-child(2)>div:last-child{width:auto!important;flex:1!important;height:1px!important}
+          .vs-panels>*:nth-child(3){border-radius:0 0 16px 16px!important;border-left:1px solid rgba(201,168,76,0.2)!important}
+          .calc-grid{grid-template-columns:1fr!important;gap:24px!important}
+          .email-cap-row{flex-direction:column!important}
+          .demo-inner{padding:32px 20px!important;gap:32px!important}
+          .featured-bar{padding:16px 20px!important}
+          .social-proof{padding:16px 20px!important}
+          .stock-search-wrap{width:100%!important;max-width:540px!important;margin:0 auto!important}
+          .stock-search-wrap>div{flex-direction:column!important;max-width:100%!important}
         }
         @media(max-width:600px){
           .stats-grid{grid-template-columns:1fr 1fr!important}
           .footer-inner{flex-direction:column!important;gap:12px!important;text-align:center!important}
+          .footer-root{padding:24px 20px!important}
+          .hero-btns>*{width:100%!important;max-width:360px!important}
+          .trust-grid{grid-template-columns:1fr!important}
         }
         .x-social-link:hover{color:#c9a84c!important}
       `}</style>
@@ -1874,6 +1895,7 @@ export default function Landing() {
 
         <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.9, type: "spring", damping: 20, stiffness: 200 }}
+          className="hero-btns"
           style={{ display: "flex", gap: 12, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
           {loggedIn ? (
             <Link href="/app" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Go to Dashboard →</Link>
@@ -1909,7 +1931,7 @@ export default function Landing() {
           <HeroMetricCard label="Sharpe Ratio" value="1.92" color="#c9a84c" animDelay="1.2s" style={{ top: 40, right: "-4%", zIndex: 4 }} />
           <HeroMetricCard label="Health Score" value="78 / 100" color="#8eb4c8" animDelay="0.6s" style={{ bottom: 80, right: "-4%", zIndex: 4 }} />
           <div style={{ background: "rgba(10,14,20,0.97)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 16, overflow: "hidden", boxShadow: "0 48px 128px rgba(0,0,0,0.7), inset 0 1px 0 rgba(201,168,76,0.08)", display: "flex" }}>
-            <div style={{ width: 180, background: "rgba(8,11,16,0.95)", borderRight: "1px solid rgba(255,255,255,0.05)", padding: "16px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
+            <div className="hero-preview-sidebar" style={{ width: 180, background: "rgba(8,11,16,0.95)", borderRight: "1px solid rgba(255,255,255,0.05)", padding: "16px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
               <div style={{ padding: "0 14px 14px", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                   <img src="/corvo-logo.svg" width={18} height={14} alt="Corvo" />
@@ -1988,7 +2010,7 @@ export default function Landing() {
       <FeaturedInBar />
 
       {/* SOCIAL PROOF */}
-      <FadeUp style={{ position: "relative", zIndex: 1, padding: "20px 56px", display: "flex", justifyContent: "center" }}>
+      <FadeUp className="social-proof" style={{ position: "relative", zIndex: 1, padding: "20px 56px", display: "flex", justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ display: "flex" }}>
             {[{ i: "M", c: "#c9a84c" }, { i: "S", c: "#5cb88a" }, { i: "J", c: "#c9a84c" }, { i: "A", c: "#e05c5c" }, { i: "R", c: "#5cb88a" }].map((u, idx) => (
@@ -2058,11 +2080,11 @@ export default function Landing() {
                 <thead>
                   <tr>
                     <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", borderBottom: "1px solid rgba(201,168,76,0.08)", fontWeight: 400 }}>Feature</th>
-                    {["Corvo", "Bloomberg", "Yahoo Finance", "Robinhood"].map((t, i) => (
+                    {["Corvo", "Traditional Tools", "Yahoo Finance", "Robinhood"].map((t, i) => (
                       <th key={t} style={{ padding: "14px 16px", textAlign: "center", fontSize: 11, fontWeight: 600, color: i === 0 ? "#c9a84c" : "rgba(232,224,204,0.3)", borderBottom: i === 0 ? "2px solid rgba(201,168,76,0.4)" : "1px solid rgba(201,168,76,0.08)", borderLeft: i === 0 ? "1px solid rgba(201,168,76,0.18)" : "none", borderRight: i === 0 ? "1px solid rgba(201,168,76,0.18)" : "none", background: i === 0 ? "rgba(201,168,76,0.05)" : "transparent", boxShadow: i === 0 ? "0 0 40px rgba(201,168,76,0.04)" : "none" }}>
                         {t}
                         {i === 0 && <span style={{ display: "block", fontSize: 8, letterSpacing: 1.5, color: "rgba(201,168,76,0.5)", fontWeight: 400, marginTop: 2 }}>FREE</span>}
-                        {i === 1 && <span style={{ display: "block", fontSize: 8, letterSpacing: 1, color: "rgba(232,224,204,0.2)", fontWeight: 400, marginTop: 2 }}>~$2,000/mo</span>}
+                        {i === 1 && <span style={{ display: "block", fontSize: 8, letterSpacing: 1, color: "rgba(232,224,204,0.2)", fontWeight: 400, marginTop: 2 }}>paid/limited</span>}
                       </th>
                     ))}
                   </tr>
@@ -2107,7 +2129,7 @@ export default function Landing() {
         <div style={{ maxWidth: 1100, margin: "0 auto", background: "rgba(255,255,255,0.014)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 24, overflow: "hidden", position: "relative" }}>
           <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.018) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.018) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
           <div style={{ position: "absolute", top: "-30%", right: "-10%", width: "50%", height: "150%", background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 60%)", pointerEvents: "none" }} />
-          <div className="demo-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center", padding: "64px 56px" }}>
+          <div className="demo-grid demo-inner" style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center", padding: "64px 56px" }}>
             <div>
               <Reveal>
                 <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 18 }}>Live Demo</p>
@@ -2142,7 +2164,7 @@ export default function Landing() {
           <div className="testi-desktop" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
               <TestimonialCard text="Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification." name="Marcus T." role="Retail Investor · 12yr experience" delay={0} />
-              <TestimonialCard text="I replaced my Bloomberg subscription for personal investing. Corvo gives me 90% of the analytics at zero cost, with a UI that doesn't look like it's from 2003." name="Sarah K." role="Self-directed IRA · Former analyst" delay={0.12} />
+              <TestimonialCard text="I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it." name="Sarah K." role="Self-directed IRA · Former analyst" delay={0.12} />
               <TestimonialCard text="The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation." name="David R." role="Index Fund Investor · Engineer" delay={0.24} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16, maxWidth: 740, margin: "0 auto", width: "100%" }}>
@@ -2154,7 +2176,7 @@ export default function Landing() {
           <div className="testi-mobile" style={{ display: "none" }}>
             {[
               { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
-              { text: "I replaced my Bloomberg subscription for personal investing. Corvo gives me 90% of the analytics at zero cost, with a UI that doesn't look like it's from 2003.", name: "Sarah K.", role: "Self-directed IRA · Former analyst" },
+              { text: "I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it.", name: "Sarah K.", role: "Self-directed IRA · Former analyst" },
               { text: "The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
               { text: "The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like.", name: "James L.", role: "Dividend Investor · 8yr experience" },
               { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 300 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
@@ -2167,17 +2189,17 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── "BLOOMBERG-SERIOUS" TAGLINE ─── */}
+      {/* ─── PHILOSOPHY TAGLINE ─── */}
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "40px 56px 80px" }}>
         <Reveal>
           <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", marginBottom: 28 }}>Our philosophy</p>
             <h2 className="tagline-h2" style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,5vw,56px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2.5, lineHeight: 1.1, marginBottom: 28 }}>
-              Built for investors who are serious,<br />
-              <span style={{ color: "#c9a84c" }}>but not Bloomberg-serious.</span>
+              Built for real investors,<br />
+              <span style={{ color: "#c9a84c" }}>not Wall Street firms.</span>
             </h2>
             <p style={{ fontSize: 17, color: "rgba(232,224,204,0.38)", lineHeight: 1.85, fontWeight: 300, maxWidth: 580, margin: "0 auto 48px" }}>
-              You care about your portfolio. You want real analytics, not guesswork. But you don't need a $2,000/month terminal. Corvo is built exactly for that gap.
+              You care about your portfolio. You want real analytics, not a basic chart. Yahoo Finance won't give it to you. Robinhood definitely won't. Corvo is built exactly for that gap.
             </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <Link href="/auth" className="cta cta-shimmer" style={{ padding: "14px 40px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>
@@ -2203,14 +2225,14 @@ export default function Landing() {
 
       {/* MOBILE STICKY CTA */}
       <div style={{ display: "none" }} className="mob-cta">
-        <style>{`@media(max-width:768px){.mob-cta{display:block!important;position:fixed;bottom:0;left:0;right:0;padding:12px 16px 20px;background:linear-gradient(to top,rgba(10,14,20,0.98) 0%,rgba(10,14,20,0.9) 100%);z-index:200;border-top:1px solid rgba(201,168,76,0.1);}}`}</style>
-        <a href="/auth" style={{ display: "block", textAlign: "center", padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>
+        <style>{`@media(max-width:768px){.mob-cta{display:block!important;position:fixed;bottom:0;left:0;right:0;padding:12px 16px calc(20px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,rgba(10,14,20,0.98) 0%,rgba(10,14,20,0.9) 100%);z-index:200;border-top:1px solid rgba(201,168,76,0.1);}}`}</style>
+        <a href="/auth" style={{ display: "block", textAlign: "center", padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" } as React.CSSProperties}>
           Analyze your portfolio free →
         </a>
       </div>
 
       {/* FOOTER */}
-      <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 56px" }}>
+      <footer className="footer-root" style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 56px" }}>
         <div className="footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />

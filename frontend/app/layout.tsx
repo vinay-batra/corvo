@@ -10,7 +10,7 @@ import ParticleCanvas from "@/components/ParticleCanvas";
 
 export const metadata: Metadata = {
   title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
-  description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+  description: "Free institutional-grade portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
-    description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+    description: "Free institutional-grade portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
     url: "https://corvo.capital",
     siteName: "Corvo",
     images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630, alt: "Corvo: Free Portfolio Analytics & AI Investing Tools" }],
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
-    description: "Free Bloomberg-quality portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+    description: "Free institutional-grade portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
     images: ["https://corvo.capital/og-image.png"],
   },
 };

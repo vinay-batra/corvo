@@ -686,7 +686,7 @@ const STEPS = [
   {
     title: "AI Insights",
     subtitle: "Instant AI analysis of your portfolio",
-    desc: "Get Bloomberg-quality intelligence powered by Claude AI. Understand your Sharpe ratio, health score, concentration risk, and what to do about it — in plain English.",
+    desc: "Get institutional-grade intelligence powered by Claude AI. Understand your Sharpe ratio, health score, concentration risk, and what to do about it — in plain English.",
     icon: "🤖",
     panel: Step2Panel,
   },
@@ -756,10 +756,19 @@ export default function DemoPage() {
         @keyframes blink { 50% { opacity: 0; } }
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        @media(max-width:768px){
+          .demo-step-layout { flex-direction: column !important; gap: 20px !important; align-items: stretch !important; }
+          .demo-left-panel { flex: none !important; width: 100% !important; }
+          .demo-right-panel { min-height: 280px !important; max-height: 360px !important; }
+          .demo-topbar-social { display: none !important; }
+          .demo-progress-bar { padding: 10px 16px !important; }
+          .demo-bottom-nav { padding: 12px 16px !important; }
+          .demo-bottom-nav button { padding: 10px 16px !important; font-size: 12px !important; min-height: 44px !important; }
+        }
       `}</style>
 
       {/* ── Top bar ── */}
-      <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 50, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, background: `linear-gradient(${C.bg2}, transparent)` }}>
+      <div className="demo-progress-bar" style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 50, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, background: `linear-gradient(${C.bg2}, transparent)` }}>
 
         {/* Progress bar */}
         <div style={{ flex: 1, display: "flex", gap: 6, alignItems: "center" }}>
@@ -774,7 +783,7 @@ export default function DemoPage() {
 
         {/* Social proof + skip */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
-          <span style={{ fontSize: 10, color: C.cream3, whiteSpace: "nowrap" }}>
+          <span className="demo-topbar-social" style={{ fontSize: 10, color: C.cream3, whiteSpace: "nowrap" }}>
             Join <span style={{ color: C.amber, fontWeight: 600 }}>2,847</span> others who have taken the tour
           </span>
           <Link href="/" style={{ fontSize: 11, color: C.cream3, textDecoration: "none", letterSpacing: 0.5, transition: "color 0.2s", flexShrink: 0 }}
@@ -791,6 +800,7 @@ export default function DemoPage() {
           <motion.div key={step} custom={dir} variants={variants}
             initial="enter" animate="center" exit="exit"
             transition={{ duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="demo-step-layout"
             style={{ flex: 1, display: "flex", padding: "0 24px", maxWidth: 1100, margin: "0 auto", width: "100%", gap: 32, alignItems: "center" }}>
 
             {isCta ? (
@@ -801,7 +811,7 @@ export default function DemoPage() {
             ) : (
               <>
                 {/* Left panel */}
-                <div style={{ flex: "0 0 320px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 20 }}>
+                <div className="demo-left-panel" style={{ flex: "0 0 320px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 20 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 28 }}>{current.icon}</span>
                     <div>
@@ -835,7 +845,7 @@ export default function DemoPage() {
                 </div>
 
                 {/* Right panel */}
-                <div style={{ flex: 1, minHeight: 420, maxHeight: 520, display: "flex", flexDirection: "column", padding: 20, background: C.bg3, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                <div className="demo-right-panel" style={{ flex: 1, minHeight: 420, maxHeight: 520, display: "flex", flexDirection: "column", padding: 20, background: C.bg3, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
                   <Panel active={true} />
                 </div>
               </>
@@ -846,7 +856,7 @@ export default function DemoPage() {
 
       {/* ── Bottom nav ── */}
       {!isCta && (
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "16px 24px", background: `linear-gradient(transparent, ${C.bg2})`, display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 50 }}>
+        <div className="demo-bottom-nav" style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "16px 24px", background: `linear-gradient(transparent, ${C.bg2})`, display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 50 }}>
           <button onClick={prev} disabled={step === 0}
             style={{ padding: "10px 24px", background: "transparent", border: `1px solid ${C.border2}`, borderRadius: 10, color: step === 0 ? C.cream3 : C.cream, fontSize: 13, cursor: step === 0 ? "default" : "pointer", transition: "all 0.2s", opacity: step === 0 ? 0.4 : 1, fontFamily: "inherit" }}>
             ← Previous

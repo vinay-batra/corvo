@@ -95,14 +95,21 @@ export default function ChangelogPage() {
         .nl { color: rgba(232,224,204,0.45); text-decoration: none; font-size: 12px; padding: 7px 14px; letter-spacing: 0.3px; transition: color 0.2s; }
         .nl:hover { color: #e8e0cc; }
         .tag { padding: 3px 10px; background: rgba(201,168,76,0.07); border: 1px solid rgba(201,168,76,0.18); border-radius: 20px; font-size: 10px; color: rgba(201,168,76,0.75); letter-spacing: 0.5px; }
-        @media(max-width:600px) { .cl-timeline { padding-left: 24px !important; } .cl-entry { padding-left: 20px !important; } .cl-date-col { display: none !important; } }
+        @media(max-width:768px) {
+          .cl-timeline { padding-left: 24px !important; }
+          .cl-entry { padding-left: 20px !important; }
+          .cl-date-col { display: none !important; }
+          .cl-hero { padding: 100px 20px 48px !important; }
+          .cl-body { padding: 0 20px 80px !important; }
+          .cl-footer { padding: 60px 20px 80px !important; }
+        }
       `}</style>
 
       {/* Nav */}
       <PublicNav />
 
       {/* Hero */}
-      <div style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
+      <div className="cl-hero" style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
         <FadeUp>
           <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>What&apos;s New</p>
           <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1, marginBottom: 16 }}>
@@ -115,7 +122,7 @@ export default function ChangelogPage() {
       </div>
 
       {/* Timeline */}
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 56px 96px" }}>
+      <div className="cl-body" style={{ maxWidth: 860, margin: "0 auto", padding: "0 56px 96px" }}>
         <div className="cl-timeline" style={{ position: "relative", paddingLeft: 0 }}>
           {/* Vertical line */}
           <div style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "rgba(201,168,76,0.12)" }} />
@@ -158,7 +165,7 @@ export default function ChangelogPage() {
       </div>
 
       {/* Subscribe section */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "80px 56px 96px" }}>
+      <div className="cl-footer" style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "80px 56px 96px" }}>
         <FadeUp>
           <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Stay in the loop</p>

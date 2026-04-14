@@ -38,13 +38,13 @@ import { supabase } from "../../lib/supabase";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const AMBER = "#c9a84c";
+const AMBER = "var(--accent)";
 const GREEN = "#4caf7d";
 const RED   = "#e05c5c";
 
 const LEVELS = [
   { min: 0,    max: 99,   name: "Beginner",  color: "#9b9b98" },
-  { min: 100,  max: 299,  name: "Investor",  color: "#c9a84c" },
+  { min: 100,  max: 299,  name: "Investor",  color: "var(--accent)" },
   { min: 300,  max: 599,  name: "Analyst",   color: AMBER },
   { min: 600,  max: 999,  name: "Expert",    color: "#a78bfa" },
   { min: 1000, max: Infinity, name: "Master", color: "#f97316" },
@@ -78,7 +78,7 @@ function XPToast({ amount, onDone }: { amount: number; onDone: () => void }) {
         background: AMBER, color: "#0a0e14", borderRadius: 40,
         padding: "10px 22px", fontSize: 15, fontWeight: 700,
         fontFamily: "Space Mono, monospace", letterSpacing: 0.5,
-        boxShadow: "0 8px 32px rgba(201,168,76,0.45)", zIndex: 2000,
+        boxShadow: "0 8px 32px rgba(184,134,11,0.45)", zIndex: 2000,
         display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
       }}>
       <Star size={14} fill={AMBER} color={AMBER} /> +{amount} XP
@@ -1961,7 +1961,7 @@ export default function LearnPage() {
                       </div>
                     </div>
                     {gameAlreadyAwardedMsg && (
-                      <div style={{ background: "#c9a84c18", border: "0.5px solid #c9a84c55", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#c9a84c" }}>
+                      <div style={{ background: "var(--accent)18", border: "0.5px solid var(--accent)55", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "var(--accent)" }}>
                         You&apos;ve already earned XP for this game. Play again for practice!
                       </div>
                     )}

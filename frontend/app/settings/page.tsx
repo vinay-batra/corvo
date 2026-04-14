@@ -41,7 +41,7 @@ function Row({ label, desc, children }: { label: string; desc?: string; children
 
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   return (
-    <div onClick={onChange} style={{ width: 38, height: 22, borderRadius: 11, background: on ? "#c9a84c" : "var(--border2)", position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0 }}>
+    <div onClick={onChange} style={{ width: 38, height: 22, borderRadius: 11, background: on ? "var(--accent)" : "var(--border2)", position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0 }}>
       <div style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: on ? "#0a0e14" : "var(--bg)", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
     </div>
   );
@@ -310,7 +310,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Avatar" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border2)" }} />
               ) : (
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(201,168,76,0.15)", border: "2px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#c9a84c" }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(184,134,11,0.15)", border: "2px solid rgba(184,134,11,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "var(--accent)" }}>
                   {initials}
                 </div>
               )}
@@ -337,7 +337,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
               <input value={displayName} onChange={e => setDisplayName(e.target.value)}
                 placeholder="Enter display name" style={{ ...inputStyle, flex: 1 }} />
               <button onClick={saveProfile} disabled={savingProfile}
-                style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: profileSaved ? "#5cb88a" : "#c9a84c", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s", whiteSpace: "nowrap" as const }}>
+                style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: profileSaved ? "#5cb88a" : "var(--accent)", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s", whiteSpace: "nowrap" as const }}>
                 {profileSaved ? "✓ Saved" : savingProfile ? "…" : "Save"}
               </button>
             </div>
@@ -398,7 +398,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
           </Row>
           <div style={{ paddingTop: 14 }}>
             <button onClick={saveNotifs} disabled={notifLoading}
-              style={{ padding: "9px 20px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: notifSaved ? "#5cb88a" : "#c9a84c", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s" }}>
+              style={{ padding: "9px 20px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: notifSaved ? "#5cb88a" : "var(--accent)", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s" }}>
               {notifSaved ? "✓ Saved" : notifLoading ? "Saving…" : "Save Notifications"}
             </button>
           </div>
@@ -408,7 +408,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
         <Section title="Referrals">
           {referralLoading ? (
             <div style={{ padding: "20px 0", display: "flex", alignItems: "center", gap: 8, color: "var(--text3)", fontSize: 13 }}>
-              <div style={{ width: 14, height: 14, border: "2px solid var(--border2)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              <div style={{ width: 14, height: 14, border: "2px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
               Loading…
             </div>
           ) : (
@@ -416,13 +416,13 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
               {/* Stats row */}
               <div style={{ display: "flex", gap: 12, padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
                 <div style={{ flex: 1, background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", border: "0.5px solid var(--border)" }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#c9a84c", fontFamily: "var(--font-mono)" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>
                     {referralData?.referral_count ?? 0}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Referrals completed</div>
                 </div>
                 <div style={{ flex: 1, background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", border: "0.5px solid var(--border)" }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#c9a84c", fontFamily: "var(--font-mono)" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>
                     +{referralData?.bonus_messages_earned ?? 0}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Bonus messages earned</div>
@@ -446,7 +446,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
                       <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>{bonus}/40</span>
                     </div>
                     <div style={{ height: 5, borderRadius: 3, background: "var(--border)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${Math.min((bonus / 40) * 100, 100)}%`, background: capped ? "#5cb88a" : "#c9a84c", borderRadius: 3, transition: "width 0.6s ease" }} />
+                      <div style={{ height: "100%", width: `${Math.min((bonus / 40) * 100, 100)}%`, background: capped ? "#5cb88a" : "var(--accent)", borderRadius: 3, transition: "width 0.6s ease" }} />
                     </div>
                   </div>
                 );
@@ -460,7 +460,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
                     {referralData?.referral_link ?? `https://corvo.capital/app?ref=${user?.id ?? "…"}`}
                   </div>
                   <button onClick={copyReferralLink}
-                    style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: linkCopied ? "#5cb88a" : "#c9a84c", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s", whiteSpace: "nowrap" as const, flexShrink: 0 }}>
+                    style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: linkCopied ? "#5cb88a" : "var(--accent)", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s", whiteSpace: "nowrap" as const, flexShrink: 0 }}>
                     {linkCopied ? "✓ Copied" : "Copy"}
                   </button>
                 </div>
@@ -470,7 +470,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
               <div style={{ padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
                 <button onClick={shareOnX}
                   style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 16px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text)", cursor: "pointer", transition: "border-color 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -536,7 +536,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
                 <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 8 }}>Zoom</div>
                 <input type="range" min={0.5} max={3} step={0.05} value={zoom}
                   onChange={e => setZoom(Number(e.target.value))}
-                  style={{ width: "100%", accentColor: "#c9a84c", cursor: "pointer" }} />
+                  style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }} />
               </div>
               {/* Buttons */}
               <div style={{ display: "flex", gap: 8 }}>
@@ -545,7 +545,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
                   Cancel
                 </button>
                 <button onClick={handleCropSave}
-                  style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 600, borderRadius: 9, border: "none", background: "#c9a84c", color: "#0a0e14", cursor: "pointer" }}>
+                  style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 600, borderRadius: 9, border: "none", background: "var(--accent)", color: "#0a0e14", cursor: "pointer" }}>
                   Save photo
                 </button>
               </div>

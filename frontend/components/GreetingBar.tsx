@@ -77,7 +77,7 @@ export default function GreetingBar({
           alignItems: "flex-start",
           gap: 9,
         }}>
-          <span style={{ fontSize: 11, color: "#c9a84c", flexShrink: 0, marginTop: 1 }}>◎</span>
+          <span style={{ fontSize: 11, color: "var(--accent)", flexShrink: 0, marginTop: 1 }}>◎</span>
           <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.55, margin: 0 }}>
             {pulse}
           </p>

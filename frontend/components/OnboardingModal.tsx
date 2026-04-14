@@ -8,7 +8,7 @@ const C = {
   navy: "#0a0e14", navy3: "#111620", navy4: "#161c26",
   border: "rgba(255,255,255,0.07)", cream: "#e8e0cc",
   cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)",
-  amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", amber3: "rgba(201,168,76,0.3)",
+  amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", amber3: "rgba(184,134,11,0.25)",
   green: "#5cb88a", green2: "rgba(92,184,138,0.12)", green3: "rgba(92,184,138,0.3)",
 };
 

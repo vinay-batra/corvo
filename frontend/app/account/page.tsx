@@ -60,7 +60,7 @@ export default function AccountPage() {
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--bg,#0a0e14)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 20, height: 20, border: "2px solid rgba(201,168,76,0.2)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ width: 20, height: 20, border: "2px solid rgba(184,134,11,0.2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
@@ -77,9 +77,9 @@ export default function AccountPage() {
         {/* Avatar + name */}
         <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 36 }}>
           {avatarUrl ? (
-            <img src={avatarUrl} alt="Avatar" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(201,168,76,0.25)" }} />
+            <img src={avatarUrl} alt="Avatar" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(184,134,11,0.25)" }} />
           ) : (
-            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(201,168,76,0.12)", border: "2px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, color: "#c9a84c" }}>
+            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(184,134,11,0.12)", border: "2px solid rgba(184,134,11,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, color: "var(--accent)" }}>
               {initials}
             </div>
           )}
@@ -98,8 +98,8 @@ export default function AccountPage() {
           <div style={{ background: "rgba(255,255,255,0.025)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px 18px" }}>
             <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 8 }}>Current Plan</p>
             <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "#c9a84c" }}>Free Beta</span>
-              <span style={{ fontSize: 9, padding: "2px 7px", background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 10, color: "#c9a84c", letterSpacing: 1 }}>ACTIVE</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--accent)" }}>Free Beta</span>
+              <span style={{ fontSize: 9, padding: "2px 7px", background: "rgba(184,134,11,0.1)", border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, color: "var(--accent)", letterSpacing: 1 }}>ACTIVE</span>
             </div>
           </div>
         </div>
@@ -109,16 +109,16 @@ export default function AccountPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
             <div>
               <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 6 }}>Level {level} · {getLevelName(level)}</p>
-              <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, lineHeight: 1 }}>{xp.toLocaleString()} <span style={{ fontSize: 13, fontWeight: 400, color: "rgba(232,224,204,0.4)" }}>XP</span></p>
+              <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "var(--accent)", letterSpacing: -1, lineHeight: 1 }}>{xp.toLocaleString()} <span style={{ fontSize: 13, fontWeight: 400, color: "rgba(232,224,204,0.4)" }}>XP</span></p>
             </div>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(184,134,11,0.1)", border: "1px solid rgba(184,134,11,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21L12 18L6.82 21L8 14.14L3 9.27L9.91 8.26L12 2Z" fill="#c9a84c" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21L12 18L6.82 21L8 14.14L3 9.27L9.91 8.26L12 2Z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
           </div>
           <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 8 }}>
-            <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, #c9a84c, #f59e0b)", borderRadius: 3, transition: "width 0.8s cubic-bezier(0.16,1,0.3,1)" }} />
+            <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg, var(--accent), #f59e0b)", borderRadius: 3, transition: "width 0.8s cubic-bezier(0.16,1,0.3,1)" }} />
           </div>
           <p style={{ fontSize: 11, color: "rgba(232,224,204,0.3)" }}>
             {level < 7 ? `${xpForNext.toLocaleString()} XP until Level ${level + 1} · ${getLevelName(level + 1)}` : "Max level reached"}
@@ -128,14 +128,14 @@ export default function AccountPage() {
         {/* Quick links */}
         <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, marginBottom: 32 }}>
           <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 4 }}>Quick Links</p>
-          <Link href="/app" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "rgba(201,168,76,0.06)", border: "0.5px solid rgba(201,168,76,0.15)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)")}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.15)")}>
+          <Link href="/app" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "rgba(184,134,11,0.06)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(184,134,11,0.35)")}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(184,134,11,0.15)")}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "#c9a84c" }}>Go to App</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--accent)" }}>Go to App</span>
             </div>
-            <span style={{ fontSize: 14, color: "rgba(201,168,76,0.5)" }}>→</span>
+            <span style={{ fontSize: 14, color: "rgba(184,134,11,0.5)" }}>→</span>
           </Link>
           <Link href="/settings" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "rgba(255,255,255,0.02)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}

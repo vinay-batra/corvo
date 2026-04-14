@@ -8,7 +8,7 @@ import ErrorState from "./ErrorState";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
-const AMBER = "#c9a84c";
+const AMBER = "#b8860b";
 const GREEN = "#4caf7d";
 
 interface Holding {
@@ -52,6 +52,14 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
   const [inputValue, setInputValue] = useState("10000");
   const [showNonPayers, setShowNonPayers] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [dark, setDark] = useState(true);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!assets.length) return;
@@ -176,7 +184,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
                       text: `$${data.total_annual_income.toFixed(0)}`,
                       x: 0.5, y: 0.5, xref: "paper", yref: "paper",
                       showarrow: false,
-                      font: { size: 13, color: AMBER, family: "Space Mono, monospace" },
+                      font: { size: 13, color: dark ? AMBER : "#b8860b", family: "Space Mono, monospace" },
                     }],
                   }}
                   config={{ displayModeBar: false, responsive: true }}

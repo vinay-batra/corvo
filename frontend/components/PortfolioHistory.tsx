@@ -10,7 +10,7 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const PALETTE = [
-  "#c9a84c", "#5cb88a", "#5b9cf6", "#e05c5c",
+  "#b8860b", "#5cb88a", "#5b9cf6", "#e05c5c",
   "#a78bfa", "#fb923c", "#38bdf8", "#f472b6",
 ];
 
@@ -64,6 +64,14 @@ export default function PortfolioHistory() {
   const [noPortfolios, setNoPortfolios] = useState(false);
   const [timeframe, setTimeframe] = useState<Timeframe>("1Y");
   const [selected, setSelected] = useState<string>("all");
+  const [dark, setDark] = useState(true);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => { loadData(); }, []);
 
@@ -231,15 +239,15 @@ export default function PortfolioHistory() {
               xaxis: {
                 showgrid: false,
                 zeroline: false,
-                tickfont: { size: 9, color: "#8a8a8a" },
+                tickfont: { size: 9, color: dark ? "#8a8a8a" : "#7a7a78" },
                 type: "date",
               },
               yaxis: {
                 showgrid: true,
-                gridcolor: "rgba(255,255,255,0.04)",
+                gridcolor: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.07)",
                 zeroline: true,
-                zerolinecolor: "rgba(255,255,255,0.08)",
-                tickfont: { size: 9, color: "#8a8a8a" },
+                zerolinecolor: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.12)",
+                tickfont: { size: 9, color: dark ? "#8a8a8a" : "#7a7a78" },
                 tickformat: ".1f",
                 ticksuffix: "%",
               },
@@ -248,7 +256,7 @@ export default function PortfolioHistory() {
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: "100%" }}
           />
-          <p style={{ fontSize: 11, color: "#8a8a8a", textAlign: "right", margin: "2px 0 4px", opacity: 0.7 }}>Double-click chart to reset zoom</p>
+          <p style={{ fontSize: 11, color: dark ? "#8a8a8a" : "#7a7a78", textAlign: "right", margin: "2px 0 4px", opacity: 0.7 }}>Double-click chart to reset zoom</p>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
             {chartLines.map(l => {

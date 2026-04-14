@@ -104,7 +104,7 @@ export default function KeyboardShortcutsModal({ open, onClose }: Props) {
                     minWidth: 28, height: 22, padding: "0 7px",
                     background: "var(--bg3)", border: "0.5px solid var(--border2)",
                     borderRadius: 5, fontSize: 10, fontFamily: "Space Mono, monospace",
-                    fontWeight: 700, color: "#c9a84c", display: "flex",
+                    fontWeight: 700, color: "var(--accent)", display: "flex",
                     alignItems: "center", justifyContent: "center", whiteSpace: "nowrap",
                     boxShadow: "0 1px 0 var(--border2)",
                   }}>{key}</kbd>

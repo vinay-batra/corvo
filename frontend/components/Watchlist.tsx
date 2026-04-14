@@ -52,8 +52,8 @@ function IconPicker({ value, onChange }: { value: string; onChange: (k: string) 
     <div style={{ display: "flex", gap: 4 }}>
       {LIST_ICON_KEYS.map(k => (
         <button key={k} onClick={() => onChange(k)}
-          style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${value === k ? "rgba(201,168,76,0.5)" : "var(--border)"}`, background: value === k ? "rgba(201,168,76,0.1)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.1s" }}>
-          <ListIcon iconKey={k} size={12} color={value === k ? "#c9a84c" : "var(--text3)"} />
+          style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${value === k ? "var(--accent)" : "var(--border)"}`, background: value === k ? "rgba(184,134,11,0.1)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.1s" }}>
+          <ListIcon iconKey={k} size={12} color={value === k ? "var(--accent)" : "var(--text3)"} />
         </button>
       ))}
     </div>
@@ -520,9 +520,9 @@ export default function Watchlist() {
           <div ref={switcherRef} style={{ position: "relative", flex: 1 }}>
             {editingListId === activeListId ? (
               /* Inline rename */
-              <div style={{ background: "var(--bg3)", border: "0.5px solid rgba(201,168,76,0.4)", borderRadius: 9, padding: "10px 12px" }}>
+              <div style={{ background: "var(--bg3)", border: "0.5px solid rgba(184,134,11,0.4)", borderRadius: 9, padding: "10px 12px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <ListIcon iconKey={editIcon} size={14} color="#c9a84c" />
+                  <ListIcon iconKey={editIcon} size={14} color="var(--accent)" />
                   <input
                     autoFocus value={editName} onChange={e => setEditName(e.target.value)}
                     onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); saveRename(); } if (e.key === "Escape") setEditingListId(null); }}
@@ -539,7 +539,7 @@ export default function Watchlist() {
                 <button
                   className="switcher-trigger"
                   onClick={() => setSwitcherOpen(o => !o)}
-                  style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "8px 11px", background: "var(--bg3)", border: `0.5px solid ${switcherOpen ? "rgba(201,168,76,0.3)" : "var(--border2)"}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}>
+                  style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "8px 11px", background: "var(--bg3)", border: `0.5px solid ${switcherOpen ? "rgba(184,134,11,0.3)" : "var(--border2)"}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}>
                   <ListIcon iconKey={activeList?.icon || "folder"} size={13} color="var(--text3)" />
                   <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {activeList?.name ?? "Watchlist"}
@@ -555,7 +555,7 @@ export default function Watchlist() {
                   onClick={() => { if (activeList) startRename(activeList.id, activeList.name, activeList.icon); }}
                   title="Rename list"
                   style={{ height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: "pointer", color: "var(--text3)", fontSize: 11, flexShrink: 0, transition: "all 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; e.currentTarget.style.color = "var(--text)"; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.3)"; e.currentTarget.style.color = "var(--text)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.color = "var(--text3)"; }}>
                   <PencilIcon size={11} /> <span style={{ letterSpacing: 0.2 }}>Rename</span>
                 </button>
@@ -574,11 +574,11 @@ export default function Watchlist() {
                     const isActive = list.id === activeListId;
                     return (
                       <div key={list.id}
-                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "pointer", background: isActive ? "rgba(201,168,76,0.05)" : "transparent", transition: "background 0.1s", borderBottom: "0.5px solid var(--border)" }}
+                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "pointer", background: isActive ? "rgba(184,134,11,0.05)" : "transparent", transition: "background 0.1s", borderBottom: "0.5px solid var(--border)" }}
                         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--bg3)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = isActive ? "rgba(201,168,76,0.05)" : "transparent"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isActive ? "rgba(184,134,11,0.05)" : "transparent"; }}
                         onClick={() => { setActiveListId(list.id); setSwitcherOpen(false); }}>
-                        <ListIcon iconKey={list.icon || "folder"} size={12} color={isActive ? "#c9a84c" : "var(--text3)"} />
+                        <ListIcon iconKey={list.icon || "folder"} size={12} color={isActive ? "var(--accent)" : "var(--text3)"} />
                         <span style={{ flex: 1, fontSize: 12, color: isActive ? "var(--text)" : "var(--text2)", fontWeight: isActive ? 500 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{list.name}</span>
                         {count > 0 && <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0 }}>{count} {count === 1 ? "asset" : "assets"}</span>}
                         <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
@@ -643,7 +643,7 @@ export default function Watchlist() {
               placeholder={`Add ticker to ${activeList?.name ?? "list"}…`}
               style={{ width: "100%", padding: "9px 12px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none", boxSizing: "border-box" }}
             />
-            {searchBusy && <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 11, height: 11, border: "1.5px solid rgba(201,168,76,0.25)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
+            {searchBusy && <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 11, height: 11, border: "1.5px solid rgba(184,134,11,0.25)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
 
             <AnimatePresence>
               {searchOpen && searchResults.length > 0 && (
@@ -658,10 +658,10 @@ export default function Watchlist() {
                       onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <div>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "#c9a84c" }}>{r.ticker}</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{r.ticker}</span>
                         <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>{r.name}</span>
                       </div>
-                      <span style={{ fontSize: 8, padding: "2px 5px", borderRadius: 3, background: "rgba(201,168,76,0.12)", color: "#c9a84c", letterSpacing: 0.5, flexShrink: 0 }}>
+                      <span style={{ fontSize: 8, padding: "2px 5px", borderRadius: 3, background: "rgba(184,134,11,0.12)", color: "var(--accent)", letterSpacing: 0.5, flexShrink: 0 }}>
                         {TICKER_TYPE_LABELS[r.type] || r.type}
                       </span>
                     </div>
@@ -718,7 +718,7 @@ export default function Watchlist() {
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                       <button onClick={e => { e.stopPropagation(); setAlertFor(item.ticker); }}
                         title={hasAlert ? "Alert set" : "Set price alert"}
-                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: hasAlert ? "rgba(201,168,76,0.1)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: hasAlert ? "#c9a84c" : "var(--text3)", transition: "all 0.15s" }}>
+                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: hasAlert ? "rgba(184,134,11,0.1)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: hasAlert ? "var(--accent)" : "var(--text3)", transition: "all 0.15s" }}>
                         ◎
                       </button>
                       <button onClick={e => { e.stopPropagation(); remove(item.ticker); }}
@@ -760,7 +760,7 @@ export default function Watchlist() {
         <div className="c-notif-prompt" style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "12px 16px", background: "var(--card-bg)", marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 12, color: "var(--text2)" }}>Get browser alerts when price targets are hit</span>
           <button onClick={async () => { const ok = await requestPermission(); setNotifGranted(ok); }}
-            style={{ padding: "6px 14px", fontSize: 11, borderRadius: 8, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.08)", color: "#c9a84c", cursor: "pointer", flexShrink: 0, marginLeft: 12, minHeight: 44 }}>
+            style={{ padding: "6px 14px", fontSize: 11, borderRadius: 8, border: "0.5px solid rgba(184,134,11,0.3)", background: "rgba(184,134,11,0.08)", color: "var(--accent)", cursor: "pointer", flexShrink: 0, marginLeft: 12, minHeight: 44 }}>
             Enable Notifications
           </button>
         </div>

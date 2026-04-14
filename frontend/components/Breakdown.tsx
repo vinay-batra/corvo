@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 // Distinct color palette — visible against dark background
 const COLORS = [
-  "#c9a84c",  // amber
+  "#b8860b",  // amber
   "#5b9bd5",  // blue
   "#e05c5c",  // red
   "#5cb88a",  // green
