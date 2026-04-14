@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const PALETTE = ["#c9a84c", "#b47ee0", "#5cb88a", "#e05c5c"];
+const PALETTE = ["#b8860b", "#b47ee0", "#5cb88a", "#e05c5c"];
 const MAX = 4;
-const AMBER = "#c9a84c";
+const AMBER = "#b8860b";
 
 const COMMON_TICKERS: { ticker: string; name: string; type: string }[] = [
   { ticker:"AAPL",    name:"Apple Inc.",                type:"EQUITY" },
@@ -111,6 +111,14 @@ export default function StockCompare() {
   const [stocks, setStocks]   = useState<Record<string, StockInfo>>({});
   const [stockLoading, setStockLoading] = useState<Record<string, boolean>>({});
   const [error, setError]     = useState("");
+  const [dark, setDark] = useState(true);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
 
   const [inputValue, setInputValue]       = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -322,11 +330,11 @@ export default function StockCompare() {
               data={chartData}
               layout={{
                 paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-                font: { color: "rgba(232,224,204,0.75)", family: "Inter", size: 10 },
+                font: { color: dark ? "rgba(232,224,204,0.75)" : "#4a4a4a", family: "Inter", size: 10 },
                 margin: { t: 8, b: 36, l: 50, r: 12 },
-                xaxis: { gridcolor: "rgba(255,255,255,0.06)", linecolor: "rgba(255,255,255,0.07)", tickcolor: "transparent" },
-                yaxis: { gridcolor: "rgba(255,255,255,0.06)", linecolor: "rgba(255,255,255,0.07)", tickcolor: "transparent", ticksuffix: "%" },
-                legend: { orientation: "h", y: -0.15, font: { size: 11 }, bgcolor: "transparent" },
+                xaxis: { gridcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)", tickcolor: "transparent" },
+                yaxis: { gridcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)", tickcolor: "transparent", ticksuffix: "%" },
+                legend: { orientation: "h", y: -0.15, font: { size: 11, color: dark ? "rgba(232,224,204,0.75)" : "#4a4a4a" }, bgcolor: "transparent" },
                 hovermode: "x unified",
                 hoverlabel: { bgcolor: "#0d1117", bordercolor: "rgba(201,168,76,0.4)", font: { color: "#e8e0cc", size: 11 } },
               }}
@@ -383,7 +391,7 @@ export default function StockCompare() {
                 } as any]}
                 layout={{
                   paper_bgcolor: "transparent", plot_bgcolor: "transparent",
-                  font: { color: "rgba(232,224,204,0.75)", family: "Inter", size: 11 },
+                  font: { color: dark ? "rgba(232,224,204,0.75)" : "#4a4a4a", family: "Inter", size: 11 },
                   margin: { t: 8, b: 36, l: 56, r: 8 },
                   xaxis: { linecolor: "transparent", tickcolor: "transparent" },
                   yaxis: { linecolor: "transparent", tickcolor: "transparent" },

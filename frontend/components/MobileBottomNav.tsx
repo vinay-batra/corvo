@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { LayoutDashboard, Eye, MessageSquare, BookOpen, User } from "lucide-react";
 
-const AMBER = "#c9a84c";
+const AMBER = "var(--accent)";
 
 const NAV_ITEMS = [
   { id: "overview",  label: "Dashboard", Icon: LayoutDashboard, href: null },

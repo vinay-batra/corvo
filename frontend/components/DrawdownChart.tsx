@@ -14,6 +14,14 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [dark, setDark] = useState(true);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!assets.length) return;
@@ -77,10 +85,10 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
           layout={{
             paper_bgcolor: "transparent",
             plot_bgcolor: "transparent",
-            font: { color: "rgba(226,232,240,0.4)", family: "Space Grotesk", size: 10 },
+            font: { color: dark ? "rgba(226,232,240,0.4)" : "#4a4a4a", family: "Space Grotesk", size: 10 },
             margin: { t: 0, b: 32, l: 52, r: 16 },
-            xaxis: { gridcolor: "rgba(255,255,255,0.04)", linecolor: "rgba(255,255,255,0.08)", tickcolor: "transparent" },
-            yaxis: { gridcolor: "rgba(255,255,255,0.04)", linecolor: "rgba(255,255,255,0.08)", tickcolor: "transparent", tickformat: ".1%" },
+            xaxis: { gridcolor: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)", tickcolor: "transparent" },
+            yaxis: { gridcolor: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)", tickcolor: "transparent", tickformat: ".1%" },
             showlegend: false,
             hovermode: "x unified",
             hoverlabel: { bgcolor: "#0a1020", bordercolor: "rgba(255,64,96,0.3)", font: { color: "#e2e8f0", family: "Space Grotesk", size: 11 } },
@@ -88,7 +96,7 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
           config={{ displayModeBar: false, responsive: true }}
           style={{ width: "100%", height: 220 }}
         />
-        <p style={{ fontSize: 11, color: "rgba(226,232,240,0.3)", textAlign: "right", margin: "2px 0 0" }}>Double-click chart to reset zoom</p>
+        <p style={{ fontSize: 11, color: dark ? "rgba(226,232,240,0.3)" : "#7a7a78", textAlign: "right", margin: "2px 0 0" }}>Double-click chart to reset zoom</p>
         </>
       ) : null}
     </motion.div>

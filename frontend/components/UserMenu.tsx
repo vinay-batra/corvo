@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
-const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", border: "rgba(255,255,255,0.08)", navy: "#0a0e14", cream: "#e8e0cc", cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)" };
+const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", border: "var(--border)", navy: "var(--bg)", cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)" };
 
 interface UserMenuProps {
   onEmailPrefs?: () => void;

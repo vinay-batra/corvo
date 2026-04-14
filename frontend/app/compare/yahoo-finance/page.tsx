@@ -44,11 +44,12 @@ const FEATURES: [string, boolean, boolean][] = [
 export default function YahooFinanceComparePage() {
   return (
     <div style={{ background: "#0a0e14", minHeight: "100vh", color: "#e8e0cc", fontFamily: "'Inter',system-ui,sans-serif", overflowX: "hidden" }}>
+      <style>{`@media(max-width:768px){.cmp-section{padding-left:20px!important;padding-right:20px!important}.cmp-pricing-grid{grid-template-columns:1fr!important;gap:16px!important}.cmp-pricing-grid>*:nth-child(2){display:none!important}}`}</style>
       {/* Nav */}
       <PublicNav />
 
       {/* ─── HERO ─── */}
-      <section style={{ paddingTop: 140, paddingBottom: 96, paddingLeft: 48, paddingRight: 48, textAlign: "center", position: "relative" }}>
+      <section className="cmp-section" style={{ paddingTop: 140, paddingBottom: 96, paddingLeft: 48, paddingRight: 48, textAlign: "center", position: "relative" }}>
         <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 800, height: 500, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 65%)", pointerEvents: "none" }} />
         <FadeUp>
           <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 20 }}>Comparison · Yahoo Finance vs Corvo</p>
@@ -87,7 +88,7 @@ export default function YahooFinanceComparePage() {
       </section>
 
       {/* ─── KEY DIFFERENCES ─── */}
-      <section style={{ padding: "0 48px 96px" }}>
+      <section className="cmp-section" style={{ padding: "0 48px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Key Differences</p>
@@ -125,7 +126,7 @@ export default function YahooFinanceComparePage() {
       </section>
 
       {/* ─── FEATURE COMPARISON TABLE ─── */}
-      <section id="comparison" style={{ padding: "0 48px 96px" }}>
+      <section id="comparison" className="cmp-section" style={{ padding: "0 48px 96px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Feature Comparison</p>
@@ -177,13 +178,13 @@ export default function YahooFinanceComparePage() {
       </section>
 
       {/* ─── PRICING COMPARISON ─── */}
-      <section style={{ padding: "0 48px 96px" }}>
+      <section className="cmp-section" style={{ padding: "0 48px 96px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Pricing</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>More features. Less cost.</h2>
           </FadeUp>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 24, alignItems: "center" }}>
+          <div className="cmp-pricing-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 24, alignItems: "center" }}>
             <FadeUp>
               <div style={{ background: "rgba(110,170,255,0.03)", border: "1px solid rgba(110,170,255,0.12)", borderRadius: 20, padding: "40px 36px", textAlign: "center" }}>
                 <p style={{ fontSize: 11, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 16 }}>Yahoo Finance Plus</p>
@@ -223,7 +224,7 @@ export default function YahooFinanceComparePage() {
       </section>
 
       {/* ─── WHY INVESTORS SWITCH ─── */}
-      <section style={{ padding: "0 48px 96px" }}>
+      <section className="cmp-section" style={{ padding: "0 48px 96px" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Real Stories</p>
@@ -251,7 +252,7 @@ export default function YahooFinanceComparePage() {
       </section>
 
       {/* ─── CTA ─── */}
-      <section style={{ padding: "0 48px 120px" }}>
+      <section className="cmp-section" style={{ padding: "0 48px 120px" }}>
         <FadeUp>
           <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 24, padding: "72px 48px", boxShadow: "0 0 100px rgba(201,168,76,0.04)", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: "-30%", left: "50%", transform: "translateX(-50%)", width: 400, height: 300, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />

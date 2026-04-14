@@ -37,6 +37,7 @@ export default function PublicNav() {
           .pnav-actions { display: none !important; }
           .pnav-hamburger { display: flex !important; }
           .pnav-pad { padding: 0 20px !important; }
+          .pnav-mobile-link { min-height: 44px !important; display: flex !important; align-items: center !important; }
         }
       `}</style>
       <nav className="pnav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "rgba(10,14,20,0.97)" : "rgba(10,14,20,0.6)", backdropFilter: "blur(20px)", borderBottom: navSolid ? "1px solid rgba(201,168,76,0.1)" : "1px solid rgba(201,168,76,0.04)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
@@ -67,7 +68,7 @@ export default function PublicNav() {
           )}
         </div>
         {/* Hamburger */}
-        <button className="pnav-hamburger" aria-label="Open menu" onClick={() => setMobileOpen(v => !v)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 36, height: 36, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, cursor: "pointer", flexShrink: 0, color: "#e8e0cc" }}>
+        <button className="pnav-hamburger" aria-label="Open menu" onClick={() => setMobileOpen(v => !v)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 44, height: 44, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, cursor: "pointer", flexShrink: 0, color: "#e8e0cc" }}>
           {mobileOpen ? (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
           ) : (

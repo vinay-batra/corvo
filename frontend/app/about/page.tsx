@@ -346,8 +346,8 @@ export default function AboutPage() {
           <span style={{ color: "#c9a84c" }}>serious about their money.</span>
         </h1>
         <p style={{ position: "relative", zIndex: 1, fontSize: 17, color: "rgba(232,224,204,0.45)", lineHeight: 1.85, fontWeight: 300, maxWidth: 640, animation: "fadein 0.9s cubic-bezier(0.16,1,0.3,1) 0.35s both" }}>
-          Corvo started as a frustration with existing tools. Bloomberg costs $24k/year, Yahoo Finance
-          {" hasn't"} changed in a decade, and Robinhood gives you a chart and nothing else.
+          Corvo started as a frustration with existing tools. Yahoo Finance
+          {" hasn't"} changed in a decade, and Robinhood gives you a chart with nothing underneath.
         </p>
       </section>
 
@@ -419,7 +419,7 @@ export default function AboutPage() {
           </Reveal>
           <Reveal delay={0.08}>
             <p style={{ fontSize: "clamp(15px,1.6vw,18px)", color: "rgba(232,224,204,0.6)", lineHeight: 1.95, fontWeight: 300, marginBottom: 28 }}>
-              Bloomberg Terminal costs $24,000 a year. Yahoo Finance {"hasn't"} changed since 2008. Robinhood gives you a chart and a buy button. None of them treat retail investors like adults.
+              Yahoo Finance {"hasn't"} changed since 2008. Robinhood gives you a chart and a buy button. Neither of them treats retail investors like adults.
             </p>
           </Reveal>
           <Reveal delay={0.16}>

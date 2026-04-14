@@ -130,18 +130,18 @@ function MessageContent({ content }: { content: string }) {
       continue;
     }
     if (/^#{1,3}\s/.test(line)) {
-      elements.push(<p key={i} style={{ fontSize: 10, letterSpacing: 1.5, color: "#c9a84c", textTransform: "uppercase", fontWeight: 700, marginTop: 8, marginBottom: 4 }}>{line.replace(/^#{1,3}\s+/, "")}</p>);
+      elements.push(<p key={i} style={{ fontSize: 10, letterSpacing: 1.5, color: "var(--accent)", textTransform: "uppercase", fontWeight: 700, marginTop: 8, marginBottom: 4 }}>{line.replace(/^#{1,3}\s+/, "")}</p>);
       i++; continue;
     }
     if (/^\*\*[^*]+\*\*:?$/.test(line)) {
-      elements.push(<p key={i} style={{ fontSize: 10, letterSpacing: 1.5, color: "#c9a84c", textTransform: "uppercase", fontWeight: 700, marginTop: 8, marginBottom: 4 }}>{line.replace(/\*\*/g, "")}</p>);
+      elements.push(<p key={i} style={{ fontSize: 10, letterSpacing: 1.5, color: "var(--accent)", textTransform: "uppercase", fontWeight: 700, marginTop: 8, marginBottom: 4 }}>{line.replace(/\*\*/g, "")}</p>);
       i++; continue;
     }
     if (/^[-•*]\s/.test(line) || /^\d+\.\s/.test(line)) {
       const text = line.replace(/^[-•*]\s+/, "").replace(/^\d+\.\s+/, "").trim();
       elements.push(
         <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", margin: "3px 0" }}>
-          <span style={{ color: "#c9a84c", fontSize: 9, marginTop: 5, flexShrink: 0 }}>▸</span>
+          <span style={{ color: "var(--accent)", fontSize: 9, marginTop: 5, flexShrink: 0 }}>▸</span>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, margin: 0 }}>{parseInline(text)}</p>
         </div>
       );
@@ -160,7 +160,7 @@ function TypingDots() {
       <style>{`@keyframes typingDot{0%,60%,100%{opacity:.2;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}`}</style>
       <div style={{ display: "flex", gap: 5, alignItems: "center", padding: "4px 2px" }}>
         {[0, 1, 2].map(i => (
-          <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "#c9a84c", animation: `typingDot 1.4s ease-in-out infinite`, animationDelay: `${i * 0.18}s` }} />
+          <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", animation: `typingDot 1.4s ease-in-out infinite`, animationDelay: `${i * 0.18}s` }} />
         ))}
       </div>
     </>
@@ -499,18 +499,18 @@ export default function AiChat({
 
   const pct         = messagesLimit > 0 ? messagesUsed / messagesLimit : 0;
   const remaining   = Math.max(0, messagesLimit - messagesUsed);
-  const limitColor  = pct > 0.8 ? "#ff6b6b" : pct > 0.6 ? "#f59e0b" : "#c9a84c";
+  const limitColor  = pct > 0.8 ? "#ff6b6b" : pct > 0.6 ? "#f59e0b" : "var(--accent)";
   const hasText     = input.trim().length > 0;
 
   // ── Render ──
   return (
     <>
       <style>{`
-        .cv-chip:hover{border-color:rgba(201,168,76,.4)!important;background:rgba(201,168,76,.07)!important;color:var(--text)!important}
+        .cv-chip:hover{border-color:rgba(184,134,11,.4)!important;background:rgba(184,134,11,.07)!important;color:var(--text)!important}
         .cv-conv:hover{background:rgba(255,255,255,.04)!important}
         .cv-conv:hover .cv-del{opacity:1!important}
         .cv-icon-btn:hover{background:var(--bg3)!important;color:var(--text)!important}
-        .cv-input:focus{outline:none;border-color:#c9a84c!important;box-shadow:0 0 0 2px rgba(201,168,76,.15)!important}
+        .cv-input:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 2px rgba(184,134,11,.15)!important}
         @keyframes spin{to{transform:rotate(360deg)}}
       `}</style>
 
@@ -561,9 +561,9 @@ export default function AiChat({
                 <div style={{ padding: "12px 10px", borderBottom: "0.5px solid var(--border)", flexShrink: 0 }}>
                   <button
                     onClick={startNewChat}
-                    style={{ width: "100%", padding: "8px 12px", background: "rgba(201,168,76,.1)", border: "0.5px solid rgba(201,168,76,.3)", borderRadius: 8, color: "#c9a84c", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,.18)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(201,168,76,.1)"; }}
+                    style={{ width: "100%", padding: "8px 12px", background: "rgba(184,134,11,.08)", border: "0.5px solid rgba(184,134,11,.25)", borderRadius: 8, color: "var(--accent)", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,.15)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,.08)"; }}
                   >
                     <Plus size={12} /> New Chat
                   </button>
@@ -588,8 +588,8 @@ export default function AiChat({
                             style={{
                               padding: "6px 10px",
                               cursor: "pointer",
-                              background: currentConvId === conv.id ? "rgba(201,168,76,.08)" : "transparent",
-                              borderLeft: `2px solid ${currentConvId === conv.id ? "#c9a84c" : "transparent"}`,
+                              background: currentConvId === conv.id ? "rgba(184,134,11,.08)" : "transparent",
+                              borderLeft: `2px solid ${currentConvId === conv.id ? "var(--accent)" : "transparent"}`,
                               display: "flex", alignItems: "center", gap: 5,
                               transition: "all .12s",
                             }}
@@ -606,7 +606,7 @@ export default function AiChat({
                                 }}
                                 onClick={e => e.stopPropagation()}
                                 style={{
-                                  flex: 1, background: "var(--bg3)", border: "1px solid #c9a84c",
+                                  flex: 1, background: "var(--bg3)", border: "1px solid var(--accent)",
                                   borderRadius: 4, padding: "2px 6px", fontSize: 12,
                                   color: "var(--text)", fontFamily: "var(--font-body)",
                                 }}
@@ -656,7 +656,7 @@ export default function AiChat({
 
           <div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1, minWidth: 0 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", letterSpacing: 0.2 }}>Corvo AI</span>
-            <span style={{ fontSize: 9, fontWeight: 600, color: "#c9a84c", background: "rgba(201,168,76,.1)", border: "0.5px solid rgba(201,168,76,.25)", padding: "2px 6px", borderRadius: 20, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 9, fontWeight: 600, color: "var(--accent)", background: "rgba(184,134,11,.1)", border: "0.5px solid rgba(184,134,11,.25)", padding: "2px 6px", borderRadius: 20, whiteSpace: "nowrap" }}>
               Claude
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -692,7 +692,7 @@ export default function AiChat({
             ))}
           </div>
           <button onClick={() => setPortfolioCtxOn(v => !v)} title={portfolioCtxOn ? "Disable portfolio context" : "Enable portfolio context"}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: portfolioCtxOn ? "#c9a84c" : "var(--text3)", display: "flex", alignItems: "center", flexShrink: 0 }}>
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: portfolioCtxOn ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", flexShrink: 0 }}>
             {portfolioCtxOn ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
           </button>
         </div>
@@ -777,7 +777,7 @@ export default function AiChat({
                     {m.role === "assistant" && (
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                         <CorvoAvatar size={20} />
-                        <span style={{ fontSize: 10, fontWeight: 600, color: "#c9a84c" }}>Corvo AI</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)" }}>Corvo AI</span>
                         <span style={{ fontSize: 9, color: "var(--text3)" }}>{formatTime(m.timestamp)}</span>
                       </div>
                     )}
@@ -785,9 +785,9 @@ export default function AiChat({
                       maxWidth: "88%",
                       padding: "10px 13px",
                       borderRadius: m.role === "user" ? "16px 16px 3px 16px" : "3px 16px 16px 16px",
-                      background: m.role === "user" ? "#c9a84c" : "#141414",
+                      background: m.role === "user" ? "var(--accent)" : "#141414",
                       border: m.role === "user" ? "none" : "1px solid rgba(255,255,255,.07)",
-                      boxShadow: m.role === "user" ? "0 2px 8px rgba(201,168,76,.15)" : "0 2px 8px rgba(0,0,0,.2)",
+                      boxShadow: m.role === "user" ? "0 2px 8px rgba(184,134,11,.15)" : "0 2px 8px rgba(0,0,0,.2)",
                     }}>
                       {m.role === "user"
                         ? <p style={{ fontSize: 12, color: "#000", lineHeight: 1.5, margin: 0 }}>{m.content}</p>
@@ -817,7 +817,7 @@ export default function AiChat({
                   style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                     <CorvoAvatar size={20} />
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "#c9a84c" }}>Corvo AI</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)" }}>Corvo AI</span>
                   </div>
                   <div style={{ padding: "8px 13px", background: "#141414", border: "1px solid rgba(255,255,255,.07)", borderRadius: "3px 16px 16px 16px" }}>
                     <TypingDots />
@@ -833,9 +833,9 @@ export default function AiChat({
         <div style={{ flexShrink: 0, borderTop: "0.5px solid var(--border)", padding: "10px 12px", background: "var(--bg)" }}>
           {limitReached ? (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-              style={{ background: "rgba(201,168,76,.07)", border: "0.5px solid rgba(201,168,76,.22)", borderRadius: 10, padding: "12px 14px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <Zap size={13} style={{ color: "#c9a84c" }} />
+              style={{ background: "rgba(184,134,11,.07)", border: "0.5px solid rgba(184,134,11,.22)", borderRadius: 10, padding: "12px 14px" }}>
+<div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Zap size={13} style={{ color: "var(--accent)" }} />
                 <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>Daily limit reached</span>
               </div>
               <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6, marginBottom: 10 }}>
@@ -846,7 +846,7 @@ export default function AiChat({
                   onClick={async () => {
                     try { await navigator.clipboard.writeText(referralLink); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2500); } catch {}
                   }}
-                  style={{ width: "100%", padding: "8px", fontSize: 11, fontWeight: 600, borderRadius: 7, border: "none", background: referralCopied ? "#5cb88a" : "#c9a84c", color: "#0a0e14", cursor: "pointer", transition: "background .2s" }}>
+                  style={{ width: "100%", padding: "8px", fontSize: 11, fontWeight: 600, borderRadius: 7, border: "none", background: referralCopied ? "#5cb88a" : "var(--accent)", color: "#ffffff", cursor: "pointer", transition: "background .2s" }}>
                   {referralCopied ? "✓ Copied!" : "Copy Referral Link"}
                 </button>
               )}
@@ -870,11 +870,11 @@ export default function AiChat({
                 style={{
                   flex: 1, minHeight: 40, maxHeight: 110, padding: "10px 12px",
                   background: "var(--card-bg)",
-                  border: `1px solid ${inputFocused ? "#c9a84c" : "var(--border)"}`,
+                  border: `1px solid ${inputFocused ? "var(--accent)" : "var(--border)"}`,
                   borderRadius: 10, color: "var(--text)", fontSize: 12,
                   resize: "none", lineHeight: 1.5,
                   transition: "border-color .15s, box-shadow .15s",
-                  boxShadow: inputFocused ? "0 0 0 2px rgba(201,168,76,.15)" : "none",
+                  boxShadow: inputFocused ? "0 0 0 2px rgba(184,134,11,.15)" : "none",
                   fontFamily: "var(--font-body)",
                 }}
               />
@@ -883,9 +883,9 @@ export default function AiChat({
                 disabled={!hasText || loading}
                 style={{
                   height: 40, padding: "0 14px",
-                  background: hasText && !loading ? "#c9a84c" : "transparent",
-                  border: `1px solid ${hasText && !loading ? "#c9a84c" : "var(--border)"}`,
-                  borderRadius: 10, color: hasText && !loading ? "#000" : "var(--text3)",
+                  background: hasText && !loading ? "var(--accent)" : "transparent",
+                  border: `1px solid ${hasText && !loading ? "var(--accent)" : "var(--border)"}`,
+                  borderRadius: 10, color: hasText && !loading ? "#ffffff" : "var(--text3)",
                   fontSize: 11, fontWeight: 700, letterSpacing: 1,
                   cursor: hasText && !loading ? "pointer" : "default",
                   transition: "all .15s", fontFamily: "var(--font-mono)", flexShrink: 0,
@@ -924,7 +924,7 @@ export default function AiChat({
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Zap size={15} style={{ color: "#c9a84c" }} />
+                  <Zap size={15} style={{ color: "var(--accent)" }} />
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>Message Limits</span>
                 </div>
                 <button onClick={() => setShowLimitModal(false)}
@@ -948,7 +948,7 @@ export default function AiChat({
                   onClick={async () => {
                     try { await navigator.clipboard.writeText(referralLink); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); } catch {}
                   }}
-                  style={{ width: "100%", padding: "9px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: referralCopied ? "#5cb88a" : "#c9a84c", color: "#0a0e14", cursor: "pointer", transition: "background .2s" }}>
+                  style={{ width: "100%", padding: "9px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: referralCopied ? "#5cb88a" : "var(--accent)", color: "#ffffff", cursor: "pointer", transition: "background .2s" }}>
                   {referralCopied ? "✓ Referral link copied!" : "Copy My Referral Link"}
                 </button>
               )}

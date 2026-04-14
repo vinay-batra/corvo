@@ -141,7 +141,7 @@ function TickerSearch({ value, onChange }: { value: string; onChange: (ticker: s
           }}
         />
         {busy && (
-          <div style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", width: 12, height: 12, border: "1.5px solid rgba(201,168,76,0.3)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+          <div style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", width: 12, height: 12, border: "1.5px solid rgba(184,134,11,0.3)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
         )}
       </div>
 
@@ -156,10 +156,10 @@ function TickerSearch({ value, onChange }: { value: string; onChange: (ticker: s
                 onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                 <div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "#c9a84c" }}>{r.ticker}</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{r.ticker}</span>
                   <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>{r.name}</span>
                 </div>
-                <span style={{ fontSize: 8, padding: "2px 5px", borderRadius: 3, background: "rgba(201,168,76,0.12)", color: "#c9a84c", letterSpacing: 0.5 }}>
+                <span style={{ fontSize: 8, padding: "2px 5px", borderRadius: 3, background: "rgba(184,134,11,0.1)", color: "var(--accent)", letterSpacing: 0.5 }}>
                   {TYPE_LABELS[r.type] || r.type}
                 </span>
               </div>
@@ -303,7 +303,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
                   {assets.filter(a => a.ticker).map(a => (
                     <button key={a.ticker} onClick={() => setTicker(a.ticker)}
-                      style={{ padding: "3px 8px", fontSize: 10, borderRadius: 4, border: `0.5px solid ${ticker === a.ticker ? "rgba(201,168,76,0.5)" : "var(--border)"}`, background: ticker === a.ticker ? "rgba(201,168,76,0.1)" : "transparent", color: ticker === a.ticker ? "#c9a84c" : "var(--text2)", cursor: "pointer", fontFamily: "var(--font-mono)", transition: "all 0.1s" }}>
+                      style={{ padding: "3px 8px", fontSize: 10, borderRadius: 4, border: `0.5px solid ${ticker === a.ticker ? "var(--accent)" : "var(--border)"}`, background: ticker === a.ticker ? "rgba(184,134,11,0.1)" : "transparent", color: ticker === a.ticker ? "var(--accent)" : "var(--text2)", cursor: "pointer", fontFamily: "var(--font-mono)", transition: "all 0.1s" }}>
                       {a.ticker}
                     </button>
                   ))}
@@ -356,7 +356,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", border: "0.5px solid var(--border)", borderRadius: 9, marginBottom: 6, background: "var(--card-bg)" }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: a.type === "price" ? "rgba(201,168,76,0.15)" : "rgba(92,184,92,0.15)", color: a.type === "price" ? "#c9a84c" : "#5cb85c", letterSpacing: 1, textTransform: "uppercase" as const }}>
+                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: a.type === "price" ? "rgba(184,134,11,0.12)" : "rgba(21,128,61,0.12)", color: a.type === "price" ? "var(--accent)" : "#15803d", letterSpacing: 1, textTransform: "uppercase" as const }}>
                           {a.type}
                         </span>
                       </div>

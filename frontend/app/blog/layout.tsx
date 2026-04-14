@@ -30,10 +30,13 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
         @keyframes fadein{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @media(max-width:900px){
           .blog-cards-grid{grid-template-columns:1fr!important}
-          .blog-content-grid{display:block!important}
+          .blog-content-grid{display:block!important;padding:32px 20px 60px!important}
           .blog-toc-col{display:none!important}
           .blog-pad{padding:48px 20px 80px!important}
           .blog-hero-pad{padding:80px 20px 48px!important}
+          .blog-related-pad{padding:40px 20px 0!important}
+          .blog-cta-wrap{margin:0 20px 64px!important}
+          .blog-cta-inner{padding:32px 24px!important}
         }
       `}</style>
 

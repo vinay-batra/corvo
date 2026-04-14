@@ -6,7 +6,7 @@ import { useRef } from "react";
 function Ring({ score, size=96 }: { score:number; size?:number }) {
   const r=(size-12)/2, circ=2*Math.PI*r, offset=circ-(score/100)*circ;
   const label = score>=75?"Excellent":score>=50?"Good":score>=25?"Fair":"Weak";
-  const ringColor = score>=75?"#4caf7d":score>=50?"#c9a84c":"#e05c5c";
+  const ringColor = score>=75?"#4caf7d":score>=50?"#b8860b":"#e05c5c";
   return (
     <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
       <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
@@ -33,7 +33,7 @@ function Bar({ label, value, max, delay }: { label:string; value:number; max:num
       <span style={{fontSize:10,color:"var(--text3)",width:66,flexShrink:0}}>{label}</span>
       <div style={{flex:1,height:2,background:"var(--track)",borderRadius:1,overflow:"hidden"}}>
         <motion.div initial={{width:0}} animate={{width:`${pct*100}%`}} transition={{duration:1,delay,ease:"easeOut"}}
-          style={{height:"100%",background:"#c9a84c",borderRadius:1}}/>
+          style={{height:"100%",background:"#b8860b",borderRadius:1}}/>
       </div>
       <motion.span initial={{opacity:0}} animate={{opacity:1}} transition={{delay:delay+0.4}}
         style={{fontSize:10,fontFamily:"Space Mono,monospace",color:"var(--text3)",width:22,textAlign:"right"}}>{Math.round(pct*100)}</motion.span>

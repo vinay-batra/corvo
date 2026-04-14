@@ -13,7 +13,7 @@ const SECTIONS = [
     items: [
       {
         q: "What is Corvo?",
-        a: "Corvo is an AI-powered portfolio analytics platform built for retail investors. Think Bloomberg-quality insights: Sharpe ratio, drawdown analysis, Monte Carlo simulations, sector exposure, without the five-figure price tag. Enter your tickers, get institutional-grade analysis in seconds.",
+        a: "Corvo is an AI-powered portfolio analytics platform built for retail investors. Think institutional-grade insights: Sharpe ratio, drawdown analysis, Monte Carlo simulations, sector exposure — without any price tag. Enter your tickers, get professional-grade analysis in seconds.",
       },
       {
         q: "Is Corvo free?",

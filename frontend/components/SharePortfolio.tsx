@@ -3,7 +3,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const C = {
-  amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)",
+  amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)",
   navy: "#0a0e14", navy2: "#0d1117", navy3: "#111620",
   border: "rgba(255,255,255,0.06)", border2: "rgba(255,255,255,0.1)",
   cream: "#e8e0cc", cream2: "rgba(232,224,204,0.65)", cream3: "rgba(232,224,204,0.35)",
@@ -48,7 +48,7 @@ export default function SharePortfolio({ data, assets, period, benchmark }: Shar
           color: C.cream3, fontSize: 11, cursor: "pointer",
           transition: "all 0.15s",
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; e.currentTarget.style.color = C.amber; }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.3)"; e.currentTarget.style.color = C.amber; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.cream3; }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
@@ -124,7 +124,7 @@ export default function SharePortfolio({ data, assets, period, benchmark }: Shar
                   {typeof window !== "undefined" ? generateShareUrl() : ""}
                 </div>
                 <button onClick={handleShare}
-                  style={{ padding: "9px 16px", background: copied ? "rgba(92,184,138,0.15)" : C.amber2, border: `1px solid ${copied ? "rgba(92,184,138,0.4)" : "rgba(201,168,76,0.3)"}`, borderRadius: 8, color: copied ? "#5cb88a" : C.amber, fontSize: 11, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.2s" }}>
+                  style={{ padding: "9px 16px", background: copied ? "rgba(92,184,138,0.15)" : C.amber2, border: `1px solid ${copied ? "rgba(92,184,138,0.4)" : "rgba(184,134,11,0.3)"}`, borderRadius: 8, color: copied ? "#5cb88a" : C.amber, fontSize: 11, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.2s" }}>
                   {copied ? "✓ Copied!" : "Copy Link"}
                 </button>
               </div>

@@ -112,7 +112,7 @@ export default function EmailPreferences({ onClose, autoDisableDigest }: Props) 
                     <div style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.5 }}>{opt.desc}</div>
                   </div>
                   {/* Toggle pill */}
-                  <div style={{ width: 38, height: 22, borderRadius: 11, background: on ? "#c9a84c" : "var(--border2)", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+                  <div style={{ width: 38, height: 22, borderRadius: 11, background: on ? "var(--accent)" : "var(--border2)", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
                     <div style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: on ? "#0a0e14" : "var(--bg)", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
                   </div>
                 </div>
@@ -128,7 +128,7 @@ export default function EmailPreferences({ onClose, autoDisableDigest }: Props) 
           </button>
           {!noUser && (
             <button onClick={save} disabled={saving || loading}
-              style={{ flex: 2, padding: "10px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: saved ? "#5cb88a" : "#c9a84c", color: "#0a0e14", cursor: saving ? "not-allowed" : "pointer", transition: "background 0.2s", letterSpacing: 0.5 }}>
+              style={{ flex: 2, padding: "10px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: saved ? "#5cb88a" : "var(--accent)", color: "#ffffff", cursor: saving ? "not-allowed" : "pointer", transition: "background 0.2s", letterSpacing: 0.5 }}>
               {saved ? "✓ Saved" : saving ? "Saving…" : "Save Preferences"}
             </button>
           )}

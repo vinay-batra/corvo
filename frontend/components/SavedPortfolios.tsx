@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 
 const LS_KEY = "corvo_saved_portfolios";
 const HISTORY_KEY_PREFIX = "corvo_history_";
-const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", border: "rgba(255,255,255,0.06)", cream: "#e8e0cc", cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)" };
+const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", border: "var(--border)", cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)" };
 interface Asset { ticker: string; weight: number; }
 interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; }
 

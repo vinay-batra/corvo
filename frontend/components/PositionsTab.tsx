@@ -79,7 +79,7 @@ function SortTh({
       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
         {label}
         {active
-          ? (dir === "asc" ? <ArrowUp size={11} style={{ color: "#c9a84c" }} /> : <ArrowDown size={11} style={{ color: "#c9a84c" }} />)
+          ? (dir === "asc" ? <ArrowUp size={11} style={{ color: "var(--accent)" }} /> : <ArrowDown size={11} style={{ color: "var(--accent)" }} />)
           : <ArrowUpDown size={11} style={{ color: "var(--text3)", opacity: 0.4 }} />}
       </span>
     </th>
@@ -398,7 +398,7 @@ export default function PositionsTab({
           <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 300, margin: "0 auto", fontSize: 12, color: "var(--text3)", textAlign: "left" }}>
             {["Add tickers + weights in the left sidebar", "Click Analyze (or press ↵)", "Click Save portfolio"].map((step, i) => (
               <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <span style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(201,168,76,0.12)", border: "0.5px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(184,134,11,0.1)", border: "0.5px solid var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent)", flexShrink: 0 }}>{i + 1}</span>
                 <span style={{ lineHeight: 1.6 }}>{step}</span>
               </div>
             ))}
@@ -476,7 +476,7 @@ export default function PositionsTab({
                         <tr key={`hdr-${portfolio.id}`}>
                           <td colSpan={showPortfolioCol ? 9 : 8} style={{
                             padding: "8px 14px",
-                            background: "rgba(201,168,76,0.04)",
+                            background: "var(--bg2)",
                             borderBottom: "0.5px solid var(--border)",
                             borderTop: "0.5px solid var(--border)",
                           }}>
@@ -556,7 +556,7 @@ function PositionRowEl({
     >
       {/* Ticker */}
       <td style={{ padding: "11px 12px" }}>
-        <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "#c9a84c" }}>
+        <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>
           {row.ticker}
         </span>
       </td>
@@ -581,7 +581,7 @@ function PositionRowEl({
       <td style={{ padding: "11px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 40, height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
-            <div style={{ height: "100%", width: `${Math.min(row.weightFrac * 100, 100)}%`, background: "#c9a84c", borderRadius: 2 }} />
+            <div style={{ height: "100%", width: `${Math.min(row.weightFrac * 100, 100)}%`, background: "var(--accent)", borderRadius: 2 }} />
           </div>
           <span style={{ fontSize: 12, color: "var(--text)", fontFamily: "Space Mono, monospace", whiteSpace: "nowrap" }}>
             {(row.weightFrac * 100).toFixed(1)}%

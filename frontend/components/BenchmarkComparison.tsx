@@ -6,7 +6,7 @@ const BENCHMARK_LABELS: Record<string, string> = {
   "^RUT": "Russell 2000", "QQQ": "QQQ ETF", "GLD": "Gold",
 };
 
-const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", red: "#e05c5c" };
+const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", red: "#e05c5c" };
 
 export default function BenchmarkComparison({ data }: { data: any }) {
   const portfolioReturn = data.portfolio_return;
@@ -23,7 +23,7 @@ export default function BenchmarkComparison({ data }: { data: any }) {
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <span style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>vs {benchLabel}</span>
-        <span style={{ fontSize: 11, color: isBeating ? C.amber : C.red, background: isBeating ? C.amber2 : "rgba(224,92,92,0.1)", border: `1px solid ${isBeating ? "rgba(201,168,76,0.3)" : "rgba(224,92,92,0.25)"}`, padding: "2px 8px", borderRadius: 4, fontFamily: "Space Mono,monospace", fontWeight: 700 }}>
+        <span style={{ fontSize: 11, color: isBeating ? C.amber : C.red, background: isBeating ? C.amber2 : "rgba(224,92,92,0.1)", border: `1px solid ${isBeating ? "rgba(184,134,11,0.3)" : "rgba(224,92,92,0.25)"}`, padding: "2px 8px", borderRadius: 4, fontFamily: "Space Mono,monospace", fontWeight: 700 }}>
           {isBeating ? "+" : ""}{(diff * 100).toFixed(1)}pp
         </span>
       </div>

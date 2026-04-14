@@ -6,8 +6,8 @@ import { importPortfolioCsv } from "../lib/api";
 import { posthog } from "../lib/posthog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const C = { amber: "#c9a84c", cream: "#e8e0cc", cream3: "rgba(232,224,204,0.25)", border: "rgba(255,255,255,0.07)", navy4: "#161c26" };
-const DOTS = ["#c9a84c","rgba(201,168,76,0.7)","rgba(201,168,76,0.5)","rgba(201,168,76,0.35)","rgba(201,168,76,0.25)","rgba(201,168,76,0.6)","rgba(201,168,76,0.45)","rgba(201,168,76,0.55)"];
+const C = { amber: "var(--accent)", cream: "var(--text)", cream3: "var(--text3)", border: "var(--border)", navy4: "var(--bg2)" };
+const DOTS = ["#b8860b","rgba(184,134,11,0.7)","rgba(184,134,11,0.5)","rgba(184,134,11,0.35)","rgba(184,134,11,0.25)","rgba(184,134,11,0.6)","rgba(184,134,11,0.45)","rgba(184,134,11,0.55)"];
 const TYPE_LABELS: Record<string,string> = { EQUITY:"Stock", ETF:"ETF", CRYPTOCURRENCY:"Crypto", MUTUALFUND:"Fund", INDEX:"Index" };
 
 // Top tickers for instant autocomplete (no API call needed)

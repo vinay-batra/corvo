@@ -71,7 +71,7 @@ const Tooltip = ({ text }: { text: string }) => {
             boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
           }}
         >
-          <strong style={{ color: "#c9a84c", display: "block", marginBottom: 4 }}>Tax Loss Harvesting</strong>
+          <strong style={{ color: "var(--accent)", display: "block", marginBottom: 4 }}>Tax Loss Harvesting</strong>
           Selling a position at a loss to offset capital gains taxes, then immediately buying a similar (but not identical)
           investment to maintain market exposure. The IRS wash-sale rule disallows the loss if you repurchase the same security
           within 30 days before or after the sale.
@@ -268,9 +268,9 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
                         fontFamily: "var(--font-mono)",
                         fontSize: 11,
                         fontWeight: 700,
-                        color: "#c9a84c",
-                        background: "rgba(201,168,76,0.1)",
-                        border: "1px solid rgba(201,168,76,0.25)",
+                        color: "var(--accent)",
+                        background: "rgba(184,134,11,0.1)",
+                        border: "1px solid rgba(184,134,11,0.25)",
                         borderRadius: 4,
                         padding: "2px 7px",
                       }}

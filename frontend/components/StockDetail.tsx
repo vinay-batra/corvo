@@ -9,7 +9,7 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 const STORAGE_KEY = "corvo_watchlist";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const AMBER = "#c9a84c";
+const AMBER = "#b8860b";
 const GREEN = "#4caf7d";
 const RED   = "#e05c5c";
 
@@ -18,7 +18,7 @@ type Period = typeof PERIODS[number];
 type ChartType = "line" | "candlestick";
 
 const RATING_COLOR: Record<string, string> = {
-  "Strong Buy": GREEN, "Buy": "#6bcf97", "Hold": AMBER,
+  "Strong Buy": GREEN, "Buy": "#6bcf97", "Hold": "#b8860b",
   "Sell": RED, "Strong Sell": "#b33", "N/A": "var(--text3)",
 };
 
@@ -255,7 +255,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Underlying</span>
-          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: AMBER }}>${livePrice.toFixed(2)}</span>
+          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: accentColor }}>${livePrice.toFixed(2)}</span>
         </div>
       </div>
 
@@ -311,7 +311,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
           <div style={{ display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 4 }}>Max Pain Strike</div>
-              <div style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: AMBER, letterSpacing: -0.5 }}>${maxPain.toFixed(2)}</div>
+              <div style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: accentColor, letterSpacing: -0.5 }}>${maxPain.toFixed(2)}</div>
             </div>
             {livePrice > 0 && (
               <div>
@@ -387,6 +387,15 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const [priceFlash, setPriceFlash]   = useState<"up" | "down" | null>(null);
   const prevPriceRef  = useRef<number | null>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dark, setDark] = useState(true);
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+  const accentColor = dark ? AMBER : "#b8860b";
 
   // ── Watchlist ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -473,8 +482,8 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   // ── Derived ─────────────────────────────────────────────────────────────────
   const currentPrice = livePrice ?? info?.current_price ?? 0;
   const positive     = (info?.change_pct ?? 0) >= 0;
-  const lineColor    = positive ? AMBER : RED;
-  const fillColor    = positive ? "rgba(201,168,76,0.07)" : "rgba(224,92,92,0.07)";
+  const lineColor    = positive ? accentColor : RED;
+  const fillColor    = positive ? (dark ? "rgba(201,168,76,0.07)" : "rgba(184,134,11,0.07)") : "rgba(224,92,92,0.07)";
   const hasOHLC      = histOpens.length > 0 && histHighs.length > 0 && histLows.length > 0;
   const priceColor   = priceFlash === "up" ? GREEN : priceFlash === "down" ? RED : "var(--text)";
 
@@ -533,16 +542,16 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
     font: { color: "var(--text3)", family: "Inter", size: 10 },
     ...(hasVol ? { grid: { rows: 2, columns: 1, pattern: "independent", roworder: "top to bottom" } } : {}),
     xaxis: {
-      gridcolor: "rgba(255,255,255,0.03)", linecolor: "transparent", tickcolor: "transparent",
+      gridcolor: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.07)", linecolor: "transparent", tickcolor: "transparent",
       type: "date", tickformat: tickfmt,
-      showspikes: true, spikecolor: AMBER + "88", spikemode: "across",
+      showspikes: true, spikecolor: dark ? AMBER + "88" : "#b8860b88", spikemode: "across",
       spikesnap: "cursor", spikedash: "solid", spikethickness: 1,
       rangeslider: { visible: false },
     },
     yaxis: {
-      gridcolor: "rgba(255,255,255,0.05)", linecolor: "transparent", tickcolor: "transparent",
+      gridcolor: dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.07)", linecolor: "transparent", tickcolor: "transparent",
       tickprefix: "$", domain: hasVol ? [0.28, 1] : [0, 1],
-      showspikes: true, spikecolor: "rgba(201,168,76,0.3)", spikemode: "across", spikethickness: 1,
+      showspikes: true, spikecolor: dark ? "rgba(201,168,76,0.3)" : "rgba(184,134,11,0.3)", spikemode: "across", spikethickness: 1,
     },
     ...(hasVol ? {
       yaxis2: {
@@ -628,7 +637,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
               ← Back
             </button>
             <button onClick={toggleWatchlist}
-              style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: `0.5px solid ${inWatchlist ? AMBER + "55" : "var(--border)"}`, background: inWatchlist ? "rgba(201,168,76,0.1)" : "transparent", color: inWatchlist ? AMBER : "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s" }}>
+              style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: `0.5px solid ${inWatchlist ? accentColor : "var(--border)"}`, background: inWatchlist ? "rgba(184,134,11,0.1)" : "transparent", color: inWatchlist ? accentColor : "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s" }}>
               {inWatchlist ? <EyeOff size={11} /> : <Eye size={11} />}
               {inWatchlist ? "Watching" : "Watch"}
             </button>
@@ -649,7 +658,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
             {/* LIVE badge */}
             <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 7px", borderRadius: 4, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.3)" }}>
               <div style={{ width: 5, height: 5, borderRadius: "50%", background: AMBER, animation: "livePulse 2s ease-in-out infinite" }} />
-              <span style={{ fontSize: 8, letterSpacing: 1.5, color: AMBER, textTransform: "uppercase", fontWeight: 700 }}>LIVE</span>
+              <span style={{ fontSize: 8, letterSpacing: 1.5, color: accentColor, textTransform: "uppercase", fontWeight: 700 }}>LIVE</span>
             </div>
             <div style={{ fontFamily: "Space Mono, monospace", fontSize: 28, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: priceColor, transition: "color 0.5s ease" }}>
               ${currentPrice.toFixed(2)}
@@ -674,7 +683,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       <div style={{ display: "flex", gap: 3, marginBottom: 10, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 9, padding: 3, width: "fit-content" }}>
         {(["overview", "options"] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            style={{ padding: "6px 16px", fontSize: 11, fontWeight: 500, borderRadius: 7, border: "none", cursor: "pointer", transition: "all 0.15s", background: activeTab === tab ? (tab === "options" ? `${AMBER}18` : "var(--bg3)") : "transparent", color: activeTab === tab ? (tab === "options" ? AMBER : "var(--text)") : "var(--text3)", letterSpacing: 0.2 }}>
+            style={{ padding: "6px 16px", fontSize: 11, fontWeight: 500, borderRadius: 7, border: "none", cursor: "pointer", transition: "all 0.15s", background: activeTab === tab ? (tab === "options" ? "rgba(184,134,11,0.12)" : "var(--bg3)") : "transparent", color: activeTab === tab ? (tab === "options" ? accentColor : "var(--text)") : "var(--text3)", letterSpacing: 0.2 }}>
             {tab === "overview" ? "Overview" : "Options Chain"}
           </button>
         ))}
@@ -692,7 +701,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{ width: 2, height: 12, background: AMBER, borderRadius: 1, flexShrink: 0 }} />
             <p style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>52-Week Range</p>
-            <span style={{ marginLeft: "auto", fontFamily: "Space Mono, monospace", fontSize: 10, color: AMBER }}>
+            <span style={{ marginLeft: "auto", fontFamily: "Space Mono, monospace", fontSize: 10, color: accentColor }}>
               {(w52Pct * 100).toFixed(0)}% of range
             </span>
           </div>
@@ -726,11 +735,11 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
         </div>
         <div style={{ display: "flex", border: "0.5px solid var(--border)", borderRadius: 7, overflow: "hidden" }}>
           <button onClick={() => setChartType("line")}
-            style={{ padding: "5px 11px", background: chartType === "line" ? "var(--bg3)" : "transparent", border: "none", cursor: "pointer", color: chartType === "line" ? AMBER : "var(--text3)", display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 500, transition: "all 0.15s" }}>
+            style={{ padding: "5px 11px", background: chartType === "line" ? "var(--bg3)" : "transparent", border: "none", cursor: "pointer", color: chartType === "line" ? accentColor : "var(--text3)", display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 500, transition: "all 0.15s" }}>
             <TrendingUp size={11} /> Line
           </button>
           <button onClick={() => setChartType("candlestick")}
-            style={{ padding: "5px 11px", background: chartType === "candlestick" ? "var(--bg3)" : "transparent", border: "none", borderLeft: "0.5px solid var(--border)", cursor: "pointer", color: chartType === "candlestick" ? AMBER : "var(--text3)", display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 500, transition: "all 0.15s" }}>
+            style={{ padding: "5px 11px", background: chartType === "candlestick" ? "var(--bg3)" : "transparent", border: "none", borderLeft: "0.5px solid var(--border)", cursor: "pointer", color: chartType === "candlestick" ? accentColor : "var(--text3)", display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 500, transition: "all 0.15s" }}>
             <CandleIcon size={11} /> Candle
           </button>
         </div>
@@ -808,7 +817,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
             {info.target_mean != null && (
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3 }}>Mean Target</div>
-                <div style={{ fontFamily: "Space Mono, monospace", fontSize: 15, fontWeight: 700, color: AMBER }}>${info.target_mean.toFixed(2)}</div>
+                <div style={{ fontFamily: "Space Mono, monospace", fontSize: 15, fontWeight: 700, color: accentColor }}>${info.target_mean.toFixed(2)}</div>
                 {info.target_mean > currentPrice && currentPrice > 0 && (
                   <div style={{ fontSize: 9, color: GREEN, marginTop: 2 }}>+{((info.target_mean / currentPrice - 1) * 100).toFixed(1)}% upside</div>
                 )}

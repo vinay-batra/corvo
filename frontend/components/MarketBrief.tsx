@@ -6,7 +6,7 @@ import { fetchMarketBrief } from "../lib/api";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { posthog } from "../lib/posthog";
 
-const C = { amber: "#c9a84c", green: "#4caf7d", red: "#e05c5c" };
+const C = { amber: "var(--accent)", green: "#4caf7d", red: "#e05c5c" };
 const HOUR_MS = 60 * 60 * 1000;
 
 type Mover = { ticker: string; change: number; volume: number };
@@ -143,7 +143,7 @@ export default function MarketBrief() {
               style={{
                 alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 5,
                 padding: "7px 14px", borderRadius: 7,
-                border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.06)",
+                border: "0.5px solid rgba(184,134,11,0.3)", background: "rgba(184,134,11,0.06)",
                 color: C.amber, fontSize: 11, fontWeight: 600, cursor: "pointer",
               }}>
               <RefreshCw size={11} />

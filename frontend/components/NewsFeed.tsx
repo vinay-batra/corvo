@@ -19,7 +19,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
   const [articlesByTicker, setArticlesByTicker] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false);
 
-  const palette = ["#c9a84c", "#3b82f6", "#ef4444", "#f59e0b", "#8b5cf6", "#10b981"];
+  const palette = ["#b8860b", "#3b82f6", "#ef4444", "#f59e0b", "#8b5cf6", "#10b981"];
   const tickerColor = (t: string) => palette[allTickers.indexOf(t) % palette.length];
 
   const BULLISH_WORDS = ["gains", "rises", "beats", "surges", "strong", "growth", "up", "high", "record", "rally", "jumps", "soars", "outperforms", "upgrade", "buy"];
