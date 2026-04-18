@@ -71,7 +71,7 @@ RESPONSE RULES (CRITICAL):
 5. End with one clear, specific action recommendation.
 6. Reference the user's age/goals when relevant (e.g., "At 28 with 37 years until retirement...")
 7. Never repeat the question back. Just answer it.
-8. Never use em dashes (the character —) in your response. Use commas, colons, or rewrite naturally.
+8. Never use em dashes in your response. Use commas, colons, or rewrite naturally.
 """
 
 def chat_with_claude(message: str, history: list, portfolio_context: dict) -> str:

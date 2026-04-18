@@ -63,7 +63,7 @@ PORTFOLIO METRICS:
 - Max Drawdown: {dd*100:.2f}%
 - Period: {portfolio_context.get('period', '1y')}
 
-RESPONSE RULES — CRITICAL:
+RESPONSE RULES , CRITICAL:
 1. Be concise. Max 150 words unless a detailed breakdown is explicitly requested.
 2. Use bullet points for lists. Never write walls of text.
 3. Use ** for section headers if needed (e.g., **Risk Assessment**)

@@ -86,7 +86,7 @@ const EXPLAINERS = [
   {
     title: "Volatility",
     simple: "How wildly your portfolio swings up and down. High volatility means your portfolio value jumps around a lot day-to-day. Low volatility means it's stable.",
-    example: "A portfolio with 30% volatility could swing ±30% in a year. Government bonds might have 3% volatility — very stable.",
+    example: "A portfolio with 30% volatility could swing ±30% in a year. Government bonds might have 3% volatility , very stable.",
     good: "Lower is generally safer. Under 15% is low risk, 15-25% is moderate, over 30% is high risk (like holding crypto).",
   },
   {

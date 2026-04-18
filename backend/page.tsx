@@ -117,7 +117,7 @@ export default function AppPage() {
         const res = await fetchPortfolio(assets, period, benchmark);
         setData(res);
       } catch {
-        setError("Backend offline — start your FastAPI server.");
+        setError("Backend offline , start your FastAPI server.");
       }
       setLoading(false);
     }, 600);

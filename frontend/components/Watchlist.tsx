@@ -209,7 +209,7 @@ export default function Watchlist() {
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const switcherRef = useRef<HTMLDivElement>(null);
 
-  // Initialize lists and items — from Supabase if logged in, localStorage otherwise
+  // Initialize lists and items: from Supabase if logged in, localStorage otherwise
   useEffect(() => {
     (async () => {
       const { data: authData } = await supabase.auth.getUser();
@@ -337,7 +337,7 @@ export default function Watchlist() {
       ((d.results ?? []) as StockData[]).forEach(s => { if (s?.ticker) map[s.ticker] = s; });
       setStockData(prev => ({ ...prev, ...map }));
     } catch {
-      // silently ignore — watchlist will show stale or empty prices
+      // silently ignore, watchlist will show stale or empty prices
     }
     setLoadingAll(false);
   }, []);
@@ -383,7 +383,7 @@ export default function Watchlist() {
     if (!ticker || !activeListId) return;
     if (activeItems.find(i => i.ticker === ticker)) { setError(`${ticker} is already in this list`); return; }
     setError("");
-    // Dropdown selections bypass validation — ticker is already confirmed via search API or local list
+    // Dropdown selections bypass validation, ticker is already confirmed via search API or local list
     if (!directTicker) {
       setValidating(true);
       try {

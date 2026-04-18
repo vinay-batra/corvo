@@ -67,7 +67,7 @@ export default function BloombergComparePage() {
             <span style={{ color: "#c9a84c" }}>Which is better for retail investors?</span>
           </h1>
           <p style={{ fontSize: "clamp(15px,1.8vw,18px)", color: "rgba(232,224,204,0.5)", maxWidth: 580, margin: "0 auto 44px", lineHeight: 1.8, fontWeight: 300 }}>
-            Bloomberg Terminal is the gold standard for institutional traders — at $2,000/month. Corvo gives retail investors the same depth of analytics, completely free.
+            Bloomberg Terminal is the gold standard for institutional traders, at $2,000/month. Corvo gives retail investors the same depth of analytics, completely free.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/auth" style={{ padding: "15px 40px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
@@ -108,7 +108,7 @@ export default function BloombergComparePage() {
               {
                 icon: "💸",
                 title: "Cost: $24,000/yr vs $0",
-                body: "Bloomberg Terminal is priced for hedge funds and trading desks. At $2,000/month, a retail investor would spend $24,000/year just to access analytics — more than most people invest annually. Corvo is free, forever.",
+                body: "Bloomberg Terminal is priced for hedge funds and trading desks. At $2,000/month, a retail investor would spend $24,000/year just to access analytics, more than most people invest annually. Corvo is free, forever.",
               },
               {
                 icon: "🖥️",
@@ -118,7 +118,7 @@ export default function BloombergComparePage() {
               {
                 icon: "🤖",
                 title: "AI that knows your portfolio",
-                body: "Bloomberg has data. Corvo has an AI that knows your exact holdings, your risk tolerance, and your goals — and can answer questions like \"Am I too concentrated in tech?\" in plain English.",
+                body: "Bloomberg has data. Corvo has an AI that knows your exact holdings, your risk tolerance, and your goals, and can answer questions like \"Am I too concentrated in tech?\" in plain English.",
               },
             ].map((card, i) => (
               <FadeUp key={i} delay={i * 0.1}>
@@ -270,7 +270,7 @@ export default function BloombergComparePage() {
               It takes 60 seconds.
             </h2>
             <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", marginBottom: 44, lineHeight: 1.8, fontWeight: 300 }}>
-              Stop paying $2,000/month for analytics you use once a week. Get the same depth — free.
+              Stop paying $2,000/month for analytics you use once a week. Get the same depth, free.
             </p>
             <Link href="/auth" style={{ display: "inline-block", padding: "16px 48px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 15, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
               Get Started Free →

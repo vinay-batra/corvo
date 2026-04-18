@@ -58,7 +58,7 @@ export default function YahooFinanceComparePage() {
             <span style={{ color: "#c9a84c" }}>Which is better for retail investors?</span>
           </h1>
           <p style={{ fontSize: "clamp(15px,1.8vw,18px)", color: "rgba(232,224,204,0.5)", maxWidth: 580, margin: "0 auto 44px", lineHeight: 1.8, fontWeight: 300 }}>
-            Yahoo Finance is a great starting point. But when you want real portfolio analytics — AI insights, risk metrics, Monte Carlo simulation — Corvo goes far deeper, completely free.
+            Yahoo Finance is a great starting point. But when you want real portfolio analytics: AI insights, risk metrics, Monte Carlo simulation, Corvo goes far deeper, completely free.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/auth" style={{ padding: "15px 40px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
@@ -99,17 +99,17 @@ export default function YahooFinanceComparePage() {
               {
                 icon: "🧠",
                 title: "AI that understands your portfolio",
-                body: "Yahoo Finance shows you data. Corvo's AI synthesizes it — telling you if your tech concentration is too high, what your Sharpe ratio means, and how to rebalance. It knows your exact holdings.",
+                body: "Yahoo Finance shows you data. Corvo's AI synthesizes it, telling you if your tech concentration is too high, what your Sharpe ratio means, and how to rebalance. It knows your exact holdings.",
               },
               {
                 icon: "📊",
                 title: "Real risk analytics, not just quotes",
-                body: "Yahoo Finance Premium gives you better charts and screeners. Corvo gives you Sharpe ratio, max drawdown, correlation heatmaps, and Monte Carlo simulation — the analytics that actually matter for your portfolio.",
+                body: "Yahoo Finance Premium gives you better charts and screeners. Corvo gives you Sharpe ratio, max drawdown, correlation heatmaps, and Monte Carlo simulation: the analytics that actually matter for your portfolio.",
               },
               {
                 icon: "🚫",
                 title: "Zero ads, zero upsells",
-                body: "Yahoo Finance's free tier is ad-heavy. Their paid tier still sells premium data upgrades. Corvo is fully featured from day one — no ads, no paywalls, no upgrade prompts.",
+                body: "Yahoo Finance's free tier is ad-heavy. Their paid tier still sells premium data upgrades. Corvo is fully featured from day one: no ads, no paywalls, no upgrade prompts.",
               },
             ].map((card, i) => (
               <FadeUp key={i} delay={i * 0.1}>
@@ -261,7 +261,7 @@ export default function YahooFinanceComparePage() {
               It takes 60 seconds.
             </h2>
             <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", marginBottom: 44, lineHeight: 1.8, fontWeight: 300 }}>
-              Get the analytics Yahoo Finance doesn't offer — AI insights, Monte Carlo simulation, real risk metrics — all free.
+              Get the analytics Yahoo Finance doesn't offer: AI insights, Monte Carlo simulation, real risk metrics. All free.
             </p>
             <Link href="/auth" style={{ display: "inline-block", padding: "16px 48px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 15, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
               Get Started Free →

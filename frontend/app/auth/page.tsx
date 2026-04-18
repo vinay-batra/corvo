@@ -17,7 +17,7 @@ function AuthForm() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") ?? "/app";
 
-  // Redirect already-authenticated users — hide form until check completes
+  // Redirect already-authenticated users, hide form until check completes
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) { window.location.replace(nextPath); return; }

@@ -18,25 +18,25 @@ export default function AiInsights({ data, assets, onAskAi }: AiInsightsProps) {
   const insights: { icon: string; text: string; type: "good" | "warn" | "info" }[] = [];
 
   if (data.portfolio_return > 0.1) {
-    insights.push({ icon: "↑", text: `Strong ${(data.portfolio_return * 100).toFixed(1)}% return this period — outperforming typical savings rates by ${((data.portfolio_return - 0.05) * 100).toFixed(1)}pp`, type: "good" });
+    insights.push({ icon: "↑", text: `Strong ${(data.portfolio_return * 100).toFixed(1)}% return this period , outperforming typical savings rates by ${((data.portfolio_return - 0.05) * 100).toFixed(1)}pp`, type: "good" });
   } else if (data.portfolio_return < 0) {
-    insights.push({ icon: "↓", text: `Portfolio is down ${(Math.abs(data.portfolio_return) * 100).toFixed(1)}% — consider whether this aligns with your risk tolerance`, type: "warn" });
+    insights.push({ icon: "↓", text: `Portfolio is down ${(Math.abs(data.portfolio_return) * 100).toFixed(1)}% , consider whether this aligns with your risk tolerance`, type: "warn" });
   } else {
-    insights.push({ icon: "→", text: `Portfolio returned ${(data.portfolio_return * 100).toFixed(1)}% — modest gains with room for optimization`, type: "info" });
+    insights.push({ icon: "→", text: `Portfolio returned ${(data.portfolio_return * 100).toFixed(1)}% , modest gains with room for optimization`, type: "info" });
   }
 
   if (sharpe >= 1.5) {
-    insights.push({ icon: "★", text: `Excellent Sharpe of ${sharpe.toFixed(2)} — you're getting strong returns relative to the risk you're taking`, type: "good" });
+    insights.push({ icon: "★", text: `Excellent Sharpe of ${sharpe.toFixed(2)} , you're getting strong returns relative to the risk you're taking`, type: "good" });
   } else if (sharpe < 0.5) {
-    insights.push({ icon: "⚠", text: `Low Sharpe ratio of ${sharpe.toFixed(2)} — you may be taking on more risk than your returns justify`, type: "warn" });
+    insights.push({ icon: "⚠", text: `Low Sharpe ratio of ${sharpe.toFixed(2)} , you may be taking on more risk than your returns justify`, type: "warn" });
   } else {
-    insights.push({ icon: "◈", text: `Sharpe ratio of ${sharpe.toFixed(2)} is decent — diversifying further could improve your risk-adjusted returns`, type: "info" });
+    insights.push({ icon: "◈", text: `Sharpe ratio of ${sharpe.toFixed(2)} is decent , diversifying further could improve your risk-adjusted returns`, type: "info" });
   }
 
   if (isConcentrated) {
-    insights.push({ icon: "⚠", text: `${topHolding.ticker} makes up ${(topHolding.weight * 100).toFixed(0)}% of your portfolio — high concentration risk. Consider spreading across more assets`, type: "warn" });
+    insights.push({ icon: "⚠", text: `${topHolding.ticker} makes up ${(topHolding.weight * 100).toFixed(0)}% of your portfolio , high concentration risk. Consider spreading across more assets`, type: "warn" });
   } else if (assets.length <= 2) {
-    insights.push({ icon: "◎", text: `Only ${assets.length} holdings — adding ETFs like VOO or sector funds could reduce single-stock risk`, type: "info" });
+    insights.push({ icon: "◎", text: `Only ${assets.length} holdings , adding ETFs like VOO or sector funds could reduce single-stock risk`, type: "info" });
   } else {
     insights.push({ icon: "✓", text: `${assets.length} holdings across your portfolio provides decent diversification`, type: "good" });
   }

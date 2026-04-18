@@ -112,7 +112,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
         }
       } catch {}
     }
-    // Logged-out or Supabase unavailable — use localStorage
+    // Logged-out or Supabase unavailable, use localStorage
     setPortfolios(loadLocal());
   };
 

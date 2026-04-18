@@ -7,7 +7,7 @@ const STEPS = [
   {
     target: "sidebar",
     title: "Build Your Portfolio",
-    body: "Search any stock, ETF, or crypto in the world. Type a company name or ticker — like 'Apple', 'VOO', or 'Bitcoin'. Adjust weights with sliders or type exact percentages.",
+    body: "Search any stock, ETF, or crypto in the world. Type a company name or ticker , like 'Apple', 'VOO', or 'Bitcoin'. Adjust weights with sliders or type exact percentages.",
     icon: "◈",
     color: "var(--green)",
     position: "right",
@@ -15,7 +15,7 @@ const STEPS = [
   {
     target: "overview",
     title: "Overview Tab",
-    body: "Your portfolio's key stats at a glance — return, volatility, Sharpe ratio, and max drawdown. Each metric has a ? button that explains what it means in plain English.",
+    body: "Your portfolio's key stats at a glance , return, volatility, Sharpe ratio, and max drawdown. Each metric has a ? button that explains what it means in plain English.",
     icon: "◎",
     color: "var(--cyan)",
     position: "center",
@@ -31,7 +31,7 @@ const STEPS = [
   {
     target: "risk",
     title: "Risk Tab",
-    body: "See how bad things could get — drawdown charts show your portfolio's worst drops, and the correlation heatmap shows if your assets move together (bad) or independently (good).",
+    body: "See how bad things could get , drawdown charts show your portfolio's worst drops, and the correlation heatmap shows if your assets move together (bad) or independently (good).",
     icon: "◬",
     color: "var(--red)",
     position: "center",
@@ -39,7 +39,7 @@ const STEPS = [
   {
     target: "ai",
     title: "AI Chat",
-    body: "Ask anything about your portfolio. 'Should I add gold?', 'Am I too concentrated in tech?', 'What happens if the market drops 30%?' — ALPHAi knows your exact holdings.",
+    body: "Ask anything about your portfolio. 'Should I add gold?', 'Am I too concentrated in tech?', 'What happens if the market drops 30%?' , ALPHAi knows your exact holdings.",
     icon: "◆",
     color: "var(--purple)",
     position: "center",
@@ -47,7 +47,7 @@ const STEPS = [
   {
     target: "simulate",
     title: "Monte Carlo Simulation",
-    body: "We run 300 simulations of possible futures for your portfolio. See the range of outcomes — best case, worst case, and most likely — over the next year.",
+    body: "We run 300 simulations of possible futures for your portfolio. See the range of outcomes , best case, worst case, and most likely , over the next year.",
     icon: "◇",
     color: "#f59e0b",
     position: "center",

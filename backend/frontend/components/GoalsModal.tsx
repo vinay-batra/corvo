@@ -19,7 +19,7 @@ const STEPS = [
   {
     id: "risk",
     title: "How do you feel about risk?",
-    subtitle: "Be honest — there's no wrong answer",
+    subtitle: "Be honest , there's no wrong answer",
     icon: "◬",
   },
   {
@@ -192,7 +192,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {[
                     { val: "conservative", label: "Conservative", sub: "I hate losing money. Keep it safe, even if returns are lower", color: "var(--cyan)" },
-                    { val: "moderate", label: "Moderate", sub: "Some ups and downs are fine — I want solid growth", color: "var(--green)" },
+                    { val: "moderate", label: "Moderate", sub: "Some ups and downs are fine , I want solid growth", color: "var(--green)" },
                     { val: "aggressive", label: "Aggressive", sub: "I can handle big swings. I want maximum long-term growth", color: "var(--purple)" },
                     { val: "yolo", label: "High Risk / High Reward", sub: "Crypto, growth stocks, I'm here for big gains", color: "#f59e0b" },
                   ].map(o => (

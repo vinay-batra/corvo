@@ -241,7 +241,7 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
                 <tr
                   key={entry.ticker}
                   style={{
-                    borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    borderBottom: "1px solid var(--border)",
                     background: "rgba(224,92,92,0.03)",
                   }}
                 >

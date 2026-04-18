@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# NEVER hardcode API keys — always load from environment
+# NEVER hardcode API keys, always load from environment
 _api_key = os.environ.get("ANTHROPIC_API_KEY")
 if not _api_key:
     raise RuntimeError("ANTHROPIC_API_KEY environment variable not set. Add it to your .env file.")
@@ -74,13 +74,25 @@ PORTFOLIO METRICS:
 RESPONSE RULES (CRITICAL):
 1. Be concise. Max 150 words unless a detailed breakdown is explicitly requested.
 2. Use bullet points for lists. Never write walls of text.
-3. Use ** for section headers if needed (e.g., **Risk Assessment**)
+3. Plain text only, no markdown headers or bold.
 4. Lead with the most important insight first.
 5. End with one clear, specific action recommendation.
 6. Always reference the user's age/goals when relevant.
 7. Never repeat the question back. Just answer it.
 8. You are Corvo AI, not Claude or ALPHAi.
+9. Never use em dashes in your response. Never use asterisks (*) or markdown formatting. Write in plain prose only.
 """
+
+def _clean_ai_response(text: str) -> str:
+    """Strip em dashes, asterisks, and markdown formatting from any Claude response."""
+    import re
+    text = text.strip()
+    text = text.replace("\u2014", ",")
+    text = re.sub(r'\*{1,2}([^*]+)\*{1,2}', r'\1', text)
+    text = re.sub(r'_{1,2}([^_]+)_{1,2}', r'\1', text)
+    text = text.replace("*", "").replace("**", "")
+    return text
+
 
 def chat_with_claude(message: str, history: list, portfolio_context: dict) -> str:
     messages = [{"role": h["role"], "content": h["content"]} for h in history]
@@ -92,7 +104,7 @@ def chat_with_claude(message: str, history: list, portfolio_context: dict) -> st
         system=build_system_prompt(portfolio_context),
         messages=messages,
     )
-    return response.content[0].text
+    return _clean_ai_response(response.content[0].text)
 
 def parse_portfolio_from_image(image_base64: str, media_type: str) -> list:
     response = client.messages.create(

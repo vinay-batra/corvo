@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { importPortfolioCsv } from "../lib/api";
 import { posthog } from "../lib/posthog";
@@ -130,11 +130,20 @@ interface Props {
 
 export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading }: Props) {
   const update = onAssetsChange || setAssets || (() => {});
+  const [dark, setDark] = useState(true);
   const [active, setActive] = useState<number|null>(null);
   const [query, setQuery] = useState<Record<number,string>>({});
   const [results, setResults] = useState<Record<number,Result[]>>({});
   const [searching, setSearching] = useState<Record<number,boolean>>({});
   const [names, setNames] = useState<Record<string,string>>({});
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+
   const [importLoading, setImportLoading] = useState(false);
   const [importError, setImportError] = useState("");
   const [showCsvModal, setShowCsvModal] = useState(false);
@@ -167,7 +176,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         merged.forEach((r: Result) => { n[r.ticker]=r.name; });
         setNames(p => ({...p,...n}));
       } catch {
-        // API failed — keep local results
+        // API failed, keep local results
         if (local.length === 0) setResults(p => ({...p,[i]:[]}));
       }
       setSearching(p => ({...p,[i]:false}));
@@ -239,7 +248,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         <span style={{fontSize:8,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase"}}>Assets</span>
         <div style={{display:"flex",gap:5,alignItems:"center"}}>
           <button onClick={()=>fileRef.current?.click()} disabled={importLoading}
-            style={{padding:"3px 8px",fontSize:9,background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:5,cursor:"pointer",color:C.cream3,letterSpacing:0.5}}>
+            style={{padding:"3px 8px",fontSize:9,background:"var(--bg3)",border:`1px solid ${C.border}`,borderRadius:5,cursor:"pointer",color:C.cream3,letterSpacing:0.5}}>
             {importLoading?"...":"↑ Screenshot"}
           </button>
           <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
@@ -272,19 +281,19 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                     onChange={e=>updateTicker(i,e.target.value)}
                     placeholder="Search ticker..."
                     className="accent-input"
-                    style={{width:"100%",padding:"5px 8px",background:"rgba(255,255,255,0.04)",border:`1px solid ${active===i?"rgba(201,168,76,0.5)":C.border}`,borderRadius:7,color:"var(--text)",fontFamily:"Space Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:1,outline:"none",transition:"border-color 0.15s, box-shadow 0.15s"}}/>
+                    style={{width:"100%",padding:"5px 8px",background:"var(--bg3)",border:`1px solid ${active===i?"rgba(201,168,76,0.5)":C.border}`,borderRadius:7,color:"var(--text)",fontFamily:"Space Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:1,outline:"none",transition:"border-color 0.15s, box-shadow 0.15s"}}/>
                   {searching[i]&&<div style={{position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:9,height:9,border:"1.5px solid rgba(201,168,76,0.2)",borderTopColor:C.amber,borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
                   <AnimatePresence>
                     {active===i&&res.length>0&&(
                       <motion.div initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-                        style={{position:"absolute",top:"calc(100% + 3px)",left:0,right:0,background:"#0d1117",border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,zIndex:100,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+                        style={{position:"absolute",top:"calc(100% + 3px)",left:0,right:0,background:dark?"#0d1117":"#ffffff",border:`1px solid ${dark?"rgba(255,255,255,0.1)":"#d4cfc8"}`,borderRadius:10,zIndex:100,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
                         {res.map((r,idx)=>(
                           <div key={idx} onMouseDown={e=>{e.preventDefault();clearTimeout(blurT.current[i]);select(i,r);}}
-                            style={{padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",borderBottom:idx<res.length-1?"1px solid rgba(255,255,255,0.05)":"none",transition:"background 0.1s"}}
-                            onMouseEnter={e=>e.currentTarget.style.background="rgba(201,168,76,0.06)"}
+                            style={{padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",borderBottom:idx<res.length-1?`1px solid ${dark?"rgba(255,255,255,0.05)":"#d4cfc8"}`:"none",transition:"background 0.1s"}}
+                            onMouseEnter={e=>e.currentTarget.style.background=dark?"rgba(201,168,76,0.06)":"rgba(184,134,11,0.05)"}
                             onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                             <div>
-                              <div style={{fontFamily:"Space Mono,monospace",fontSize:11,color:C.amber,fontWeight:700}}>{r.ticker}</div>
+                              <div style={{fontFamily:"Space Mono,monospace",fontSize:11,color:dark?C.amber:"#8b6914",fontWeight:700}}>{r.ticker}</div>
                               <div style={{fontSize:10,color:C.cream3,maxWidth:"min(140px,40vw)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
                             </div>
                             <span style={{fontSize:8,background:"rgba(201,168,76,0.1)",color:C.amber,padding:"2px 6px",borderRadius:3,border:"1px solid rgba(201,168,76,0.2)"}}>{TYPE_LABELS[r.type]||r.type}</span>
@@ -296,25 +305,25 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 </div>
                 <input type="number" min="0" max="100" step="1" value={Math.round(a.weight*100)}
                   onChange={e=>updateWeight(i,Math.max(0,Math.min(100,Number(e.target.value)))/100)}
-                  style={{width:36,padding:"5px 3px",background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:5,color:"var(--text)",fontSize:11,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"center"}}/>
+                  style={{width:36,padding:"5px 3px",background:"var(--bg3)",border:`1px solid ${C.border}`,borderRadius:5,color:"var(--text)",fontSize:11,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"center"}}/>
                 <span style={{fontSize:9,color:C.cream3,flexShrink:0}}>%</span>
-                <button onClick={()=>remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.15)",fontSize:12,padding:"0 2px",lineHeight:1}}
+                <button onClick={()=>remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",fontSize:12,padding:"0 2px",lineHeight:1}}
                   onMouseEnter={e=>e.currentTarget.style.color="#e05c5c"}
-                  onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.15)"}>✕</button>
+                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}>✕</button>
               </div>
               {name&&<div style={{paddingLeft:9,marginTop:2,fontSize:9,color:C.cream3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>}
               <div style={{paddingLeft:9,marginTop:4}}>
                 <input type="range" min="0" max="1" step="0.01" value={a.weight}
                   onChange={e=>updateWeight(i,parseFloat(e.target.value))}
                   onInput={e=>updateWeight(i,parseFloat((e.target as HTMLInputElement).value))}
-                  style={{width:"100%",height:2,appearance:"none" as any,background:`linear-gradient(90deg,${C.amber} ${a.weight*100}%,rgba(255,255,255,0.08) ${a.weight*100}%)`,borderRadius:1,outline:"none",cursor:"pointer"}}/>
+                  style={{width:"100%",height:2,appearance:"none" as any,background:`linear-gradient(90deg,${C.amber} ${a.weight*100}%,var(--track) ${a.weight*100}%)`,borderRadius:1,outline:"none",cursor:"pointer"}}/>
               </div>
               <div style={{paddingLeft:9,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
-                <span style={{fontSize:8,color:"rgba(232,224,204,0.25)",letterSpacing:1.5,textTransform:"uppercase",flexShrink:0}}>Avg Cost $</span>
+                <span style={{fontSize:8,color:"var(--text3)",letterSpacing:1.5,textTransform:"uppercase",flexShrink:0}}>Avg Cost $</span>
                 <input type="number" min="0" step="0.01" placeholder="optional"
                   value={a.purchasePrice ?? ""}
                   onChange={e=>updatePurchasePrice(i,e.target.value)}
-                  style={{flex:"1 1 60px",minWidth:0,maxWidth:80,padding:"3px 5px",background:"rgba(255,255,255,0.03)",border:`1px solid rgba(255,255,255,0.06)`,borderRadius:4,color:"rgba(232,224,204,0.5)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"left"}}/>
+                  style={{flex:"1 1 60px",minWidth:0,maxWidth:80,padding:"3px 5px",background:"var(--bg3)",border:`1px dashed ${C.border}`,borderRadius:4,color:"var(--text3)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"left"}}/>
               </div>
             </motion.div>
           );
@@ -374,7 +383,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   </div>
                 )}
 
-                {/* Drop zone — only shown when no preview yet */}
+                {/* Drop zone: only shown when no preview yet */}
                 {!csvPreview&&(
                   <div
                     onDragOver={e=>{e.preventDefault();setCsvDragOver(true);}}

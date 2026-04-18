@@ -52,38 +52,43 @@ function groupByDate(convs: Conversation[]): { label: string; items: Conversatio
   return Object.entries(map).map(([label, items]) => ({ label, items }));
 }
 
-function generateSuggestions(data: any, assets: any[], goals: any): string[] {
-  const tickers: string[] = data?.tickers || assets?.map((a: any) => a.ticker) || [];
-  const sharpe: number | undefined = data?.sharpe_ratio;
-  const drawdown: number = Math.abs(data?.max_drawdown || 0);
-  const ret: number | undefined = data?.portfolio_return;
-
-  const contextual: string[] = [];
-  if (sharpe !== undefined && sharpe < 0.5)
-    contextual.push("My Sharpe ratio is low — how can I improve risk-adjusted returns?");
-  else if (sharpe !== undefined && sharpe > 1.5)
-    contextual.push("My Sharpe ratio looks strong — how do I maintain this?");
-  if (drawdown > 0.2)
-    contextual.push(`I've had a ${(drawdown * 100).toFixed(0)}% max drawdown — how do I protect against that?`);
-  if (tickers.length > 1)
-    contextual.push(`Am I too concentrated in ${tickers.slice(0, 2).join(" and ")}?`);
-  if (ret !== undefined && ret < 0)
-    contextual.push("My portfolio is down — should I hold or change strategy?");
-  else if (ret !== undefined && ret > 0.3)
-    contextual.push("My returns are strong — should I lock in some profits?");
-  if (goals?.goal === "retirement") contextual.push("Am I saving enough to retire comfortably?");
-  else if (goals?.goal === "income") contextual.push("How can I add more income-generating assets?");
-
-  const base = [
-    "What's my biggest risk right now?",
+const PROMPT_SETS: string[][] = [
+  [
+    "Am I taking too much risk?",
+    "How diversified is my portfolio?",
+    "What is my Sharpe ratio telling me?",
     "Should I rebalance my portfolio?",
-    "How would a market crash affect me?",
-    "What's the best way to diversify from here?",
-    "How do I reduce my portfolio volatility?",
-    "What tax-loss harvesting opportunities do I have?",
-  ];
-  return [...new Set([...contextual, ...base])].slice(0, 6);
-}
+    "What sectors am I exposed to?",
+  ],
+  [
+    "How does my portfolio compare to SPY?",
+    "What is my biggest risk right now?",
+    "Which holdings are dragging my returns?",
+    "How much volatility am I taking on?",
+    "What would happen if tech stocks dropped 20%?",
+  ],
+  [
+    "What is my portfolio's health score?",
+    "How can I reduce my drawdown risk?",
+    "Is my portfolio too concentrated?",
+    "What is the correlation between my holdings?",
+    "How much should I allocate to bonds?",
+  ],
+  [
+    "What are the best ETFs to diversify with?",
+    "How do I calculate my real return after inflation?",
+    "What is a good Sharpe ratio to aim for?",
+    "How much risk should I take for my age?",
+    "What is dollar cost averaging?",
+  ],
+  [
+    "What stocks pair well with my current holdings?",
+    "How can I hedge against a market downturn?",
+    "What is my portfolio's beta?",
+    "How do dividends affect my total return?",
+    "What would a 10% market crash do to my portfolio?",
+  ],
+];
 
 // ── Markdown renderer ─────────────────────────────────────────────────────────
 
@@ -222,7 +227,14 @@ export default function AiChat({
   const [copiedMsgIdx, setCopiedMsgIdx]     = useState<number | null>(null);
   const [portfolioCtxOn, setPortfolioCtxOn] = useState(true);
   const [suggestions, setSuggestions]       = useState<string[]>([]);
-  const [sugSeed, setSugSeed]               = useState(0);
+  const [promptSetIdx, setPromptSetIdx]     = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    const stored = localStorage.getItem("corvo_prompt_set_index");
+    if (stored !== null) return parseInt(stored, 10) % PROMPT_SETS.length;
+    const random = Math.floor(Math.random() * PROMPT_SETS.length);
+    localStorage.setItem("corvo_prompt_set_index", String(random));
+    return random;
+  });
 
   const bottomRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
@@ -290,10 +302,8 @@ export default function AiChat({
   }, []);
 
   useEffect(() => {
-    const all = generateSuggestions(data, assets || [], goals);
-    const rotated = sugSeed === 0 ? all : [...all.slice(sugSeed % all.length), ...all.slice(0, sugSeed % all.length)];
-    setSuggestions([...new Set(rotated)].slice(0, 6));
-  }, [data, assets, sugSeed]);
+    setSuggestions(PROMPT_SETS[promptSetIdx]);
+  }, [promptSetIdx]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -536,7 +546,7 @@ export default function AiChat({
           boxShadow: "-8px 0 40px rgba(0,0,0,0.4)",
         }}
       >
-        {/* History sidebar — absolute overlay within panel */}
+        {/* History sidebar: absolute overlay within panel */}
         <AnimatePresence>
           {sidebarOpen && (
             <>
@@ -725,7 +735,7 @@ export default function AiChat({
                   <img src="/corvo-logo.svg" width={30} height={30} alt="Corvo" />
                 </div>
                 <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>
-                  {goals?.age ? "Hi — I know your profile." : "Ask about your portfolio"}
+                  {goals?.age ? "Hi, I know your profile." : "Ask about your portfolio"}
                 </p>
                 <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
                   {goals?.age
@@ -734,7 +744,7 @@ export default function AiChat({
                 </p>
               </div>
 
-              {/* Suggestions — single column for narrow panel */}
+              {/* Suggestions: single column for narrow panel */}
               <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 10 }}>
                 {suggestions.map((s, i) => (
                   <motion.button
@@ -753,12 +763,16 @@ export default function AiChat({
 
               <div style={{ textAlign: "center" }}>
                 <button
-                  onClick={() => setSugSeed(v => v + 2)}
+                  onClick={() => {
+                    const next = (promptSetIdx + 1) % PROMPT_SETS.length;
+                    setPromptSetIdx(next);
+                    localStorage.setItem("corvo_prompt_set_index", String(next));
+                  }}
                   style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 5, padding: "4px 10px", cursor: "pointer", color: "var(--text3)", fontSize: 10, fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: 4 }}
                   onMouseEnter={e => { e.currentTarget.style.color = "var(--text2)"; }}
                   onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}
                 >
-                  <RefreshCw size={9} /> Refresh
+                  <RefreshCw size={9} /> Refresh suggestions
                 </button>
               </div>
             </div>
@@ -940,7 +954,7 @@ export default function AiChat({
               </div>
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.7, marginBottom: 16 }}>
                 <strong style={{ color: "var(--text)" }}>Base limit:</strong> 15 messages/day<br />
-                <strong style={{ color: "var(--text)" }}>How to get more:</strong> Invite friends using your referral link — each referral adds +5 messages per day (up to +25 bonus).<br />
+                <strong style={{ color: "var(--text)" }}>How to get more:</strong> Invite friends using your referral link. Each referral adds +5 messages per day (up to +25 bonus).<br />
                 <strong style={{ color: "var(--text)" }}>Resets:</strong> Midnight UTC daily.
               </p>
               {referralLink && (

@@ -57,14 +57,14 @@ const ENTRIES = [
     date: "April 2026",
     version: "v1.1",
     title: "Learn Page XP System, Daily Challenges & 8 Mini-games",
-    desc: "Gamified investing education with an XP and level system. Complete daily challenges to earn badges. Eight interactive mini-games teach everything from P/E ratios to options basics — no prior knowledge needed.",
+    desc: "Gamified investing education with an XP and level system. Complete daily challenges to earn badges. Eight interactive mini-games teach everything from P/E ratios to options basics, no prior knowledge needed.",
     tags: ["Education", "Gamification"],
   },
   {
     date: "March 2026",
     version: "v1.0",
     title: "Launch: Portfolio Analyzer, AI Chat, Sharpe, Drawdown & Health Score",
-    desc: "Corvo launches publicly. Core features include an AI-powered portfolio analyzer, real-time AI chat, Sharpe ratio, max drawdown, diversification score, and an overall portfolio Health Score — all free.",
+    desc: "Corvo launches publicly. Core features include an AI-powered portfolio analyzer, real-time AI chat, Sharpe ratio, max drawdown, diversification score, and an overall portfolio Health Score. All free.",
     tags: ["Launch", "Core"],
   },
 ];

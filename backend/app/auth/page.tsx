@@ -33,7 +33,7 @@ function AuthForm() {
         redirectTo: `${window.location.origin}/auth/callback?next=/app`,
       });
       if (error) setError(error.message);
-      else setSuccess("Password reset email sent — check your inbox.");
+      else setSuccess("Password reset email sent , check your inbox.");
     }
     setLoading(false);
   };

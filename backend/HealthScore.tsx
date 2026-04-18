@@ -124,7 +124,7 @@ export default function HealthScore({ data }: { data: any }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
                 { label: "Returns (30%)", desc: "How much your portfolio grew vs. a standard benchmark" },
-                { label: "Risk-Adjusted (30%)", desc: "Your Sharpe ratio — are you being rewarded enough for the risk you're taking?" },
+                { label: "Risk-Adjusted (30%)", desc: "Your Sharpe ratio , are you being rewarded enough for the risk you're taking?" },
                 { label: "Stability (25%)", desc: "How calm your portfolio is day-to-day. Lower volatility = higher score" },
                 { label: "Resilience (15%)", desc: "How well your portfolio recovered from its worst drop" },
               ].map(r => (

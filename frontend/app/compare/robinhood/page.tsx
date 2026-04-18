@@ -58,7 +58,7 @@ export default function RobinhoodComparePage() {
             <span style={{ color: "#c9a84c" }}>Which is better for retail investors?</span>
           </h1>
           <p style={{ fontSize: "clamp(15px,1.8vw,18px)", color: "rgba(232,224,204,0.5)", maxWidth: 580, margin: "0 auto 44px", lineHeight: 1.8, fontWeight: 300 }}>
-            Robinhood is built for executing trades. Corvo is built for understanding your portfolio. Get AI-powered risk analytics, Monte Carlo simulation, and Sharpe ratio — all free.
+            Robinhood is built for executing trades. Corvo is built for understanding your portfolio. Get AI-powered risk analytics, Monte Carlo simulation, and Sharpe ratio. All free.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/auth" style={{ padding: "15px 40px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
@@ -99,17 +99,17 @@ export default function RobinhoodComparePage() {
               {
                 icon: "📈",
                 title: "Analytics, not just execution",
-                body: "Robinhood helps you buy and sell. Corvo helps you understand whether you should. Get Sharpe ratio, correlation analysis, max drawdown, and AI-powered portfolio insights — the context Robinhood doesn't provide.",
+                body: "Robinhood helps you buy and sell. Corvo helps you understand whether you should. Get Sharpe ratio, correlation analysis, max drawdown, and AI-powered portfolio insights: the context Robinhood doesn't provide.",
               },
               {
                 icon: "🔍",
                 title: "See your whole picture",
-                body: "Robinhood only shows your Robinhood holdings. Corvo imports from Fidelity, Schwab, Robinhood, and more — giving you one unified view of your full net worth with real analytics.",
+                body: "Robinhood only shows your Robinhood holdings. Corvo imports from Fidelity, Schwab, Robinhood, and more, giving you one unified view of your full net worth with real analytics.",
               },
               {
                 icon: "🎓",
                 title: "Built for learning, not FOMO",
-                body: "Robinhood's UX is designed to maximize engagement and trading. Corvo is designed to help you make better long-term decisions — with a Learn & Earn system that builds your investing knowledge.",
+                body: "Robinhood's UX is designed to maximize engagement and trading. Corvo is designed to help you make better long-term decisions, with a Learn & Earn system that builds your investing knowledge.",
               },
             ].map((card, i) => (
               <FadeUp key={i} delay={i * 0.1}>

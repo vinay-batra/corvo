@@ -31,7 +31,7 @@ export default function InstallBanner() {
     };
     window.addEventListener("beforeinstallprompt", handler);
 
-    // iOS Safari doesn't fire beforeinstallprompt — show banner anyway
+    // iOS Safari doesn't fire beforeinstallprompt, show banner anyway
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isIOS) setShow(true);
 

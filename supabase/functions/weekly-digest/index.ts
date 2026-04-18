@@ -124,7 +124,7 @@ function buildEmailHtml(opts: {
   <div class="wrap">
     <div class="brand">CORVO</div>
     <div class="brand-sub">Portfolio Intelligence</div>
-    <div class="week-label">Weekly Digest — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</div>
+    <div class="week-label">Weekly Digest: ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</div>
 
     <h1>${opts.portfolioName}</h1>
     <p style="font-size:12px;color:rgba(232,224,204,0.4);margin-bottom:18px">${opts.tickers.join(" · ")}</p>
@@ -176,7 +176,7 @@ function generateInsight(data: any, assets: { ticker: string; weight: number }[]
   const vol    = data.portfolio_volatility ?? 0;
   const sharpe = vol > 0 ? (ret - 0.04) / vol : 0;
 
-  if (sharpe > 1.5) return `Your portfolio is firing on all cylinders with a Sharpe ratio of ${sharpe.toFixed(2)} — you're earning strong returns for the risk you're taking. Keep your current allocation unless a major thesis changes.`;
+  if (sharpe > 1.5) return `Your portfolio is firing on all cylinders with a Sharpe ratio of ${sharpe.toFixed(2)}, earning strong returns for the risk you're taking. Keep your current allocation unless a major thesis changes.`;
   if (ret < 0)      return `Your portfolio is down ${(Math.abs(ret) * 100).toFixed(1)}% annualized. Consider reviewing your highest-risk positions and whether your allocation still matches your timeline.`;
   if (vol > 0.35)   return `Your portfolio's volatility of ${(vol * 100).toFixed(1)}% is quite high. Adding low-correlation assets like bonds or gold could smooth out the ride without sacrificing much return.`;
   if (assets.length <= 2) return `You're holding only ${assets.length} position${assets.length === 1 ? "" : "s"}. Even adding one uncorrelated ETF like GLD or BND could meaningfully reduce your risk without hurting expected returns.`;
@@ -236,7 +236,7 @@ Deno.serve(async (_req) => {
           .single();
         if (prefs && prefs.weekly_digest === false) continue;
       } catch {
-        // No row — default to sending
+        // No row, default to sending
       }
 
       const primary = userPortfolios[0];
@@ -249,7 +249,7 @@ Deno.serve(async (_req) => {
 
         const indRet: Record<string, number> = metrics.individual_returns ?? {};
         const retEntries = Object.entries(indRet).sort((a, b) => (b[1] as number) - (a[1] as number));
-        const topAsset   = retEntries[0]                      ?? [primary.assets[0]?.ticker ?? "—", 0];
+        const topAsset   = retEntries[0]                      ?? [primary.assets[0]?.ticker ?? "-", 0];
         const worstAsset = retEntries[retEntries.length - 1]  ?? topAsset;
         const annRet     = (metrics.portfolio_return ?? 0) * 100;
         const insight    = generateInsight(metrics, primary.assets);
@@ -274,7 +274,7 @@ Deno.serve(async (_req) => {
           body: JSON.stringify({
             from:    "Corvo <digest@corvo.capital>",
             to:      [email],
-            subject: `Your weekly portfolio digest — ${primary.name}`,
+            subject: `Your weekly portfolio digest: ${primary.name}`,
             html,
           }),
         });
