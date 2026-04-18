@@ -481,7 +481,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
             </div>
           )}
 
-          {/* AI insight — auto-generated */}
+          {/* AI insight: auto-generated */}
           {active.length >= 2 && (aiInsight || aiLoading || aiError) && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               style={{ border: "0.5px solid rgba(184,134,11,0.2)", borderRadius: 12, padding: "16px 18px", background: "rgba(184,134,11,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -598,7 +598,7 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
       }
       localStorage.setItem(NOTIF_ASKED_KEY, "granted");
     } catch {
-      // silently ignore — push subscription is non-critical
+      // silently ignore, push subscription is non-critical
     }
     setLoading(false);
     onDismiss();
@@ -819,7 +819,7 @@ export default function AppPage() {
   useEffect(() => {
     const g = localStorage.getItem("corvo_goals");
     if (g && g !== "skipped") { try { setGoals(JSON.parse(g)); } catch {} }
-    // showGoals is controlled by the onboarding Supabase check below — not localStorage
+    // showGoals is controlled by the onboarding Supabase check below, not localStorage
 
     // Load alert count
     try {
@@ -873,7 +873,7 @@ export default function AppPage() {
         .finally(() => setLoading(false));
     }
 
-    // Check onboarding status — Supabase is the source of truth; localStorage is a fallback
+    // Check onboarding status: Supabase is the source of truth; localStorage is a fallback
     (async () => {
       // Show setup banner if user previously skipped onboarding
       if (localStorage.getItem("corvo_onboarding_skipped") === "true" &&
@@ -903,7 +903,7 @@ export default function AppPage() {
 
       tourNeededRef.current = true;
 
-      // New user — create profile row and send welcome email for OAuth signups
+      // New user: create profile row and send welcome email for OAuth signups
       if (!profile) {
         await supabase.from("profiles").upsert({
           id: user.id,
@@ -1340,7 +1340,7 @@ export default function AppPage() {
         <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
       </div>
 
-      {/* Live price strip — isolated component; ticks never re-render AppPage */}
+      {/* Live price strip: isolated component; ticks never re-render AppPage */}
       <LivePriceStrip assets={assets} active={!!data} />
 
     </>
@@ -1457,7 +1457,7 @@ export default function AppPage() {
         .c-mob-analyze[data-loading=true]{animation:analyze-ring 1.2s ease-out infinite}
       `}</style>
 
-      {/* Desktop sidebar — collapsible */}
+      {/* Desktop sidebar: collapsible */}
       <motion.aside
         className="c-sidebar"
         animate={{ width: sidebarCollapsed ? 0 : 300 }}
@@ -1860,7 +1860,7 @@ export default function AppPage() {
         </main>
       </div>{/* end inner flex column */}
 
-      {/* Right panel — market brief, live movers, events */}
+      {/* Right panel: market brief, live movers, events */}
       <RightPanel
         open={rightPanelOpen}
         onClose={() => setRightPanelOpen(false)}
@@ -1871,7 +1871,7 @@ export default function AppPage() {
 
       </div>{/* end S.main outer row */}
 
-      {/* AI Chat — slide-in panel */}
+      {/* AI Chat: slide-in panel */}
       {chatOpen && (
         <AiChat
           data={data}

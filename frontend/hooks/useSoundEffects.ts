@@ -9,7 +9,7 @@ function isEnabled(): boolean {
   return stored === null ? true : stored === "true";
 }
 
-// Singleton AudioContext — reused across calls to avoid hitting the limit
+// Singleton AudioContext: reused across calls to avoid hitting the limit
 let _ac: AudioContext | null = null;
 
 function getCtx(): AudioContext | null {
@@ -57,12 +57,12 @@ function playTone(
 }
 
 export function useSoundEffects() {
-  /** Short sine click — for button presses */
+  /** Short sine click: for button presses */
   function click() {
     playTone(800, 0.03, "sine", 0.08);
   }
 
-  /** Smooth whoosh — for tab switches */
+  /** Smooth whoosh: for tab switches */
   function whoosh() {
     if (!isEnabled()) return;
     const ac = getCtx();
@@ -86,13 +86,13 @@ export function useSoundEffects() {
     osc.stop(ac.currentTime + 0.16);
   }
 
-  /** Two-tone chime — for analysis completion */
+  /** Two-tone chime: for analysis completion */
   function success() {
     playTone(523, 0.09, "sine", 0.1, 0);
     playTone(659, 0.09, "sine", 0.1, 0.1);
   }
 
-  /** Low tone — for errors */
+  /** Low tone: for errors */
   function error() {
     playTone(200, 0.1, "sine", 0.1);
   }

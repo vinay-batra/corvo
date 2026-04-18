@@ -37,7 +37,16 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
   const [whatIfData, setWhatIfData]       = useState<any>(null);
   const [loading, setLoading]             = useState(false);
   const [analyzed, setAnalyzed]           = useState(false);
+  const [dark, setDark]                   = useState(true);
   const analyzeRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const check = () => setDark(document.documentElement.dataset.theme !== "light");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
 
   // Reset when opened
   useEffect(() => {
@@ -122,7 +131,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 280 }}
-            style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(900px, 95vw)", background: "var(--bg2)", borderLeft: "0.5px solid var(--border2)", zIndex: 501, display: "flex", flexDirection: "column", overflow: "hidden" }}
+            style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(900px, 95vw)", background: "var(--bg2)", borderLeft: dark ? "0.5px solid var(--border2)" : "1px solid #d4cfc8", zIndex: 501, display: "flex", flexDirection: "column", overflow: "hidden" }}
           >
             {/* Header */}
             <div style={{ padding: "14px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
@@ -150,7 +159,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
             <div style={{ flex: 1, overflow: "auto", padding: "16px 20px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
 
-                {/* LEFT — Current (read-only) */}
+                {/* LEFT: Current (read-only) */}
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLORS.current }} />
@@ -182,7 +191,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                   )}
                 </div>
 
-                {/* RIGHT — Editable what-if */}
+                {/* RIGHT: Editable what-if */}
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLORS.whatif }} />

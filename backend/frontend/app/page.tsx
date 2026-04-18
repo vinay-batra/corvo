@@ -5,12 +5,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const FEATURES = [
-  { title: "Real-Time Analytics", desc: "Sharpe ratio, volatility, max drawdown, and benchmark comparison — updated live." },
+  { title: "Real-Time Analytics", desc: "Sharpe ratio, volatility, max drawdown, and benchmark comparison , updated live." },
   { title: "AI Portfolio Analyst", desc: "Ask anything in plain English. Your AI analyst knows your exact holdings and goals." },
   { title: "Risk Intelligence", desc: "Drawdown charts, correlation heatmaps, and Monte Carlo simulations." },
   { title: "Health Score", desc: "Your portfolio gets a 0–100 score. Know at a glance if you're on track." },
   { title: "Goal Tracking", desc: "Set your retirement age, risk tolerance, and savings rate." },
-  { title: "Universal Search", desc: "Any stock, ETF, or crypto worldwide — if it trades, Corvo tracks it." },
+  { title: "Universal Search", desc: "Any stock, ETF, or crypto worldwide , if it trades, Corvo tracks it." },
 ];
 
 const TESTIMONIALS = [

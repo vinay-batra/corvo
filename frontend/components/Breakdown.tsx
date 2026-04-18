@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 
-// Distinct color palette — visible against dark background
+// Distinct color palette: visible against dark background
 const COLORS = [
   "#b8860b",  // amber
   "#5b9bd5",  // blue

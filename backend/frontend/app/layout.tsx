@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Corvo — Portfolio Intelligence",
+  title: "Corvo , Portfolio Intelligence",
   description: "Know your portfolio. Beat the market.",
 };
 

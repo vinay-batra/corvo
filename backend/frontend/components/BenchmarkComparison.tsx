@@ -113,7 +113,7 @@ export default function BenchmarkComparison({ data }: { data: any }) {
               A benchmark is a standard portfolio (like the S&P 500) used to measure your performance. If the S&P 500 returned 12% and your portfolio returned 15%, you "beat the market" by 3 percentage points.
             </p>
             <p style={{ fontSize: 13, color: "rgba(226,232,240,0.7)", lineHeight: 1.7 }}>
-              Most professional fund managers struggle to consistently beat the S&P 500 — so if you're doing it, that's impressive!
+              Most professional fund managers struggle to consistently beat the S&P 500 , so if you're doing it, that's impressive!
             </p>
           </motion.div>
         </motion.div>

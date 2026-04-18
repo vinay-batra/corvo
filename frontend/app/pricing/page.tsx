@@ -437,7 +437,7 @@ function RoiCalculator() {
               <span style={{ fontFamily: "Space Mono,monospace", color: "#5cb88a", fontWeight: 700 }}>${bloombergAnnual.toLocaleString()}</span>
               {" back in your portfolio every year. Compounded over 10 years at 8% returns, that's "}
               <span style={{ fontFamily: "Space Mono,monospace", color: "#5cb88a", fontWeight: 700 }}>${compoundGain.toLocaleString()}+</span>
-              {" in additional wealth — just from not paying for Bloomberg."}
+              {" in additional wealth, just from not paying for Bloomberg."}
             </p>
           </div>
         </div>

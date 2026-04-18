@@ -93,7 +93,7 @@ export default function AccountPage() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
           <div style={{ background: "rgba(255,255,255,0.025)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px 18px" }}>
             <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 8 }}>Member Since</p>
-            <p style={{ fontSize: 14, fontWeight: 500, color: "#e8e0cc" }}>{memberSince || "—"}</p>
+            <p style={{ fontSize: 14, fontWeight: 500, color: "#e8e0cc" }}>{memberSince || "-"}</p>
           </div>
           <div style={{ background: "rgba(255,255,255,0.025)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px 18px" }}>
             <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 8 }}>Current Plan</p>

@@ -78,7 +78,7 @@ function useCountUp(target: number, active: boolean, duration = 1400) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   STEP 1 — Portfolio Builder
+   STEP 1: Portfolio Builder
 ───────────────────────────────────────────────────────── */
 const DEMO_STOCKS = [
   { ticker: "AAPL", name: "Apple Inc.", price: 212.45, pct: 25 },
@@ -215,9 +215,9 @@ function Step1Panel({ active }: { active: boolean }) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   STEP 2 — AI Insights
+   STEP 2: AI Insights
 ───────────────────────────────────────────────────────── */
-const AI_INSIGHT = "Your portfolio is heavily weighted toward US large-cap growth (82%). NVDA dominates at 30%, introducing single-stock concentration risk. The Sharpe ratio of 1.92 is exceptional — outperforming 94% of retail investors. Consider diversifying with international exposure or REITs to reduce drawdown risk.";
+const AI_INSIGHT = "Your portfolio is heavily weighted toward US large-cap growth (82%). NVDA dominates at 30%, introducing single-stock concentration risk. The Sharpe ratio of 1.92 is exceptional, outperforming 94% of retail investors. Consider diversifying with international exposure or REITs to reduce drawdown risk.";
 
 function Step2Panel({ active }: { active: boolean }) {
   const sharpe = useCountUp(1.92, active, 1200);
@@ -287,7 +287,7 @@ function Step2Panel({ active }: { active: boolean }) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   STEP 3 — Monte Carlo
+   STEP 3: Monte Carlo
 ───────────────────────────────────────────────────────── */
 type SimPath = { d: string; color: string; opacity: number };
 
@@ -365,7 +365,7 @@ function Step3Panel({ active }: { active: boolean }) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   STEP 4 — Watchlist
+   STEP 4: Watchlist
 ───────────────────────────────────────────────────────── */
 type WatchItem = { ticker: string; name: string; price: number; change: number; alert?: number };
 const INITIAL_WATCH: WatchItem[] = [
@@ -436,7 +436,7 @@ function Step4Panel({ active }: { active: boolean }) {
                     )}
                   </div>
                 ) : (
-                  <span style={{ color: C.cream3, fontSize: 13 }}>—</span>
+                  <span style={{ color: C.cream3, fontSize: 13 }}>-</span>
                 )}
               </div>
             </motion.div>
@@ -466,7 +466,7 @@ function Step4Panel({ active }: { active: boolean }) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   STEP 5 — Learn
+   STEP 5: Learn
 ───────────────────────────────────────────────────────── */
 const LESSONS = [
   { icon: "📊", title: "Portfolio Diversification", xp: 50, done: true },
@@ -564,7 +564,7 @@ function Step5Panel({ active }: { active: boolean }) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   STEP 6 — CTA
+   STEP 6: CTA
 ───────────────────────────────────────────────────────── */
 function useCountUpCta(target: number, active: boolean, duration = 2000) {
   const [val, setVal] = useState(0);
@@ -686,28 +686,28 @@ const STEPS = [
   {
     title: "AI Insights",
     subtitle: "Instant AI analysis of your portfolio",
-    desc: "Get institutional-grade intelligence powered by Claude AI. Understand your Sharpe ratio, health score, concentration risk, and what to do about it — in plain English.",
+    desc: "Get institutional-grade intelligence powered by Claude AI. Understand your Sharpe ratio, health score, concentration risk, and what to do about it, in plain English.",
     icon: "🤖",
     panel: Step2Panel,
   },
   {
     title: "Monte Carlo Simulation",
     subtitle: "See 300 possible futures",
-    desc: "Corvo runs hundreds of simulations to show you the realistic range of outcomes for your portfolio over the next 12 months — from the worst case to the best.",
+    desc: "Corvo runs hundreds of simulations to show you the realistic range of outcomes for your portfolio over the next 12 months, from the worst case to the best.",
     icon: "🎲",
     panel: Step3Panel,
   },
   {
     title: "Watchlist & Alerts",
     subtitle: "Track your favorite stocks with live prices",
-    desc: "Add any stock or ETF to your watchlist and get live price updates. Set price alerts and get notified the moment an asset hits your target — no noise, just signal.",
+    desc: "Add any stock or ETF to your watchlist and get live price updates. Set price alerts and get notified the moment an asset hits your target: no noise, just signal.",
     icon: "👁️",
     panel: Step4Panel,
   },
   {
     title: "Learn",
     subtitle: "Level up your investing knowledge",
-    desc: "AI-powered lessons tailored to your level. Earn XP, hit daily challenges, and build real investing knowledge — from diversification to derivatives, at your own pace.",
+    desc: "AI-powered lessons tailored to your level. Earn XP, hit daily challenges, and build real investing knowledge, from diversification to derivatives, at your own pace.",
     icon: "🎓",
     panel: Step5Panel,
   },
@@ -834,7 +834,7 @@ export default function DemoPage() {
                   )}
                   {step === 3 && (
                     <div style={{ padding: "10px 14px", background: C.amberBg, border: `1px solid ${C.amberBd}`, borderRadius: 10, fontSize: 11, color: C.amber }}>
-                      💡 Prices update live every second — watch them tick
+                      💡 Prices update live every second. Watch them tick
                     </div>
                   )}
                   {step === 4 && (

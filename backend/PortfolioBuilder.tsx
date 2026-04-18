@@ -107,7 +107,7 @@ export default function PortfolioBuilder({ assets, setAssets }: Props) {
       if (data.assets?.length > 0) {
         setAssets(data.assets.slice(0, 20));
       } else {
-        setImportError("No holdings found — try a clearer screenshot.");
+        setImportError("No holdings found , try a clearer screenshot.");
       }
     } catch {
       setImportError("Import failed. Try again.");

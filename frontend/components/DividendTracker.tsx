@@ -127,7 +127,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: 1 }}>Portfolio Value</span>
-            <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, overflow: "hidden" }}>
               <span style={{ fontSize: 11, padding: "4px 6px", color: "var(--text-muted)" }}>$</span>
               <input
                 type="number"
@@ -140,7 +140,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
           {data?.next_ex_div_date && (
             <div style={{ textAlign: "right" }}>
               <p style={{ fontSize: 8, letterSpacing: 2, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 2 }}>Next Ex-Div</p>
-              <p style={{ fontSize: 11, color: "rgba(201,168,76,0.9)", margin: 0 }}>{formatDate(data.next_ex_div_date)}</p>
+              <p style={{ fontSize: 11, color: dark ? "rgba(201,168,76,0.9)" : "#8b6914", margin: 0 }}>{formatDate(data.next_ex_div_date)}</p>
             </div>
           )}
         </div>
@@ -212,7 +212,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
                       const soon = days !== null && days >= 0 && days <= 30;
                       const yieldPct = h.dividend_yield != null ? h.dividend_yield * 100 : null;
                       return (
-                        <tr key={h.ticker} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", background: soon ? "rgba(201,168,76,0.06)" : "transparent" }}>
+                        <tr key={h.ticker} style={{ borderBottom: "1px solid var(--border)", background: soon ? "rgba(201,168,76,0.06)" : "transparent" }}>
                           <td style={{ padding: "8px 8px", fontWeight: 600, color: "var(--text1)", textAlign: "left" }}>
                             <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
                               {h.ticker}
@@ -223,7 +223,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
                               )}
                             </span>
                           </td>
-                          <td style={{ padding: "8px 8px", textAlign: "right", color: "rgba(201,168,76,0.9)", fontFamily: "Space Mono, monospace" }}>
+                          <td style={{ padding: "8px 8px", textAlign: "right", color: dark ? "rgba(201,168,76,0.9)" : "#8b6914", fontFamily: "Space Mono, monospace" }}>
                             {yieldPct != null ? `${yieldPct.toFixed(2)}%` : "-"}
                           </td>
                           <td style={{ padding: "8px 8px", textAlign: "right", color: "var(--text1)", fontFamily: "Space Mono, monospace" }}>
@@ -257,7 +257,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
               {showNonPayers && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
                   {nonPayers.map(h => (
-                    <span key={h.ticker} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-muted)", fontFamily: "Space Mono, monospace" }}>
+                    <span key={h.ticker} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text-muted)", fontFamily: "Space Mono, monospace" }}>
                       {h.ticker}
                     </span>
                   ))}

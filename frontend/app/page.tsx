@@ -36,7 +36,7 @@ function Counter({ target, suffix = "", duration = 2000 }: { target: number; suf
   return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
 }
 
-/* ─── Loop Counter — counts up on loop every `loopEvery` ms ─── */
+/* ─── Loop Counter: counts up on loop every `loopEvery` ms ─── */
 function LoopCounter({ target, suffix = "", prefix = "", decimals = 0, duration = 1800, loopEvery = 4500 }: {
   target: number; suffix?: string; prefix?: string; decimals?: number; duration?: number; loopEvery?: number;
 }) {
@@ -65,7 +65,7 @@ function LoopCounter({ target, suffix = "", prefix = "", decimals = 0, duration 
 /* ─── Animation defaults ─── */
 const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
 
-/* ─── FadeUp — reusable Framer Motion scroll-in ─── */
+/* ─── FadeUp: reusable Framer Motion scroll-in ─── */
 function FadeUp({ children, delay = 0, y = 30, style = {}, className }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties; className?: string }) {
   return (
     <motion.div
@@ -81,7 +81,7 @@ function FadeUp({ children, delay = 0, y = 30, style = {}, className }: { childr
   );
 }
 
-/* ─── SlideIn — reusable Framer Motion horizontal slide ─── */
+/* ─── SlideIn: reusable Framer Motion horizontal slide ─── */
 function SlideIn({ children, direction = "left", delay = 0, style = {} }: { children: React.ReactNode; direction?: "left" | "right"; delay?: number; style?: React.CSSProperties }) {
   return (
     <motion.div
@@ -99,6 +99,40 @@ function SlideIn({ children, direction = "left", delay = 0, style = {} }: { chil
 /* ─── Reveal wrapper (delegates to FadeUp) ─── */
 function Reveal({ children, delay = 0, y = 30, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
   return <FadeUp delay={delay} y={y} style={style}>{children}</FadeUp>;
+}
+
+/* ─── Mobile Desktop Banner ─── */
+function MobileDesktopBanner() {
+  const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
+  useEffect(() => {
+    const stored = localStorage.getItem("corvo_desktop_banner_dismissed");
+    if (!stored) setDismissed(false);
+  }, []);
+  const dismiss = () => {
+    localStorage.setItem("corvo_desktop_banner_dismissed", "1");
+    setDismissed(true);
+  };
+  if (dismissed) return null;
+  return (
+    <div style={{ display: "none" }} className="mobile-desktop-banner">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: "#c9a84c" }} aria-hidden="true">
+        <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="#c9a84c" strokeWidth="1.4" />
+        <path d="M5.5 14h5M8 12v2" stroke="#c9a84c" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+      <span style={{ flex: 1, fontSize: 11, color: "rgba(232,224,204,0.7)", letterSpacing: 0.2 }}>
+        For the best experience, view Corvo on desktop
+      </span>
+      <button
+        onClick={dismiss}
+        aria-label="Dismiss"
+        style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "rgba(232,224,204,0.4)", lineHeight: 1, flexShrink: 0 }}
+      >
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+    </div>
+  );
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -445,7 +479,7 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
           </div>
         </div>
       </div>
-      {/* PDF Reports section — vertical stack, bleeds edge-to-edge */}
+      {/* PDF Reports section: vertical stack, bleeds edge-to-edge */}
       <div style={{ margin: "24px -28px -28px", overflow: "hidden" }}>
         {/* Top: full-width dark PDF preview */}
         <div style={{ background: "#06090e", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
@@ -591,10 +625,10 @@ function StockTeaserSection() {
         name: data.name || fallback?.name || key,
         price: formatPrice(data.current_price),
         changePct: typeof data.change_pct === "number" ? data.change_pct : null,
-        sharpe: fallback?.sharpe ?? "—",
+        sharpe: fallback?.sharpe ?? "-",
         health: fallback?.health ?? 0,
         peRatio: peRaw != null ? peRaw.toFixed(1) : null,
-        volatility: fallback?.volatility ?? "—",
+        volatility: fallback?.volatility ?? "-",
         insight: fallback?.insight ?? `${data.name || key} data loaded live from market.`,
         isLive: true,
         sparkline,
@@ -604,7 +638,7 @@ function StockTeaserSection() {
       setResult(
         fallback
           ? { ...fallback, changePct: null, peRatio: null, isLive: false }
-          : { name: `"${key}" — unknown ticker`, price: "—", changePct: null, sharpe: "—", health: 0, peRatio: null, volatility: "—", insight: "No data found. Try AAPL, TSLA, NVDA, MSFT, or BTC-USD.", isLive: false }
+          : { name: `"${key}" - unknown ticker`, price: "-", changePct: null, sharpe: "-", health: 0, peRatio: null, volatility: "-", insight: "No data found. Try AAPL, TSLA, NVDA, MSFT, or BTC-USD.", isLive: false }
       );
     } finally {
       setLoading(false);
@@ -699,7 +733,7 @@ function StockTeaserSection() {
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 8, fontWeight: 700, color: "#c9a84c", letterSpacing: 0.5, textAlign: "center" as const, padding: 2 }}>
-                  {query || "—"}
+                  {query || "-"}
                 </div>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
@@ -728,7 +762,7 @@ function StockTeaserSection() {
               </div>
               <div style={{ textAlign: "right" as const }}>
                 <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 4 }}>Health (Est.)</p>
-                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 22, fontWeight: 700, color: healthColor(result.health), letterSpacing: -1 }}>{result.health > 0 ? result.health : "—"}</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 22, fontWeight: 700, color: healthColor(result.health), letterSpacing: -1 }}>{result.health > 0 ? result.health : "-"}</p>
                 {result.health > 0 && <p style={{ fontSize: 9, color: healthColor(result.health), letterSpacing: 1 }}>{healthLabel(result.health)}</p>}
               </div>
             </div>
@@ -738,8 +772,8 @@ function StockTeaserSection() {
                 { label: "Sharpe (Est.)", value: result.sharpe, color: "#e8e0cc" },
                 result.peRatio != null
                   ? { label: "P/E Ratio", value: result.peRatio, color: "#e8e0cc" }
-                  : { label: "Volatility", value: result.volatility, color: result.volatility !== "—" && parseFloat(result.volatility) > 40 ? "#e05c5c" : "#e8e0cc" },
-                { label: "Health (Est.)", value: result.health > 0 ? `${result.health}/100` : "—", color: healthColor(result.health) },
+                  : { label: "Volatility", value: result.volatility, color: result.volatility !== "-" && parseFloat(result.volatility) > 40 ? "#e05c5c" : "#e8e0cc" },
+                { label: "Health (Est.)", value: result.health > 0 ? `${result.health}/100` : "-", color: healthColor(result.health) },
               ].map((m, i) => (
                 <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
                   <p style={{ fontSize: 7, letterSpacing: 2, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 6 }}>{m.label}</p>
@@ -800,7 +834,7 @@ function VisualComparisonSection() {
               <span style={{ fontSize: 8, color: "rgba(120,120,120,0.5)", lineHeight: 1.6 }}>No portfolio health score. No risk analysis. No AI insights. Just a number.</span>
             </div>
             <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {["Sharpe ratio? —", "Drawdown? —", "Correlation? —", "Monte Carlo? —"].map((t, i) => (
+              {["Sharpe ratio?", "Drawdown?", "Correlation?", "Monte Carlo?"].map((t, i) => (
                 <span key={i} style={{ fontSize: 7, color: "rgba(120,120,120,0.35)", background: "rgba(255,255,255,0.03)", padding: "2px 6px", borderRadius: 3 }}>{t}</span>
               ))}
             </div>
@@ -922,6 +956,69 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
         <p style={{ fontSize: 11, color: "rgba(232,224,204,0.28)", marginTop: 3 }}>{role}</p>
       </div>
     </motion.div>
+  );
+}
+
+/* ─── Mobile Testimonial Carousel ─── */
+const MOBILE_TESTIMONIALS = [
+  { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
+  { text: "I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it.", name: "Sarah K.", role: "Self-directed IRA · Former analyst" },
+  { text: "The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
+  { text: "The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like.", name: "James L.", role: "Dividend Investor · 8yr experience" },
+  { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 300 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
+];
+function MobileTestimonialCarousel() {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const pauseAndResume = () => {
+    setPaused(true);
+    if (pauseTimer.current) clearTimeout(pauseTimer.current);
+    pauseTimer.current = setTimeout(() => setPaused(false), 8000);
+  };
+
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => setIdx(i => (i + 1) % MOBILE_TESTIMONIALS.length), 5000);
+    return () => clearInterval(t);
+  }, [paused]);
+
+  const prev = () => { setIdx(i => (i - 1 + MOBILE_TESTIMONIALS.length) % MOBILE_TESTIMONIALS.length); pauseAndResume(); };
+  const next = () => { setIdx(i => (i + 1) % MOBILE_TESTIMONIALS.length); pauseAndResume(); };
+
+  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 40) { dx < 0 ? next() : prev(); }
+    touchStartX.current = null;
+  };
+
+  const card = MOBILE_TESTIMONIALS[idx];
+  return (
+    <div style={{ position: "relative", width: "100%", paddingLeft: 28, paddingRight: 28 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", minHeight: 220 }}>
+        <p style={{ fontFamily: "Georgia,serif", fontSize: 72, color: "#c9a84c", lineHeight: 0.75, marginBottom: 18, opacity: 0.7 }}>"</p>
+        <p style={{ fontSize: 14, color: "rgba(232,224,204,0.65)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24 }}>{card.text}</p>
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 18 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{card.name}</p>
+          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.28)", marginTop: 3 }}>{card.role}</p>
+        </div>
+      </div>
+      <button onClick={prev} aria-label="Previous testimonial" style={{ position: "absolute", left: -2, top: "45%", transform: "translateY(-50%)", background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </button>
+      <button onClick={next} aria-label="Next testimonial" style={{ position: "absolute", right: -2, top: "45%", transform: "translateY(-50%)", background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </button>
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 20 }}>
+        {MOBILE_TESTIMONIALS.map((_, i) => (
+          <button key={i} onClick={() => { setIdx(i); pauseAndResume(); }} aria-label={`Go to testimonial ${i + 1}`} style={{ width: i === idx ? 20 : 8, height: 8, borderRadius: 4, background: i === idx ? "#c9a84c" : "rgba(201,168,76,0.25)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.3s ease" }} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1546,7 +1643,7 @@ function SecurityTrustSection() {
         </svg>
       ),
       title: "Cancel anytime",
-      desc: "No lock-in. No cancellation fees. Leave whenever you want — your data exports too.",
+      desc: "No lock-in. No cancellation fees. Leave whenever you want. Your data exports too.",
     },
   ];
   return (
@@ -1684,9 +1781,7 @@ export default function Landing() {
           .tagline-h2{font-size:clamp(24px,5vw,44px)!important}
           .testi-grid{display:flex!important;flex-direction:column!important}
           .testi-desktop{display:none!important}
-          .testi-mobile{display:flex!important;overflow-x:auto;gap:14px!important;padding-bottom:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-          .testi-mobile::-webkit-scrollbar{display:none}
-          .testi-mobile-card{min-width:min(300px,82vw);flex-shrink:0}
+          .testi-mobile{display:block!important}
           .trust-grid{grid-template-columns:repeat(2,1fr)!important}
           .nav-pad{padding:0 20px!important}
           .sec-pad{padding-left:20px!important;padding-right:20px!important}
@@ -1720,7 +1815,14 @@ export default function Landing() {
           .trust-grid{grid-template-columns:1fr!important}
         }
         .x-social-link:hover{color:#c9a84c!important}
+        .mobile-desktop-banner{display:none!important}
+        @media(max-width:767px){
+          .mobile-desktop-banner{display:flex!important;align-items:center;gap:8px;background:#0d1017;border-bottom:1px solid rgba(201,168,76,0.12);padding:7px 14px;position:relative;z-index:200}
+        }
       `}</style>
+
+      {/* Mobile desktop banner */}
+      <MobileDesktopBanner />
 
       {/* Fixed grid bg */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
@@ -2021,7 +2123,7 @@ export default function Landing() {
         </div>
       </FadeUp>
 
-      {/* ─── FEATURE SHOWCASE — BENTO GRID ─── */}
+      {/* ─── FEATURE SHOWCASE: BENTO GRID ─── */}
       <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "64px 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
@@ -2172,19 +2274,9 @@ export default function Landing() {
               <TestimonialCard text="I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 300 paths and realized I was way under-diversified." name="Priya M." role="Software Engineer · Long-term investor" delay={0.22} />
             </div>
           </div>
-          {/* Mobile: horizontal scroll carousel */}
+          {/* Mobile: one-at-a-time carousel with arrows + dots */}
           <div className="testi-mobile" style={{ display: "none" }}>
-            {[
-              { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
-              { text: "I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it.", name: "Sarah K.", role: "Self-directed IRA · Former analyst" },
-              { text: "The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
-              { text: "The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like.", name: "James L.", role: "Dividend Investor · 8yr experience" },
-              { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 300 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
-            ].map((t, i) => (
-              <div key={i} className="testi-mobile-card">
-                <TestimonialCard text={t.text} name={t.name} role={t.role} delay={0} />
-              </div>
-            ))}
+            <MobileTestimonialCarousel />
           </div>
         </div>
       </section>

@@ -235,7 +235,7 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
         throw new Error(body.detail || `Server error ${res.status}`);
       }
 
-      // Hard-delete confirmed — clear local state and redirect
+      // Hard-delete confirmed, clear local state and redirect
       await supabase.auth.signOut();
       window.location.href = "/";
     } catch (err) {

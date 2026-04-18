@@ -13,7 +13,7 @@ const SECTIONS = [
     items: [
       {
         q: "What is Corvo?",
-        a: "Corvo is an AI-powered portfolio analytics platform built for retail investors. Think institutional-grade insights: Sharpe ratio, drawdown analysis, Monte Carlo simulations, sector exposure — without any price tag. Enter your tickers, get professional-grade analysis in seconds.",
+        a: "Corvo is an AI-powered portfolio analytics platform built for retail investors. Think institutional-grade insights: Sharpe ratio, drawdown analysis, Monte Carlo simulations, sector exposure, without any price tag. Enter your tickers, get professional-grade analysis in seconds.",
       },
       {
         q: "Is Corvo free?",
@@ -466,7 +466,7 @@ export default function FaqPage() {
             }}
           >
             Ask anything about your portfolio, investing concepts, or how Corvo
-            works. The AI has answers — or reach us directly.
+            works. The AI has answers, or reach us directly.
           </p>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
             <Link

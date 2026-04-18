@@ -373,7 +373,7 @@ export default function ExportPDF({ data, assets, goals }: Props) {
         URL.revokeObjectURL(url);
       }
     } catch {
-      // silently ignore — user can try again
+      // silently ignore, user can try again
     } finally {
       setLoading(false);
     }

@@ -23,7 +23,7 @@ VAPID_PRIVATE_KEY    = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY     = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_CLAIMS_EMAIL   = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:alerts@corvo.capital")
 
-# Startup env check — visible in Railway logs
+# Startup env check: visible in Railway logs
 print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', '')[:6] + '...)' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
 print(f"[startup] RESEND_FROM_EMAIL: {os.environ.get('RESEND_FROM_EMAIL', 'NOT SET')}")
 print(f"[startup] SUPABASE_URL: {'SET' if SUPABASE_URL else 'NOT SET'}")
@@ -98,6 +98,20 @@ def safe_float(val):
 def safe_list(lst):
     return [safe_float(x) for x in lst]
 
+
+def clean_ai_response(text: str) -> str:
+    """Strip em dashes, asterisks, and markdown formatting from any Claude response."""
+    import re
+    text = text.strip()
+    # Replace em dashes with commas
+    text = text.replace("\u2014", ",")
+    # Strip bold/italic markdown (**, *, __, _)
+    text = re.sub(r'\*{1,2}([^*]+)\*{1,2}', r'\1', text)
+    text = re.sub(r'_{1,2}([^_]+)_{1,2}', r'\1', text)
+    # Remove any remaining stray asterisks
+    text = text.replace("*", "").replace("**", "")
+    return text
+
 def get_prices(tickers, period="1y"):
     """Download prices for a list of tickers."""
     period = PERIOD_MAP.get(period, "1y")
@@ -150,7 +164,7 @@ def root():
 
 @app.get("/health")
 def health():
-    """Health check — verifies Supabase connectivity."""
+    """Health check: verifies Supabase connectivity."""
     supabase_ok = False
     if SUPABASE_URL and SUPABASE_SERVICE_KEY:
         try:
@@ -549,10 +563,10 @@ def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
     resp = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=200,
-        system="You are a plain-English financial analyst. Write concise, jargon-free summaries for retail investors.",
+        system="You are a plain-English financial analyst. Write concise, jargon-free summaries for retail investors. Never use em dashes in your response. Never use asterisks (*) or markdown formatting. Write in plain prose only.",
         messages=[{"role": "user", "content": prompt}],
     )
-    return {"insight": resp.content[0].text.strip()}
+    return {"insight": clean_ai_response(resp.content[0].text)}
 
 
 _sectors_cache: dict[str, tuple[dict, float]] = {}
@@ -644,7 +658,7 @@ def portfolio_dividends(
             info = {}
 
         raw_yield = info.get("dividendYield")
-        # Return as decimal (e.g. 0.0082 = 0.82%) — frontend multiplies by 100 for display
+        # Return as decimal (e.g. 0.0082 = 0.82%); frontend multiplies by 100 for display
         div_yield_decimal = safe_float(raw_yield) if raw_yield is not None else None
 
         # ex-dividend date: yfinance returns Unix timestamp or None
@@ -823,7 +837,7 @@ def news(tickers: str = "AAPL"):
             if parsed:
                 result["sections"][ticker] = parsed
             else:
-                # yfinance returned nothing — try Finnhub first, then RSS
+                # yfinance returned nothing, try Finnhub first, then RSS
                 print(f"yfinance news empty for {ticker}, trying Finnhub fallback")
                 finnhub_articles = _finnhub_fallback(ticker)
                 if finnhub_articles:
@@ -957,14 +971,15 @@ Write a full analysis with these sections:
 ## Areas for Improvement
 ## Conclusion
 
-Be specific with numbers. Use bullet points (- item) for lists. 500-700 words total."""
+Be specific with numbers. Use bullet points (- item) for lists. 500-700 words total.
+Never use em dashes in your response. Never use asterisks (*) or markdown bold/italic. Write in plain prose only."""
 
         response = client.messages.create(
             model="claude-sonnet-4-5",
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}]
         )
-        analysis_text = response.content[0].text
+        analysis_text = clean_ai_response(response.content[0].text)
 
         # ── Build PDF with ReportLab ──────────────────────────────────────────
         from reportlab.lib.pagesizes import A4
@@ -1377,7 +1392,7 @@ RESPONSE RULES:
 • When the investor has a profile, reference their goals/age/timeline in your answer
 • If they ask about risk, factor in their stated risk tolerance
 • Plain text only, no markdown headers or bold
-• Never use em dashes (the character —). Use commas, colons, or rewrite naturally."""
+• Never use em dashes in your response. Never use asterisks (*) or markdown formatting. Write in plain prose only."""
 
         messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
         messages.append({"role": "user", "content": req.message})
@@ -1388,7 +1403,7 @@ RESPONSE RULES:
             system=system,
             messages=messages,
         )
-        reply = response.content[0].text
+        reply = clean_ai_response(response.content[0].text)
         # Record usage for daily limit tracking
         messages_used_now = daily_count + 1 if req.user_id else None
         if req.user_id:
@@ -1686,7 +1701,7 @@ def send_welcome_email(req: WelcomeEmailRequest):
     print(f"[send-welcome-email] called for {req.email}")
     resend_key = os.environ.get("RESEND_API_KEY", "")
     if not resend_key:
-        print("[send-welcome-email] RESEND_API_KEY not set — skipping")
+        print("[send-welcome-email] RESEND_API_KEY not set, skipping")
         return {"ok": True, "skipped": True}
 
     html = get_email_html(display_name=req.display_name, email_type="welcome", user_id=req.user_id)
@@ -1791,7 +1806,7 @@ def stock_detail(ticker: str, request: Request):
         def _round(v, digits):
             return round(v, digits) if v is not None else None
 
-        # Earnings date — take first item if list (yfinance returns list of timestamps)
+        # Earnings date: take first item if list (yfinance returns list of timestamps)
         earnings_raw = info.get("earningsDate")
         earnings_date = None
         if earnings_raw:
@@ -1912,7 +1927,7 @@ def stock_detail(ticker: str, request: Request):
 
 @app.get("/stock/{ticker}/history")
 def stock_history(ticker: str, period: str = "1y", request: Request = None):
-    """OHLC history for charting — 1D/1W/1M/3M/1Y/5Y."""
+    """OHLC history for charting: 1D/1W/1M/3M/1Y/5Y."""
     if request:
         ip = request.client.host if request.client else "unknown"
         if check_rate_limit(ip, "stock-history", 60, 3600):
@@ -2015,7 +2030,7 @@ _stats_cache: dict = {"user_count": 847, "ts": 0.0}
 
 @app.get("/stats")
 def platform_stats():
-    """Return platform-level stats — user count from Supabase, cached 1 hour."""
+    """Return platform-level stats: user count from Supabase, cached 1 hour."""
     import time
     global _stats_cache
     if time.time() - _stats_cache["ts"] < 3600:
@@ -2097,7 +2112,7 @@ def watchlist_data(tickers: str, request: Request):
 
 @app.get("/test-email")
 def test_email(email: str = ""):
-    """Debug endpoint — send a test email via Resend and return the result."""
+    """Debug endpoint: send a test email via Resend and return the result."""
     import traceback
 
     target = email or os.environ.get("TEST_EMAIL_TO", "")
@@ -2243,9 +2258,9 @@ def push_subscribe(req: PushSubscribeRequest):
 def _send_push(subscription: dict, title: str, body: str, icon: str = "", url: str = "") -> str:
     """
     Send a push notification. Returns:
-      "ok"   — delivered
-      "dead" — subscription is expired/gone (410/404); safe to delete
-      "err"  — transient error; keep the subscription
+      "ok"   - delivered
+      "dead" - subscription is expired/gone (410/404); safe to delete
+      "err"  - transient error; keep the subscription
     """
     if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
         return "err"
@@ -2700,14 +2715,15 @@ def _generate_tlh_reasoning(ticker: str, replacement: str, sector: str, loss_pct
             f"(${abs(loss_dollars):,.0f} loss on a ${portfolio_value:,.0f} portfolio). "
             f"The suggested replacement is {replacement}. "
             f"In 1-2 concise sentences, explain why selling {ticker} and buying {replacement} is a smart tax loss harvesting move. "
-            f"Mention the wash-sale rule, the similar market exposure, and the tax benefit. Be direct and specific."
+            f"Mention the wash-sale rule, the similar market exposure, and the tax benefit. Be direct and specific. "
+            f"Never use em dashes. Never use asterisks or markdown formatting. Write in plain prose only."
         )
         response = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=120,
             messages=[{"role": "user", "content": prompt}],
         )
-        return response.content[0].text.strip()
+        return clean_ai_response(response.content[0].text)
     except Exception:
         return f"Sell {ticker} to realize the {abs(loss_pct):.1f}% loss, then buy {replacement} to maintain {sector} sector exposure. Wait 31 days to repurchase {ticker} to avoid the wash-sale rule."
 
@@ -2976,7 +2992,7 @@ def portfolio_share_image(
             rx += pw + pill_gap
 
     # ── Watermark ──
-    wmark = "Analyzed with Corvo  —  corvo.capital"
+    wmark = "Analyzed with Corvo  |  corvo.capital"
     bbox = draw.textbbox((0, 0), wmark, font=font_small)
     wmw = bbox[2] - bbox[0]
     draw.text(((W - wmw) // 2, H - 46), wmark, font=font_small, fill=(201, 168, 76, 120))
@@ -3041,9 +3057,9 @@ def _brief_generate(indices: dict[str, float], movers: list[dict]) -> str:
         "Paragraph 2: Notable movers.\n"
         "Paragraph 3: One forward-looking insight.\n"
         "Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff.\n\n"
-        "FORMATTING RULES — follow these exactly:\n"
+        "FORMATTING RULES (follow these exactly):\n"
         "- Never use asterisks (*) or double asterisks (**) for bold or any formatting\n"
-        "- Never use em dashes (—) anywhere in the response\n"
+        "- Never use em dashes anywhere in the response\n"
         "- Never use markdown formatting of any kind\n"
         "- Write in plain prose only\n"
         "- No bullet points, no headers, no bold, no italics\n"
@@ -3054,10 +3070,7 @@ def _brief_generate(indices: dict[str, float], movers: list[dict]) -> str:
         max_tokens=400,
         messages=[{"role": "user", "content": prompt}],
     )
-    raw = response.content[0].text.strip()
-    # Post-process: strip any stray markdown characters
-    cleaned = raw.replace("**", "").replace("*", "").replace("—", ",")
-    return cleaned
+    return clean_ai_response(response.content[0].text)
 
 
 def _brief_push_body(brief: str, indices: dict[str, float]) -> str:
@@ -3094,7 +3107,7 @@ async def send_morning_brief() -> dict:
 
     # Fetch all push subscriptions
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        print("[morning-brief] Supabase not configured — skipping push")
+        print("[morning-brief] Supabase not configured, skipping push")
         return {"skipped": "supabase not configured", "brief": brief}
 
     try:
@@ -3139,7 +3152,7 @@ async def send_morning_brief() -> dict:
         except Exception:
             pass
 
-    print(f"[morning-brief] done — sent={sent} failed={failed} removed={removed}")
+    print(f"[morning-brief] done, sent={sent} failed={failed} removed={removed}")
     return {"sent": sent, "failed": failed, "removed": removed, "brief_preview": brief[:120]}
 
 
@@ -3289,14 +3302,14 @@ def _generate_digest_summary(display_name: str, portfolio_blocks: list[dict]) ->
             "what drove it, and compare good vs bad days.\n"
             "Paragraph 2: One forward-looking observation: a risk, opportunity, or rebalancing thought.\n"
             "Be direct, specific, and concise. Max 60 words per paragraph. No bullet points. No preamble. "
-            "Never use em dashes (the — character). Use commas, colons, or rewrite naturally."
+            "Never use em dashes. Never use asterisks (*) or markdown formatting. Write in plain prose only."
         )
         resp = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=300,
             messages=[{"role": "user", "content": prompt}],
         )
-        return resp.content[0].text.strip()
+        return clean_ai_response(resp.content[0].text)
     except Exception as e:
         print(f"[digest] Claude error: {e}")
         return ""
@@ -3480,7 +3493,7 @@ def _send_digest_email(to_email: str, display_name: str, user_id: str,
     """Build and send the weekly digest email via Resend. Returns True on success."""
     resend_key = os.environ.get("RESEND_API_KEY", "")
     if not resend_key:
-        print("[digest] RESEND_API_KEY not set — skipping email")
+        print("[digest] RESEND_API_KEY not set, skipping email")
         return False
     html = _build_digest_html(display_name, user_id, portfolio_blocks, ai_summary)
     try:
@@ -3614,7 +3627,7 @@ async def send_weekly_digest(target_user_id: str | None = None) -> dict:
             print(f"[digest] error for user {user_id}: {e}")
             failed += 1
 
-    print(f"[digest] done — sent={sent} failed={failed} skipped={skipped}")
+    print(f"[digest] done, sent={sent} failed={failed} skipped={skipped}")
     return {"sent": sent, "failed": failed, "skipped": skipped}
 
 
@@ -3629,7 +3642,7 @@ def _seconds_until_sunday_8am_et() -> float:
         hour=8, minute=0, second=0, microsecond=0
     )
     if target <= now_et:
-        # We're already past 8am on a Sunday — next Sunday
+        # We're already past 8am on a Sunday, use next Sunday
         target += timedelta(days=7)
     return max((target - now_et).total_seconds(), 60.0)
 

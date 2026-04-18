@@ -36,7 +36,7 @@ from chat import chat_with_claude, parse_portfolio_from_image
 
 app = FastAPI()
 
-# Startup env check — visible in Railway logs
+# Startup env check: visible in Railway logs
 print(f"[startup] RESEND_API_KEY: {'SET' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
 print(f"[startup] RESEND_FROM_EMAIL: {'SET' if os.environ.get('RESEND_FROM_EMAIL') else 'NOT SET'}")
 
@@ -112,7 +112,7 @@ Paragraph 2: Notable movers. Highlight the most interesting stocks and why they 
 Paragraph 3: One forward-looking insight for investors to watch in the coming sessions.
 
 Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff.
-IMPORTANT: Never use em dashes (the — character) in your response. Use commas, colons, or rewrite sentences naturally instead."""
+IMPORTANT: Never use em dashes in your response. Use commas, colons, or rewrite sentences naturally instead."""
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=400,
@@ -542,7 +542,7 @@ def send_welcome_email(req: WelcomeEmailRequest):
     print(f"[send-welcome-email] called for {req.email}")
     key = os.environ.get("RESEND_API_KEY", "")
     if not key:
-        print("[send-welcome-email] RESEND_API_KEY not set — skipping")
+        print("[send-welcome-email] RESEND_API_KEY not set, skipping")
         return {"ok": True, "skipped": True}
     try:
         r = _requests.post(
@@ -561,7 +561,7 @@ def send_welcome_email(req: WelcomeEmailRequest):
 
 @app.get("/test-email")
 def test_email(email: str = ""):
-    """Debug endpoint — send a test email via Resend and return the result."""
+    """Debug endpoint: send a test email via Resend and return the result."""
     import traceback
     key = os.environ.get("RESEND_API_KEY", "")
     if not key:

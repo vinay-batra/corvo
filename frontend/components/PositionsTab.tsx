@@ -43,7 +43,7 @@ interface PositionRow {
 // ── Small helpers ─────────────────────────────────────────────────────────────
 
 function Pill({ value }: { value: number | null }) {
-  if (value === null) return <span style={{ color: "var(--text3)", fontSize: 11 }}>—</span>;
+  if (value === null) return <span style={{ color: "var(--text3)", fontSize: 11 }}>-</span>;
   const pos = value >= 0;
   return (
     <span style={{
@@ -237,7 +237,7 @@ export default function PositionsTab({
         return {
           ticker: a.ticker,
           company: live?.name ?? a.ticker,
-          sector: live?.sector ?? "—",
+          sector: live?.sector ?? "-",
           portfolioId: p.id,
           portfolioName: p.name,
           weightFrac: wFrac,

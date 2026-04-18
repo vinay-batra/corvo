@@ -85,7 +85,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       });
       const data = await res.json();
       if (data.assets?.length > 0) update(data.assets.slice(0, 20));
-      else setImportError("No holdings found — try a clearer screenshot.");
+      else setImportError("No holdings found , try a clearer screenshot.");
     } catch { setImportError("Import failed."); }
     setImportLoading(false);
   };

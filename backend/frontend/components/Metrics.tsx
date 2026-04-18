@@ -26,7 +26,7 @@ const EXPLAINERS = [
   { title: "Annual Return", simple: "How much your portfolio grew over the period as a percentage.", example: "If you invested $10,000 and it's now $11,500, your return is +15%.", good: "Anything above the S&P 500 average of ~10%/year is excellent." },
   { title: "Volatility", simple: "How wildly your portfolio swings up and down day to day.", example: "30% volatility means your portfolio could swing ±30% in a year.", good: "Under 15% is low risk. 15–25% moderate. Over 30% is high risk." },
   { title: "Sharpe Ratio", simple: "How much return you're getting per unit of risk you're taking.", example: "Sharpe of 2.0 = great returns for the risk. 0.2 = lots of risk, little gain.", good: "Above 1.0 is good. Above 2.0 is excellent. Below 0 means underperforming cash." },
-  { title: "Max Drawdown", simple: "The biggest drop from peak to trough that actually happened.", example: "Portfolio hits $50k then drops to $35k — max drawdown is -30%.", good: "Closer to 0% is better. Under 10% is very stable." },
+  { title: "Max Drawdown", simple: "The biggest drop from peak to trough that actually happened.", example: "Portfolio hits $50k then drops to $35k , max drawdown is -30%.", good: "Closer to 0% is better. Under 10% is very stable." },
 ];
 
 export default function Metrics({ data }: { data: any }) {

@@ -162,7 +162,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
             </button>
           </div>
 
-          {/* Market Brief — collapsible */}
+          {/* Market Brief: collapsible */}
           <div style={{ borderBottom: "0.5px solid var(--border)" }}>
             <button
               onClick={() => setBriefCollapsed(p => !p)}
@@ -194,7 +194,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
             </AnimatePresence>
           </div>
 
-          {/* Live prices — holdings */}
+          {/* Live prices: holdings */}
           {holdingTickers.length > 0 && (
             <>
               <SectionHeader title="Your Holdings">
@@ -205,7 +205,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
                 if (!e) return (
                   <div key={t} style={{ padding: "9px 14px", display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text3)" }}>{t}</span>
-                    <span style={{ fontSize: 10, color: "var(--text3)" }}>—</span>
+                    <span style={{ fontSize: 10, color: "var(--text3)" }}>-</span>
                   </div>
                 );
                 return <LiveRow key={t} entry={e} flash={flashSet.has(t)} onSelect={() => onSelectTicker(t)} />;
@@ -214,7 +214,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
             </>
           )}
 
-          {/* Top movers — from watchlist */}
+          {/* Top movers: from watchlist */}
           {(gainers.length > 0 || losers.length > 0) && (
             <>
               {gainers.length > 0 && (

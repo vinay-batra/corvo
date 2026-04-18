@@ -72,7 +72,7 @@ export default function ShareImageModal({ assets, data, onClose }: ShareImageMod
 
   const retSign = ret >= 0 ? "+" : "";
   const tweetText = encodeURIComponent(
-    `My portfolio is ${retSign}${ret}% with a Sharpe of ${sharpe}. Analyzed with @corvocapital — try it free: corvo.capital`
+    `My portfolio is ${retSign}${ret}% with a Sharpe of ${sharpe}. Analyzed with @corvocapital. Try it free: corvo.capital`
   );
   const tweetUrl = `https://twitter.com/intent/tweet?text=${tweetText}`;
   const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://corvo.capital")}`;

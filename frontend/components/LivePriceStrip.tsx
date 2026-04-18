@@ -13,7 +13,7 @@ interface Props {
 }
 
 /**
- * Self-contained live price strip — owns its own state so price ticks
+ * Self-contained live price strip: owns its own state so price ticks
  * never cause the parent (AppPage) to re-render.
  */
 const LivePriceStrip = memo(function LivePriceStrip({ assets, active }: Props) {

@@ -1372,7 +1372,7 @@ export default function LearnPage() {
   const [learnPoints, setLearnPoints] = useState(0);
   const [profileReady, setProfileReady] = useState(false);
 
-  // Daily challenge — 3 questions, +25 XP each
+  // Daily challenge: 3 questions, +25 XP each
   type DailyQ = { question: string; options: string[]; correct: number; explanation: string };
   const [dailyQuestions, setDailyQuestions]     = useState<DailyQ[]>([]);
   const [dailyIdx, setDailyIdx]                 = useState(0);
@@ -1697,7 +1697,7 @@ export default function LearnPage() {
       setDailySelected(null);
       setDailyShowResult(false);
     } else {
-      // All 3 done — mark complete
+      // All 3 done, mark complete
       setDailyCompleted(true);
       try { localStorage.setItem(LS_DAILY_DONE_KEY, JSON.stringify({ date: today })); } catch {}
       if (userId) {

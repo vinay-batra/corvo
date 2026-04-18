@@ -11,23 +11,23 @@ export default function AiInsights({ data, assets, onAskAi }: { data: any; asset
   const insights: { icon: string; text: string; type: "good" | "warn" | "info" }[] = [];
 
   if (data.portfolio_return > 0.1)
-    insights.push({ icon: "↑", text: `Strong ${(data.portfolio_return * 100).toFixed(1)}% return — outperforming savings rates by ${((data.portfolio_return - 0.05) * 100).toFixed(1)}pp`, type: "good" });
+    insights.push({ icon: "↑", text: `Strong ${(data.portfolio_return * 100).toFixed(1)}% return , outperforming savings rates by ${((data.portfolio_return - 0.05) * 100).toFixed(1)}pp`, type: "good" });
   else if (data.portfolio_return < 0)
-    insights.push({ icon: "↓", text: `Portfolio is down ${(Math.abs(data.portfolio_return) * 100).toFixed(1)}% — consider your risk tolerance`, type: "warn" });
+    insights.push({ icon: "↓", text: `Portfolio is down ${(Math.abs(data.portfolio_return) * 100).toFixed(1)}% , consider your risk tolerance`, type: "warn" });
   else
-    insights.push({ icon: "→", text: `Portfolio returned ${(data.portfolio_return * 100).toFixed(1)}% — room for optimization`, type: "info" });
+    insights.push({ icon: "→", text: `Portfolio returned ${(data.portfolio_return * 100).toFixed(1)}% , room for optimization`, type: "info" });
 
   if (sharpe >= 1.5)
-    insights.push({ icon: "★", text: `Excellent Sharpe of ${sharpe.toFixed(2)} — strong returns for the risk taken`, type: "good" });
+    insights.push({ icon: "★", text: `Excellent Sharpe of ${sharpe.toFixed(2)} , strong returns for the risk taken`, type: "good" });
   else if (sharpe < 0.5)
-    insights.push({ icon: "!", text: `Low Sharpe of ${sharpe.toFixed(2)} — taking more risk than returns justify`, type: "warn" });
+    insights.push({ icon: "!", text: `Low Sharpe of ${sharpe.toFixed(2)} , taking more risk than returns justify`, type: "warn" });
   else
-    insights.push({ icon: "◈", text: `Sharpe of ${sharpe.toFixed(2)} is decent — diversifying could improve it`, type: "info" });
+    insights.push({ icon: "◈", text: `Sharpe of ${sharpe.toFixed(2)} is decent , diversifying could improve it`, type: "info" });
 
   if (top.weight > 0.5)
-    insights.push({ icon: "!", text: `${top.ticker} is ${(top.weight * 100).toFixed(0)}% of your portfolio — high concentration risk`, type: "warn" });
+    insights.push({ icon: "!", text: `${top.ticker} is ${(top.weight * 100).toFixed(0)}% of your portfolio , high concentration risk`, type: "warn" });
   else if (assets.length <= 2)
-    insights.push({ icon: "◎", text: `Only ${assets.length} holdings — consider adding ETFs to reduce risk`, type: "info" });
+    insights.push({ icon: "◎", text: `Only ${assets.length} holdings , consider adding ETFs to reduce risk`, type: "info" });
   else
     insights.push({ icon: "✓", text: `${assets.length} holdings provides decent diversification`, type: "good" });
 
