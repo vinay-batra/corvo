@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -2096,78 +2096,146 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-_market_summary_cache: dict = {"summary": None, "spy_pct": 0.0, "qqq_pct": 0.0, "dia_pct": 0.0, "vix": 0.0, "ts": 0.0}
+# Base cache: index prices + news headlines (shared across all ticker combos, 5-min TTL)
+_market_base_cache: dict = {"indexes": {}, "headlines": [], "ts": 0.0}
+# Per-ticker-set cache: keyed by sorted ticker string -> full result dict + ts
+_market_per_ticker_cache: dict = {}
 
 @app.get("/market-summary")
-def market_summary():
-    """Return a Bloomberg-style AI market summary paragraph + raw index values. Cached 5 minutes."""
-    global _market_summary_cache
-    if time.time() - _market_summary_cache["ts"] < 300 and _market_summary_cache["summary"]:
-        return _market_summary_cache
+def market_summary(tickers: str = Query(default="")):
+    """Return structured AI market brief (market/holdings/context) + raw index values.
+    Accepts optional ?tickers=BND,SPY,... to include per-holding performance.
+    Base market data cached 5 min globally; per-ticker AI results cached 5 min each."""
+    global _market_base_cache, _market_per_ticker_cache
 
-    # Fetch index prices
-    index_data = {}
-    for ticker in ["SPY", "QQQ", "DIA", "^VIX"]:
+    user_tickers = [t.strip().upper() for t in tickers.split(",") if t.strip()] if tickers else []
+    ticker_key = ",".join(sorted(user_tickers))
+
+    # Check per-ticker cache first
+    cached = _market_per_ticker_cache.get(ticker_key)
+    if cached and time.time() - cached.get("ts", 0) < 300:
+        return cached
+
+    # Refresh base market data (indexes + news) if stale
+    now = time.time()
+    if now - _market_base_cache["ts"] > 300:
+        index_data = {}
+        for sym in ["SPY", "QQQ", "DIA", "^VIX"]:
+            try:
+                info = yf.Ticker(sym).fast_info
+                price = safe_float(getattr(info, "last_price", 0) or 0)
+                prev_close = safe_float(getattr(info, "previous_close", 0) or 0)
+                pct = ((price - prev_close) / prev_close * 100) if price > 0 and prev_close > 0 else 0.0
+                index_data[sym] = {"price": price, "pct": pct}
+            except Exception as e:
+                print(f"market-summary index error for {sym}: {e}")
+                index_data[sym] = {"price": 0.0, "pct": 0.0}
+
+        # Top 3 news headlines from SPY
+        headlines: list[str] = []
         try:
-            t = yf.Ticker(ticker)
-            info = t.fast_info
+            news_items = yf.Ticker("SPY").news or []
+            for item in news_items[:5]:
+                # yfinance returns varying structures across versions
+                title = (
+                    item.get("title")
+                    or (item.get("content") or {}).get("title")
+                    or ""
+                )
+                if title and len(headlines) < 3:
+                    headlines.append(title.strip())
+        except Exception as e:
+            print(f"market-summary news error: {e}")
+
+        _market_base_cache = {"indexes": index_data, "headlines": headlines, "ts": now}
+
+    index_data = _market_base_cache["indexes"]
+    headlines = _market_base_cache["headlines"]
+
+    spy_pct = index_data.get("SPY", {}).get("pct", 0.0)
+    qqq_pct = index_data.get("QQQ", {}).get("pct", 0.0)
+    dia_pct = index_data.get("DIA", {}).get("pct", 0.0)
+    vix_val = index_data.get("^VIX", {}).get("price", 0.0)
+
+    # Fetch per-holding price changes
+    holdings_data: dict[str, float] = {}
+    for sym in user_tickers:
+        try:
+            info = yf.Ticker(sym).fast_info
             price = safe_float(getattr(info, "last_price", 0) or 0)
             prev_close = safe_float(getattr(info, "previous_close", 0) or 0)
-            if price > 0 and prev_close > 0:
-                pct = ((price - prev_close) / prev_close) * 100
-            else:
-                pct = 0.0
-            index_data[ticker] = {"price": price, "pct": pct}
+            pct = ((price - prev_close) / prev_close * 100) if price > 0 and prev_close > 0 else 0.0
+            holdings_data[sym] = round(pct, 2)
         except Exception as e:
-            print(f"market-summary price error for {ticker}: {e}")
-            index_data[ticker] = {"price": 0.0, "pct": 0.0}
+            print(f"market-summary holdings error for {sym}: {e}")
 
-    spy = index_data.get("SPY", {})
-    qqq = index_data.get("QQQ", {})
-    dia = index_data.get("DIA", {})
-    vix = index_data.get("^VIX", {})
-
-    spy_pct = spy.get("pct", 0.0)
-    qqq_pct = qqq.get("pct", 0.0)
-    dia_pct = dia.get("pct", 0.0)
-    vix_val = vix.get("price", 0.0)
-
-    summary_text = ""
+    # AI generation — three distinct sections
+    market_text = holdings_text = context_text = ""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if api_key:
         try:
             import anthropic
             client = anthropic.Anthropic(api_key=api_key)
             direction = lambda p: "up" if p >= 0 else "down"
-            prompt = (
-                f"Write a 2-3 sentence Bloomberg morning-brief style paragraph about today's market. "
-                f"Use these actual values: S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, "
-                f"Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, "
-                f"Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, "
-                f"VIX at {vix_val:.1f}. "
-                f"Be specific and analytical. Mention what's driving sentiment if moves are notable. "
-                f"No asterisks, no em dashes, no markdown, no bullet points. Plain prose only."
-            )
+            sign = lambda p: "+" if p >= 0 else ""
+
+            news_str = " | ".join(headlines) if headlines else "No headlines available"
+
+            if holdings_data:
+                best_sym = max(holdings_data, key=lambda k: holdings_data[k])
+                worst_sym = min(holdings_data, key=lambda k: holdings_data[k])
+                holdings_line = (
+                    "User holdings today: "
+                    + ", ".join(f"{s} {sign(v)}{v:.2f}%" for s, v in holdings_data.items())
+                    + f". Best performer: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%)."
+                    + f" Worst performer: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%)."
+                )
+            else:
+                holdings_line = "No user holdings provided."
+
+            prompt = f"""Market data:
+S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, VIX {vix_val:.1f}.
+Top news: {news_str}
+{holdings_line}
+
+Return a JSON object with exactly these three string keys:
+- "market": 2 sentences on what major indexes did today and why, referencing the news headlines.
+- "holdings": {"1-2 sentences on how the user's holdings performed, naming best and worst performer with their actual % change." if holdings_data else '"No holdings provided."'}
+- "context": 1 sentence of macro context (geopolitical, Fed, earnings) drawn from the news.
+
+Rules: no asterisks, no em dashes, no markdown. Plain prose. Return only the JSON object."""
+
             resp = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=180,
-                system="You are a senior Bloomberg markets correspondent writing a terse daily market open briefing. Be specific, analytical, and confident. Never use em dashes, asterisks, or markdown. Plain prose only.",
+                max_tokens=450,
+                system="You are a senior Bloomberg markets correspondent. Return ONLY a valid JSON object with keys: market, holdings, context. No markdown fences, no extra text.",
                 messages=[{"role": "user", "content": prompt}],
             )
-            summary_text = clean_ai_response(resp.content[0].text)
+            raw = resp.content[0].text.strip()
+            # Strip markdown code fences if the model adds them
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            parsed = json.loads(raw)
+            market_text = clean_ai_response(parsed.get("market", ""))
+            holdings_text = clean_ai_response(parsed.get("holdings", ""))
+            context_text = clean_ai_response(parsed.get("context", ""))
         except Exception as e:
             print(f"market-summary AI error: {e}")
-            summary_text = ""
 
     result = {
-        "summary": summary_text,
+        "market": market_text,
+        "holdings": holdings_text,
+        "context": context_text,
+        "holdings_pct": holdings_data,
         "spy_pct": round(spy_pct, 2),
         "qqq_pct": round(qqq_pct, 2),
         "dia_pct": round(dia_pct, 2),
         "vix": round(vix_val, 1),
         "ts": time.time(),
     }
-    _market_summary_cache = result
+    _market_per_ticker_cache[ticker_key] = result
     return result
 
 

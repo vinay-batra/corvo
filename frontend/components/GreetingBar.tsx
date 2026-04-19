@@ -14,7 +14,9 @@ function getGreeting(): string {
 type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
 
 interface MarketSummary {
-  summary: string;
+  market: string;
+  holdings: string;
+  context: string;
   spy_pct: number;
   qqq_pct: number;
   dia_pct: number;
@@ -62,11 +64,18 @@ export default function GreetingBar({
   const [market, setMarket] = useState<MarketSummary | null>(null);
 
   useEffect(() => {
-    fetch(`${API_URL}/market-summary`)
+    const tickerParam = assets
+      .map(a => a.ticker)
+      .filter(Boolean)
+      .join(",");
+    const url = tickerParam
+      ? `${API_URL}/market-summary?tickers=${encodeURIComponent(tickerParam)}`
+      : `${API_URL}/market-summary`;
+    fetch(url)
       .then(r => r.json())
       .then(setMarket)
       .catch(() => {});
-  }, []);
+  }, [assets]);
 
   const pos = (v: number) => v >= 0;
   const fmtSign = (v: number) => (v >= 0 ? "+" : "");
@@ -95,25 +104,29 @@ export default function GreetingBar({
         <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 3, marginBottom: 0, letterSpacing: "0.01em" }}>
           {dateStr}
         </p>
-        {market?.summary ? (
-          <p style={{
-            fontSize: 13,
-            color: "var(--text2)",
-            lineHeight: 1.7,
-            marginTop: 8,
-            marginBottom: 0,
-          }}>
-            {market.summary}
-          </p>
+        {market ? (
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            {market.market && (
+              <div>
+                <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Markets</span>
+                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>{market.market}</p>
+              </div>
+            )}
+            {market.holdings && (
+              <div>
+                <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Your Portfolio</span>
+                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>{market.holdings}</p>
+              </div>
+            )}
+            {market.context && (
+              <div>
+                <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Context</span>
+                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>{market.context}</p>
+              </div>
+            )}
+          </div>
         ) : (
-          <p style={{
-            fontSize: 13,
-            color: "var(--text3)",
-            lineHeight: 1.7,
-            marginTop: 8,
-            marginBottom: 0,
-            opacity: 0.5,
-          }}>
+          <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, marginTop: 8, marginBottom: 0, opacity: 0.5 }}>
             Fetching market brief...
           </p>
         )}
