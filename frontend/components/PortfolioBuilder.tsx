@@ -436,7 +436,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       </AnimatePresence>
       </div>
 
-      <div style={{display:"flex",gap:5,marginTop:6,marginBottom:10}}>
+      <div style={{display:"flex",gap:5,marginTop:8,marginBottom:10}}>
         <button onClick={add} disabled={assets.length>=20}
           style={{flex:1,padding:"7px",background:"transparent",border:"1px dashed rgba(201,168,76,0.2)",borderRadius:8,color:C.cream3,fontSize:10,letterSpacing:1,cursor:assets.length>=20?"not-allowed":"pointer",transition:"all 0.15s"}}
           onMouseEnter={e=>{if(assets.length<20){e.currentTarget.style.borderColor="rgba(201,168,76,0.5)";e.currentTarget.style.color=C.amber;}}}
