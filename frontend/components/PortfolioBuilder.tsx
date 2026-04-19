@@ -10,10 +10,8 @@ const C = { amber: "var(--accent)", cream: "var(--text)", cream3: "var(--text3)"
 const DOTS = ["#b8860b","rgba(184,134,11,0.7)","rgba(184,134,11,0.5)","rgba(184,134,11,0.35)","rgba(184,134,11,0.25)","rgba(184,134,11,0.6)","rgba(184,134,11,0.45)","rgba(184,134,11,0.55)"];
 const TYPE_LABELS: Record<string,string> = { EQUITY:"Stock", ETF:"ETF", CRYPTOCURRENCY:"Crypto", MUTUALFUND:"Fund", INDEX:"Index", CASH:"Cash" };
 
-// Cash / money market tickers: bypass yfinance, use manual annual return
 const CASH_TICKERS = new Set(["CASH", "FDRXX", "SPAXX", "BND", "SGOV"]);
 
-// Top tickers for instant autocomplete
 const COMMON_TICKERS: { ticker: string; name: string; type: string; exchange: string }[] = [
   { ticker:"AAPL",    name:"Apple Inc.",                type:"EQUITY",         exchange:"NASDAQ" },
   { ticker:"MSFT",    name:"Microsoft Corp.",           type:"EQUITY",         exchange:"NASDAQ" },
@@ -104,13 +102,13 @@ const COMMON_TICKERS: { ticker: string; name: string; type: string; exchange: st
   { ticker:"VIG",     name:"Vanguard Dividend Appreciation",type:"ETF",        exchange:"NYSE" },
   { ticker:"TLT",     name:"iShares 20+ Year Treasury", type:"ETF",            exchange:"NASDAQ" },
   { ticker:"DIA",     name:"SPDR Dow Jones ETF",        type:"ETF",            exchange:"NYSE" },
-  // Crypto (yfinance symbols)
+  // Crypto
   { ticker:"BTC-USD", name:"Bitcoin",                   type:"CRYPTOCURRENCY", exchange:"CCC" },
   { ticker:"ETH-USD", name:"Ethereum",                  type:"CRYPTOCURRENCY", exchange:"CCC" },
   { ticker:"SOL-USD", name:"Solana",                    type:"CRYPTOCURRENCY", exchange:"CCC" },
   { ticker:"BNB-USD", name:"BNB",                       type:"CRYPTOCURRENCY", exchange:"CCC" },
   { ticker:"XRP-USD", name:"XRP",                       type:"CRYPTOCURRENCY", exchange:"CCC" },
-  // Cash / Money Market: manual return override, never calls yfinance
+  // Cash / Money Market
   { ticker:"CASH",    name:"Cash / Money Market",            type:"CASH",       exchange:"N/A" },
   { ticker:"FDRXX",   name:"Fidelity Gov't Cash Reserves",   type:"CASH",       exchange:"N/A" },
   { ticker:"SPAXX",   name:"Fidelity Gov't Money Market",    type:"CASH",       exchange:"N/A" },
@@ -134,7 +132,35 @@ function localSearch(q: string): { ticker: string; name: string; type: string; e
   ).slice(0, 8);
 }
 
-interface Asset { ticker: string; weight: number; purchasePrice?: number; manualReturn?: number; }
+// Shared input styles
+const INPUT_STYLE: React.CSSProperties = {
+  background: "var(--input-bg)",
+  border: "0.5px solid var(--border2)",
+  color: "var(--text)",
+  fontSize: 13,
+  outline: "none",
+  borderRadius: 6,
+  padding: "5px 8px",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+const LABEL_STYLE: React.CSSProperties = {
+  fontSize: 11,
+  color: "var(--text2)",
+  letterSpacing: 1,
+  textTransform: "uppercase",
+  display: "block",
+  marginBottom: 4,
+};
+
+interface Asset {
+  ticker: string;
+  weight: number;
+  purchasePrice?: number;
+  purchaseDate?: string;
+  manualReturn?: number;
+}
 interface Result { ticker: string; name: string; exchange: string; type: string; }
 interface Props {
   assets: Asset[];
@@ -154,6 +180,17 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const [names, setNames] = useState<Record<string,string>>({});
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [presetConfirm, setPresetConfirm] = useState<typeof BUILDER_PRESETS[0]|null>(null);
+
+  // Portfolio Value — persisted to localStorage
+  const [portfolioValue, setPortfolioValueState] = useState<string>("10000");
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_portfolio_value") : null;
+    if (stored) setPortfolioValueState(stored);
+  }, []);
+  const handlePortfolioValueChange = (v: string) => {
+    setPortfolioValueState(v);
+    if (typeof window !== "undefined") localStorage.setItem("corvo_portfolio_value", v);
+  };
 
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
@@ -180,7 +217,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const search = useCallback(async (i: number, q: string) => {
     if (!q) { setResults(p => ({...p,[i]:[]})); return; }
     const upper = q.toUpperCase();
-    // Cash tickers: show local match only, never hit API
     if (CASH_TICKERS.has(upper)) {
       const local = localSearch(q);
       setResults(p => ({...p,[i]:local}));
@@ -211,6 +247,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const updateWeight = (i: number, v: number) => { const n=[...assets]; n[i]={...n[i],weight:v}; update(n); };
   const updatePurchasePrice = (i: number, v: string) => {
     const n=[...assets]; n[i]={...n[i],purchasePrice:v===''?undefined:parseFloat(v)||undefined}; update(n);
+  };
+  const updatePurchaseDate = (i: number, v: string) => {
+    const n=[...assets]; n[i]={...n[i],purchaseDate:v===''?undefined:v}; update(n);
   };
   const updateManualReturn = (i: number, v: string) => {
     const n=[...assets];
@@ -287,7 +326,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     <div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      {/* ── Sticky weight header ─────────────────────────────────── */}
+      {/* ── Sticky header ─────────────────────────────────────────── */}
       <div style={{
         position:"sticky", top:0, zIndex:20,
         background:"var(--bg2)",
@@ -313,7 +352,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             style={{padding:"3px 7px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
             CSV
           </button>
-          {/* Total weight badge */}
           <span
             onClick={!balanced && !overweight ? equalize : undefined}
             title={!balanced && !overweight ? "Click to equalize weights" : ""}
@@ -334,29 +372,63 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
 
       {importError&&<p style={{fontSize:10,color:"#e05c5c",margin:"8px 0"}}>{importError}</p>}
 
-      <div style={{marginTop:20}}>
+      {/* ── Portfolio Value input ──────────────────────────────────── */}
+      <div style={{marginTop:16,marginBottom:16,padding:"12px 14px",background:"var(--bg3)",border:"0.5px solid var(--border2)",borderRadius:10}}>
+        <label style={LABEL_STYLE}>Portfolio Value</label>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:15,color:"var(--text2)",lineHeight:1}}>$</span>
+          <input
+            type="number"
+            min="0"
+            step="1000"
+            value={portfolioValue}
+            onChange={e=>handlePortfolioValueChange(e.target.value)}
+            placeholder="10000"
+            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:600, maxWidth:180}}
+          />
+        </div>
+        <div style={{fontSize:10,color:"var(--text3)",marginTop:5,lineHeight:1.5}}>
+          Used for P&amp;L, tax loss harvesting, and dividend calculations
+        </div>
+      </div>
+
+      {/* ── Asset list ────────────────────────────────────────────── */}
+      <div style={{marginTop:4}}>
       <AnimatePresence>
         {assets.map((a,i)=>{
           const color=DOTS[i%DOTS.length];
           const res=results[i]||[];
           const isCash = CASH_TICKERS.has(a.ticker);
-          // Company name: prefer static entry for cash tickers, then names state
           const staticEntry = COMMON_TICKERS.find(t => t.ticker === a.ticker);
           const displayName = isCash
             ? (staticEntry?.name || "Cash / Money Market")
             : (names[a.ticker] || "");
+          const isExpanded = expandedSecondary.has(i);
           return (
-            <motion.div key={i} initial={{opacity:0,x:-6}} animate={{opacity:1,x:0}} exit={{opacity:0,height:0}} transition={{duration:0.15}} style={{marginBottom:10,position:"relative"}}>
-              <div style={{display:"flex",alignItems:"center",gap:5}}>
-                <div style={{width:4,height:4,borderRadius:"50%",background:color,flexShrink:0}}/>
+            <motion.div key={i} initial={{opacity:0,x:-6}} animate={{opacity:1,x:0}} exit={{opacity:0,height:0}} transition={{duration:0.15}} style={{marginBottom:12,position:"relative"}}>
+
+              {/* Main row: dot · ticker · weight · expand · remove */}
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{width:4,height:4,borderRadius:"50%",background:color,flexShrink:0,marginTop:1}}/>
+
+                {/* Ticker search */}
                 <div style={{position:"relative",flex:1,zIndex:active===i?50:1}}>
-                  <input value={query[i]??a.ticker}
+                  <input
+                    value={query[i]??a.ticker}
                     onFocus={()=>setActive(i)}
                     onBlur={()=>{blurT.current[i]=setTimeout(()=>{setActive(p=>p===i?null:p);setResults(p=>({...p,[i]:[]}));},200);}}
                     onChange={e=>updateTicker(i,e.target.value)}
                     placeholder="Search ticker..."
                     className="accent-input"
-                    style={{width:"100%",padding:"5px 8px",background:"var(--bg3)",border:`1px solid ${active===i?"rgba(201,168,76,0.5)":C.border}`,borderRadius:7,color:"var(--text)",fontFamily:"Space Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:1,outline:"none",transition:"border-color 0.15s, box-shadow 0.15s"}}/>
+                    style={{
+                      ...INPUT_STYLE,
+                      fontFamily:"Space Mono,monospace",
+                      fontWeight:700,
+                      letterSpacing:1,
+                      border:`0.5px solid ${active===i?"rgba(201,168,76,0.5)":"var(--border2)"}`,
+                      transition:"border-color 0.15s",
+                    }}
+                  />
                   {searching[i]&&<div style={{position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:9,height:9,border:"1.5px solid rgba(201,168,76,0.2)",borderTopColor:C.amber,borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
                   <AnimatePresence>
                     {active===i&&res.length>0&&(
@@ -378,73 +450,122 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                     )}
                   </AnimatePresence>
                 </div>
-                <input type="number" min="0" max="100" step="1" value={Math.round(a.weight*100)}
+
+                {/* Weight % input */}
+                <input
+                  type="number" min="0" max="100" step="1"
+                  value={Math.round(a.weight*100)}
                   onChange={e=>updateWeight(i,Math.max(0,Math.min(100,Number(e.target.value)))/100)}
-                  style={{width:36,padding:"5px 3px",background:"var(--bg3)",border:`1px solid ${C.border}`,borderRadius:5,color:"var(--text)",fontSize:11,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"center"}}/>
-                <span style={{fontSize:9,color:C.cream3,flexShrink:0}}>%</span>
-                <button onClick={()=>remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center"}}
+                  style={{...INPUT_STYLE, width:44, padding:"5px 4px", fontFamily:"Space Mono,monospace", fontWeight:600, textAlign:"center"}}
+                />
+                <span style={{fontSize:11,color:C.cream3,flexShrink:0}}>%</span>
+
+                {/* Expand toggle */}
+                <button
+                  onClick={()=>toggleSecondary(i)}
+                  title={isExpanded?"Collapse":"Expand details"}
+                  style={{background:"none",border:"none",cursor:"pointer",color:isExpanded?"var(--accent)":"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center",transition:"color 0.15s",flexShrink:0}}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    {isExpanded
+                      ? <polyline points="18 15 12 9 6 15"/>
+                      : <polyline points="6 9 12 15 18 9"/>}
+                  </svg>
+                </button>
+
+                {/* Remove */}
+                <button onClick={()=>remove(i)}
+                  style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center",flexShrink:0}}
                   onMouseEnter={e=>e.currentTarget.style.color="#e05c5c"}
-                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
 
-              {/* Company name / description below ticker */}
+              {/* Company name */}
               {displayName&&(
-                <div style={{paddingLeft:9,marginTop:2,fontSize:9,color:C.cream3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                <div style={{paddingLeft:10,marginTop:3,fontSize:9,color:C.cream3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                   {displayName}
                 </div>
               )}
 
-              <div style={{paddingLeft:9,marginTop:5}}>
+              {/* Weight progress bar (3px, no handle) */}
+              <div style={{paddingLeft:10,marginTop:5}}>
                 <div style={{height:3,borderRadius:2,background:"rgba(201,168,76,0.1)",overflow:"hidden"}}>
                   <div style={{height:"100%",width:`${Math.min(100,a.weight*100)}%`,background:C.amber,borderRadius:2,transition:"width 0.1s"}}/>
                 </div>
               </div>
 
-              {/* Expandable secondary: annual return (cash) or avg cost (non-cash) */}
-              <div style={{paddingLeft:9,marginTop:4}}>
-                {expandedSecondary.has(i) ? (
-                  isCash ? (
-                    <div style={{display:"flex",alignItems:"center",gap:4}}>
-                      <span style={{fontSize:8,color:"rgba(201,168,76,0.6)",letterSpacing:1,textTransform:"uppercase",flexShrink:0}}>Annual return</span>
-                      <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 4.5"
-                        value={a.manualReturn ?? ""}
-                        onChange={e=>updateManualReturn(i,e.target.value)}
-                        style={{flex:"1 1 55px",minWidth:0,maxWidth:70,padding:"3px 5px",background:"rgba(201,168,76,0.06)",border:`1px solid rgba(201,168,76,0.3)`,borderRadius:4,color:C.amber,fontSize:9,fontFamily:"Space Mono,monospace",outline:"none"}}/>
-                      <span style={{fontSize:8,color:C.amber,opacity:0.7,flexShrink:0}}>%</span>
-                      <span onClick={()=>toggleSecondary(i)} style={{fontSize:8,color:"rgba(232,224,204,0.2)",cursor:"pointer",marginLeft:2}}>✕</span>
-                    </div>
-                  ) : (
-                    <div style={{display:"flex",alignItems:"center",gap:4}}>
-                      <span style={{fontSize:8,color:"var(--text3)",letterSpacing:1,textTransform:"uppercase",flexShrink:0}}>Avg Cost $</span>
-                      <input type="number" min="0" step="0.01" placeholder="optional"
-                        value={a.purchasePrice ?? ""}
-                        onChange={e=>updatePurchasePrice(i,e.target.value)}
-                        style={{flex:"1 1 60px",minWidth:0,maxWidth:80,padding:"3px 5px",background:"var(--bg3)",border:`1px dashed ${C.border}`,borderRadius:4,color:"var(--text3)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none"}}/>
-                      <span onClick={()=>toggleSecondary(i)} style={{fontSize:8,color:"rgba(232,224,204,0.2)",cursor:"pointer",marginLeft:2}}>✕</span>
-                    </div>
-                  )
-                ) : (
-                  <span onClick={()=>toggleSecondary(i)}
-                    style={{fontSize:8,color:"rgba(232,224,204,0.2)",cursor:"pointer",letterSpacing:0.3,userSelect:"none"}}>
-                    {isCash ? "+ return" : "+ cost"}
-                  </span>
+              {/* Expandable detail section */}
+              <AnimatePresence>
+                {isExpanded&&(
+                  <motion.div
+                    initial={{opacity:0,height:0}} animate={{opacity:1,height:"auto"}} exit={{opacity:0,height:0}}
+                    transition={{duration:0.15}}
+                    style={{overflow:"hidden",paddingLeft:10,marginTop:8}}>
+                    {isCash ? (
+                      /* Cash: annual return only */
+                      <div style={{display:"flex",flexDirection:"column",gap:2,maxWidth:120}}>
+                        <label style={LABEL_STYLE}>Annual Return</label>
+                        <div style={{display:"flex",alignItems:"center",gap:5}}>
+                          <input
+                            type="number" min="0" max="100" step="0.1"
+                            placeholder="e.g. 4.5"
+                            value={a.manualReturn ?? ""}
+                            onChange={e=>updateManualReturn(i,e.target.value)}
+                            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace"}}
+                          />
+                          <span style={{fontSize:13,color:"var(--text2)",flexShrink:0}}>%</span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Non-cash: avg cost + purchase date */
+                      <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                        <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:100,flex:"1 1 100px",maxWidth:160}}>
+                          <label style={LABEL_STYLE}>Avg Cost $</label>
+                          <div style={{display:"flex",alignItems:"center",gap:5}}>
+                            <span style={{fontSize:13,color:"var(--text2)",lineHeight:1,flexShrink:0}}>$</span>
+                            <input
+                              type="number" min="0" step="0.01"
+                              placeholder="0.00"
+                              value={a.purchasePrice ?? ""}
+                              onChange={e=>updatePurchasePrice(i,e.target.value)}
+                              style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace"}}
+                            />
+                          </div>
+                        </div>
+                        <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:130,flex:"1 1 130px",maxWidth:180}}>
+                          <label style={LABEL_STYLE}>Purchase Date</label>
+                          <input
+                            type="date"
+                            value={a.purchaseDate ?? ""}
+                            onChange={e=>updatePurchaseDate(i,e.target.value)}
+                            style={{...INPUT_STYLE, fontFamily:"inherit", colorScheme:dark?"dark":"light"}}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
                 )}
-              </div>
+              </AnimatePresence>
             </motion.div>
           );
         })}
       </AnimatePresence>
       </div>
 
-      <div style={{display:"flex",gap:5,marginTop:8,marginBottom:10}}>
+      {/* ── Add Asset + Equalize ───────────────────────────────────── */}
+      <div style={{display:"flex",gap:5,marginTop:12,marginBottom:10}}>
         <button onClick={add} disabled={assets.length>=20}
-          style={{flex:1,padding:"7px",background:"transparent",border:"1px dashed rgba(201,168,76,0.2)",borderRadius:8,color:C.cream3,fontSize:10,letterSpacing:1,cursor:assets.length>=20?"not-allowed":"pointer",transition:"all 0.15s"}}
-          onMouseEnter={e=>{if(assets.length<20){e.currentTarget.style.borderColor="rgba(201,168,76,0.5)";e.currentTarget.style.color=C.amber;}}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(201,168,76,0.2)";e.currentTarget.style.color=C.cream3;}}>
+          style={{flex:1,padding:"7px",background:"transparent",border:"1px solid var(--border2)",borderRadius:8,color:C.cream3,fontSize:11,letterSpacing:1,cursor:assets.length>=20?"not-allowed":"pointer",transition:"all 0.15s"}}
+          onMouseEnter={e=>{if(assets.length<20){e.currentTarget.style.borderColor="rgba(201,168,76,0.6)";e.currentTarget.style.color=C.amber;}}}
+          onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.color=C.cream3;}}>
           + Add Asset
         </button>
         {!balanced&&assets.length>0&&(
-          <button onClick={equalize} style={{padding:"7px 10px",background:"rgba(201,168,76,0.08)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:8,color:C.amber,fontSize:9,letterSpacing:1,cursor:"pointer"}}>Equal</button>
+          <button onClick={equalize}
+            style={{padding:"7px 10px",background:"rgba(201,168,76,0.08)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:8,color:C.amber,fontSize:9,letterSpacing:1,cursor:"pointer"}}>
+            Equal
+          </button>
         )}
       </div>
 
@@ -504,7 +625,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         )}
       </AnimatePresence>
 
-      {/* ── CSV Import Modal ─────────────────────────────────────────── */}
+      {/* ── CSV Import Modal ──────────────────────────────────────── */}
       <AnimatePresence>
         {showCsvModal&&(
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
