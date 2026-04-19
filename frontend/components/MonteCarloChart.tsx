@@ -72,11 +72,11 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
   }, [data]);
 
   const days = data ? Array.from({ length: data.horizon }, (_, i) => i + 1) : [];
-  const p5  = data ? (data.final_p5  * 100).toFixed(1) : null;
-  const p25 = data ? (data.final_p25 * 100).toFixed(1) : null;
-  const p50 = data ? (data.final_p50 * 100).toFixed(1) : null;
-  const p75 = data ? (data.final_p75 * 100).toFixed(1) : null;
-  const p95 = data ? (data.final_p95 * 100).toFixed(1) : null;
+  const p5  = data ? ((data.final_p5  ?? 0) * 100).toFixed(1) : null;
+  const p25 = data ? ((data.final_p25 ?? 0) * 100).toFixed(1) : null;
+  const p50 = data ? ((data.final_p50 ?? 0) * 100).toFixed(1) : null;
+  const p75 = data ? ((data.final_p75 ?? 0) * 100).toFixed(1) : null;
+  const p95 = data ? ((data.final_p95 ?? 0) * 100).toFixed(1) : null;
 
   const positiveProb = (() => {
     if (!data?.sample_paths?.length) return null;
@@ -132,8 +132,8 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
     },
   ] : [];
 
-  const varPct  = data ? Math.abs(data.final_p5 * 100).toFixed(1) : null;
-  const esPct   = data ? Math.abs((data.expected_shortfall ?? data.final_p5) * 100).toFixed(1) : null;
+  const varPct  = data ? Math.abs((data.final_p5 ?? 0) * 100).toFixed(1) : null;
+  const esPct   = data ? Math.abs((data.expected_shortfall ?? data.final_p5 ?? 0) * 100).toFixed(1) : null;
   const ruinPct = data
     ? data.ruin_probability != null
       ? (data.ruin_probability * 100).toFixed(1)

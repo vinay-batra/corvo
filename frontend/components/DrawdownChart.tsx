@@ -52,7 +52,7 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
         <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase" }}>Drawdown Chart</p>
         {data && (
           <span style={{ fontFamily: "var(--font-display)", fontSize: 11, color: "var(--red)", letterSpacing: 1 }}>
-            Max: {(Math.min(...data.drawdown) * 100).toFixed(2)}%
+            Max: {(Math.min(...(data.drawdown as number[]).map((v: number) => v ?? 0)) * 100).toFixed(2)}%
           </span>
         )}
       </div>

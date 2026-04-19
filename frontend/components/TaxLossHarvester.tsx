@@ -249,17 +249,17 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
                     {entry.ticker}
                   </td>
                   <td style={{ padding: "10px 10px", textAlign: "right", color: "var(--text2)", whiteSpace: "nowrap" }}>
-                    ${entry.purchase_price.toFixed(2)}
+                    ${(entry.purchase_price ?? 0).toFixed(2)}
                   </td>
                   <td style={{ padding: "10px 10px", textAlign: "right", color: "var(--text2)", whiteSpace: "nowrap" }}>
-                    ${entry.current_price.toFixed(2)}
+                    ${(entry.current_price ?? 0).toFixed(2)}
                   </td>
                   <td style={{ padding: "10px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
                     <span style={{ color: "#e05c5c", fontWeight: 600 }}>
-                      {entry.loss_pct.toFixed(2)}%
+                      {(entry.loss_pct ?? 0).toFixed(2)}%
                     </span>
                     <span style={{ display: "block", fontSize: 10, color: "rgba(224,92,92,0.7)" }}>
-                      -${Math.abs(entry.loss_dollars).toFixed(2)}
+                      -${Math.abs(entry.loss_dollars ?? 0).toFixed(2)}
                     </span>
                   </td>
                   <td style={{ padding: "10px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
