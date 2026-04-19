@@ -182,6 +182,13 @@ function Empty() {
         </p>
       </div>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 20 }}>
+        {/* Animated arrow pointing left toward sidebar */}
+        <motion.div
+          animate={{ x: [4, -4, 4] }}
+          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+          style={{ fontSize: 22, color: "var(--accent)", opacity: 0.7, flexShrink: 0, alignSelf: "center" }}>
+          ←
+        </motion.div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 320 }}>
           {steps.map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, textAlign: "left" }}>
@@ -195,13 +202,6 @@ function Empty() {
             </div>
           ))}
         </div>
-        {/* Animated arrow pointing left toward sidebar */}
-        <motion.div
-          animate={{ x: [-4, 4, -4] }}
-          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-          style={{ fontSize: 22, color: "var(--accent)", opacity: 0.7, paddingTop: 0, flexShrink: 0, alignSelf: "center", transform: "scaleX(-1)" }}>
-          →
-        </motion.div>
       </div>
       <p style={{ fontSize: 11, color: "var(--text3)", opacity: 0.5, letterSpacing: 0.3 }}>
         Or press Presets to start with a sample portfolio
