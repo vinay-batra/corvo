@@ -887,7 +887,7 @@ export default function AppPage() {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [sidebarWidth, setSidebarWidth] = useState(340);
   const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
@@ -1444,7 +1444,7 @@ export default function AppPage() {
                 whileHover={canAnalyze ? { scale: 1.02 } : {}}
                 whileTap={canAnalyze ? { scale: 0.97 } : {}}
                 transition={{ duration: 0.35 }}
-                style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : canAnalyze ? "var(--text)" : "var(--bg3)", color: loading || !canAnalyze ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: canAnalyze ? "pointer" : "not-allowed", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
+                style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : canAnalyze ? "var(--bg)" : "var(--bg3)", color: loading || !canAnalyze ? "var(--text3)" : "var(--accent)", border: canAnalyze ? "1px solid rgba(201,168,76,0.55)" : "0.5px solid var(--border2)", borderRadius: 9, cursor: canAnalyze ? "pointer" : "not-allowed", transition: "background 0.2s, color 0.2s, border-color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
                 {loading ? "Analyzing..." : "Analyze"}
               </motion.button>
               {hasHoldings && !isBalanced && (

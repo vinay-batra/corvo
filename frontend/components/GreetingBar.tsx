@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Plus, Upload, Bell, MessageSquare } from "lucide-react";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -12,36 +14,25 @@ function getGreeting(): string {
 
 type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
 
-function buildPulse(data: any, perfHistory: PerfSnapshot[], portfolioValue: number): string {
-  if (!data) return "";
+interface LiveQuote {
+  price: number;
+  change: number;
+  pct: number;
+}
 
-  // Prefer today's daily return computed from the last two snapshots
-  let dailyPart = "";
-  if (perfHistory && perfHistory.length >= 2) {
-    const last = perfHistory[perfHistory.length - 1];
-    const prev = perfHistory[perfHistory.length - 2];
-    if (last && prev && prev.cumulative_return != null && last.cumulative_return != null) {
-      // daily_return ≈ difference in cumulative returns over one day
-      const prevValue = portfolioValue * (1 + prev.cumulative_return);
-      const lastValue = portfolioValue * (1 + last.cumulative_return);
-      const dailyDollar = lastValue - prevValue;
-      const dailyPct = prev.cumulative_return !== -1
-        ? ((last.cumulative_return - prev.cumulative_return) / (1 + prev.cumulative_return)) * 100
-        : 0;
-      const sign = (dailyDollar ?? 0) >= 0 ? "+" : "";
-      dailyPart = `Today: ${sign}$${Math.abs(dailyDollar ?? 0).toFixed(0)} (${sign}${(dailyPct ?? 0).toFixed(2)}%). `;
-    }
-  }
-
-  const sharpe = data.sharpe_ratio ?? 0;
-  const drawdown = data.max_drawdown ?? 0;
-  const sharpeTxt =
-    sharpe > 2 ? "excellent risk-adjusted returns" :
-    sharpe > 1 ? "solid risk-adjusted returns" :
-    sharpe > 0 ? "moderate risk-adjusted returns" :
-    "risk-adjusted returns below target";
-  const ddWarn = Math.abs(drawdown) > 0.2 ? ` Heads up: max drawdown is ${(Math.abs(drawdown) * 100).toFixed(1)}%.` : "";
-  return `${dailyPart}Sharpe ${sharpe.toFixed(2)}, ${sharpeTxt}.${ddWarn}`;
+function computeDailyChange(perfHistory: PerfSnapshot[], portfolioValue: number) {
+  if (perfHistory.length < 2) return null;
+  const last = perfHistory[perfHistory.length - 1];
+  const prev = perfHistory[perfHistory.length - 2];
+  if (!last || !prev || prev.cumulative_return == null || last.cumulative_return == null) return null;
+  const prevValue = portfolioValue * (1 + prev.cumulative_return);
+  const lastValue = portfolioValue * (1 + last.cumulative_return);
+  const dailyDollar = lastValue - prevValue;
+  const dailyPct =
+    prev.cumulative_return !== -1
+      ? ((last.cumulative_return - prev.cumulative_return) / (1 + prev.cumulative_return)) * 100
+      : 0;
+  return { dollar: dailyDollar, pct: dailyPct };
 }
 
 interface Props {
@@ -63,12 +54,42 @@ export default function GreetingBar({
   const greeting = getGreeting();
   const name = displayName.trim() || "Investor";
   const dateStr = new Date().toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric",
+    weekday: "long", month: "long", day: "numeric",
   });
-  const pulse = useMemo(
-    () => buildPulse(portfolioData, perfHistory, portfolioValue),
-    [portfolioData, perfHistory, portfolioValue]
+
+  const dailyChange = useMemo(
+    () => computeDailyChange(perfHistory, portfolioValue),
+    [perfHistory, portfolioValue]
   );
+
+  const sharpe: number = portfolioData?.sharpe_ratio ?? 0;
+
+  const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
+
+  useEffect(() => {
+    if (!assets.length) return;
+    const tickers = ["^GSPC", ...assets.map(a => a.ticker)].join(",");
+    fetch(`${API_URL}/prices?tickers=${encodeURIComponent(tickers)}`)
+      .then(r => r.json())
+      .then(setQuotes)
+      .catch(() => {});
+  }, [assets]);
+
+  // Top daily mover among portfolio tickers
+  const topMover = useMemo(() => {
+    if (!assets.length) return null;
+    let best: { ticker: string; pct: number } | null = null;
+    for (const a of assets) {
+      const q = quotes[a.ticker];
+      if (!q) continue;
+      if (!best || Math.abs(q.pct) > Math.abs(best.pct)) {
+        best = { ticker: a.ticker, pct: q.pct };
+      }
+    }
+    return best;
+  }, [assets, quotes]);
+
+  const spxQuote = quotes["^GSPC"];
 
   const actions = [
     { label: "Add Portfolio", Icon: Plus, onClick: onAddPortfolio, disabled: false },
@@ -77,75 +98,163 @@ export default function GreetingBar({
     { label: "Ask AI", Icon: MessageSquare, onClick: onAskAI, disabled: false },
   ];
 
+  const pos = (v: number) => v >= 0;
+  const fmtSign = (v: number) => (v >= 0 ? "+" : "");
+  const green = "var(--green, #4ade80)";
+  const red = "var(--red, #f87171)";
+
   return (
-    <div style={{ marginBottom: 20 }}>
-      {/* Greeting */}
-      <div style={{ marginBottom: pulse ? 10 : 14 }}>
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 0,
+      minHeight: 100,
+      padding: "18px 0",
+      borderBottom: "0.5px solid var(--border)",
+      marginBottom: 20,
+    }}>
+
+      {/* LEFT — greeting */}
+      <div style={{ flex: "0 0 auto", minWidth: 220 }}>
         <h1 style={{
-          fontSize: 22, fontWeight: 700, color: "var(--text)",
-          letterSpacing: "-0.5px", lineHeight: 1.2, margin: 0,
+          fontSize: 26, fontWeight: 700, color: "var(--text)",
+          letterSpacing: "-0.6px", lineHeight: 1.15, margin: 0,
         }}>
           {greeting}, {name}
         </h1>
-        <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>{dateStr}</p>
+        <p style={{ fontSize: 11.5, color: "var(--text3)", marginTop: 5, letterSpacing: "0.01em" }}>
+          {dateStr}
+        </p>
       </div>
 
-      {/* Portfolio pulse */}
-      {pulse && (
-        <div style={{
-          padding: "10px 14px",
-          background: "rgba(201,168,76,0.04)",
-          border: "0.5px solid rgba(201,168,76,0.18)",
-          borderRadius: 10,
-          marginBottom: 14,
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 9,
-        }}>
-          <span style={{ fontSize: 11, color: "var(--accent)", flexShrink: 0, marginTop: 1 }}>◎</span>
-          <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.55, margin: 0 }}>
-            {pulse}
-          </p>
-        </div>
-      )}
+      {/* DIVIDER */}
+      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
-      {/* Quick actions */}
-      <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-        {actions.map(({ label, Icon, onClick, disabled }) => (
-          <button
-            key={label}
-            onClick={disabled ? undefined : onClick}
-            style={{
-              padding: "6px 13px",
-              fontSize: 11,
-              fontWeight: 500,
-              borderRadius: 8,
-              border: "0.5px solid var(--border2)",
-              background: "transparent",
-              color: disabled ? "var(--text3)" : "var(--text2)",
-              cursor: disabled ? "not-allowed" : "pointer",
-              transition: "all 0.15s",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              opacity: disabled ? 0.45 : 1,
-            }}
-            onMouseEnter={e => {
-              if (!disabled) {
-                e.currentTarget.style.background = "var(--bg3)";
-                e.currentTarget.style.color = "var(--text)";
-                e.currentTarget.style.borderColor = "var(--border2)";
-              }
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = disabled ? "var(--text3)" : "var(--text2)";
-            }}
-          >
-            <Icon size={11} />
-            {label}
-          </button>
-        ))}
+      {/* CENTER — 3 quick stats */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 32 }}>
+
+        {/* Stat 1: Today's daily change */}
+        <div>
+          <div style={{ fontSize: 10.5, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 5 }}>
+            Today
+          </div>
+          {dailyChange ? (
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontSize: 17, fontWeight: 700, color: pos(dailyChange.dollar) ? green : red, letterSpacing: "-0.3px" }}>
+                {fmtSign(dailyChange.dollar)}${Math.abs(dailyChange.dollar).toFixed(0)}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 500, color: pos(dailyChange.pct) ? green : red }}>
+                {fmtSign(dailyChange.pct)}{dailyChange.pct.toFixed(2)}%
+              </span>
+            </div>
+          ) : (
+            <span style={{ fontSize: 14, color: "var(--text3)" }}>—</span>
+          )}
+        </div>
+
+        {/* Stat 2: Sharpe ratio */}
+        <div>
+          <div style={{ fontSize: 10.5, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 5 }}>
+            Sharpe
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+            <span style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.3px" }}>
+              {portfolioData ? sharpe.toFixed(2) : "—"}
+            </span>
+            {portfolioData && (
+              <span style={{ fontSize: 11, color: sharpe > 1 ? green : sharpe > 0 ? "var(--accent)" : red }}>
+                {sharpe > 2 ? "excellent" : sharpe > 1 ? "solid" : sharpe > 0 ? "moderate" : "low"}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Stat 3: Top daily mover */}
+        <div>
+          <div style={{ fontSize: 10.5, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 5 }}>
+            Top Mover
+          </div>
+          {topMover ? (
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.2px" }}>
+                {topMover.ticker}
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: pos(topMover.pct) ? green : red }}>
+                {fmtSign(topMover.pct)}{topMover.pct.toFixed(2)}%
+              </span>
+            </div>
+          ) : (
+            <span style={{ fontSize: 14, color: "var(--text3)" }}>—</span>
+          )}
+        </div>
+
+      </div>
+
+      {/* DIVIDER */}
+      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
+
+      {/* RIGHT — market pill + actions */}
+      <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
+
+        {/* S&P 500 pill */}
+        <div style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 7,
+          padding: "5px 11px",
+          borderRadius: 20,
+          border: "0.5px solid var(--border2)",
+          background: "var(--bg2)",
+        }}>
+          <span style={{ fontSize: 11, color: "var(--text3)", fontWeight: 500 }}>S&amp;P 500</span>
+          {spxQuote ? (
+            <span style={{ fontSize: 12, fontWeight: 700, color: pos(spxQuote.pct) ? green : red }}>
+              {fmtSign(spxQuote.pct)}{spxQuote.pct.toFixed(2)}%
+            </span>
+          ) : (
+            <span style={{ fontSize: 12, color: "var(--text3)" }}>—</span>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {actions.map(({ label, Icon, onClick, disabled }) => (
+            <button
+              key={label}
+              onClick={disabled ? undefined : onClick}
+              title={label}
+              style={{
+                padding: "5px 11px",
+                fontSize: 10.5,
+                fontWeight: 500,
+                borderRadius: 7,
+                border: "0.5px solid var(--border2)",
+                background: "transparent",
+                color: disabled ? "var(--text3)" : "var(--text2)",
+                cursor: disabled ? "not-allowed" : "pointer",
+                transition: "all 0.15s",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                opacity: disabled ? 0.4 : 1,
+              }}
+              onMouseEnter={e => {
+                if (!disabled) {
+                  e.currentTarget.style.background = "var(--bg3)";
+                  e.currentTarget.style.color = "var(--text)";
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = disabled ? "var(--text3)" : "var(--text2)";
+              }}
+            >
+              <Icon size={10} />
+              {label}
+            </button>
+          ))}
+        </div>
+
       </div>
     </div>
   );

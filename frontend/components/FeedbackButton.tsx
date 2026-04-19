@@ -55,7 +55,7 @@ export default function FeedbackButton() {
 
   return (
     <>
-      {/* Fixed button: bottom left */}
+      {/* Fixed button: bottom right */}
       <motion.button
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -64,7 +64,7 @@ export default function FeedbackButton() {
         title="Send feedback"
         aria-label="Send feedback"
         style={{
-          position: "fixed", bottom: 24, left: 20, zIndex: 240,
+          position: "fixed", bottom: 24, right: 20, zIndex: 240,
           width: 36, height: 36,
           background: "var(--card-bg)",
           border: "0.5px solid var(--border2)",

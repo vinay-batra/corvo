@@ -163,6 +163,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     return () => obs.disconnect();
   }, []);
 
+  const [expandedSecondary, setExpandedSecondary] = useState<Set<number>>(new Set());
+  const toggleSecondary = (i: number) => setExpandedSecondary(p => { const s = new Set(p); s.has(i) ? s.delete(i) : s.add(i); return s; });
   const [importLoading, setImportLoading] = useState(false);
   const [importError, setImportError] = useState("");
   const [showCsvModal, setShowCsvModal] = useState(false);
@@ -302,11 +304,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             style={{padding:"3px 7px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
             Presets
           </button>
-          <button onClick={()=>fileRef.current?.click()} disabled={importLoading}
-            style={{padding:"3px 7px",fontSize:9,background:"var(--bg3)",border:`1px solid ${C.border}`,borderRadius:5,cursor:"pointer",color:C.cream3,letterSpacing:0.3}}>
-            {importLoading?"...":"Screenshot"}
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
           <button onClick={()=>{setShowCsvModal(true);setCsvPreview(null);setCsvError("");}}
             style={{padding:"3px 7px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
             CSV
@@ -392,35 +389,42 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 </div>
               )}
 
-              <div style={{paddingLeft:9,marginTop:4}}>
-                <input type="range" min="0" max="1" step="0.01" value={a.weight}
-                  onChange={e=>updateWeight(i,parseFloat(e.target.value))}
-                  onInput={e=>updateWeight(i,parseFloat((e.target as HTMLInputElement).value))}
-                  style={{width:"100%",height:2,appearance:"none" as any,background:`linear-gradient(90deg,${C.amber} ${a.weight*100}%,var(--track) ${a.weight*100}%)`,borderRadius:1,outline:"none",cursor:"pointer"}}/>
+              <div style={{paddingLeft:9,marginTop:5}}>
+                <div style={{height:3,borderRadius:2,background:"rgba(201,168,76,0.1)",overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${Math.min(100,a.weight*100)}%`,background:C.amber,borderRadius:2,transition:"width 0.1s"}}/>
+                </div>
               </div>
 
-              {/* Cash: annual return input */}
-              {isCash && (
-                <div style={{paddingLeft:9,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
-                  <span style={{fontSize:8,color:"rgba(201,168,76,0.7)",letterSpacing:1.5,textTransform:"uppercase",flexShrink:0}}>Annual return on this position? (e.g. 4.5%)</span>
-                  <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 4.5"
-                    value={a.manualReturn ?? ""}
-                    onChange={e=>updateManualReturn(i,e.target.value)}
-                    style={{flex:"1 1 55px",minWidth:0,maxWidth:70,padding:"3px 5px",background:"rgba(201,168,76,0.06)",border:`1px solid rgba(201,168,76,0.3)`,borderRadius:4,color:C.amber,fontSize:9,fontFamily:"Space Mono,monospace",outline:"none"}}/>
-                  <span style={{fontSize:8,color:C.amber,opacity:0.7,flexShrink:0}}>%</span>
-                </div>
-              )}
-
-              {/* Non-cash: purchase price */}
-              {!isCash && (
-                <div style={{paddingLeft:9,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
-                  <span style={{fontSize:8,color:"var(--text3)",letterSpacing:1.5,textTransform:"uppercase",flexShrink:0}}>Avg Cost $</span>
-                  <input type="number" min="0" step="0.01" placeholder="optional"
-                    value={a.purchasePrice ?? ""}
-                    onChange={e=>updatePurchasePrice(i,e.target.value)}
-                    style={{flex:"1 1 60px",minWidth:0,maxWidth:80,padding:"3px 5px",background:"var(--bg3)",border:`1px dashed ${C.border}`,borderRadius:4,color:"var(--text3)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"left"}}/>
-                </div>
-              )}
+              {/* Expandable secondary: annual return (cash) or avg cost (non-cash) */}
+              <div style={{paddingLeft:9,marginTop:4}}>
+                {expandedSecondary.has(i) ? (
+                  isCash ? (
+                    <div style={{display:"flex",alignItems:"center",gap:4}}>
+                      <span style={{fontSize:8,color:"rgba(201,168,76,0.6)",letterSpacing:1,textTransform:"uppercase",flexShrink:0}}>Annual return</span>
+                      <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 4.5"
+                        value={a.manualReturn ?? ""}
+                        onChange={e=>updateManualReturn(i,e.target.value)}
+                        style={{flex:"1 1 55px",minWidth:0,maxWidth:70,padding:"3px 5px",background:"rgba(201,168,76,0.06)",border:`1px solid rgba(201,168,76,0.3)`,borderRadius:4,color:C.amber,fontSize:9,fontFamily:"Space Mono,monospace",outline:"none"}}/>
+                      <span style={{fontSize:8,color:C.amber,opacity:0.7,flexShrink:0}}>%</span>
+                      <span onClick={()=>toggleSecondary(i)} style={{fontSize:8,color:"rgba(232,224,204,0.2)",cursor:"pointer",marginLeft:2}}>✕</span>
+                    </div>
+                  ) : (
+                    <div style={{display:"flex",alignItems:"center",gap:4}}>
+                      <span style={{fontSize:8,color:"var(--text3)",letterSpacing:1,textTransform:"uppercase",flexShrink:0}}>Avg Cost $</span>
+                      <input type="number" min="0" step="0.01" placeholder="optional"
+                        value={a.purchasePrice ?? ""}
+                        onChange={e=>updatePurchasePrice(i,e.target.value)}
+                        style={{flex:"1 1 60px",minWidth:0,maxWidth:80,padding:"3px 5px",background:"var(--bg3)",border:`1px dashed ${C.border}`,borderRadius:4,color:"var(--text3)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none"}}/>
+                      <span onClick={()=>toggleSecondary(i)} style={{fontSize:8,color:"rgba(232,224,204,0.2)",cursor:"pointer",marginLeft:2}}>✕</span>
+                    </div>
+                  )
+                ) : (
+                  <span onClick={()=>toggleSecondary(i)}
+                    style={{fontSize:8,color:"rgba(232,224,204,0.2)",cursor:"pointer",letterSpacing:0.3,userSelect:"none"}}>
+                    {isCash ? "+ return" : "+ cost"}
+                  </span>
+                )}
+              </div>
             </motion.div>
           );
         })}
