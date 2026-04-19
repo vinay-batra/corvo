@@ -23,14 +23,14 @@ export default function BlogIndexPage() {
         .blog-cats { padding: 0 56px 48px; }
         .blog-pad { padding: 0 56px 100px; }
         .blog-cta-wrap { margin: 0 56px 100px; }
-        .blog-cta-inner { padding: 48px 56px; }
+        .blog-cta-inner { padding: 20px 32px; }
         @media(max-width:768px){
           .blog-hero { padding: 80px 20px 40px !important; }
           .blog-cats { padding: 0 20px 32px !important; }
           .blog-pad { padding: 0 20px 64px !important; }
           .blog-cards-grid { grid-template-columns: 1fr !important; }
           .blog-cta-wrap { margin: 0 20px 64px !important; }
-          .blog-cta-inner { padding: 32px 24px !important; }
+          .blog-cta-inner { padding: 16px 20px !important; }
         }
       `}</style>
       {/* Hero */}
@@ -52,12 +52,12 @@ export default function BlogIndexPage() {
 
       {/* CTA banner */}
       <div className="blog-cta-wrap" style={{ maxWidth: 1100, marginLeft: "auto", marginRight: "auto" }}>
-        <div className="blog-cta-inner" style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 20, textAlign: "center" }}>
-          <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(20px,3vw,32px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1, marginBottom: 14 }}>Ready to analyze your portfolio?</p>
-          <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", fontWeight: 300, marginBottom: 28, maxWidth: 480, margin: "0 auto 28px" }}>
-            Free institutional-grade analytics. Monte Carlo simulation, Sharpe ratio, AI chat, and more. No subscription required.
-          </p>
-          <Link href="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "14px 36px", background: "#c9a84c", borderRadius: 12, fontSize: 14, fontWeight: 700, color: "#0a0e14", textDecoration: "none" }}>
+        <div className="blog-cta-inner" style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <p style={{ fontSize: 18, fontWeight: 700, color: "#e8e0cc", letterSpacing: -0.4, marginBottom: 4 }}>Ready to analyze your portfolio?</p>
+            <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", fontWeight: 300 }}>Monte Carlo, Sharpe ratio, AI chat, and more. Free.</p>
+          </div>
+          <Link href="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 20px", background: "#c9a84c", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#0a0e14", textDecoration: "none", flexShrink: 0 }}>
             Start for free →
           </Link>
         </div>
