@@ -1872,30 +1872,6 @@ export default function AppPage() {
                   assets={assets}
                   perfHistory={perfHistory}
                   portfolioValue={10000}
-                  onAddPortfolio={() => setSidebarOpen(true)}
-                  onImportCSV={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = ".csv";
-                    input.onchange = async (e) => {
-                      const file = (e.target as HTMLInputElement).files?.[0];
-                      if (!file) return;
-                      try {
-                        const { importPortfolioCsv } = await import("../../lib/api");
-                        const result = await importPortfolioCsv(file);
-                        if (result?.tickers?.length && result?.weights?.length) {
-                          const total = result.weights.reduce((s: number, w: number) => s + w, 0) || 1;
-                          setAssets(result.tickers.map((t: string, i: number) => ({
-                            ticker: t,
-                            weight: result.weights[i] / total,
-                          })));
-                        }
-                      } catch {}
-                    };
-                    input.click();
-                  }}
-                  onSetAlert={() => setShowAlerts(true)}
-                  onAskAI={() => setChatOpen(true)}
                 />
                 <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
                 <motion.div
@@ -2018,17 +1994,6 @@ export default function AppPage() {
                       style={{ fontSize: 12, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
                       Save this portfolio →
                     </button>
-                  </motion.div>
-                )}
-                {savedPortfolioId && (
-                  <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} transition={{ duration: 0.2 }}>
-                    <PortfolioPerformanceTrend
-                      history={perfHistory}
-                      range={perfRange}
-                      setRange={setPerfRange}
-                      loading={perfLoading}
-                      portfolioName={savedPortfolioName}
-                    />
                   </motion.div>
                 )}
               </motion.div>
