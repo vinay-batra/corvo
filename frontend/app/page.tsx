@@ -267,10 +267,10 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
 /* ─── Watchlist + Alerts bento card ─── */
 function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
   const [stocks, setStocks] = useState([
-    { ticker: "NVDA", price: 108, change: 3.1, up: true, alert: true },
-    { ticker: "AAPL", price: 198, change: 1.8, up: true, alert: false },
-    { ticker: "TSLA", price: 252, change: -2.4, up: false, alert: true },
-    { ticker: "VOO",  price: 480, change: 0.7, up: true, alert: false },
+    { ticker: "NVDA", price: 202, change: 3.1, up: true, alert: true },
+    { ticker: "AAPL", price: 270, change: 1.8, up: true, alert: false },
+    { ticker: "TSLA", price: 401, change: -2.4, up: false, alert: true },
+    { ticker: "VOO",  price: 653, change: 0.7, up: true, alert: false },
   ]);
   const [flash, setFlash] = useState(-1);
   useEffect(() => {
