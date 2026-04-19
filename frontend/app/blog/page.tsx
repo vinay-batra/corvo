@@ -51,15 +51,14 @@ export default function BlogIndexPage() {
       <BlogFilteredPosts />
 
       {/* CTA banner */}
-      <div className="blog-cta-wrap" style={{ maxWidth: 1100, marginLeft: "auto", marginRight: "auto" }}>
-        <div className="flex justify-center py-12">
-          <div className="bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center gap-4 w-fit">
-            <p style={{ fontSize: 20, fontWeight: 700, color: "#e8e0cc" }}>Ready to analyze your portfolio?</p>
-            <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)" }}>Monte Carlo, Sharpe ratio, AI chat, and more. Free.</p>
-            <Link href="/auth" style={{ display: "inline-block", padding: "8px 20px", background: "#c9a84c", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#0a0e14", textDecoration: "none" }}>
-              Start for free →
-            </Link>
-          </div>
+      <div className="blog-cta-wrap" style={{ maxWidth: 1100, marginLeft: "auto", marginRight: "auto", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 16, background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 24px", flexWrap: "wrap", justifyContent: "center" }}>
+          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.5)", margin: 0 }}>Free during beta · No credit card required</p>
+          <Link href="/auth" style={{ padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", display: "inline-block", transition: "opacity 0.2s", flexShrink: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
+            Start for free →
+          </Link>
         </div>
       </div>
     </div>
