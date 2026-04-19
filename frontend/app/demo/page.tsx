@@ -321,7 +321,7 @@ function Step3Panel({ active }: { active: boolean }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%" }}>
       <div style={{ padding: "10px 14px", background: C.amberBg, border: `1px solid ${C.amberBd}`, borderRadius: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: C.cream2, fontSize: 11 }}>Simulation</span>
-        <span style={{ color: C.amber, fontSize: 11, fontWeight: 600 }}>10,000 paths · 12-month horizon</span>
+        <span style={{ color: C.amber, fontSize: 11, fontWeight: 600 }}>8,500 paths · 12-month horizon</span>
       </div>
       <div style={{ background: C.bg4, border: `1px solid ${C.border}`, borderRadius: 12, padding: 12, overflow: "hidden" }}>
         <svg viewBox="0 0 400 200" style={{ width: "100%", height: "auto", display: "block" }} preserveAspectRatio="none">

@@ -288,7 +288,7 @@ def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
 
 
 @app.get("/montecarlo")
-def monte_carlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 10000, horizon: int = 252):
+def monte_carlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 8500, horizon: int = 252):
     tickers_list = [t.strip() for t in tickers.split(",")]
     yf_period = PERIOD_MAP.get(period, "1y")
     data = get_data(tickers_list, period=yf_period)
@@ -305,12 +305,14 @@ def monte_carlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y
     mu = float(port_returns.mean())
     sigma = float(port_returns.std())
 
-    # Vectorised: sample all daily returns at once, then compound into paths.
-    # No fixed seed so extreme outcomes are genuinely represented each run.
-    daily_draws = np.random.normal(mu, sigma, (simulations, horizon))
-    paths_arr = np.cumprod(1 + daily_draws, axis=1) - 1  # cumulative return
+    paths = []
+    for _ in range(simulations):
+        daily = np.random.normal(mu, sigma, horizon)
+        path = list(np.cumprod(1 + daily))
+        paths.append(path)
 
-    p5  = np.percentile(paths_arr,  5, axis=0).tolist()
+    paths_arr = np.array(paths)
+    p5  = np.percentile(paths_arr, 5,  axis=0).tolist()
     p25 = np.percentile(paths_arr, 25, axis=0).tolist()
     p50 = np.percentile(paths_arr, 50, axis=0).tolist()
     p75 = np.percentile(paths_arr, 75, axis=0).tolist()
@@ -319,31 +321,14 @@ def monte_carlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y
     sample_indices = np.random.choice(simulations, min(20, simulations), replace=False)
     sample_paths = paths_arr[sample_indices].tolist()
 
-    final_vals = paths_arr[:, -1]
-    final_p5  = float(np.percentile(final_vals,  5))
-    final_p25 = float(np.percentile(final_vals, 25))
-    final_p50 = float(np.percentile(final_vals, 50))
-    final_p75 = float(np.percentile(final_vals, 75))
-    final_p95 = float(np.percentile(final_vals, 95))
-
-    positive_probability = int(round(float(np.mean(final_vals > 0)) * 100))
-    ruin_probability = float(np.mean(final_vals < -0.5))
-    worst_5pct_mask = final_vals <= final_p5
-    expected_shortfall = float(np.mean(final_vals[worst_5pct_mask])) if worst_5pct_mask.any() else final_p5
-
     return {
         "horizon": horizon,
         "simulations": simulations,
         "p5": p5, "p25": p25, "p50": p50, "p75": p75, "p95": p95,
         "sample_paths": sample_paths,
-        "final_p5":  final_p5,
-        "final_p25": final_p25,
-        "final_p50": final_p50,
-        "final_p75": final_p75,
-        "final_p95": final_p95,
-        "positive_probability": positive_probability,
-        "ruin_probability": ruin_probability,
-        "expected_shortfall": expected_shortfall,
+        "final_p5":  float(paths_arr[:, -1].min()),
+        "final_p50": float(np.median(paths_arr[:, -1])),
+        "final_p95": float(paths_arr[:, -1].max()),
     }
 
 

@@ -481,7 +481,7 @@ def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
 
 
 @app.get("/montecarlo")
-def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 10000):
+def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 300):
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers")
@@ -514,35 +514,30 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     sigma = float(np.std(port_returns))
     horizon = 252
 
-    # Sample daily returns from N(mu, sigma) and compound into full-year paths.
-    # No fixed seed — each call produces a genuinely random distribution so that
-    # extreme outcomes (large gains AND large losses) are properly represented.
-    daily_draws = np.random.normal(mu, sigma, (simulations, horizon))
-    # Cumulative product gives the growth factor; subtract 1 for return %
-    paths = np.cumprod(1 + daily_draws, axis=1) - 1  # shape (simulations, horizon)
+    np.random.seed(42)
+    sims = np.random.normal(mu, sigma, (simulations, horizon))
+    paths = np.cumprod(1 + sims, axis=1) - 1  # shape (sims, horizon)
 
     final_vals = paths[:, -1]
-    p5  = float(np.percentile(final_vals,  5))
+    p5 = float(np.percentile(final_vals, 5))
     p25 = float(np.percentile(final_vals, 25))
     p50 = float(np.percentile(final_vals, 50))
     p75 = float(np.percentile(final_vals, 75))
     p95 = float(np.percentile(final_vals, 95))
 
-    # Percentile bands across time (for the fan chart)
+    # Percentile bands across time
     pct_bands = {
-        "p5":  safe_list(np.percentile(paths,  5, axis=0).tolist()),
+        "p5": safe_list(np.percentile(paths, 5, axis=0).tolist()),
         "p25": safe_list(np.percentile(paths, 25, axis=0).tolist()),
         "p50": safe_list(np.percentile(paths, 50, axis=0).tolist()),
         "p75": safe_list(np.percentile(paths, 75, axis=0).tolist()),
         "p95": safe_list(np.percentile(paths, 95, axis=0).tolist()),
     }
 
-    # Random sample of 20 paths for the spaghetti overlay
-    sample_idx = np.random.choice(simulations, min(20, simulations), replace=False)
-    sample_paths = [safe_list(paths[i].tolist()) for i in sample_idx]
+    # Sample paths (20)
+    sample_paths = [safe_list(paths[i].tolist()) for i in range(min(20, simulations))]
 
-    # Risk metrics — computed from the full distribution, not from sample paths
-    positive_probability = int(round(float(np.mean(final_vals > 0)) * 100))
+    # Risk metrics
     ruin_threshold = -0.5
     ruin_probability = float(np.mean(final_vals < ruin_threshold))
     worst_5pct_mask = final_vals <= p5
@@ -558,7 +553,6 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         "final_p95": p95,
         "bands": pct_bands,
         "sample_paths": sample_paths,
-        "positive_probability": positive_probability,
         "ruin_probability": ruin_probability,
         "expected_shortfall": expected_shortfall,
     }
@@ -571,7 +565,7 @@ class MonteCarloInsightRequest(BaseModel):
     p95: float
     ruin_probability: float
     expected_shortfall: float
-    simulations: int = 10000
+    simulations: int = 300
 
 
 @app.post("/montecarlo/insight")
