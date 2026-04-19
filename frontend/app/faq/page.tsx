@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import Link from "next/link";
+import React, { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
@@ -177,6 +176,120 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+/* ─── Inline AI Chat ─── */
+interface ChatMessage { role: "user" | "assistant"; content: string; }
+
+function FAQAIChat() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    setInput("");
+    const next: ChatMessage[] = [...messages, { role: "user", content: text }];
+    setMessages(next);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ai-chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messages: next }),
+      });
+      const data = await res.json();
+      setMessages([...next, { role: "assistant", content: data.content }]);
+    } catch {
+      setMessages([...next, { role: "assistant", content: "Something went wrong. Please try again." }]);
+    } finally {
+      setLoading(false);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    }
+  };
+
+  return (
+    <div
+      id="faq-ai-chat"
+      style={{
+        marginTop: 48,
+        border: "1px solid rgba(201,168,76,0.18)",
+        borderRadius: 20,
+        overflow: "hidden",
+        background: "rgba(13,17,23,0.8)",
+      }}
+    >
+      {/* Header */}
+      <div style={{ padding: "18px 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
+          C
+        </div>
+        <div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", margin: 0 }}>Corvo AI</p>
+          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", margin: 0 }}>Ask anything about Corvo or investing</p>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div style={{ padding: "20px 20px 8px", display: "flex", flexDirection: "column", gap: 12, minHeight: 180, maxHeight: 360, overflowY: "auto" }}>
+        {messages.length === 0 && (
+          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.28)", textAlign: "center", marginTop: 48, lineHeight: 1.7 }}>
+            Ask about Sharpe ratio, Monte Carlo simulation, portfolio diversification, or how Corvo works.
+          </p>
+        )}
+        {messages.map((msg, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
+            <div style={{
+              maxWidth: "78%",
+              padding: "10px 14px",
+              borderRadius: msg.role === "user" ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
+              background: msg.role === "user" ? "#c9a84c" : "rgba(255,255,255,0.04)",
+              border: msg.role === "assistant" ? "1px solid rgba(255,255,255,0.06)" : "none",
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: msg.role === "user" ? "#0a0e14" : "rgba(232,224,204,0.85)",
+              fontWeight: msg.role === "user" ? 500 : 300,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}>
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div style={{ display: "flex", justifyContent: "flex-start" }}>
+            <div style={{ padding: "10px 16px", borderRadius: "12px 12px 12px 3px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 18, color: "rgba(232,224,204,0.4)", letterSpacing: 2 }}>...</div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{ padding: "12px 16px 16px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 10 }}>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
+          placeholder="Ask a question about Corvo or investing..."
+          style={{ flex: 1, padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, color: "#e8e0cc", fontSize: 13, outline: "none", transition: "border-color 0.2s" }}
+          onFocus={(e) => (e.target.style.borderColor = "rgba(201,168,76,0.35)")}
+          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.07)")}
+        />
+        <button
+          onClick={send}
+          disabled={loading || !input.trim()}
+          style={{ padding: "0 18px", height: 42, borderRadius: 10, background: loading || !input.trim() ? "rgba(201,168,76,0.25)" : "#c9a84c", border: "none", cursor: loading || !input.trim() ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.2s" }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0e14" strokeWidth="2.5">
+            <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main page ─── */
 export default function FaqPage() {
   const [query, setQuery] = useState("");
@@ -236,17 +349,6 @@ export default function FaqPage() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           style={{ position: "relative" }}
         >
-          <p
-            style={{
-              fontSize: 9,
-              letterSpacing: 3,
-              color: "#c9a84c",
-              textTransform: "uppercase",
-              marginBottom: 16,
-            }}
-          >
-            Help Center
-          </p>
           <h1
             style={{
               fontFamily: "Space Mono, monospace",
@@ -329,11 +431,8 @@ export default function FaqPage() {
         transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
         style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px 64px" }}
       >
-        <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", textAlign: "center", marginBottom: 14 }}>
-          Video Walkthrough
-        </p>
         <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1, textAlign: "center", marginBottom: 28 }}>
-          See Corvo in 2 minutes
+          See Corvo in one minute
         </h2>
         <div style={{
           background: "rgba(8,11,16,0.9)",
@@ -355,7 +454,7 @@ export default function FaqPage() {
           />
         </div>
         <p style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textAlign: "center", marginTop: 12 }}>
-          No sound required · 2 min · No signup needed to watch
+          No sound required · one minute · No signup needed to watch
         </p>
       </motion.section>
 
@@ -469,8 +568,10 @@ export default function FaqPage() {
             works. The AI has answers, or reach us directly.
           </p>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-            <Link
-              href="/app"
+            <button
+              onClick={() => {
+                document.getElementById("faq-ai-chat")?.scrollIntoView({ behavior: "smooth" });
+              }}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -481,12 +582,13 @@ export default function FaqPage() {
                 color: "#0a0e14",
                 fontSize: 13,
                 fontWeight: 700,
-                textDecoration: "none",
+                border: "none",
+                cursor: "pointer",
                 letterSpacing: 0.3,
               }}
             >
               Ask our AI →
-            </Link>
+            </button>
             <a
               href="mailto:hello@corvo.capital"
               style={{
@@ -502,6 +604,9 @@ export default function FaqPage() {
             </a>
           </div>
         </motion.div>
+
+        {/* Inline AI Chat */}
+        <FAQAIChat />
       </main>
 
       {/* Footer */}
