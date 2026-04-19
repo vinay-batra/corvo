@@ -102,10 +102,6 @@ export default function GreetingBar({
             lineHeight: 1.7,
             marginTop: 8,
             marginBottom: 0,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
           }}>
             {market.summary}
           </p>
