@@ -27,6 +27,7 @@ interface Props {
   onSavedLinesChange?: (lines: SavedPortfolioLine[]) => void;
   customDateRange?: { start: string; end: string } | null;
   onCustomDateChange?: (range: { start: string; end: string } | null) => void;
+  benchmarkOverride?: { ticker: string; cumulative: number[] };
 }
 
 // Compute the date at which the max drawdown trough occurs
@@ -68,7 +69,7 @@ function filterByDateRange(
   return filtered;
 }
 
-export default function PerformanceChart({ data, savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange }: Props) {
+export default function PerformanceChart({ data, savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange, benchmarkOverride }: Props) {
   const [dark, setDark] = useState(true);
   const [showCustomPicker, setShowCustomPicker] = useState(!!customDateRange);
   const [localStart, setLocalStart] = useState(customDateRange?.start || "");
@@ -94,10 +95,11 @@ export default function PerformanceChart({ data, savedLines = [], onSavedLinesCh
   const lc = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.1)";
   const legendFg = dark ? "rgba(232,224,204,0.3)" : "#6b6b68";
 
-  const benchLabel = BENCHMARK_LABELS[data.benchmark_ticker] ?? data.benchmark_ticker ?? "Benchmark";
+  const activeBenchTicker = benchmarkOverride?.ticker ?? data.benchmark_ticker;
+  const benchLabel = BENCHMARK_LABELS[activeBenchTicker] ?? activeBenchTicker ?? "Benchmark";
 
   let portfolioY: number[] = data.portfolio_cumulative || data.growth || [];
-  let benchmarkY: number[] = data.benchmark_cumulative || data.benchmark || [];
+  let benchmarkY: number[] = benchmarkOverride?.cumulative ?? data.benchmark_cumulative ?? data.benchmark ?? [];
   let chartDates: string[] = data.dates || [];
 
   // Apply custom date range filter

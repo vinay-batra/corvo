@@ -855,6 +855,9 @@ export default function AppPage() {
   const [showProfile, setShowProfile]     = useState(false);
   const [showSettings, setShowSettings]   = useState(false);
   const [benchOpen, setBenchOpen]         = useState(false);
+  const [chartBenchOpen, setChartBenchOpen] = useState(false);
+  const [localBenchmark, setLocalBenchmark] = useState("^GSPC");
+  const [localBenchmarkSeries, setLocalBenchmarkSeries] = useState<{ ticker: string; cumulative: number[] } | null>(null);
   const [sidebarOpen, setSidebarOpen]     = useState(false);
 const [paletteOpen, setPaletteOpen]   = useState(false);
   const [stockTicker, setStockTicker]   = useState<string | null>(null);
@@ -1070,6 +1073,26 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
   const handleAnalyzeRef = useRef(handleAnalyze);
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
+
+  // Sync localBenchmark when data arrives from a new analysis
+  useEffect(() => {
+    if (data?.benchmark_ticker) {
+      setLocalBenchmark(data.benchmark_ticker);
+      setLocalBenchmarkSeries(null);
+    }
+  }, [data]);
+
+  // Fetch override benchmark series when user changes chart benchmark without re-analyzing
+  useEffect(() => {
+    if (!data || !assets.length || localBenchmark === (data.benchmark_ticker ?? "^GSPC")) {
+      setLocalBenchmarkSeries(null);
+      return;
+    }
+    const valid = assets.filter(a => a.ticker && a.weight > 0);
+    fetchPortfolio(valid, period, localBenchmark, "", "").then(res => {
+      setLocalBenchmarkSeries({ ticker: localBenchmark, cumulative: res.benchmark_cumulative || res.benchmark || [] });
+    }).catch(() => {});
+  }, [localBenchmark]);
 
   // Mark results stale whenever the portfolio changes after a successful analysis
   useEffect(() => {
@@ -1863,19 +1886,19 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                             </button>
                           ))}
                         </div>
-                        {/* Benchmark selector: adjacent to graph */}
+                        {/* Benchmark selector: chart-only, does NOT trigger re-analyze */}
                         <div style={{ position: "relative" }}>
-                          <button onClick={() => setBenchOpen(o => !o)}
+                          <button onClick={() => setChartBenchOpen(o => !o)}
                             style={{ padding: "4px 10px", fontSize: 11, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 5, cursor: "pointer", color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
-                            <span style={{ fontSize: 11, color: "var(--text3)" }}>vs</span>{benchLabel}<span style={{ fontSize: 11, color: "var(--text3)" }}>▾</span>
+                            <span style={{ fontSize: 11, color: "var(--text3)" }}>vs</span>{BENCHMARKS.find(b => b.ticker === localBenchmark)?.label ?? localBenchmark}<span style={{ fontSize: 11, color: "var(--text3)" }}>▾</span>
                           </button>
                           <AnimatePresence>
-                            {benchOpen && (
+                            {chartBenchOpen && (
                               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                                 style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 130, boxShadow: "var(--shadow)" }}>
                                 {BENCHMARKS.map(b => (
-                                  <button key={b.ticker} onClick={() => { setBenchmark(b.ticker); setBenchOpen(false); }}
-                                    style={{ width: "100%", textAlign: "left", padding: "7px 12px", background: b.ticker === benchmark ? "var(--bg3)" : "transparent", border: "none", color: "var(--text)", fontSize: 11, cursor: "pointer" }}>
+                                  <button key={b.ticker} onClick={() => { setLocalBenchmark(b.ticker); setChartBenchOpen(false); }}
+                                    style={{ width: "100%", textAlign: "left", padding: "7px 12px", background: b.ticker === localBenchmark ? "var(--bg3)" : "transparent", border: "none", color: "var(--text)", fontSize: 11, cursor: "pointer" }}>
                                     {b.label}
                                   </button>
                                 ))}
@@ -1897,6 +1920,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                       onSavedLinesChange={setSavedPortfolioLines}
                       customDateRange={customDateRange}
                       onCustomDateChange={setCustomDateRange}
+                      benchmarkOverride={localBenchmarkSeries ?? undefined}
                     />
                   </Card>
                 </motion.div>
