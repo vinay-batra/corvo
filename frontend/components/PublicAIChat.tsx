@@ -8,7 +8,17 @@ interface Message {
   content: string;
 }
 
+class ChatErrorBoundary extends React.Component<{ children: React.ReactNode }, { crashed: boolean }> {
+  state = { crashed: false };
+  static getDerivedStateFromError() { return { crashed: true }; }
+  render() { return this.state.crashed ? null : this.props.children; }
+}
+
 export default function PublicAIChat() {
+  return <ChatErrorBoundary><PublicAIChatInner /></ChatErrorBoundary>;
+}
+
+function PublicAIChatInner() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
