@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -23,6 +23,11 @@ interface MarketSummary {
   vix: number;
 }
 
+interface HoldingPrice {
+  ticker: string;
+  change_pct: number;
+}
+
 interface Props {
   displayName: string;
   portfolioData: any;
@@ -41,7 +46,9 @@ export default function GreetingBar({
   });
 
   const [market, setMarket] = useState<MarketSummary | null>(null);
+  const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
 
+  // Fetch AI market summary + index data
   useEffect(() => {
     const tickerParam = assets
       .map(a => a.ticker)
@@ -56,15 +63,48 @@ export default function GreetingBar({
       .catch(() => {});
   }, [assets]);
 
+  // Fetch live holdings prices from watchlist-data
+  const assetsRef = useRef(assets);
+  useEffect(() => { assetsRef.current = assets; }, [assets]);
+
+  useEffect(() => {
+    const validTickers = assets
+      .filter(a => a.ticker && a.weight > 0)
+      .map(a => a.ticker);
+    if (!validTickers.length) return;
+
+    const fetchPrices = async () => {
+      try {
+        const r = await fetch(`${API_URL}/watchlist-data?tickers=${validTickers.join(",")}`);
+        const d = await r.json();
+        setHoldingPrices(
+          (d.results || []).map((s: any) => ({
+            ticker: s.ticker,
+            change_pct: s.change_pct ?? 0,
+          }))
+        );
+      } catch {}
+    };
+
+    fetchPrices();
+    const id = setInterval(fetchPrices, 30000);
+    return () => clearInterval(id);
+  }, [assets]);
+
   const pos = (v: number) => v >= 0;
   const fmtSign = (v: number) => (v >= 0 ? "+" : "");
   const green = "#4caf7d";
   const red = "#e05c5c";
 
+  // Combine the three AI text fields into one flowing paragraph
+  const summaryText = [market?.market, market?.holdings, market?.context]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div style={{
       display: "flex",
-      alignItems: "center",
+      alignItems: "flex-start",
       gap: 0,
       minHeight: 90,
       padding: "20px 24px",
@@ -72,7 +112,7 @@ export default function GreetingBar({
       marginBottom: 20,
     }}>
 
-      {/* LEFT - greeting + market summary */}
+      {/* LEFT - greeting + AI market summary paragraph */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{
           fontSize: 22, fontWeight: 700, color: "var(--text)",
@@ -83,29 +123,26 @@ export default function GreetingBar({
         <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 3, marginBottom: 0, letterSpacing: "0.01em" }}>
           {dateStr}
         </p>
-        {market ? (
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-            {market.market && (
-              <div>
-                <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Markets</span>
-                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>{market.market}</p>
-              </div>
-            )}
-            {market.holdings && (
-              <div>
-                <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Your Portfolio</span>
-                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>{market.holdings}</p>
-              </div>
-            )}
-            {market.context && (
-              <div>
-                <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Context</span>
-                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>{market.context}</p>
-              </div>
-            )}
-          </div>
+        {summaryText ? (
+          <p style={{
+            fontSize: 13,
+            color: "var(--text2)",
+            lineHeight: 1.7,
+            marginTop: 8,
+            marginBottom: 0,
+            fontWeight: 300,
+          }}>
+            {summaryText}
+          </p>
         ) : (
-          <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, marginTop: 8, marginBottom: 0, opacity: 0.5 }}>
+          <p style={{
+            fontSize: 13,
+            color: "var(--text3)",
+            lineHeight: 1.7,
+            marginTop: 8,
+            marginBottom: 0,
+            opacity: 0.5,
+          }}>
             Fetching market brief...
           </p>
         )}
@@ -114,26 +151,40 @@ export default function GreetingBar({
       {/* DIVIDER */}
       <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
-      {/* RIGHT - live market index pills */}
-      <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 12 }}>
+      {/* RIGHT - index pills on top, holdings price pills below */}
+      <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
 
-        <StatPill
-          label="S&P 500"
-          value={market != null ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
-          color={market != null ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
-        />
+        {/* Index pills row */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <StatPill
+            label="S&P 500"
+            value={market != null ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
+            color={market != null ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
+          />
+          <StatPill
+            label="Nasdaq"
+            value={market != null ? `${fmtSign(market.qqq_pct)}${market.qqq_pct.toFixed(2)}%` : "-"}
+            color={market != null ? (pos(market.qqq_pct) ? green : red) : "var(--text3)"}
+          />
+          <StatPill
+            label="Dow"
+            value={market != null ? `${fmtSign(market.dia_pct)}${market.dia_pct.toFixed(2)}%` : "-"}
+            color={market != null ? (pos(market.dia_pct) ? green : red) : "var(--text3)"}
+          />
+        </div>
 
-        <StatPill
-          label="Nasdaq"
-          value={market != null ? `${fmtSign(market.qqq_pct)}${market.qqq_pct.toFixed(2)}%` : "-"}
-          color={market != null ? (pos(market.qqq_pct) ? green : red) : "var(--text3)"}
-        />
-
-        <StatPill
-          label="Dow"
-          value={market != null ? `${fmtSign(market.dia_pct)}${market.dia_pct.toFixed(2)}%` : "-"}
-          color={market != null ? (pos(market.dia_pct) ? green : red) : "var(--text3)"}
-        />
+        {/* Holdings price pills row */}
+        {holdingPrices.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, justifyContent: "flex-end", maxWidth: 320 }}>
+            {holdingPrices.map(h => (
+              <HoldingPill
+                key={h.ticker}
+                ticker={h.ticker}
+                changePct={h.change_pct}
+              />
+            ))}
+          </div>
+        )}
 
       </div>
     </div>
@@ -164,6 +215,39 @@ function StatPill({ label, value, color }: { label: string; value: string; color
         letterSpacing: "-0.2px",
       }}>
         {value}
+      </span>
+    </div>
+  );
+}
+
+function HoldingPill({ ticker, changePct }: { ticker: string; changePct: number }) {
+  const isPos = changePct >= 0;
+  const color = isPos ? "#4caf7d" : "#e05c5c";
+  const bgColor = isPos ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)";
+  const borderColor = isPos ? "rgba(76,175,125,0.2)" : "rgba(224,92,92,0.2)";
+
+  return (
+    <div style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 4,
+      padding: "3px 8px",
+      borderRadius: 6,
+      background: bgColor,
+      border: `0.5px solid ${borderColor}`,
+      whiteSpace: "nowrap",
+    }}>
+      <span style={{
+        fontSize: 10, fontWeight: 700, color: "var(--text2)",
+        fontFamily: "'Space Mono', monospace", letterSpacing: "0.02em",
+      }}>
+        {ticker}
+      </span>
+      <span style={{
+        fontSize: 10, fontWeight: 600, color,
+        fontFamily: "'Space Mono', monospace",
+      }}>
+        {isPos ? "+" : ""}{changePct.toFixed(2)}%
       </span>
     </div>
   );

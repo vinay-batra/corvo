@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
@@ -76,7 +75,7 @@ const SECTIONS = [
     ],
   },
   {
-    category: "Pro: Coming Soon",
+    category: "Pro",
     items: [
       {
         q: "What is Corvo Pro?",
@@ -93,12 +92,18 @@ const SECTIONS = [
 /* ─── Accordion item ─── */
 function AccordionItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         borderBottom: "1px solid rgba(255,255,255,0.05)",
+        borderLeft: hovered ? "2px solid rgba(201,168,76,0.55)" : "2px solid transparent",
+        paddingLeft: hovered ? 12 : 12,
         overflow: "hidden",
+        transition: "border-left-color 0.2s",
       }}
     >
       <button
@@ -184,7 +189,7 @@ function FAQAIChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomRef = React.useRef<HTMLDivElement>(null);
 
   const send = async () => {
     const text = input.trim();
@@ -295,7 +300,6 @@ function FAQAIChat() {
 
 /* ─── Main page ─── */
 export default function FaqPage() {
-
   return (
     <div
       style={{
@@ -305,84 +309,78 @@ export default function FaqPage() {
         fontFamily: "Inter, system-ui, sans-serif",
       }}
     >
-      {/* Nav */}
       <PublicNav />
 
-      {/* Hero */}
-      <section
+      <main
         style={{
-          textAlign: "center",
-          padding: "72px 24px 56px",
-          position: "relative",
+          maxWidth: 760,
+          margin: "0 auto",
+          padding: "80px 24px 80px",
         }}
       >
-        {/* Ambient glow */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 600,
-            height: 300,
-            background:
-              "radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)",
-            pointerEvents: "none",
-            filter: "blur(40px)",
-          }}
-        />
-
+        {/* Heading */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          style={{ position: "relative" }}
+          style={{ textAlign: "center", marginBottom: 56, position: "relative" }}
         >
+          {/* Ambient glow */}
+          <div
+            style={{
+              position: "absolute",
+              top: -40,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 600,
+              height: 260,
+              background: "radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)",
+              pointerEvents: "none",
+              filter: "blur(40px)",
+            }}
+          />
           <h1
             style={{
               fontFamily: "Space Mono, monospace",
-              fontSize: "clamp(28px, 4vw, 48px)",
+              fontSize: "clamp(32px, 5vw, 56px)",
               fontWeight: 700,
               color: "#e8e0cc",
               letterSpacing: -1.5,
               marginBottom: 16,
               lineHeight: 1.15,
+              position: "relative",
             }}
           >
             Frequently Asked Questions
           </h1>
-          <p
-            style={{
-              fontSize: 15,
-              color: "rgba(232,224,204,0.4)",
-              maxWidth: 480,
-              margin: "0 auto 40px",
-              lineHeight: 1.7,
-              fontWeight: 300,
-            }}
-          >
-            Everything you need to know about Corvo. Can&apos;t find your
-            answer? Chat with our AI below.
-          </p>
-
         </motion.div>
-      </section>
 
-      {/* Content */}
-      <main
-        style={{
-          maxWidth: 720,
-          margin: "0 auto",
-          padding: "0 24px 80px",
-        }}
-      >
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            fontSize: 15,
+            color: "rgba(232,224,204,0.4)",
+            maxWidth: 480,
+            margin: "0 auto 56px",
+            lineHeight: 1.7,
+            fontWeight: 300,
+            textAlign: "center",
+          }}
+        >
+          Everything you need to know about Corvo. Can&apos;t find your answer? Chat with our AI below.
+        </motion.p>
+
+        {/* Accordion sections */}
         {SECTIONS.map((section, si) => (
           <motion.section
             key={section.category}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: si * 0.08, ease: [0.16, 1, 0.3, 1] }}
-            style={{ marginBottom: 56 }}
+            transition={{ duration: 0.5, delay: 0.15 + si * 0.05, ease: [0.16, 1, 0.3, 1] }}
+            style={{ marginBottom: 24 }}
           >
             <p
               style={{
@@ -399,8 +397,7 @@ export default function FaqPage() {
             <div
               style={{
                 height: 1,
-                background:
-                  "linear-gradient(to right, rgba(201,168,76,0.2), transparent)",
+                background: "linear-gradient(to right, rgba(201,168,76,0.2), transparent)",
                 marginBottom: 8,
               }}
             />
@@ -414,7 +411,6 @@ export default function FaqPage() {
         <FAQAIChat />
       </main>
 
-      {/* Footer */}
       <PublicFooter />
     </div>
   );
