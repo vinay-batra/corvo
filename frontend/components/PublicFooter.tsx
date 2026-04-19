@@ -16,8 +16,7 @@ export default function PublicFooter() {
           <span style={{ fontSize: 11, color: "rgba(232,224,204,0.15)", marginLeft: 8 }}>© 2026 Corvo. All rights reserved.</span>
         </div>
         <div className="pfooter-links" style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
-          <a href="/about" className="pfooter-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>About</a>
-          <a href="/pricing" className="pfooter-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Pricing</a>
+<a href="/pricing" className="pfooter-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Pricing</a>
           <a href="/privacy" className="pfooter-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Privacy</a>
           <a href="/terms" className="pfooter-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Terms</a>
           <a href="/faq" className="pfooter-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>FAQ</a>

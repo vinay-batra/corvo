@@ -54,7 +54,6 @@ export default function PublicNav() {
           <Link href="/blog" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/blog") ? "#c9a84c" : "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Blog</Link>
           <Link href="/changelog" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/changelog") ? "#c9a84c" : "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
           <Link href="/faq" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/faq") ? "#c9a84c" : "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
-          <Link href="/about" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/about") ? "#c9a84c" : "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>About</Link>
         </div>
         {/* Right side */}
         <div className="pnav-actions" style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -85,7 +84,6 @@ export default function PublicNav() {
           <Link href="/blog" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Blog</Link>
           <Link href="/changelog" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Changelog</Link>
           <Link href="/faq" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>FAQ</Link>
-          <Link href="/about" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>About</Link>
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             {loggedIn ? (
               <Link href="/app" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 10 }}>Go to App</Link>

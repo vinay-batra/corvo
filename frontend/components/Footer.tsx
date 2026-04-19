@@ -21,8 +21,7 @@ export default function Footer() {
         </div>
         <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
           <a href="/blog" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Blog</a>
-          <a href="/about" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>About</a>
-          <a href="/pricing" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Pricing</a>
+<a href="/pricing" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Pricing</a>
           <a href="/privacy" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Privacy</a>
           <a href="/terms" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Terms</a>
           <a href="/faq" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>FAQ</a>
