@@ -438,7 +438,6 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
 function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "montecarlo", padding: "28px" }}>
-      <div style={{ position: "absolute", bottom: -40, right: -40, width: 160, height: 160, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)", pointerEvents: "none", borderRadius: "50%" }} />
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Monte Carlo Simulation</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>See your future in 300 paths</h3>
       <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", marginBottom: 18, lineHeight: 1.6 }}>Simulate outcomes based on your actual volatility and correlation.</p>

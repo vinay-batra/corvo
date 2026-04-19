@@ -290,7 +290,7 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
             ← Back
           </button>
         ) : (
-          <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
             onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
             onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
             ← Back
