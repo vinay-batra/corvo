@@ -5,9 +5,13 @@ export async function fetchPortfolio(assets: any[], period: string, benchmark = 
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
+  // Collect manual returns for cash/money market tickers
+  const manualReturns = normalized.map(a => a.manualReturn != null ? a.manualReturn : "").join(",");
+  const hasManual = normalized.some(a => a.manualReturn != null);
   const extras = [
     userId ? `user_id=${encodeURIComponent(userId)}` : "",
     referralCode ? `referral_code=${encodeURIComponent(referralCode)}` : "",
+    hasManual ? `manual_returns=${encodeURIComponent(manualReturns)}` : "",
   ].filter(Boolean).join("&");
   const res = await fetch(
     `${API_URL}/portfolio?tickers=${tickers}&weights=${weights}&period=${period}&benchmark=${encodeURIComponent(benchmark)}${extras ? "&" + extras : ""}`

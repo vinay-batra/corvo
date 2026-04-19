@@ -68,7 +68,11 @@ function loadLocal(): Portfolio[] {
   try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
 }
 function saveLocal(portfolios: Portfolio[]) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(portfolios)); } catch {}
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(portfolios));
+    // Notify PositionsTab (same page) that portfolios changed
+    window.dispatchEvent(new CustomEvent("corvo:portfolio-saved"));
+  } catch {}
 }
 
 export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asset[]; data: any; onLoad: (a: Asset[]) => void }) {
@@ -133,12 +137,14 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
         if (!error) {
           await fetchPortfolios();
           setName(""); setShowSave(false); setSaving(false);
+          // Notify PositionsTab on the same page
+          window.dispatchEvent(new CustomEvent("corvo:portfolio-saved"));
           return;
         }
       } catch {}
     }
 
-    // Fallback: localStorage
+    // Fallback: localStorage (saveLocal already dispatches the event)
     const local = loadLocal();
     const updated = [newPortfolio, ...local];
     saveLocal(updated);

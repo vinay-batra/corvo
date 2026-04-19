@@ -10,25 +10,46 @@ function getGreeting(): string {
   return "Good evening";
 }
 
-function buildPulse(data: any): string {
+type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
+
+function buildPulse(data: any, perfHistory: PerfSnapshot[], portfolioValue: number): string {
   if (!data) return "";
-  const ret = data.portfolio_return ?? 0;
+
+  // Prefer today's daily return computed from the last two snapshots
+  let dailyPart = "";
+  if (perfHistory && perfHistory.length >= 2) {
+    const last = perfHistory[perfHistory.length - 1];
+    const prev = perfHistory[perfHistory.length - 2];
+    if (last && prev && prev.cumulative_return !== undefined && last.cumulative_return !== undefined) {
+      // daily_return ≈ difference in cumulative returns over one day
+      const prevValue = portfolioValue * (1 + prev.cumulative_return);
+      const lastValue = portfolioValue * (1 + last.cumulative_return);
+      const dailyDollar = lastValue - prevValue;
+      const dailyPct = prev.cumulative_return !== -1
+        ? ((last.cumulative_return - prev.cumulative_return) / (1 + prev.cumulative_return)) * 100
+        : 0;
+      const sign = dailyDollar >= 0 ? "+" : "";
+      dailyPart = `Today: ${sign}$${Math.abs(dailyDollar).toFixed(0)} (${sign}${dailyPct.toFixed(2)}%). `;
+    }
+  }
+
   const sharpe = data.sharpe_ratio ?? 0;
   const drawdown = data.max_drawdown ?? 0;
-  const retStr = ret >= 0 ? `up ${(ret * 100).toFixed(1)}%` : `down ${Math.abs(ret * 100).toFixed(1)}%`;
   const sharpeTxt =
     sharpe > 2 ? "excellent risk-adjusted returns" :
     sharpe > 1 ? "solid risk-adjusted returns" :
     sharpe > 0 ? "moderate risk-adjusted returns" :
     "risk-adjusted returns below target";
-  const ddWarn = Math.abs(drawdown) > 0.2 ? ` · Heads up: max drawdown reached ${(Math.abs(drawdown) * 100).toFixed(1)}%.` : "";
-  return `Portfolio is ${retStr} · ${sharpeTxt} (Sharpe ${sharpe.toFixed(2)}).${ddWarn}`;
+  const ddWarn = Math.abs(drawdown) > 0.2 ? ` Heads up: max drawdown is ${(Math.abs(drawdown) * 100).toFixed(1)}%.` : "";
+  return `${dailyPart}Sharpe ${sharpe.toFixed(2)} — ${sharpeTxt}.${ddWarn}`;
 }
 
 interface Props {
   displayName: string;
   portfolioData: any;
   assets: { ticker: string; weight: number }[];
+  perfHistory?: PerfSnapshot[];
+  portfolioValue?: number;
   onAddPortfolio: () => void;
   onImportCSV: () => void;
   onSetAlert: () => void;
@@ -36,14 +57,18 @@ interface Props {
 }
 
 export default function GreetingBar({
-  displayName, portfolioData, assets, onAddPortfolio, onImportCSV, onSetAlert, onAskAI,
+  displayName, portfolioData, assets, perfHistory = [], portfolioValue = 10000,
+  onAddPortfolio, onImportCSV, onSetAlert, onAskAI,
 }: Props) {
   const greeting = getGreeting();
   const name = displayName.trim() || "Investor";
   const dateStr = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
-  const pulse = useMemo(() => buildPulse(portfolioData), [portfolioData]);
+  const pulse = useMemo(
+    () => buildPulse(portfolioData, perfHistory, portfolioValue),
+    [portfolioData, perfHistory, portfolioValue]
+  );
 
   const actions = [
     { label: "Add Portfolio", Icon: Plus, onClick: onAddPortfolio, disabled: false },

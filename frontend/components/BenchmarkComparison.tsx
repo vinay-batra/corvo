@@ -21,17 +21,20 @@ export default function BenchmarkComparison({ data }: { data: any }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <span style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>vs {benchLabel}</span>
-        <span style={{ fontSize: 11, color: isBeating ? C.amber : C.red, background: isBeating ? C.amber2 : "rgba(224,92,92,0.1)", border: `1px solid ${isBeating ? "rgba(184,134,11,0.3)" : "rgba(224,92,92,0.25)"}`, padding: "2px 8px", borderRadius: 4, fontFamily: "Space Mono,monospace", fontWeight: 700 }}>
-          {isBeating ? "+" : ""}{(diff * 100).toFixed(1)}pp
+      {/* Outperformance headline */}
+      <div style={{ marginBottom: 14, padding: "8px 12px", background: isBeating ? "rgba(184,134,11,0.06)" : "rgba(224,92,92,0.06)", border: `0.5px solid ${isBeating ? "rgba(184,134,11,0.25)" : "rgba(224,92,92,0.25)"}`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 11, color: "var(--text2)" }}>
+          {isBeating ? `Beat ${benchLabel} by` : `Behind ${benchLabel} by`}
+        </span>
+        <span style={{ fontSize: 15, fontFamily: "Space Mono,monospace", fontWeight: 700, color: isBeating ? C.amber : C.red }}>
+          {isBeating ? "+" : "-"}{(Math.abs(diff) * 100).toFixed(1)}%
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 11, color: "var(--text2)" }}>Your Portfolio</span>
-            <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: portfolioReturn >= 0 ? C.amber : C.red }}>{portfolioReturn >= 0 ? "+" : ""}{(portfolioReturn * 100).toFixed(2)}%</span>
+            <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 500 }}>Portfolio Return</span>
+            <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: portfolioReturn >= 0 ? C.amber : C.red, fontWeight: 700 }}>{portfolioReturn >= 0 ? "+" : ""}{(portfolioReturn * 100).toFixed(2)}%</span>
           </div>
           <div style={{ height: 6, background: "var(--track)", borderRadius: 3, overflow: "hidden" }}>
             <motion.div initial={{ width: 0 }} animate={{ width: `${portWidth * 100}%` }} transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
@@ -40,7 +43,7 @@ export default function BenchmarkComparison({ data }: { data: any }) {
         </div>
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 11, color: "var(--text2)" }}>{benchLabel}</span>
+            <span style={{ fontSize: 11, color: "var(--text3)" }}>{benchLabel} Return</span>
             <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "var(--text3)" }}>{benchReturn >= 0 ? "+" : ""}{(benchReturn * 100).toFixed(2)}%</span>
           </div>
           <div style={{ height: 6, background: "var(--track)", borderRadius: 3, overflow: "hidden" }}>
@@ -48,12 +51,6 @@ export default function BenchmarkComparison({ data }: { data: any }) {
               style={{ height: "100%", background: "var(--border2)", borderRadius: 3 }} />
           </div>
         </div>
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
-          style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6, paddingTop: 10, borderTop: "0.5px solid var(--border)" }}>
-          {isBeating
-            ? `Portfolio beat ${benchLabel} by ${(diff * 100).toFixed(1)}pp this period.`
-            : `Portfolio underperformed ${benchLabel} by ${(Math.abs(diff) * 100).toFixed(1)}pp this period.`}
-        </motion.p>
       </div>
     </motion.div>
   );

@@ -51,7 +51,7 @@ function Sparkline({ values, positive }: { values: number[]; positive: boolean }
   );
 }
 
-export function Metrics({ data, currency = "USD", rate = 1, sparklineValues }: { data: any; currency?: string; rate?: number; sparklineValues?: number[] }) {
+export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, period = "1y" }: { data: any; currency?: string; rate?: number; sparklineValues?: number[]; period?: string }) {
   const [modal, setModal] = useState<number|null>(null);
   const modalIdRef = useRef(`metrics-modal-${Math.random().toString(36).slice(2)}`);
 
@@ -74,9 +74,11 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues }: {
     window.dispatchEvent(new CustomEvent("corvo:modal-open", { detail: { id: modalIdRef.current } }));
     setModal(i);
   };
+  const PERIOD_LABELS: Record<string,string> = { "6mo":"6M","1y":"1Y","2y":"2Y","5y":"5Y" };
+  const periodLabel = PERIOD_LABELS[period] || period.toUpperCase();
   const sharpe = data.portfolio_volatility>0?(data.portfolio_return-0.04)/data.portfolio_volatility:0;
   const items = [
-    { label: "Return",       value: data.portfolio_return,     fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: data.portfolio_return<0, bar: null },
+    { label: `Portfolio Return (${periodLabel})`, value: data.portfolio_return, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: data.portfolio_return<0, bar: null },
     { label: "Volatility",   value: data.portfolio_volatility, fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: false, bar: data.portfolio_volatility/0.6 },
     { label: "Sharpe",       value: sharpe,                    fmt: (v:number) => v.toFixed(2),                           neg: sharpe<0, bar: Math.min(Math.max(sharpe/3,0),1) },
     { label: "Max Drawdown", value: data.max_drawdown,         fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: true, bar: null },

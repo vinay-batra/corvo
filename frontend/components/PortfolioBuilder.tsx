@@ -8,9 +8,12 @@ import { posthog } from "../lib/posthog";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const C = { amber: "var(--accent)", cream: "var(--text)", cream3: "var(--text3)", border: "var(--border)", navy4: "var(--bg2)" };
 const DOTS = ["#b8860b","rgba(184,134,11,0.7)","rgba(184,134,11,0.5)","rgba(184,134,11,0.35)","rgba(184,134,11,0.25)","rgba(184,134,11,0.6)","rgba(184,134,11,0.45)","rgba(184,134,11,0.55)"];
-const TYPE_LABELS: Record<string,string> = { EQUITY:"Stock", ETF:"ETF", CRYPTOCURRENCY:"Crypto", MUTUALFUND:"Fund", INDEX:"Index" };
+const TYPE_LABELS: Record<string,string> = { EQUITY:"Stock", ETF:"ETF", CRYPTOCURRENCY:"Crypto", MUTUALFUND:"Fund", INDEX:"Index", CASH:"Cash" };
 
-// Top tickers for instant autocomplete (no API call needed)
+// Cash / money market tickers — bypass yfinance, use manual annual return
+const CASH_TICKERS = new Set(["CASH", "FDRXX", "SPAXX", "BND", "SGOV"]);
+
+// Top tickers for instant autocomplete
 const COMMON_TICKERS: { ticker: string; name: string; type: string; exchange: string }[] = [
   { ticker:"AAPL",    name:"Apple Inc.",                type:"EQUITY",         exchange:"NASDAQ" },
   { ticker:"MSFT",    name:"Microsoft Corp.",           type:"EQUITY",         exchange:"NASDAQ" },
@@ -93,7 +96,6 @@ const COMMON_TICKERS: { ticker: string; name: string; type: string; exchange: st
   { ticker:"IWM",     name:"iShares Russell 2000 ETF",  type:"ETF",            exchange:"NYSE" },
   { ticker:"VTI",     name:"Vanguard Total Stock Mkt",  type:"ETF",            exchange:"NYSE" },
   { ticker:"VOO",     name:"Vanguard S&P 500 ETF",      type:"ETF",            exchange:"NYSE" },
-  { ticker:"BND",     name:"Vanguard Total Bond Mkt",   type:"ETF",            exchange:"NASDAQ" },
   { ticker:"GLD",     name:"SPDR Gold Shares",          type:"ETF",            exchange:"NYSE" },
   { ticker:"SLV",     name:"iShares Silver Trust",      type:"ETF",            exchange:"NYSE" },
   { ticker:"VNQ",     name:"Vanguard Real Estate ETF",  type:"ETF",            exchange:"NYSE" },
@@ -108,6 +110,20 @@ const COMMON_TICKERS: { ticker: string; name: string; type: string; exchange: st
   { ticker:"SOL-USD", name:"Solana",                    type:"CRYPTOCURRENCY", exchange:"CCC" },
   { ticker:"BNB-USD", name:"BNB",                       type:"CRYPTOCURRENCY", exchange:"CCC" },
   { ticker:"XRP-USD", name:"XRP",                       type:"CRYPTOCURRENCY", exchange:"CCC" },
+  // Cash / Money Market — manual return override, never calls yfinance
+  { ticker:"CASH",    name:"Cash / Money Market",            type:"CASH",       exchange:"N/A" },
+  { ticker:"FDRXX",   name:"Fidelity Gov't Cash Reserves",   type:"CASH",       exchange:"N/A" },
+  { ticker:"SPAXX",   name:"Fidelity Gov't Money Market",    type:"CASH",       exchange:"N/A" },
+  { ticker:"BND",     name:"Vanguard Total Bond Mkt ETF",    type:"CASH",       exchange:"NASDAQ" },
+  { ticker:"SGOV",    name:"iShares 0-3 Month Treasury ETF", type:"CASH",       exchange:"CBOE" },
+];
+
+const BUILDER_PRESETS = [
+  { label:"Tech Heavy",   assets:[{ticker:"AAPL",weight:0.25},{ticker:"MSFT",weight:0.25},{ticker:"NVDA",weight:0.25},{ticker:"GOOGL",weight:0.25}] },
+  { label:"Diversified",  assets:[{ticker:"SPY", weight:0.40},{ticker:"BND", weight:0.30},{ticker:"GLD", weight:0.15},{ticker:"VNQ",  weight:0.15}] },
+  { label:"Crypto Mix",   assets:[{ticker:"BTC-USD",weight:0.60},{ticker:"ETH-USD",weight:0.40}] },
+  { label:"Dividend",     assets:[{ticker:"VIG", weight:0.35},{ticker:"SCHD",weight:0.35},{ticker:"JNJ", weight:0.15},{ticker:"KO",   weight:0.15}] },
+  { label:"Conservative", assets:[{ticker:"BND", weight:0.50},{ticker:"SGOV",weight:0.20},{ticker:"SPY", weight:0.20},{ticker:"GLD",  weight:0.10}] },
 ];
 
 function localSearch(q: string): { ticker: string; name: string; type: string; exchange: string }[] {
@@ -118,7 +134,7 @@ function localSearch(q: string): { ticker: string; name: string; type: string; e
   ).slice(0, 8);
 }
 
-interface Asset { ticker: string; weight: number; purchasePrice?: number; }
+interface Asset { ticker: string; weight: number; purchasePrice?: number; manualReturn?: number; }
 interface Result { ticker: string; name: string; exchange: string; type: string; }
 interface Props {
   assets: Asset[];
@@ -136,6 +152,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const [results, setResults] = useState<Record<number,Result[]>>({});
   const [searching, setSearching] = useState<Record<number,boolean>>({});
   const [names, setNames] = useState<Record<string,string>>({});
+  const [showPresetsModal, setShowPresetsModal] = useState(false);
+  const [presetConfirm, setPresetConfirm] = useState<typeof BUILDER_PRESETS[0]|null>(null);
+
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
     check();
@@ -149,7 +168,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const [showCsvModal, setShowCsvModal] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
   const [csvError, setCsvError] = useState("");
-  const [csvPreview, setCsvPreview] = useState<{ tickers: string[]; weights: number[]; detected_format: string } | null>(null);
+  const [csvPreview, setCsvPreview] = useState<{ tickers: string[]; weights: number[]; detected_format: string }|null>(null);
   const [csvDragOver, setCsvDragOver] = useState(false);
   const blurT = useRef<Record<number,ReturnType<typeof setTimeout>>>({});
   const searchT = useRef<Record<number,ReturnType<typeof setTimeout>>>({});
@@ -158,7 +177,13 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
 
   const search = useCallback(async (i: number, q: string) => {
     if (!q) { setResults(p => ({...p,[i]:[]})); return; }
-    // Show local results immediately for instant feedback
+    const upper = q.toUpperCase();
+    // Cash tickers: show local match only, never hit API
+    if (CASH_TICKERS.has(upper)) {
+      const local = localSearch(q);
+      setResults(p => ({...p,[i]:local}));
+      return;
+    }
     const local = localSearch(q);
     if (local.length > 0) setResults(p => ({...p,[i]:local}));
     clearTimeout(searchT.current[i]);
@@ -168,7 +193,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         const res = await fetch(`${API_URL}/search-ticker?q=${encodeURIComponent(q)}`);
         const d = await res.json();
         const apiResults: Result[] = d.results || [];
-        // Merge: API results first, then local results not already in API results
         const apiTickers = new Set(apiResults.map((r: Result) => r.ticker));
         const merged = [...apiResults, ...local.filter(l => !apiTickers.has(l.ticker))].slice(0, 8);
         setResults(p => ({...p,[i]: merged.length > 0 ? merged : local}));
@@ -176,7 +200,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         merged.forEach((r: Result) => { n[r.ticker]=r.name; });
         setNames(p => ({...p,...n}));
       } catch {
-        // API failed, keep local results
         if (local.length === 0) setResults(p => ({...p,[i]:[]}));
       }
       setSearching(p => ({...p,[i]:false}));
@@ -184,7 +207,15 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   }, []);
 
   const updateWeight = (i: number, v: number) => { const n=[...assets]; n[i]={...n[i],weight:v}; update(n); };
-  const updatePurchasePrice = (i: number, v: string) => { const n=[...assets]; n[i]={...n[i],purchasePrice:v===''?undefined:parseFloat(v)||undefined}; update(n); };
+  const updatePurchasePrice = (i: number, v: string) => {
+    const n=[...assets]; n[i]={...n[i],purchasePrice:v===''?undefined:parseFloat(v)||undefined}; update(n);
+  };
+  const updateManualReturn = (i: number, v: string) => {
+    const n=[...assets];
+    const parsed = parseFloat(v);
+    n[i]={...n[i],manualReturn: v==='' ? undefined : (isNaN(parsed) ? undefined : parsed)};
+    update(n);
+  };
   const updateTicker = (i: number, v: string) => {
     setQuery(p=>({...p,[i]:v}));
     const n=[...assets]; n[i]={...n[i],ticker:v.toUpperCase()}; update(n);
@@ -200,6 +231,15 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const remove = (i: number) => update(assets.filter((_,idx)=>idx!==i));
   const add = () => update([...assets,{ticker:"",weight:0.05}]);
   const equalize = () => { if(!assets.length)return; const w=parseFloat((1/assets.length).toFixed(4)); update(assets.map(a=>({...a,weight:w}))); };
+
+  const loadPreset = (preset: typeof BUILDER_PRESETS[0]) => {
+    if (assets.length > 0) {
+      setPresetConfirm(preset);
+    } else {
+      update(preset.assets);
+      setShowPresetsModal(false);
+    }
+  };
 
   const handleImport = async (file: File) => {
     setImportLoading(true); setImportError("");
@@ -239,37 +279,70 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
 
   const total = assets.reduce((s,a)=>s+a.weight,0);
   const balanced = Math.abs(total-1)<0.01;
+  const overweight = total > 1.005;
 
   return (
     <div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+      {/* ── Sticky weight header ─────────────────────────────────── */}
+      <div style={{
+        position:"sticky", top:0, zIndex:20,
+        background:"var(--bg2)",
+        marginLeft:-14, marginRight:-14, marginTop:-12,
+        padding:"8px 14px 8px",
+        borderBottom:`0.5px solid var(--border)`,
+        display:"flex", justifyContent:"space-between", alignItems:"center",
+        backdropFilter:"blur(8px)", WebkitBackdropFilter:"blur(8px)",
+      }}>
         <span style={{fontSize:8,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase"}}>Assets</span>
         <div style={{display:"flex",gap:5,alignItems:"center"}}>
+          <button
+            onClick={()=>setShowPresetsModal(true)}
+            style={{padding:"3px 7px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
+            Presets
+          </button>
           <button onClick={()=>fileRef.current?.click()} disabled={importLoading}
-            style={{padding:"3px 8px",fontSize:9,background:"var(--bg3)",border:`1px solid ${C.border}`,borderRadius:5,cursor:"pointer",color:C.cream3,letterSpacing:0.5}}>
-            {importLoading?"...":"↑ Screenshot"}
+            style={{padding:"3px 7px",fontSize:9,background:"var(--bg3)",border:`1px solid ${C.border}`,borderRadius:5,cursor:"pointer",color:C.cream3,letterSpacing:0.3}}>
+            {importLoading?"...":"Screenshot"}
           </button>
           <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
           <button onClick={()=>{setShowCsvModal(true);setCsvPreview(null);setCsvError("");}}
-            style={{padding:"3px 8px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.5}}>
-            ↑ CSV
+            style={{padding:"3px 7px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
+            CSV
           </button>
-          <span onClick={!balanced?equalize:undefined}
-            style={{fontSize:9,padding:"2px 7px",border:`1px solid ${!balanced?"rgba(201,168,76,0.3)":C.border}`,borderRadius:4,cursor:balanced?"default":"pointer",color:!balanced?C.amber:C.cream3,background:"rgba(255,255,255,0.03)",fontFamily:"Space Mono,monospace"}}>
-            {(total*100).toFixed(0)}%
+          {/* Total weight badge */}
+          <span
+            onClick={!balanced && !overweight ? equalize : undefined}
+            title={!balanced && !overweight ? "Click to equalize weights" : ""}
+            style={{
+              fontSize:9, padding:"2px 7px",
+              border:`1px solid ${overweight ? "rgba(224,92,92,0.5)" : !balanced ? "rgba(201,168,76,0.35)" : C.border}`,
+              borderRadius:4,
+              cursor: balanced ? "default" : !overweight ? "pointer" : "default",
+              color: overweight ? "#e05c5c" : !balanced ? C.amber : C.cream3,
+              background: overweight ? "rgba(224,92,92,0.06)" : "rgba(255,255,255,0.02)",
+              fontFamily:"Space Mono,monospace",
+              transition:"all 0.15s", flexShrink:0,
+            }}>
+            {(total*100).toFixed(0)}% / 100%
           </span>
         </div>
       </div>
 
-      {importError&&<p style={{fontSize:10,color:"#e05c5c",marginBottom:8}}>{importError}</p>}
+      {importError&&<p style={{fontSize:10,color:"#e05c5c",margin:"8px 0"}}>{importError}</p>}
 
+      <div style={{marginTop:10}}>
       <AnimatePresence>
         {assets.map((a,i)=>{
           const color=DOTS[i%DOTS.length];
           const res=results[i]||[];
-          const name=names[a.ticker]||"";
+          const isCash = CASH_TICKERS.has(a.ticker);
+          // Company name: prefer static entry for cash tickers, then names state
+          const staticEntry = COMMON_TICKERS.find(t => t.ticker === a.ticker);
+          const displayName = isCash
+            ? (staticEntry?.name || "Cash / Money Market")
+            : (names[a.ticker] || "");
           return (
             <motion.div key={i} initial={{opacity:0,x:-6}} animate={{opacity:1,x:0}} exit={{opacity:0,height:0}} transition={{duration:0.15}} style={{marginBottom:10,position:"relative"}}>
               <div style={{display:"flex",alignItems:"center",gap:5}}>
@@ -311,24 +384,48 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   onMouseEnter={e=>e.currentTarget.style.color="#e05c5c"}
                   onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}>✕</button>
               </div>
-              {name&&<div style={{paddingLeft:9,marginTop:2,fontSize:9,color:C.cream3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>}
+
+              {/* Company name / description below ticker */}
+              {displayName&&(
+                <div style={{paddingLeft:9,marginTop:2,fontSize:9,color:C.cream3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {displayName}
+                </div>
+              )}
+
               <div style={{paddingLeft:9,marginTop:4}}>
                 <input type="range" min="0" max="1" step="0.01" value={a.weight}
                   onChange={e=>updateWeight(i,parseFloat(e.target.value))}
                   onInput={e=>updateWeight(i,parseFloat((e.target as HTMLInputElement).value))}
                   style={{width:"100%",height:2,appearance:"none" as any,background:`linear-gradient(90deg,${C.amber} ${a.weight*100}%,var(--track) ${a.weight*100}%)`,borderRadius:1,outline:"none",cursor:"pointer"}}/>
               </div>
-              <div style={{paddingLeft:9,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
-                <span style={{fontSize:8,color:"var(--text3)",letterSpacing:1.5,textTransform:"uppercase",flexShrink:0}}>Avg Cost $</span>
-                <input type="number" min="0" step="0.01" placeholder="optional"
-                  value={a.purchasePrice ?? ""}
-                  onChange={e=>updatePurchasePrice(i,e.target.value)}
-                  style={{flex:"1 1 60px",minWidth:0,maxWidth:80,padding:"3px 5px",background:"var(--bg3)",border:`1px dashed ${C.border}`,borderRadius:4,color:"var(--text3)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"left"}}/>
-              </div>
+
+              {/* Cash: annual return input */}
+              {isCash && (
+                <div style={{paddingLeft:9,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{fontSize:8,color:"rgba(201,168,76,0.7)",letterSpacing:1.5,textTransform:"uppercase",flexShrink:0}}>Annual return on this position? (e.g. 4.5%)</span>
+                  <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 4.5"
+                    value={a.manualReturn ?? ""}
+                    onChange={e=>updateManualReturn(i,e.target.value)}
+                    style={{flex:"1 1 55px",minWidth:0,maxWidth:70,padding:"3px 5px",background:"rgba(201,168,76,0.06)",border:`1px solid rgba(201,168,76,0.3)`,borderRadius:4,color:C.amber,fontSize:9,fontFamily:"Space Mono,monospace",outline:"none"}}/>
+                  <span style={{fontSize:8,color:C.amber,opacity:0.7,flexShrink:0}}>%</span>
+                </div>
+              )}
+
+              {/* Non-cash: purchase price */}
+              {!isCash && (
+                <div style={{paddingLeft:9,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{fontSize:8,color:"var(--text3)",letterSpacing:1.5,textTransform:"uppercase",flexShrink:0}}>Avg Cost $</span>
+                  <input type="number" min="0" step="0.01" placeholder="optional"
+                    value={a.purchasePrice ?? ""}
+                    onChange={e=>updatePurchasePrice(i,e.target.value)}
+                    style={{flex:"1 1 60px",minWidth:0,maxWidth:80,padding:"3px 5px",background:"var(--bg3)",border:`1px dashed ${C.border}`,borderRadius:4,color:"var(--text3)",fontSize:9,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"left"}}/>
+                </div>
+              )}
             </motion.div>
           );
         })}
       </AnimatePresence>
+      </div>
 
       <div style={{display:"flex",gap:5,marginTop:6,marginBottom:10}}>
         <button onClick={add} disabled={assets.length>=20}
@@ -342,7 +439,63 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         )}
       </div>
 
-      {/* ── CSV Import Modal ─────────────────────────────────────── */}
+      {/* ── Presets Modal ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showPresetsModal&&(
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+            style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
+            onClick={()=>{setShowPresetsModal(false);setPresetConfirm(null);}}>
+            <motion.div initial={{scale:0.94,y:10}} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
+              style={{background:"#141413",border:"0.5px solid rgba(255,255,255,0.09)",borderRadius:16,width:"100%",maxWidth:380,boxShadow:"0 24px 80px rgba(0,0,0,0.55)",overflow:"hidden"}}
+              onClick={e=>e.stopPropagation()}>
+              <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div>
+                  <div style={{fontSize:8,letterSpacing:2.5,color:"rgba(232,224,204,0.3)",textTransform:"uppercase",marginBottom:4}}>Portfolio</div>
+                  <div style={{fontSize:14,fontWeight:600,color:"var(--text)"}}>Load a Preset</div>
+                </div>
+                <button onClick={()=>{setShowPresetsModal(false);setPresetConfirm(null);}}
+                  style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.3)",fontSize:16,lineHeight:1,padding:4}}
+                  onMouseEnter={e=>e.currentTarget.style.color="rgba(255,255,255,0.7)"}
+                  onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}>✕</button>
+              </div>
+              {presetConfirm ? (
+                <div style={{padding:"20px"}}>
+                  <p style={{fontSize:13,color:"var(--text)",marginBottom:6}}>Replace current portfolio?</p>
+                  <p style={{fontSize:12,color:"var(--text3)",marginBottom:20,lineHeight:1.6}}>
+                    This will replace your current portfolio with <strong style={{color:C.amber}}>{presetConfirm.label}</strong>. Continue?
+                  </p>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>setPresetConfirm(null)}
+                      style={{flex:1,padding:"9px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,color:"rgba(232,224,204,0.5)",fontSize:12,cursor:"pointer"}}>
+                      Cancel
+                    </button>
+                    <button onClick={()=>{update(presetConfirm.assets);setShowPresetsModal(false);setPresetConfirm(null);}}
+                      style={{flex:2,padding:"9px",background:C.amber,border:"none",borderRadius:8,color:"#0d0d0c",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                      Load Preset
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{padding:"12px 20px 20px"}}>
+                  {BUILDER_PRESETS.map(p=>(
+                    <button key={p.label} onClick={()=>loadPreset(p)}
+                      style={{width:"100%",padding:"12px 14px",marginBottom:6,background:"rgba(255,255,255,0.02)",border:"0.5px solid rgba(255,255,255,0.07)",borderRadius:10,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,0.06)";e.currentTarget.style.borderColor="rgba(201,168,76,0.25)";}}
+                      onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.02)";e.currentTarget.style.borderColor="rgba(255,255,255,0.07)";}}>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--text)",marginBottom:4}}>{p.label}</div>
+                      <div style={{fontSize:10,color:"var(--text3)"}}>
+                        {p.assets.map(a=>`${a.ticker} ${Math.round(a.weight*100)}%`).join(" · ")}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── CSV Import Modal ─────────────────────────────────────────── */}
       <AnimatePresence>
         {showCsvModal&&(
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
@@ -353,8 +506,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               className="c-modal-sheet"
               style={{background:"#141413",border:"0.5px solid rgba(255,255,255,0.09)",borderRadius:16,width:"100%",maxWidth:460,boxShadow:"0 24px 80px rgba(0,0,0,0.55)",overflow:"hidden"}}
               onClick={e=>e.stopPropagation()}>
-
-              {/* Header */}
               <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div>
                   <div style={{fontSize:8,letterSpacing:2.5,color:"rgba(232,224,204,0.3)",textTransform:"uppercase",marginBottom:4}}>Portfolio</div>
@@ -365,9 +516,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   onMouseEnter={e=>e.currentTarget.style.color="rgba(255,255,255,0.7)"}
                   onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}>✕</button>
               </div>
-
               <div style={{padding:"16px 20px 20px"}}>
-                {/* Supported brokerages */}
                 {!csvPreview&&(
                   <div style={{marginBottom:14}}>
                     <div style={{fontSize:8,letterSpacing:2,color:"rgba(232,224,204,0.3)",textTransform:"uppercase",marginBottom:8}}>Supported Exports</div>
@@ -382,8 +531,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                     </div>
                   </div>
                 )}
-
-                {/* Drop zone: only shown when no preview yet */}
                 {!csvPreview&&(
                   <div
                     onDragOver={e=>{e.preventDefault();setCsvDragOver(true);}}
@@ -407,25 +554,18 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 )}
                 <input ref={csvFileRef} type="file" accept=".csv,text/csv" style={{display:"none"}}
                   onChange={e=>{if(e.target.files?.[0])handleCsvFile(e.target.files[0]);e.target.value="";}}/>
-
-                {/* Error */}
                 {csvError&&(
                   <div style={{marginTop:8,padding:"9px 12px",background:"rgba(224,92,92,0.08)",border:"1px solid rgba(224,92,92,0.2)",borderRadius:8,fontSize:10,color:"#e05c5c"}}>
                     {csvError}
                   </div>
                 )}
-
-                {/* Preview */}
                 {csvPreview&&(
                   <div>
-                    {/* Format badge */}
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
                       <span style={{fontSize:8,letterSpacing:2,color:"rgba(232,224,204,0.3)",textTransform:"uppercase"}}>Detected</span>
                       <span style={{fontSize:9,padding:"3px 9px",background:"rgba(201,168,76,0.1)",border:"1px solid rgba(201,168,76,0.3)",borderRadius:4,color:C.amber,letterSpacing:0.5}}>{csvPreview.detected_format}</span>
                       <span style={{fontSize:9,color:"rgba(232,224,204,0.3)"}}>· {csvPreview.tickers.length} holdings</span>
                     </div>
-
-                    {/* Table */}
                     <div style={{border:"0.5px solid rgba(255,255,255,0.07)",borderRadius:8,overflow:"hidden",marginBottom:14}}>
                       <div style={{display:"grid",gridTemplateColumns:"1fr auto",padding:"6px 12px",background:"rgba(255,255,255,0.03)",borderBottom:"0.5px solid rgba(255,255,255,0.06)"}}>
                         <span style={{fontSize:8,letterSpacing:2,color:"rgba(232,224,204,0.3)",textTransform:"uppercase"}}>Ticker</span>
@@ -443,8 +583,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                         ))}
                       </div>
                     </div>
-
-                    {/* Actions */}
                     <div style={{display:"flex",gap:8}}>
                       <button onClick={()=>{setCsvPreview(null);setCsvError("");}}
                         style={{flex:1,padding:"8px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,color:"rgba(232,224,204,0.5)",fontSize:10,cursor:"pointer",letterSpacing:0.5}}>
@@ -462,7 +600,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

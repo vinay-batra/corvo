@@ -9,11 +9,13 @@ interface UserMenuProps {
   onEmailPrefs?: () => void;
   onReferral?: () => void;
   onSettings?: () => void;
+  onReplayOnboarding?: () => void;
+  onReplayTour?: () => void;
   avatarUrl?: string | null;
   displayName?: string;
 }
 
-export default function UserMenu({ onEmailPrefs, onReferral, onSettings, avatarUrl, displayName }: UserMenuProps) {
+export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onReplayOnboarding, onReplayTour, avatarUrl, displayName }: UserMenuProps) {
   const [user, setUser] = useState<any>(null);
   const [open, setOpen] = useState(false);
 
@@ -61,12 +63,12 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, avatarU
             style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: 6, minWidth: 180, zIndex: 100, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
             <div style={{ padding: "8px 12px", fontSize: 11, color: C.cream3, borderBottom: "1px solid rgba(255,255,255,0.05)", marginBottom: 4 }}>{user.email}</div>
             {onSettings ? (
-              <button onClick={() => { setOpen(false); onSettings(); }}
+              <button id="tour-settings-btn" onClick={() => { setOpen(false); onSettings(); }}
                 style={{ width: "100%", padding: "8px 12px", background: "none", border: "none", color: C.cream, fontSize: 12, cursor: "pointer", textAlign: "left", borderRadius: 6, transition: "background 0.1s" }}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                 onMouseLeave={e => e.currentTarget.style.background = "none"}>Settings</button>
             ) : (
-              <a href="/settings"
+              <a id="tour-settings-btn" href="/settings"
                 style={{ display: "block", width: "100%", padding: "8px 12px", background: "none", border: "none", color: C.cream, fontSize: 12, cursor: "pointer", textAlign: "left", borderRadius: 6, transition: "background 0.1s", textDecoration: "none" }}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                 onMouseLeave={e => e.currentTarget.style.background = "none"}>Settings</a>
@@ -82,6 +84,18 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, avatarU
                 style={{ width: "100%", padding: "8px 12px", background: "none", border: "none", color: C.cream, fontSize: 12, cursor: "pointer", textAlign: "left", borderRadius: 6, transition: "background 0.1s" }}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                 onMouseLeave={e => e.currentTarget.style.background = "none"}>Invite Friends</button>
+            )}
+            {onReplayOnboarding && (
+              <button onClick={() => { setOpen(false); onReplayOnboarding(); }}
+                style={{ width: "100%", padding: "8px 12px", background: "none", border: "none", color: C.cream, fontSize: 12, cursor: "pointer", textAlign: "left", borderRadius: 6, transition: "background 0.1s" }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseLeave={e => e.currentTarget.style.background = "none"}>Replay Onboarding</button>
+            )}
+            {onReplayTour && (
+              <button onClick={() => { setOpen(false); onReplayTour(); }}
+                style={{ width: "100%", padding: "8px 12px", background: "none", border: "none", color: C.cream, fontSize: 12, cursor: "pointer", textAlign: "left", borderRadius: 6, transition: "background 0.1s" }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseLeave={e => e.currentTarget.style.background = "none"}>Replay Tour</button>
             )}
             <button onClick={signOut}
               style={{ width: "100%", padding: "8px 12px", background: "none", border: "none", color: "#e05c5c", fontSize: 12, cursor: "pointer", textAlign: "left", borderRadius: 6, transition: "background 0.1s" }}

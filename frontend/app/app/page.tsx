@@ -45,7 +45,6 @@ import LivePriceStrip from "../../components/LivePriceStrip";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
 import StockCompare from "../../components/StockCompare";
 import Watchlist from "../../components/Watchlist";
-import PortfolioHistory from "../../components/PortfolioHistory";
 import MarketBrief from "../../components/MarketBrief";
 import EmailPreferences from "../../components/EmailPreferences";
 import ReferralModal from "../../components/ReferralModal";
@@ -56,6 +55,9 @@ import KeyboardShortcutsModal from "../../components/KeyboardShortcutsModal";
 import PositionsTab from "../../components/PositionsTab";
 import RightPanel from "../../components/RightPanel";
 import MobileBottomNav from "../../components/MobileBottomNav";
+import DashboardTour from "../../components/DashboardTour";
+import FeedbackButton from "../../components/FeedbackButton";
+import { type SavedPortfolioLine } from "../../components/PerformanceChart";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -762,6 +764,8 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
 
 export default function AppPage() {
   const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number }[]>([]);
+  const [portfolioStale, setPortfolioStale] = useState(false);
+  const lastAnalyzedAssetsRef             = useRef<string>("");
   const [period, setPeriod]               = useState("1y");
   const [benchmark, setBenchmark]         = useState("^GSPC");
   const [data, setData]                   = useState<any>(null);
@@ -796,6 +800,9 @@ export default function AppPage() {
   const [whatIfOpen, setWhatIfOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const [showDashboardTour, setShowDashboardTour] = useState(false);
+  const [savedPortfolioLines, setSavedPortfolioLines] = useState<SavedPortfolioLine[]>([]);
+  const [customDateRange, setCustomDateRange] = useState<{ start: string; end: string } | null>(null);
   const [userId, setUserId]         = useState<string | null>(null);
   const [navProfile, setNavProfile] = useState<{ displayName: string; avatarUrl: string | null }>({ displayName: "", avatarUrl: null });
   const referralCodeRef             = useRef<string>("");
@@ -945,6 +952,11 @@ export default function AppPage() {
       setData(result);
       setActiveTab("overview");
       setAnalyzeComplete(true);
+      // Record the portfolio state that produced these results so we can detect drift
+      lastAnalyzedAssetsRef.current = valid
+        .map(a => `${a.ticker}:${a.weight.toFixed(4)}`)
+        .sort().join(",");
+      setPortfolioStale(false);
       sound.success();
       posthog.capture("portfolio_analyzed", { ticker_count: valid.length, tickers: valid.map(a => a.ticker) });
       setTimeout(() => setAnalyzeComplete(false), 600);
@@ -986,6 +998,18 @@ export default function AppPage() {
 
   const handleAnalyzeRef = useRef(handleAnalyze);
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
+
+  // Mark results stale whenever the portfolio changes after a successful analysis
+  useEffect(() => {
+    if (!data) return;
+    const key = assets
+      .filter(a => a.ticker && a.weight > 0)
+      .map(a => `${a.ticker}:${a.weight.toFixed(4)}`)
+      .sort().join(",");
+    if (lastAnalyzedAssetsRef.current && key !== lastAnalyzedAssetsRef.current) {
+      setPortfolioStale(true);
+    }
+  }, [assets, data]);
 
   // ── Detect saved portfolio from assets (pre-analysis) ───────────────────────
   useEffect(() => {
@@ -1090,6 +1114,41 @@ export default function AppPage() {
       } catch {}
     })();
   }, [userId]);
+
+  // ── Load saved portfolio overlay lines when analysis completes ────────────────
+  useEffect(() => {
+    if (!data) return;
+    const SAVED_PALETTE = ["#5cb88a", "#5b9cf6", "#e05c5c", "#a78bfa", "#fb923c", "#38bdf8"];
+    try {
+      const raw = localStorage.getItem("corvo_saved_portfolios");
+      const saved: any[] = raw ? JSON.parse(raw) : [];
+      if (!saved.length) return;
+      const currentKey = assets.map(a => a.ticker).sort().join(",");
+      const others = saved.filter(p => {
+        const t = ((p.assets || []) as any[]).map((a: any) => a.ticker).sort().join(",");
+        return t && t !== currentKey;
+      }).slice(0, 6);
+      if (!others.length) return;
+      // Fetch portfolio data for each saved portfolio in parallel (silent errors)
+      const fetchLine = async (p: any, color: string): Promise<SavedPortfolioLine | null> => {
+        try {
+          const { fetchPortfolio: fp } = await import("../../lib/api");
+          const pAssets = (p.assets || []).filter((a: any) => a.ticker && a.weight > 0);
+          if (!pAssets.length) return null;
+          const res: any = await fp(pAssets, period, benchmark);
+          const dates: string[] = res.dates || [];
+          const cumulative: number[] = res.portfolio_cumulative || res.growth || [];
+          if (!dates.length || !cumulative.length) return null;
+          return { id: p.id || p.name, name: p.name || "Saved", color, dates, cumulative, visible: false };
+        } catch { return null; }
+      };
+      Promise.all(others.map((p, i) => fetchLine(p, SAVED_PALETTE[i % SAVED_PALETTE.length]))).then(results => {
+        const lines = results.filter(Boolean) as SavedPortfolioLine[];
+        if (lines.length) setSavedPortfolioLines(lines);
+      });
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   // ── Show notification prompt once after login ────────────────────────────────
   useEffect(() => {
@@ -1289,17 +1348,44 @@ export default function AppPage() {
 
       {/* Analyze button */}
       <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
-        <motion.button
-          id="tour-analyze-btn"
-          onClick={handleAnalyze}
-          disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
-          animate={analyzeComplete ? { scale: [1, 1.05, 1] } : { scale: 1 }}
-          whileHover={!loading && assets.some(a => a.ticker && a.weight > 0) ? { scale: 1.02 } : {}}
-          whileTap={!loading && assets.some(a => a.ticker && a.weight > 0) ? { scale: 0.97 } : {}}
-          transition={{ duration: 0.35 }}
-          style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : assets.some(a => a.ticker && a.weight > 0) ? "var(--text)" : "var(--bg3)", color: loading || !assets.some(a => a.ticker && a.weight > 0) ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: loading || !assets.some(a => a.ticker && a.weight > 0) ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
-          {loading ? "Analyzing..." : "Analyze"}
-        </motion.button>
+        {(() => {
+          const validA = assets.filter(a => a.ticker && a.weight > 0);
+          const totalW = validA.reduce((s, a) => s + a.weight, 0);
+          // Allow fraction weights (sum ≈ 1) or integer weights (sum ≈ 100) gracefully
+          const isBalanced = validA.length === 0 ||
+            Math.abs(totalW - 1) < 0.015 ||
+            Math.abs(totalW - 100) < 1.5;
+          const hasHoldings = validA.length > 0;
+          const canAnalyze = !loading && hasHoldings && isBalanced;
+          return (
+            <>
+              <motion.button
+                id="tour-analyze-btn"
+                onClick={canAnalyze ? handleAnalyze : undefined}
+                disabled={!canAnalyze}
+                animate={analyzeComplete ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+                whileHover={canAnalyze ? { scale: 1.02 } : {}}
+                whileTap={canAnalyze ? { scale: 0.97 } : {}}
+                transition={{ duration: 0.35 }}
+                style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : canAnalyze ? "var(--text)" : "var(--bg3)", color: loading || !canAnalyze ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: canAnalyze ? "pointer" : "not-allowed", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
+                {loading ? "Analyzing..." : "Analyze"}
+              </motion.button>
+              {hasHoldings && !isBalanced && (
+                <p style={{ fontSize: 10, color: "#e05c5c", textAlign: "center", marginTop: 5, lineHeight: 1.4 }}>
+                  Weights must total 100% before analyzing.
+                  {" "}<span style={{ color: "var(--accent)", cursor: "pointer", textDecoration: "underline" }}
+                    onClick={() => {
+                      const total = validA.reduce((s, a) => s + a.weight, 0);
+                      if (!total) return;
+                      setAssets(assets.map(a => ({ ...a, weight: a.weight / total })));
+                    }}>
+                    Equalize
+                  </span>
+                </p>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {/* Period */}
@@ -1547,7 +1633,7 @@ export default function AppPage() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
             {/* Keyboard shortcuts hint */}
-            <button onClick={() => setShowHelpModal(true)} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
+            <button id="tour-keyboard-shortcuts" onClick={() => setShowHelpModal(true)} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
               style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 5, transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
               onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
@@ -1574,7 +1660,7 @@ export default function AppPage() {
                 <span style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg)" }} />
               )}
             </button>
-            <DarkModeToggle dark={dark} toggle={toggleDark} />
+            <div id="tour-dark-mode-toggle"><DarkModeToggle dark={dark} toggle={toggleDark} /></div>
             {data && (
               <button onClick={exportCSV} title="Export CSV"
                 style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text2)", display: "flex", alignItems: "center", gap: 5, transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
@@ -1592,7 +1678,26 @@ export default function AppPage() {
                 ↗ Share
               </button>
             )}
-            <UserMenu onEmailPrefs={() => setShowEmailPrefs(true)} onReferral={() => setShowReferral(true)} onSettings={() => setShowSettings(true)} avatarUrl={navProfile.avatarUrl} displayName={navProfile.displayName} />
+            <div id="tour-profile-btn">
+              <UserMenu
+                onEmailPrefs={() => setShowEmailPrefs(true)}
+                onReferral={() => setShowReferral(true)}
+                onSettings={() => setShowSettings(true)}
+                onReplayOnboarding={() => {
+                  localStorage.removeItem("corvo_onboarding_skipped");
+                  localStorage.removeItem("corvo_setup_banner_dismissed");
+                  setShowSettings(false);
+                  setShowOnboarding(true);
+                }}
+                onReplayTour={() => {
+                  localStorage.removeItem("corvo_tour_completed");
+                  setShowSettings(false);
+                  setShowDashboardTour(true);
+                }}
+                avatarUrl={navProfile.avatarUrl}
+                displayName={navProfile.displayName}
+              />
+            </div>
           </div>
         </header>
 
@@ -1696,11 +1801,29 @@ export default function AppPage() {
               <motion.div key="loading" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                {/* Stale-portfolio banner */}
+                {portfolioStale && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                    style={{ border: "0.5px solid rgba(184,134,11,0.35)", borderRadius: 10, padding: "10px 16px", background: "rgba(184,134,11,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <span style={{ fontSize: 12, color: "var(--text2)" }}>
+                      Your portfolio has changed. Results below may not reflect your current holdings.
+                    </span>
+                    <button
+                      onClick={handleAnalyze}
+                      style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "#0a0e14", cursor: "pointer", flexShrink: 0 }}>
+                      Reanalyze
+                    </button>
+                  </motion.div>
+                )}
+
                 {/* Greeting + portfolio pulse + quick actions */}
                 <GreetingBar
                   displayName={navProfile.displayName}
                   portfolioData={data}
                   assets={assets}
+                  perfHistory={perfHistory}
+                  portfolioValue={10000}
                   onAddPortfolio={() => setSidebarOpen(true)}
                   onImportCSV={() => {
                     const input = document.createElement("input");
@@ -1736,21 +1859,59 @@ export default function AppPage() {
                     data={data}
                     currency={currency}
                     rate={rate}
+                    period={period}
                     sparklineValues={(data.portfolio_cumulative || data.growth || []).slice(-14)}
                   />
                 </motion.div>
                 <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
                   <Card>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                       <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
-                      <button onClick={() => setWhatIfOpen(true)}
-                        style={{ padding: "4px 10px", fontSize: 10, borderRadius: 6, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}>
-                        What-If →
-                      </button>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        {/* Period selector — adjacent to graph */}
+                        <div style={{ display: "flex", gap: 3 }}>
+                          {PERIODS.map(p => (
+                            <button key={p} onClick={() => setPeriod(p)}
+                              style={{ padding: "4px 9px", fontSize: 10, fontFamily: "var(--font-mono)", background: period === p ? "var(--text)" : "transparent", border: "0.5px solid var(--border)", borderRadius: 5, color: period === p ? "var(--bg)" : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
+                              {PERIOD_LABELS[p]}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Benchmark selector — adjacent to graph */}
+                        <div style={{ position: "relative" }}>
+                          <button onClick={() => setBenchOpen(o => !o)}
+                            style={{ padding: "4px 10px", fontSize: 10, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 5, cursor: "pointer", color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
+                            <span style={{ fontSize: 8, color: "var(--text3)" }}>vs</span>{benchLabel}<span style={{ fontSize: 8, color: "var(--text3)" }}>▾</span>
+                          </button>
+                          <AnimatePresence>
+                            {benchOpen && (
+                              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 130, boxShadow: "var(--shadow)" }}>
+                                {BENCHMARKS.map(b => (
+                                  <button key={b.ticker} onClick={() => { setBenchmark(b.ticker); setBenchOpen(false); }}
+                                    style={{ width: "100%", textAlign: "left", padding: "7px 12px", background: b.ticker === benchmark ? "var(--bg3)" : "transparent", border: "none", color: "var(--text)", fontSize: 11, cursor: "pointer" }}>
+                                    {b.label}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                        <button onClick={() => setWhatIfOpen(true)}
+                          style={{ padding: "4px 10px", fontSize: 10, borderRadius: 5, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
+                          onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}>
+                          What-If →
+                        </button>
+                      </div>
                     </div>
-                    <PerformanceChart data={data} />
+                    <PerformanceChart
+                      data={data}
+                      savedLines={savedPortfolioLines}
+                      onSavedLinesChange={setSavedPortfolioLines}
+                      customDateRange={customDateRange}
+                      onCustomDateChange={setCustomDateRange}
+                    />
                   </Card>
                 </motion.div>
                 <motion.div
@@ -1810,7 +1971,6 @@ export default function AppPage() {
                     </button>
                   </motion.div>
                 )}
-                <PortfolioHistory />
                 {savedPortfolioId && (
                   <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} transition={{ duration: 0.2 }}>
                     <PortfolioPerformanceTrend
@@ -1883,6 +2043,7 @@ export default function AppPage() {
 
       {/* Floating AI Chat button */}
       <motion.button
+        id="tour-ai-chat-fab"
         onClick={() => setChatOpen(v => !v)}
         title="AI Chat (A)"
         initial={{ scale: 0, opacity: 0 }}
@@ -1925,7 +2086,7 @@ export default function AppPage() {
       <motion.button
         className="c-mob-analyze"
         onClick={handleAnalyze}
-        disabled={loading || !assets.some(a => a.ticker && a.weight > 0)}
+        disabled={loading || !assets.some(a => a.ticker && a.weight > 0 && a.ticker !== "")}
         animate={analyzeComplete ? { scale: [1, 1.08, 1] } : { scale: 1 }}
         transition={{ duration: 0.35 }}
         style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 150, padding: "13px 40px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "var(--bg3)" : assets.some(a => a.ticker && a.weight > 0) ? "var(--text)" : "var(--bg3)", color: loading || !assets.some(a => a.ticker && a.weight > 0) ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 24, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.3)", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none", display: "none" }}>
@@ -1937,14 +2098,17 @@ export default function AppPage() {
           <OnboardingModal
             onComplete={async (builtAssets) => {
               setShowOnboarding(false);
-              localStorage.setItem("corvo_tour_completed", "true");
               localStorage.removeItem("corvo_onboarding_skipped");
               setShowSetupBanner(false);
               posthog.capture("onboarding_completed", { tickers_added: builtAssets.length });
               if (builtAssets.length > 0) {
-                setAssets(builtAssets.map(a => ({ ...a, weight: Math.round(a.weight * 100) > 0 ? Math.round(a.weight * 100) : a.weight })));
+                // builtAssets come from PortfolioBuilder which stores fractions (0–1).
+                // Do NOT multiply by 100 — that corrupts the weights.
+                setAssets(builtAssets);
               }
               tourNeededRef.current = false;
+              // Show guided tour after onboarding
+              setShowDashboardTour(true);
               const { data: { user } } = await supabase.auth.getUser();
               if (user) {
                 const { data: xpRow } = await supabase.from("profiles").select("xp").eq("id", user.id).single();
@@ -1969,6 +2133,12 @@ export default function AppPage() {
       <AnimatePresence>
         {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} />}
       </AnimatePresence>
+      {showDashboardTour && (
+        <DashboardTour onComplete={() => {
+          setShowDashboardTour(false);
+          localStorage.setItem("corvo_tour_completed", "true");
+        }} />
+      )}
       <AnimatePresence>
         {showTour && <OnboardingTour
           assets={assets}
@@ -1990,7 +2160,21 @@ export default function AppPage() {
             initial={{ opacity: 0, x: "100%" }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 280 }}
             style={{ position: "fixed", inset: 0, zIndex: 490, background: "var(--bg)", overflowY: "auto" }}>
-            <SettingsPage onClose={() => setShowSettings(false)} onProfileSaved={(p) => setNavProfile({ displayName: p.displayName, avatarUrl: p.avatarUrl })} />
+            <SettingsPage
+              onClose={() => setShowSettings(false)}
+              onProfileSaved={(p) => setNavProfile({ displayName: p.displayName, avatarUrl: p.avatarUrl })}
+              onReplayOnboarding={() => {
+                localStorage.removeItem("corvo_onboarding_skipped");
+                localStorage.removeItem("corvo_setup_banner_dismissed");
+                setShowSettings(false);
+                setShowOnboarding(true);
+              }}
+              onReplayTour={() => {
+                localStorage.removeItem("corvo_tour_completed");
+                setShowSettings(false);
+                setShowDashboardTour(true);
+              }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -2070,6 +2254,9 @@ export default function AppPage() {
       <AnimatePresence>
         {showNotifPrompt && <NotificationPrompt onDismiss={() => setShowNotifPrompt(false)} />}
       </AnimatePresence>
+
+      {/* Feedback button */}
+      <FeedbackButton />
 
       {/* Back to top */}
       <button

@@ -121,49 +121,63 @@ export default function PositionsTab({
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   // ── Load saved portfolios ──────────────────────────────────────────────────
-  useEffect(() => {
-    (async () => {
-      setPortfoliosLoading(true);
-      const portfolios: SavedPortfolio[] = [];
+  const loadPortfolios = useCallback(async () => {
+    setPortfoliosLoading(true);
+    const portfolios: SavedPortfolio[] = [];
 
-      // localStorage (works for logged-out users too)
-      try {
-        const raw = localStorage.getItem(LOCAL_KEY);
-        if (raw) {
-          const parsed: any[] = JSON.parse(raw);
-          parsed.forEach(p => {
-            if (p.id && p.name && Array.isArray(p.assets) && p.assets.length > 0) {
-              portfolios.push({ id: p.id, name: p.name, assets: p.assets });
-            }
+    // localStorage (works for logged-out users too)
+    try {
+      const raw = localStorage.getItem(LOCAL_KEY);
+      if (raw) {
+        const parsed: any[] = JSON.parse(raw);
+        parsed.forEach(p => {
+          if (p.id && p.name && Array.isArray(p.assets) && p.assets.length > 0) {
+            portfolios.push({ id: p.id, name: p.name, assets: p.assets });
+          }
+        });
+      }
+    } catch {}
+
+    // Supabase (logged-in users)
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: pfs } = await supabase
+          .from("portfolios")
+          .select("id,name,assets")
+          .eq("user_id", user.id);
+        if (pfs) {
+          pfs.forEach((p: any) => {
+            // Skip duplicates already in localStorage
+            if (portfolios.some(lp => lp.id === p.id)) return;
+            const assets: SavedPortfolio["assets"] = Array.isArray(p.assets)
+              ? p.assets.filter((a: any) => a.ticker && a.weight > 0)
+              : [];
+            if (assets.length > 0) portfolios.push({ id: p.id, name: p.name || "Untitled", assets });
           });
         }
-      } catch {}
+      }
+    } catch {}
 
-      // Supabase (logged-in users)
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: pfs } = await supabase
-            .from("portfolios")
-            .select("id,name,assets")
-            .eq("user_id", user.id);
-          if (pfs) {
-            pfs.forEach((p: any) => {
-              // Skip duplicates already in localStorage
-              if (portfolios.some(lp => lp.id === p.id)) return;
-              const assets: SavedPortfolio["assets"] = Array.isArray(p.assets)
-                ? p.assets.filter((a: any) => a.ticker && a.weight > 0)
-                : [];
-              if (assets.length > 0) portfolios.push({ id: p.id, name: p.name || "Untitled", assets });
-            });
-          }
-        }
-      } catch {}
-
-      setSavedPortfolios(portfolios);
-      setPortfoliosLoading(false);
-    })();
+    setSavedPortfolios(portfolios);
+    setPortfoliosLoading(false);
   }, []);
+
+  useEffect(() => {
+    loadPortfolios();
+    // Refresh whenever another tab/component saves to localStorage
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LOCAL_KEY) loadPortfolios();
+    };
+    window.addEventListener("storage", onStorage);
+    // Also listen for a custom event fired by SavedPortfolios on same page
+    const onSaved = () => loadPortfolios();
+    window.addEventListener("corvo:portfolio-saved", onSaved);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("corvo:portfolio-saved", onSaved);
+    };
+  }, [loadPortfolios]);
 
   // ── Derive all unique tickers across selection ─────────────────────────────
   const activePortfolios = selectedId === "all"

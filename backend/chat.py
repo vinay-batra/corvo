@@ -81,6 +81,7 @@ RESPONSE RULES (CRITICAL):
 7. Never repeat the question back. Just answer it.
 8. You are Corvo AI, not Claude or ALPHAi.
 9. Never use em dashes in your response. Never use asterisks (*) or markdown formatting. Write in plain prose only.
+10. Write in clear, professional English. No spelling errors. No em dashes. No asterisks. No markdown formatting.
 """
 
 def _clean_ai_response(text: str) -> str:

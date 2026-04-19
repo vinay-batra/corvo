@@ -252,30 +252,30 @@ export default function AiChat({
     try { return JSON.parse(raw); } catch { return null; }
   })();
 
-  // Portfolio context
-  const portfolioContext = portfolioCtxOn ? (data ? {
-    tickers:              data.tickers || assets?.map((a: any) => a.ticker) || [],
-    weights:              data.weights || assets?.map((a: any) => a.weight / 100) || [],
-    portfolio_return:     data.portfolio_return,
-    portfolio_volatility: data.portfolio_volatility,
-    max_drawdown:         data.max_drawdown,
-    sharpe_ratio:         data.sharpe_ratio,
-    period:               data.period,
-    health_score:         data.health_score,
-    benchmark_return:     data.benchmark_return,
+  // Portfolio context — ALWAYS use live assets for tickers/weights so the AI
+  // never operates on a stale portfolio from a previous analysis.
+  const liveTickers = assets?.map((a: any) => a.ticker).filter(Boolean) || [];
+  const liveTotal = assets?.reduce((s: number, a: any) => s + (a.weight ?? 0), 0) || 1;
+  const liveWeights = assets?.map((a: any) => (a.weight ?? 0) / liveTotal) || [];
+
+  const portfolioContext = portfolioCtxOn ? {
+    // Live holdings — always current
+    tickers: liveTickers,
+    weights: liveWeights,
+    // Analysis metrics from last run (may lag behind current holdings, clearly labelled)
+    portfolio_return:     data?.portfolio_return,
+    portfolio_volatility: data?.portfolio_volatility,
+    max_drawdown:         data?.max_drawdown,
+    sharpe_ratio:         data?.sharpe_ratio,
+    period:               data?.period,
+    health_score:         data?.health_score,
+    benchmark_return:     data?.benchmark_return,
     user_goals: goals ? {
       age: goals.age, salary: goals.salary, invested: goals.invested,
       monthly_contribution: goals.monthlyContribution, retirement_age: goals.retirementAge,
       risk_tolerance: goals.riskTolerance, goal: goals.goal,
     } : null,
-  } : {
-    tickers:    assets?.map((a: any) => a.ticker) || [],
-    user_goals: goals ? {
-      age: goals.age, salary: goals.salary, invested: goals.invested,
-      monthly_contribution: goals.monthlyContribution, retirement_age: goals.retirementAge,
-      risk_tolerance: goals.riskTolerance, goal: goals.goal,
-    } : null,
-  }) : {};
+  } : {};
 
   // ── Effects ──
 
