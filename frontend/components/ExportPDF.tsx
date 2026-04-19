@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", navy: "#0a0e14", cream: "#e8e0cc", cream3: "rgba(232,224,204,0.35)" };
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-interface Props { data: any; assets: any[]; goals?: any; }
+interface Props { data: any; assets: any[]; goals?: any; menuItem?: boolean; onClose?: () => void; }
 
 // ── jsPDF dark-theme PDF builder ─────────────────────────────────────────────
 async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> {
@@ -333,16 +333,17 @@ function buildAiReport(analysis: string, data: any, assets: any[]): string {
   </body></html>`;
 }
 
-export default function ExportPDF({ data, assets, goals }: Props) {
+export default function ExportPDF({ data, assets, goals, menuItem, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"jspdf" | "ai">("jspdf");
   const [open, setOpen] = useState(false);
 
-  const handleExport = async () => {
+  const handleExport = async (exportMode?: "jspdf" | "ai") => {
     if (!data) return;
-    setLoading(true); setOpen(false);
+    const m = exportMode ?? mode;
+    setLoading(true); setOpen(false); onClose?.();
     try {
-      if (mode === "jspdf") {
+      if (m === "jspdf") {
         await buildJsPDF(data, assets, goals);
       } else {
         // AI narrative PDF from backend (ReportLab)
@@ -379,12 +380,24 @@ export default function ExportPDF({ data, assets, goals }: Props) {
     }
   };
 
+  if (menuItem) {
+    const row = (label: string, m: "jspdf" | "ai") => (
+      <button key={m} onClick={() => handleExport(m)} disabled={!data || loading}
+        style={{ width: "100%", textAlign: "left" as const, padding: "9px 14px", fontSize: 12, color: !data ? "var(--text3)" : "var(--text)", background: "transparent", border: "none", cursor: !data || loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, opacity: !data ? 0.5 : 1, transition: "background 0.12s" }}
+        onMouseEnter={e => { if (data && !loading) e.currentTarget.style.background = "var(--bg3)"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+        {loading && mode === m ? (m === "jspdf" ? "Building…" : "Writing…") : label}
+      </button>
+    );
+    return <>{row("↓ Export PDF", "jspdf")}{row("✦ AI Report", "ai")}</>;
+  }
+
   return (
     <div style={{ position: "relative" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ display: "flex", gap: 0 }}>
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-          onClick={handleExport} disabled={!data || loading}
+          onClick={() => handleExport()} disabled={!data || loading}
           style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 12px", background: C.amber2, border: "1px solid rgba(201,168,76,0.25)", borderRight: "none", borderRadius: "8px 0 0 8px", color: C.amber, fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", cursor: !data || loading ? "not-allowed" : "pointer", opacity: !data ? 0.4 : 1, transition: "all 0.2s" }}>
           {loading
             ? <><div style={{ width: 11, height: 11, border: "1.5px solid rgba(201,168,76,0.3)", borderTopColor: C.amber, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />{mode === "ai" ? "Writing..." : "Building..."}</>
