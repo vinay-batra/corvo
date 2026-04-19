@@ -274,20 +274,6 @@ function PricingCard({
         animation: isPro && visible ? "amberPulse 3s ease-in-out infinite" : undefined,
       }}
     >
-      {/* Ambient glow for Pro */}
-      {isPro && (
-        <div style={{
-          position: "absolute",
-          top: -60,
-          right: -60,
-          width: 220,
-          height: 220,
-          borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(201,168,76,0.12) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
-      )}
-
       {/* Pill label */}
       <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{
@@ -317,12 +303,6 @@ function PricingCard({
         </span>
         <span style={{ fontSize: 14, color: "rgba(232,224,204,0.35)", marginLeft: 4 }}>/mo</span>
       </div>
-
-      {isPro && (
-        <p style={{ fontSize: 11, color: "rgba(201,168,76,0.6)", marginBottom: 6, fontStyle: "italic" }}>
-          Early bird pricing TBD
-        </p>
-      )}
 
       <p style={{ fontSize: 13.5, color: "rgba(232,224,204,0.45)", marginBottom: 28, lineHeight: 1.6 }}>
         {isPro ? "For serious investors" : "Everything you need to get started"}
@@ -369,80 +349,6 @@ function PricingCard({
         ))}
       </div>
     </div>
-  );
-}
-
-/* ─── ROI Counter ─── */
-function useCounter(target: number, visible: boolean, duration = 1800) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (!visible) return;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min((now - start) / duration, 1);
-      setCount(Math.floor(target * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [visible, target, duration]);
-  return count;
-}
-
-/* ─── ROI Calculator ─── */
-function RoiCalculator() {
-  const { ref, visible } = useReveal(0.1);
-  const bloombergAnnual = useCounter(24000, visible, 2000);
-  const compoundGain = useCounter(35000, visible, 2200);
-
-  const rows = [
-    { label: "Bloomberg Terminal", monthly: "$2,000/mo", annual: "$24,000/yr", color: "#e05c5c", strikethrough: true },
-    { label: "Yahoo Finance Pro", monthly: "$25/mo", annual: "$300/yr", color: "rgba(232,224,204,0.35)", strikethrough: false },
-    { label: "Corvo", monthly: "$0", annual: "$0/yr", color: "#5cb88a", strikethrough: false },
-  ];
-
-  return (
-    <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 20, padding: "40px 36px", overflow: "hidden", position: "relative" }}>
-          {/* Ambient */}
-          <div style={{ position: "absolute", top: -40, right: -40, width: 240, height: 240, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(224,92,92,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
-
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 12 }}>The Bloomberg Math</p>
-          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(20px,3vw,30px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1, marginBottom: 32, lineHeight: 1.2 }}>
-            What are you really paying<br />for analytics?
-          </h2>
-
-          {/* Comparison rows */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-            {rows.map((r, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", background: i === 2 ? "rgba(92,184,138,0.06)" : "rgba(255,255,255,0.025)", border: `1px solid ${i === 0 ? "rgba(224,92,92,0.2)" : i === 2 ? "rgba(92,184,138,0.2)" : "rgba(255,255,255,0.05)"}`, borderRadius: 12, opacity: visible ? 1 : 0, transform: visible ? "translateX(0)" : "translateX(-20px)", transition: `opacity 0.6s ease ${0.15 + i * 0.12}s, transform 0.6s ease ${0.15 + i * 0.12}s` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, color: "rgba(232,224,204,0.7)", fontWeight: 500 }}>{r.label}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 20, textAlign: "right" as const }}>
-                  <span style={{ fontSize: 12, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace" }}>{r.monthly}</span>
-                  <span style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: r.color, textDecoration: r.strikethrough ? "line-through" : "none", opacity: r.strikethrough ? 0.8 : 1 }}>
-                    {i === 0 ? `$${bloombergAnnual.toLocaleString()}/yr` : r.annual}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Insight */}
-          <div style={{ background: "rgba(92,184,138,0.05)", border: "1px solid rgba(92,184,138,0.15)", borderRadius: 14, padding: "20px 24px", opacity: visible ? 1 : 0, transition: "opacity 0.7s ease 0.5s" }}>
-            <p style={{ fontSize: 14, color: "rgba(232,224,204,0.75)", lineHeight: 1.75 }}>
-              {"That's "}
-              <span style={{ fontFamily: "Space Mono,monospace", color: "#5cb88a", fontWeight: 700 }}>${bloombergAnnual.toLocaleString()}</span>
-              {" back in your portfolio every year. Compounded over 10 years at 8% returns, that's "}
-              <span style={{ fontFamily: "Space Mono,monospace", color: "#5cb88a", fontWeight: 700 }}>${compoundGain.toLocaleString()}+</span>
-              {" in additional wealth, just from not paying for Bloomberg."}
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -539,13 +445,13 @@ function FeatureVoteSection() {
   }, []);
 
   const handleVote = async (id: string) => {
-    if (voted[id]) return;
     const featureName = FEATURE_NAME_MAP[id];
     if (!featureName) return;
+    const alreadyVoted = voted[id] ?? false;
 
-    // Optimistic update
-    const newVotes = { ...votes, [id]: (votes[id] ?? 0) + 1 };
-    const newVoted = { ...voted, [id]: true };
+    // Optimistic update — toggle
+    const newVotes = { ...votes, [id]: Math.max(0, (votes[id] ?? 0) + (alreadyVoted ? -1 : 1)) };
+    const newVoted = { ...voted, [id]: !alreadyVoted };
     setVotes(newVotes);
     setVoted(newVoted);
     try {
@@ -554,7 +460,7 @@ function FeatureVoteSection() {
 
     // Persist to Supabase via atomic RPC
     try {
-      await fetch(`${SB_URL}/rest/v1/rpc/increment_feature_vote`, {
+      await fetch(`${SB_URL}/rest/v1/rpc/${alreadyVoted ? "decrement_feature_vote" : "increment_feature_vote"}`, {
         method: "POST",
         headers: {
           apikey: SB_ANON,
@@ -573,7 +479,6 @@ function FeatureVoteSection() {
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
         <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 12 }}>Roadmap</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,32px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 10 }}>
               Shape what we build next
             </h2>
@@ -602,10 +507,9 @@ function FeatureVoteSection() {
                   </div>
                   <button
                     onClick={() => handleVote(f.id)}
-                    disabled={hasVoted}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: hasVoted ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: 8, cursor: hasVoted ? "default" : "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
-                    onMouseEnter={e => { if (!hasVoted) (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.08)"; }}
-                    onMouseLeave={e => { if (!hasVoted) (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)"; }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: hasVoted ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: 8, cursor: "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = hasVoted ? "rgba(201,168,76,0.06)" : "rgba(201,168,76,0.08)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = hasVoted ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)"; }}
                   >
                     <span style={{ fontSize: 13, color: hasVoted ? "#c9a84c" : "rgba(232,224,204,0.4)" }}>{hasVoted ? "▲" : "△"}</span>
                     <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: hasVoted ? "#c9a84c" : "rgba(232,224,204,0.4)" }}>{loading ? "…" : voteCount}</span>
@@ -628,7 +532,6 @@ function FeatureVoteSection() {
 export default function PricingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
 
-  const { ref: faqRef, visible: faqVisible } = useReveal(0.05);
   const { ref: trustRef, visible: trustVisible } = useReveal(0.1);
 
   return (
@@ -701,7 +604,6 @@ export default function PricingPage() {
             fontSize: "clamp(32px,5vw,60px)",
             fontWeight: 700,
             lineHeight: 1.1,
-            letterSpacing: -2.5,
             color: "#e8e0cc",
             marginBottom: 20,
           }}>
@@ -717,21 +619,8 @@ export default function PricingPage() {
           }}>
             Free during beta. Pro coming soon.
           </p>
-
-          <p style={{
-            fontSize: 14,
-            color: "rgba(232,224,204,0.35)",
-            lineHeight: 1.8,
-            maxWidth: 440,
-            margin: "0 auto",
-          }}>
-            No credit card. No trial period. Institutional-grade analytics, free.
-          </p>
         </div>
       </section>
-
-      {/* ROI CALCULATOR */}
-      <RoiCalculator />
 
       {/* PRICING CARDS */}
       <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
@@ -756,39 +645,6 @@ export default function PricingPage() {
 
       {/* FEATURE VOTING */}
       <FeatureVoteSection />
-
-      {/* FAQ */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 100px" }}>
-        <div
-          ref={faqRef}
-          style={{
-            maxWidth: 680,
-            margin: "0 auto",
-            opacity: faqVisible ? 1 : 0,
-            transform: faqVisible ? "translateY(0)" : "translateY(24px)",
-            transition: "opacity 0.7s ease, transform 0.7s ease",
-          }}
-        >
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", textAlign: "center", marginBottom: 12 }}>
-            FAQ
-          </p>
-          <h2 style={{
-            fontFamily: "Space Mono,monospace",
-            fontSize: "clamp(20px,3vw,30px)",
-            fontWeight: 700,
-            letterSpacing: -1,
-            color: "#e8e0cc",
-            textAlign: "center",
-            marginBottom: 48,
-          }}>
-            Questions about pricing
-          </h2>
-
-          {FAQS.map(({ q, a }) => (
-            <FaqItem key={q} q={q} a={a} />
-          ))}
-        </div>
-      </section>
 
       {/* TRUST BADGE */}
       <section style={{ position: "relative", zIndex: 1, padding: "0 24px 120px", textAlign: "center" }}>
