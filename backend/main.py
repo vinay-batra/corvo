@@ -242,6 +242,20 @@ def delete_user(request: Request):
     return {"ok": True}
 
 
+CASH_TICKERS = {"CASH", "FDRXX", "SPAXX", "BND", "SGOV"}
+
+def make_synthetic_prices(annual_return: float, n_days: int, start_date=None) -> pd.Series:
+    """Generate synthetic daily price series from an annual return rate."""
+    daily_r = (1 + annual_return) ** (1 / 252) - 1
+    prices = [100.0]
+    for _ in range(n_days - 1):
+        prices.append(prices[-1] * (1 + daily_r))
+    if start_date is not None:
+        idx = pd.bdate_range(start=start_date, periods=n_days)
+    else:
+        idx = pd.bdate_range(end=pd.Timestamp.today(), periods=n_days)
+    return pd.Series(prices, index=idx[:len(prices)])
+
 @app.get("/portfolio")
 def portfolio(
     request: Request,
@@ -251,6 +265,7 @@ def portfolio(
     benchmark: str = "^GSPC",
     user_id: str = "",
     referral_code: str = "",
+    manual_returns: str = "",
 ):
     ip = request.client.host if request.client else "unknown"
     if check_rate_limit(ip, "portfolio", 30, 3600):
@@ -291,6 +306,17 @@ def portfolio(
 
     weights_arr = np.array(w_list)
 
+    # Parse manual returns (comma-separated, empty string = no override)
+    manual_returns_list = []
+    if manual_returns:
+        try:
+            manual_returns_list = [float(x) if x.strip() else None for x in manual_returns.split(",")]
+        except Exception:
+            manual_returns_list = []
+    # Pad to match tickers length
+    while len(manual_returns_list) < len(tickers_list):
+        manual_returns_list.append(None)
+
     # Download prices
     all_tickers = tickers_list + [benchmark]
     prices = get_prices(all_tickers, period)
@@ -303,6 +329,18 @@ def portfolio(
     if benchmark in prices.columns:
         bench_prices = prices[benchmark].dropna()
         prices = prices.drop(columns=[benchmark])
+
+    # Inject synthetic price series for cash tickers that failed to load or have manual return
+    n_days = len(bench_prices) if bench_prices is not None and len(bench_prices) > 1 else 252
+    start_date = bench_prices.index[0] if bench_prices is not None and len(bench_prices) > 0 else None
+    for i, t in enumerate(tickers_list):
+        mr = manual_returns_list[i] if i < len(manual_returns_list) else None
+        if mr is not None and (t not in prices.columns or t in CASH_TICKERS):
+            synthetic = make_synthetic_prices(mr, n_days, start_date)
+            synthetic.index = synthetic.index[:len(synthetic)]
+            prices[t] = np.nan
+            common = prices.index.intersection(synthetic.index)
+            prices.loc[common, t] = synthetic.loc[common].values
 
     # Keep only requested tickers that loaded
     available = [t for t in tickers_list if t in prices.columns]

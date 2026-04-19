@@ -1370,15 +1370,6 @@ function EmailCaptureBottom() {
 function FeaturedInBar() {
   const platforms = [
     {
-      name: "Product Hunt",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="20" r="19" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.2)" strokeWidth="1"/>
-          <path d="M15 13h7a6 6 0 010 12h-7V13zm0 7h7a3 3 0 000-6h-7v6z" fill="#c9a84c" opacity="0.85"/>
-        </svg>
-      ),
-    },
-    {
       name: "Hacker News",
       icon: (
         <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
@@ -1976,15 +1967,15 @@ export default function Landing() {
           variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
           initial="hidden" animate="visible">
           <span style={{ display: "block", color: "#e8e0cc" }}>
-            {["Your", "portfolio."].map((w, i) => (
+            {["Stop", "guessing,"].map((w, i) => (
               <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200 } } }}
                 style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
             ))}
           </span>
           <span style={{ display: "block", color: "#c9a84c", position: "relative" }}>
-            {["Analyzed."].map((w, i) => (
+            {["start", "knowing."].map((w, i) => (
               <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
-                style={{ display: "inline-block" }}>{w}</motion.span>
+                style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
             ))}
             <span style={{ position: "absolute", bottom: 2, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(201,168,76,0.35), transparent)" }} />
           </span>
@@ -1992,7 +1983,7 @@ export default function Landing() {
 
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
           style={{ fontSize: 17, color: "rgba(232,224,204,0.45)", lineHeight: 1.85, fontWeight: 300, maxWidth: 520, marginBottom: 48 }}>
-          Stop guessing. Start knowing exactly what your money is doing and why.
+          Institutional-grade portfolio analytics — free, for real investors.
         </motion.p>
 
         <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
@@ -2004,27 +1995,6 @@ export default function Landing() {
           ) : (
             <Link href="/auth" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Start for free →</Link>
           )}
-          <Link href="/app?demo=true" className="ghost" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c", textDecoration: "none", fontWeight: 500 }}>Try demo →</Link>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.5 }}
-          style={{ marginBottom: 40, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", margin: 0 }}>Trusted by investors from</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
-            {[
-              { label: "Goldman Sachs alumni", delay: "0ms" },
-              { label: "Fidelity customers", delay: "80ms" },
-              { label: "Schwab users", delay: "160ms" },
-              { label: "Self-directed IRA holders", delay: "240ms" },
-              { label: "Crypto investors", delay: "320ms" },
-            ].map(({ label, delay }) => (
-              <span key={label} style={{
-                fontSize: 10, padding: "5px 12px", borderRadius: 100,
-                background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)",
-                color: "rgba(232,224,204,0.5)", letterSpacing: 0.3,
-                animation: `fadein 0.5s ease ${delay} both`,
-              }}>{label}</span>
-            ))}
-          </div>
         </motion.div>
 
         {/* Dashboard preview */}
@@ -2103,7 +2073,7 @@ export default function Landing() {
             <StatItem target={liveUserCount ?? 847} suffix="+" label="Active Users" delay={0} borderRight />
             <StatItem target={5500} suffix="+" label="Portfolios Analyzed" delay={0.1} borderRight />
             <StatItem target={17000} suffix="+" label="AI Insights Generated" delay={0.2} borderRight />
-            <StatItem target={1} suffix="s" label="Avg Analysis Time" delay={0.3} />
+            <StatItem target={300} suffix="" label="Monte Carlo Paths Simulated" delay={0.3} />
           </div>
         </div>
       </section>
@@ -2140,9 +2110,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      {/* ─── STOCK TEASER ─── */}
-      <StockTeaserSection />
 
       {/* ─── HOW IT WORKS ─── */}
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
@@ -2182,26 +2149,25 @@ export default function Landing() {
                 <thead>
                   <tr>
                     <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", borderBottom: "1px solid rgba(201,168,76,0.08)", fontWeight: 400 }}>Feature</th>
-                    {["Corvo", "Traditional Tools", "Yahoo Finance", "Robinhood"].map((t, i) => (
+                    {["Corvo", "Yahoo Finance", "Robinhood"].map((t, i) => (
                       <th key={t} style={{ padding: "14px 16px", textAlign: "center", fontSize: 11, fontWeight: 600, color: i === 0 ? "#c9a84c" : "rgba(232,224,204,0.3)", borderBottom: i === 0 ? "2px solid rgba(201,168,76,0.4)" : "1px solid rgba(201,168,76,0.08)", borderLeft: i === 0 ? "1px solid rgba(201,168,76,0.18)" : "none", borderRight: i === 0 ? "1px solid rgba(201,168,76,0.18)" : "none", background: i === 0 ? "rgba(201,168,76,0.05)" : "transparent", boxShadow: i === 0 ? "0 0 40px rgba(201,168,76,0.04)" : "none" }}>
                         {t}
                         {i === 0 && <span style={{ display: "block", fontSize: 8, letterSpacing: 1.5, color: "rgba(201,168,76,0.5)", fontWeight: 400, marginTop: 2 }}>FREE</span>}
-                        {i === 1 && <span style={{ display: "block", fontSize: 8, letterSpacing: 1, color: "rgba(232,224,204,0.2)", fontWeight: 400, marginTop: 2 }}>paid/limited</span>}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {[
-                    ["AI-Powered Insights", true, true, false, false],
-                    ["Monte Carlo Simulation", true, true, false, false],
-                    ["Learn & Earn XP", true, false, false, false],
-                    ["Real-Time Alerts", true, true, true, true],
-                    ["Portfolio Health Score", true, false, false, false],
-                    ["Correlation Heatmap", true, true, true, false],
-                    ["Screenshot Import", true, false, false, false],
-                    ["Free to Use", true, false, true, true],
-                    ["Beautiful UI", true, false, false, false],
+                    ["AI-Powered Insights", true, false, false],
+                    ["Monte Carlo Simulation", true, false, false],
+                    ["Learn & Earn XP", true, false, false],
+                    ["Real-Time Alerts", true, true, true],
+                    ["Portfolio Health Score", true, false, false],
+                    ["Correlation Heatmap", true, true, false],
+                    ["Screenshot Import", true, false, false],
+                    ["Free to Use", true, true, true],
+                    ["Beautiful UI", true, false, false],
                   ].map(([label, ...vals], ri) => (
                     <AnimatedTableRow key={ri} delay={ri * 0.07}>
                       <td style={{ padding: "13px 20px", fontSize: 13, color: "rgba(232,224,204,0.6)", fontWeight: 300 }}>{label as string}</td>
@@ -2218,7 +2184,6 @@ export default function Landing() {
               </table>
             </div>
             <Reveal delay={0.1} style={{ marginTop: 24, display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
-              <Link href="/compare/bloomberg" style={{ fontSize: 12, color: "rgba(201,168,76,0.6)", textDecoration: "none" }}>Corvo vs Bloomberg →</Link>
               <Link href="/compare/yahoo-finance" style={{ fontSize: 12, color: "rgba(201,168,76,0.6)", textDecoration: "none" }}>Corvo vs Yahoo Finance →</Link>
               <Link href="/compare/robinhood" style={{ fontSize: 12, color: "rgba(201,168,76,0.6)", textDecoration: "none" }}>Corvo vs Robinhood →</Link>
             </Reveal>
@@ -2255,7 +2220,7 @@ export default function Landing() {
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-              <a href="https://www.producthunt.com/products/corvo?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-corvo" target="_blank" rel="noopener noreferrer">
+              <a href="https://www.producthunt.com/products/corvo" target="_blank" rel="noopener noreferrer">
                 <img alt="Corvo - AI-powered portfolio analysis for real investors | Product Hunt" width="220" height="48" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1120194&theme=dark&t=1775786806638" />
               </a>
             </div>
@@ -2297,17 +2262,11 @@ export default function Landing() {
               <Link href="/auth" className="cta cta-shimmer" style={{ padding: "14px 40px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>
                 Get started free →
               </Link>
-              <Link href="/app?demo=true" className="ghost" style={{ padding: "14px 40px", borderRadius: 12, fontSize: 14, background: "transparent", border: "1px solid rgba(201,168,76,0.25)", color: "#c9a84c", textDecoration: "none", fontWeight: 500 }}>
-                Try demo first
-              </Link>
             </div>
           </div>
         </Reveal>
       </section>
 
-
-      {/* ─── PORTFOLIO GROWTH CALCULATOR ─── */}
-      <GrowthCalculatorSection />
 
       {/* ─── SECURITY / TRUST ─── */}
       <SecurityTrustSection />

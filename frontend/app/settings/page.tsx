@@ -47,7 +47,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   );
 }
 
-export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: () => void; onProfileSaved?: (profile: { displayName: string; avatarUrl: string | null }) => void }) {
+export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboarding, onReplayTour }: { onClose?: () => void; onProfileSaved?: (profile: { displayName: string; avatarUrl: string | null }) => void; onReplayOnboarding?: () => void; onReplayTour?: () => void }) {
   const [user, setUser]               = useState<any>(null);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl]     = useState<string | null>(null);
@@ -495,6 +495,32 @@ export default function SettingsPage({ onClose, onProfileSaved }: { onClose?: ()
             </>
           )}
         </Section>
+
+        {/* ONBOARDING */}
+        {(onReplayOnboarding || onReplayTour) && (
+          <Section title="Onboarding">
+            {onReplayOnboarding && (
+              <Row label="Replay Onboarding" desc="Restart the setup wizard from step 1">
+                <button onClick={onReplayOnboarding}
+                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+                  Restart
+                </button>
+              </Row>
+            )}
+            {onReplayTour && (
+              <Row label="Replay Dashboard Tour" desc="Re-run the guided tooltip tour of dashboard features">
+                <button onClick={onReplayTour}
+                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+                  Start Tour
+                </button>
+              </Row>
+            )}
+          </Section>
+        )}
 
         {/* DANGER ZONE */}
         <Section title="Danger Zone">
