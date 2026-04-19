@@ -481,7 +481,7 @@ def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
 
 
 @app.get("/montecarlo")
-def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 300):
+def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 8500):
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers")
@@ -565,7 +565,7 @@ class MonteCarloInsightRequest(BaseModel):
     p95: float
     ruin_probability: float
     expected_shortfall: float
-    simulations: int = 300
+    simulations: int = 8500
 
 
 @app.post("/montecarlo/insight")
