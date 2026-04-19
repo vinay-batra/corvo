@@ -64,7 +64,7 @@ export default function FeedbackButton() {
         title="Send feedback"
         aria-label="Send feedback"
         style={{
-          position: "fixed", bottom: 24, right: 20, zIndex: 240,
+          position: "fixed", bottom: 28, right: 88, zIndex: 240,
           width: 36, height: 36,
           background: "var(--card-bg)",
           border: "0.5px solid var(--border2)",
