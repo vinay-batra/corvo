@@ -52,14 +52,14 @@ export default function BlogIndexPage() {
 
       {/* CTA banner */}
       <div className="blog-cta-wrap" style={{ maxWidth: 1100, marginLeft: "auto", marginRight: "auto" }}>
-        <div className="blog-cta-inner" style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <div>
-            <p style={{ fontSize: 18, fontWeight: 700, color: "#e8e0cc", letterSpacing: -0.4, marginBottom: 4 }}>Ready to analyze your portfolio?</p>
-            <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", fontWeight: 300 }}>Monte Carlo, Sharpe ratio, AI chat, and more. Free.</p>
+        <div className="flex justify-center py-12">
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center gap-4 w-fit">
+            <p style={{ fontSize: 20, fontWeight: 700, color: "#e8e0cc" }}>Ready to analyze your portfolio?</p>
+            <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)" }}>Monte Carlo, Sharpe ratio, AI chat, and more. Free.</p>
+            <Link href="/auth" style={{ display: "inline-block", padding: "8px 20px", background: "#c9a84c", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#0a0e14", textDecoration: "none" }}>
+              Start for free →
+            </Link>
           </div>
-          <Link href="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 20px", background: "#c9a84c", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#0a0e14", textDecoration: "none", flexShrink: 0 }}>
-            Start for free →
-          </Link>
         </div>
       </div>
     </div>
