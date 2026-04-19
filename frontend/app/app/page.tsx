@@ -169,25 +169,33 @@ function Spinner() {
 function Empty({ onPreset }: { onPreset?: (a: { ticker: string; weight: number }[]) => void }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 400, gap: 24, textAlign: "center", padding: "40px 0" }}>
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 96px)", gap: 28, textAlign: "center", padding: "0 24px" }}>
       <motion.img
         src="/corvo-logo.svg"
         alt="Corvo"
-        width={52}
-        height={52}
-        animate={{ y: [0, -8, 0] }}
-        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-        style={{ opacity: 0.7 }}
+        width={48}
+        height={48}
+        animate={{ y: [0, -7, 0] }}
+        transition={{ repeat: Infinity, duration: 3.2, ease: "easeInOut" }}
+        style={{ opacity: 0.55 }}
       />
       <div>
-        <p style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.3px", color: "var(--text)", marginBottom: 8 }}>Analyze your first portfolio</p>
-        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7 }}>Add tickers on the left, or start with a preset below</p>
+        <p style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.4px", color: "var(--text)", marginBottom: 10 }}>Analyze your first portfolio</p>
+        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.75 }}>
+          Add tickers on the left, or start with a preset below
+        </p>
+        <motion.p
+          animate={{ opacity: [0.3, 0.9, 0.3] }}
+          transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+          style={{ fontSize: 11, color: "var(--accent)", letterSpacing: 2, textTransform: "uppercase", marginTop: 18 }}>
+          ← pick a preset to get started
+        </motion.p>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, maxWidth: 520, width: "100%" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, maxWidth: 500, width: "100%" }}>
         {PRESETS.map(p => (
           <button key={p.label} onClick={() => onPreset?.(p.assets)}
             style={{ padding: "16px 18px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 12, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.background = "var(--bg3)"; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.background = "var(--bg3)"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{p.label}</p>
             <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.6 }}>
@@ -876,6 +884,8 @@ export default function AppPage() {
   const [showShareCard, setShowShareCard] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
   const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
@@ -1393,8 +1403,7 @@ export default function AppPage() {
       </div>
 
       {/* Preset portfolios */}
-      <div style={{ padding: "8px 14px", borderBottom: "0.5px solid var(--border)" }}>
-        <div style={S.label}>Presets</div>
+      <div style={{ padding: "6px 10px", borderBottom: "0.5px solid var(--border)" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
           {PRESETS.map(p => (
             <button key={p.label} onClick={() => setAssets(p.assets)}
@@ -1504,6 +1513,25 @@ export default function AppPage() {
     localStorage.setItem("corvo_sidebar_collapsed", String(next));
   };
 
+  const handleSidebarDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = sidebarWidth;
+    const onMove = (ev: MouseEvent) => {
+      setSidebarWidth(Math.min(400, Math.max(200, startW + ev.clientX - startX)));
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+
   useEffect(() => {
     const t = setTimeout(() => window.dispatchEvent(new Event("resize")), 300);
     return () => clearTimeout(t);
@@ -1546,10 +1574,19 @@ export default function AppPage() {
       {/* Desktop sidebar: collapsible */}
       <motion.aside
         className="c-sidebar"
-        animate={{ width: sidebarCollapsed ? 0 : 300 }}
+        animate={{ width: sidebarCollapsed ? 0 : sidebarWidth }}
         transition={{ type: "spring", damping: 30, stiffness: 260 }}
-        style={{ flexShrink: 0, borderRight: sidebarCollapsed ? "none" : "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden" }}>
+        style={{ flexShrink: 0, borderRight: sidebarCollapsed ? "none" : "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
         {SidebarInner()}
+        {!sidebarCollapsed && (
+          <div
+            onMouseDown={handleSidebarDragStart}
+            title="Drag to resize"
+            style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", zIndex: 10, transition: "background 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "rgba(201,168,76,0.2)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+          />
+        )}
       </motion.aside>
 
       {/* Mobile drawer */}
@@ -1661,23 +1698,41 @@ export default function AppPage() {
               )}
             </button>
             <div id="tour-dark-mode-toggle"><DarkModeToggle dark={dark} toggle={toggleDark} /></div>
-            {data && (
-              <button onClick={exportCSV} title="Export CSV"
-                style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text2)", display: "flex", alignItems: "center", gap: 5, transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
+            {/* ··· overflow: CSV, PDF, Share */}
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                onClick={() => setOverflowOpen(o => !o)}
+                title="More actions"
+                style={{ height: 32, width: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: overflowOpen ? "var(--bg3)" : "transparent", cursor: "pointer", fontSize: 16, fontWeight: 700, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: 1, transition: "background 0.15s" }}
                 onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                ↓ CSV
+                onMouseLeave={e => { if (!overflowOpen) e.currentTarget.style.background = "transparent"; }}>
+                ···
               </button>
-            )}
-            <ExportPDF data={data} assets={assets} />
-            {data && (
-              <button onClick={() => setShowShareCard(true)} title="Share portfolio"
-                style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text2)", display: "flex", alignItems: "center", gap: 5, transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                ↗ Share
-              </button>
-            )}
+              {overflowOpen && (
+                <>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setOverflowOpen(false)} />
+                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 160, boxShadow: "var(--shadow-md)" }}>
+                    {data && (
+                      <button onClick={() => { exportCSV(); setOverflowOpen(false); }}
+                        style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        ↓ Export CSV
+                      </button>
+                    )}
+                    <ExportPDF data={data} assets={assets} menuItem onClose={() => setOverflowOpen(false)} />
+                    {data && (
+                      <button onClick={() => { setShowShareCard(true); setOverflowOpen(false); }}
+                        style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        ↗ Share
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
             <div id="tour-profile-btn">
               <UserMenu
                 onEmailPrefs={() => setShowEmailPrefs(true)}

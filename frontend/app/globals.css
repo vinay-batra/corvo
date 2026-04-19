@@ -36,30 +36,30 @@
 
 /* ── Dark mode ── */
 [data-theme="dark"] {
-  --bg:          #0d0d0c;
-  --bg2:         #141413;
-  --bg3:         #1a1a18;
-  --border:      rgba(255,255,255,0.08);
-  --border2:     rgba(255,255,255,0.14);
-  --border-dim:  rgba(255,255,255,0.07);
-  --text:        #f0efed;
-  --text1:       #f0efed;
-  --text2:       #a8a8a4;
-  --text3:       #6b6b68;
-  --text-muted:  #6b6b68;
-  --green:       #f0efed;
+  --bg:          #0a0e14;
+  --bg2:         #0d1117;
+  --bg3:         #131c27;
+  --border:      rgba(255,255,255,0.07);
+  --border2:     rgba(255,255,255,0.13);
+  --border-dim:  rgba(255,255,255,0.05);
+  --text:        #e8e0cc;
+  --text1:       #e8e0cc;
+  --text2:       #a0a8b8;
+  --text3:       #5a6478;
+  --text-muted:  #5a6478;
+  --green:       #e8e0cc;
   --red:         #e05c5c;
   --accent:      #c9a84c;
   --accent-text: #c9a84c;
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
-  --card-bg:     #141413;
-  --bg-card:     #141413;
-  --card-glass:  rgba(255,255,255,0.03);
-  --input-bg:    #1a1a18;
-  --input-border: rgba(255,255,255,0.12);
-  --shadow:      0 1px 4px rgba(0,0,0,0.4);
-  --shadow-md:   0 4px 12px rgba(0,0,0,0.4);
-  --track:       rgba(255,255,255,0.06);
+  --card-bg:     #0d1117;
+  --bg-card:     #0d1117;
+  --card-glass:  rgba(255,255,255,0.025);
+  --input-bg:    #131c27;
+  --input-border: rgba(255,255,255,0.1);
+  --shadow:      0 1px 4px rgba(0,0,0,0.5);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.5);
+  --track:       rgba(255,255,255,0.05);
 }
 
 /* ── Light mode explicit overrides ── */
