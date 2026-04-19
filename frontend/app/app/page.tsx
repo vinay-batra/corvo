@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
-  MessageSquare, Eye, PanelLeftClose, PanelLeftOpen,
+  MessageSquare, Eye, PanelLeftOpen,
   Sun, Moon, CandlestickChart, Sparkles, BookOpen,
   Calendar, CheckCircle2,
 } from "lucide-react";
@@ -857,11 +857,7 @@ export default function AppPage() {
   const [showSettings, setShowSettings]   = useState(false);
   const [benchOpen, setBenchOpen]         = useState(false);
   const [sidebarOpen, setSidebarOpen]     = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("corvo_sidebar_collapsed") === "true";
-  });
-  const [paletteOpen, setPaletteOpen]   = useState(false);
+const [paletteOpen, setPaletteOpen]   = useState(false);
   const [stockTicker, setStockTicker]   = useState<string | null>(null);
   const [compareMode, setCompareMode]   = useState(false);
   const sound = useSoundEffects();
@@ -1509,11 +1505,6 @@ export default function AppPage() {
     </>
   );
 
-  const toggleSidebar = () => {
-    const next = !sidebarCollapsed;
-    setSidebarCollapsed(next);
-    localStorage.setItem("corvo_sidebar_collapsed", String(next));
-  };
 
   const handleSidebarDragStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -1534,10 +1525,6 @@ export default function AppPage() {
     document.addEventListener("mouseup", onUp);
   };
 
-  useEffect(() => {
-    const t = setTimeout(() => window.dispatchEvent(new Event("resize")), 300);
-    return () => clearTimeout(t);
-  }, [sidebarCollapsed]);
 
   return (
     <div style={S.app}>
@@ -1573,23 +1560,12 @@ export default function AppPage() {
         .c-mob-analyze[data-loading=true]{animation:analyze-ring 1.2s ease-out infinite}
       `}</style>
 
-      {/* Desktop sidebar: collapsible */}
-      <motion.aside
+      {/* Desktop sidebar */}
+      <div
         className="c-sidebar"
-        animate={{ width: sidebarCollapsed ? 0 : sidebarWidth }}
-        transition={{ type: "spring", damping: 30, stiffness: 260 }}
-        style={{ flexShrink: 0, borderRight: sidebarCollapsed ? "none" : "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
+        style={{ width: 340, flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
         {SidebarInner()}
-        {!sidebarCollapsed && (
-          <div
-            onMouseDown={handleSidebarDragStart}
-            title="Drag to resize"
-            style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 4, cursor: "col-resize", zIndex: 10, transition: "background 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(201,168,76,0.2)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-          />
-        )}
-      </motion.aside>
+      </div>
 
       {/* Mobile drawer */}
       <AnimatePresence>
@@ -1631,11 +1607,6 @@ export default function AppPage() {
 
         {/* Desktop topbar */}
         <header className="c-topbar" style={S.topbar}>
-          {/* Sidebar collapse toggle */}
-          <IconBtn onClick={toggleSidebar} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
-            {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-          </IconBtn>
-
           {/* Tabs with animated underline indicator */}
           <div style={{ display: "flex", gap: 0, flex: 1, overflowX: "auto", position: "relative" }}>
             {TABS.map(tab => {
