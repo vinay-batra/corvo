@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import BlogPost, { CtaBox } from "../BlogPost";
+import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
@@ -137,7 +137,6 @@ export default function MonteCarloPage() {
         Carlo simulation reveals this critical difference in outcome.
       </p>
 
-      <CtaBox text="Run Monte Carlo on your portfolio" href="/app" />
 
       <h2 id="reading-results">Reading Your Monte Carlo Results</h2>
       <p>
@@ -225,7 +224,6 @@ export default function MonteCarloPage() {
         instantly visible.
       </p>
 
-      <CtaBox text="Run Monte Carlo on my portfolio for free" href="/app" />
     </BlogPost>
   );
 }

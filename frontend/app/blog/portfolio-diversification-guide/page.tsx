@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import BlogPost, { CtaBox } from "../BlogPost";
+import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
@@ -127,7 +127,6 @@ export default function DiversificationGuidePage() {
         missing potential return and diversification benefits from economies with different cycles.
       </p>
 
-      <CtaBox text="See your portfolio's correlation heatmap" href="/app" />
 
       <h2 id="sector-exposure">Sector Exposure and How to Think About It</h2>
       <p>
@@ -225,7 +224,6 @@ export default function DiversificationGuidePage() {
         When your health score drops, the platform explains exactly why and suggests specific adjustments.
       </p>
 
-      <CtaBox text="Analyze your diversification for free" href="/app" />
     </BlogPost>
   );
 }
