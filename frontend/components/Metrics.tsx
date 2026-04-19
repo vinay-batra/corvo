@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
 const C = { amber: "var(--accent)", red: "#e05c5c" };
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function Num({ value, fmt }: { value: number; fmt: (v: number) => string }) {
   const [d, setD] = useState(0);
@@ -27,6 +28,7 @@ const EXPLAINERS = [
   { title: "Volatility", simple: "How wildly your portfolio swings day to day.", example: "30% vol = could swing ±30% in a year.", good: "Under 15% is low. 15–25% moderate. 30%+ is high." },
   { title: "Sharpe Ratio", simple: "Return per unit of risk. Higher = more efficient.", example: "Sharpe 2.0 = great returns for the risk taken.", good: "Above 1.0 good. Above 2.0 excellent. Below 0 bad." },
   { title: "Max Drawdown", simple: "Biggest drop from peak to trough that happened.", example: "$50k drops to $35k = -30% max drawdown.", good: "Closer to 0% is better. Under 10% very stable." },
+  { title: "Unrealized P&L", simple: "Total paper gain or loss on holdings where you've entered a purchase price.", example: "Bought AAPL at $150, now $180 with 25% weight on $10k = +$500.", good: "Green = currently profitable. Red = currently underwater. Based on purchase prices you entered." },
 ];
 
 function Sparkline({ values, positive }: { values: number[]; positive: boolean }) {
@@ -51,9 +53,23 @@ function Sparkline({ values, positive }: { values: number[]; positive: boolean }
   );
 }
 
-export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, period = "1y" }: { data: any; currency?: string; rate?: number; sparklineValues?: number[]; period?: string }) {
+export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, period = "1y", assets, portfolioValue }: { data: any; currency?: string; rate?: number; sparklineValues?: number[]; period?: string; assets?: { ticker: string; weight: number; purchasePrice?: number }[]; portfolioValue?: number }) {
   const [modal, setModal] = useState<number|null>(null);
   const modalIdRef = useRef(`metrics-modal-${Math.random().toString(36).slice(2)}`);
+  const [currentPrices, setCurrentPrices] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!assets || !assets.length) return;
+    const tickers = assets.map(a => a.ticker).join(",");
+    fetch(`${API_URL}/watchlist-data?tickers=${tickers}`)
+      .then(r => r.json())
+      .then((d: any) => {
+        const map: Record<string, number> = {};
+        (d.results || []).forEach((s: any) => { if (s?.ticker && s.price) map[s.ticker] = s.price; });
+        setCurrentPrices(map);
+      })
+      .catch(() => {});
+  }, [assets]);
 
   useEffect(() => {
     const handleOtherOpen = (e: Event) => {
@@ -80,28 +96,47 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
   const portVol    = data.portfolio_volatility ?? 0;
   const portDD     = data.max_drawdown ?? 0;
   const sharpe = portVol > 0 ? (portReturn - 0.04) / portVol : 0;
+
+  // Unrealized P&L: sum over assets with purchasePrice where currentPrice is available
+  const pnlAssets = (assets || []).filter(a => a.purchasePrice != null && a.purchasePrice > 0 && currentPrices[a.ticker] != null);
+  const hasPnlData = pnlAssets.length > 0 && portfolioValue != null && portfolioValue > 0;
+  const totalWeight = (assets || []).reduce((s, a) => s + a.weight, 0) || 1;
+  const unrealizedPnlDollars = hasPnlData ? pnlAssets.reduce((sum, a) => {
+    const w = a.weight / totalWeight;
+    const cur = currentPrices[a.ticker];
+    const pp = a.purchasePrice!;
+    return sum + (cur - pp) / pp * w * portfolioValue!;
+  }, 0) : 0;
+  const unrealizedPnlPct = hasPnlData && portfolioValue! > 0 ? unrealizedPnlDollars / portfolioValue! : 0;
+
   const items = [
     { label: `Return (${periodLabel})`, value: portReturn, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: portReturn<0, neutral: false, bar: null },
     { label: "Volatility",              value: portVol,    fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: false,        neutral: true,  bar: portVol/0.6 },
     { label: "Sharpe Ratio",            value: sharpe,     fmt: (v:number) => v.toFixed(2),                           neg: sharpe<0,     neutral: false, bar: Math.min(Math.max(sharpe/3,0),1) },
     { label: "Max Drawdown",            value: portDD,     fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: true,         neutral: false, bar: null },
-  ];
+    ...(hasPnlData ? [{ label: "Unrealized P&L", value: unrealizedPnlPct, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: unrealizedPnlPct<0, neutral: false, bar: null, pnlDollars: unrealizedPnlDollars }] : []),
+  ] as Array<{ label: string; value: number; fmt: (v: number) => string; neg: boolean; neutral: boolean; bar: number | null; pnlDollars?: number }>;
   void rate; void sparklineValues;
   return (
     <>
-      {items.map(({label,value,fmt,neg,neutral,bar},i) => {
+      {items.map(({label,value,fmt,neg,neutral,bar,pnlDollars},i) => {
         const color = neutral ? C.amber : neg ? C.red : "#4caf7d";
         return (
         <motion.div key={label} initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:i*0.07}}
           style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"18px 16px 14px"}}>
-          <p style={{fontFamily:"Space Mono,monospace",fontSize:30,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,marginBottom:10}}>
+          <p style={{fontFamily:"Space Mono,monospace",fontSize:30,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,marginBottom:pnlDollars!=null?4:10}}>
             <Num value={value} fmt={fmt}/>
           </p>
+          {pnlDollars!=null&&(
+            <p style={{fontFamily:"Space Mono,monospace",fontSize:13,fontWeight:600,color,marginBottom:8,lineHeight:1}}>
+              {pnlDollars>=0?"+":"-"}${Math.abs(pnlDollars).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
+            </p>
+          )}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <p style={{fontSize:8,letterSpacing:2.5,color:"var(--text3)",textTransform:"uppercase"}}>
+            <p style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>
               {label}{i===0&&currency!=="USD"?<span style={{marginLeft:4,color:C.amber,letterSpacing:1}}> · {currency}</span>:null}
             </p>
-            <button onClick={()=>openMetricModal(i)} style={{width:16,height:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
+            <button onClick={()=>openMetricModal(i)} style={{width:16,height:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
               onMouseEnter={e=>{e.currentTarget.style.background=C.amber;e.currentTarget.style.color="#0a0e14";}}
               onMouseLeave={e=>{e.currentTarget.style.background="var(--bg3)";e.currentTarget.style.color="var(--text3)";}}>?</button>
           </div>
@@ -122,11 +157,11 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
               onClick={e=>e.stopPropagation()}
               style={{background:"var(--card-bg)",border:"0.5px solid var(--border2)",borderRadius:16,padding:28,maxWidth:400,width:"100%",maxHeight:"90vh",overflowY:"auto",position:"relative"}}>
               <button onClick={()=>setModal(null)} style={{position:"absolute",top:14,right:14,background:"var(--bg3)",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",color:"var(--text3)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-              <p style={{fontSize:8,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>About</p>
+              <p style={{fontSize:10,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>About</p>
               <h3 style={{fontSize:18,fontWeight:500,color:"var(--text)",marginBottom:18}}>{EXPLAINERS[modal].title}</h3>
               {[{label:"Plain English",text:EXPLAINERS[modal].simple},{label:"Example",text:EXPLAINERS[modal].example},{label:"What's good?",text:EXPLAINERS[modal].good}].map(({label,text})=>(
                 <div key={label} style={{background:"var(--bg2)",border:"0.5px solid var(--border)",borderRadius:8,padding:"10px 12px",marginBottom:6}}>
-                  <p style={{fontSize:8,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:4}}>{label}</p>
+                  <p style={{fontSize:10,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:4}}>{label}</p>
                   <p style={{fontSize:13,color:"var(--text2)",lineHeight:1.65}}>{text}</p>
                 </div>
               ))}

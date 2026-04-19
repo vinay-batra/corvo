@@ -507,33 +507,46 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     total_w = sum(avail_w) or 1
     avail_w = [w / total_w for w in avail_w]
 
-    # Compute portfolio daily arithmetic returns then convert to log returns for GBM
+    # Step 1: Compute weighted portfolio daily arithmetic returns from actual history
     returns = prices.pct_change().dropna()
-    port_returns = returns.values @ np.array(avail_w)
+    port_returns = returns.values @ np.array(avail_w)  # sum(weight_i * daily_return_i) per day
 
-    # Geometric Brownian Motion parameters from historical log returns
-    log_returns = np.log(1.0 + port_returns)
-    mu_log = float(np.mean(log_returns))
-    sigma_log = float(np.std(log_returns))
+    # Step 2: mu and sigma from the arithmetic daily return series
+    mu_daily = float(np.mean(port_returns))
+    sigma_daily = float(np.std(port_returns))
+
+    # Step 3: Annualise for the GBM formula with dt = 1/252
+    # exp((mu - 0.5*sigma^2)*dt + sigma*sqrt(dt)*Z) with annualised params and dt=1/252
+    # is mathematically equivalent to exp(mu_daily - 0.5*sigma_daily^2 + sigma_daily*Z) per day
+    mu = mu_daily * 252
+    sigma = sigma_daily * np.sqrt(252)
+    dt = 1.0 / 252
     horizon = 252
 
-    # GBM simulation: sample log returns from N(mu_log, sigma_log), no fixed seed
+    # Step 4: Run 8500 independent GBM paths — each starts at 1.0
     rng = np.random.default_rng()
-    daily_log_rets = rng.normal(mu_log, sigma_log, (simulations, horizon))
+    Z = rng.standard_normal((simulations, horizon))
+    daily_factors = np.exp((mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * Z)
+    path_values = np.cumprod(daily_factors, axis=1)  # shape (simulations, 252); 1.0 = breakeven
 
-    # Cumulative log returns → portfolio value starting at 1.0; convert to % gain/loss
-    cum_log = np.cumsum(daily_log_rets, axis=1)
-    path_values = np.exp(cum_log)           # shape (simulations, horizon); 1.0 = breakeven
-    paths_pct = path_values - 1.0          # fractional gain/loss (0.0 = breakeven)
+    # Step 5: Collect all 8500 final values after 252 steps
+    final_vals = path_values[:, -1]  # actual multipliers (1.0 = breakeven)
 
-    final_vals = paths_pct[:, -1]
-    p5  = float(np.percentile(final_vals, 5))
-    p25 = float(np.percentile(final_vals, 25))
-    p50 = float(np.percentile(final_vals, 50))
-    p75 = float(np.percentile(final_vals, 75))
-    p95 = float(np.percentile(final_vals, 95))
+    # Step 6: Percentiles of final values as percentage gains from 1.0
+    p5  = safe_float(float(np.percentile(final_vals, 5))  - 1.0)
+    p25 = safe_float(float(np.percentile(final_vals, 25)) - 1.0)
+    p50 = safe_float(float(np.percentile(final_vals, 50)) - 1.0)
+    p75 = safe_float(float(np.percentile(final_vals, 75)) - 1.0)
+    p95 = safe_float(float(np.percentile(final_vals, 95)) - 1.0)
 
-    # Percentile bands across all 252 days
+    # Step 7: Probability positive — fraction of paths ending above 1.0 (never hardcoded)
+    positive_prob = safe_float(float(np.mean(final_vals > 1.0)))
+
+    # Step 8: Max loss — 1 minus the lowest final path value
+    max_loss = safe_float(float(1.0 - np.min(final_vals)))
+
+    # Step 9: Percentile bands at each of 252 days for the fan chart (fractional gain/loss)
+    paths_pct = path_values - 1.0
     pct_bands = {
         "p5":  safe_list(np.percentile(paths_pct, 5,  axis=0).tolist()),
         "p25": safe_list(np.percentile(paths_pct, 25, axis=0).tolist()),
@@ -542,15 +555,15 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         "p95": safe_list(np.percentile(paths_pct, 95, axis=0).tolist()),
     }
 
-    # Positive probability: actual fraction of paths ending above breakeven
-    positive_prob = safe_float(float(np.mean(final_vals > 0.0)))
-
     # Risk metrics
-    ruin_threshold = -0.5
+    ruin_threshold = 0.5  # lose more than 50% → final value < 0.5
     ruin_probability = safe_float(float(np.mean(final_vals < ruin_threshold)))
-    worst_5pct_mask = final_vals <= p5
-    expected_shortfall = safe_float(float(np.mean(final_vals[worst_5pct_mask])) if worst_5pct_mask.any() else p5)
+    worst_5pct_mask = final_vals <= np.percentile(final_vals, 5)
+    expected_shortfall = safe_float(
+        float(np.mean(final_vals[worst_5pct_mask]) - 1.0) if worst_5pct_mask.any() else p5
+    )
 
+    # Step 10: Return simulations count in response
     return {
         "horizon": horizon,
         "simulations": simulations,
@@ -561,6 +574,7 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         "final_p95": p95,
         "bands": pct_bands,
         "positive_prob": positive_prob,
+        "max_loss": max_loss,
         "ruin_probability": ruin_probability,
         "expected_shortfall": expected_shortfall,
     }
@@ -699,51 +713,61 @@ def portfolio_dividends(
     holdings = []
     for ticker, weight in zip(ticker_list, normalized_weights):
         try:
-            info = yf.Ticker(ticker).info
-        except Exception:
-            info = {}
-
-        raw_yield = info.get("dividendYield")
-        # Return as decimal (e.g. 0.0082 = 0.82%); frontend multiplies by 100 for display
-        div_yield_decimal = safe_float(raw_yield) if raw_yield is not None else None
-
-        # ex-dividend date: yfinance returns Unix timestamp or None
-        ex_div_ts = info.get("exDividendDate")
-        ex_div_date: str | None = None
-        if ex_div_ts:
             try:
-                ex_div_date = datetime.fromtimestamp(int(ex_div_ts), tz=timezone.utc).strftime("%Y-%m-%d")
+                info = yf.Ticker(ticker).info
             except Exception:
-                ex_div_date = None
+                info = {}
 
-        # Dividend frequency: estimate from trailingAnnualDividendRate / dividendRate
-        frequency: str | None = None
-        div_rate = safe_float(info.get("dividendRate"))
-        trailing_rate = safe_float(info.get("trailingAnnualDividendRate"))
-        if div_rate and div_rate > 0 and trailing_rate and trailing_rate > 0:
-            freq_count = round(trailing_rate / div_rate)
-            if freq_count <= 1:
-                frequency = "Annual"
-            elif freq_count == 2:
-                frequency = "Semi-Annual"
-            elif freq_count == 4:
-                frequency = "Quarterly"
-            elif freq_count == 12:
-                frequency = "Monthly"
-            else:
-                frequency = f"{freq_count}x/yr"
+            raw_yield = info.get("dividendYield")
+            # Return as decimal (e.g. 0.0082 = 0.82%); frontend multiplies by 100 for display
+            div_yield_decimal = safe_float(raw_yield) if raw_yield is not None else None
 
-        alloc_value = portfolio_value * weight
-        annual_income = round(alloc_value * safe_float(raw_yield), 2) if raw_yield else 0.0
+            # ex-dividend date: yfinance returns Unix timestamp or None
+            ex_div_ts = info.get("exDividendDate")
+            ex_div_date: str | None = None
+            if ex_div_ts:
+                try:
+                    ex_div_date = datetime.fromtimestamp(int(ex_div_ts), tz=timezone.utc).strftime("%Y-%m-%d")
+                except Exception:
+                    ex_div_date = None
 
-        holdings.append({
-            "ticker": ticker,
-            "weight": round(weight, 4),
-            "dividend_yield": round(div_yield_decimal, 6) if div_yield_decimal is not None else 0.0,
-            "annual_income": annual_income,
-            "ex_div_date": ex_div_date or "",
-            "frequency": frequency or "",
-        })
+            # Dividend frequency: estimate from trailingAnnualDividendRate / dividendRate
+            frequency: str | None = None
+            div_rate = safe_float(info.get("dividendRate"))
+            trailing_rate = safe_float(info.get("trailingAnnualDividendRate"))
+            if div_rate and div_rate > 0 and trailing_rate and trailing_rate > 0:
+                freq_count = round(trailing_rate / div_rate)
+                if freq_count <= 1:
+                    frequency = "Annual"
+                elif freq_count == 2:
+                    frequency = "Semi-Annual"
+                elif freq_count == 4:
+                    frequency = "Quarterly"
+                elif freq_count == 12:
+                    frequency = "Monthly"
+                else:
+                    frequency = f"{freq_count}x/yr"
+
+            alloc_value = portfolio_value * weight
+            annual_income = round(alloc_value * safe_float(raw_yield), 2) if raw_yield else 0.0
+
+            holdings.append({
+                "ticker": ticker,
+                "weight": round(weight, 4),
+                "dividend_yield": round(div_yield_decimal, 6) if div_yield_decimal is not None else 0.0,
+                "annual_income": annual_income,
+                "ex_div_date": ex_div_date or "",
+                "frequency": frequency or "",
+            })
+        except Exception:
+            holdings.append({
+                "ticker": ticker,
+                "weight": round(weight, 4),
+                "dividend_yield": 0.0,
+                "annual_income": 0.0,
+                "ex_div_date": "",
+                "frequency": "",
+            })
 
     total_annual_income = round(sum(h["annual_income"] for h in holdings), 2)
 
