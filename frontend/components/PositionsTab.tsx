@@ -139,20 +139,24 @@ export default function PositionsTab({
     } catch {}
 
     // Supabase (logged-in users)
+    // NOTE: the table stores tickers/weights as separate arrays (see SavedPortfolios.toDb),
+    // NOT a single "assets" JSON column — query the right columns.
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: pfs } = await supabase
           .from("portfolios")
-          .select("id,name,assets")
+          .select("id,name,tickers,weights")
           .eq("user_id", user.id);
         if (pfs) {
           pfs.forEach((p: any) => {
             // Skip duplicates already in localStorage
             if (portfolios.some(lp => lp.id === p.id)) return;
-            const assets: SavedPortfolio["assets"] = Array.isArray(p.assets)
-              ? p.assets.filter((a: any) => a.ticker && a.weight > 0)
-              : [];
+            const tickers: string[] = p.tickers ?? [];
+            const weights: number[] = p.weights ?? [];
+            const assets: SavedPortfolio["assets"] = tickers
+              .map((t, i) => ({ ticker: t, weight: weights[i] ?? 0 }))
+              .filter(a => a.ticker && a.weight > 0);
             if (assets.length > 0) portfolios.push({ id: p.id, name: p.name || "Untitled", assets });
           });
         }
@@ -160,6 +164,11 @@ export default function PositionsTab({
     } catch {}
 
     setSavedPortfolios(portfolios);
+    // If the selected portfolio no longer exists, fall back to "all"
+    setSelectedId(prev => {
+      if (prev === "all") return "all";
+      return portfolios.some(p => p.id === prev) ? prev : "all";
+    });
     setPortfoliosLoading(false);
   }, []);
 
