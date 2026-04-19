@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import BlogFilteredPosts from "./BlogFilteredPosts";
 
 export const metadata: Metadata = {
@@ -28,11 +27,7 @@ export default function BlogIndexPage() {
           .blog-pad { padding: 0 20px 64px !important; }
           .blog-cards-grid { grid-template-columns: 1fr !important; }
         }
-        .blog-back-link { position: fixed; top: 68px; left: 24px; z-index: 99; display: flex; align-items: center; gap: 6px; color: rgba(232,224,204,0.35); text-decoration: none; font-size: 12px; transition: color 0.15s; font-family: Inter, sans-serif; }
-        .blog-back-link:hover { color: #e8e0cc; }
       `}</style>
-      {/* BACK */}
-      <Link href="/" className="blog-back-link">← Back</Link>
       {/* Hero */}
       <div className="blog-hero" style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 24, marginBottom: 28, background: "rgba(201,168,76,0.06)", animation: "fadeinUp 0.6s ease 0.1s both" }}>
