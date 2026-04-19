@@ -646,53 +646,41 @@ export default function PricingPage() {
       {/* FEATURE VOTING */}
       <FeatureVoteSection />
 
-      {/* TRUST BADGE */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 120px", textAlign: "center" }}>
+      {/* FOOTER CTA */}
+      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 72px", textAlign: "center" }}>
         <div
           ref={trustRef}
           style={{
             display: "inline-flex",
-            flexDirection: "column",
             alignItems: "center",
-            gap: 12,
+            gap: 16,
             opacity: trustVisible ? 1 : 0,
-            transform: trustVisible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.97)",
-            transition: "opacity 0.7s ease, transform 0.7s cubic-bezier(0.34,1.56,0.64,1)",
+            transform: trustVisible ? "translateY(0)" : "translateY(12px)",
+            transition: "opacity 0.6s ease, transform 0.6s ease",
+            background: "rgba(255,255,255,0.018)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: 12,
+            padding: "14px 24px",
+            flexWrap: "wrap" as const,
+            justifyContent: "center",
           }}
         >
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 12,
-            background: "rgba(201,168,76,0.05)",
-            border: "1px solid rgba(201,168,76,0.15)",
-            borderRadius: 16,
-            padding: "18px 32px",
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <div style={{ textAlign: "left" }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 2 }}>
-                100% free during beta
-              </p>
-              <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)" }}>
-                No credit card required · Cancel anytime · Your data is yours
-              </p>
-            </div>
-          </div>
-
+          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.5)", margin: 0 }}>
+            Free during beta · No credit card required
+          </p>
           <Link
             href="/auth"
             style={{
-              marginTop: 8,
-              padding: "13px 36px",
-              borderRadius: 12,
-              fontSize: 14,
+              padding: "8px 20px",
+              borderRadius: 8,
+              fontSize: 12,
               fontWeight: 600,
               background: "#c9a84c",
               color: "#0a0e14",
               textDecoration: "none",
               display: "inline-block",
               transition: "opacity 0.2s",
+              flexShrink: 0,
             }}
             onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
             onMouseLeave={e => (e.currentTarget.style.opacity = "1")}

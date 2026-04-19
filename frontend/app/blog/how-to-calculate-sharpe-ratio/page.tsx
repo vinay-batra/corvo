@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import BlogPost, { CtaBox } from "../BlogPost";
+import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
@@ -133,7 +133,6 @@ export default function SharpeRatioPage() {
         Well-managed hedge funds typically target ratios above 1.0.
       </p>
 
-      <CtaBox text="See your portfolio's Sharpe ratio" href="/app" />
 
       <h2 id="examples">Real Portfolio Examples</h2>
       <p>
@@ -213,7 +212,6 @@ export default function SharpeRatioPage() {
         often explains why a seemingly diversified portfolio underperforms its benchmark on a risk-adjusted basis.
       </p>
 
-      <CtaBox text="Calculate your Sharpe ratio for free" href="/app" />
     </BlogPost>
   );
 }

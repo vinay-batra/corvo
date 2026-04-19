@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import BlogPost, { CtaBox } from "../BlogPost";
+import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
@@ -117,7 +117,6 @@ export default function BloombergAlternativePage() {
         The only barrier has been that nobody built it for retail investors.
       </p>
 
-      <CtaBox text="Try Corvo free" href="/auth" />
 
       <h2 id="how-corvo-fills-gap">How Corvo Fills the Gap</h2>
       <p>
@@ -180,7 +179,6 @@ export default function BloombergAlternativePage() {
         answer is no.
       </p>
 
-      <CtaBox text="Try Corvo free" href="/auth" />
     </BlogPost>
   );
 }
