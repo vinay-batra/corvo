@@ -762,6 +762,72 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   return buf.buffer as ArrayBuffer;
 }
 
+// ── Stocks search mini-component (module-level so hooks are stable) ───────────
+const STOCKS_SEARCH_POPULAR = ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","BRK-B","SPY","QQQ"];
+function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
+  const [busy, setBusy] = useState(false);
+  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    if (!q) { setResults([]); return; }
+    const t = setTimeout(async () => {
+      setBusy(true);
+      try {
+        const r = await fetch(`${API}/search-ticker?q=${encodeURIComponent(q)}`);
+        const d = await r.json();
+        setResults((d.results || []).slice(0, 8));
+      } catch {} finally { setBusy(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto" }}>
+      <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Stock Lookup</p>
+      <div style={{ position: "relative", marginBottom: 20 }}>
+        <input
+          className="accent-input"
+          value={q} onChange={e => setQ(e.target.value)}
+          placeholder="Search any ticker or company…"
+          style={{ width: "100%", padding: "10px 14px", fontSize: 14, border: "0.5px solid var(--border2)", borderRadius: 10, background: "var(--input-bg)", color: "var(--text)", outline: "none" }}
+        />
+        {busy && <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
+      </div>
+      {results.length > 0 ? (
+        <div style={{ border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+          {results.map((r: any) => (
+            <div key={r.ticker} onClick={() => onSelect(r.ticker)}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", cursor: "pointer", borderBottom: "0.5px solid var(--border)", transition: "background 0.1s" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+              <div>
+                <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>{r.ticker}</span>
+                <span style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>{r.name}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : !q ? (
+        <div>
+          <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 10 }}>Popular tickers</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {STOCKS_SEARCH_POPULAR.map(t => (
+              <button key={t} onClick={() => onSelect(t)}
+                style={{ padding: "6px 14px", fontSize: 12, fontFamily: "Space Mono, monospace", fontWeight: 700, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "all 0.15s" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function AppPage() {
   const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number }[]>([]);
   const [portfolioStale, setPortfolioStale] = useState(false);
@@ -1431,72 +1497,6 @@ export default function AppPage() {
 
     </>
   );
-
-  // ── Stocks search mini-component ─────────────────────────────────────────────
-  function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
-    const [q, setQ] = useState("");
-    const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
-    const [busy, setBusy] = useState(false);
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    useEffect(() => {
-      if (!q) { setResults([]); return; }
-      const t = setTimeout(async () => {
-        setBusy(true);
-        try {
-          const r = await fetch(`${API}/search-ticker?q=${encodeURIComponent(q)}`);
-          const d = await r.json();
-          setResults((d.results || []).slice(0, 8));
-        } catch {} finally { setBusy(false); }
-      }, 300);
-      return () => clearTimeout(t);
-    }, [q]);
-
-    const POPULAR = ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","BRK-B","SPY","QQQ"];
-    return (
-      <div style={{ maxWidth: 560, margin: "0 auto" }}>
-        <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Stock Lookup</p>
-        <div style={{ position: "relative", marginBottom: 20 }}>
-          <input
-            className="accent-input"
-            value={q} onChange={e => setQ(e.target.value)}
-            placeholder="Search any ticker or company…"
-            style={{ width: "100%", padding: "10px 14px", fontSize: 14, border: "0.5px solid var(--border2)", borderRadius: 10, background: "var(--input-bg)", color: "var(--text)", outline: "none" }}
-          />
-          {busy && <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
-        </div>
-        {results.length > 0 ? (
-          <div style={{ border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
-            {results.map((r: any) => (
-              <div key={r.ticker} onClick={() => onSelect(r.ticker)}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", cursor: "pointer", borderBottom: "0.5px solid var(--border)", transition: "background 0.1s" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                <div>
-                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>{r.ticker}</span>
-                  <span style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>{r.name}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : !q ? (
-          <div>
-            <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 10 }}>Popular tickers</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {POPULAR.map(t => (
-                <button key={t} onClick={() => onSelect(t)}
-                  style={{ padding: "6px 14px", fontSize: 12, fontFamily: "Space Mono, monospace", fontWeight: 700, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "all 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </div>
-    );
-  }
 
   const toggleSidebar = () => {
     const next = !sidebarCollapsed;
