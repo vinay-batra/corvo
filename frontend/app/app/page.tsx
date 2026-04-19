@@ -362,7 +362,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
             <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
             <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Comparison</span>
             <InfoModal title="Portfolio Comparison" sections={[{ label: "How it works", text: "Add multiple saved portfolios to compare their risk, return, and Sharpe ratio side by side. Save a portfolio first from the Dashboard." }]} />
-            {active.length > 0 && <span style={{ fontSize: 9, color: "var(--text3)" }}>· {active.length} portfolio{active.length !== 1 ? "s" : ""} · {period.toUpperCase()} · vs {benchmarkLabel}</span>}
+            {active.length > 0 && <span style={{ fontSize: 11, color: "var(--text3)" }}>· {active.length} portfolio{active.length !== 1 ? "s" : ""} · {period.toUpperCase()} · vs {benchmarkLabel}</span>}
           </div>
         </div>
         {savedPortfolios.length > 0 ? (
@@ -404,7 +404,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                 <div key={p.id} style={{ border: `0.5px solid ${color}44`, borderRadius: 12, overflow: "hidden", background: "var(--card-bg)" }}>
                   <div style={{ padding: "12px 16px", background: `${color}10`, borderBottom: `0.5px solid ${color}22` }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color, marginBottom: 2 }}>{p.name}</div>
-                    <div style={{ fontSize: 9, color: "var(--text3)" }}>{p.tickers.slice(0, 4).join(" · ")}{p.tickers.length > 4 ? ` +${p.tickers.length - 4}` : ""}</div>
+                    <div style={{ fontSize: 11, color: "var(--text3)" }}>{p.tickers.slice(0, 4).join(" · ")}{p.tickers.length > 4 ? ` +${p.tickers.length - 4}` : ""}</div>
                   </div>
                   {metrics.map((m) => {
                     const vals = active.map(q => q.result[m.key] ?? 0);
@@ -416,7 +416,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                       <div key={m.key} style={{ padding: "9px 16px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 11, color: "var(--text3)" }}>{m.label}</span>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: isBest ? 700 : 400, color: isBest ? color : "var(--text2)" }}>
-                          {m.fmt(val)}{isBest && <span style={{ marginLeft: 4, fontSize: 8 }}>★</span>}
+                          {m.fmt(val)}{isBest && <span style={{ marginLeft: 4, fontSize: 11 }}>★</span>}
                         </span>
                       </div>
                     );
@@ -470,18 +470,18 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                     <p style={{ fontSize: 11, color: "var(--text2)", marginBottom: 8 }}>{ov.a} vs {ov.b}</p>
                     {ov.shared.length > 0 && (
                       <div style={{ marginBottom: 8 }}>
-                        <p style={{ fontSize: 9, letterSpacing: 1, color: "var(--text3)", marginBottom: 5 }}>SHARED ({ov.shared.length})</p>
+                        <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", marginBottom: 5 }}>SHARED ({ov.shared.length})</p>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                          {ov.shared.map(t => <span key={t} style={{ padding: "2px 8px", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, borderRadius: 4, background: "rgba(184,134,11,0.1)", color: "var(--accent)", border: "0.5px solid rgba(184,134,11,0.2)" }}>{t}</span>)}
+                          {ov.shared.map(t => <span key={t} style={{ padding: "2px 8px", fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 600, borderRadius: 4, background: "rgba(184,134,11,0.1)", color: "var(--accent)", border: "0.5px solid rgba(184,134,11,0.2)" }}>{t}</span>)}
                         </div>
                       </div>
                     )}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {[{ label: ov.a, tickers: ov.unique_a, ci: 0 }, { label: ov.b, tickers: ov.unique_b, ci: 1 }].map(col => (
                         <div key={col.label}>
-                          <p style={{ fontSize: 9, letterSpacing: 1, color: COMPARE_COLORS[col.ci], marginBottom: 5 }}>ONLY {col.label.toUpperCase()}</p>
+                          <p style={{ fontSize: 10, letterSpacing: 2, color: COMPARE_COLORS[col.ci], marginBottom: 5 }}>ONLY {col.label.toUpperCase()}</p>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                            {col.tickers.length > 0 ? col.tickers.map(t => <span key={t} style={{ padding: "2px 6px", fontSize: 9, fontFamily: "var(--font-mono)", borderRadius: 4, background: "var(--bg3)", color: "var(--text2)" }}>{t}</span>) : <span style={{ fontSize: 10, color: "var(--text3)" }}>N/A</span>}
+                            {col.tickers.length > 0 ? col.tickers.map(t => <span key={t} style={{ padding: "2px 6px", fontSize: 11, fontFamily: "var(--font-mono)", borderRadius: 4, background: "var(--bg3)", color: "var(--text2)" }}>{t}</span>) : <span style={{ fontSize: 11, color: "var(--text3)" }}>N/A</span>}
                           </div>
                         </div>
                       ))}
@@ -499,7 +499,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
               style={{ border: "0.5px solid rgba(184,134,11,0.2)", borderRadius: 12, padding: "16px 18px", background: "rgba(184,134,11,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
               <Sparkles size={14} color="var(--accent)" style={{ flexShrink: 0, marginTop: 2 }} />
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", marginBottom: 8 }}>AI Comparison Insight</p>
+                <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", marginBottom: 8 }}>AI Comparison Insight</p>
                 {aiLoading ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                     {[100, 88, 72].map((w, i) => (
@@ -693,7 +693,7 @@ function PortfolioPerformanceTrend({
           <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
             {PERF_RANGES.map(r => (
               <button key={r} onClick={() => setRange(r)}
-                style={{ padding: "3px 9px", fontSize: 10, borderRadius: 5, border: `0.5px solid ${range === r ? AMBER : "var(--border)"}`, background: range === r ? `${AMBER}18` : "transparent", color: range === r ? AMBER : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
+                style={{ padding: "3px 9px", fontSize: 11, borderRadius: 5, border: `0.5px solid ${range === r ? AMBER : "var(--border)"}`, background: range === r ? `${AMBER}18` : "transparent", color: range === r ? AMBER : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
                 {r}
               </button>
             ))}
@@ -720,7 +720,7 @@ function PortfolioPerformanceTrend({
         <div style={{ padding: "16px 8px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <span style={{ fontSize: 12, color: "var(--text2)", fontWeight: 500 }}>Building your history</span>
-            <span style={{ fontSize: 10, color: "var(--text3)" }}>Day 1</span>
+            <span style={{ fontSize: 11, color: "var(--text3)" }}>Day 1</span>
           </div>
           <div style={{ height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden", marginBottom: 10 }}>
             <div style={{ width: "14%", height: "100%", background: AMBER, borderRadius: 2 }} />
@@ -754,7 +754,7 @@ function PortfolioPerformanceTrend({
             style={{ width: "100%" }}
             useResizeHandler
           />
-          <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 6 }}>
+          <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>
             {filtered.length} data point{filtered.length !== 1 ? "s" : ""} · updated on each analysis
           </p>
         </>
@@ -1409,7 +1409,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             <div style={{ fontSize: 11, fontWeight: 500, color: "var(--text)" }}>
               {goals?.age ? `Age ${goals.age} · ${goals.riskTolerance?.replace("_time", "")}` : "Edit Profile"}
             </div>
-            <div style={{ fontSize: 9, color: "var(--text3)" }}>Goals & preferences</div>
+            <div style={{ fontSize: 11, color: "var(--text3)" }}>Goals & preferences</div>
           </div>
         </button>
       </div>
@@ -1444,7 +1444,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 {loading ? "Analyzing..." : "Analyze"}
               </motion.button>
               {hasHoldings && !isBalanced && (
-                <p style={{ fontSize: 10, color: "#e05c5c", textAlign: "center", marginTop: 5, lineHeight: 1.4 }}>
+                <p style={{ fontSize: 11, color: "#e05c5c", textAlign: "center", marginTop: 5, lineHeight: 1.4 }}>
                   Weights must total 100% before analyzing.
                   {" "}<span style={{ color: "var(--accent)", cursor: "pointer", textDecoration: "underline" }}
                     onClick={() => {
@@ -1870,7 +1870,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                         <div style={{ display: "flex", gap: 3 }}>
                           {PERIODS.map(p => (
                             <button key={p} onClick={() => setPeriod(p)}
-                              style={{ padding: "4px 9px", fontSize: 10, fontFamily: "var(--font-mono)", background: period === p ? "var(--text)" : "transparent", border: "0.5px solid var(--border)", borderRadius: 5, color: period === p ? "var(--bg)" : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
+                              style={{ padding: "4px 9px", fontSize: 11, fontFamily: "var(--font-mono)", background: period === p ? "var(--text)" : "transparent", border: "0.5px solid var(--border)", borderRadius: 5, color: period === p ? "var(--bg)" : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
                               {PERIOD_LABELS[p]}
                             </button>
                           ))}
@@ -1879,7 +1879,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                         <div style={{ position: "relative" }}>
                           <button onClick={() => setBenchOpen(o => !o)}
                             style={{ padding: "4px 10px", fontSize: 10, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 5, cursor: "pointer", color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
-                            <span style={{ fontSize: 8, color: "var(--text3)" }}>vs</span>{benchLabel}<span style={{ fontSize: 8, color: "var(--text3)" }}>▾</span>
+                            <span style={{ fontSize: 11, color: "var(--text3)" }}>vs</span>{benchLabel}<span style={{ fontSize: 11, color: "var(--text3)" }}>▾</span>
                           </button>
                           <AnimatePresence>
                             {benchOpen && (

@@ -71,7 +71,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
       .finally(() => setInsightLoading(false));
   }, [data]);
 
-  // Derived display values — all bands are fractional gain/loss (0.0 = breakeven)
+  // Derived display values - all bands are fractional gain/loss (0.0 = breakeven)
   const days = data ? Array.from({ length: data.horizon }, (_, i) => i + 1) : [];
   const toDisplayPct = (v: number | null | undefined) =>
     v == null ? null : (v * 100).toFixed(1);
@@ -93,7 +93,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
       range: "< 5th pct",
       prob: "5%",
       ret: `${Number(p5) >= 0 ? "+" : ""}${p5}%`,
-      meaning: "Severe downturn — portfolio underperforms nearly all historical scenarios",
+      meaning: "Severe downturn - portfolio underperforms nearly all historical scenarios",
       color: C.red,
       bg: "rgba(224,92,92,0.06)",
     },
@@ -111,7 +111,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
       range: "25th – 75th pct",
       prob: "50%",
       ret: `${Number(p50) >= 0 ? "+" : ""}${p50}%`,
-      meaning: "Most likely outcome — returns in line with historical volatility",
+      meaning: "Most likely outcome - returns in line with historical volatility",
       color: "var(--text2)",
       bg: "transparent",
     },
@@ -120,7 +120,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
       range: "75th – 95th pct",
       prob: "20%",
       ret: `${((+p75! + +p95!) / 2) >= 0 ? "+" : ""}${((+p75! + +p95!) / 2).toFixed(1)}%`,
-      meaning: "Solid outperformance — favorable macro and company conditions",
+      meaning: "Solid outperformance - favorable macro and company conditions",
       color: "#7dc98f",
       bg: "rgba(92,184,138,0.04)",
     },
@@ -129,7 +129,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
       range: "> 95th pct",
       prob: "5%",
       ret: `${Number(p95) >= 0 ? "+" : ""}${p95}%`,
-      meaning: "Exceptional run — portfolio outperforms nearly all historical scenarios",
+      meaning: "Exceptional run - portfolio outperforms nearly all historical scenarios",
       color: C.green,
       bg: "rgba(92,184,138,0.08)",
     },
@@ -149,7 +149,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
   const mcLc     = dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)";
   const mcMedian = dark ? "#ffffff" : "#1a1a1a";
 
-  // Band arrays already in fractional form — multiply by 100 for % display
+  // Band arrays already in fractional form - multiply by 100 for % display
   const band = (key: string): number[] =>
     (data?.bands?.[key] ?? []).map((v: number) => v * 100);
 
@@ -223,11 +223,11 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
           {/*
             Fan chart: filled areas between percentile bands.
             Order matters for Plotly "tonexty":
-              [0] p5  — outer bottom boundary (no fill)
-              [1] p95 — outer top boundary (fill="tonexty" → fills p5→p95 outer zone)
-              [2] p25 — inner bottom boundary (no fill)
-              [3] p75 — inner top boundary (fill="tonexty" → fills p25→p75 middle zone)
-              [4] p50 — median line (bright, no fill)
+              [0] p5  - outer bottom boundary (no fill)
+              [1] p95 - outer top boundary (fill="tonexty" fills p5->p95 outer zone)
+              [2] p25 - inner bottom boundary (no fill)
+              [3] p75 - inner top boundary (fill="tonexty" fills p25->p75 middle zone)
+              [4] p50 - median line (bright, no fill)
               [5] breakeven at y=0 (dashed gray)
           */}
           <Plot
@@ -239,7 +239,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
                 line: { color: "rgba(239,68,68,0.4)", width: 1, dash: "dot" },
                 hoverinfo: "skip", showlegend: false,
               } as any,
-              // Outer top: p95 — fills outer band back to p5
+              // Outer top: p95 - fills outer band back to p5
               {
                 x: days, y: band("p95"),
                 type: "scatter", mode: "lines",
@@ -255,7 +255,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
                 line: { color: "transparent", width: 0 },
                 hoverinfo: "skip", showlegend: false,
               } as any,
-              // Inner top: p75 — fills middle 50% band back to p25
+              // Inner top: p75 - fills middle 50% band back to p25
               {
                 x: days, y: band("p75"),
                 type: "scatter", mode: "lines",
