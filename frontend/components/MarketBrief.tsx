@@ -30,7 +30,7 @@ function IndexPill({ ticker, change }: { ticker: string; change: number }) {
     }}>
       <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text)", letterSpacing: 0.3 }}>{ticker}</span>
       <span style={{ fontSize: 11, fontWeight: 600, color: up ? C.green : C.red }}>
-        {up ? "+" : ""}{change.toFixed(2)}%
+        {up ? "+" : ""}{change != null ? change.toFixed(2) : "—"}%
       </span>
     </div>
   );

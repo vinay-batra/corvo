@@ -227,7 +227,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
                             {yieldPct != null ? `${yieldPct.toFixed(2)}%` : "-"}
                           </td>
                           <td style={{ padding: "8px 8px", textAlign: "right", color: "var(--text1)", fontFamily: "Space Mono, monospace" }}>
-                            ${h.annual_income.toFixed(2)}
+                            {h.annual_income != null ? `$${h.annual_income.toFixed(2)}` : "—"}
                           </td>
                           <td style={{ padding: "8px 8px", textAlign: "right", color: soon ? AMBER : "var(--text2)", whiteSpace: "nowrap" }}>
                             {h.ex_div_date ? formatDate(h.ex_div_date) : "-"}
