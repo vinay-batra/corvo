@@ -304,6 +304,11 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             style={{padding:"3px 7px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
             Presets
           </button>
+          <button onClick={()=>fileRef.current?.click()} disabled={importLoading}
+            style={{padding:"3px 7px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
+            {importLoading?"...":"Screenshot"}
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
           <button onClick={()=>{setShowCsvModal(true);setCsvPreview(null);setCsvError("");}}
             style={{padding:"3px 7px",fontSize:9,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
             CSV
