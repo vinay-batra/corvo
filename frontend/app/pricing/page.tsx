@@ -600,7 +600,7 @@ export default function PricingPage() {
           </div>
 
           <h1 style={{
-            fontFamily: "Space Mono,monospace",
+            fontFamily: "system-ui,-apple-system,sans-serif",
             fontSize: "clamp(32px,5vw,60px)",
             fontWeight: 700,
             lineHeight: 1.1,
@@ -647,48 +647,51 @@ export default function PricingPage() {
       <FeatureVoteSection />
 
       {/* FOOTER CTA */}
-      <section style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", justifyContent: "center", padding: "48px 16px" }}>
-          <div
-            ref={trustRef}
-            style={{
-              background: "#1a1a1a",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 16,
-              padding: "32px 40px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              textAlign: "center",
-              gap: 16,
-              maxWidth: 420,
-              width: "100%",
-              opacity: trustVisible ? 1 : 0,
-              transform: trustVisible ? "translateY(0)" : "translateY(12px)",
-              transition: "opacity 0.6s ease, transform 0.6s ease",
-            }}
-          >
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(18px,2.5vw,24px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -0.5, lineHeight: 1.2 }}>
+      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
+        <div
+          ref={trustRef}
+          style={{
+            maxWidth: 720,
+            margin: "0 auto",
+            background: "rgba(255,255,255,0.04)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(201,168,76,0.28)",
+            borderRadius: 24,
+            padding: "64px 40px",
+            textAlign: "center",
+            position: "relative",
+            overflow: "hidden",
+            opacity: trustVisible ? 1 : 0,
+            transform: trustVisible ? "translateY(0)" : "translateY(20px)",
+            transition: "opacity 0.7s ease, transform 0.7s ease",
+          }}
+        >
+          {/* Ambient glow */}
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 60%)", pointerEvents: "none" }} />
+          <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, lineHeight: 1.15, margin: 0 }}>
               Ready to analyze your portfolio?
             </h2>
-            <p style={{ fontSize: 13, color: "rgba(232,224,204,0.5)", margin: 0 }}>
+            <p style={{ fontSize: 15, color: "rgba(232,224,204,0.5)", margin: 0, maxWidth: 400 }}>
               Free during beta · No credit card required
             </p>
             <Link
               href="/auth"
               style={{
-                padding: "10px 24px",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
+                padding: "14px 32px",
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 700,
                 background: "#c9a84c",
                 color: "#0a0e14",
                 textDecoration: "none",
                 display: "inline-block",
-                transition: "opacity 0.2s",
+                letterSpacing: 0.3,
+                transition: "opacity 0.2s, transform 0.2s",
               }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+              onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
               Start for free →
             </Link>
