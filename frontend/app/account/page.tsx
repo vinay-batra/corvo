@@ -72,7 +72,13 @@ export default function AccountPage() {
 
       <PublicNav />
 
-      <main style={{ maxWidth: 560, margin: "0 auto", padding: "98px 24px 80px", animation: "fadein 0.5s ease" }}>
+      <main style={{ maxWidth: 560, margin: "0 auto", padding: "80px 24px 80px", animation: "fadein 0.5s ease" }}>
+
+        <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", textDecoration: "none", fontSize: 12, transition: "color 0.15s", marginBottom: 28 }}
+          onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")}
+          onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>
+          ← Back
+        </Link>
 
         {/* Avatar + name */}
         <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 36 }}>
