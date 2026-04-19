@@ -62,7 +62,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
         p95: data.final_p95,
         ruin_probability: data.ruin_probability ?? 0,
         expected_shortfall: data.expected_shortfall ?? data.final_p5,
-        simulations: data.simulations ?? 300,
+        simulations: data.simulations ?? 8500,
       }),
     })
       .then(r => r.json())
@@ -179,7 +179,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
       {loading ? (
         <div style={{ height: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
           <div style={{ width: 26, height: 26, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: dark ? C.amber : "#b8860b", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <p style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>Running 300 simulations...</p>
+          <p style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>Running 8,500 simulations...</p>
         </div>
       ) : fetchError ? (
         <ErrorState
@@ -265,7 +265,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
               style={{ marginTop: 16, background: dark ? C.amber3 : "rgba(184,134,11,0.06)", border: "1px solid rgba(184,134,11,0.15)", borderRadius: 10, padding: "14px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
               <span style={{ color: mcAmber, fontSize: 14, flexShrink: 0, marginTop: 1 }}>◈</span>
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.75 }}>
-                Based on these 300 simulations, your portfolio has a{" "}
+                Based on these 8,500 simulations, your portfolio has a{" "}
                 <strong style={{ color: mcAmber }}>{positiveProb}% chance of positive returns</strong> over 1 year,
                 with a median outcome of{" "}
                 <strong style={{ color: Number(p50) >= 0 ? mcAmber : C.red }}>

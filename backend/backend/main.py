@@ -288,7 +288,7 @@ def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
 
 
 @app.get("/montecarlo")
-def monte_carlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 200, horizon: int = 252):
+def monte_carlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 8500, horizon: int = 252):
     tickers_list = [t.strip() for t in tickers.split(",")]
     yf_period = PERIOD_MAP.get(period, "1y")
     data = get_data(tickers_list, period=yf_period)
