@@ -556,6 +556,13 @@ export default function PricingPage() {
       {/* NAV */}
       <PublicNav />
 
+      {/* BACK */}
+      <Link href="/" style={{ position: "fixed", top: 68, left: 24, zIndex: 99, display: "flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
+        onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")}
+        onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>
+        ← Back
+      </Link>
+
       {/* HERO */}
       <section
         ref={heroRef}
