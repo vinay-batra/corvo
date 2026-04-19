@@ -2072,6 +2072,81 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+_market_summary_cache: dict = {"summary": None, "spy_pct": 0.0, "qqq_pct": 0.0, "dia_pct": 0.0, "vix": 0.0, "ts": 0.0}
+
+@app.get("/market-summary")
+def market_summary():
+    """Return a Bloomberg-style AI market summary paragraph + raw index values. Cached 5 minutes."""
+    global _market_summary_cache
+    if time.time() - _market_summary_cache["ts"] < 300 and _market_summary_cache["summary"]:
+        return _market_summary_cache
+
+    # Fetch index prices
+    index_data = {}
+    for ticker in ["SPY", "QQQ", "DIA", "^VIX"]:
+        try:
+            t = yf.Ticker(ticker)
+            info = t.fast_info
+            price = safe_float(getattr(info, "last_price", 0) or 0)
+            prev_close = safe_float(getattr(info, "previous_close", 0) or 0)
+            if price > 0 and prev_close > 0:
+                pct = ((price - prev_close) / prev_close) * 100
+            else:
+                pct = 0.0
+            index_data[ticker] = {"price": price, "pct": pct}
+        except Exception as e:
+            print(f"market-summary price error for {ticker}: {e}")
+            index_data[ticker] = {"price": 0.0, "pct": 0.0}
+
+    spy = index_data.get("SPY", {})
+    qqq = index_data.get("QQQ", {})
+    dia = index_data.get("DIA", {})
+    vix = index_data.get("^VIX", {})
+
+    spy_pct = spy.get("pct", 0.0)
+    qqq_pct = qqq.get("pct", 0.0)
+    dia_pct = dia.get("pct", 0.0)
+    vix_val = vix.get("price", 0.0)
+
+    summary_text = ""
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if api_key:
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=api_key)
+            direction = lambda p: "up" if p >= 0 else "down"
+            prompt = (
+                f"Write a 2-3 sentence Bloomberg morning-brief style paragraph about today's market. "
+                f"Use these actual values: S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, "
+                f"Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, "
+                f"Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, "
+                f"VIX at {vix_val:.1f}. "
+                f"Be specific and analytical. Mention what's driving sentiment if moves are notable. "
+                f"No asterisks, no em dashes, no markdown, no bullet points. Plain prose only."
+            )
+            resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=180,
+                system="You are a senior Bloomberg markets correspondent writing a terse daily market open briefing. Be specific, analytical, and confident. Never use em dashes, asterisks, or markdown. Plain prose only.",
+                messages=[{"role": "user", "content": prompt}],
+            )
+            summary_text = clean_ai_response(resp.content[0].text)
+        except Exception as e:
+            print(f"market-summary AI error: {e}")
+            summary_text = ""
+
+    result = {
+        "summary": summary_text,
+        "spy_pct": round(spy_pct, 2),
+        "qqq_pct": round(qqq_pct, 2),
+        "dia_pct": round(dia_pct, 2),
+        "vix": round(vix_val, 1),
+        "ts": time.time(),
+    }
+    _market_summary_cache = result
+    return result
+
+
 _stats_cache: dict = {"user_count": 847, "ts": 0.0}
 
 @app.get("/stats")

@@ -13,10 +13,12 @@ function getGreeting(): string {
 
 type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
 
-interface LiveQuote {
-  price: number;
-  change: number;
-  pct: number;
+interface MarketSummary {
+  summary: string;
+  spy_pct: number;
+  qqq_pct: number;
+  dia_pct: number;
+  vix: number;
 }
 
 function computeDailyChange(perfHistory: PerfSnapshot[], portfolioValue: number) {
@@ -24,9 +26,8 @@ function computeDailyChange(perfHistory: PerfSnapshot[], portfolioValue: number)
   const last = perfHistory[perfHistory.length - 1];
   const prev = perfHistory[perfHistory.length - 2];
   if (!last || !prev || prev.cumulative_return == null || last.cumulative_return == null) return null;
-  const prevValue = portfolioValue * (1 + prev.cumulative_return);
-  const lastValue = portfolioValue * (1 + last.cumulative_return);
-  const dailyDollar = lastValue - prevValue;
+  const dailyDollar =
+    portfolioValue * (1 + last.cumulative_return) - portfolioValue * (1 + prev.cumulative_return);
   const dailyPct =
     prev.cumulative_return !== -1
       ? ((last.cumulative_return - prev.cumulative_return) / (1 + prev.cumulative_return)) * 100
@@ -58,32 +59,14 @@ export default function GreetingBar({
 
   const sharpe: number = portfolioData?.sharpe_ratio ?? 0;
 
-  const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
+  const [market, setMarket] = useState<MarketSummary | null>(null);
 
   useEffect(() => {
-    if (!assets.length) return;
-    const tickers = ["^GSPC", ...assets.map(a => a.ticker)].join(",");
-    fetch(`${API_URL}/prices?tickers=${encodeURIComponent(tickers)}`)
+    fetch(`${API_URL}/market-summary`)
       .then(r => r.json())
-      .then(setQuotes)
+      .then(setMarket)
       .catch(() => {});
-  }, [assets]);
-
-  // Top daily mover among portfolio tickers
-  const topMover = useMemo(() => {
-    if (!assets.length) return null;
-    let best: { ticker: string; pct: number } | null = null;
-    for (const a of assets) {
-      const q = quotes[a.ticker];
-      if (!q) continue;
-      if (!best || Math.abs(q.pct) > Math.abs(best.pct)) {
-        best = { ticker: a.ticker, pct: q.pct };
-      }
-    }
-    return best;
-  }, [assets, quotes]);
-
-  const spxQuote = quotes["^GSPC"];
+  }, []);
 
   const pos = (v: number) => v >= 0;
   const fmtSign = (v: number) => (v >= 0 ? "+" : "");
@@ -95,112 +78,117 @@ export default function GreetingBar({
       display: "flex",
       alignItems: "center",
       gap: 0,
-      minHeight: 100,
-      padding: "18px 0",
+      minHeight: 90,
+      padding: "20px 24px",
       borderBottom: "0.5px solid var(--border)",
       marginBottom: 20,
     }}>
 
-      {/* LEFT — greeting */}
-      <div style={{ flex: "0 0 auto", minWidth: 220 }}>
+      {/* LEFT — greeting + market summary */}
+      <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{
-          fontSize: 26, fontWeight: 700, color: "var(--text)",
-          letterSpacing: "-0.6px", lineHeight: 1.15, margin: 0,
+          fontSize: 22, fontWeight: 700, color: "var(--text)",
+          letterSpacing: "-0.5px", lineHeight: 1.2, margin: 0,
         }}>
           {greeting}, {name}
         </h1>
-        <p style={{ fontSize: 11.5, color: "var(--text3)", marginTop: 5, letterSpacing: "0.01em" }}>
+        <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 3, marginBottom: 0, letterSpacing: "0.01em" }}>
           {dateStr}
         </p>
+        {market?.summary ? (
+          <p style={{
+            fontSize: 13,
+            color: "var(--text2)",
+            lineHeight: 1.7,
+            marginTop: 8,
+            marginBottom: 0,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}>
+            {market.summary}
+          </p>
+        ) : (
+          <p style={{
+            fontSize: 13,
+            color: "var(--text3)",
+            lineHeight: 1.7,
+            marginTop: 8,
+            marginBottom: 0,
+            opacity: 0.5,
+          }}>
+            Fetching market brief...
+          </p>
+        )}
       </div>
 
       {/* DIVIDER */}
       <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
-      {/* CENTER — 3 quick stats */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 32 }}>
+      {/* RIGHT — 3 stat pills */}
+      <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 16 }}>
 
-        {/* Stat 1: Today's daily change */}
-        <div>
-          <div style={{ fontSize: 10.5, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 5 }}>
-            Today
-          </div>
-          {dailyChange ? (
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontSize: 17, fontWeight: 700, color: pos(dailyChange.dollar) ? green : red, letterSpacing: "-0.3px" }}>
-                {fmtSign(dailyChange.dollar)}${Math.abs(dailyChange.dollar).toFixed(0)}
-              </span>
-              <span style={{ fontSize: 12, fontWeight: 500, color: pos(dailyChange.pct) ? green : red }}>
-                {fmtSign(dailyChange.pct)}{dailyChange.pct.toFixed(2)}%
-              </span>
-            </div>
-          ) : (
-            <span style={{ fontSize: 14, color: "var(--text3)" }}>—</span>
-          )}
-        </div>
+        {/* Pill: S&P 500 */}
+        <StatPill
+          label="S&P 500"
+          value={market ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "—"}
+          color={market ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
+        />
 
-        {/* Stat 2: Sharpe ratio */}
-        <div>
-          <div style={{ fontSize: 10.5, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 5 }}>
-            Sharpe
-          </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.3px" }}>
-              {portfolioData ? sharpe.toFixed(2) : "—"}
-            </span>
-            {portfolioData && (
-              <span style={{ fontSize: 11, color: sharpe > 1 ? green : sharpe > 0 ? "var(--accent)" : red }}>
-                {sharpe > 2 ? "excellent" : sharpe > 1 ? "solid" : sharpe > 0 ? "moderate" : "low"}
-              </span>
-            )}
-          </div>
-        </div>
+        {/* Pill: Sharpe */}
+        <StatPill
+          label="Sharpe"
+          value={portfolioData ? sharpe.toFixed(2) : "—"}
+          color={
+            !portfolioData ? "var(--text3)"
+            : sharpe > 1 ? green
+            : sharpe > 0 ? "var(--accent)"
+            : red
+          }
+        />
 
-        {/* Stat 3: Top daily mover */}
-        <div>
-          <div style={{ fontSize: 10.5, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 5 }}>
-            Top Mover
-          </div>
-          {topMover ? (
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.2px" }}>
-                {topMover.ticker}
-              </span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: pos(topMover.pct) ? green : red }}>
-                {fmtSign(topMover.pct)}{topMover.pct.toFixed(2)}%
-              </span>
-            </div>
-          ) : (
-            <span style={{ fontSize: 14, color: "var(--text3)" }}>—</span>
-          )}
-        </div>
+        {/* Pill: Portfolio Daily */}
+        <StatPill
+          label="Today"
+          value={
+            dailyChange
+              ? `${fmtSign(dailyChange.pct)}${dailyChange.pct.toFixed(2)}%`
+              : "—"
+          }
+          color={dailyChange ? (pos(dailyChange.pct) ? green : red) : "var(--text3)"}
+        />
 
       </div>
+    </div>
+  );
+}
 
-      {/* DIVIDER */}
-      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
-
-      {/* RIGHT — market pill */}
-      <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center" }}>
-        <div style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 7,
-          padding: "5px 11px",
-          borderRadius: 20,
-          border: "0.5px solid var(--border2)",
-          background: "var(--bg2)",
-        }}>
-          <span style={{ fontSize: 11, color: "var(--text3)", fontWeight: 500 }}>S&amp;P 500</span>
-          {spxQuote ? (
-            <span style={{ fontSize: 12, fontWeight: 700, color: pos(spxQuote.pct) ? green : red }}>
-              {fmtSign(spxQuote.pct)}{spxQuote.pct.toFixed(2)}%
-            </span>
-          ) : (
-            <span style={{ fontSize: 12, color: "var(--text3)" }}>—</span>
-          )}
-        </div>
-      </div>
+function StatPill({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      padding: "7px 14px",
+      borderRadius: 10,
+      border: "0.5px solid var(--border2)",
+      background: "var(--bg2)",
+      minWidth: 72,
+    }}>
+      <span style={{
+        fontSize: 10, color: "var(--text3)", fontWeight: 500,
+        letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4,
+      }}>
+        {label}
+      </span>
+      <span style={{
+        fontSize: 13, fontWeight: 700, color,
+        fontFamily: "'Space Mono', monospace",
+        letterSpacing: "-0.2px",
+      }}>
+        {value}
+      </span>
     </div>
   );
 }
