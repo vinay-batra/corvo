@@ -504,7 +504,6 @@ function Step5Panel({ active }: { active: boolean }) {
       <div style={{ padding: "10px 14px", background: C.bg4, border: `1px solid ${C.border}`, borderRadius: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 14 }}>⚡</span>
             <span style={{ fontSize: 11, color: C.cream, fontWeight: 600 }}>Analyst Level</span>
           </div>
           <span style={{ fontSize: 11, color: C.amber, fontFamily: "'Space Mono', monospace", fontWeight: 600 }}>

@@ -78,6 +78,7 @@ function saveLocal(portfolios: Portfolio[]) {
 export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asset[]; data: any; onLoad: (a: Asset[]) => void }) {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [saving, setSaving] = useState(false);
+  const [savedOk, setSavedOk] = useState(false);
   const [name, setName] = useState("");
   const [showSave, setShowSave] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -136,9 +137,9 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
           .upsert(toDb(newPortfolio, user.id), { onConflict: "id" });
         if (!error) {
           await fetchPortfolios();
-          setName(""); setShowSave(false); setSaving(false);
-          // Notify PositionsTab on the same page
+          setSavedOk(true);
           window.dispatchEvent(new CustomEvent("corvo:portfolio-saved"));
+          setTimeout(() => { setSavedOk(false); setName(""); setShowSave(false); setSaving(false); }, 1000);
           return;
         }
       } catch {}
@@ -149,7 +150,8 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
     const updated = [newPortfolio, ...local];
     saveLocal(updated);
     setPortfolios(updated);
-    setName(""); setShowSave(false); setSaving(false);
+    setSavedOk(true);
+    setTimeout(() => { setSavedOk(false); setName(""); setShowSave(false); setSaving(false); }, 1000);
   };
 
   const remove = async (id: string) => {
@@ -175,8 +177,12 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
             <div style={{ display: "flex", gap: 5 }}>
               <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && save()}
                 onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} placeholder="Portfolio name..."
+                autoFocus
                 style={{ flex: 1, padding: "6px 9px", background: "rgba(255,255,255,0.04)", border: `1px solid ${focused ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 7, color: C.cream, fontSize: 11, fontFamily: "Inter,sans-serif", outline: "none", transition: "border-color 0.15s" }} />
-              <button onClick={save} disabled={saving} style={{ padding: "6px 10px", background: C.amber2, border: "1px solid rgba(201,168,76,0.3)", borderRadius: 7, color: C.amber, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>{saving ? "..." : "OK"}</button>
+              <button onClick={save} disabled={saving || savedOk}
+                style={{ padding: "6px 10px", background: savedOk ? "rgba(92,184,138,0.15)" : C.amber2, border: `1px solid ${savedOk ? "rgba(92,184,138,0.4)" : "rgba(201,168,76,0.3)"}`, borderRadius: 7, color: savedOk ? "#5cb88a" : C.amber, fontSize: 10, cursor: "pointer", fontWeight: 700, transition: "all 0.2s", minWidth: 32 }}>
+                {saving ? "..." : savedOk ? "✓" : "OK"}
+              </button>
             </div>
           </motion.div>
         )}

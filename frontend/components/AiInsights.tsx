@@ -5,6 +5,15 @@ import { useState } from "react";
 
 const C = { amber: "var(--accent)" };
 
+function sanitize(text: string): string {
+  return text
+    .replace(/\*+/g, "")
+    .replace(/—/g, "-")
+    .replace(/_{1,2}([^_]+)_{1,2}/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .trim();
+}
+
 export default function AiInsights({ data, assets, onAskAi }: { data:any; assets:any[]; onAskAi:()=>void }) {
   const [hovered, setHovered] = useState<number|null>(null);
   const sharpe = data.portfolio_volatility>0?(data.portfolio_return-0.04)/data.portfolio_volatility:0;
@@ -12,25 +21,25 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
   const insights: {icon:string;text:string}[] = [];
 
   if (data.portfolio_return>0.1)
-    insights.push({icon:"↑",text:`Strong ${(data.portfolio_return*100).toFixed(1)}% return, outperforming savings by ${((data.portfolio_return-0.05)*100).toFixed(1)}pp`});
+    insights.push({icon:"↑",text:sanitize(`Strong ${(data.portfolio_return*100).toFixed(1)}% return, outperforming savings by ${((data.portfolio_return-0.05)*100).toFixed(1)}pp`)});
   else if (data.portfolio_return<0)
-    insights.push({icon:"↓",text:`Down ${(Math.abs(data.portfolio_return)*100).toFixed(1)}%. Consider reviewing your risk tolerance`});
+    insights.push({icon:"↓",text:sanitize(`Down ${(Math.abs(data.portfolio_return)*100).toFixed(1)}%. Consider reviewing your risk tolerance`)});
   else
-    insights.push({icon:"→",text:`${(data.portfolio_return*100).toFixed(1)}% return, with room for optimization`});
+    insights.push({icon:"→",text:sanitize(`${(data.portfolio_return*100).toFixed(1)}% return, with room for optimization`)});
 
   if (sharpe>=1.5)
-    insights.push({icon:"★",text:`Excellent Sharpe of ${sharpe.toFixed(2)}: strong returns for the risk taken`});
+    insights.push({icon:"★",text:sanitize(`Excellent Sharpe of ${sharpe.toFixed(2)}: strong returns for the risk taken`)});
   else if (sharpe<0.5)
-    insights.push({icon:"!",text:`Low Sharpe of ${sharpe.toFixed(2)}: taking more risk than returns justify`});
+    insights.push({icon:"!",text:sanitize(`Low Sharpe of ${sharpe.toFixed(2)}: taking more risk than returns justify`)});
   else
-    insights.push({icon:"◈",text:`Sharpe of ${sharpe.toFixed(2)}: further diversification could improve this`});
+    insights.push({icon:"◈",text:sanitize(`Sharpe of ${sharpe.toFixed(2)}: further diversification could improve this`)});
 
   if (top&&top.weight>0.5)
-    insights.push({icon:"!",text:`${top.ticker} is ${(top.weight*100).toFixed(0)}% of your portfolio. Consider reducing concentration`});
+    insights.push({icon:"!",text:sanitize(`${top.ticker} is ${(top.weight*100).toFixed(0)}% of your portfolio. Consider reducing concentration`)});
   else if (assets.length<=2)
-    insights.push({icon:"◎",text:`Only ${assets.length} holdings. Consider adding ETFs for broader exposure`});
+    insights.push({icon:"◎",text:sanitize(`Only ${assets.length} holdings. Consider adding ETFs for broader exposure`)});
   else
-    insights.push({icon:"✓",text:`${assets.length} holdings provides good diversification`});
+    insights.push({icon:"✓",text:sanitize(`${assets.length} holdings provides good diversification`)});
 
   // Rebalancing suggestions: flag any asset deviating >5% from equal weight
   const equalW = 1 / assets.length;
@@ -41,7 +50,7 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
     .map(a => {
       const diff = a.normW - equalW;
       const action = diff > 0 ? "trim" : "add to";
-      return `Consider ${action}ing ${a.ticker} from ${(a.normW*100).toFixed(0)}% toward ${(equalW*100).toFixed(0)}%`;
+      return sanitize(`Consider ${action}ing ${a.ticker} from ${(a.normW*100).toFixed(0)}% toward ${(equalW*100).toFixed(0)}%`);
     });
 
   return (

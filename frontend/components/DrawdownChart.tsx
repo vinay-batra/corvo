@@ -49,9 +49,9 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
     >
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, var(--red), transparent)", opacity: 0.5 }} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase" }}>Drawdown Chart</p>
+        <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Drawdown Chart</p>
         {data && (
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 11, color: "var(--red)", letterSpacing: 1 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "#e05c5c", letterSpacing: 0, fontWeight: 700 }}>
             Max: {(Math.min(...(data.drawdown as number[]).map((v: number) => v ?? 0)) * 100).toFixed(2)}%
           </span>
         )}

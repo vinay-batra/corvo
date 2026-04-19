@@ -181,7 +181,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [presetConfirm, setPresetConfirm] = useState<typeof BUILDER_PRESETS[0]|null>(null);
 
-  // Portfolio Value — persisted to localStorage
+  // Portfolio Value - persisted to localStorage
   const [portfolioValue, setPortfolioValueState] = useState<string>("10000");
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_portfolio_value") : null;

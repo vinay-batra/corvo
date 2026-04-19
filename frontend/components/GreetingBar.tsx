@@ -84,7 +84,7 @@ export default function GreetingBar({
       marginBottom: 20,
     }}>
 
-      {/* LEFT — greeting + market summary */}
+      {/* LEFT - greeting + market summary */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{
           fontSize: 22, fontWeight: 700, color: "var(--text)",
@@ -126,20 +126,20 @@ export default function GreetingBar({
       {/* DIVIDER */}
       <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
-      {/* RIGHT — 3 stat pills */}
+      {/* RIGHT - 3 stat pills */}
       <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 16 }}>
 
         {/* Pill: S&P 500 */}
         <StatPill
           label="S&P 500"
-          value={market ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "—"}
+          value={market ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
           color={market ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
         />
 
         {/* Pill: Sharpe */}
         <StatPill
           label="Sharpe"
-          value={portfolioData ? sharpe.toFixed(2) : "—"}
+          value={portfolioData ? sharpe.toFixed(2) : "-"}
           color={
             !portfolioData ? "var(--text3)"
             : sharpe > 1 ? green
@@ -154,7 +154,7 @@ export default function GreetingBar({
           value={
             dailyChange
               ? `${fmtSign(dailyChange.pct)}${dailyChange.pct.toFixed(2)}%`
-              : "—"
+              : "-"
           }
           color={dailyChange ? (pos(dailyChange.pct) ? green : red) : "var(--text3)"}
         />

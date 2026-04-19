@@ -14,13 +14,13 @@ function Ring({ score, size=96 }: { score:number; size?:number }) {
         <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={ringColor} strokeWidth={6}
           strokeLinecap="round" strokeDasharray={circ}
           initial={{strokeDashoffset:circ}} animate={{strokeDashoffset:offset}}
-          transition={{duration:1.5,ease:"easeOut",delay:0.2}}/>
+          transition={{duration:1,ease:"easeOut",delay:0}}/>
       </svg>
       <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
         <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.8}}
           style={{fontFamily:"Space Mono,monospace",fontSize:20,fontWeight:700,color:ringColor,letterSpacing:-1,lineHeight:1}}>{score}</motion.p>
         <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:1}}
-          style={{fontSize:8,letterSpacing:1,color:"var(--text3)",textTransform:"uppercase",marginTop:2}}>{label}</motion.p>
+          style={{fontSize:10,letterSpacing:1,color:"var(--text3)",textTransform:"uppercase",marginTop:2}}>{label}</motion.p>
       </div>
     </div>
   );
@@ -36,7 +36,7 @@ function Bar({ label, value, max, delay }: { label:string; value:number; max:num
           style={{height:"100%",background:"#b8860b",borderRadius:1}}/>
       </div>
       <motion.span initial={{opacity:0}} animate={{opacity:1}} transition={{delay:delay+0.4}}
-        style={{fontSize:10,fontFamily:"Space Mono,monospace",color:"var(--text3)",width:22,textAlign:"right"}}>{Math.round(pct*100)}</motion.span>
+        style={{fontSize:11,fontFamily:"Space Mono,monospace",color:"var(--text3)",width:22,textAlign:"right"}}>{Math.round(pct*100)}</motion.span>
     </div>
   );
 }

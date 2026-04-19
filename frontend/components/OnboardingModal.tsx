@@ -319,7 +319,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
                   background: "rgba(92,184,138,0.15)", border: `1.5px solid ${C.green3}`,
                   display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
                 }}>
-                  ⚡
+                  +
                 </div>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: C.green, marginBottom: 2 }}>+100 XP Earned</p>

@@ -3,10 +3,10 @@ import Link from "next/link";
 import BlogFilteredPosts from "./BlogFilteredPosts";
 
 export const metadata: Metadata = {
-  title: "Corvo Blog - Investing Insights, Portfolio Strategy & Product Updates",
+  title: "Blog | Corvo",
   description: "Investing insights, product updates, and portfolio strategy from the Corvo team. Learn how to analyze your portfolio like a professional investor.",
   openGraph: {
-    title: "Corvo Blog - Investing Insights & Portfolio Strategy",
+    title: "Blog | Corvo",
     description: "Investing insights, product updates, and portfolio strategy from the Corvo team.",
     url: "https://corvo.capital/blog",
     siteName: "Corvo",

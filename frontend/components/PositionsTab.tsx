@@ -140,7 +140,7 @@ export default function PositionsTab({
 
     // Supabase (logged-in users)
     // NOTE: the table stores tickers/weights as separate arrays (see SavedPortfolios.toDb),
-    // NOT a single "assets" JSON column — query the right columns.
+    // NOT a single "assets" JSON column - query the right columns.
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
