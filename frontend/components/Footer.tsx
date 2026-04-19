@@ -8,6 +8,7 @@ export default function Footer() {
       <style>{`
         .footer-link:hover { color: #c9a84c !important; }
         .footer-x-link:hover { color: #c9a84c !important; }
+        .footer-ph-link:hover { opacity: 1 !important; }
         @media(max-width: 600px) {
           .footer-inner { flex-direction: column !important; gap: 12px !important; text-align: center !important; }
           .footer-root { padding: 24px 20px !important; }
@@ -26,6 +27,9 @@ export default function Footer() {
           <a href="/terms" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Terms</a>
           <a href="/faq" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>FAQ</a>
           <a href="/changelog" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>Changelog</a>
+          <a href="https://www.producthunt.com/posts/corvo" target="_blank" rel="noopener noreferrer" aria-label="Corvo on Product Hunt" className="footer-ph-link" style={{ display: "flex", alignItems: "center", opacity: 0.6, transition: "opacity 0.2s" }}>
+            <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=corvo&theme=dark" alt="Corvo on Product Hunt" style={{ height: 20, width: "auto" }} />
+          </a>
 <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" className="footer-link" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }}>GitHub</a>
           <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="footer-x-link" style={{ color: "rgba(232,224,204,0.35)", textDecoration: "none", display: "flex", alignItems: "center", transition: "color 0.2s" }}>
             <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
