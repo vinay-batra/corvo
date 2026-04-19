@@ -2,12 +2,19 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { Suspense } from "react";
+import React from "react";
 import PostHogProvider from "@/components/PosthogProvider";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallBanner from "@/components/InstallBanner";
 import { ToastProvider } from "@/components/Toast";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import PublicAIChat from "@/components/PublicAIChat";
+
+class ChatErrorBoundary extends React.Component<{ children: React.ReactNode }, { crashed: boolean }> {
+  state = { crashed: false };
+  static getDerivedStateFromError() { return { crashed: true }; }
+  render() { return this.state.crashed ? null : this.props.children; }
+}
 
 export const metadata: Metadata = {
   title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
@@ -62,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </ToastProvider>
           </PostHogProvider>
         </Suspense>
-        <PublicAIChat />
+        <ChatErrorBoundary><PublicAIChat /></ChatErrorBoundary>
         <Analytics />
         <ServiceWorkerRegistrar />
         <InstallBanner />

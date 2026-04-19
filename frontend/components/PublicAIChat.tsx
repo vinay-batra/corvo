@@ -17,19 +17,15 @@ export default function PublicAIChat() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Hide on /app routes
-  if (pathname.startsWith("/app")) return null;
-
-  const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
     if (open) {
-      scrollToBottom();
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open, messages]);
+
+  // Hide on /app routes
+  if (pathname.startsWith("/app")) return null;
 
   const send = async () => {
     const text = input.trim();
