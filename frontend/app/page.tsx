@@ -213,8 +213,7 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
             <linearGradient id="portGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a84c" stopOpacity="0.2" /><stop offset="100%" stopColor="#c9a84c" stopOpacity="0" /></linearGradient>
           </defs>
           <path d="M0,44 C60,40 120,32 190,20 C260,8 320,6 390,4 C430,3 465,5 500,2 L500,52 L0,52Z" fill="url(#portGrd)" />
-          <path d="M0,44 C60,40 120,32 190,20 C260,8 320,6 390,4 C430,3 465,5 500,2" fill="none" stroke="#c9a84c" strokeWidth="1.5"
-            pathLength="1" strokeDasharray="1" style={{ animation: "drawLoopLine 4s ease-in-out infinite" }} />
+          <path d="M0,44 C60,40 120,32 190,20 C260,8 320,6 390,4 C430,3 465,5 500,2" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
           <path d="M0,44 C80,42 160,38 240,33 C320,28 400,23 500,19" fill="none" stroke="rgba(232,224,204,0.14)" strokeWidth="1" strokeDasharray="4 3" />
         </svg>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
@@ -516,8 +515,7 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
               ))}
               <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2 L360,72 L0,72Z" fill="url(#pdfChartGrd)" />
               <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2"
-                fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                pathLength="1" strokeDasharray="1" style={{ animation: "drawLoopLine 4.5s ease-in-out infinite" }} />
+                fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               {([[0,64],[85,47],[160,20],[250,9],[360,2]] as [number,number][]).map(([x,y], i) => (
                 <circle key={i} cx={x} cy={y} r="2.5" fill="#c9a84c" opacity="0.9" />
               ))}
@@ -886,12 +884,6 @@ function VisualComparisonSection() {
         </SlideIn>
       </div>
 
-      {/* Caption */}
-      <FadeUp delay={0.2} style={{ textAlign: "center" }}>
-        <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(14px,2.5vw,20px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -0.5 }}>
-          Same intelligence. <span style={{ color: "#c9a84c" }}>Zero cost.</span>
-        </p>
-      </FadeUp>
     </div>
   );
 }
@@ -2069,11 +2061,10 @@ export default function Landing() {
       {/* ─── STATS BAR ─── */}
       <section style={{ position: "relative", zIndex: 1 }}>
         <div style={{ background: "rgba(10,14,20,0.7)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(201,168,76,0.08)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
-          <div className="stats-grid" style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
+          <div className="stats-grid" style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
             <StatItem target={liveUserCount ?? 847} suffix="+" label="Active Users" delay={0} borderRight />
             <StatItem target={5500} suffix="+" label="Portfolios Analyzed" delay={0.1} borderRight />
-            <StatItem target={17000} suffix="+" label="AI Insights Generated" delay={0.2} borderRight />
-            <StatItem target={300} suffix="" label="Monte Carlo Paths Simulated" delay={0.3} />
+            <StatItem target={17000} suffix="+" label="AI Insights Generated" delay={0.2} />
           </div>
         </div>
       </section>
@@ -2081,23 +2072,10 @@ export default function Landing() {
       {/* FEATURED IN */}
       <FeaturedInBar />
 
-      {/* SOCIAL PROOF */}
-      <FadeUp className="social-proof" style={{ position: "relative", zIndex: 1, padding: "20px 56px", display: "flex", justifyContent: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ display: "flex" }}>
-            {[{ i: "M", c: "#c9a84c" }, { i: "S", c: "#5cb88a" }, { i: "J", c: "#c9a84c" }, { i: "A", c: "#e05c5c" }, { i: "R", c: "#5cb88a" }].map((u, idx) => (
-              <div key={idx} style={{ width: 32, height: 32, borderRadius: "50%", background: u.c + "22", border: `2px solid ${u.c}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: u.c, marginLeft: idx === 0 ? 0 : -10, zIndex: 5 - idx, position: "relative" }}>{u.i}</div>
-            ))}
-          </div>
-          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", letterSpacing: 0.2 }}>Join <span style={{ color: "#c9a84c", fontWeight: 600 }}>{liveUserCount ? `${liveUserCount.toLocaleString()}+` : "847+"}</span> investors already using Corvo</p>
-        </div>
-      </FadeUp>
-
       {/* ─── FEATURE SHOWCASE: BENTO GRID ─── */}
       <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "64px 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>What Corvo Does</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,44px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1 }}>Everything your portfolio<br />actually needs</h2>
           </Reveal>
           <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist montecarlo" "learnxp deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
@@ -2108,86 +2086,6 @@ export default function Landing() {
             <BentoLearnCard delay={0.2} />
             <BentoDeepDivesCard delay={0.25} />
           </div>
-        </div>
-      </section>
-
-      {/* ─── HOW IT WORKS ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 60 }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>How It Works</p>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,44px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2 }}>Up and running in 60 seconds</h2>
-          </Reveal>
-          <div style={{ position: "relative" }}>
-            {/* Animated connecting line */}
-            <div className="how-line" style={{ position: "absolute", top: 40, left: "20%", right: "20%", height: 2, zIndex: 0, overflow: "hidden", background: "rgba(201,168,76,0.15)" }}>
-              <div style={{ height: "100%", background: "linear-gradient(90deg, transparent, #c9a84c 20%, rgba(201,168,76,0.6) 50%, #c9a84c 80%, transparent)", animation: "shimmer 3s linear infinite", backgroundSize: "200% 100%" }} />
-            </div>
-            <div className="how-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 0, position: "relative", zIndex: 1 }}>
-              <HowStep n="01" icon={<HowIconSearch />} title="Add your tickers" desc="Search any stock, ETF, or crypto. Or screenshot your brokerage and we'll import it automatically." delay={0} dir="left" />
-              <HowStep n="02" icon={<HowIconSparkle />} title="Get instant AI analysis" desc="Corvo computes Sharpe, drawdown, Monte Carlo, and AI insights in under a second." delay={0.2} dir="up" />
-              <HowStep n="03" icon={<HowIconTarget />} title="Make smarter decisions" desc="Act on clear, personalized recommendations based on your actual holdings and goals." delay={0.4} dir="right" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── COMPARISON TABLE ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 44 }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Why Corvo</p>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1 }}>The only tool built<br />for serious investors</h2>
-          </Reveal>
-          {/* Visual comparison */}
-          <Reveal style={{ marginBottom: 56 }}>
-            <VisualComparisonSection />
-          </Reveal>
-          <Reveal>
-            <div style={{ overflowX: "auto" }}>
-              <table className="compare-table" style={{ width: "100%", borderCollapse: "collapse", minWidth: 580 }}>
-                <thead>
-                  <tr>
-                    <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", borderBottom: "1px solid rgba(201,168,76,0.08)", fontWeight: 400 }}>Feature</th>
-                    {["Corvo", "Yahoo Finance", "Robinhood"].map((t, i) => (
-                      <th key={t} style={{ padding: "14px 16px", textAlign: "center", fontSize: 11, fontWeight: 600, color: i === 0 ? "#c9a84c" : "rgba(232,224,204,0.3)", borderBottom: i === 0 ? "2px solid rgba(201,168,76,0.4)" : "1px solid rgba(201,168,76,0.08)", borderLeft: i === 0 ? "1px solid rgba(201,168,76,0.18)" : "none", borderRight: i === 0 ? "1px solid rgba(201,168,76,0.18)" : "none", background: i === 0 ? "rgba(201,168,76,0.05)" : "transparent", boxShadow: i === 0 ? "0 0 40px rgba(201,168,76,0.04)" : "none" }}>
-                        {t}
-                        {i === 0 && <span style={{ display: "block", fontSize: 8, letterSpacing: 1.5, color: "rgba(201,168,76,0.5)", fontWeight: 400, marginTop: 2 }}>FREE</span>}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ["AI-Powered Insights", true, false, false],
-                    ["Monte Carlo Simulation", true, false, false],
-                    ["Learn & Earn XP", true, false, false],
-                    ["Real-Time Alerts", true, true, true],
-                    ["Portfolio Health Score", true, false, false],
-                    ["Correlation Heatmap", true, true, false],
-                    ["Screenshot Import", true, false, false],
-                    ["Free to Use", true, true, true],
-                    ["Beautiful UI", true, false, false],
-                  ].map(([label, ...vals], ri) => (
-                    <AnimatedTableRow key={ri} delay={ri * 0.07}>
-                      <td style={{ padding: "13px 20px", fontSize: 13, color: "rgba(232,224,204,0.6)", fontWeight: 300 }}>{label as string}</td>
-                      {(vals as boolean[]).map((v, ci) => (
-                        <td key={ci} style={{ padding: "13px 16px", textAlign: "center", borderLeft: ci === 0 ? "1px solid rgba(201,168,76,0.18)" : "none", borderRight: ci === 0 ? "1px solid rgba(201,168,76,0.18)" : "none", background: ci === 0 ? "rgba(201,168,76,0.03)" : "transparent", fontSize: 14 }}>
-                          {v
-                            ? <span style={{ color: ci === 0 ? "#c9a84c" : "#5cb88a", fontSize: ci === 0 ? 16 : 14, fontWeight: ci === 0 ? 700 : 400 }}>✓</span>
-                            : <span style={{ color: "rgba(255,255,255,0.12)" }}>✗</span>}
-                        </td>
-                      ))}
-                    </AnimatedTableRow>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <Reveal delay={0.1} style={{ marginTop: 24, display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
-              <Link href="/compare/yahoo-finance" style={{ fontSize: 12, color: "rgba(201,168,76,0.6)", textDecoration: "none" }}>Corvo vs Yahoo Finance →</Link>
-              <Link href="/compare/robinhood" style={{ fontSize: 12, color: "rgba(201,168,76,0.6)", textDecoration: "none" }}>Corvo vs Robinhood →</Link>
-            </Reveal>
-          </Reveal>
         </div>
       </section>
 
@@ -2246,30 +2144,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── PHILOSOPHY TAGLINE ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "40px 56px 80px" }}>
-        <Reveal>
-          <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", marginBottom: 28 }}>Our philosophy</p>
-            <h2 className="tagline-h2" style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,5vw,56px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2.5, lineHeight: 1.1, marginBottom: 28 }}>
-              Built for real investors,<br />
-              <span style={{ color: "#c9a84c" }}>not Wall Street firms.</span>
-            </h2>
-            <p style={{ fontSize: 17, color: "rgba(232,224,204,0.38)", lineHeight: 1.85, fontWeight: 300, maxWidth: 580, margin: "0 auto 48px" }}>
-              You care about your portfolio. You want real analytics, not a basic chart. Yahoo Finance won't give it to you. Robinhood definitely won't. Corvo is built exactly for that gap.
-            </p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-              <Link href="/auth" className="cta cta-shimmer" style={{ padding: "14px 40px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>
-                Get started free →
-              </Link>
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-
-      {/* ─── SECURITY / TRUST ─── */}
-      <SecurityTrustSection />
+      {/* ─── SECURITY / TRUST removed ─── */}
 
       {/* EMAIL CAPTURE BOTTOM (prominent, above footer) */}
       <EmailCaptureBottom />
