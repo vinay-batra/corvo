@@ -55,7 +55,9 @@ function FeatureItem({ text, delay }: { text: string; delay: number }) {
         opacity: visible ? 1 : 0,
         transform: visible ? "scale(1)" : "scale(0.6)",
         transition: `opacity 0.4s ease ${delay + 0.05}s, transform 0.4s cubic-bezier(0.34,1.56,0.64,1) ${delay + 0.05}s`,
-      }}>✓</span>
+      }}>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
       <span style={{ fontSize: 13.5, color: "rgba(232,224,204,0.7)", lineHeight: 1.6 }}>{text}</span>
     </div>
   );
@@ -142,7 +144,10 @@ function WaitlistCapture() {
         borderRadius: 10,
         padding: "12px 20px",
       }}>
-        <span style={{ color: "#5cb88a", fontSize: 13, fontWeight: 500 }}>✓ You&apos;re on the waitlist!</span>
+        <span style={{ color: "#5cb88a", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          You&apos;re on the waitlist!
+        </span>
       </div>
     );
   }
@@ -184,7 +189,10 @@ function WaitlistCapture() {
             cursor: status === "loading" ? "wait" : "pointer",
             letterSpacing: 0.3,
             flexShrink: 0,
+            transition: "filter 0.15s",
           }}
+          onMouseEnter={e => { if (status !== "loading") (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; }}
         >
           {status === "loading" ? "..." : "Join Waitlist"}
         </button>
@@ -262,8 +270,8 @@ function PricingCard({
           ? "rgba(201,168,76,0.04)"
           : "rgba(255,255,255,0.018)",
         border: isPro
-          ? "1px solid rgba(201,168,76,0.35)"
-          : "1px solid rgba(255,255,255,0.07)",
+          ? "0.5px solid rgba(201,168,76,0.35)"
+          : "0.5px solid rgba(255,255,255,0.07)",
         borderRadius: 20,
         padding: "36px 32px 40px",
         position: "relative",
@@ -271,7 +279,7 @@ function PricingCard({
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(32px)",
         transition: `opacity 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
-        animation: isPro && visible ? "amberPulse 3s ease-in-out infinite" : undefined,
+        animation: isPro ? "amberPulse 3s ease-in-out infinite" : undefined,
       }}
     >
       {/* Pill label */}
@@ -282,7 +290,7 @@ function PricingCard({
           fontWeight: 700,
           color: "#c9a84c",
           background: "rgba(201,168,76,0.12)",
-          border: "1px solid rgba(201,168,76,0.25)",
+          border: "0.5px solid rgba(201,168,76,0.25)",
           borderRadius: 20,
           padding: "4px 11px",
           textTransform: "uppercase",
@@ -327,15 +335,15 @@ function PricingCard({
             letterSpacing: 0.3,
             transition: "opacity 0.2s",
           }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-          onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+          onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.1)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+          onMouseLeave={e => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
         >
           Get Started Free →
         </Link>
       )}
 
       {/* Divider */}
-      <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "28px 0" }} />
+      <div style={{ height: "0.5px", background: "rgba(255,255,255,0.07)", margin: "28px 0" }} />
 
       {/* Features heading */}
       <p style={{ fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 18 }}>
@@ -358,11 +366,11 @@ function FoundingMemberSection() {
   return (
     <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: 20, padding: "44px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", background: "rgba(201,168,76,0.04)", border: "0.5px solid rgba(201,168,76,0.3)", borderRadius: 20, padding: "44px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
           {/* Glow */}
           <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 60%)", pointerEvents: "none" }} />
           <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 20, marginBottom: 20 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 20, marginBottom: 20 }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
               <span style={{ fontSize: 10, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase" }}>Limited Spots</span>
             </div>
@@ -492,11 +500,11 @@ function FeatureVoteSection() {
               const voteCount = votes[f.id] ?? 0;
               const hasVoted = voted[f.id] ?? false;
               return (
-                <div key={f.id} style={{ background: "rgba(255,255,255,0.018)", border: `1px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 14, padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: `opacity 0.6s ease ${i * 0.07}s, transform 0.6s ease ${i * 0.07}s`, position: "relative", overflow: "hidden" }}>
+                <div key={f.id} style={{ background: "rgba(255,255,255,0.018)", border: `0.5px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 14, padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: `opacity 0.6s ease ${i * 0.07}s, transform 0.6s ease ${i * 0.07}s`, position: "relative", overflow: "hidden" }}>
                   {hasVoted && <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />}
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#c9a84c", flexShrink: 0 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(201,168,76,0.08)", border: "0.5px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#c9a84c", flexShrink: 0 }}>
                         {f.icon}
                       </div>
                       <div>
@@ -507,7 +515,7 @@ function FeatureVoteSection() {
                   </div>
                   <button
                     onClick={() => handleVote(f.id)}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: hasVoted ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: 8, cursor: "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: hasVoted ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)", border: `0.5px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: 8, cursor: "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = hasVoted ? "rgba(201,168,76,0.06)" : "rgba(201,168,76,0.08)"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = hasVoted ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)"; }}
                   >
@@ -535,7 +543,7 @@ export default function PricingPage() {
   const { ref: trustRef, visible: trustVisible } = useReveal(0.1);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0d1117", color: "#e8e0cc", fontFamily: "system-ui,-apple-system,sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,system-ui,sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -544,6 +552,7 @@ export default function PricingPage() {
           50% { box-shadow: 0 0 28px 4px rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.55); }
         }
         @keyframes heroFadeIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeinUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pdot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         @media (max-width: 700px) {
           .pricing-cards { flex-direction: column !important; align-items: center !important; }
@@ -597,7 +606,7 @@ export default function PricingPage() {
             alignItems: "center",
             gap: 8,
             padding: "6px 16px",
-            border: "1px solid rgba(201,168,76,0.18)",
+            border: "0.5px solid rgba(201,168,76,0.18)",
             borderRadius: 24,
             marginBottom: 28,
             background: "rgba(201,168,76,0.06)",
@@ -607,7 +616,7 @@ export default function PricingPage() {
           </div>
 
           <h1 style={{
-            fontFamily: "system-ui,-apple-system,sans-serif",
+            fontFamily: "Space Mono,monospace",
             fontSize: "clamp(32px,5vw,60px)",
             fontWeight: 700,
             lineHeight: 1.1,
@@ -663,7 +672,7 @@ export default function PricingPage() {
             background: "rgba(255,255,255,0.05)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(201,168,76,0.45)",
+            border: "0.5px solid rgba(201,168,76,0.45)",
             borderRadius: 28,
             padding: "80px 56px",
             textAlign: "center",
@@ -679,7 +688,7 @@ export default function PricingPage() {
           {/* Bottom glow */}
           <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "70%", height: 120, background: "radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)", filter: "blur(30px)", pointerEvents: "none" }} />
           <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 20 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 20 }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
               <span style={{ fontSize: 10, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase" }}>Free During Beta</span>
             </div>
@@ -704,8 +713,8 @@ export default function PricingPage() {
                 transition: "opacity 0.2s, transform 0.2s",
                 marginTop: 4,
               }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+              onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.1)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
               Start for free →
             </Link>

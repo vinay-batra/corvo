@@ -58,7 +58,7 @@ export default function ReferralsPage() {
 
   const copyForPlatform = (platform: string) => {
     navigator.clipboard.writeText(refLink).then(() => {
-      showToast(`Link copied — paste it in ${platform}`);
+      showToast(`Link copied · paste it in ${platform}`);
     }).catch(() => {});
   };
 

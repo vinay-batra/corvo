@@ -35,15 +35,15 @@ export default function BlogIndexPage() {
       <Link href="/" className="blog-back-link">← Back</Link>
       {/* Hero */}
       <div className="blog-hero" style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 24, marginBottom: 28, background: "rgba(201,168,76,0.06)", animation: "fadein 0.6s ease 0.1s both" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 24, marginBottom: 28, background: "rgba(201,168,76,0.06)", animation: "fadeinUp 0.6s ease 0.1s both" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block" }} />
           <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>Corvo Blog</span>
         </div>
-        <h1 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,5vw,58px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.08, marginBottom: 20, animation: "fadein 0.8s ease 0.15s both" }}>
+        <h1 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,5vw,58px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.08, marginBottom: 20, animation: "fadeinUp 0.8s ease 0.15s both" }}>
           Investing insights.<br />
           <span style={{ color: "#c9a84c" }}>Portfolio strategy.</span>
         </h1>
-        <p style={{ fontSize: 17, color: "rgba(232,224,204,0.42)", fontWeight: 300, lineHeight: 1.75, maxWidth: 560, animation: "fadein 0.8s ease 0.25s both" }}>
+        <p style={{ fontSize: 17, color: "rgba(232,224,204,0.42)", fontWeight: 300, lineHeight: 1.75, maxWidth: 560, animation: "fadeinUp 0.8s ease 0.25s both" }}>
           Investing insights, product updates, and portfolio strategy from the Corvo team.
         </p>
       </div>
