@@ -334,7 +334,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
 
       {importError&&<p style={{fontSize:10,color:"#e05c5c",margin:"8px 0"}}>{importError}</p>}
 
-      <div style={{marginTop:10}}>
+      <div style={{marginTop:20}}>
       <AnimatePresence>
         {assets.map((a,i)=>{
           const color=DOTS[i%DOTS.length];
