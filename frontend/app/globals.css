@@ -163,6 +163,10 @@ input::placeholder { color: var(--text3); }
   from { opacity: 0; transform: translateX(-50%) translateY(4px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+@keyframes fadeinUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ── Typography enhancements ── */
 .metric-number {

@@ -38,7 +38,7 @@ export default function ReferralsDashboard() {
 
   const copyForPlatform = (platform: string) => {
     navigator.clipboard.writeText(refLink).then(() => {
-      showToast(`Link copied — paste it in ${platform}`);
+      showToast(`Link copied · paste it in ${platform}`);
     }).catch(() => {});
   };
 
@@ -85,8 +85,8 @@ export default function ReferralsDashboard() {
         </svg>
       ),
       action: () => window.open(
-        `mailto:?subject=${encodeURIComponent("Check out Corvo — free AI portfolio analysis")}&body=${encodeURIComponent(shareMsgClean)}`,
-        "_blank"
+        `https://mail.google.com/mail/?view=cm&body=${encodeURIComponent(shareMsgClean)}`,
+        "_blank", "noopener"
       ),
     },
     {

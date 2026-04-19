@@ -280,7 +280,9 @@ function FAQAIChat() {
         <button
           onClick={send}
           disabled={loading || !input.trim()}
-          style={{ padding: "0 18px", height: 42, borderRadius: 10, background: loading || !input.trim() ? "rgba(201,168,76,0.25)" : "#c9a84c", border: "none", cursor: loading || !input.trim() ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.2s" }}
+          style={{ padding: "0 18px", height: 42, borderRadius: 10, background: loading || !input.trim() ? "rgba(201,168,76,0.25)" : "#c9a84c", border: "none", cursor: loading || !input.trim() ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.2s, filter 0.15s" }}
+          onMouseEnter={e => { if (!loading && input.trim()) (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0e14" strokeWidth="2.5">
             <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
@@ -594,7 +596,10 @@ export default function FaqPage() {
                 border: "none",
                 cursor: "pointer",
                 letterSpacing: 0.3,
+                transition: "filter 0.15s, transform 0.15s",
               }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
             >
               Ask our AI →
             </button>

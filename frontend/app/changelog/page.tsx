@@ -198,7 +198,7 @@ export default function ChangelogPage() {
                 </div>
 
                 {/* Dot */}
-                <div style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "#0a0e14", border: "2px solid #c9a84c", zIndex: 2 }} />
+                <div style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--bg, #0a0e14)", border: "2px solid #c9a84c", zIndex: 2 }} />
 
                 {/* Content */}
                 <div style={{ paddingLeft: 36, flex: 1 }}>
@@ -239,7 +239,7 @@ export default function ChangelogPage() {
             </p>
             {status === "done" ? (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.25)", borderRadius: 12, padding: "16px 28px" }}>
-                <span style={{ fontSize: 16, color: "#4caf7d" }}>✓</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4caf7d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 <span style={{ fontSize: 14, color: "#4caf7d", fontWeight: 500 }}>{"You're on the list!"}</span>
               </div>
             ) : (
@@ -257,7 +257,9 @@ export default function ChangelogPage() {
                 <button
                   onClick={submit}
                   disabled={status === "loading"}
-                  style={{ padding: "14px 24px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, transition: "opacity 0.2s", opacity: status === "loading" ? 0.8 : 1 }}>
+                  style={{ padding: "14px 24px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, transition: "filter 0.15s, opacity 0.2s", opacity: status === "loading" ? 0.8 : 1 }}
+                  onMouseEnter={e => { if (status !== "loading") (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; }}>
                   {status === "loading" ? "..." : "Subscribe Free"}
                 </button>
               </div>
