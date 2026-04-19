@@ -541,7 +541,7 @@ const LESSONS = [
     id: "montecarlo", title: "Monte Carlo Simulation", iconKey: "montecarlo", time: "3 min",
     xpReward: 50,
     content: [
-      { type: "text", text: "Monte Carlo simulation runs thousands of possible future scenarios using historical return data. Corvo runs 8,500 paths." },
+      { type: "text", text: "Monte Carlo simulation runs thousands of possible future scenarios using historical return data. Corvo runs 10,000 paths." },
       { type: "list", items: ["Uses historical mean return and volatility", "Randomly samples returns based on a statistical distribution", "Runs each scenario forward over time", "The spread of outcomes shows your uncertainty range"] },
       { type: "text", text: "The wider the cone, the more uncertain your future. A volatile portfolio has a huge range: you might be up 300% or down 60%." },
       { type: "text", text: "Use the 10th percentile (bottom of the cone) as a stress-test: can you afford that outcome?" },

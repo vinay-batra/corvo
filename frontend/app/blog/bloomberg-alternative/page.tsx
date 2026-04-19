@@ -46,7 +46,7 @@ const RELATED: RelatedPost[] = [
     category: "Education",
     categoryColor: "#8eb4c8",
     readTime: "6 min read",
-    excerpt: "Running 8,500 simulations of your future is the best way to understand your real retirement risk.",
+    excerpt: "Running 10,000 simulations of your future is the best way to understand your real retirement risk.",
   },
 ];
 
@@ -150,7 +150,7 @@ export default function BloombergAlternativePage() {
         <tbody>
           <tr><td>Annual Cost</td><td>$24,000+</td><td>Free</td></tr>
           <tr><td>Setup Time</td><td>Days to weeks</td><td>Under 5 minutes</td></tr>
-          <tr><td>Monte Carlo Simulation</td><td>Yes (institutional)</td><td>Yes (8,500 paths)</td></tr>
+          <tr><td>Monte Carlo Simulation</td><td>Yes (institutional)</td><td>Yes (10,000 paths)</td></tr>
           <tr><td>Sharpe Ratio Analysis</td><td>Yes</td><td>Yes</td></tr>
           <tr><td>Portfolio Health Score</td><td>No</td><td>Yes</td></tr>
           <tr><td>AI Portfolio Chat</td><td>No</td><td>Yes</td></tr>
