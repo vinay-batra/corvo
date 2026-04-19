@@ -106,17 +106,17 @@ export default function BloombergComparePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20 }}>
             {[
               {
-                icon: "💸",
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
                 title: "Cost: $24,000/yr vs $0",
                 body: "Bloomberg Terminal is priced for hedge funds and trading desks. At $2,000/month, a retail investor would spend $24,000/year just to access analytics, more than most people invest annually. Corvo is free, forever.",
               },
               {
-                icon: "🖥️",
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
                 title: "Designed for humans, not traders",
                 body: "Bloomberg's interface was built in the 1980s for institutional traders who spend decades learning it. Corvo's modern UI lets any investor understand their portfolio risk in under 5 minutes.",
               },
               {
-                icon: "🤖",
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>,
                 title: "AI that knows your portfolio",
                 body: "Bloomberg has data. Corvo has an AI that knows your exact holdings, your risk tolerance, and your goals, and can answer questions like \"Am I too concentrated in tech?\" in plain English.",
               },
@@ -169,10 +169,10 @@ export default function BloombergComparePage() {
                     >
                       <td style={{ padding: "13px 20px", fontSize: 13, color: "rgba(232,224,204,0.6)", fontWeight: 300 }}>{label}</td>
                       <td style={{ padding: "13px 16px", textAlign: "center", borderLeft: "1px solid rgba(201,168,76,0.18)", borderRight: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.03)", fontSize: 15 }}>
-                        {corvo ? <span style={{ color: "#c9a84c", fontWeight: 700 }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.12)" }}>✗</span>}
+                        {corvo ? <span style={{ color: "#c9a84c", fontWeight: 700 }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
                       </td>
                       <td style={{ padding: "13px 16px", textAlign: "center", fontSize: 14 }}>
-                        {bloomberg ? <span style={{ color: "#5cb88a" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.12)" }}>✗</span>}
+                        {bloomberg ? <span style={{ color: "#5cb88a" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
                       </td>
                     </motion.tr>
                   ))}

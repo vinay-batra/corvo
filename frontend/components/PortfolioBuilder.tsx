@@ -325,7 +325,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               fontFamily:"Space Mono,monospace",
               transition:"all 0.15s", flexShrink:0,
             }}>
-            {(total*100).toFixed(0)}% / 100%
+            {Math.min(100, Math.round(total * 100))}% / 100%
           </span>
         </div>
       </div>
@@ -380,9 +380,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   onChange={e=>updateWeight(i,Math.max(0,Math.min(100,Number(e.target.value)))/100)}
                   style={{width:36,padding:"5px 3px",background:"var(--bg3)",border:`1px solid ${C.border}`,borderRadius:5,color:"var(--text)",fontSize:11,fontFamily:"Space Mono,monospace",outline:"none",textAlign:"center"}}/>
                 <span style={{fontSize:9,color:C.cream3,flexShrink:0}}>%</span>
-                <button onClick={()=>remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",fontSize:12,padding:"0 2px",lineHeight:1}}
+                <button onClick={()=>remove(i)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center"}}
                   onMouseEnter={e=>e.currentTarget.style.color="#e05c5c"}
-                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}>✕</button>
+                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
 
               {/* Company name / description below ticker */}
@@ -454,9 +454,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   <div style={{fontSize:14,fontWeight:600,color:"var(--text)"}}>Load a Preset</div>
                 </div>
                 <button onClick={()=>{setShowPresetsModal(false);setPresetConfirm(null);}}
-                  style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.3)",fontSize:16,lineHeight:1,padding:4}}
+                  style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.3)",padding:4,display:"flex",alignItems:"center"}}
                   onMouseEnter={e=>e.currentTarget.style.color="rgba(255,255,255,0.7)"}
-                  onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}>✕</button>
+                  onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
               {presetConfirm ? (
                 <div style={{padding:"20px"}}>
@@ -512,9 +512,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   <div style={{fontSize:14,fontWeight:600,color:"var(--text)"}}>Import from CSV</div>
                 </div>
                 <button onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}
-                  style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.3)",fontSize:16,lineHeight:1,padding:4}}
+                  style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.3)",padding:4,display:"flex",alignItems:"center"}}
                   onMouseEnter={e=>e.currentTarget.style.color="rgba(255,255,255,0.7)"}
-                  onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}>✕</button>
+                  onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
               <div style={{padding:"16px 20px 20px"}}>
                 {!csvPreview&&(
@@ -545,7 +545,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                       </div>
                     ):(
                       <>
-                        <div style={{fontSize:22,marginBottom:8,opacity:0.5}}>📂</div>
+                        <div style={{marginBottom:8,opacity:0.5,display:"flex",justifyContent:"center",color:"var(--text)"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
                         <div style={{fontSize:11,color:"var(--text)",marginBottom:4}}>Drop your CSV here</div>
                         <div style={{fontSize:9,color:"rgba(232,224,204,0.35)"}}>or click to browse</div>
                       </>

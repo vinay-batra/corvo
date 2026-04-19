@@ -97,17 +97,17 @@ export default function YahooFinanceComparePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20 }}>
             {[
               {
-                icon: "🧠",
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a9 9 0 100 18A9 9 0 0012 2z"/><path d="M12 8v4l3 3"/></svg>,
                 title: "AI that understands your portfolio",
                 body: "Yahoo Finance shows you data. Corvo's AI synthesizes it, telling you if your tech concentration is too high, what your Sharpe ratio means, and how to rebalance. It knows your exact holdings.",
               },
               {
-                icon: "📊",
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
                 title: "Real risk analytics, not just quotes",
                 body: "Yahoo Finance Premium gives you better charts and screeners. Corvo gives you Sharpe ratio, max drawdown, correlation heatmaps, and Monte Carlo simulation: the analytics that actually matter for your portfolio.",
               },
               {
-                icon: "🚫",
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>,
                 title: "Zero ads, zero upsells",
                 body: "Yahoo Finance's free tier is ad-heavy. Their paid tier still sells premium data upgrades. Corvo is fully featured from day one: no ads, no paywalls, no upgrade prompts.",
               },
@@ -160,10 +160,10 @@ export default function YahooFinanceComparePage() {
                     >
                       <td style={{ padding: "13px 20px", fontSize: 13, color: "rgba(232,224,204,0.6)", fontWeight: 300 }}>{label}</td>
                       <td style={{ padding: "13px 16px", textAlign: "center", borderLeft: "1px solid rgba(201,168,76,0.18)", borderRight: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.03)", fontSize: 15 }}>
-                        {corvo ? <span style={{ color: "#c9a84c", fontWeight: 700 }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.12)" }}>✗</span>}
+                        {corvo ? <span style={{ color: "#c9a84c", fontWeight: 700 }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
                       </td>
                       <td style={{ padding: "13px 16px", textAlign: "center", fontSize: 14 }}>
-                        {yahoo ? <span style={{ color: "#5cb88a" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.12)" }}>✗</span>}
+                        {yahoo ? <span style={{ color: "#5cb88a" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
                       </td>
                     </motion.tr>
                   ))}

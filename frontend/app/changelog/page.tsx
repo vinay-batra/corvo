@@ -145,7 +145,7 @@ export default function ChangelogPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0e14", fontFamily: "Inter, sans-serif", color: "#e8e0cc" }}>
+    <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "Inter, sans-serif", color: "#e8e0cc" }}>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .nl { color: rgba(232,224,204,0.45); text-decoration: none; font-size: 12px; padding: 7px 14px; letter-spacing: 0.3px; transition: color 0.2s; }

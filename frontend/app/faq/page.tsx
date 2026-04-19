@@ -314,7 +314,7 @@ export default function FaqPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#0a0e14",
+        background: "transparent",
         color: "#e8e0cc",
         fontFamily: "Inter, system-ui, sans-serif",
       }}

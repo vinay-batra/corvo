@@ -36,9 +36,9 @@
 
 /* ── Dark mode ── */
 [data-theme="dark"] {
-  --bg:          #0a0e14;
-  --bg2:         #0d1117;
-  --bg3:         #131c27;
+  --bg:          #080c14;
+  --bg2:         #0b1019;
+  --bg3:         #111927;
   --border:      rgba(255,255,255,0.07);
   --border2:     rgba(255,255,255,0.13);
   --border-dim:  rgba(255,255,255,0.05);
@@ -52,8 +52,8 @@
   --accent:      #c9a84c;
   --accent-text: #c9a84c;
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
-  --card-bg:     #0d1117;
-  --bg-card:     #0d1117;
+  --card-bg:     #0c1220;
+  --bg-card:     #0c1220;
   --card-glass:  rgba(255,255,255,0.025);
   --input-bg:    #131c27;
   --input-border: rgba(255,255,255,0.1);

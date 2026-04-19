@@ -20,7 +20,7 @@ function buildPulse(data: any, perfHistory: PerfSnapshot[], portfolioValue: numb
   if (perfHistory && perfHistory.length >= 2) {
     const last = perfHistory[perfHistory.length - 1];
     const prev = perfHistory[perfHistory.length - 2];
-    if (last && prev && prev.cumulative_return !== undefined && last.cumulative_return !== undefined) {
+    if (last && prev && prev.cumulative_return != null && last.cumulative_return != null) {
       // daily_return ≈ difference in cumulative returns over one day
       const prevValue = portfolioValue * (1 + prev.cumulative_return);
       const lastValue = portfolioValue * (1 + last.cumulative_return);
@@ -28,8 +28,8 @@ function buildPulse(data: any, perfHistory: PerfSnapshot[], portfolioValue: numb
       const dailyPct = prev.cumulative_return !== -1
         ? ((last.cumulative_return - prev.cumulative_return) / (1 + prev.cumulative_return)) * 100
         : 0;
-      const sign = dailyDollar >= 0 ? "+" : "";
-      dailyPart = `Today: ${sign}$${Math.abs(dailyDollar).toFixed(0)} (${sign}${dailyPct.toFixed(2)}%). `;
+      const sign = (dailyDollar ?? 0) >= 0 ? "+" : "";
+      dailyPart = `Today: ${sign}$${Math.abs(dailyDollar ?? 0).toFixed(0)} (${sign}${(dailyPct ?? 0).toFixed(2)}%). `;
     }
   }
 

@@ -85,7 +85,7 @@ export default function ReferralsPage() {
         </svg>
       ),
       action: () => window.open(
-        `https://reddit.com/submit?url=${encodeURIComponent(refLink)}&title=${encodeURIComponent("I learned more about my portfolio risk in 5 minutes than I have in years — free tool")}`,
+        `https://reddit.com/submit?url=${encodeURIComponent(refLink)}&title=${encodeURIComponent("I learned more about my portfolio risk in 5 minutes than I have in years - free tool")}`,
         "_blank", "noopener"
       ),
     },
@@ -178,10 +178,10 @@ export default function ReferralsPage() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "transparent", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
-      <header style={{ height: 52, borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "#0a0e14", position: "sticky", top: 0, zIndex: 10 }}>
+      <header style={{ height: 52, borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "rgba(10,14,20,0.92)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
           onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")}
           onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>

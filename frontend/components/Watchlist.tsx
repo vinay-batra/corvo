@@ -226,7 +226,7 @@ export default function Watchlist() {
         ]);
 
         let loadedLists: WatchList[] = (dbLists ?? []).map((r: any) => ({
-          id: r.id, name: r.name, icon: r.icon ?? "📈", tickers: [],
+          id: r.id, name: r.name, icon: r.icon ?? "chart", tickers: [],
         }));
         const loadedItems: WatchItem[] = (dbItems ?? []).map((r: any) => ({
           ticker: r.ticker, addedAt: r.added_at, listId: r.list_id,
@@ -235,8 +235,8 @@ export default function Watchlist() {
         // New user: create a default list in Supabase
         if (loadedLists.length === 0) {
           const defaultId = crypto.randomUUID();
-          await supabase.from("watchlist_lists").insert({ id: defaultId, user_id: uid, name: "My Watchlist", icon: "📈" });
-          loadedLists = [{ id: defaultId, name: "My Watchlist", icon: "📈", tickers: [] }];
+          await supabase.from("watchlist_lists").insert({ id: defaultId, user_id: uid, name: "My Watchlist", icon: "chart" });
+          loadedLists = [{ id: defaultId, name: "My Watchlist", icon: "chart", tickers: [] }];
         }
 
         setLists(loadedLists);
@@ -269,7 +269,7 @@ export default function Watchlist() {
         } catch {}
 
         if (loadedLists.length === 0) {
-          const defaultList: WatchList = { id: genId(), name: "My Watchlist", icon: "📈", tickers: [] };
+          const defaultList: WatchList = { id: genId(), name: "My Watchlist", icon: "chart", tickers: [] };
           loadedLists = [defaultList];
           loadedItems = loadedItems.map(i => ({ ...i, listId: defaultList.id }));
           try { localStorage.setItem(LISTS_KEY, JSON.stringify(loadedLists)); } catch {}
@@ -529,7 +529,7 @@ export default function Watchlist() {
                     style={{ flex: 1, padding: 0, background: "transparent", border: "none", color: "var(--text)", fontSize: 13, fontWeight: 500, outline: "none" }}
                   />
                   <button onClick={saveRename} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
-                  <button onClick={() => setEditingListId(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0, lineHeight: 1 }}>✕</button>
+                  <button onClick={() => setEditingListId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 0, display: "flex", alignItems: "center" }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>
                 <IconPicker value={editIcon} onChange={setEditIcon} />
               </div>
@@ -593,7 +593,7 @@ export default function Watchlist() {
                               style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent", cursor: "pointer", color: "rgba(224,92,92,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, transition: "color 0.1s, background 0.1s" }}
                               onMouseEnter={e => { e.currentTarget.style.color = "#e05c5c"; e.currentTarget.style.background = "rgba(224,92,92,0.06)"; }}
                               onMouseLeave={e => { e.currentTarget.style.color = "rgba(224,92,92,0.4)"; e.currentTarget.style.background = "transparent"; }}>
-                              ✕
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                           )}
                         </div>
@@ -612,7 +612,7 @@ export default function Watchlist() {
                           style={{ flex: 1, padding: "2px 0", background: "transparent", border: "none", color: "var(--text)", fontSize: 12, outline: "none" }}
                         />
                         <button onClick={createList} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
-                        <button onClick={() => { setCreatingList(false); setNewListName(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text3)", padding: 0, lineHeight: 1 }}>✕</button>
+                        <button onClick={() => { setCreatingList(false); setNewListName(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 0, display: "flex", alignItems: "center" }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                       </div>
                       <IconPicker value={newListIcon} onChange={setNewListIcon} />
                     </div>
@@ -722,10 +722,10 @@ export default function Watchlist() {
                         ◎
                       </button>
                       <button onClick={e => { e.stopPropagation(); remove(item.ticker); }}
-                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "var(--text3)", transition: "all 0.15s" }}
+                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", transition: "all 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = "#e05c5c"; e.currentTarget.style.color = "#e05c5c"; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
-                        ✕
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                       </button>
                     </div>
                   </div>
@@ -778,7 +778,7 @@ export default function Watchlist() {
                 <button onClick={() => saveAlerts(alerts.filter((_, idx) => idx !== i))}
                   style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 12, padding: "0 4px" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
-                  onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}>✕</button>
+                  onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
             ))}
           </div>

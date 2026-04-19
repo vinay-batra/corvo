@@ -665,7 +665,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
             </div>
           </div>
           <div style={{ fontSize: 13, fontWeight: 600, color: positive ? GREEN : RED }}>
-            {positive ? "+" : ""}{info.change != null ? info.change.toFixed(2) : "—"} ({positive ? "+" : ""}{info.change_pct != null ? info.change_pct.toFixed(2) : "—"}%)
+            {positive ? "+" : ""}{info.change != null ? info.change.toFixed(2) : "-"} ({positive ? "+" : ""}{info.change_pct != null ? info.change_pct.toFixed(2) : "-"}%)
           </div>
           {info.bid != null && info.ask != null && (
             <div style={{ display: "flex", gap: 10, fontSize: 10, color: "var(--text3)" }}>

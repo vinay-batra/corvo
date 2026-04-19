@@ -128,11 +128,11 @@ function useS() {
     section:    { padding: "10px 14px", borderBottom: "0.5px solid var(--border)" },
     label:      { fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 8 },
     main:       { flex: 1, display: "flex", flexDirection: "column" as const, background: "var(--bg)", minWidth: 0, overflow: "hidden" },
-    topbar:     { height: 48, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: "var(--bg)", gap: 8 },
+    topbar:     { height: 44, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: "var(--bg2)", gap: 8 },
     content:    { flex: 1, overflowY: "auto" as const, overflowX: "hidden" as const, padding: "20px 24px" },
-    card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 12, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px var(--border)" } as React.CSSProperties,
+    card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 12, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)" } as React.CSSProperties,
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
-    cardAccent: { width: 2, height: 14, background: "var(--text)", borderRadius: 1 },
+    cardAccent: { width: 3, height: 14, background: "var(--accent)", borderRadius: 1 },
     cardTitle:  { fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
     metricsGrid:{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 12 },
     bottomGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 },
@@ -142,7 +142,7 @@ function useS() {
 function TooltipCardHeader({ title, sections }: { title: string; sections: { label: string; text: string }[] }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-      <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+      <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
       <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{title}</span>
       <InfoModal title={title} sections={sections} />
     </div>
@@ -168,41 +168,44 @@ function Spinner() {
 
 function Empty() {
   const steps = [
-    { n: "1", label: "Search a ticker", desc: "Type any stock, ETF, or fund in the sidebar" },
+    { n: "1", label: "Add a ticker", desc: "Search any stock, ETF, or fund in the sidebar" },
     { n: "2", label: "Set your weight", desc: "Enter how much of your portfolio it represents" },
     { n: "3", label: "Hit Analyze", desc: "Get Sharpe ratio, Monte Carlo, drawdown, and more" },
   ];
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 96px)", gap: 36, textAlign: "center", padding: "0 32px" }}>
-      <motion.img
-        src="/corvo-logo.svg"
-        alt="Corvo"
-        width={40}
-        height={40}
-        animate={{ y: [0, -6, 0] }}
-        transition={{ repeat: Infinity, duration: 3.2, ease: "easeInOut" }}
-        style={{ opacity: 0.4 }}
-      />
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 96px)", gap: 32, textAlign: "center", padding: "0 32px" }}>
       <div>
-        <p style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.4px", color: "var(--text)", marginBottom: 8 }}>Build your first portfolio</p>
-        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, maxWidth: 320 }}>
-          Add tickers in the sidebar, assign weights, and run the analysis.
+        <p style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.3px", color: "var(--text)", marginBottom: 6, fontFamily: "var(--font-mono)" }}>BUILD YOUR PORTFOLIO</p>
+        <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.7, maxWidth: 300 }}>
+          Three steps to full risk analysis and AI insights.
         </p>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 340 }}>
-        {steps.map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, textAlign: "left" }}>
-            <div style={{ width: 26, height: 26, borderRadius: "50%", border: "0.5px solid var(--border2)", background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--accent)" }}>
-              {s.n}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 320 }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, textAlign: "left" }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "1.5px solid var(--accent)", background: "rgba(184,134,11,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>
+                {s.n}
+              </div>
+              <div style={{ paddingTop: 4 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{s.label}</p>
+                <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>{s.desc}</p>
+              </div>
             </div>
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{s.label}</p>
-              <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>{s.desc}</p>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        {/* Animated arrow pointing left toward sidebar */}
+        <motion.div
+          animate={{ x: [-4, 4, -4] }}
+          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+          style={{ fontSize: 22, color: "var(--accent)", opacity: 0.7, paddingTop: 0, flexShrink: 0, alignSelf: "center", transform: "scaleX(-1)" }}>
+          →
+        </motion.div>
       </div>
+      <p style={{ fontSize: 11, color: "var(--text3)", opacity: 0.5, letterSpacing: 0.3 }}>
+        Or press Presets to start with a sample portfolio
+      </p>
     </motion.div>
   );
 }
@@ -356,7 +359,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
       <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 20px", background: "var(--card-bg)", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: savedPortfolios.length > 0 || active.length > 0 ? 12 : 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+            <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
             <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Comparison</span>
             <InfoModal title="Portfolio Comparison" sections={[{ label: "How it works", text: "Add multiple saved portfolios to compare their risk, return, and Sharpe ratio side by side. Save a portfolio first from the Dashboard." }]} />
             {active.length > 0 && <span style={{ fontSize: 9, color: "var(--text3)" }}>· {active.length} portfolio{active.length !== 1 ? "s" : ""} · {period.toUpperCase()} · vs {benchmarkLabel}</span>}
@@ -435,7 +438,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
               <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+                  <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
                   <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Radar Comparison</span>
                 </div>
                 <ComparePlot
@@ -459,7 +462,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
               </div>
               <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                  <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1 }} />
+                  <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
                   <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Holding Overlap</span>
                 </div>
                 {overlapData.map((ov, i) => (
@@ -619,7 +622,7 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
       style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 800, width: "min(380px, calc(100vw - 32px)", background: "var(--card-bg)", border: "0.5px solid rgba(184,134,11,0.3)", borderRadius: 14, padding: "16px 18px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", display: "flex", gap: 14, alignItems: "flex-start" }}>
-      <span style={{ fontSize: 20, flexShrink: 0 }}>🔔</span>
+      <span style={{ flexShrink: 0, display: "flex", alignItems: "center", color: "var(--accent)", paddingTop: 2 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>Enable price alerts</p>
         <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.55, marginBottom: 12 }}>
@@ -675,7 +678,7 @@ function PortfolioPerformanceTrend({
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: hasChart ? 16 : 20 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: portfolioName ? 5 : 0 }}>
-            <div style={{ width: 2, height: 14, background: "var(--text)", borderRadius: 1, flexShrink: 0 }} />
+            <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1, flexShrink: 0 }} />
             <Calendar size={11} style={{ color: "var(--text3)", flexShrink: 0 }} />
             <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Performance</span>
             <div title="Updates every time you analyze" style={{ display: "flex", alignItems: "center", cursor: "default" }}>
@@ -1370,7 +1373,21 @@ export default function AppPage() {
     return arr.map(a => a.weight / total);
   };
 
-  const Card = ({ children, style = {} }: any) => <div style={{ ...S.card, ...style }}>{children}</div>;
+  const Card = ({ children, style = {} }: any) => {
+    const [hov, setHov] = useState(false);
+    const cardStyle: React.CSSProperties = {
+      ...S.card,
+      ...style,
+      borderLeft: hov ? "2px solid rgba(184,134,11,0.5)" : "0.5px solid var(--border)",
+      transition: "border-left 0.15s, box-shadow 0.15s",
+      boxShadow: hov ? "0 4px 16px rgba(0,0,0,0.2)" : "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)",
+    };
+    return (
+      <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={cardStyle}>
+        {children}
+      </div>
+    );
+  };
   const CardHeader = ({ title }: { title: string }) => (
     <div style={S.cardHeader}><div style={S.cardAccent} /><span style={S.cardTitle}>{title}</span></div>
   );
@@ -1378,9 +1395,9 @@ export default function AppPage() {
   const SidebarInner = () => (
     <>
       {/* Logo → homepage */}
-      <div style={S.sidebarTop}>
+      <div style={{ ...S.sidebarTop, borderLeft: "3px solid var(--accent)", paddingLeft: 13 }}>
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-          <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" style={{ flexShrink: 0 }} />
+          <img src="/corvo-logo.svg" width={26} height={26} alt="Corvo" style={{ flexShrink: 0, opacity: 0.9 }} />
           <div style={S.logo}>CORVO</div>
         </Link>
         <div style={S.logoSub}>Portfolio Intelligence</div>
@@ -1390,7 +1407,7 @@ export default function AppPage() {
       <div style={S.section}>
         <button onClick={() => setShowProfile(true)} style={{ width: "100%", padding: "7px 10px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 8, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", textAlign: "left" }}>
           <div style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 9, color: "var(--bg)" }}>✦</span>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="var(--bg)" stroke="var(--bg)" strokeWidth="1"><circle cx="12" cy="12" r="4"/></svg>
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 500, color: "var(--text)" }}>
@@ -1619,31 +1636,29 @@ export default function AppPage() {
             {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           </IconBtn>
 
-          {/* Tabs with animated pill indicator */}
-          <div style={{ display: "flex", gap: 2, flex: 1, overflowX: "auto", position: "relative" }}>
+          {/* Tabs with animated underline indicator */}
+          <div style={{ display: "flex", gap: 0, flex: 1, overflowX: "auto", position: "relative" }}>
             {TABS.map(tab => {
-              const TabIcon = tab.Icon;
               const isActive = activeTab === tab.id;
               const tabStyle: React.CSSProperties = {
                 position: "relative",
-                padding: "7px 12px", fontSize: 12, borderRadius: 8, flexShrink: 0,
+                padding: "6px 11px", fontSize: 11, borderRadius: 0, flexShrink: 0,
                 border: "none", background: "transparent",
                 color: isActive ? "var(--text)" : "var(--text3)",
-                cursor: "pointer", fontWeight: isActive ? 500 : 400,
+                cursor: "pointer", fontWeight: isActive ? 600 : 400,
                 display: "flex", alignItems: "center", gap: 5, textDecoration: "none",
-                transition: "color 0.15s",
+                transition: "color 0.15s", letterSpacing: 0.2,
               };
               const content = (
                 <>
                   {isActive && (
                     <motion.span
                       layoutId="tab-indicator"
-                      style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: 2, borderRadius: 1, background: "var(--accent)", zIndex: 0 }}
+                      style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: 2, borderRadius: 1, background: "var(--accent)", zIndex: 0 }}
                       transition={{ type: "spring", damping: 30, stiffness: 300 }}
                     />
                   )}
-                  <span style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 5 }}>
-                    <TabIcon size={12} />
+                  <span style={{ position: "relative", zIndex: 1 }}>
                     {tab.label}
                   </span>
                 </>
@@ -1654,13 +1669,6 @@ export default function AppPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            {/* Keyboard shortcuts hint */}
-            <button id="tour-keyboard-shortcuts" onClick={() => setShowHelpModal(true)} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"
-              style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 5, transition: "background 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
-              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-              <kbd style={{ padding: "1px 5px", background: "var(--bg3)", borderRadius: 4, fontSize: 10, fontFamily: "mono", border: "0.5px solid var(--border2)" }}>⌘</kbd>
-            </button>
             {/* Right panel toggle */}
             <button onClick={() => setRightPanelOpen(o => !o)} title="Market panel" aria-label="Toggle market panel"
               style={{ height: 32, padding: "0 10px", borderRadius: 8, border: `0.5px solid ${rightPanelOpen ? "rgba(184,134,11,0.4)" : "var(--border)"}`, background: rightPanelOpen ? "rgba(184,134,11,0.06)" : "transparent", cursor: "pointer", fontSize: 11, color: rightPanelOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}
@@ -1683,15 +1691,15 @@ export default function AppPage() {
               )}
             </button>
             <div id="tour-dark-mode-toggle"><DarkModeToggle dark={dark} toggle={toggleDark} /></div>
-            {/* ··· overflow: CSV, PDF, Share */}
+            {/* Export dropdown */}
             <div style={{ position: "relative", flexShrink: 0 }}>
               <button
                 onClick={() => setOverflowOpen(o => !o)}
-                title="More actions"
-                style={{ height: 32, width: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: overflowOpen ? "var(--bg3)" : "transparent", cursor: "pointer", fontSize: 16, fontWeight: 700, color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: 1, transition: "background 0.15s" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                onMouseLeave={e => { if (!overflowOpen) e.currentTarget.style.background = "transparent"; }}>
-                ···
+                title="Export"
+                style={{ height: 32, padding: "0 10px", borderRadius: 8, border: `0.5px solid ${overflowOpen ? "rgba(184,134,11,0.4)" : "var(--border)"}`, background: overflowOpen ? "rgba(184,134,11,0.06)" : "transparent", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-mono)", color: overflowOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, letterSpacing: 0.5, transition: "all 0.15s", whiteSpace: "nowrap" }}
+                onMouseEnter={e => { if (!overflowOpen) { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}}
+                onMouseLeave={e => { if (!overflowOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
+                Export ↓
               </button>
               {overflowOpen && (
                 <>
@@ -1763,8 +1771,8 @@ export default function AppPage() {
                     Complete Setup
                   </button>
                   <button onClick={() => { setShowSetupBanner(false); localStorage.setItem("corvo_setup_banner_dismissed", "true"); }}
-                    style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "rgba(184,134,11,0.1)", color: "rgba(232,224,204,0.4)", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    ✕
+                    style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "rgba(184,134,11,0.1)", color: "rgba(232,224,204,0.4)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
               </motion.div>
@@ -1783,8 +1791,8 @@ export default function AppPage() {
                     Try again
                   </button>
                   <button onClick={() => setErrorMsg(null)}
-                    style={{ width: 22, height: 22, borderRadius: 6, border: "none", background: "rgba(224,92,92,0.12)", color: "#e05c5c", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    ✕
+                    style={{ width: 22, height: 22, borderRadius: 6, border: "none", background: "rgba(224,92,92,0.12)", color: "#e05c5c", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
               </motion.div>
@@ -1889,6 +1897,7 @@ export default function AppPage() {
                   onSetAlert={() => setShowAlerts(true)}
                   onAskAI={() => setChatOpen(true)}
                 />
+                <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
                 <motion.div
                   className="c-metrics"
                   style={S.metricsGrid}
