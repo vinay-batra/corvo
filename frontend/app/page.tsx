@@ -1963,7 +1963,7 @@ export default function Landing() {
         </div>
 
         <motion.h1
-          style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(36px,6vw,78px)", fontWeight: 700, lineHeight: 1.06, letterSpacing: -3, marginBottom: 28, maxWidth: 840 }}
+          style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4.5vw,56px)", fontWeight: 700, lineHeight: 1.06, letterSpacing: -2, marginBottom: 28, maxWidth: 840 }}
           variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
           initial="hidden" animate="visible">
           <span style={{ display: "block", color: "#e8e0cc" }}>

@@ -865,10 +865,10 @@ export default function AppPage() {
     if (params.get("demo") === "true") {
       posthog.capture("demo_mode_started");
       const demoAssets = [
-        { ticker: "SPY", weight: 40 },
-        { ticker: "QQQ", weight: 30 },
-        { ticker: "GLD", weight: 15 },
-        { ticker: "BND", weight: 15 },
+        { ticker: "SPY", weight: 0.40 },
+        { ticker: "QQQ", weight: 0.30 },
+        { ticker: "GLD", weight: 0.15 },
+        { ticker: "BND", weight: 0.15 },
       ];
       setAssets(demoAssets);
       setShowGoals(false);
@@ -1795,7 +1795,7 @@ export default function AppPage() {
               </motion.div>
             ) : !data && !loading ? (
               <motion.div key="empty" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <Empty onPreset={(a) => setAssets(a.map(x => ({ ...x, weight: Math.round(x.weight * 100) })))} />
+                <Empty onPreset={(a) => setAssets(a.map(x => ({ ...x, weight: x.weight })))} />
               </motion.div>
             ) : loading ? (
               <motion.div key="loading" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
@@ -1839,7 +1839,7 @@ export default function AppPage() {
                           const total = result.weights.reduce((s: number, w: number) => s + w, 0) || 1;
                           setAssets(result.tickers.map((t: string, i: number) => ({
                             ticker: t,
-                            weight: Math.round((result.weights[i] / total) * 100),
+                            weight: result.weights[i] / total,
                           })));
                         }
                       } catch {}
