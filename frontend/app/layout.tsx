@@ -3,14 +3,12 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { Suspense } from "react";
 import React from "react";
-import dynamic from "next/dynamic";
 import PostHogProvider from "@/components/PosthogProvider";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallBanner from "@/components/InstallBanner";
 import { ToastProvider } from "@/components/Toast";
 import ParticleCanvas from "@/components/ParticleCanvas";
-
-const PublicAIChat = dynamic(() => import("@/components/PublicAIChat"), { ssr: false });
+import PublicAIChatLoader from "@/components/PublicAIChatLoader";
 
 export const metadata: Metadata = {
   title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
@@ -65,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </ToastProvider>
           </PostHogProvider>
         </Suspense>
-        <PublicAIChat />
+        <PublicAIChatLoader />
         <Analytics />
         <ServiceWorkerRegistrar />
         <InstallBanner />
