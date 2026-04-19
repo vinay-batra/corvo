@@ -376,51 +376,6 @@ export default function FaqPage() {
             answer? Chat with our AI below.
           </p>
 
-          {/* Search */}
-          <div style={{ maxWidth: 480, margin: "0 auto", position: "relative" }}>
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="rgba(232,224,204,0.3)"
-              strokeWidth="2"
-              style={{
-                position: "absolute",
-                left: 14,
-                top: "50%",
-                transform: "translateY(-50%)",
-                pointerEvents: "none",
-              }}
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search questions..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "13px 18px 13px 40px",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 12,
-                color: "#e8e0cc",
-                fontSize: 14,
-                outline: "none",
-                boxSizing: "border-box",
-                transition: "border-color 0.2s",
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "rgba(201,168,76,0.4)")
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = "rgba(255,255,255,0.08)")
-              }
-            />
-          </div>
         </motion.div>
       </section>
 
@@ -466,6 +421,52 @@ export default function FaqPage() {
           padding: "0 24px 80px",
         }}
       >
+        {/* Search */}
+        <div style={{ maxWidth: 480, margin: "0 auto 32px", position: "relative" }}>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgba(232,224,204,0.3)"
+            strokeWidth="2"
+            style={{
+              position: "absolute",
+              left: 14,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+            }}
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search questions..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "13px 18px 13px 40px",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 12,
+              color: "#e8e0cc",
+              fontSize: 14,
+              outline: "none",
+              boxSizing: "border-box",
+              transition: "border-color 0.2s",
+            }}
+            onFocus={(e) =>
+              (e.target.style.borderColor = "rgba(201,168,76,0.4)")
+            }
+            onBlur={(e) =>
+              (e.target.style.borderColor = "rgba(255,255,255,0.08)")
+            }
+          />
+        </div>
+
         <AnimatePresence mode="wait">
           {filtered.length === 0 ? (
             <motion.div
