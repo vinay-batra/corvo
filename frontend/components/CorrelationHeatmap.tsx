@@ -84,7 +84,7 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
             ],
             zmin: -1,
             zmax: 1,
-            text: data.matrix.map((row: number[]) => row.map((v: number) => v.toFixed(2))),
+            text: data.matrix.map((row: number[]) => row.map((v: number) => (v ?? 0).toFixed(2))),
             texttemplate: "%{text}",
             textfont: { color: dark ? "rgba(226,232,240,0.7)" : "#1a1a1a", size: 11 },
             hovertemplate: "%{y} / %{x}: %{z:.3f}<extra></extra>",

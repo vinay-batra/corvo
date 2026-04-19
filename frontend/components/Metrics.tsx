@@ -76,45 +76,44 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
   };
   const PERIOD_LABELS: Record<string,string> = { "6mo":"6M","1y":"1Y","2y":"2Y","5y":"5Y" };
   const periodLabel = PERIOD_LABELS[period] || period.toUpperCase();
-  const sharpe = data.portfolio_volatility>0?(data.portfolio_return-0.04)/data.portfolio_volatility:0;
+  const portReturn = data.portfolio_return ?? 0;
+  const portVol    = data.portfolio_volatility ?? 0;
+  const portDD     = data.max_drawdown ?? 0;
+  const sharpe = portVol > 0 ? (portReturn - 0.04) / portVol : 0;
   const items = [
-    { label: `Portfolio Return (${periodLabel})`, value: data.portfolio_return, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: data.portfolio_return<0, bar: null },
-    { label: "Volatility",   value: data.portfolio_volatility, fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: false, bar: data.portfolio_volatility/0.6 },
-    { label: "Sharpe",       value: sharpe,                    fmt: (v:number) => v.toFixed(2),                           neg: sharpe<0, bar: Math.min(Math.max(sharpe/3,0),1) },
-    { label: "Max Drawdown", value: data.max_drawdown,         fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: true, bar: null },
+    { label: `Return (${periodLabel})`, value: portReturn, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: portReturn<0, neutral: false, bar: null },
+    { label: "Volatility",              value: portVol,    fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: false,        neutral: true,  bar: portVol/0.6 },
+    { label: "Sharpe Ratio",            value: sharpe,     fmt: (v:number) => v.toFixed(2),                           neg: sharpe<0,     neutral: false, bar: Math.min(Math.max(sharpe/3,0),1) },
+    { label: "Max Drawdown",            value: portDD,     fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: true,         neutral: false, bar: null },
   ];
-  void rate;
+  void rate; void sparklineValues;
   return (
     <>
-      {items.map(({label,value,fmt,neg,bar},i) => (
+      {items.map(({label,value,fmt,neg,neutral,bar},i) => {
+        const color = neutral ? C.amber : neg ? C.red : "#4caf7d";
+        return (
         <motion.div key={label} initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:i*0.07}}
-          style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"16px 16px 14px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+          style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"18px 16px 14px"}}>
+          <p style={{fontFamily:"Space Mono,monospace",fontSize:30,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,marginBottom:10}}>
+            <Num value={value} fmt={fmt}/>
+          </p>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <p style={{fontSize:8,letterSpacing:2.5,color:"var(--text3)",textTransform:"uppercase"}}>
               {label}{i===0&&currency!=="USD"?<span style={{marginLeft:4,color:C.amber,letterSpacing:1}}> · {currency}</span>:null}
             </p>
-            <button onClick={()=>openMetricModal(i)} style={{width:16,height:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
+            <button onClick={()=>openMetricModal(i)} style={{width:16,height:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
               onMouseEnter={e=>{e.currentTarget.style.background=C.amber;e.currentTarget.style.color="#0a0e14";}}
               onMouseLeave={e=>{e.currentTarget.style.background="var(--bg3)";e.currentTarget.style.color="var(--text3)";}}>?</button>
-          </div>
-          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:8}}>
-            <p style={{fontFamily:"Space Mono,monospace",fontSize:24,fontWeight:700,letterSpacing:-1,color:neg?C.red:"var(--text)",lineHeight:1}}>
-              <Num value={value} fmt={fmt}/>
-            </p>
-            {sparklineValues && sparklineValues.length >= 2 && i === 0 && (
-              <div style={{marginBottom:2,flexShrink:0}}>
-                <Sparkline values={sparklineValues.slice(-7)} positive={!neg}/>
-              </div>
-            )}
           </div>
           {bar!==null&&(
             <div style={{marginTop:10,height:2,background:"var(--track)",borderRadius:1,overflow:"hidden"}}>
               <motion.div initial={{width:0}} animate={{width:`${Math.min(bar,1)*100}%`}} transition={{duration:1,delay:i*0.07+0.3}}
-                style={{height:"100%",background:C.amber,borderRadius:1}}/>
+                style={{height:"100%",background:color,borderRadius:1}}/>
             </div>
           )}
         </motion.div>
-      ))}
+        );
+      })}
       <AnimatePresence>
         {modal!==null&&(
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setModal(null)}

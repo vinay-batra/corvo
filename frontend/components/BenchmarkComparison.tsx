@@ -9,7 +9,7 @@ const BENCHMARK_LABELS: Record<string, string> = {
 const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", red: "#e05c5c" };
 
 export default function BenchmarkComparison({ data }: { data: any }) {
-  const portfolioReturn = data.portfolio_return;
+  const portfolioReturn = data.portfolio_return ?? 0;
   const benchLabel = BENCHMARK_LABELS[data.benchmark_ticker] ?? data.benchmark_ticker ?? "Benchmark";
   const benchArr = data.benchmark || [];
   const benchReturn = benchArr.length >= 2 ? (benchArr[benchArr.length - 1] / benchArr[0]) - 1 : 0;
