@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
@@ -295,20 +295,6 @@ function FAQAIChat() {
 
 /* ─── Main page ─── */
 export default function FaqPage() {
-  const [query, setQuery] = useState("");
-
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    if (!q) return SECTIONS;
-    return SECTIONS.map((s) => ({
-      ...s,
-      items: s.items.filter(
-        (item) =>
-          item.q.toLowerCase().includes(q) ||
-          item.a.toLowerCase().includes(q)
-      ),
-    })).filter((s) => s.items.length > 0);
-  }, [query]);
 
   return (
     <div
@@ -389,40 +375,6 @@ export default function FaqPage() {
         </motion.div>
       </section>
 
-      {/* Loom Video Embed */}
-      <motion.section
-        initial={{ opacity: 0, y: 28 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px 64px" }}
-      >
-        <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1, textAlign: "center", marginBottom: 28 }}>
-          See Corvo in one minute
-        </h2>
-        <div style={{
-          background: "rgba(8,11,16,0.9)",
-          border: "1px solid rgba(201,168,76,0.22)",
-          borderRadius: 16,
-          overflow: "hidden",
-          boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)",
-        }}>
-          <iframe
-            src="https://www.loom.com/embed/9a1f9818afcd45bbb199b71d6e3d2120"
-            allowFullScreen
-            style={{
-              width: "100%",
-              height: 400,
-              border: "none",
-              display: "block",
-            }}
-            title="Corvo product walkthrough"
-          />
-        </div>
-        <p style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", textAlign: "center", marginTop: 12 }}>
-          No sound required · one minute · No signup needed to watch
-        </p>
-      </motion.section>
-
       {/* Content */}
       <main
         style={{
@@ -431,193 +383,39 @@ export default function FaqPage() {
           padding: "0 24px 80px",
         }}
       >
-        {/* Search */}
-        <div style={{ maxWidth: 480, margin: "0 auto 32px", position: "relative" }}>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="rgba(232,224,204,0.3)"
-            strokeWidth="2"
-            style={{
-              position: "absolute",
-              left: 14,
-              top: "50%",
-              transform: "translateY(-50%)",
-              pointerEvents: "none",
-            }}
+        {SECTIONS.map((section, si) => (
+          <motion.section
+            key={section.category}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: si * 0.08, ease: [0.16, 1, 0.3, 1] }}
+            style={{ marginBottom: 56 }}
           >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search questions..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "13px 18px 13px 40px",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 12,
-              color: "#e8e0cc",
-              fontSize: 14,
-              outline: "none",
-              boxSizing: "border-box",
-              transition: "border-color 0.2s",
-            }}
-            onFocus={(e) =>
-              (e.target.style.borderColor = "rgba(201,168,76,0.4)")
-            }
-            onBlur={(e) =>
-              (e.target.style.borderColor = "rgba(255,255,255,0.08)")
-            }
-          />
-        </div>
-
-        <AnimatePresence mode="wait">
-          {filtered.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{ textAlign: "center", padding: "60px 0", color: "rgba(232,224,204,0.3)", fontSize: 14 }}
-            >
-              No results for &ldquo;{query}&rdquo;. Try a different search term.
-            </motion.div>
-          ) : (
-            <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              {filtered.map((section, si) => (
-                <motion.section
-                  key={section.category}
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: si * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                  style={{ marginBottom: 56 }}
-                >
-                  <p
-                    style={{
-                      fontSize: 9,
-                      letterSpacing: 3,
-                      color: "#c9a84c",
-                      textTransform: "uppercase",
-                      marginBottom: 4,
-                      fontFamily: "Space Mono, monospace",
-                    }}
-                  >
-                    {section.category}
-                  </p>
-                  <div
-                    style={{
-                      height: 1,
-                      background:
-                        "linear-gradient(to right, rgba(201,168,76,0.2), transparent)",
-                      marginBottom: 8,
-                    }}
-                  />
-                  {section.items.map((item) => (
-                    <AccordionItem key={item.q} q={item.q} a={item.a} />
-                  ))}
-                </motion.section>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Still have questions? */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          style={{
-            marginTop: 16,
-            padding: "40px 36px",
-            background: "rgba(201,168,76,0.04)",
-            border: "1px solid rgba(201,168,76,0.12)",
-            borderRadius: 20,
-            textAlign: "center",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 9,
-              letterSpacing: 3,
-              color: "#c9a84c",
-              textTransform: "uppercase",
-              marginBottom: 12,
-            }}
-          >
-            Still have questions?
-          </p>
-          <h2
-            style={{
-              fontFamily: "Space Mono, monospace",
-              fontSize: "clamp(18px, 2.5vw, 24px)",
-              fontWeight: 700,
-              color: "#e8e0cc",
-              letterSpacing: -0.5,
-              marginBottom: 12,
-            }}
-          >
-            We&apos;re here to help
-          </h2>
-          <p
-            style={{
-              fontSize: 13,
-              color: "rgba(232,224,204,0.4)",
-              lineHeight: 1.7,
-              marginBottom: 28,
-              maxWidth: 360,
-              margin: "0 auto 28px",
-              fontWeight: 300,
-            }}
-          >
-            Ask anything about your portfolio, investing concepts, or how Corvo
-            works. The AI has answers, or reach us directly.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-            <button
-              onClick={() => {
-                document.getElementById("faq-ai-chat")?.scrollIntoView({ behavior: "smooth" });
-              }}
+            <p
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "12px 28px",
-                background: "#c9a84c",
-                borderRadius: 10,
-                color: "#0a0e14",
-                fontSize: 13,
-                fontWeight: 700,
-                border: "none",
-                cursor: "pointer",
-                letterSpacing: 0.3,
-                transition: "filter 0.15s, transform 0.15s",
+                fontSize: 9,
+                letterSpacing: 3,
+                color: "#c9a84c",
+                textTransform: "uppercase",
+                marginBottom: 4,
+                fontFamily: "Space Mono, monospace",
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
             >
-              Ask our AI →
-            </button>
-            <a
-              href="mailto:hello@corvo.capital"
+              {section.category}
+            </p>
+            <div
               style={{
-                fontSize: 12,
-                color: "rgba(232,224,204,0.35)",
-                textDecoration: "none",
-                transition: "color 0.2s",
+                height: 1,
+                background:
+                  "linear-gradient(to right, rgba(201,168,76,0.2), transparent)",
+                marginBottom: 8,
               }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")}
-              onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}
-            >
-              or email us at hello@corvo.capital
-            </a>
-          </div>
-        </motion.div>
+            />
+            {section.items.map((item) => (
+              <AccordionItem key={item.q} q={item.q} a={item.a} />
+            ))}
+          </motion.section>
+        ))}
 
         {/* Inline AI Chat */}
         <FAQAIChat />
