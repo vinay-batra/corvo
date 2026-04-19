@@ -190,7 +190,6 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
 function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "portfolio", padding: "32px 32px 28px" }}>
-      <div style={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, background: "radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)", pointerEvents: "none", borderRadius: "50%" }} />
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Portfolio Analyzer</p>
       <h3 style={{ fontSize: 21, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>Full portfolio intelligence</h3>
       <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", marginBottom: 24, lineHeight: 1.7, maxWidth: 360 }}>Sharpe ratio, volatility, max drawdown, and benchmark comparison, updated live as markets move.</p>
@@ -228,7 +227,7 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
 
 /* ─── AI Chat bento card ─── */
 function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
-  const FULL_TEXT = "Your tech concentration is 67%, above the 40% threshold. Adding BND or GLD would reduce correlation risk significantly.";
+  const FULL_TEXT = "Your tech concentration is 67%. Adding BND or GLD would reduce correlation risk.";
   const [displayed, setDisplayed] = useState("");
   useEffect(() => {
     if (displayed.length >= FULL_TEXT.length) {
