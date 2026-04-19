@@ -1073,7 +1073,7 @@ function TickerTape() {
   const doubled = [...items, ...items];
   return (
     <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "hidden", background: "rgba(10,14,20,0.88)" }}>
-      <div style={{ display: "flex", gap: 48, animation: "ticker 32s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
+      <div style={{ display: "flex", gap: 48, animation: "ticker 30s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
         {doubled.map((item, i) => {
           const up = item.change_pct >= 0;
           return (
