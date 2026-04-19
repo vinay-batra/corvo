@@ -2112,12 +2112,6 @@ export default function Landing() {
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-              <a href="https://www.producthunt.com/products/corvo" target="_blank" rel="noopener noreferrer">
-                <img alt="Corvo - AI-powered portfolio analysis for real investors | Product Hunt" width="220" height="48" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1120194&theme=dark&t=1775786806638" />
-              </a>
-            </div>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Investor Stories</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>What investors are saying</h2>
           </Reveal>
           {/* Desktop: 3+2 grid */}

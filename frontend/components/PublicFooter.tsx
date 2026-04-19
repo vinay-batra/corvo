@@ -27,6 +27,9 @@ export default function PublicFooter() {
               <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"/>
             </svg>
           </a>
+          <a href="https://www.producthunt.com/products/corvo" target="_blank" rel="noopener noreferrer" style={{ opacity: 0.45, transition: "opacity 0.2s", display: "flex", alignItems: "center" }} onMouseEnter={e => (e.currentTarget.style.opacity = "0.75")} onMouseLeave={e => (e.currentTarget.style.opacity = "0.45")}>
+            <img alt="Corvo on Product Hunt" width="120" height="26" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1120194&theme=dark&t=1775786806638" style={{ display: "block" }} />
+          </a>
         </div>
       </div>
     </footer>
