@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 const LAST_UPDATED = "April 7, 2026";
 
 const S = {
@@ -19,10 +17,6 @@ export default function TermsPage() {
   return (
     <div style={S.page}>
       <header style={S.header}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}>
-          ← Back
-        </Link>
-        <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
         <img src="/corvo-logo.svg" width={22} height={22} alt="Corvo" />
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Terms of Service</span>
       </header>

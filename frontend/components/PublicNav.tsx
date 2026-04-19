@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import UserMenu from "./UserMenu";
 
 export default function PublicNav() {
   const [navSolid, setNavSolid] = useState(false);
@@ -58,7 +59,7 @@ export default function PublicNav() {
         {/* Right side */}
         <div className="pnav-actions" style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {loggedIn ? (
-            <Link href="/app" className="pnav-cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none", transition: "all 0.2s" }}>Go to App</Link>
+            <UserMenu />
           ) : (
             <>
               <Link href="/auth" className="pnav-link" style={{ padding: "7px 16px", fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Log in</Link>
