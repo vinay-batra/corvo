@@ -64,7 +64,7 @@ function LiveRow({
           ${entry.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <div style={{ fontSize: 11, fontWeight: 600, color: up ? "#4caf7d" : "#e05c5c" }}>
-          {up ? "+" : ""}{entry.change_pct.toFixed(2)}%
+          {up ? "+" : ""}{entry.change_pct != null ? entry.change_pct.toFixed(2) : "—"}%
         </div>
       </div>
     </motion.div>

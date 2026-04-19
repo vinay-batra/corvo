@@ -1039,8 +1039,8 @@ function TickerTape() {
           return (
             <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11, fontFamily: "Space Mono,monospace" }}>
               <span style={{ color: "#c9a84c", letterSpacing: 1 }}>{item.ticker}</span>
-              <span style={{ color: "rgba(232,224,204,0.4)", letterSpacing: 0.5 }}>${item.price < 100 ? item.price.toFixed(2) : item.price.toLocaleString()}</span>
-              <span style={{ color: up ? "#5cb88a" : "#e05c5c", fontWeight: 600 }}>{up ? "+" : ""}{item.change_pct.toFixed(2)}%</span>
+              <span style={{ color: "rgba(232,224,204,0.4)", letterSpacing: 0.5 }}>{item.price != null ? (item.price < 100 ? `$${item.price.toFixed(2)}` : `$${item.price.toLocaleString()}`) : "—"}</span>
+              <span style={{ color: up ? "#5cb88a" : "#e05c5c", fontWeight: 600 }}>{up ? "+" : ""}{item.change_pct != null ? item.change_pct.toFixed(2) : "—"}%</span>
             </span>
           );
         })}

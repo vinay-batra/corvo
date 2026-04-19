@@ -93,8 +93,8 @@ const LivePriceStrip = memo(function LivePriceStrip({ assets, active }: Props) {
               className={isFlashing ? (flashDir[a.ticker] === "up" ? "price-flash-up" : "price-flash-down") : undefined}
               style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: pos ? "#5cb88a" : "#e05c5c", transition: "color 0.3s" }}
             >
-              ${s.price.toFixed(2)}{" "}
-              <span style={{ fontSize: 9 }}>{pos ? "+" : ""}{s.change_pct.toFixed(2)}%</span>
+              {s.price != null ? `$${s.price.toFixed(2)}` : "—"}{" "}
+              <span style={{ fontSize: 9 }}>{pos ? "+" : ""}{s.change_pct != null ? s.change_pct.toFixed(2) : "—"}%</span>
             </span>
           </div>
         );

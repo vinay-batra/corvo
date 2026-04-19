@@ -502,7 +502,7 @@ export default function AiChat({
   if (portfolioCtxOn) {
     const t: string[] = data?.tickers || assets?.map((a: any) => a.ticker) || [];
     if (t.length > 0) ctxItems.push(`${t.length} holdings`);
-    if (data?.sharpe_ratio !== undefined) ctxItems.push(`Sharpe ${data.sharpe_ratio.toFixed(2)}`);
+    if (data?.sharpe_ratio != null) ctxItems.push(`Sharpe ${data.sharpe_ratio.toFixed(2)}`);
     if (data?.health_score !== undefined) ctxItems.push(`Health ${data.health_score}/100`);
     if (goals?.age) ctxItems.push(`Age ${goals.age}`);
   }
