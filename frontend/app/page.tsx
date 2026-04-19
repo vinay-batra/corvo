@@ -1010,17 +1010,57 @@ function MobileTestimonialCarousel() {
 /* ─── Live Ticker Tape ─── */
 interface TickerItem { ticker: string; price: number; change_pct: number; }
 const TICKER_FALLBACK: TickerItem[] = [
-  { ticker: "SPY", price: 521.4, change_pct: 0.72 }, { ticker: "QQQ", price: 448.2, change_pct: 1.14 },
-  { ticker: "AAPL", price: 189.4, change_pct: 1.82 }, { ticker: "MSFT", price: 415.8, change_pct: -0.4 },
-  { ticker: "NVDA", price: 875.1, change_pct: 3.1 }, { ticker: "TSLA", price: 248.3, change_pct: -2.4 },
-  { ticker: "BTC-USD", price: 67420, change_pct: 5.2 }, { ticker: "ETH-USD", price: 3540, change_pct: 2.8 },
+  { ticker: "AAPL",    price: 189.4,  change_pct:  1.82 },
+  { ticker: "MSFT",    price: 415.8,  change_pct: -0.40 },
+  { ticker: "NVDA",    price: 875.1,  change_pct:  3.10 },
+  { ticker: "GOOGL",   price: 175.2,  change_pct:  0.95 },
+  { ticker: "AMZN",    price: 192.3,  change_pct:  1.20 },
+  { ticker: "TSLA",    price: 248.3,  change_pct: -2.40 },
+  { ticker: "META",    price: 518.6,  change_pct:  1.65 },
+  { ticker: "BRK-B",   price: 407.1,  change_pct:  0.30 },
+  { ticker: "JPM",     price: 212.4,  change_pct:  0.55 },
+  { ticker: "V",       price: 279.8,  change_pct:  0.42 },
+  { ticker: "UNH",     price: 521.3,  change_pct: -0.18 },
+  { ticker: "JNJ",     price: 152.7,  change_pct:  0.22 },
+  { ticker: "XOM",     price: 118.9,  change_pct:  0.88 },
+  { ticker: "WMT",     price: 68.4,   change_pct:  0.61 },
+  { ticker: "PG",      price: 162.1,  change_pct:  0.14 },
+  { ticker: "MA",      price: 476.2,  change_pct:  0.73 },
+  { ticker: "HD",      price: 371.5,  change_pct: -0.32 },
+  { ticker: "CVX",     price: 157.8,  change_pct:  1.05 },
+  { ticker: "MRK",     price: 128.4,  change_pct: -0.55 },
+  { ticker: "ABBV",    price: 174.6,  change_pct:  0.38 },
+  { ticker: "PFE",     price: 27.3,   change_pct: -0.70 },
+  { ticker: "BAC",     price: 38.9,   change_pct:  0.46 },
+  { ticker: "KO",      price: 62.1,   change_pct:  0.18 },
+  { ticker: "PEP",     price: 171.4,  change_pct: -0.12 },
+  { ticker: "AVGO",    price: 1412.5, change_pct:  2.35 },
+  { ticker: "COST",    price: 872.3,  change_pct:  0.92 },
+  { ticker: "TMO",     price: 548.7,  change_pct:  0.44 },
+  { ticker: "MCD",     price: 285.6,  change_pct:  0.27 },
+  { ticker: "ACN",     price: 318.2,  change_pct:  0.51 },
+  { ticker: "LIN",     price: 468.9,  change_pct:  0.33 },
+  { ticker: "SPY",     price: 521.4,  change_pct:  0.72 },
+  { ticker: "QQQ",     price: 448.2,  change_pct:  1.14 },
+  { ticker: "DIA",     price: 398.7,  change_pct:  0.48 },
+  { ticker: "IWM",     price: 201.3,  change_pct:  0.65 },
+  { ticker: "GLD",     price: 220.8,  change_pct:  0.35 },
+  { ticker: "TLT",     price: 88.4,   change_pct: -0.28 },
+  { ticker: "VTI",     price: 249.6,  change_pct:  0.71 },
+  { ticker: "VNQ",     price: 84.2,   change_pct:  0.19 },
+  { ticker: "BND",     price: 72.3,   change_pct: -0.09 },
+  { ticker: "BTC-USD", price: 67420,  change_pct:  5.20 },
+  { ticker: "ETH-USD", price: 3540,   change_pct:  2.80 },
+  { ticker: "SOL-USD", price: 168.4,  change_pct:  3.45 },
+  { ticker: "BNB-USD", price: 598.2,  change_pct:  1.90 },
 ];
+const TICKER_LIST = "AAPL,MSFT,NVDA,GOOGL,AMZN,TSLA,META,BRK-B,JPM,V,UNH,JNJ,XOM,WMT,PG,MA,HD,CVX,MRK,ABBV,PFE,BAC,KO,PEP,AVGO,COST,TMO,MCD,ACN,LIN,SPY,QQQ,DIA,IWM,GLD,TLT,VTI,VNQ,BND,BTC-USD,ETH-USD,SOL-USD,BNB-USD";
 function TickerTape() {
   const [items, setItems] = useState<TickerItem[]>(TICKER_FALLBACK);
   useEffect(() => {
     const load = async () => {
       try {
-        const tickers = "SPY,QQQ,AAPL,MSFT,NVDA,TSLA,BTC-USD,ETH-USD";
+        const tickers = TICKER_LIST;
         const res = await fetch(`${API_URL}/watchlist-data?tickers=${tickers}`);
         const d = await res.json();
         if (Array.isArray(d.results) && d.results.length > 0) setItems(d.results);
@@ -1392,7 +1432,7 @@ function FeaturedInBar() {
     },
   ];
   return (
-    <FadeUp className="featured-bar" style={{ position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(201,168,76,0.07)", background: "rgba(8,11,16,0.6)" }}>
+    <FadeUp className="featured-bar" style={{ position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(201,168,76,0.07)" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
         <span style={{ fontSize: 9, letterSpacing: 3, color: "rgba(201,168,76,0.45)", textTransform: "uppercase", flexShrink: 0 }}>As Seen On</span>
         <div style={{ width: 1, height: 20, background: "rgba(201,168,76,0.1)", flexShrink: 0 }} />
@@ -1403,7 +1443,7 @@ function FeaturedInBar() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: ANIM_EASE, delay: 0.1 + i * 0.08 }}
-            style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px" }}
           >
             {p.icon}
             <span style={{ fontSize: 12, color: "rgba(232,224,204,0.45)", fontWeight: 500, letterSpacing: 0.2 }}>{p.name}</span>
