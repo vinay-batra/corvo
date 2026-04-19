@@ -2055,7 +2055,7 @@ export default function AppPage() {
             ) : activeTab === "simulate" ? (
               <motion.div key="simulate" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Card><TooltipCardHeader title="Monte Carlo Simulation" sections={[
-                  { label: "What it shows", text: "Monte Carlo simulation runs 300 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
+                  { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
                 ]} /><MonteCarloChart assets={assets} period={period} /></Card>
               </motion.div>
             ) : activeTab === "compare" ? (

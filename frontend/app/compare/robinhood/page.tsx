@@ -232,7 +232,7 @@ export default function RobinhoodComparePage() {
           </FadeUp>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
             {[
-              { text: "The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
+              { text: "The Monte Carlo simulator is genuinely impressive. I ran 8,500 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
               { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
               { text: "The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like.", name: "James L.", role: "Dividend Investor · 8yr experience" },
             ].map((t, i) => (
