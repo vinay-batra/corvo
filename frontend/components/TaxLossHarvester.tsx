@@ -81,7 +81,7 @@ const Tooltip = ({ text }: { text: string }) => {
   );
 };
 
-const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: any[] }) {
+const TaxLossHarvester = memo(function TaxLossHarvester({ assets, portfolioValue = 10000 }: { assets: any[]; portfolioValue?: number }) {
   const [data, setData] = useState<TaxLossData | null>(null);
   const [loading, setLoading] = useState(false);
   const [noPurchasePrices, setNoPurchasePrices] = useState(false);
@@ -107,11 +107,11 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets }: { assets: an
     setNoPurchasePrices(false);
     setFetchError(false);
     setLoading(true);
-    fetchTaxLoss(assets, 10000)
+    fetchTaxLoss(assets, portfolioValue)
       .then((res) => setData(res ?? null))
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
-  }, [assets, retryCount]);
+  }, [assets, portfolioValue, retryCount]);
 
   return (
     <motion.div

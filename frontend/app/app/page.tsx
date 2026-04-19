@@ -124,16 +124,16 @@ function useS() {
     app:        { display: "flex", height: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)" } as React.CSSProperties,
     sidebarTop: { padding: "14px 16px 12px", borderBottom: "0.5px solid var(--border)" },
     logo:       { fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" },
-    logoSub:    { fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
+    logoSub:    { fontSize: 11, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
     section:    { padding: "10px 14px", borderBottom: "0.5px solid var(--border)" },
-    label:      { fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 8 },
+    label:      { fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 8 },
     main:       { flex: 1, display: "flex", flexDirection: "column" as const, background: "var(--bg)", minWidth: 0, overflow: "hidden" },
     topbar:     { height: 44, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: "var(--bg2)", gap: 8 },
     content:    { flex: 1, overflowY: "auto" as const, overflowX: "hidden" as const, padding: "20px 24px" },
-    card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 12, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)" } as React.CSSProperties,
+    card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 16, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)" } as React.CSSProperties,
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
     cardAccent: { width: 3, height: 14, background: "var(--accent)", borderRadius: 1 },
-    cardTitle:  { fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
+    cardTitle:  { fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
     metricsGrid:{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 12 },
     bottomGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 },
   };
@@ -143,7 +143,7 @@ function TooltipCardHeader({ title, sections }: { title: string; sections: { lab
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
       <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
-      <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{title}</span>
+      <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{title}</span>
       <InfoModal title={title} sections={sections} />
     </div>
   );
@@ -360,7 +360,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: savedPortfolios.length > 0 || active.length > 0 ? 12 : 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
-            <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Comparison</span>
+            <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Comparison</span>
             <InfoModal title="Portfolio Comparison" sections={[{ label: "How it works", text: "Add multiple saved portfolios to compare their risk, return, and Sharpe ratio side by side. Save a portfolio first from the Dashboard." }]} />
             {active.length > 0 && <span style={{ fontSize: 9, color: "var(--text3)" }}>· {active.length} portfolio{active.length !== 1 ? "s" : ""} · {period.toUpperCase()} · vs {benchmarkLabel}</span>}
           </div>
@@ -422,7 +422,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                     );
                   })}
                   <div style={{ padding: "10px 16px" }}>
-                    <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 5, letterSpacing: 1 }}>SHARPE SCORE</div>
+                    <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 5, letterSpacing: 2 }}>SHARPE SCORE</div>
                     <div style={{ height: 3, background: "var(--bg3)", borderRadius: 2, marginBottom: 4 }}>
                       <div style={{ width: `${Math.min(100, Math.max(0, ((p.result.sharpe_ratio || 0) / 3) * 100))}%`, height: "100%", background: color, borderRadius: 2 }} />
                     </div>
@@ -439,7 +439,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
               <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
-                  <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Radar Comparison</span>
+                  <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Radar Comparison</span>
                 </div>
                 <ComparePlot
                   data={radarData}
@@ -463,7 +463,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
               <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                   <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
-                  <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Holding Overlap</span>
+                  <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Holding Overlap</span>
                 </div>
                 {overlapData.map((ov, i) => (
                   <div key={i} style={{ marginBottom: i < overlapData.length - 1 ? 16 : 0 }}>
@@ -680,7 +680,7 @@ function PortfolioPerformanceTrend({
           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: portfolioName ? 5 : 0 }}>
             <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1, flexShrink: 0 }} />
             <Calendar size={11} style={{ color: "var(--text3)", flexShrink: 0 }} />
-            <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Performance</span>
+            <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Performance</span>
             <div title="Updates every time you analyze" style={{ display: "flex", alignItems: "center", cursor: "default" }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: AMBER, animation: "perfPulse 2s ease-in-out infinite" }} />
             </div>
@@ -795,7 +795,7 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
 
   return (
     <div style={{ maxWidth: 560, margin: "0 auto" }}>
-      <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Stock Lookup</p>
+      <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Stock Lookup</p>
       <div style={{ position: "relative", marginBottom: 20 }}>
         <input
           className="accent-input"
@@ -1613,7 +1613,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               const isActive = activeTab === tab.id;
               const tabStyle: React.CSSProperties = {
                 position: "relative",
-                padding: "6px 11px", fontSize: 11, borderRadius: 0, flexShrink: 0,
+                padding: "6px 11px", fontSize: 13, borderRadius: 0, flexShrink: 0,
                 border: "none", background: "transparent",
                 color: isActive ? "var(--text)" : "var(--text3)",
                 cursor: "pointer", fontWeight: isActive ? 600 : 400,
@@ -1779,7 +1779,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                         style={{ padding: "6px 12px", fontSize: 11, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
                         ← Back
                       </button>
-                      <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Stock Comparison</span>
+                      <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Stock Comparison</span>
                     </div>
                     <StockCompare />
                   </>
@@ -1857,6 +1857,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     rate={rate}
                     period={period}
                     sparklineValues={(data.portfolio_cumulative || data.growth || []).slice(-14)}
+                    assets={assets}
+                    portfolioValue={10000}
                   />
                 </motion.div>
                 <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
@@ -1979,7 +1981,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and a $10,000 portfolio value."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your $10k portfolio, you'd earn ~$90/year from it."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days. You must own the stock before that date to receive the dividend."}]} /><DividendTracker assets={assets} /></Card>
                 </div>
                 <div style={{ marginTop: 12 }}>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} /></Card>
+                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} portfolioValue={10000} /></Card>
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (

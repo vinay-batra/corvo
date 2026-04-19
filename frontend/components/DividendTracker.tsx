@@ -48,8 +48,18 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
   const [data, setData] = useState<DividendData | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
-  const [portfolioValue, setPortfolioValue] = useState(10000);
-  const [inputValue, setInputValue] = useState("10000");
+  const [portfolioValue, setPortfolioValue] = useState(() => {
+    if (typeof window === "undefined") return 10000;
+    const stored = localStorage.getItem("corvo_portfolio_value");
+    const parsed = stored ? parseFloat(stored) : NaN;
+    return !isNaN(parsed) && parsed > 0 ? parsed : 10000;
+  });
+  const [inputValue, setInputValue] = useState(() => {
+    if (typeof window === "undefined") return "10000";
+    const stored = localStorage.getItem("corvo_portfolio_value");
+    const parsed = stored ? parseFloat(stored) : NaN;
+    return !isNaN(parsed) && parsed > 0 ? String(parsed) : "10000";
+  });
   const [showNonPayers, setShowNonPayers] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [dark, setDark] = useState(true);
@@ -93,7 +103,10 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
   const handlePortfolioValueChange = (v: string) => {
     setInputValue(v);
     const n = parseFloat(v);
-    if (!isNaN(n) && n > 0) setPortfolioValue(n);
+    if (!isNaN(n) && n > 0) {
+      setPortfolioValue(n);
+      localStorage.setItem("corvo_portfolio_value", String(n));
+    }
   };
 
   return (
