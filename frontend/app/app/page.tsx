@@ -166,42 +166,41 @@ function Spinner() {
   );
 }
 
-function Empty({ onPreset }: { onPreset?: (a: { ticker: string; weight: number }[]) => void }) {
+function Empty() {
+  const steps = [
+    { n: "1", label: "Search a ticker", desc: "Type any stock, ETF, or fund in the sidebar" },
+    { n: "2", label: "Set your weight", desc: "Enter how much of your portfolio it represents" },
+    { n: "3", label: "Hit Analyze", desc: "Get Sharpe ratio, Monte Carlo, drawdown, and more" },
+  ];
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 96px)", gap: 28, textAlign: "center", padding: "0 24px" }}>
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 96px)", gap: 36, textAlign: "center", padding: "0 32px" }}>
       <motion.img
         src="/corvo-logo.svg"
         alt="Corvo"
-        width={48}
-        height={48}
-        animate={{ y: [0, -7, 0] }}
+        width={40}
+        height={40}
+        animate={{ y: [0, -6, 0] }}
         transition={{ repeat: Infinity, duration: 3.2, ease: "easeInOut" }}
-        style={{ opacity: 0.55 }}
+        style={{ opacity: 0.4 }}
       />
       <div>
-        <p style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.4px", color: "var(--text)", marginBottom: 10 }}>Analyze your first portfolio</p>
-        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.75 }}>
-          Add tickers on the left, or start with a preset below
+        <p style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.4px", color: "var(--text)", marginBottom: 8 }}>Build your first portfolio</p>
+        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, maxWidth: 320 }}>
+          Add tickers in the sidebar, assign weights, and run the analysis.
         </p>
-        <motion.p
-          animate={{ opacity: [0.3, 0.9, 0.3] }}
-          transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
-          style={{ fontSize: 11, color: "var(--accent)", letterSpacing: 2, textTransform: "uppercase", marginTop: 18 }}>
-          ← pick a preset to get started
-        </motion.p>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, maxWidth: 500, width: "100%" }}>
-        {PRESETS.map(p => (
-          <button key={p.label} onClick={() => onPreset?.(p.assets)}
-            style={{ padding: "16px 18px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 12, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.background = "var(--bg3)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{p.label}</p>
-            <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.6 }}>
-              {p.assets.map(a => `${a.ticker} ${Math.round(a.weight * 100)}%`).join(" · ")}
-            </p>
-          </button>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 340 }}>
+        {steps.map((s, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, textAlign: "left" }}>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", border: "0.5px solid var(--border2)", background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--accent)" }}>
+              {s.n}
+            </div>
+            <div>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{s.label}</p>
+              <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>{s.desc}</p>
+            </div>
+          </div>
         ))}
       </div>
     </motion.div>
@@ -1402,20 +1401,6 @@ export default function AppPage() {
         </button>
       </div>
 
-      {/* Preset portfolios */}
-      <div style={{ padding: "6px 10px", borderBottom: "0.5px solid var(--border)" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-          {PRESETS.map(p => (
-            <button key={p.label} onClick={() => setAssets(p.assets)}
-              style={{ padding: "5px 8px", fontSize: 10, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer", textAlign: "left" as const, transition: "all 0.15s" }}
-              onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Builder */}
       <div id="tour-ticker-area" style={{ flex: 1, overflow: "auto", padding: "12px 14px" }}>
         <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} />
@@ -1850,7 +1835,7 @@ export default function AppPage() {
               </motion.div>
             ) : !data && !loading ? (
               <motion.div key="empty" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <Empty onPreset={(a) => setAssets(a.map(x => ({ ...x, weight: x.weight })))} />
+                <Empty />
               </motion.div>
             ) : loading ? (
               <motion.div key="loading" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
