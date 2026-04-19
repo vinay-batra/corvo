@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
-import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
 const LEVEL_NAMES: Record<number, string> = {
@@ -70,15 +69,18 @@ export default function AccountPage() {
     <div style={{ minHeight: "100vh", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
-      <PublicNav />
-
-      <main style={{ maxWidth: 560, margin: "0 auto", padding: "80px 24px 80px", animation: "fadein 0.5s ease" }}>
-
-        <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", textDecoration: "none", fontSize: 12, transition: "color 0.15s", marginBottom: 28 }}
+      <header style={{ height: 52, borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "#0a0e14", position: "sticky", top: 0, zIndex: 10 }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
           onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")}
           onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>
           ← Back
         </Link>
+        <div style={{ width: "0.5px", height: 16, background: "rgba(255,255,255,0.06)" }} />
+        <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
+        <span style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc" }}>Account</span>
+      </header>
+
+      <main style={{ maxWidth: 560, margin: "0 auto", padding: "32px 24px 80px", animation: "fadein 0.5s ease" }}>
 
         {/* Avatar + name */}
         <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 36 }}>
