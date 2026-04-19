@@ -389,7 +389,7 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose }: Pr
         {loading && mode === m ? (m === "jspdf" ? "Building…" : "Writing…") : label}
       </button>
     );
-    return <>{row("↓ Export PDF", "jspdf")}{row("✦ AI Report", "ai")}</>;
+    return <>{row("↓ Export PDF", "jspdf")}{row("AI Report", "ai")}</>;
   }
 
   return (
@@ -413,7 +413,7 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose }: Pr
             style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, overflow: "hidden", zIndex: 100, width: 220, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
             {[
               { value: "jspdf", label: "↓ Multi-page PDF", desc: "Cover · metrics · allocation · returns" },
-              { value: "ai",    label: "✦ AI Narrative PDF", desc: "Claude writes full analysis (print)" },
+              { value: "ai",    label: "AI Narrative PDF", desc: "Claude writes full analysis (print)" },
             ].map(opt => (
               <button key={opt.value} onClick={() => { setMode(opt.value as "jspdf" | "ai"); setOpen(false); }}
                 style={{ width: "100%", textAlign: "left", padding: "11px 14px", background: mode === opt.value ? C.amber2 : "transparent", border: "none", cursor: "pointer", transition: "background 0.1s" }}

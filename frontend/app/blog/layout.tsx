@@ -6,7 +6,7 @@ import PublicFooter from "@/components/PublicFooter";
 
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "transparent", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}

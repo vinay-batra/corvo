@@ -83,10 +83,10 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
                   <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{title}</span>
                 </div>
                 <button onClick={() => setOpen(false)}
-                  style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s" }}
+                  style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s" }}
                   onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
                   onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}>
-                  ✕
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
 

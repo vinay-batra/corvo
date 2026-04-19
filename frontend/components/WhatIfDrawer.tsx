@@ -150,8 +150,8 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                   Apply What-If
                 </button>
                 <button onClick={onClose}
-                  style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  ✕
+                  style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
             </div>
@@ -217,9 +217,9 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                             →{normalizedPct(i).toFixed(0)}%
                           </span>
                           <button onClick={() => removeAsset(i)}
-                            style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 12 }}
+                            style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center" }}
                             onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
-                            onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}>✕</button>
+                            onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                         </div>
                         <input type="range" min="0" max="1" step="0.01" value={a.weight}
                           onChange={e => updateWeight(i, parseFloat(e.target.value))}

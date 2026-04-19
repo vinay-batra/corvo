@@ -197,7 +197,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
               </div>
               <button onClick={e => { e.stopPropagation(); remove(p.id); }} style={{ background: "none", border: "none", color: "rgba(224,92,92,0.3)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
                 onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
-                onMouseLeave={e => e.currentTarget.style.color = "rgba(224,92,92,0.3)"}>✕</button>
+                onMouseLeave={e => e.currentTarget.style.color = "rgba(224,92,92,0.3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </motion.div>
           ))}
         </div>

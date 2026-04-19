@@ -241,7 +241,7 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
   };
 
   return (
-    <div style={{ minHeight: "100vh", overflowY: "auto", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
+    <div style={{ minHeight: "100vh", overflowY: "auto", background: "transparent", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       {/* Header */}

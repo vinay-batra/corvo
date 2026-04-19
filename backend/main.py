@@ -539,9 +539,9 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
 
     # Risk metrics
     ruin_threshold = -0.5
-    ruin_probability = float(np.mean(final_vals < ruin_threshold))
+    ruin_probability = safe_float(float(np.mean(final_vals < ruin_threshold)))
     worst_5pct_mask = final_vals <= p5
-    expected_shortfall = float(np.mean(final_vals[worst_5pct_mask])) if worst_5pct_mask.any() else p5
+    expected_shortfall = safe_float(float(np.mean(final_vals[worst_5pct_mask])) if worst_5pct_mask.any() else p5)
 
     return {
         "horizon": horizon,
@@ -731,10 +731,10 @@ def portfolio_dividends(
         holdings.append({
             "ticker": ticker,
             "weight": round(weight, 4),
-            "dividend_yield": round(div_yield_decimal, 6) if div_yield_decimal is not None else None,
+            "dividend_yield": round(div_yield_decimal, 6) if div_yield_decimal is not None else 0.0,
             "annual_income": annual_income,
-            "ex_div_date": ex_div_date,
-            "frequency": frequency,
+            "ex_div_date": ex_div_date or "",
+            "frequency": frequency or "",
         })
 
     total_annual_income = round(sum(h["annual_income"] for h in holdings), 2)
@@ -742,7 +742,7 @@ def portfolio_dividends(
     # Next upcoming ex-div date across all paying tickers
     upcoming = [h["ex_div_date"] for h in holdings if h["ex_div_date"]]
     upcoming.sort()
-    next_ex_div_date = upcoming[0] if upcoming else None
+    next_ex_div_date = upcoming[0] if upcoming else ""
 
     result = {
         "holdings": holdings,
@@ -1867,7 +1867,7 @@ def stock_detail(ticker: str, request: Request):
         op_margin_raw = si("operatingMargins", None)
 
         # Analyst breakdown from recommendations DataFrame
-        analyst_buy = analyst_hold = analyst_sell = None
+        analyst_buy = analyst_hold = analyst_sell = 0
         try:
             recs = t.recommendations
             if recs is not None and not recs.empty:
@@ -1879,8 +1879,8 @@ def stock_detail(ticker: str, request: Request):
             pass
 
         # EPS history for earnings calendar
-        eps_current = si("trailingEps", None)
-        eps_forward = si("forwardEps", None)
+        eps_current = safe_float(si("trailingEps", 0))
+        eps_forward = safe_float(si("forwardEps", 0))
 
         # Similar stocks from same sector
         sector = info.get("sector") or ""
@@ -1919,44 +1919,44 @@ def stock_detail(ticker: str, request: Request):
             "change": round(change, 4),
             "change_pct": round(change_pct, 4),
             "market_cap": si("marketCap", 0),
-            "pe_ratio": _round(si("trailingPE", None), 2),
-            "forward_pe": _round(si("forwardPE", None), 2),
+            "pe_ratio": _round(si("trailingPE", 0), 2),
+            "forward_pe": _round(si("forwardPE", 0), 2),
             "eps": eps_current,
             "eps_forward": eps_forward,
-            "dividend_yield": _round(divi_raw * 100, 2) if divi_raw is not None else None,
-            "week52_high": si("fiftyTwoWeekHigh", None),
-            "week52_low": si("fiftyTwoWeekLow", None),
+            "dividend_yield": _round(divi_raw * 100, 2) if divi_raw is not None else 0.0,
+            "week52_high": safe_float(si("fiftyTwoWeekHigh", 0)),
+            "week52_low": safe_float(si("fiftyTwoWeekLow", 0)),
             "volume": si("volume", 0),
             "avg_volume": si("averageVolume", 0),
-            "beta": si("beta", None),
-            "price_to_book": _round(si("priceToBook", None), 2),
-            "revenue": si("totalRevenue", None),
-            "net_income": si("netIncomeToCommon", None),
+            "beta": safe_float(si("beta", 0)),
+            "price_to_book": _round(si("priceToBook", 0), 2),
+            "revenue": si("totalRevenue", 0),
+            "net_income": si("netIncomeToCommon", 0),
             "analyst_rating": analyst_rating,
             "analyst_buy": analyst_buy,
             "analyst_hold": analyst_hold,
             "analyst_sell": analyst_sell,
-            "num_analysts": _round(si("numberOfAnalystOpinions", None), 0),
-            "target_mean": _round(si("targetMeanPrice", None), 2),
-            "target_high": _round(si("targetHighPrice", None), 2),
-            "target_low": _round(si("targetLowPrice", None), 2),
+            "num_analysts": _round(si("numberOfAnalystOpinions", 0), 0),
+            "target_mean": _round(si("targetMeanPrice", 0), 2),
+            "target_high": _round(si("targetHighPrice", 0), 2),
+            "target_low": _round(si("targetLowPrice", 0), 2),
             "sector": sector,
             "industry": info.get("industry") or "",
             "chart_1d": chart_1d,
             # financials
             "earnings_date": earnings_date,
-            "revenue_growth": _round(rev_growth_raw * 100, 1) if rev_growth_raw is not None else None,
-            "profit_margin": _round(profit_margin_raw * 100, 1) if profit_margin_raw is not None else None,
-            "gross_margin": _round(gross_margin_raw * 100, 1) if gross_margin_raw is not None else None,
-            "operating_margin": _round(op_margin_raw * 100, 1) if op_margin_raw is not None else None,
-            "debt_to_equity": _round(si("debtToEquity", None), 2),
-            "current_ratio": _round(si("currentRatio", None), 2),
-            "free_cashflow": si("freeCashflow", None),
-            "short_ratio": _round(si("shortRatio", None), 2),
-            "insider_ownership": _round(insider_raw * 100, 1) if insider_raw is not None else None,
+            "revenue_growth": _round(rev_growth_raw * 100, 1) if rev_growth_raw is not None else 0.0,
+            "profit_margin": _round(profit_margin_raw * 100, 1) if profit_margin_raw is not None else 0.0,
+            "gross_margin": _round(gross_margin_raw * 100, 1) if gross_margin_raw is not None else 0.0,
+            "operating_margin": _round(op_margin_raw * 100, 1) if op_margin_raw is not None else 0.0,
+            "debt_to_equity": _round(si("debtToEquity", 0), 2),
+            "current_ratio": _round(si("currentRatio", 0), 2),
+            "free_cashflow": si("freeCashflow", 0),
+            "short_ratio": _round(si("shortRatio", 0), 2),
+            "insider_ownership": _round(insider_raw * 100, 1) if insider_raw is not None else 0.0,
             "similar_stocks": similar_stocks,
-            "bid": _round(si("bid", None), 2),
-            "ask": _round(si("ask", None), 2),
+            "bid": _round(si("bid", 0), 2),
+            "ask": _round(si("ask", 0), 2),
         }
     except Exception as e:
         print(f"Stock detail error for {ticker}: {e}")
@@ -2144,7 +2144,7 @@ def watchlist_data(tickers: str, request: Request):
                 "sparkline": sparkline,
             })
         except Exception as e:
-            results.append({"ticker": ticker, "name": ticker, "price": None, "change": None, "change_pct": None, "sparkline": [], "error": str(e)})
+            results.append({"ticker": ticker, "name": ticker, "price": 0.0, "change": 0.0, "change_pct": 0.0, "sparkline": [], "error": str(e)})
     return {"results": results}
 
 

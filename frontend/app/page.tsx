@@ -1079,8 +1079,8 @@ function TickerTape() {
           return (
             <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11, fontFamily: "Space Mono,monospace" }}>
               <span style={{ color: "#c9a84c", letterSpacing: 1 }}>{item.ticker}</span>
-              <span style={{ color: "rgba(232,224,204,0.4)", letterSpacing: 0.5 }}>{item.price != null ? (item.price < 100 ? `$${item.price.toFixed(2)}` : `$${item.price.toLocaleString()}`) : "—"}</span>
-              <span style={{ color: up ? "#5cb88a" : "#e05c5c", fontWeight: 600 }}>{up ? "+" : ""}{item.change_pct != null ? item.change_pct.toFixed(2) : "—"}%</span>
+              <span style={{ color: "rgba(232,224,204,0.4)", letterSpacing: 0.5 }}>{item.price != null ? (item.price < 100 ? `$${item.price.toFixed(2)}` : `$${item.price.toLocaleString()}`) : "-"}</span>
+              <span style={{ color: up ? "#5cb88a" : "#e05c5c", fontWeight: 600 }}>{up ? "+" : ""}{item.change_pct != null ? item.change_pct.toFixed(2) : "-"}%</span>
             </span>
           );
         })}
@@ -1270,10 +1270,10 @@ function EmailPopupModal() {
             position: "absolute", top: 14, right: 14,
             background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 8, width: 30, height: 30, cursor: "pointer",
-            color: "rgba(232,224,204,0.4)", fontSize: 14, display: "flex",
-            alignItems: "center", justifyContent: "center", lineHeight: 1,
+            color: "rgba(232,224,204,0.4)", display: "flex",
+            alignItems: "center", justifyContent: "center",
           }}>
-          ✕
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
 
         {/* Logo */}
@@ -2038,7 +2038,7 @@ export default function Landing() {
                   <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#e8e0cc" }}>CORVO</span>
                 </div>
               </div>
-              {["◈  Overview", "◬  Risk", "◎  Simulate", "⊞  Compare", "◷  News", "✦  AI Chat"].map((t, i) => (
+              {["◈  Overview", "◬  Risk", "◎  Simulate", "⊞  Compare", "◷  News", "◆  AI Chat"].map((t, i) => (
                 <div key={i} style={{ padding: "7px 14px", fontSize: 10, color: i === 0 ? "#c9a84c" : "rgba(232,224,204,0.35)", background: i === 0 ? "rgba(201,168,76,0.06)" : "transparent", borderLeft: i === 0 ? "2px solid #c9a84c" : "2px solid transparent" }}>{t}</div>
               ))}
               <div style={{ marginTop: "auto", padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>

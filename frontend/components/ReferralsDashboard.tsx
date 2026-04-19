@@ -124,7 +124,7 @@ export default function ReferralsDashboard() {
         </svg>
       ),
       action: () => window.open(
-        `https://reddit.com/submit?url=${encodeURIComponent(refLink)}&title=${encodeURIComponent("I learned more about my portfolio risk in 5 minutes than I have in years — free tool")}`,
+        `https://reddit.com/submit?url=${encodeURIComponent(refLink)}&title=${encodeURIComponent("I learned more about my portfolio risk in 5 minutes than I have in years - free tool")}`,
         "_blank", "noopener"
       ),
     },

@@ -403,7 +403,7 @@ function Step4Panel({ active }: { active: boolean }) {
         {showAlert && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ padding: "10px 14px", background: "rgba(201,168,76,0.12)", border: `1px solid ${C.amberBd}`, borderRadius: 10, display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
-            <span style={{ fontSize: 16 }}>🔔</span>
+            <span style={{ display: "flex", color: C.amber }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
             <span style={{ color: C.cream }}>Alert: <strong style={{ color: C.amber }}>AAPL</strong> approaching target <strong style={{ color: C.amber }}>$215.00</strong></span>
           </motion.div>
         )}
@@ -429,7 +429,7 @@ function Step4Panel({ active }: { active: boolean }) {
               <div style={{ display: "flex", justifyContent: "center", position: "relative" }}>
                 {item.alert ? (
                   <div style={{ position: "relative" }}>
-                    <span style={{ fontSize: 14 }}>🔔</span>
+                    <span style={{ display: "flex", color: C.amber }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
                     {ping && item.ticker === "AAPL" && (
                       <motion.div initial={{ scale: 0.5, opacity: 1 }} animate={{ scale: 2.5, opacity: 0 }} transition={{ duration: 1, repeat: Infinity }}
                         style={{ position: "absolute", inset: -2, borderRadius: "50%", border: `2px solid ${C.amber}` }} />
@@ -469,10 +469,10 @@ function Step4Panel({ active }: { active: boolean }) {
    STEP 5: Learn
 ───────────────────────────────────────────────────────── */
 const LESSONS = [
-  { icon: "📊", title: "Portfolio Diversification", xp: 50, done: true },
-  { icon: "📈", title: "Understanding Sharpe Ratio", xp: 75, done: true },
-  { icon: "🎲", title: "Monte Carlo Methods", xp: 100, active: true },
-  { icon: "🏦", title: "Dollar-Cost Averaging", xp: 60, locked: true },
+  { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>, title: "Portfolio Diversification", xp: 50, done: true },
+  { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>, title: "Understanding Sharpe Ratio", xp: 75, done: true },
+  { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>, title: "Monte Carlo Methods", xp: 100, active: true },
+  { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7" fill="none"/></svg>, title: "Dollar-Cost Averaging", xp: 60, locked: true },
 ];
 const QUIZ_Q = "What does a Sharpe ratio above 1.5 generally indicate?";
 const QUIZ_OPTS = ["High portfolio risk", "Strong risk-adjusted returns", "Negative performance", "Low volatility only"];
@@ -518,7 +518,7 @@ function Step5Panel({ active }: { active: boolean }) {
         {showXp && (
           <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ marginTop: 6, fontSize: 11, color: C.amber, fontWeight: 600 }}>
-            +100 XP earned! 🎉
+            +100 XP earned!
           </motion.div>
         )}
       </div>
@@ -528,7 +528,7 @@ function Step5Panel({ active }: { active: boolean }) {
         {LESSONS.map((l, i) => (
           <motion.div key={l.title} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
             style={{ padding: "10px 12px", background: l.active ? C.amberBg : C.bg4, border: `1px solid ${l.active ? C.amberBd : C.border}`, borderRadius: 10, opacity: l.locked ? 0.45 : 1 }}>
-            <div style={{ fontSize: 18, marginBottom: 5 }}>{l.locked ? "🔒" : l.icon}</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 5, color: l.locked ? C.cream3 : l.active ? C.amber : C.cream2 }}>{l.locked ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> : l.icon}</div>
             <div style={{ fontSize: 11, color: C.cream, fontWeight: 500, lineHeight: 1.35 }}>{l.title}</div>
             <div style={{ fontSize: 9, color: l.done ? C.green : l.active ? C.amber : C.cream3, marginTop: 4, fontWeight: 600 }}>
               {l.done ? "✓ Completed" : l.active ? "▶ In Progress" : `${l.xp} XP`}
@@ -605,11 +605,11 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
   }, [active]);
 
   const completedSteps = [
-    { icon: "📁", title: "Portfolio Builder" },
-    { icon: "🤖", title: "AI Insights" },
-    { icon: "🎲", title: "Monte Carlo Simulation" },
-    { icon: "👁️", title: "Watchlist & Alerts" },
-    { icon: "🎓", title: "Learn" },
+    { icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>, title: "Portfolio Builder" },
+    { icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>, title: "AI Insights" },
+    { icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>, title: "Monte Carlo Simulation" },
+    { icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>, title: "Watchlist & Alerts" },
+    { icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>, title: "Learn" },
   ];
 
   return (
@@ -617,7 +617,7 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
       <ParticleCanvas />
       <div style={{ position: "relative", zIndex: 1, maxWidth: 520 }}>
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>🎉</div>
+          <div style={{ marginBottom: 8, display: "flex", justifyContent: "center", color: C.amber }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
         </motion.div>
         <motion.h2 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           style={{ fontSize: "clamp(20px, 3.5vw, 32px)", fontWeight: 700, color: C.cream, margin: "0 0 8px", lineHeight: 1.2, fontFamily: "'Space Mono', monospace" }}>
@@ -639,7 +639,7 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
                 <div style={{ width: 18, height: 18, borderRadius: "50%", background: C.greenBg, border: `1px solid rgba(76,175,125,0.35)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <span style={{ fontSize: 9, color: C.green, fontWeight: 700 }}>✓</span>
                 </div>
-                <span style={{ fontSize: 13 }}>{s.icon}</span>
+                <span style={{ display: "flex", color: C.cream2 }}>{s.icon}</span>
                 <span style={{ fontSize: 12, color: C.cream2 }}>{s.title}</span>
               </motion.div>
             ))}
@@ -680,42 +680,42 @@ const STEPS = [
     title: "Portfolio Builder",
     subtitle: "Build your portfolio in seconds",
     desc: "Search any stock, ETF, or crypto by ticker. Set your allocation with a simple slider. Corvo instantly calculates risk metrics and tells you what your mix really means.",
-    icon: "📁",
+    icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>,
     panel: Step1Panel,
   },
   {
     title: "AI Insights",
     subtitle: "Instant AI analysis of your portfolio",
     desc: "Get institutional-grade intelligence powered by Claude AI. Understand your Sharpe ratio, health score, concentration risk, and what to do about it, in plain English.",
-    icon: "🤖",
+    icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>,
     panel: Step2Panel,
   },
   {
     title: "Monte Carlo Simulation",
     subtitle: "See 300 possible futures",
     desc: "Corvo runs hundreds of simulations to show you the realistic range of outcomes for your portfolio over the next 12 months, from the worst case to the best.",
-    icon: "🎲",
+    icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="#c9a84c"/><circle cx="16" cy="16" r="1.5" fill="#c9a84c"/><circle cx="12" cy="12" r="1.5" fill="#c9a84c"/></svg>,
     panel: Step3Panel,
   },
   {
     title: "Watchlist & Alerts",
     subtitle: "Track your favorite stocks with live prices",
     desc: "Add any stock or ETF to your watchlist and get live price updates. Set price alerts and get notified the moment an asset hits your target: no noise, just signal.",
-    icon: "👁️",
+    icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
     panel: Step4Panel,
   },
   {
     title: "Learn",
     subtitle: "Level up your investing knowledge",
     desc: "AI-powered lessons tailored to your level. Earn XP, hit daily challenges, and build real investing knowledge, from diversification to derivatives, at your own pace.",
-    icon: "🎓",
+    icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>,
     panel: Step5Panel,
   },
   {
     title: "Get Started",
     subtitle: "You've seen what Corvo can do",
     desc: "",
-    icon: "🚀",
+    icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
     panel: Step6Panel,
   },
 ];
@@ -813,7 +813,7 @@ export default function DemoPage() {
                 {/* Left panel */}
                 <div className="demo-left-panel" style={{ flex: "0 0 320px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 20 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 28 }}>{current.icon}</span>
+                    <span style={{ display: "flex", flexShrink: 0 }}>{current.icon}</span>
                     <div>
                       <div style={{ fontSize: 10, color: C.amber, letterSpacing: 1.5, fontWeight: 600, textTransform: "uppercase" }}>
                         Step {step + 1} of {STEPS.length - 1}
@@ -829,17 +829,17 @@ export default function DemoPage() {
                   </p>
                   {step === 0 && (
                     <div style={{ padding: "10px 14px", background: C.amberBg, border: `1px solid ${C.amberBd}`, borderRadius: 10, fontSize: 11, color: C.amber }}>
-                      💡 Try typing a ticker in the search box after the demo plays
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.9V17h8v-2.1A7 7 0 0012 2z"/></svg> Try typing a ticker in the search box after the demo plays</span>
                     </div>
                   )}
                   {step === 3 && (
                     <div style={{ padding: "10px 14px", background: C.amberBg, border: `1px solid ${C.amberBd}`, borderRadius: 10, fontSize: 11, color: C.amber }}>
-                      💡 Prices update live every second. Watch them tick
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.9V17h8v-2.1A7 7 0 0012 2z"/></svg> Prices update live every second. Watch them tick</span>
                     </div>
                   )}
                   {step === 4 && (
                     <div style={{ padding: "10px 14px", background: C.amberBg, border: `1px solid ${C.amberBd}`, borderRadius: 10, fontSize: 11, color: C.amber }}>
-                      💡 Answer the challenge question to earn XP
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.9V17h8v-2.1A7 7 0 0012 2z"/></svg> Answer the challenge question to earn XP</span>
                     </div>
                   )}
                 </div>
@@ -869,7 +869,7 @@ export default function DemoPage() {
           </div>
           <button onClick={next}
             style={{ padding: "10px 24px", background: step === STEPS.length - 2 ? C.amber : "rgba(201,168,76,0.12)", border: `1px solid ${step === STEPS.length - 2 ? C.amber : C.amberBd}`, borderRadius: 10, color: step === STEPS.length - 2 ? C.bg : C.amber, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s", fontFamily: "inherit" }}>
-            {step === STEPS.length - 2 ? "Finish tour 🎉" : "Next →"}
+            {step === STEPS.length - 2 ? "Finish tour" : "Next →"}
           </button>
         </div>
       )}

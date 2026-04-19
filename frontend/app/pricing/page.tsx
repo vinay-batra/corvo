@@ -398,7 +398,7 @@ function FoundingMemberSection() {
 
 /* ─── Feature Vote Section ─── */
 const FEATURE_DEFS = [
-  { id: "ai-chat", label: "Unlimited AI Chat", desc: "No daily message caps, ever", icon: "✦" },
+  { id: "ai-chat", label: "Unlimited AI Chat", desc: "No daily message caps, ever", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
   { id: "options", label: "Options Chain", desc: "Live options flow & Greeks", icon: "◈" },
   { id: "tax-docs", label: "Tax Documents", desc: "Automated gain/loss PDF reports", icon: "◎" },
   { id: "mobile", label: "Mobile App", desc: "Native iOS & Android apps", icon: "◷" },
@@ -457,7 +457,7 @@ function FeatureVoteSection() {
     if (!featureName) return;
     const alreadyVoted = voted[id] ?? false;
 
-    // Optimistic update — toggle
+    // Optimistic update - toggle
     const newVotes = { ...votes, [id]: Math.max(0, (votes[id] ?? 0) + (alreadyVoted ? -1 : 1)) };
     const newVoted = { ...voted, [id]: !alreadyVoted };
     setVotes(newVotes);
@@ -543,7 +543,7 @@ export default function PricingPage() {
   const { ref: trustRef, visible: trustVisible } = useReveal(0.1);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,system-ui,sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "transparent", color: "#e8e0cc", fontFamily: "Inter,system-ui,sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }

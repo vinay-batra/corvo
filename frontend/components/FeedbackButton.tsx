@@ -103,10 +103,10 @@ export default function FeedbackButton() {
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Send Feedback</div>
                 </div>
                 <button onClick={handleClose}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 16, lineHeight: 1, padding: 4 }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4, display: "flex", alignItems: "center" }}
                   onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
                   onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}>
-                  ✕
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
 

@@ -143,9 +143,9 @@ export default function ShareImageModal({ assets, data, onClose }: ShareImageMod
             position: "absolute", top: 16, right: 16,
             background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`,
             borderRadius: 8, width: 30, height: 30, cursor: "pointer",
-            color: C.cream3, fontSize: 14, display: "flex",
-            alignItems: "center", justifyContent: "center", lineHeight: 1,
-          }}>✕</button>
+            color: C.cream3, display: "flex",
+            alignItems: "center", justifyContent: "center",
+          }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 
         {/* Header */}
         <div style={{ marginBottom: 20 }}>

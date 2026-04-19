@@ -54,8 +54,8 @@ export default function ReferralModal({ onClose }: Props) {
             <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)" }}>Invite friends to Corvo</div>
           </div>
           <button onClick={onClose}
-            style={{ width: 30, height: 30, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            ✕
+            style={{ width: 30, height: 30, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 

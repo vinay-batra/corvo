@@ -69,7 +69,7 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
             <p style={{ fontSize: 9, letterSpacing: 2, color: C.amber, textTransform: "uppercase", marginBottom: 4 }}>Settings</p>
             <h3 style={{ fontSize: 18, fontWeight: 500, color: C.cream }}>Profile & Goals</h3>
           </div>
-          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, color: C.cream2, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, color: C.cream2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
         {/* Fields */}

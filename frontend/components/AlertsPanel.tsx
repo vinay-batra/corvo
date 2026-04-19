@@ -280,7 +280,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
             <div style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 2 }}>Alerts</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Price &amp; Portfolio Alerts</div>
           </div>
-          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 7, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 7, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
         {/* Type tabs */}
@@ -346,7 +346,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 18px" }}>
           {alerts.length === 0 ? (
             <div style={{ textAlign: "center", paddingTop: 32 }}>
-              <div style={{ fontSize: 22, marginBottom: 10 }}>🔔</div>
+              <div style={{ marginBottom: 10, display: "flex", justifyContent: "center", color: "var(--text3)" }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
               <p style={{ fontSize: 12, color: "var(--text3)" }}>No alerts set yet</p>
             </div>
           ) : (
@@ -363,7 +363,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
                       <p style={{ fontSize: 12, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{formatAlert(a)}</p>
                     </div>
                     <button onClick={() => removeAlert(a.id)}
-                      style={{ width: 22, height: 22, borderRadius: 5, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✕</button>
+                      style={{ width: 22, height: 22, borderRadius: 5, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                   </div>
                 </motion.div>
               ))}

@@ -97,17 +97,17 @@ export default function RobinhoodComparePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20 }}>
             {[
               {
-                icon: "📈",
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
                 title: "Analytics, not just execution",
                 body: "Robinhood helps you buy and sell. Corvo helps you understand whether you should. Get Sharpe ratio, correlation analysis, max drawdown, and AI-powered portfolio insights: the context Robinhood doesn't provide.",
               },
               {
-                icon: "🔍",
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
                 title: "See your whole picture",
                 body: "Robinhood only shows your Robinhood holdings. Corvo imports from Fidelity, Schwab, Robinhood, and more, giving you one unified view of your full net worth with real analytics.",
               },
               {
-                icon: "🎓",
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>,
                 title: "Built for learning, not FOMO",
                 body: "Robinhood's UX is designed to maximize engagement and trading. Corvo is designed to help you make better long-term decisions, with a Learn & Earn system that builds your investing knowledge.",
               },
@@ -160,10 +160,10 @@ export default function RobinhoodComparePage() {
                     >
                       <td style={{ padding: "13px 20px", fontSize: 13, color: "rgba(232,224,204,0.6)", fontWeight: 300 }}>{label}</td>
                       <td style={{ padding: "13px 16px", textAlign: "center", borderLeft: "1px solid rgba(201,168,76,0.18)", borderRight: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.03)", fontSize: 15 }}>
-                        {corvo ? <span style={{ color: "#c9a84c", fontWeight: 700 }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.12)" }}>✗</span>}
+                        {corvo ? <span style={{ color: "#c9a84c", fontWeight: 700 }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
                       </td>
                       <td style={{ padding: "13px 16px", textAlign: "center", fontSize: 14 }}>
-                        {robinhood ? <span style={{ color: "#5cb88a" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.12)" }}>✗</span>}
+                        {robinhood ? <span style={{ color: "#5cb88a" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
                       </td>
                     </motion.tr>
                   ))}
