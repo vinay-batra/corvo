@@ -507,35 +507,43 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     total_w = sum(avail_w) or 1
     avail_w = [w / total_w for w in avail_w]
 
+    # Compute portfolio daily arithmetic returns then convert to log returns for GBM
     returns = prices.pct_change().dropna()
     port_returns = returns.values @ np.array(avail_w)
 
-    mu = float(np.mean(port_returns))
-    sigma = float(np.std(port_returns))
+    # Geometric Brownian Motion parameters from historical log returns
+    log_returns = np.log(1.0 + port_returns)
+    mu_log = float(np.mean(log_returns))
+    sigma_log = float(np.std(log_returns))
     horizon = 252
 
-    np.random.seed(42)
-    sims = np.random.normal(mu, sigma, (simulations, horizon))
-    paths = np.cumprod(1 + sims, axis=1) - 1  # shape (sims, horizon)
+    # GBM simulation: sample log returns from N(mu_log, sigma_log), no fixed seed
+    rng = np.random.default_rng()
+    daily_log_rets = rng.normal(mu_log, sigma_log, (simulations, horizon))
 
-    final_vals = paths[:, -1]
-    p5 = float(np.percentile(final_vals, 5))
+    # Cumulative log returns → portfolio value starting at 1.0; convert to % gain/loss
+    cum_log = np.cumsum(daily_log_rets, axis=1)
+    path_values = np.exp(cum_log)           # shape (simulations, horizon); 1.0 = breakeven
+    paths_pct = path_values - 1.0          # fractional gain/loss (0.0 = breakeven)
+
+    final_vals = paths_pct[:, -1]
+    p5  = float(np.percentile(final_vals, 5))
     p25 = float(np.percentile(final_vals, 25))
     p50 = float(np.percentile(final_vals, 50))
     p75 = float(np.percentile(final_vals, 75))
     p95 = float(np.percentile(final_vals, 95))
 
-    # Percentile bands across time
+    # Percentile bands across all 252 days
     pct_bands = {
-        "p5": safe_list(np.percentile(paths, 5, axis=0).tolist()),
-        "p25": safe_list(np.percentile(paths, 25, axis=0).tolist()),
-        "p50": safe_list(np.percentile(paths, 50, axis=0).tolist()),
-        "p75": safe_list(np.percentile(paths, 75, axis=0).tolist()),
-        "p95": safe_list(np.percentile(paths, 95, axis=0).tolist()),
+        "p5":  safe_list(np.percentile(paths_pct, 5,  axis=0).tolist()),
+        "p25": safe_list(np.percentile(paths_pct, 25, axis=0).tolist()),
+        "p50": safe_list(np.percentile(paths_pct, 50, axis=0).tolist()),
+        "p75": safe_list(np.percentile(paths_pct, 75, axis=0).tolist()),
+        "p95": safe_list(np.percentile(paths_pct, 95, axis=0).tolist()),
     }
 
-    # Sample paths (20)
-    sample_paths = [safe_list(paths[i].tolist()) for i in range(min(20, simulations))]
+    # Positive probability: actual fraction of paths ending above breakeven
+    positive_prob = safe_float(float(np.mean(final_vals > 0.0)))
 
     # Risk metrics
     ruin_threshold = -0.5
@@ -552,7 +560,7 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         "final_p75": p75,
         "final_p95": p95,
         "bands": pct_bands,
-        "sample_paths": sample_paths,
+        "positive_prob": positive_prob,
         "ruin_probability": ruin_probability,
         "expected_shortfall": expected_shortfall,
     }
