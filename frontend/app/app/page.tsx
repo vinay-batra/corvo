@@ -1497,9 +1497,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
       </div>
 
-      {/* Live price strip: isolated component; ticks never re-render AppPage */}
-      <LivePriceStrip assets={assets} active={!!data} />
-
     </>
   );
 
@@ -1834,6 +1831,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   perfHistory={perfHistory}
                   portfolioValue={10000}
                 />
+                <LivePriceStrip assets={assets} active={!!data} />
                 <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
                 <motion.div
                   className="c-metrics"
