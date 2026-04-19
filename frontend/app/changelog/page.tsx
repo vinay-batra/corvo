@@ -113,7 +113,7 @@ const ENTRIES = [
     date: "Mar 3, 2026",
     version: "v0.2",
     title: "Sharpe Ratio, Monte Carlo Simulation & Max Drawdown",
-    desc: "Core risk analytics are live. Sharpe ratio measures return per unit of risk. Max drawdown shows the worst peak-to-trough decline over the selected period. Monte Carlo runs 8,500 forward simulations using each holding's historical volatility and correlation to show the realistic range of 1, 5, and 10 year outcomes.",
+    desc: "Core risk analytics are live. Sharpe ratio measures return per unit of risk. Max drawdown shows the worst peak-to-trough decline over the selected period. Monte Carlo runs 10,000 forward simulations using each holding's historical volatility and correlation to show the realistic range of 1, 5, and 10 year outcomes.",
     tags: ["Risk", "Analytics"],
   },
   {

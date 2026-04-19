@@ -234,7 +234,7 @@ export default function YahooFinanceComparePage() {
             {[
               { text: "The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like.", name: "James L.", role: "Dividend Investor · 8yr experience" },
               { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
-              { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 8,500 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
+              { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 10,000 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
             ].map((t, i) => (
               <FadeUp key={i} delay={i * 0.1}>
                 <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: "28px 24px", position: "relative" }}>
