@@ -146,7 +146,7 @@ export default function AccountPage() {
             </div>
             <span style={{ fontSize: 14, color: "rgba(255,255,255,0.2)" }}>→</span>
           </Link>
-          <Link href="/settings#referrals" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "rgba(255,255,255,0.02)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
+          <Link href="/referrals" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "rgba(255,255,255,0.02)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}
             onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
