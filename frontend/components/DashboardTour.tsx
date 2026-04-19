@@ -12,8 +12,8 @@ interface TourStop {
 }
 
 const STOPS: TourStop[] = [
-  { id: "tour-analyze-btn",        label: "Analyze",           description: "Run your portfolio analysis here — get Sharpe ratio, health score, and AI insights." },
-  { id: "tour-ai-chat-fab",        label: "AI Chat",           description: "Ask AI anything about your portfolio — risk, strategy, what-if scenarios." },
+  { id: "tour-analyze-btn",        label: "Analyze",           description: "Run your portfolio analysis here: get Sharpe ratio, health score, and AI insights." },
+  { id: "tour-ai-chat-fab",        label: "AI Chat",           description: "Ask AI anything about your portfolio: risk, strategy, what-if scenarios." },
   { id: "tour-keyboard-shortcuts", label: "Keyboard Shortcuts", description: "Navigate the dashboard with keyboard shortcuts. Press ? anytime to see them." },
   { id: "tour-dark-mode-toggle",   label: "Light / Dark Mode",  description: "Switch between light and dark mode to match your preference." },
   { id: "tour-settings-btn",       label: "Settings",           description: "Set price alerts, email preferences, and manage your account." },
@@ -115,7 +115,7 @@ export default function DashboardTour({ onComplete }: Props) {
           }
         `}</style>
 
-        {/* Dim overlay — clickable to skip */}
+        {/* Dim overlay: clickable to skip */}
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", pointerEvents: "auto" }}
           onClick={handleDone}

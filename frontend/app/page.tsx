@@ -1967,13 +1967,13 @@ export default function Landing() {
           variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
           initial="hidden" animate="visible">
           <span style={{ display: "block", color: "#e8e0cc" }}>
-            {["Stop", "guessing,"].map((w, i) => (
+            {["Your", "portfolio", "deserves"].map((w, i) => (
               <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200 } } }}
                 style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
             ))}
           </span>
           <span style={{ display: "block", color: "#c9a84c", position: "relative" }}>
-            {["start", "knowing."].map((w, i) => (
+            {["better", "than", "a", "pie", "chart."].map((w, i) => (
               <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
                 style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
             ))}
@@ -1983,7 +1983,7 @@ export default function Landing() {
 
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
           style={{ fontSize: 17, color: "rgba(232,224,204,0.45)", lineHeight: 1.85, fontWeight: 300, maxWidth: 520, marginBottom: 48 }}>
-          Institutional-grade portfolio analytics — free, for real investors.
+          AI-powered analytics: Sharpe ratio, Monte Carlo, sector exposure, and more. Free.
         </motion.p>
 
         <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}

@@ -55,7 +55,7 @@ export default function FeedbackButton() {
 
   return (
     <>
-      {/* Fixed button — bottom left */}
+      {/* Fixed button: bottom left */}
       <motion.button
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

@@ -1868,7 +1868,7 @@ export default function AppPage() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                       <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        {/* Period selector — adjacent to graph */}
+                        {/* Period selector: adjacent to graph */}
                         <div style={{ display: "flex", gap: 3 }}>
                           {PERIODS.map(p => (
                             <button key={p} onClick={() => setPeriod(p)}
@@ -1877,7 +1877,7 @@ export default function AppPage() {
                             </button>
                           ))}
                         </div>
-                        {/* Benchmark selector — adjacent to graph */}
+                        {/* Benchmark selector: adjacent to graph */}
                         <div style={{ position: "relative" }}>
                           <button onClick={() => setBenchOpen(o => !o)}
                             style={{ padding: "4px 10px", fontSize: 10, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 5, cursor: "pointer", color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
@@ -2103,7 +2103,7 @@ export default function AppPage() {
               posthog.capture("onboarding_completed", { tickers_added: builtAssets.length });
               if (builtAssets.length > 0) {
                 // builtAssets come from PortfolioBuilder which stores fractions (0–1).
-                // Do NOT multiply by 100 — that corrupts the weights.
+                // Do NOT multiply by 100, that corrupts the weights.
                 setAssets(builtAssets);
               }
               tourNeededRef.current = false;
