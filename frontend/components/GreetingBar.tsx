@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -23,20 +23,6 @@ interface MarketSummary {
   vix: number;
 }
 
-function computeDailyChange(perfHistory: PerfSnapshot[], portfolioValue: number) {
-  if (perfHistory.length < 2) return null;
-  const last = perfHistory[perfHistory.length - 1];
-  const prev = perfHistory[perfHistory.length - 2];
-  if (!last || !prev || prev.cumulative_return == null || last.cumulative_return == null) return null;
-  const dailyDollar =
-    portfolioValue * (1 + last.cumulative_return) - portfolioValue * (1 + prev.cumulative_return);
-  const dailyPct =
-    prev.cumulative_return !== -1
-      ? ((last.cumulative_return - prev.cumulative_return) / (1 + prev.cumulative_return)) * 100
-      : 0;
-  return { dollar: dailyDollar, pct: dailyPct };
-}
-
 interface Props {
   displayName: string;
   portfolioData: any;
@@ -46,20 +32,13 @@ interface Props {
 }
 
 export default function GreetingBar({
-  displayName, portfolioData, assets, perfHistory = [], portfolioValue = 10000,
+  displayName, assets,
 }: Props) {
   const greeting = getGreeting();
   const name = displayName.trim() || "Investor";
   const dateStr = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric",
   });
-
-  const dailyChange = useMemo(
-    () => computeDailyChange(perfHistory, portfolioValue),
-    [perfHistory, portfolioValue]
-  );
-
-  const sharpe: number = portfolioData?.sharpe_ratio ?? 0;
 
   const [market, setMarket] = useState<MarketSummary | null>(null);
 
@@ -79,8 +58,8 @@ export default function GreetingBar({
 
   const pos = (v: number) => v >= 0;
   const fmtSign = (v: number) => (v >= 0 ? "+" : "");
-  const green = "var(--green, #4ade80)";
-  const red = "var(--red, #f87171)";
+  const green = "#4caf7d";
+  const red = "#e05c5c";
 
   return (
     <div style={{
@@ -135,37 +114,25 @@ export default function GreetingBar({
       {/* DIVIDER */}
       <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
-      {/* RIGHT - 3 stat pills */}
-      <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 16 }}>
+      {/* RIGHT - live market index pills */}
+      <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 12 }}>
 
-        {/* Pill: S&P 500 */}
         <StatPill
           label="S&P 500"
-          value={market ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
-          color={market ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
+          value={market != null ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
+          color={market != null ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
         />
 
-        {/* Pill: Sharpe */}
         <StatPill
-          label="Sharpe"
-          value={portfolioData ? sharpe.toFixed(2) : "-"}
-          color={
-            !portfolioData ? "var(--text3)"
-            : sharpe > 1 ? green
-            : sharpe > 0 ? "var(--accent)"
-            : red
-          }
+          label="Nasdaq"
+          value={market != null ? `${fmtSign(market.qqq_pct)}${market.qqq_pct.toFixed(2)}%` : "-"}
+          color={market != null ? (pos(market.qqq_pct) ? green : red) : "var(--text3)"}
         />
 
-        {/* Pill: Portfolio Daily */}
         <StatPill
-          label="Today"
-          value={
-            dailyChange
-              ? `${fmtSign(dailyChange.pct)}${dailyChange.pct.toFixed(2)}%`
-              : "-"
-          }
-          color={dailyChange ? (pos(dailyChange.pct) ? green : red) : "var(--text3)"}
+          label="Dow"
+          value={market != null ? `${fmtSign(market.dia_pct)}${market.dia_pct.toFixed(2)}%` : "-"}
+          color={market != null ? (pos(market.dia_pct) ? green : red) : "var(--text3)"}
         />
 
       </div>
