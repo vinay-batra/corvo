@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useEffect, useState } from "react";
-import { Plus, Upload, Bell, MessageSquare } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -41,15 +40,10 @@ interface Props {
   assets: { ticker: string; weight: number }[];
   perfHistory?: PerfSnapshot[];
   portfolioValue?: number;
-  onAddPortfolio: () => void;
-  onImportCSV: () => void;
-  onSetAlert: () => void;
-  onAskAI: () => void;
 }
 
 export default function GreetingBar({
   displayName, portfolioData, assets, perfHistory = [], portfolioValue = 10000,
-  onAddPortfolio, onImportCSV, onSetAlert, onAskAI,
 }: Props) {
   const greeting = getGreeting();
   const name = displayName.trim() || "Investor";
@@ -90,13 +84,6 @@ export default function GreetingBar({
   }, [assets, quotes]);
 
   const spxQuote = quotes["^GSPC"];
-
-  const actions = [
-    { label: "Add Portfolio", Icon: Plus, onClick: onAddPortfolio, disabled: false },
-    { label: "Import CSV", Icon: Upload, onClick: onImportCSV, disabled: false },
-    { label: "Set Alert", Icon: Bell, onClick: onSetAlert, disabled: !assets.length },
-    { label: "Ask AI", Icon: MessageSquare, onClick: onAskAI, disabled: false },
-  ];
 
   const pos = (v: number) => v >= 0;
   const fmtSign = (v: number) => (v >= 0 ? "+" : "");
@@ -193,10 +180,8 @@ export default function GreetingBar({
       {/* DIVIDER */}
       <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
-      {/* RIGHT — market pill + actions */}
-      <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
-
-        {/* S&P 500 pill */}
+      {/* RIGHT — market pill */}
+      <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center" }}>
         <div style={{
           display: "inline-flex",
           alignItems: "center",
@@ -215,46 +200,6 @@ export default function GreetingBar({
             <span style={{ fontSize: 12, color: "var(--text3)" }}>—</span>
           )}
         </div>
-
-        {/* Action buttons */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          {actions.map(({ label, Icon, onClick, disabled }) => (
-            <button
-              key={label}
-              onClick={disabled ? undefined : onClick}
-              title={label}
-              style={{
-                padding: "5px 11px",
-                fontSize: 10.5,
-                fontWeight: 500,
-                borderRadius: 7,
-                border: "0.5px solid var(--border2)",
-                background: "transparent",
-                color: disabled ? "var(--text3)" : "var(--text2)",
-                cursor: disabled ? "not-allowed" : "pointer",
-                transition: "all 0.15s",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                opacity: disabled ? 0.4 : 1,
-              }}
-              onMouseEnter={e => {
-                if (!disabled) {
-                  e.currentTarget.style.background = "var(--bg3)";
-                  e.currentTarget.style.color = "var(--text)";
-                }
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = disabled ? "var(--text3)" : "var(--text2)";
-              }}
-            >
-              <Icon size={10} />
-              {label}
-            </button>
-          ))}
-        </div>
-
       </div>
     </div>
   );
