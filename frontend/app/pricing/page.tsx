@@ -647,46 +647,52 @@ export default function PricingPage() {
       <FeatureVoteSection />
 
       {/* FOOTER CTA */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 72px", textAlign: "center" }}>
-        <div
-          ref={trustRef}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 16,
-            opacity: trustVisible ? 1 : 0,
-            transform: trustVisible ? "translateY(0)" : "translateY(12px)",
-            transition: "opacity 0.6s ease, transform 0.6s ease",
-            background: "rgba(255,255,255,0.018)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: 12,
-            padding: "14px 24px",
-            flexWrap: "wrap" as const,
-            justifyContent: "center",
-          }}
-        >
-          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.5)", margin: 0 }}>
-            Free during beta · No credit card required
-          </p>
-          <Link
-            href="/auth"
+      <section style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "48px 16px" }}>
+          <div
+            ref={trustRef}
             style={{
-              padding: "8px 20px",
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 600,
-              background: "#c9a84c",
-              color: "#0a0e14",
-              textDecoration: "none",
-              display: "inline-block",
-              transition: "opacity 0.2s",
-              flexShrink: 0,
+              background: "#1a1a1a",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 16,
+              padding: "32px 40px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              gap: 16,
+              maxWidth: 420,
+              width: "100%",
+              opacity: trustVisible ? 1 : 0,
+              transform: trustVisible ? "translateY(0)" : "translateY(12px)",
+              transition: "opacity 0.6s ease, transform 0.6s ease",
             }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
           >
-            Start for free →
-          </Link>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(18px,2.5vw,24px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -0.5, lineHeight: 1.2 }}>
+              Ready to analyze your portfolio?
+            </h2>
+            <p style={{ fontSize: 13, color: "rgba(232,224,204,0.5)", margin: 0 }}>
+              Free during beta · No credit card required
+            </p>
+            <Link
+              href="/auth"
+              style={{
+                padding: "10px 24px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                background: "#c9a84c",
+                color: "#0a0e14",
+                textDecoration: "none",
+                display: "inline-block",
+                transition: "opacity 0.2s",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+            >
+              Start for free →
+            </Link>
+          </div>
         </div>
       </section>
 
