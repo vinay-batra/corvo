@@ -252,14 +252,14 @@ export default function AiChat({
     try { return JSON.parse(raw); } catch { return null; }
   })();
 
-  // Portfolio context — ALWAYS use live assets for tickers/weights so the AI
+  // Portfolio context: ALWAYS use live assets for tickers/weights so the AI
   // never operates on a stale portfolio from a previous analysis.
   const liveTickers = assets?.map((a: any) => a.ticker).filter(Boolean) || [];
   const liveTotal = assets?.reduce((s: number, a: any) => s + (a.weight ?? 0), 0) || 1;
   const liveWeights = assets?.map((a: any) => (a.weight ?? 0) / liveTotal) || [];
 
   const portfolioContext = portfolioCtxOn ? {
-    // Live holdings — always current
+    // Live holdings: always current
     tickers: liveTickers,
     weights: liveWeights,
     // Analysis metrics from last run (may lag behind current holdings, clearly labelled)

@@ -41,7 +41,7 @@ function buildPulse(data: any, perfHistory: PerfSnapshot[], portfolioValue: numb
     sharpe > 0 ? "moderate risk-adjusted returns" :
     "risk-adjusted returns below target";
   const ddWarn = Math.abs(drawdown) > 0.2 ? ` Heads up: max drawdown is ${(Math.abs(drawdown) * 100).toFixed(1)}%.` : "";
-  return `${dailyPart}Sharpe ${sharpe.toFixed(2)} — ${sharpeTxt}.${ddWarn}`;
+  return `${dailyPart}Sharpe ${sharpe.toFixed(2)}, ${sharpeTxt}.${ddWarn}`;
 }
 
 interface Props {

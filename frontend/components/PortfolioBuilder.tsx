@@ -10,7 +10,7 @@ const C = { amber: "var(--accent)", cream: "var(--text)", cream3: "var(--text3)"
 const DOTS = ["#b8860b","rgba(184,134,11,0.7)","rgba(184,134,11,0.5)","rgba(184,134,11,0.35)","rgba(184,134,11,0.25)","rgba(184,134,11,0.6)","rgba(184,134,11,0.45)","rgba(184,134,11,0.55)"];
 const TYPE_LABELS: Record<string,string> = { EQUITY:"Stock", ETF:"ETF", CRYPTOCURRENCY:"Crypto", MUTUALFUND:"Fund", INDEX:"Index", CASH:"Cash" };
 
-// Cash / money market tickers — bypass yfinance, use manual annual return
+// Cash / money market tickers: bypass yfinance, use manual annual return
 const CASH_TICKERS = new Set(["CASH", "FDRXX", "SPAXX", "BND", "SGOV"]);
 
 // Top tickers for instant autocomplete
@@ -110,7 +110,7 @@ const COMMON_TICKERS: { ticker: string; name: string; type: string; exchange: st
   { ticker:"SOL-USD", name:"Solana",                    type:"CRYPTOCURRENCY", exchange:"CCC" },
   { ticker:"BNB-USD", name:"BNB",                       type:"CRYPTOCURRENCY", exchange:"CCC" },
   { ticker:"XRP-USD", name:"XRP",                       type:"CRYPTOCURRENCY", exchange:"CCC" },
-  // Cash / Money Market — manual return override, never calls yfinance
+  // Cash / Money Market: manual return override, never calls yfinance
   { ticker:"CASH",    name:"Cash / Money Market",            type:"CASH",       exchange:"N/A" },
   { ticker:"FDRXX",   name:"Fidelity Gov't Cash Reserves",   type:"CASH",       exchange:"N/A" },
   { ticker:"SPAXX",   name:"Fidelity Gov't Money Market",    type:"CASH",       exchange:"N/A" },
