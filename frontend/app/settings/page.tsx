@@ -256,8 +256,9 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
 
   const shareOnX = () => {
     if (!user) return;
+    const refLink = referralData?.referral_link ?? `https://corvo.capital/app?ref=${user.id.replace(/-/g, "").slice(0, 8)}`;
     const tweet = encodeURIComponent(
-      `I've been using Corvo for portfolio analytics. Way better than Yahoo Finance. Try it free: corvo.capital?ref=${user.id} @corvocapital`
+      `Just ran my portfolio through Corvo and learned more about my risk in 5 minutes than I have in years. Free, no BS: ${refLink} @corvocapital`
     );
     window.open(`https://x.com/intent/tweet?text=${tweet}`, "_blank", "noopener");
   };
