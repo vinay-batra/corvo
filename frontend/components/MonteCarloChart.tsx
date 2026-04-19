@@ -45,20 +45,11 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
       .finally(() => setLoading(false));
   }, [assets, period, retryCount]);
 
-  // Fetch Claude insight after simulation data loads.
-  // Use positive_probability from the backend (computed over all paths) rather
-  // than re-deriving it from the 20 sample paths, which gives a noisy estimate.
+  // Fetch Claude insight after simulation data loads
   useEffect(() => {
-    if (!data) return;
-    const positiveProb: number =
-      data.positive_probability != null
-        ? data.positive_probability
-        : (() => {
-            const count = (data.sample_paths as number[][]).filter(
-              (p: number[]) => p[p.length - 1] > 0
-            ).length;
-            return Math.round((count / (data.sample_paths?.length || 1)) * 100);
-          })();
+    if (!data?.sample_paths?.length) return;
+    const positiveCount = (data.sample_paths as number[][]).filter((p: number[]) => p[p.length - 1] > 0).length;
+    const positiveProb = Math.round((positiveCount / data.sample_paths.length) * 100);
 
     setInsightLoading(true);
     fetch(`${API_URL}/montecarlo/insight`, {
@@ -71,7 +62,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
         p95: data.final_p95,
         ruin_probability: data.ruin_probability ?? 0,
         expected_shortfall: data.expected_shortfall ?? data.final_p5,
-        simulations: data.simulations ?? 10000,
+        simulations: data.simulations ?? 8500,
       }),
     })
       .then(r => r.json())
@@ -87,18 +78,11 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
   const p75 = data ? (data.final_p75 * 100).toFixed(1) : null;
   const p95 = data ? (data.final_p95 * 100).toFixed(1) : null;
 
-  // Prefer the server-computed value (full distribution); fall back to sample paths.
-  const positiveProb: number | null = data
-    ? data.positive_probability != null
-      ? data.positive_probability
-      : (() => {
-          if (!data.sample_paths?.length) return null;
-          const pos = (data.sample_paths as number[][]).filter(
-            (path: number[]) => path[path.length - 1] > 0
-          ).length;
-          return Math.round((pos / data.sample_paths.length) * 100);
-        })()
-    : null;
+  const positiveProb = (() => {
+    if (!data?.sample_paths?.length) return null;
+    const positive = (data.sample_paths as number[][]).filter((path: number[]) => path[path.length - 1] > 0).length;
+    return Math.round((positive / data.sample_paths.length) * 100);
+  })();
 
   const probRows = data ? [
     {
@@ -195,7 +179,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
       {loading ? (
         <div style={{ height: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
           <div style={{ width: 26, height: 26, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: dark ? C.amber : "#b8860b", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <p style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>Running 10,000 simulations...</p>
+          <p style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>Running 8,500 simulations...</p>
         </div>
       ) : fetchError ? (
         <ErrorState
@@ -281,7 +265,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
               style={{ marginTop: 16, background: dark ? C.amber3 : "rgba(184,134,11,0.06)", border: "1px solid rgba(184,134,11,0.15)", borderRadius: 10, padding: "14px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
               <span style={{ color: mcAmber, fontSize: 14, flexShrink: 0, marginTop: 1 }}>◈</span>
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.75 }}>
-                Based on these 10,000 simulations, your portfolio has a{" "}
+                Based on these 8,500 simulations, your portfolio has a{" "}
                 <strong style={{ color: mcAmber }}>{positiveProb}% chance of positive returns</strong> over 1 year,
                 with a median outcome of{" "}
                 <strong style={{ color: Number(p50) >= 0 ? mcAmber : C.red }}>
