@@ -647,30 +647,46 @@ export default function PricingPage() {
       <FeatureVoteSection />
 
       {/* FOOTER CTA */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 72px" }}>
-        <div ref={trustRef} className="flex justify-center py-12" style={{ opacity: trustVisible ? 1 : 0, transform: trustVisible ? "translateY(0)" : "translateY(12px)", transition: "opacity 0.6s ease, transform 0.6s ease" }}>
-          <div className="bg-[#111] border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center gap-4 w-fit">
-            <p style={{ fontSize: 20, fontWeight: 700, color: "#e8e0cc" }}>Ready to analyze your portfolio?</p>
-            <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)" }}>Monte Carlo, Sharpe ratio, AI chat, and more. Free.</p>
-            <Link
-              href="/auth"
-              style={{
-                padding: "8px 20px",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                background: "#c9a84c",
-                color: "#0a0e14",
-                textDecoration: "none",
-                display: "inline-block",
-                transition: "opacity 0.2s",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
-            >
-              Start for free →
-            </Link>
-          </div>
+      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 72px", textAlign: "center" }}>
+        <div
+          ref={trustRef}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 16,
+            opacity: trustVisible ? 1 : 0,
+            transform: trustVisible ? "translateY(0)" : "translateY(12px)",
+            transition: "opacity 0.6s ease, transform 0.6s ease",
+            background: "rgba(255,255,255,0.018)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: 12,
+            padding: "14px 24px",
+            flexWrap: "wrap" as const,
+            justifyContent: "center",
+          }}
+        >
+          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.5)", margin: 0 }}>
+            Free during beta · No credit card required
+          </p>
+          <Link
+            href="/auth"
+            style={{
+              padding: "8px 20px",
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              background: "#c9a84c",
+              color: "#0a0e14",
+              textDecoration: "none",
+              display: "inline-block",
+              transition: "opacity 0.2s",
+              flexShrink: 0,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+          >
+            Start for free →
+          </Link>
         </div>
       </section>
 
