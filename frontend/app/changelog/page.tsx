@@ -164,6 +164,13 @@ export default function ChangelogPage() {
       {/* Nav */}
       <PublicNav />
 
+      {/* BACK */}
+      <Link href="/" style={{ position: "fixed", top: 68, left: 24, zIndex: 99, display: "flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
+        onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")}
+        onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>
+        ← Back
+      </Link>
+
       {/* Hero */}
       <div className="cl-hero" style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
         <FadeUp>

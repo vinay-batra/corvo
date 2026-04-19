@@ -233,7 +233,7 @@ export default function ReferralsPage() {
 
             <Section title="Your Referral Link">
               <div style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
-                <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontFamily: "var(--font-mono)", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontFamily: "var(--font-mono)", background: "var(--bg2)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 8, color: "var(--text2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
                   {refLink}
                 </div>
                 <button onClick={copyLink}
@@ -254,9 +254,9 @@ export default function ReferralsPage() {
               <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8, paddingBottom: 4 }}>
                 {platforms.map(p => (
                   <button key={p.name} onClick={p.action} title={p.name}
-                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 5, padding: "10px 14px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border2)")}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
+                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 5, padding: "10px 14px", background: "var(--bg2)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)")}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(184,134,11,0.15)")}>
                     <span style={{ color: p.color, display: "flex", alignItems: "center" }}>{p.icon}</span>
                     <span style={{ fontSize: 9, letterSpacing: 0.5, color: "var(--text3)", whiteSpace: "nowrap" as const }}>{p.name}</span>
                   </button>
@@ -268,7 +268,7 @@ export default function ReferralsPage() {
               <Section title="Referred Users">
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
                   {referralData!.referred_emails.map((email, i) => (
-                    <div key={i} style={{ fontSize: 12, color: "var(--text2)", fontFamily: "var(--font-mono)", padding: "6px 10px", background: "var(--bg2)", borderRadius: 7, border: "0.5px solid var(--border)" }}>
+                    <div key={i} style={{ fontSize: 12, color: "var(--text2)", fontFamily: "var(--font-mono)", padding: "6px 10px", background: "var(--bg2)", borderRadius: 7, border: "0.5px solid rgba(184,134,11,0.15)" }}>
                       {email}
                     </div>
                   ))}
@@ -280,7 +280,7 @@ export default function ReferralsPage() {
       </main>
 
       {toast && (
-        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "#1e2730", border: "0.5px solid var(--border2)", borderRadius: 10, padding: "10px 18px", fontSize: 13, color: "var(--text)", zIndex: 100, boxShadow: "0 4px 24px rgba(0,0,0,0.4)", whiteSpace: "nowrap" as const }}>
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "var(--card-bg)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 10, padding: "10px 18px", fontSize: 13, color: "var(--text)", zIndex: 100, boxShadow: "0 4px 24px rgba(0,0,0,0.4)", whiteSpace: "nowrap" as const }}>
           {toast}
         </div>
       )}
