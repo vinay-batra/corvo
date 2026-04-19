@@ -439,7 +439,7 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "montecarlo", padding: "28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Monte Carlo Simulation</p>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>See your future in 300 paths</h3>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>See your future in 8,500 paths</h3>
       <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", marginBottom: 18, lineHeight: 1.6 }}>Simulate outcomes based on your actual volatility and correlation.</p>
       <div style={{ background: "rgba(8,11,16,0.6)", borderRadius: 12, padding: "14px" }}>
         <svg width="100%" height="110" viewBox="0 0 280 110" preserveAspectRatio="none">
@@ -948,9 +948,9 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
 const MOBILE_TESTIMONIALS = [
   { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
   { text: "I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it.", name: "Sarah K.", role: "Self-directed IRA · Former analyst" },
-  { text: "The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
+  { text: "The Monte Carlo simulator is genuinely impressive. I ran 8,500 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
   { text: "The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like.", name: "James L.", role: "Dividend Investor · 8yr experience" },
-  { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 300 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
+  { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 8,500 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
 ];
 function MobileTestimonialCarousel() {
   const [idx, setIdx] = useState(0);
@@ -1162,7 +1162,7 @@ function DemoPreview() {
   const lines = [
     "Analyzing AAPL · MSFT · NVDA · VOO...",
     "Computing Sharpe ratio: 0.66 ✓",
-    "Running 300 Monte Carlo paths ✓",
+    "Running 8,500 Monte Carlo paths ✓",
     "AI insight ready: high tech concentration detected",
   ];
   return (
@@ -1582,7 +1582,7 @@ function GrowthCalculatorSection() {
 
           {/* Disclaimer + CTA */}
           <p style={{ fontSize: 10, color: "rgba(232,224,204,0.25)", lineHeight: 1.7, marginBottom: 24, textAlign: "center" as const }}>
-            These are estimates based on historical S&amp;P 500 average returns. Corvo runs 300 Monte Carlo simulations for your actual portfolio.
+            These are estimates based on historical S&amp;P 500 average returns. Corvo runs 8,500 Monte Carlo simulations for your actual portfolio.
           </p>
           <div style={{ textAlign: "center" as const }}>
             <Link href="/app" className="cta cta-shimmer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 32px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", letterSpacing: 0.2 }}>
@@ -2161,11 +2161,11 @@ export default function Landing() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
               <TestimonialCard text="Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification." name="Marcus T." role="Retail Investor · 12yr experience" delay={0} />
               <TestimonialCard text="I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it." name="Sarah K." role="Self-directed IRA · Former analyst" delay={0.12} />
-              <TestimonialCard text="The Monte Carlo simulator is genuinely impressive. I ran 300 paths against my retirement timeline and completely rethought my allocation." name="David R." role="Index Fund Investor · Engineer" delay={0.24} />
+              <TestimonialCard text="The Monte Carlo simulator is genuinely impressive. I ran 8,500 paths against my retirement timeline and completely rethought my allocation." name="David R." role="Index Fund Investor · Engineer" delay={0.24} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16, maxWidth: 740, margin: "0 auto", width: "100%" }}>
               <TestimonialCard text="The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like." name="James L." role="Dividend Investor · 8yr experience" delay={0.1} />
-              <TestimonialCard text="I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 300 paths and realized I was way under-diversified." name="Priya M." role="Software Engineer · Long-term investor" delay={0.22} />
+              <TestimonialCard text="I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 8,500 paths and realized I was way under-diversified." name="Priya M." role="Software Engineer · Long-term investor" delay={0.22} />
             </div>
           </div>
           {/* Mobile: one-at-a-time carousel with arrows + dots */}

@@ -46,7 +46,7 @@ const SECTIONS = [
       },
       {
         q: "What is Monte Carlo simulation?",
-        a: "Corvo runs 300 forward simulations of your portfolio's possible outcomes based on each holding's historical volatility and correlation. You'll see a range of projected values, including the best case, median, and worst case, giving you a realistic picture of what to expect over your chosen time horizon.",
+        a: "Corvo runs 8,500 forward simulations of your portfolio's possible outcomes based on each holding's historical volatility and correlation. You'll see a range of projected values, including the best case, median, and worst case, giving you a realistic picture of what to expect over your chosen time horizon.",
       },
       {
         q: "How accurate are the AI insights?",

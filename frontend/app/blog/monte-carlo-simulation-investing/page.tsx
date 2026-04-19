@@ -5,11 +5,11 @@ import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
   title: "What is Monte Carlo Simulation and Why Should Investors Care? | Corvo Blog",
-  description: "Monte Carlo simulation runs 300 scenarios of your portfolio's future to show you the real distribution of retirement outcomes. Here is how it works and what to do with the results.",
+  description: "Monte Carlo simulation runs 8,500 scenarios of your portfolio's future to show you the real distribution of retirement outcomes. Here is how it works and what to do with the results.",
   keywords: ["monte carlo simulation investing", "monte carlo portfolio", "retirement simulation", "portfolio simulation", "monte carlo retirement planning"],
   openGraph: {
     title: "What is Monte Carlo Simulation and Why Should Investors Care?",
-    description: "Running 300 simulations of your portfolio's future is the best way to understand your real retirement risk.",
+    description: "Running 8,500 simulations of your portfolio's future is the best way to understand your real retirement risk.",
     url: "https://corvo.capital/blog/monte-carlo-simulation-investing",
     siteName: "Corvo",
     type: "article",
@@ -18,17 +18,17 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "What is Monte Carlo Simulation and Why Should Investors Care?",
-    description: "Running 300 simulations of your portfolio's future is the best way to understand your real retirement risk.",
+    description: "Running 8,500 simulations of your portfolio's future is the best way to understand your real retirement risk.",
   },
 };
 
 const TOC: TocItem[] = [
   { id: "what-is-monte-carlo", title: "What Is Monte Carlo Simulation?" },
-  { id: "why-300-paths", title: "Why 300 Paths Matter" },
+  { id: "why-8500-paths", title: "Why 8,500 Paths Matter" },
   { id: "sequence-of-returns", title: "Sequence of Returns Risk" },
   { id: "reading-results", title: "Reading Your Results" },
   { id: "probability-distribution", title: "The Probability Distribution" },
-  { id: "corvo-implementation", title: "How Corvo Runs 300 Simulations" },
+  { id: "corvo-implementation", title: "How Corvo Runs 8,500 Simulations" },
 ];
 
 const RELATED: RelatedPost[] = [
@@ -83,7 +83,7 @@ export default function MonteCarloPage() {
         honest and useful than any single-point projection.
       </p>
 
-      <h2 id="why-300-paths">Why 300 Paths (Not Just One) Matters</h2>
+      <h2 id="why-8500-paths">Why 8,500 Paths (Not Just One) Matters</h2>
       <p>
         Financial models often project a "base case" return. Plug in 8% annual growth and extrapolate
         30 years. It looks tidy. It is misleading.
@@ -95,14 +95,13 @@ export default function MonteCarloPage() {
         matters enormously for outcomes, especially when you are making regular contributions or withdrawals.
       </p>
       <p>
-        Running 300 simulations, each with different randomly-ordered return sequences, captures this
+        Running 8,500 simulations, each with different randomly-ordered return sequences, captures this
         distribution of outcomes. You see worst-case scenarios, best-case scenarios, and everything in
         between. The spread of the fan chart tells you how uncertain your outcome actually is.
       </p>
       <p>
         More simulations reduce sampling error. Fewer simulations give you a noisier, less reliable
-        distribution. 300 paths is a standard threshold that balances computational speed with statistical
-        reliability for retail portfolio analysis.
+        distribution. 8,500 paths provides strong statistical reliability, giving you a precise probability distribution rather than a rough approximation.
       </p>
 
       <h2 id="sequence-of-returns">Sequence of Returns Risk</h2>
@@ -192,7 +191,7 @@ export default function MonteCarloPage() {
         way to understand your own risk tolerance in practical terms.
       </p>
 
-      <h2 id="corvo-implementation">How Corvo Runs 300 Simulations</h2>
+      <h2 id="corvo-implementation">How Corvo Runs 8,500 Simulations</h2>
       <p>
         Corvo's Monte Carlo engine works in four steps:
       </p>
@@ -205,20 +204,20 @@ export default function MonteCarloPage() {
       </p>
       <h3>Step 2: Correlated random paths</h3>
       <p>
-        Corvo generates 300 sets of annual returns using the Cholesky decomposition of the correlation
+        Corvo generates 8,500 sets of annual returns using the Cholesky decomposition of the correlation
         matrix. This technical step preserves the realistic relationships between your holdings: tech stocks
         and Treasury bonds do not suddenly become independent in the simulation. If they historically move
         together, they move together in the model too.
       </p>
       <h3>Step 3: Portfolio construction</h3>
       <p>
-        Each of the 300 paths applies your specific position weights, rebalancing assumptions, and any
+        Each of the 8,500 paths applies your specific position weights, rebalancing assumptions, and any
         contribution or withdrawal schedule you have set. An investor who contributes $1,000 per month gets
         a different simulation than one who is drawing down $3,000 per month in retirement.
       </p>
       <h3>Step 4: Distribution analysis</h3>
       <p>
-        Corvo compiles the 300 portfolio outcomes into the probability distribution you see in the chart.
+        Corvo compiles the 8,500 portfolio outcomes into the probability distribution you see in the chart.
         The full simulation runs in seconds. You can immediately adjust your allocation or contribution
         schedule and see how it shifts the distribution, making the trade-offs between risk and outcome
         instantly visible.

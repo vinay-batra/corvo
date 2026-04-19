@@ -38,7 +38,7 @@ const POSTS = [
     readTime: "6 min read",
     category: "Education",
     categoryColor: "#8eb4c8",
-    excerpt: "Running 300 simulations of your portfolio's future is the best way to understand your real retirement risk. Here is how it works in plain English.",
+    excerpt: "Running 8,500 simulations of your portfolio's future is the best way to understand your real retirement risk. Here is how it works in plain English.",
   },
 ];
 
