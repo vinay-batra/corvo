@@ -21,7 +21,7 @@ const CURRENCIES = ["USD", "GBP", "EUR", "JPY", "CAD"] as const;
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 14, paddingBottom: 8, borderBottom: "0.5px solid var(--border)" }}>{title}</div>
+      <div style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase" as const, marginBottom: 14, paddingBottom: 8, borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{title}</div>
       {children}
     </div>
   );
@@ -29,10 +29,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "0.5px solid var(--border)" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
       <div>
-        <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>{label}</div>
-        {desc && <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{desc}</div>}
+        <div style={{ fontSize: 13, color: "#e8e0cc", fontWeight: 500 }}>{label}</div>
+        {desc && <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 2 }}>{desc}</div>}
       </div>
       <div style={{ flexShrink: 0, marginLeft: 16 }}>{children}</div>
     </div>
@@ -41,8 +41,8 @@ function Row({ label, desc, children }: { label: string; desc?: string; children
 
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   return (
-    <div onClick={onChange} style={{ width: 38, height: 22, borderRadius: 11, background: on ? "var(--accent)" : "var(--border2)", position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0 }}>
-      <div style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: on ? "#0a0e14" : "var(--bg)", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+    <div onClick={onChange} style={{ width: 38, height: 22, borderRadius: 11, background: on ? "#c9a84c" : "rgba(255,255,255,0.1)", position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0 }}>
+      <div style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "#0a0e14", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
     </div>
   );
 }
@@ -269,8 +269,8 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
 
   const inputStyle: React.CSSProperties = {
     padding: "8px 12px", fontSize: 13, borderRadius: 8,
-    border: "0.5px solid var(--border)", background: "var(--bg2)",
-    color: "var(--text)", outline: "none", width: "100%",
+    border: "0.5px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)",
+    color: "#e8e0cc", outline: "none", width: "100%",
   };
 
   const selectStyle: React.CSSProperties = {
@@ -278,30 +278,30 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
   };
 
   return (
-    <div style={{ minHeight: "100vh", overflowY: "auto", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div style={{ minHeight: "100vh", overflowY: "auto", background: "#0a0e14", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       {/* Header */}
-      <header style={{ height: 52, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg)", position: "sticky", top: 0, zIndex: 10 }}>
+      <header style={{ height: 52, borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "rgba(10,14,20,0.95)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
         {onClose ? (
-          <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", fontSize: 12, cursor: "pointer", transition: "color 0.15s", padding: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-            onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
+          <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", background: "none", border: "none", fontSize: 12, cursor: "pointer", transition: "color 0.15s", padding: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")}
+            onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>
             ← Back
           </button>
         ) : (
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-            onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")}
+            onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>
             ← Back
           </Link>
         )}
-        <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
+        <div style={{ width: "0.5px", height: 16, background: "rgba(255,255,255,0.06)" }} />
         <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
-        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Settings</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc" }}>Settings</span>
       </header>
 
-      <main style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px" }}>
+      <main style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px", animation: "fadein 0.5s ease" }}>
 
         {/* PROFILE */}
         <Section title="Profile">
@@ -408,25 +408,25 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
         {/* REFERRALS */}
         <Section title="Referrals">
           {referralLoading ? (
-            <div style={{ padding: "20px 0", display: "flex", alignItems: "center", gap: 8, color: "var(--text3)", fontSize: 13 }}>
-              <div style={{ width: 14, height: 14, border: "2px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <div style={{ padding: "20px 0", display: "flex", alignItems: "center", gap: 8, color: "rgba(232,224,204,0.35)", fontSize: 13 }}>
+              <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
               Loading…
             </div>
           ) : (
             <>
               {/* Stats row */}
-              <div style={{ display: "flex", gap: 12, padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
-                <div style={{ flex: 1, background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", border: "0.5px solid var(--border)" }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>
+              <div style={{ display: "flex", gap: 12, padding: "14px 0", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ flex: 1, background: "rgba(255,255,255,0.025)", borderRadius: 12, padding: "16px 18px", border: "0.5px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "#c9a84c", fontFamily: "Space Mono,monospace" }}>
                     {referralData?.referral_count ?? 0}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Referrals completed</div>
+                  <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 3 }}>Referrals completed</div>
                 </div>
-                <div style={{ flex: 1, background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", border: "0.5px solid var(--border)" }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>
+                <div style={{ flex: 1, background: "rgba(255,255,255,0.025)", borderRadius: 12, padding: "16px 18px", border: "0.5px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "#c9a84c", fontFamily: "Space Mono,monospace" }}>
                     +{referralData?.bonus_messages_earned ?? 0}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Bonus messages earned</div>
+                  <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 3 }}>Bonus messages earned</div>
                 </div>
               </div>
 
@@ -439,14 +439,14 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
                 const progress = capped ? 100 : ((count % 1 === 0 ? count : 0) / nextMilestone) * 100;
                 const remaining = capped ? 0 : 1 - (count % 1);
                 return (
-                  <div style={{ padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
+                  <div style={{ padding: "14px 0", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <span style={{ fontSize: 12, color: "var(--text2)" }}>
+                      <span style={{ fontSize: 12, color: "rgba(232,224,204,0.65)" }}>
                         {capped ? "Max bonus reached (40 messages)" : `${count} / ${count + 1} referrals → next +5 messages`}
                       </span>
-                      <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>{bonus}/40</span>
+                      <span style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", fontFamily: "Space Mono,monospace" }}>{bonus}/40</span>
                     </div>
-                    <div style={{ height: 5, borderRadius: 3, background: "var(--border)", overflow: "hidden" }}>
+                    <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${Math.min((bonus / 40) * 100, 100)}%`, background: capped ? "#5cb88a" : "var(--accent)", borderRadius: 3, transition: "width 0.6s ease" }} />
                     </div>
                   </div>
@@ -454,10 +454,10 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
               })()}
 
               {/* Referral link */}
-              <div style={{ padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
-                <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 8 }}>Your referral link</div>
+              <div style={{ padding: "14px 0", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", marginBottom: 8 }}>Your referral link</div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontFamily: "var(--font-mono)", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                  <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontFamily: "Space Mono,monospace", background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "rgba(232,224,204,0.65)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
                     {referralData?.referral_link ?? `https://corvo.capital/app?ref=${user?.id ?? "…"}`}
                   </div>
                   <button onClick={copyReferralLink}
@@ -468,11 +468,11 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
               </div>
 
               {/* Share on X */}
-              <div style={{ padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
+              <div style={{ padding: "14px 0", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
                 <button onClick={shareOnX}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 16px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text)", cursor: "pointer", transition: "border-color 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 16px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "0.5px solid rgba(255,255,255,0.12)", background: "transparent", color: "#e8e0cc", cursor: "pointer", transition: "border-color 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
@@ -483,10 +483,10 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
               {/* Referred emails list */}
               {(referralData?.referred_emails?.length ?? 0) > 0 && (
                 <div style={{ paddingTop: 14 }}>
-                  <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 1.5, textTransform: "uppercase" as const, marginBottom: 10 }}>Referred users</div>
+                  <div style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", letterSpacing: 1.5, textTransform: "uppercase" as const, marginBottom: 10 }}>Referred users</div>
                   <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
                     {referralData!.referred_emails.map((email, i) => (
-                      <div key={i} style={{ fontSize: 12, color: "var(--text2)", fontFamily: "var(--font-mono)", padding: "6px 10px", background: "var(--bg2)", borderRadius: 7, border: "0.5px solid var(--border)" }}>
+                      <div key={i} style={{ fontSize: 12, color: "rgba(232,224,204,0.65)", fontFamily: "Space Mono,monospace", padding: "6px 10px", background: "rgba(255,255,255,0.025)", borderRadius: 7, border: "0.5px solid rgba(255,255,255,0.06)" }}>
                         {email}
                       </div>
                     ))}
@@ -503,9 +503,9 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
             {onReplayOnboarding && (
               <Row label="Replay Onboarding" desc="Restart the setup wizard from step 1">
                 <button onClick={onReplayOnboarding}
-                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(232,224,204,0.65)", cursor: "pointer", transition: "border-color 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}>
                   Restart
                 </button>
               </Row>
@@ -513,9 +513,9 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
             {onReplayTour && (
               <Row label="Replay Dashboard Tour" desc="Re-run the guided tooltip tour of dashboard features">
                 <button onClick={onReplayTour}
-                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(232,224,204,0.65)", cursor: "pointer", transition: "border-color 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}>
                   Start Tour
                 </button>
               </Row>
