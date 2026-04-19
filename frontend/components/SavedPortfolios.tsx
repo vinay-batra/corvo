@@ -168,8 +168,8 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ fontSize: 8, letterSpacing: 2.5, color: C.cream3, textTransform: "uppercase" }}>Saved</span>
-        <button id="tour-save-btn" data-save-trigger onClick={() => setShowSave(s => !s)} style={{ fontSize: 9, letterSpacing: 1, color: C.amber, background: "none", border: "none", cursor: "pointer" }}>+ Save</button>
+        <span style={{ fontSize: 9, letterSpacing: 3, color: C.cream3, textTransform: "uppercase" }}>Saved</span>
+        <button id="tour-save-btn" data-save-trigger onClick={() => setShowSave(s => !s)} style={{ fontSize: 11, letterSpacing: 1, color: C.amber, background: "none", border: "none", cursor: "pointer" }}>+ Save</button>
       </div>
       <AnimatePresence>
         {showSave && (
@@ -188,7 +188,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
         )}
       </AnimatePresence>
       {portfolios.length === 0 ? (
-        <p style={{ fontSize: 10, color: C.cream3, textAlign: "center", padding: "6px 0" }}>No saved portfolios</p>
+        <p style={{ fontSize: 11, color: C.cream3, textAlign: "center", padding: "6px 0" }}>No saved portfolios</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {portfolios.map(p => (
@@ -199,7 +199,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
               onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 11, color: C.cream2, marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</p>
-                <p style={{ fontSize: 9, color: C.cream3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.assets.map((a: Asset) => a.ticker).join(", ")}</p>
+                <p style={{ fontSize: 11, color: C.cream3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.assets.map((a: Asset) => a.ticker).join(", ")}</p>
               </div>
               <button onClick={e => { e.stopPropagation(); remove(p.id); }} style={{ background: "none", border: "none", color: "rgba(224,92,92,0.3)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
                 onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}

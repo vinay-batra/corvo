@@ -415,7 +415,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                     return (
                       <div key={m.key} style={{ padding: "9px 16px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 11, color: "var(--text3)" }}>{m.label}</span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: isBest ? 700 : 400, color: isBest ? color : "var(--text2)" }}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: isBest ? 700 : 400, color: isBest ? color : "var(--text2)" }}>
                           {m.fmt(val)}{isBest && <span style={{ marginLeft: 4, fontSize: 11 }}>★</span>}
                         </span>
                       </div>
@@ -426,7 +426,7 @@ function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: 
                     <div style={{ height: 3, background: "var(--bg3)", borderRadius: 2, marginBottom: 4 }}>
                       <div style={{ width: `${Math.min(100, Math.max(0, ((p.result.sharpe_ratio || 0) / 3) * 100))}%`, height: "100%", background: color, borderRadius: 2 }} />
                     </div>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color, fontWeight: 600 }}>{(p.result.sharpe_ratio || 0).toFixed(2)}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color, fontWeight: 600 }}>{(p.result.sharpe_ratio || 0).toFixed(2)}</span>
                   </div>
                 </div>
               );
@@ -1878,7 +1878,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                         {/* Benchmark selector: adjacent to graph */}
                         <div style={{ position: "relative" }}>
                           <button onClick={() => setBenchOpen(o => !o)}
-                            style={{ padding: "4px 10px", fontSize: 10, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 5, cursor: "pointer", color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
+                            style={{ padding: "4px 10px", fontSize: 11, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 5, cursor: "pointer", color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
                             <span style={{ fontSize: 11, color: "var(--text3)" }}>vs</span>{benchLabel}<span style={{ fontSize: 11, color: "var(--text3)" }}>▾</span>
                           </button>
                           <AnimatePresence>
@@ -1896,7 +1896,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                           </AnimatePresence>
                         </div>
                         <button onClick={() => setWhatIfOpen(true)}
-                          style={{ padding: "4px 10px", fontSize: 10, borderRadius: 5, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
+                          style={{ padding: "4px 10px", fontSize: 11, borderRadius: 5, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
                           onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
                           onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}>
                           What-If →

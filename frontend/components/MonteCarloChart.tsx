@@ -87,6 +87,11 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
     ? Math.round(data.positive_prob * 100)
     : null;
 
+  // Simulation count — always from server response
+  const simCount: string = data?.simulations != null
+    ? Number(data.simulations).toLocaleString()
+    : "8,500";
+
   const probRows = data ? [
     {
       scenario: "Bear case",
@@ -147,9 +152,14 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
   const mcFc     = dark ? "rgba(232,224,204,0.75)" : "#4a4a4a";
   const mcGc     = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)";
   const mcLc     = dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)";
-  const mcMedian = dark ? "#ffffff" : "#1a1a1a";
 
-  // Band arrays already in fractional form - multiply by 100 for % display
+  // Amber shades for fan chart bands
+  const amberOuter     = dark ? "rgba(201,168,76,0.08)" : "rgba(184,134,11,0.07)";
+  const amberOuterLine = dark ? "rgba(201,168,76,0.35)" : "rgba(184,134,11,0.35)";
+  const amberInner     = dark ? "rgba(201,168,76,0.22)" : "rgba(184,134,11,0.18)";
+  const amberBright    = dark ? "#c9a84c" : "#b8860b";
+
+  // Band arrays already in fractional form — multiply by 100 for % display
   const band = (key: string): number[] =>
     (data?.bands?.[key] ?? []).map((v: number) => v * 100);
 
@@ -185,7 +195,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
       {loading ? (
         <div style={{ height: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
           <div style={{ width: 26, height: 26, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: dark ? C.amber : "#b8860b", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <p style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>Running 8,500 simulations...</p>
+          <p style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>Running {simCount} simulations...</p>
         </div>
       ) : fetchError ? (
         <ErrorState
@@ -199,14 +209,14 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
           {/* Legend */}
           <div style={{ display: "flex", gap: 20, marginBottom: 12, flexWrap: "wrap" }}>
             {[
-              { color: "rgba(239,68,68,0.5)",    fill: true,  label: "Worst/Best 5%" },
-              { color: dark ? "rgba(201,168,76,0.7)" : "rgba(184,134,11,0.7)", fill: true, label: "Middle 50%" },
-              { color: mcMedian, fill: false, label: "Median", thick: true },
-              { color: "rgba(150,150,150,0.5)", fill: false, label: "Breakeven", dashed: true },
+              { label: "5th – 95th pct",  fill: true,  linec: amberOuterLine, bg: amberOuter },
+              { label: "25th – 75th pct", fill: true,  linec: amberOuterLine, bg: amberInner },
+              { label: "Median",          fill: false, color: amberBright, thick: true },
+              { label: "Breakeven",       fill: false, color: "rgba(59,130,246,0.6)", dashed: true },
             ].map((l, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {l.fill ? (
-                  <div style={{ width: 18, height: 8, borderRadius: 2, background: l.color }} />
+                  <div style={{ width: 18, height: 8, borderRadius: 2, background: l.bg, border: `1px solid ${l.linec}` }} />
                 ) : (
                   <svg width="18" height="10">
                     <line x1="0" y1="5" x2="18" y2="5"
@@ -223,29 +233,29 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
           {/*
             Fan chart: filled areas between percentile bands.
             Order matters for Plotly "tonexty":
-              [0] p5  - outer bottom boundary (no fill)
-              [1] p95 - outer top boundary (fill="tonexty" fills p5->p95 outer zone)
-              [2] p25 - inner bottom boundary (no fill)
-              [3] p75 - inner top boundary (fill="tonexty" fills p25->p75 middle zone)
-              [4] p50 - median line (bright, no fill)
-              [5] breakeven at y=0 (dashed gray)
+              [0] p5  — outer bottom boundary (no fill)
+              [1] p95 — outer top boundary (fill="tonexty" → fills p5→p95, very transparent amber)
+              [2] p25 — inner bottom boundary (no fill)
+              [3] p75 — inner top boundary (fill="tonexty" → fills p25→p75, more opaque amber)
+              [4] p50 — median line (bright amber, no fill)
+              [5] breakeven at y=0 (blue dashed)
           */}
           <Plot
             data={[
-              // Outer bottom: p5
+              // Outer bottom: p5 (amber boundary)
               {
                 x: days, y: band("p5"),
                 type: "scatter", mode: "lines",
-                line: { color: "rgba(239,68,68,0.4)", width: 1, dash: "dot" },
+                line: { color: amberOuterLine, width: 1, dash: "dot" },
                 hoverinfo: "skip", showlegend: false,
               } as any,
-              // Outer top: p95 - fills outer band back to p5
+              // Outer top: p95 — fills outer band (very transparent amber)
               {
                 x: days, y: band("p95"),
                 type: "scatter", mode: "lines",
                 fill: "tonexty",
-                fillcolor: "rgba(239,68,68,0.08)",
-                line: { color: "rgba(239,68,68,0.4)", width: 1, dash: "dot" },
+                fillcolor: amberOuter,
+                line: { color: amberOuterLine, width: 1, dash: "dot" },
                 hoverinfo: "skip", showlegend: false,
               } as any,
               // Inner bottom: p25
@@ -255,29 +265,29 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
                 line: { color: "transparent", width: 0 },
                 hoverinfo: "skip", showlegend: false,
               } as any,
-              // Inner top: p75 - fills middle 50% band back to p25
+              // Inner top: p75 — fills middle 50% band (more opaque amber)
               {
                 x: days, y: band("p75"),
                 type: "scatter", mode: "lines",
                 fill: "tonexty",
-                fillcolor: dark ? "rgba(201,168,76,0.18)" : "rgba(184,134,11,0.14)",
+                fillcolor: amberInner,
                 line: { color: "transparent", width: 0 },
                 hoverinfo: "skip", showlegend: false,
               } as any,
-              // Median line
+              // Median line (bright amber)
               {
                 x: days, y: band("p50"),
                 type: "scatter", mode: "lines",
-                line: { color: mcMedian, width: 2.5 },
+                line: { color: amberBright, width: 2.5 },
                 hovertemplate: "Median: %{y:.1f}%<extra></extra>",
                 showlegend: false,
               } as any,
-              // Breakeven reference at y=0
+              // Breakeven reference at y=0 (blue dashed)
               {
                 x: [1, data.horizon],
                 y: [0, 0],
                 type: "scatter", mode: "lines",
-                line: { color: "rgba(150,150,150,0.35)", width: 1, dash: "dash" },
+                line: { color: "rgba(59,130,246,0.55)", width: 1.5, dash: "dash" },
                 hoverinfo: "skip", showlegend: false,
               } as any,
             ]}
@@ -314,7 +324,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
               style={{ marginTop: 16, background: dark ? C.amber3 : "rgba(184,134,11,0.06)", border: "1px solid rgba(184,134,11,0.15)", borderRadius: 10, padding: "14px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
               <span style={{ color: mcAmber, fontSize: 14, flexShrink: 0, marginTop: 1 }}>◈</span>
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.75 }}>
-                Based on 8,500 simulations, your portfolio has a{" "}
+                Based on {simCount} simulations, your portfolio has a{" "}
                 <strong style={{ color: mcAmber }}>{positiveProb}% chance of positive returns</strong> over 1 year,
                 with a median outcome of{" "}
                 <strong style={{ color: Number(p50) >= 0 ? mcAmber : C.red }}>
@@ -419,7 +429,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
 
           {/* ── Simulation Assumptions Footer ── */}
           <p style={{ marginTop: 16, fontSize: 10, color: "var(--text3)", lineHeight: 1.6, textAlign: "center" }}>
-            Based on 8,500 Monte Carlo simulations using historical volatility and returns. Past performance does not guarantee future results.
+            Based on {simCount} Monte Carlo simulations using historical volatility and returns. Past performance does not guarantee future results.
           </p>
         </motion.div>
       ) : null}
