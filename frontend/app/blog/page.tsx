@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import BlogFilteredPosts from "./BlogFilteredPosts";
 
 export const metadata: Metadata = {
@@ -22,15 +21,11 @@ export default function BlogIndexPage() {
         .blog-hero { padding: 80px 56px 64px; }
         .blog-cats { padding: 0 56px 48px; }
         .blog-pad { padding: 0 56px 100px; }
-        .blog-cta-wrap { margin: 0 56px 100px; }
-        .blog-cta-inner { padding: 20px 32px; }
         @media(max-width:768px){
           .blog-hero { padding: 80px 20px 40px !important; }
           .blog-cats { padding: 0 20px 32px !important; }
           .blog-pad { padding: 0 20px 64px !important; }
           .blog-cards-grid { grid-template-columns: 1fr !important; }
-          .blog-cta-wrap { margin: 0 20px 64px !important; }
-          .blog-cta-inner { padding: 16px 20px !important; }
         }
       `}</style>
       {/* Hero */}
@@ -49,18 +44,6 @@ export default function BlogIndexPage() {
       </div>
 
       <BlogFilteredPosts />
-
-      {/* CTA banner */}
-      <div className="blog-cta-wrap" style={{ maxWidth: 1100, marginLeft: "auto", marginRight: "auto", textAlign: "center" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 16, background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 24px", flexWrap: "wrap", justifyContent: "center" }}>
-          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.5)", margin: 0 }}>Free during beta · No credit card required</p>
-          <Link href="/auth" style={{ padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", display: "inline-block", transition: "opacity 0.2s", flexShrink: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
-            Start for free →
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }
