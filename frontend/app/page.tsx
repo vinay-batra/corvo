@@ -152,21 +152,18 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
 /* ─── Bento Card base ─── */
 function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = cardRef.current; const glow = glowRef.current;
+    const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
     const x = e.clientX - rect.left, y = e.clientY - rect.top;
     const rotX = ((y - rect.height / 2) / (rect.height / 2)) * -7;
     const rotY = ((x - rect.width / 2) / (rect.width / 2)) * 7;
     card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-    if (glow) { glow.style.background = `radial-gradient(400px circle at ${x}px ${y}px, rgba(201,168,76,0.11), transparent 60%)`; glow.style.opacity = "1"; }
   };
   const handleMouseLeave = () => {
-    const card = cardRef.current; const glow = glowRef.current;
+    const card = cardRef.current;
     if (card) card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg)";
-    if (glow) glow.style.opacity = "0";
   };
   const { gridArea, ...restStyle } = style as any;
   return (
@@ -181,7 +178,6 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
         style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
         {children}
       </div>
-      <div ref={glowRef} style={{ position: "absolute", inset: 0, borderRadius: 20, pointerEvents: "none", opacity: 0, transition: "opacity 0.3s ease", zIndex: 2 }} />
     </motion.div>
   );
 }
@@ -271,10 +267,10 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
 /* ─── Watchlist + Alerts bento card ─── */
 function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
   const [stocks, setStocks] = useState([
-    { ticker: "NVDA", price: 875, change: 3.1, up: true, alert: true },
-    { ticker: "AAPL", price: 189, change: 1.8, up: true, alert: false },
-    { ticker: "TSLA", price: 248, change: -2.4, up: false, alert: true },
-    { ticker: "VOO",  price: 478, change: 0.7, up: true, alert: false },
+    { ticker: "NVDA", price: 108, change: 3.1, up: true, alert: true },
+    { ticker: "AAPL", price: 198, change: 1.8, up: true, alert: false },
+    { ticker: "TSLA", price: 252, change: -2.4, up: false, alert: true },
+    { ticker: "VOO",  price: 480, change: 0.7, up: true, alert: false },
   ]);
   const [flash, setFlash] = useState(-1);
   useEffect(() => {
@@ -477,77 +473,76 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
           </div>
         </div>
       </div>
-      {/* PDF Reports section: vertical stack, bleeds edge-to-edge */}
-      <div style={{ margin: "24px -28px -28px", overflow: "hidden" }}>
-        {/* Top: full-width dark PDF preview */}
-        <div style={{ background: "#06090e", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          {/* Subtle grid lines */}
-          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
-            {[30, 60, 90, 120].map(y => (
-              <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
+    </BentoCard>
+  );
+}
+
+/* ─── Export & Share bento card ─── */
+function BentoExportCard({ delay = 0 }: { delay?: number }) {
+  return (
+    <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: 0 }}>
+      {/* Dark PDF preview */}
+      <div style={{ background: "#06090e", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
+          {[30, 60, 90, 120].map(y => (
+            <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
+          ))}
+          {[80, 160, 240, 320].map(x => (
+            <line key={x} x1={x} y1="0" x2={x} y2="150" stroke="rgba(201,168,76,0.05)" strokeWidth="0.5" />
+          ))}
+        </svg>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, position: "relative", zIndex: 1 }}>
+          <span style={{ fontSize: 7.5, fontFamily: "Space Mono,monospace", fontWeight: 700, letterSpacing: 1.8, color: "#c9a84c", textTransform: "uppercase" }}>Portfolio Report</span>
+          <svg width="13" height="13" viewBox="0 0 64 64" fill="none" style={{ flexShrink: 0 }}>
+            <circle cx="32" cy="32" r="29" fill="#c9a84c" opacity="0.85" />
+            <path d="M46 14 C38 9 28 9 20 14 C12 19 8 25 8 32 C8 39 12 45 20 50 C28 55 38 55 46 50 L46 44 C40 48 33 49 27 46 C20 43 17 38 17 32 C17 26 20 21 27 18 C33 15 40 16 46 20 Z" fill="#06090e" />
+          </svg>
+        </div>
+        <div style={{ position: "relative", zIndex: 1, marginBottom: 10 }}>
+          <svg width="100%" height="72" viewBox="0 0 360 72" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="pdfChartGrd" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {[18, 36, 54].map(y => (
+              <line key={y} x1="0" y1={y} x2="360" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
             ))}
-            {[80, 160, 240, 320].map(x => (
-              <line key={x} x1={x} y1="0" x2={x} y2="150" stroke="rgba(201,168,76,0.05)" strokeWidth="0.5" />
+            <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2 L360,72 L0,72Z" fill="url(#pdfChartGrd)" />
+            <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2"
+              fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            {([[0,64],[85,47],[160,20],[250,9],[360,2]] as [number,number][]).map(([x,y], i) => (
+              <circle key={i} cx={x} cy={y} r="2.5" fill="#c9a84c" opacity="0.9" />
             ))}
           </svg>
-          {/* Ambient glow */}
-          <div style={{ position: "absolute", bottom: -20, right: -20, width: 140, height: 140, background: "radial-gradient(ellipse, rgba(201,168,76,0.08) 0%, transparent 70%)", pointerEvents: "none", borderRadius: "50%" }} />
-          {/* Header */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, position: "relative", zIndex: 1 }}>
-            <span style={{ fontSize: 7.5, fontFamily: "Space Mono,monospace", fontWeight: 700, letterSpacing: 1.8, color: "#c9a84c", textTransform: "uppercase" }}>Portfolio Report</span>
-            <svg width="13" height="13" viewBox="0 0 64 64" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="32" cy="32" r="29" fill="#c9a84c" opacity="0.85" />
-              <path d="M46 14 C38 9 28 9 20 14 C12 19 8 25 8 32 C8 39 12 45 20 50 C28 55 38 55 46 50 L46 44 C40 48 33 49 27 46 C20 43 17 38 17 32 C17 26 20 21 27 18 C33 15 40 16 46 20 Z" fill="#06090e" />
-            </svg>
-          </div>
-          {/* Chart */}
-          <div style={{ position: "relative", zIndex: 1, marginBottom: 10 }}>
-            <svg width="100%" height="72" viewBox="0 0 360 72" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="pdfChartGrd" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {[18, 36, 54].map(y => (
-                <line key={y} x1="0" y1={y} x2="360" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
-              ))}
-              <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2 L360,72 L0,72Z" fill="url(#pdfChartGrd)" />
-              <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2"
-                fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              {([[0,64],[85,47],[160,20],[250,9],[360,2]] as [number,number][]).map(([x,y], i) => (
-                <circle key={i} cx={x} cy={y} r="2.5" fill="#c9a84c" opacity="0.9" />
-              ))}
-            </svg>
-          </div>
-          {/* 4 stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, position: "relative", zIndex: 1 }}>
-            {([
-              { label: "Sharpe", value: <LoopCounter target={0.66} decimals={2} duration={1200} loopEvery={5000} />, color: "#e8e0cc" },
-              { label: "Return", value: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#c9a84c" },
-              { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
-              { label: "Volatility", value: <><LoopCounter target={12.1} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#e8e0cc" },
-            ] as { label: string; value: React.ReactNode; color: string }[]).map((stat, i) => (
-              <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
-                <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
-                <p style={{ fontSize: 9, fontWeight: 700, color: stat.color, fontFamily: "Space Mono,monospace" }}>{stat.value}</p>
-              </div>
-            ))}
-          </div>
         </div>
-        {/* Bottom: text content */}
-        <div style={{ padding: "16px 28px 28px" }}>
-          <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 5 }}>PDF Reports</p>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 5, letterSpacing: -0.3 }}>Export & share</p>
-          <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65, marginBottom: 10 }}>Generate a full portfolio report in one click.</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, animation: `fadein 0.5s ease ${0.3 + i * 0.12}s both` }}>
-                <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
-                <span style={{ fontSize: 11, color: "rgba(232,224,204,0.4)" }}>{item}</span>
-              </div>
-            ))}
-          </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, position: "relative", zIndex: 1 }}>
+          {([
+            { label: "Sharpe", value: <LoopCounter target={0.66} decimals={2} duration={1200} loopEvery={5000} />, color: "#e8e0cc" },
+            { label: "Return", value: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#c9a84c" },
+            { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
+            { label: "Volatility", value: <><LoopCounter target={12.1} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#e8e0cc" },
+          ] as { label: string; value: React.ReactNode; color: string }[]).map((stat, i) => (
+            <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
+              <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
+              <p style={{ fontSize: 9, fontWeight: 700, color: stat.color, fontFamily: "Space Mono,monospace" }}>{stat.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Text content */}
+      <div style={{ padding: "16px 28px 28px" }}>
+        <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 5 }}>PDF Reports</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 5, letterSpacing: -0.3 }}>Export & share</p>
+        <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65, marginBottom: 10 }}>Generate a full portfolio report in one click.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, animation: `fadein 0.5s ease ${0.3 + i * 0.12}s both` }}>
+              <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
+              <span style={{ fontSize: 11, color: "rgba(232,224,204,0.4)" }}>{item}</span>
+            </div>
+          ))}
         </div>
       </div>
     </BentoCard>
@@ -2077,11 +2072,12 @@ export default function Landing() {
           <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,44px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1 }}>Everything your portfolio<br />actually needs</h2>
           </Reveal>
-          <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist montecarlo" "learnxp deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
+          <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist exportshare" "learnxp deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
             <BentoPortfolioCard delay={0} />
             <BentoAIChatCard delay={0.1} />
             <BentoWatchlistCard delay={0.15} />
             <BentoMonteCarloCard delay={0.05} />
+            <BentoExportCard delay={0.15} />
             <BentoLearnCard delay={0.2} />
             <BentoDeepDivesCard delay={0.25} />
           </div>
