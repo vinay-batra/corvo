@@ -110,10 +110,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
                   {initials}
                 </div>
               )}
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: C.cream }}>{resolvedName || user.email?.split("@")[0]}</div>
-                <div style={{ fontSize: 10, color: C.cream3, marginTop: 1 }}>{user.email}</div>
-              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.cream }}>{resolvedName || user.email?.split("@")[0]}</div>
             </div>
 
             {/* My Account */}

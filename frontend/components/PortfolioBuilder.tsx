@@ -337,19 +337,19 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       }}>
         <span style={{fontSize:9,letterSpacing:3,color:C.cream3,textTransform:"uppercase",display:"block",marginBottom:6}}>Assets</span>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:6}}>
-          <div style={{display:"flex",gap:5,alignItems:"center"}}>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <button
               onClick={()=>setShowPresetsModal(true)}
-              style={{padding:"4px 10px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
+              style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
               Presets
             </button>
             <button onClick={()=>fileRef.current?.click()} disabled={importLoading}
-              style={{padding:"4px 10px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
+              style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
               {importLoading?"...":"Screenshot"}
             </button>
             <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
             <button onClick={()=>{setShowCsvModal(true);setCsvPreview(null);setCsvError("");}}
-              style={{padding:"4px 10px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
+              style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
               CSV
             </button>
           </div>
