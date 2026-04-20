@@ -54,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="theme-color" content="#1a1a1a" />
       </head>
-      <body style={{ margin: 0, background: "#0d1117" }}>
+      <body style={{ margin: 0, background: "#0a0e14", minHeight: "100%", height: "auto" }}>
         <ParticleCanvas />
         <Suspense>
           <PostHogProvider>
