@@ -191,7 +191,7 @@ export default function ChangelogPage() {
                 </div>
 
                 {/* Dot */}
-                <div style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--bg, #0a0e14)", border: "2px solid #c9a84c", zIndex: 2 }} />
+                <div style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "transparent", border: "2px solid #c9a84c", zIndex: 2 }} />
 
                 {/* Content */}
                 <div style={{ paddingLeft: 36, flex: 1 }}>
