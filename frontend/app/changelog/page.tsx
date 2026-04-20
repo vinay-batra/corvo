@@ -1,12 +1,28 @@
 "use client";
 
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
+
+function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
+      style={style}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 const ENTRIES = [
   {
@@ -139,7 +155,7 @@ export default function ChangelogPage() {
           .cl-timeline { padding-left: 24px !important; }
           .cl-entry { padding-left: 20px !important; }
           .cl-date-col { display: none !important; }
-          .cl-hero { padding: 78px 20px 32px !important; }
+          .cl-hero { padding: 100px 20px 48px !important; }
           .cl-body { padding: 0 20px 80px !important; }
           .cl-footer { padding: 60px 20px 80px !important; }
         }
@@ -149,15 +165,15 @@ export default function ChangelogPage() {
       <PublicNav />
 
       {/* Hero */}
-      <div className="cl-hero" style={{ textAlign: "center", padding: "80px 56px 40px" }}>
-        <div>
+      <div className="cl-hero" style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
+        <FadeUp>
           <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1, marginBottom: 16 }}>
             What&apos;s new in Corvo
           </h1>
           <p style={{ fontSize: 16, color: "rgba(232,224,204,0.45)", fontWeight: 300, maxWidth: 480, margin: "0 auto" }}>
             We ship fast. Here&apos;s everything we&apos;ve built.
           </p>
-        </div>
+        </FadeUp>
       </div>
 
       {/* Timeline */}
@@ -167,7 +183,7 @@ export default function ChangelogPage() {
           <div style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "rgba(201,168,76,0.12)" }} />
 
           {ENTRIES.map((entry, i) => (
-            <div key={i}>
+            <FadeUp key={i} delay={i * 0.06}>
               <div className="cl-entry" style={{ display: "flex", gap: 0, marginBottom: 48, position: "relative" }}>
                 {/* Date column */}
                 <div className="cl-date-col" style={{ width: 140, flexShrink: 0, paddingRight: 28, textAlign: "right", paddingTop: 4 }}>
@@ -195,7 +211,7 @@ export default function ChangelogPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </FadeUp>
           ))}
 
           {/* Origin dot */}
@@ -205,7 +221,7 @@ export default function ChangelogPage() {
 
       {/* Subscribe section */}
       <div className="cl-footer" style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "80px 56px 96px" }}>
-        <div>
+        <FadeUp>
           <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Stay in the loop</p>
             <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 32px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1, marginBottom: 10, lineHeight: 1.2 }}>
@@ -246,7 +262,7 @@ export default function ChangelogPage() {
             )}
             <p style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", marginTop: 16 }}>No spam. Unsubscribe at any time.</p>
           </div>
-        </div>
+        </FadeUp>
       </div>
 
       {/* Footer */}

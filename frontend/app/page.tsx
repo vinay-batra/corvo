@@ -70,7 +70,8 @@ function FadeUp({ children, delay = 0, y = 30, style = {}, className }: { childr
   return (
     <motion.div
       initial={{ opacity: 0, y }}
-      animate={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={style}
       className={className}
@@ -85,7 +86,8 @@ function SlideIn({ children, direction = "left", delay = 0, style = {} }: { chil
   return (
     <motion.div
       initial={{ opacity: 0, x: direction === "left" ? -40 : 40 }}
-      animate={{ opacity: 1, x: 0 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={style}
     >
@@ -148,7 +150,7 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
 }
 
 /* ─── Bento Card base ─── */
-function BentoCard({ children, style = {}, delay = 0, noAnim = false }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number; noAnim?: boolean }) {
+function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = cardRef.current;
@@ -164,21 +166,18 @@ function BentoCard({ children, style = {}, delay = 0, noAnim = false }: { childr
     if (card) card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg)";
   };
   const { gridArea, ...restStyle } = style as any;
-  const inner = (
-    <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
-      style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
-      {children}
-    </div>
-  );
-  if (noAnim) return <div style={{ gridArea, height: "100%", position: "relative" }}>{inner}</div>;
   return (
     <motion.div
       initial={{ opacity: 0, y: 28 }}
-      animate={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ gridArea, height: "100%", position: "relative" }}
     >
-      {inner}
+      <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
+        style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
+        {children}
+      </div>
     </motion.div>
   );
 }
@@ -186,15 +185,15 @@ function BentoCard({ children, style = {}, delay = 0, noAnim = false }: { childr
 /* ─── Portfolio Analyzer bento card ─── */
 function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
   return (
-    <BentoCard delay={delay} noAnim style={{ gridArea: "portfolio", padding: "32px 32px 28px" }}>
+    <BentoCard delay={delay} style={{ gridArea: "portfolio", padding: "32px 32px 28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Portfolio Analyzer</p>
       <h3 style={{ fontSize: 21, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>Full portfolio intelligence</h3>
       <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", marginBottom: 24, lineHeight: 1.7, maxWidth: 360 }}>Sharpe ratio, volatility, max drawdown, and benchmark comparison, updated live as markets move.</p>
       <div style={{ background: "rgba(8,11,16,0.7)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           {([
-            { l: "Return", v: "+18.4%", c: "#c9a84c" },
-            { l: "Sharpe", v: "0.66", c: "#e8e0cc" },
+            { l: "Return", v: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1500} loopEvery={4000} />%</>, c: "#c9a84c" },
+            { l: "Sharpe", v: <LoopCounter target={0.66} decimals={2} duration={1500} loopEvery={4000} />, c: "#e8e0cc" },
             { l: "Drawdown", v: "-14.2%", c: "#e05c5c" },
             { l: "Beta", v: "0.84", c: "#e8e0cc" },
           ] as { l: string; v: React.ReactNode; c: string }[]).map((m, i) => (
@@ -480,7 +479,7 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
 /* ─── Export & Share bento card ─── */
 function BentoExportCard({ delay = 0 }: { delay?: number }) {
   return (
-    <BentoCard delay={delay} noAnim style={{ gridArea: "exportshare", padding: 0 }}>
+    <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: 0 }}>
       {/* Dark PDF preview */}
       <div style={{ background: "#06090e", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
@@ -519,10 +518,10 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, position: "relative", zIndex: 1 }}>
           {([
-            { label: "Sharpe", value: "0.66", color: "#e8e0cc" },
-            { label: "Return", value: "+18.4%", color: "#c9a84c" },
+            { label: "Sharpe", value: <LoopCounter target={0.66} decimals={2} duration={1200} loopEvery={5000} />, color: "#e8e0cc" },
+            { label: "Return", value: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#c9a84c" },
             { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
-            { label: "Volatility", value: "12.1%", color: "#e8e0cc" },
+            { label: "Volatility", value: <><LoopCounter target={12.1} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#e8e0cc" },
           ] as { label: string; value: React.ReactNode; color: string }[]).map((stat, i) => (
             <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
               <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
@@ -538,7 +537,7 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
         <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65, marginBottom: 10 }}>Generate a full portfolio report in one click.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, animation: `fadein 0.5s ease ${0.3 + i * 0.12}s both` }}>
               <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
               <span style={{ fontSize: 11, color: "rgba(232,224,204,0.4)" }}>{item}</span>
             </div>
@@ -912,7 +911,8 @@ function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon:
   return (
     <motion.div
       initial={initial}
-      animate={{ opacity: 1, x: 0, y: 0 }}
+      whileInView={{ opacity: 1, x: 0, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ textAlign: "center", padding: "0 28px", position: "relative", zIndex: 1 }}
     >
@@ -929,7 +929,8 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
   return (
     <motion.div
       initial={{ opacity: 0, y: 24, scale: 0.94 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}
     >
@@ -1072,7 +1073,7 @@ function TickerTape() {
   const doubled = [...items, ...items];
   return (
     <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "hidden", background: "rgba(10,14,20,0.88)" }}>
-      <div style={{ display: "flex", gap: 48, animation: "ticker 29s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
+      <div style={{ display: "flex", gap: 48, animation: "ticker 30s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
         {doubled.map((item, i) => {
           const up = item.change_pct >= 0;
           return (
@@ -1141,7 +1142,8 @@ function AnimatedTableRow({ children, delay }: { children: React.ReactNode; dela
   return (
     <motion.tr
       initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.5, ease: ANIM_EASE, delay }}
       style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}
     >
@@ -1438,7 +1440,8 @@ function FeaturedInBar() {
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: ANIM_EASE, delay: 0.1 + i * 0.08 }}
             style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px" }}
           >
@@ -1597,7 +1600,8 @@ function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title:
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 16 }}
     >

@@ -540,6 +540,8 @@ function FeatureVoteSection() {
 export default function PricingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
 
+  const { ref: trustRef, visible: trustVisible } = useReveal(0.1);
+
   return (
     <div style={{ minHeight: "100vh", background: "transparent", color: "#e8e0cc", fontFamily: "Inter,system-ui,sans-serif" }}>
       <style>{`
@@ -652,6 +654,66 @@ export default function PricingPage() {
 
       {/* FEATURE VOTING */}
       <FeatureVoteSection />
+
+      {/* FOOTER CTA */}
+      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 100px" }}>
+        <div
+          ref={trustRef}
+          style={{
+            maxWidth: 900,
+            margin: "0 auto",
+            background: "rgba(255,255,255,0.05)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "0.5px solid rgba(201,168,76,0.45)",
+            borderRadius: 28,
+            padding: "80px 56px",
+            textAlign: "center",
+            position: "relative",
+            overflow: "hidden",
+            opacity: trustVisible ? 1 : 0,
+            transform: trustVisible ? "translateY(0)" : "translateY(20px)",
+            transition: "opacity 0.7s ease, transform 0.7s ease",
+          }}
+        >
+          {/* Ambient glow */}
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.12) 0%, transparent 60%)", pointerEvents: "none" }} />
+          {/* Bottom glow */}
+          <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "70%", height: 120, background: "radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)", filter: "blur(30px)", pointerEvents: "none" }} />
+          <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 20 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
+              <span style={{ fontSize: 10, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase" }}>Free During Beta</span>
+            </div>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(26px,4vw,44px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, lineHeight: 1.15, margin: 0 }}>
+              Ready to analyze your portfolio?
+            </h2>
+            <p style={{ fontSize: 15, color: "rgba(232,224,204,0.5)", margin: 0 }}>
+              No credit card required · Cancel anytime
+            </p>
+            <Link
+              href="/auth"
+              style={{
+                padding: "15px 40px",
+                borderRadius: 11,
+                fontSize: 14,
+                fontWeight: 700,
+                background: "#c9a84c",
+                color: "#0a0e14",
+                textDecoration: "none",
+                display: "inline-block",
+                letterSpacing: 0.3,
+                transition: "opacity 0.2s, transform 0.2s",
+                marginTop: 4,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.1)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
+            >
+              Start for free →
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* FOOTER */}
       <PublicFooter />
