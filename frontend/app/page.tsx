@@ -70,8 +70,7 @@ function FadeUp({ children, delay = 0, y = 30, style = {}, className }: { childr
   return (
     <motion.div
       initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={style}
       className={className}
@@ -86,8 +85,7 @@ function SlideIn({ children, direction = "left", delay = 0, style = {} }: { chil
   return (
     <motion.div
       initial={{ opacity: 0, x: direction === "left" ? -40 : 40 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
+      animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={style}
     >
@@ -176,8 +174,7 @@ function BentoCard({ children, style = {}, delay = 0, noAnim = false }: { childr
   return (
     <motion.div
       initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ gridArea, height: "100%", position: "relative" }}
     >
@@ -915,8 +912,7 @@ function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon:
   return (
     <motion.div
       initial={initial}
-      whileInView={{ opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
+      animate={{ opacity: 1, x: 0, y: 0 }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ textAlign: "center", padding: "0 28px", position: "relative", zIndex: 1 }}
     >
@@ -933,8 +929,7 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
   return (
     <motion.div
       initial={{ opacity: 0, y: 24, scale: 0.94 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, margin: "-100px" }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}
     >
@@ -1146,8 +1141,7 @@ function AnimatedTableRow({ children, delay }: { children: React.ReactNode; dela
   return (
     <motion.tr
       initial={{ opacity: 0, x: -20 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
+      animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, ease: ANIM_EASE, delay }}
       style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}
     >
@@ -1444,8 +1438,7 @@ function FeaturedInBar() {
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: ANIM_EASE, delay: 0.1 + i * 0.08 }}
             style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px" }}
           >
@@ -1604,8 +1597,7 @@ function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title:
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 16 }}
     >
