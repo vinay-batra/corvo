@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,7 +69,7 @@ function filterByDateRange(
   return filtered;
 }
 
-export default function PerformanceChart({ data, savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange, benchmarkOverride }: Props) {
+const PerformanceChart = memo(function PerformanceChart({ data, savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange, benchmarkOverride }: Props) {
   const [dark, setDark] = useState(true);
   const [showCustomPicker, setShowCustomPicker] = useState(!!customDateRange);
   const [localStart, setLocalStart] = useState(customDateRange?.start || "");
@@ -291,4 +291,6 @@ export default function PerformanceChart({ data, savedLines = [], onSavedLinesCh
       )}
     </motion.div>
   );
-}
+});
+
+export default PerformanceChart;
