@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { posthog } from "@/lib/posthog";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -1912,16 +1912,14 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                         </button>
                       </div>
                     </div>
-                    {useMemo(() => (
-                      <PerformanceChart
-                        data={data}
-                        savedLines={savedPortfolioLines}
-                        onSavedLinesChange={setSavedPortfolioLines}
-                        customDateRange={customDateRange}
-                        onCustomDateChange={setCustomDateRange}
-                        benchmarkOverride={localBenchmarkSeries ?? undefined}
-                      />
-                    ), [data, savedPortfolioLines, customDateRange, localBenchmarkSeries])}
+                    <PerformanceChart
+                      data={data}
+                      savedLines={savedPortfolioLines}
+                      onSavedLinesChange={setSavedPortfolioLines}
+                      customDateRange={customDateRange}
+                      onCustomDateChange={setCustomDateRange}
+                      benchmarkOverride={localBenchmarkSeries ?? undefined}
+                    />
                   </Card>
                 </motion.div>
                 <motion.div
