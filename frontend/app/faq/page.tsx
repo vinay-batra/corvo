@@ -227,7 +227,7 @@ function FAQAIChat() {
     >
       {/* Header */}
       <div style={{ padding: "18px 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "transparent", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
           C
         </div>
         <div>
@@ -249,7 +249,7 @@ function FAQAIChat() {
               maxWidth: "78%",
               padding: "10px 14px",
               borderRadius: msg.role === "user" ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
-              background: "transparent",
+              background: msg.role === "user" ? "#c9a84c" : "rgba(255,255,255,0.04)",
               border: msg.role === "assistant" ? "1px solid rgba(255,255,255,0.06)" : "none",
               fontSize: 13,
               lineHeight: 1.65,
@@ -264,7 +264,7 @@ function FAQAIChat() {
         ))}
         {loading && (
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <div style={{ padding: "10px 16px", borderRadius: "12px 12px 12px 3px", background: "transparent", border: "1px solid rgba(255,255,255,0.06)", fontSize: 18, color: "rgba(232,224,204,0.4)", letterSpacing: 2 }}>...</div>
+            <div style={{ padding: "10px 16px", borderRadius: "12px 12px 12px 3px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 18, color: "rgba(232,224,204,0.4)", letterSpacing: 2 }}>...</div>
           </div>
         )}
         <div ref={bottomRef} />
@@ -334,7 +334,7 @@ export default function FaqPage() {
               transform: "translateX(-50%)",
               width: 600,
               height: 260,
-              background: "transparent",
+              background: "radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)",
               pointerEvents: "none",
               filter: "blur(40px)",
             }}
@@ -397,7 +397,7 @@ export default function FaqPage() {
             <div
               style={{
                 height: 1,
-                background: "transparent",
+                background: "linear-gradient(to right, rgba(201,168,76,0.2), transparent)",
                 marginBottom: 8,
               }}
             />
