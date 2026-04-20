@@ -118,15 +118,15 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
           border: "none",
           cursor: "pointer",
           textAlign: "left",
+          color: "#e8e0cc",
         }}
       >
         <span
           style={{
             fontSize: 15,
             fontWeight: 500,
-            color: open ? "#e8e0cc" : "rgba(232,224,204,0.75)",
+            color: "#e8e0cc",
             lineHeight: 1.5,
-            transition: "color 0.2s",
           }}
         >
           {q}
