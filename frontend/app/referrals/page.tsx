@@ -264,6 +264,31 @@ export default function ReferralsPage() {
               </div>
             </Section>
 
+            <Section title="How It Works">
+              <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                {[
+                  { step: "1", text: "Share your unique referral link with friends or on social media." },
+                  { step: "2", text: "When someone signs up using your link, you both get credited." },
+                  { step: "3", text: "Each referral adds +5 AI chat messages to your daily quota." },
+                ].map(({ step, text }) => (
+                  <div key={step} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", background: "rgba(255,255,255,0.025)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 10 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent)", flexShrink: 0, fontFamily: "Space Mono,monospace" }}>{step}</div>
+                    <span style={{ fontSize: 13, color: "rgba(232,224,204,0.6)", lineHeight: 1.5 }}>{text}</span>
+                  </div>
+                ))}
+                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                  <div style={{ flex: 1, padding: "14px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 10, textAlign: "center" as const }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace", lineHeight: 1 }}>+5</div>
+                    <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 4 }}>messages per referral</div>
+                  </div>
+                  <div style={{ flex: 1, padding: "14px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 10, textAlign: "center" as const }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace", lineHeight: 1 }}>40</div>
+                    <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 4 }}>referrals = unlimited / month</div>
+                  </div>
+                </div>
+              </div>
+            </Section>
+
             {(referralData?.referred_emails?.length ?? 0) > 0 && (
               <Section title="Referred Users">
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
