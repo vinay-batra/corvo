@@ -393,7 +393,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       </div>
 
       {/* ── Asset list ────────────────────────────────────────────── */}
-      <div style={{marginTop:4}}>
+      <div style={{marginTop:4, paddingTop:12}}>
       <AnimatePresence>
         {assets.map((a,i)=>{
           const color=DOTS[i%DOTS.length];

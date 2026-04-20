@@ -185,7 +185,7 @@ function Empty() {
         <motion.div
           animate={{ x: [4, -4, 4] }}
           transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-          style={{ fontSize: 22, color: "var(--accent)", opacity: 0.7, flexShrink: 0, alignSelf: "center" }}>
+          style={{ fontSize: 22, color: "var(--accent)", opacity: 0.7, flexShrink: 0, alignSelf: "flex-start", paddingTop: 3 }}>
           ←
         </motion.div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 320 }}>
@@ -1418,21 +1418,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           <div style={S.logo}>CORVO</div>
         </Link>
         <div style={S.logoSub}>Portfolio Intelligence</div>
-      </div>
-
-      {/* Profile */}
-      <div style={S.section}>
-        <button onClick={() => setShowProfile(true)} style={{ width: "100%", padding: "7px 10px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 8, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", textAlign: "left" }}>
-          <div style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="var(--bg)" stroke="var(--bg)" strokeWidth="1"><circle cx="12" cy="12" r="4"/></svg>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: "var(--text)" }}>
-              {goals?.age ? `Age ${goals.age} · ${goals.riskTolerance?.replace("_time", "")}` : "Edit Profile"}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--text3)" }}>Goals & preferences</div>
-          </div>
-        </button>
       </div>
 
       {/* Builder */}
