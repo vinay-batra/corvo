@@ -59,7 +59,7 @@ export default function PublicNav() {
         {/* Right side */}
         <div className="pnav-actions" style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {loggedIn ? (
-            <UserMenu />
+            <UserMenu publicNav />
           ) : (
             <>
               <Link href="/auth" className="pnav-link" style={{ padding: "7px 16px", fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Log in</Link>
