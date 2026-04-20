@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
@@ -131,7 +132,9 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
         >
           {q}
         </span>
-        <span
+        <motion.span
+          animate={{ rotate: open ? 45 : 0 }}
+          transition={{ duration: 0.22, ease: "easeInOut" }}
           style={{
             display: "flex",
             alignItems: "center",
@@ -144,29 +147,37 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
             border: `1px solid ${open ? "rgba(201,168,76,0.25)" : "rgba(255,255,255,0.06)"}`,
             fontSize: 16,
             color: open ? "#c9a84c" : "rgba(232,224,204,0.35)",
-            transform: open ? "rotate(45deg)" : "rotate(0deg)",
-            transition: "background 0.2s, border-color 0.2s, color 0.2s, transform 0.22s ease-in-out",
+            transition: "background 0.2s, border-color 0.2s, color 0.2s",
           }}
         >
           +
-        </span>
+        </motion.span>
       </button>
 
-      {open && (
-        <div style={{ overflow: "hidden" }}>
-          <p
-            style={{
-              fontSize: 14,
-              color: "rgba(232,224,204,0.55)",
-              lineHeight: 1.8,
-              paddingBottom: 20,
-              fontWeight: 300,
-            }}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            style={{ overflow: "hidden" }}
           >
-            {a}
-          </p>
-        </div>
-      )}
+            <p
+              style={{
+                fontSize: 14,
+                color: "rgba(232,224,204,0.55)",
+                lineHeight: 1.8,
+                paddingBottom: 20,
+                fontWeight: 300,
+              }}
+            >
+              {a}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -308,7 +319,12 @@ export default function FaqPage() {
         }}
       >
         {/* Heading */}
-        <div style={{ textAlign: "center", marginBottom: 56, position: "relative" }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          style={{ textAlign: "center", marginBottom: 56, position: "relative" }}
+        >
           {/* Ambient glow */}
           <div
             style={{
@@ -337,10 +353,13 @@ export default function FaqPage() {
           >
             Frequently Asked Questions
           </h1>
-        </div>
+        </motion.div>
 
         {/* Subtitle */}
-        <p
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           style={{
             fontSize: 15,
             color: "rgba(232,224,204,0.4)",
@@ -352,12 +371,15 @@ export default function FaqPage() {
           }}
         >
           Everything you need to know about Corvo. Can&apos;t find your answer? Chat with our AI below.
-        </p>
+        </motion.p>
 
         {/* Accordion sections */}
         {SECTIONS.map((section, si) => (
-          <section
+          <motion.section
             key={section.category}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 + si * 0.05, ease: [0.16, 1, 0.3, 1] }}
             style={{ marginBottom: 24 }}
           >
             <p
@@ -382,7 +404,7 @@ export default function FaqPage() {
             {section.items.map((item) => (
               <AccordionItem key={item.q} q={item.q} a={item.a} />
             ))}
-          </section>
+          </motion.section>
         ))}
 
         {/* Inline AI Chat */}
