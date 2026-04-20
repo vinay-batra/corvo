@@ -21,27 +21,27 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
 
   // Insight 1: Concentration check
   if (top && top.weight > 0.4)
-    insights.push({icon:"!",text:sanitize(`${top.ticker} makes up ${(top.weight*100).toFixed(0)}% of your portfolio — consider reducing single-stock concentration`)});
+    insights.push({icon:"↑",text:sanitize(`${top.ticker} makes up ${(top.weight*100).toFixed(0)}% of your portfolio — consider reducing single-stock concentration`)});
   else if (top)
-    insights.push({icon:"◎",text:sanitize(`${top.ticker} is your largest holding at ${(top.weight*100).toFixed(0)}% — concentration looks reasonable`)});
+    insights.push({icon:"↓",text:sanitize(`${top.ticker} is your largest holding at ${(top.weight*100).toFixed(0)}% — concentration looks reasonable`)});
 
   // Insight 2: Volatility vs benchmark
   if (data.portfolio_volatility != null) {
     const vol = data.portfolio_volatility;
     const baseline = 0.15;
     const dir = vol > baseline ? "higher" : "lower";
-    insights.push({icon:"◈",text:sanitize(`Your portfolio volatility is ${(vol*100).toFixed(1)}% — ${dir} than a typical balanced portfolio (15%)`)});
+    insights.push({icon:"~",text:sanitize(`Your portfolio volatility is ${(vol*100).toFixed(1)}% — ${dir} than a typical balanced portfolio (15%)`)});
   }
 
   // Insight 3: Diversification / sector concentration
   if (assets.length <= 2)
-    insights.push({icon:"◎",text:sanitize(`Only ${assets.length} holdings. Consider adding ETFs for broader exposure`)});
+    insights.push({icon:"⬡",text:sanitize(`Only ${assets.length} holdings. Consider adding ETFs for broader exposure`)});
   else if (assets.length >= 4 && data.sector_concentration != null && data.sector_concentration > 0.7)
-    insights.push({icon:"!",text:sanitize(`High sector concentration (${(data.sector_concentration*100).toFixed(0)}% in one sector) — consider diversifying across industries`)});
+    insights.push({icon:"⬡",text:sanitize(`High sector concentration (${(data.sector_concentration*100).toFixed(0)}% in one sector) — consider diversifying across industries`)});
   else if (assets.length >= 4)
-    insights.push({icon:"!",text:sanitize(`Your holdings appear concentrated in tech (AAPL, MSFT, NVDA, GOOGL) — consider adding exposure to other sectors`)});
+    insights.push({icon:"⬡",text:sanitize(`Your holdings appear concentrated in tech (AAPL, MSFT, NVDA, GOOGL) — consider adding exposure to other sectors`)});
   else
-    insights.push({icon:"✓",text:sanitize(`${assets.length} holdings provides good diversification`)});
+    insights.push({icon:"⬡",text:sanitize(`${assets.length} holdings provides good diversification`)});
 
   // Rebalancing suggestions: flag any asset deviating >5% from equal weight
   const equalW = 1 / assets.length;
