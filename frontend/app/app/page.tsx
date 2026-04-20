@@ -103,6 +103,15 @@ function IconBtn({ onClick, title, children }: { onClick: () => void; title?: st
 function useTheme() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
+    const handler = () => {
+      const stored = localStorage.getItem("corvo_portfolio_value");
+      if (stored) setPortfolioInputValue(Number(stored));
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  useEffect(() => {
     const stored = localStorage.getItem("corvo_theme");
     const isDark = stored ? stored === "dark" : true; // default: dark
     setDark(isDark);
@@ -883,7 +892,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(340);
-  const [portfolioInputValue, setPortfolioInputValue] = useState(10000);
+  const [portfolioInputValue, setPortfolioInputValue] = useState<number>(() => {
+    if (typeof window === "undefined") return 10000;
+    const stored = localStorage.getItem("corvo_portfolio_value");
+    return stored ? Number(stored) : 10000;
+  });
   const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
