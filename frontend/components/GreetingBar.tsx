@@ -25,7 +25,9 @@ interface MarketSummary {
 
 interface HoldingPrice {
   ticker: string;
+  price: number;
   change_pct: number;
+  change_dollar: number;
 }
 
 interface Props {
@@ -47,6 +49,7 @@ export default function GreetingBar({
 
   const [market, setMarket] = useState<MarketSummary | null>(null);
   const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   // Fetch AI market summary + index data
   useEffect(() => {
@@ -78,10 +81,14 @@ export default function GreetingBar({
         const r = await fetch(`${API_URL}/watchlist-data?tickers=${validTickers.join(",")}`);
         const d = await r.json();
         setHoldingPrices(
-          (d.results || []).map((s: any) => ({
-            ticker: s.ticker,
-            change_pct: s.change_pct ?? 0,
-          }))
+          (d.results || []).map((s: any) => {
+            const price = s.price ?? 0;
+            const change_pct = s.change_pct ?? 0;
+            const change_dollar = s.change_dollar != null
+              ? s.change_dollar
+              : price * (change_pct / 100);
+            return { ticker: s.ticker, price, change_pct, change_dollar };
+          })
         );
       } catch {}
     };
@@ -124,16 +131,36 @@ export default function GreetingBar({
           {dateStr}
         </p>
         {summaryText ? (
-          <p style={{
-            fontSize: 13,
-            color: "var(--text2)",
-            lineHeight: 1.7,
-            marginTop: 8,
-            marginBottom: 0,
-            fontWeight: 300,
-          }}>
-            {summaryText}
-          </p>
+          <div style={{ marginTop: 8 }}>
+            <p style={{
+              fontSize: 13,
+              color: "var(--text2)",
+              lineHeight: 1.7,
+              margin: 0,
+              fontWeight: 300,
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: summaryExpanded ? undefined : 2,
+              overflow: summaryExpanded ? undefined : "hidden",
+            }}>
+              {summaryText}
+            </p>
+            <button
+              onClick={() => setSummaryExpanded(e => !e)}
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                marginTop: 2,
+                fontSize: 11,
+                color: "var(--text3)",
+                cursor: "pointer",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {summaryExpanded ? "less" : "more"}
+            </button>
+          </div>
         ) : (
           <p style={{
             fontSize: 13,
@@ -180,7 +207,9 @@ export default function GreetingBar({
               <HoldingPill
                 key={h.ticker}
                 ticker={h.ticker}
+                price={h.price}
                 changePct={h.change_pct}
+                changeDollar={h.change_dollar}
               />
             ))}
           </div>
@@ -220,34 +249,41 @@ function StatPill({ label, value, color }: { label: string; value: string; color
   );
 }
 
-function HoldingPill({ ticker, changePct }: { ticker: string; changePct: number }) {
+function HoldingPill({ ticker, price, changePct, changeDollar }: {
+  ticker: string;
+  price: number;
+  changePct: number;
+  changeDollar: number;
+}) {
   const isPos = changePct >= 0;
   const color = isPos ? "#4caf7d" : "#e05c5c";
   const bgColor = isPos ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)";
   const borderColor = isPos ? "rgba(76,175,125,0.2)" : "rgba(224,92,92,0.2)";
+  const sign = isPos ? "+" : "";
 
   return (
     <div style={{
       display: "inline-flex",
       alignItems: "center",
-      gap: 4,
+      gap: 5,
       padding: "3px 8px",
       borderRadius: 6,
       background: bgColor,
       border: `0.5px solid ${borderColor}`,
       whiteSpace: "nowrap",
+      fontFamily: "'Space Mono', monospace",
     }}>
-      <span style={{
-        fontSize: 10, fontWeight: 700, color: "var(--text2)",
-        fontFamily: "'Space Mono', monospace", letterSpacing: "0.02em",
-      }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text2)", letterSpacing: "0.02em" }}>
         {ticker}
       </span>
-      <span style={{
-        fontSize: 10, fontWeight: 600, color,
-        fontFamily: "'Space Mono', monospace",
-      }}>
-        {isPos ? "+" : ""}{changePct.toFixed(2)}%
+      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)" }}>
+        ${price.toFixed(2)}
+      </span>
+      <span style={{ fontSize: 10, fontWeight: 600, color }}>
+        {sign}${Math.abs(changeDollar).toFixed(2)}
+      </span>
+      <span style={{ fontSize: 10, fontWeight: 600, color, opacity: 0.85 }}>
+        {sign}{changePct.toFixed(2)}%
       </span>
     </div>
   );
