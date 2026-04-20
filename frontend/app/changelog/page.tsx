@@ -138,7 +138,7 @@ export default function ChangelogPage() {
           .cl-timeline { padding-left: 24px !important; }
           .cl-entry { padding-left: 20px !important; }
           .cl-date-col { display: none !important; }
-          .cl-hero { padding: 100px 20px 48px !important; }
+          .cl-hero { padding: 78px 20px 32px !important; }
           .cl-body { padding: 0 20px 80px !important; }
           .cl-footer { padding: 60px 20px 80px !important; }
         }
@@ -148,7 +148,7 @@ export default function ChangelogPage() {
       <PublicNav />
 
       {/* Hero */}
-      <div className="cl-hero" style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
+      <div className="cl-hero" style={{ textAlign: "center", padding: "80px 56px 40px" }}>
         <div>
           <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1, marginBottom: 16 }}>
             What&apos;s new in Corvo
