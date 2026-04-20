@@ -150,7 +150,7 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
 }
 
 /* ─── Bento Card base ─── */
-function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
+function BentoCard({ children, style = {}, delay = 0, noAnim = false }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number; noAnim?: boolean }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = cardRef.current;
@@ -166,6 +166,13 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
     if (card) card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg)";
   };
   const { gridArea, ...restStyle } = style as any;
+  const inner = (
+    <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
+      style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
+      {children}
+    </div>
+  );
+  if (noAnim) return <div style={{ gridArea, height: "100%", position: "relative" }}>{inner}</div>;
   return (
     <motion.div
       initial={{ opacity: 0, y: 28 }}
@@ -174,10 +181,7 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ gridArea, height: "100%", position: "relative" }}
     >
-      <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
-        style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
-        {children}
-      </div>
+      {inner}
     </motion.div>
   );
 }
@@ -185,7 +189,7 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
 /* ─── Portfolio Analyzer bento card ─── */
 function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
   return (
-    <BentoCard delay={delay} style={{ gridArea: "portfolio", padding: "32px 32px 28px" }}>
+    <BentoCard delay={delay} noAnim style={{ gridArea: "portfolio", padding: "32px 32px 28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Portfolio Analyzer</p>
       <h3 style={{ fontSize: 21, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>Full portfolio intelligence</h3>
       <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", marginBottom: 24, lineHeight: 1.7, maxWidth: 360 }}>Sharpe ratio, volatility, max drawdown, and benchmark comparison, updated live as markets move.</p>
@@ -479,7 +483,7 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
 /* ─── Export & Share bento card ─── */
 function BentoExportCard({ delay = 0 }: { delay?: number }) {
   return (
-    <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: 0 }}>
+    <BentoCard delay={delay} noAnim style={{ gridArea: "exportshare", padding: 0 }}>
       {/* Dark PDF preview */}
       <div style={{ background: "#06090e", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
@@ -537,7 +541,7 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
         <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65, marginBottom: 10 }}>Generate a full portfolio report in one click.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, animation: `fadein 0.5s ease ${0.3 + i * 0.12}s both` }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
               <span style={{ fontSize: 11, color: "rgba(232,224,204,0.4)" }}>{item}</span>
             </div>
