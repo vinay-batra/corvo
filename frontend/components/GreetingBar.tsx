@@ -59,8 +59,8 @@ export default function GreetingBar({
       : `${API_URL}/market-summary`;
     fetch(url)
       .then(r => r.json())
-      .then(setMarket)
-      .catch(() => {});
+      .then(d => { console.log("[GreetingBar] market-summary response:", d); setMarket(d); })
+      .catch(err => console.error("[GreetingBar] market-summary error:", err));
   }, [assets]);
 
   // Fetch live holdings prices from watchlist-data
@@ -158,18 +158,18 @@ export default function GreetingBar({
         <div style={{ display: "flex", gap: 8 }}>
           <StatPill
             label="S&P 500"
-            value={market != null ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
-            color={market != null ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
+            value={market?.spy_pct != null ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
+            color={market?.spy_pct != null ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
           />
           <StatPill
             label="Nasdaq"
-            value={market != null ? `${fmtSign(market.qqq_pct)}${market.qqq_pct.toFixed(2)}%` : "-"}
-            color={market != null ? (pos(market.qqq_pct) ? green : red) : "var(--text3)"}
+            value={market?.qqq_pct != null ? `${fmtSign(market.qqq_pct)}${market.qqq_pct.toFixed(2)}%` : "-"}
+            color={market?.qqq_pct != null ? (pos(market.qqq_pct) ? green : red) : "var(--text3)"}
           />
           <StatPill
             label="Dow"
-            value={market != null ? `${fmtSign(market.dia_pct)}${market.dia_pct.toFixed(2)}%` : "-"}
-            color={market != null ? (pos(market.dia_pct) ? green : red) : "var(--text3)"}
+            value={market?.dia_pct != null ? `${fmtSign(market.dia_pct)}${market.dia_pct.toFixed(2)}%` : "-"}
+            color={market?.dia_pct != null ? (pos(market.dia_pct) ? green : red) : "var(--text3)"}
           />
         </div>
 
