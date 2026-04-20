@@ -883,6 +883,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(340);
+  const [portfolioInputValue, setPortfolioInputValue] = useState(10000);
   const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
@@ -1477,6 +1478,18 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         </div>
       </div>
 
+      {/* Portfolio Value */}
+      <div style={S.section}>
+        <div style={S.label}>Portfolio Value</div>
+        <input
+          type="number"
+          min={0}
+          value={portfolioInputValue}
+          onChange={e => setPortfolioInputValue(Number(e.target.value))}
+          style={{ width: "100%", padding: "6px 10px", fontSize: 12, fontFamily: "var(--font-mono)", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", outline: "none", boxSizing: "border-box" as const }}
+        />
+      </div>
+
       {/* Benchmark */}
       <div style={{ ...S.section, position: "relative" }}>
         <div style={S.label}>Benchmark</div>
@@ -1836,7 +1849,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   portfolioData={data}
                   assets={assets}
                   perfHistory={perfHistory}
-                  portfolioValue={10000}
+                  portfolioValue={portfolioInputValue}
                 />
 <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
                 <motion.div
@@ -1852,7 +1865,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     period={period}
                     sparklineValues={(data.portfolio_cumulative || data.growth || []).slice(-14)}
                     assets={assets}
-                    portfolioValue={10000}
+                    portfolioValue={portfolioInputValue}
                   />
                 </motion.div>
                 <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
@@ -1948,7 +1961,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   ))}
                 </motion.div>
                 <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} style={{ marginTop: 12 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
-                  <Card><CardHeader title="Allocation" /><Breakdown assets={assets} portfolioValue={10000} /></Card>
+                  <Card><CardHeader title="Allocation" /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
                 </motion.div>
                 {data && !isPortfolioSaved && (
                   <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
@@ -1976,7 +1989,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and a $10,000 portfolio value."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your $10k portfolio, you'd earn ~$90/year from it."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days. You must own the stock before that date to receive the dividend."}]} /><DividendTracker assets={assets} /></Card>
                 </div>
                 <div style={{ marginTop: 12 }}>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} portfolioValue={10000} /></Card>
+                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} portfolioValue={portfolioInputValue} /></Card>
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (
