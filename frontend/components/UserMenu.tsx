@@ -10,13 +10,14 @@ interface UserMenuProps {
   onEmailPrefs?: () => void;
   onReferral?: () => void;
   onSettings?: () => void;
+  onProfile?: () => void;
   onReplayOnboarding?: () => void;
   onReplayTour?: () => void;
   avatarUrl?: string | null;
   displayName?: string;
 }
 
-export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onReplayOnboarding, onReplayTour, avatarUrl: avatarUrlProp, displayName: displayNameProp }: UserMenuProps) {
+export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfile, onReplayOnboarding, onReplayTour, avatarUrl: avatarUrlProp, displayName: displayNameProp }: UserMenuProps) {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<{ displayName: string; avatarUrl: string | null } | null>(null);
   const [open, setOpen] = useState(false);
@@ -101,7 +102,19 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onRepla
             transition={{ duration: 0.15 }}
             style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 182, background: "rgba(13,17,23,0.98)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 6, backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)", zIndex: 200 }}
           >
-            <div style={{ padding: "8px 12px", fontSize: 11, color: C.cream3, borderBottom: "1px solid rgba(255,255,255,0.05)", marginBottom: 4 }}>{user.email}</div>
+            <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+              {resolvedAvatar ? (
+                <img src={resolvedAvatar} alt="Avatar" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
+                  {initials}
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.cream }}>{resolvedName || user.email?.split("@")[0]}</div>
+                <div style={{ fontSize: 10, color: C.cream3, marginTop: 1 }}>{user.email}</div>
+              </div>
+            </div>
 
             {/* My Account */}
             <Link href="/account" onClick={() => setOpen(false)} style={itemStyle}
@@ -143,6 +156,16 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onRepla
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                 Settings
               </Link>
+            )}
+
+            {/* Goals & Profile — in-app only */}
+            {onProfile && (
+              <button onClick={() => { setOpen(false); onProfile(); }} style={itemStyle}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Goals &amp; Profile
+              </button>
             )}
 
             {/* Email Prefs — in-app only */}
