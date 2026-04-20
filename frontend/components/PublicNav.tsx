@@ -10,12 +10,27 @@ export default function PublicNav() {
   const [navSolid, setNavSolid] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [displayName, setDisplayName] = useState<string | undefined>(undefined);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const pathname = usePathname();
 
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", userId).single();
+    if (data) {
+      setDisplayName(data.display_name || undefined);
+      setAvatarUrl(data.avatar_url || null);
+    }
+  };
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setLoggedIn(!!data.user);
+      if (data.user) fetchProfile(data.user.id);
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setLoggedIn(!!session?.user);
+      if (session?.user) fetchProfile(session.user.id);
+      else { setDisplayName(undefined); setAvatarUrl(null); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -59,7 +74,7 @@ export default function PublicNav() {
         {/* Right side */}
         <div className="pnav-actions" style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {loggedIn ? (
-            <UserMenu publicNav />
+            <UserMenu publicNav avatarUrl={avatarUrl} displayName={displayName} />
           ) : (
             <>
               <Link href="/auth" className="pnav-link" style={{ padding: "7px 16px", fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Log in</Link>

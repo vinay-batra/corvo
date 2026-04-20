@@ -50,11 +50,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" style={{ background: "#0a0e14" }}>
+    <html lang="en" data-theme="dark" style={{ background: "transparent" }}>
       <head>
         <meta name="theme-color" content="#1a1a1a" />
       </head>
-      <body style={{ margin: 0, background: "#0d1117" }}>
+      <body style={{ margin: 0, background: "transparent" }}>
         <ParticleCanvas />
         <Suspense>
           <PostHogProvider>
