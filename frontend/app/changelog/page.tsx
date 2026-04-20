@@ -177,7 +177,7 @@ export default function ChangelogPage() {
       </div>
 
       {/* Timeline */}
-      <div className="cl-body" style={{ maxWidth: 860, margin: "0 auto", padding: "0 56px 96px" }}>
+      <div className="cl-body" style={{ maxWidth: 860, margin: "0 auto", padding: "0 56px 0" }}>
         <div className="cl-timeline" style={{ position: "relative", paddingLeft: 0 }}>
           {/* Vertical line */}
           <div style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "rgba(201,168,76,0.12)" }} />
@@ -214,13 +214,11 @@ export default function ChangelogPage() {
             </FadeUp>
           ))}
 
-          {/* Origin dot */}
-          <div style={{ position: "absolute", left: 134, bottom: 0, width: 13, height: 13, borderRadius: "50%", background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.25)", zIndex: 2 }} />
         </div>
       </div>
 
       {/* Subscribe section */}
-      <div className="cl-footer" style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "80px 56px 96px" }}>
+      <div className="cl-footer" style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "60px 56px 96px" }}>
         <FadeUp>
           <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Stay in the loop</p>
