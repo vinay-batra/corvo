@@ -38,7 +38,7 @@ export default function BenchmarkComparison({ data }: { data: any }) {
 
   // Use pre-computed benchmark_return if available, fall back to deriving from array
   const benchArr = data?.benchmark_cumulative || [];
-  const benchReturnFromArr = benchArr.length >= 2 ? (benchArr[benchArr.length - 1] / benchArr[0]) - 1 : null;
+  const benchReturnFromArr = benchArr.length > 0 ? benchArr[benchArr.length - 1] : 0;
   const benchReturn = data?.benchmark_return ?? benchReturnFromArr;
 
   if (benchReturn === null) {
