@@ -14,7 +14,6 @@ export default function ParticleCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
-    canvas.style.background = "#0a0e14";
     resize();
     window.addEventListener("resize", resize);
     const N = 55;
