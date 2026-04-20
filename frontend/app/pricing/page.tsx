@@ -607,6 +607,7 @@ export default function PricingPage() {
           </div>
 
           <h1 style={{
+            fontFamily: "var(--font-mono)",
             fontSize: "clamp(32px,5vw,60px)",
             fontWeight: 700,
             lineHeight: 1.1,
