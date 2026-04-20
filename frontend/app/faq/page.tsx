@@ -211,7 +211,7 @@ function FAQAIChat() {
         border: "1px solid rgba(201,168,76,0.18)",
         borderRadius: 20,
         overflow: "hidden",
-        background: "transparent",
+        background: "rgba(13,17,23,0.8)",
       }}
     >
       {/* Header */}
