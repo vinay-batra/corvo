@@ -1478,18 +1478,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         </div>
       </div>
 
-      {/* Portfolio Value */}
-      <div style={S.section}>
-        <div style={S.label}>Portfolio Value</div>
-        <input
-          type="number"
-          min={0}
-          value={portfolioInputValue}
-          onChange={e => setPortfolioInputValue(Number(e.target.value))}
-          style={{ width: "100%", padding: "6px 10px", fontSize: 12, fontFamily: "var(--font-mono)", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", outline: "none", boxSizing: "border-box" as const }}
-        />
-      </div>
-
       {/* Benchmark */}
       <div style={{ ...S.section, position: "relative" }}>
         <div style={S.label}>Benchmark</div>
