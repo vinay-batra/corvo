@@ -1854,9 +1854,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 />
 <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
                 <motion.div
+                  key="stats-row"
                   className="c-metrics"
                   style={S.metricsGrid}
-                  initial="hidden"
+                  initial={false}
                   animate="visible"
                   variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
                   <Metrics
@@ -1869,7 +1870,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     portfolioValue={portfolioInputValue}
                   />
                 </motion.div>
-                <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
+                <motion.div key="perf-card" initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
                   <Card>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                       <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
@@ -1922,9 +1923,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   </Card>
                 </motion.div>
                 <motion.div
+                  key="bottom-grid"
                   className="c-bgrid"
                   style={{ ...S.bottomGrid }}
-                  initial="hidden"
+                  initial={false}
                   animate="visible"
                   variants={{ visible: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } } }}>
                   {[
@@ -1956,12 +1958,12 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                       ],
                     },
                   ].map(({ title, content, sections }) => (
-                    <motion.div key={title} variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }} style={{ display: "flex", flexDirection: "column" }}>
+                    <motion.div key={title} initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }} style={{ display: "flex", flexDirection: "column" }}>
                       <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
                     </motion.div>
                   ))}
                 </motion.div>
-                <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} style={{ marginTop: 12 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
+                <motion.div key="allocation-card" initial={false} style={{ marginTop: 12 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
                   <Card><CardHeader title="Allocation" /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
                 </motion.div>
                 {data && !isPortfolioSaved && (
