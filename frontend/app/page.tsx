@@ -196,8 +196,8 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
       <div style={{ background: "rgba(8,11,16,0.7)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           {([
-            { l: "Return", v: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1500} loopEvery={4000} />%</>, c: "#c9a84c" },
-            { l: "Sharpe", v: <LoopCounter target={0.66} decimals={2} duration={1500} loopEvery={4000} />, c: "#e8e0cc" },
+            { l: "Return", v: "+18.4%", c: "#c9a84c" },
+            { l: "Sharpe", v: "0.66", c: "#e8e0cc" },
             { l: "Drawdown", v: "-14.2%", c: "#e05c5c" },
             { l: "Beta", v: "0.84", c: "#e8e0cc" },
           ] as { l: string; v: React.ReactNode; c: string }[]).map((m, i) => (
@@ -1077,7 +1077,7 @@ function TickerTape() {
   const doubled = [...items, ...items];
   return (
     <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "hidden", background: "rgba(10,14,20,0.88)" }}>
-      <div style={{ display: "flex", gap: 48, animation: "ticker 30s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
+      <div style={{ display: "flex", gap: 48, animation: "ticker 29s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
         {doubled.map((item, i) => {
           const up = item.change_pct >= 0;
           return (
