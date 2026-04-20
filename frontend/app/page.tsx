@@ -519,10 +519,10 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, position: "relative", zIndex: 1 }}>
           {([
-            { label: "Sharpe", value: <LoopCounter target={0.66} decimals={2} duration={1200} loopEvery={5000} />, color: "#e8e0cc" },
-            { label: "Return", value: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#c9a84c" },
+            { label: "Sharpe", value: "0.66", color: "#e8e0cc" },
+            { label: "Return", value: "+18.4%", color: "#c9a84c" },
             { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
-            { label: "Volatility", value: <><LoopCounter target={12.1} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#e8e0cc" },
+            { label: "Volatility", value: "12.1%", color: "#e8e0cc" },
           ] as { label: string; value: React.ReactNode; color: string }[]).map((stat, i) => (
             <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
               <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
