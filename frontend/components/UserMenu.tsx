@@ -16,8 +16,9 @@ interface UserMenuProps {
   displayName?: string;
 }
 
-export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onReplayOnboarding, onReplayTour, avatarUrl, displayName }: UserMenuProps) {
+export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onReplayOnboarding, onReplayTour, avatarUrl: avatarUrlProp, displayName: displayNameProp }: UserMenuProps) {
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<{ displayName: string; avatarUrl: string | null } | null>(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -25,6 +26,18 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onRepla
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user ?? null));
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch profile from DB when no props provided (public nav context)
+  useEffect(() => {
+    if (!user || displayNameProp) return;
+    supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single()
+      .then(({ data }) => {
+        if (data) {
+          const name = data.display_name || user.email?.split("@")[0] || "User";
+          setProfile({ displayName: name, avatarUrl: data.avatar_url || null });
+        }
+      }).catch(() => {});
+  }, [user, displayNameProp]);
 
   // Close on outside click
   useEffect(() => {
@@ -51,7 +64,9 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onRepla
       onMouseLeave={e => { (e.target as any).style.background = "transparent"; }}>LOG IN</a>
   );
 
-  const label = displayName || user.email?.split("@")[0] || "";
+  const resolvedName = displayNameProp || profile?.displayName || user.email?.split("@")[0] || "";
+  const resolvedAvatar = avatarUrlProp !== undefined ? avatarUrlProp : profile?.avatarUrl ?? null;
+  const label = resolvedName;
   const initials = label[0]?.toUpperCase() || "?";
 
   const itemStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "rgba(232,224,204,0.75)", textDecoration: "none", transition: "background 0.15s", background: "transparent", border: "none", cursor: "pointer", width: "100%", textAlign: "left", fontFamily: "Inter,sans-serif" };
@@ -65,8 +80,8 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onRepla
         onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"}
         onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
       >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="Avatar" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+        {resolvedAvatar ? (
+          <img src={resolvedAvatar} alt="Avatar" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
         ) : (
           <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
             {initials}
