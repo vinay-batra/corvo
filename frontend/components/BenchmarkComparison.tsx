@@ -28,12 +28,20 @@ function BenchmarkSkeleton() {
 export default function BenchmarkComparison({ data }: { data: any }) {
   const portfolioReturn = data?.portfolio_return ?? null;
   const benchLabel = BENCHMARK_LABELS[data?.benchmark_ticker] ?? data?.benchmark_ticker ?? "Benchmark";
+  if (!data || portfolioReturn == null) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 80 }}>
+        <span style={{ fontSize: 12, color: "var(--text3)" }}>Run an analysis to see benchmark comparison</span>
+      </div>
+    );
+  }
+
   // Use pre-computed benchmark_return if available, fall back to deriving from array
-  const benchArr = data?.benchmark || [];
+  const benchArr = data?.benchmark_cumulative || [];
   const benchReturnFromArr = benchArr.length >= 2 ? (benchArr[benchArr.length - 1] / benchArr[0]) - 1 : null;
   const benchReturn = data?.benchmark_return ?? benchReturnFromArr;
 
-  if (!data || portfolioReturn === null || benchReturn === null) {
+  if (benchReturn === null) {
     return <BenchmarkSkeleton />;
   }
 
