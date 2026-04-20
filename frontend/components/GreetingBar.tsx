@@ -113,8 +113,7 @@ export default function GreetingBar({
       display: "flex",
       alignItems: "flex-start",
       gap: 0,
-      minHeight: 90,
-      padding: "20px 24px",
+      padding: "12px 24px",
       borderBottom: "0.5px solid var(--border)",
       marginBottom: 20,
     }}>
@@ -127,11 +126,11 @@ export default function GreetingBar({
         }}>
           {greeting}, {name}
         </h1>
-        <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 3, marginBottom: 0, letterSpacing: "0.01em" }}>
+        <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, marginBottom: 0, letterSpacing: "0.01em" }}>
           {dateStr}
         </p>
         {summaryText ? (
-          <div style={{ marginTop: 8 }}>
+          <div style={{ marginTop: 6 }}>
             <p style={{
               fontSize: 13,
               color: "var(--text2)",
