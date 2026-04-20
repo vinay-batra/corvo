@@ -40,11 +40,6 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
         }
       `}</style>
 
-      {/* Fixed grid bg */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.025) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.025) 1px, transparent 1px)", backgroundSize: "80px 80px" }} />
-      </div>
-
       <PublicNav />
 
       <main style={{ paddingTop: 58, position: "relative", zIndex: 1 }}>
