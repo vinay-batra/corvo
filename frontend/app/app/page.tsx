@@ -1948,7 +1948,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   ))}
                 </motion.div>
                 <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }} style={{ marginTop: 12 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
-                  <Card><CardHeader title="Allocation" /><Breakdown assets={assets} /></Card>
+                  <Card><CardHeader title="Allocation" /><Breakdown assets={assets} portfolioValue={10000} /></Card>
                 </motion.div>
                 {data && !isPortfolioSaved && (
                   <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
