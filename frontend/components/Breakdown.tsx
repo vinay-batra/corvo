@@ -30,6 +30,8 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
     color: COLORS[i % COLORS.length],
   }));
   const maxPct = Math.max(...normalized.map(a => a.pct), 0.001);
+  const minPct = Math.min(...normalized.map(a => a.pct));
+  const equalWeight = maxPct === minPct;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
@@ -65,6 +67,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
               borderRadius: 6,
               cursor: "default",
               transition: "background 0.15s",
+              borderBottom: i < normalized.length - 1 ? "0.5px solid var(--border-dim)" : undefined,
             }}
             whileHover={{ backgroundColor: "rgba(232,224,204,0.06)" }}
           >
@@ -85,7 +88,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
             <div style={{ height: 4, borderRadius: 2, background: "rgba(232,224,204,0.1)", overflow: "hidden" }}>
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${(a.pct / maxPct) * 100}%` }}
+                animate={{ width: equalWeight ? `${a.pct * 100}%` : `${(a.pct / maxPct) * 100}%` }}
                 transition={{ duration: 0.9, delay: 0.4 + i * 0.08, ease: "easeOut" }}
                 style={{ height: "100%", background: a.color, borderRadius: 2 }}
               />
