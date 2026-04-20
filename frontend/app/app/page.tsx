@@ -88,6 +88,31 @@ const BENCHMARKS = [
   { ticker: "GLD",    label: "Gold" },
 ];
 
+function BenchmarkDropdown({ localBenchmark, benchmarks, onSelect }: { localBenchmark: string; benchmarks: { ticker: string; label: string }[]; onSelect: (ticker: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ padding: "4px 10px", fontSize: 11, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 5, cursor: "pointer", color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ fontSize: 11, color: "var(--text3)" }}>vs</span>{benchmarks.find(b => b.ticker === localBenchmark)?.label ?? localBenchmark}<span style={{ fontSize: 11, color: "var(--text3)" }}>▾</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 130, boxShadow: "var(--shadow)" }}>
+            {benchmarks.map(b => (
+              <button key={b.ticker} onClick={() => { onSelect(b.ticker); setOpen(false); }}
+                style={{ width: "100%", textAlign: "left", padding: "7px 12px", background: b.ticker === localBenchmark ? "var(--bg3)" : "transparent", border: "none", color: "var(--text)", fontSize: 11, cursor: "pointer" }}>
+                {b.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // Thin icon button helper
 function IconBtn({ onClick, title, children }: { onClick: () => void; title?: string; children: React.ReactNode }) {
   return (
@@ -862,7 +887,6 @@ export default function AppPage() {
   const [showProfile, setShowProfile]     = useState(false);
   const [showSettings, setShowSettings]   = useState(false);
   const [benchOpen, setBenchOpen]         = useState(false);
-  const [chartBenchOpen, setChartBenchOpen] = useState(false);
   const [localBenchmark, setLocalBenchmark] = useState("^GSPC");
   const [localBenchmarkSeries, setLocalBenchmarkSeries] = useState<{ ticker: string; cumulative: number[] } | null>(null);
   const [sidebarOpen, setSidebarOpen]     = useState(false);
@@ -1885,25 +1909,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                           ))}
                         </div>
                         {/* Benchmark selector: chart-only, does NOT trigger re-analyze */}
-                        <div style={{ position: "relative" }}>
-                          <button onClick={() => setChartBenchOpen(o => !o)}
-                            style={{ padding: "4px 10px", fontSize: 11, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 5, cursor: "pointer", color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
-                            <span style={{ fontSize: 11, color: "var(--text3)" }}>vs</span>{BENCHMARKS.find(b => b.ticker === localBenchmark)?.label ?? localBenchmark}<span style={{ fontSize: 11, color: "var(--text3)" }}>▾</span>
-                          </button>
-                          <AnimatePresence>
-                            {chartBenchOpen && (
-                              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 130, boxShadow: "var(--shadow)" }}>
-                                {BENCHMARKS.map(b => (
-                                  <button key={b.ticker} onClick={() => { setLocalBenchmark(b.ticker); setChartBenchOpen(false); }}
-                                    style={{ width: "100%", textAlign: "left", padding: "7px 12px", background: b.ticker === localBenchmark ? "var(--bg3)" : "transparent", border: "none", color: "var(--text)", fontSize: 11, cursor: "pointer" }}>
-                                    {b.label}
-                                  </button>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                        <BenchmarkDropdown localBenchmark={localBenchmark} benchmarks={BENCHMARKS} onSelect={setLocalBenchmark} />
                         <button onClick={() => setWhatIfOpen(true)}
                           style={{ padding: "4px 10px", fontSize: 11, borderRadius: 5, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
                           onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
