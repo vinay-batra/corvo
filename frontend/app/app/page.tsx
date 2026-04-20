@@ -214,12 +214,6 @@ function Empty() {
         </p>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-        <motion.div
-          animate={{ x: [4, -4, 4] }}
-          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-          style={{ fontSize: 20, color: "var(--accent)", opacity: 0.7, flexShrink: 0 }}>
-          ←
-        </motion.div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, textAlign: "left" }}>
           {steps.map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
@@ -234,7 +228,7 @@ function Empty() {
           ))}
         </div>
       </div>
-      <p style={{ fontSize: 11, color: "var(--text3)", opacity: 0.5, letterSpacing: 0.3 }}>
+      <p style={{ fontSize: 11, color: "var(--text3)", opacity: 1, letterSpacing: 0.3 }}>
         Or press Presets to start with a sample portfolio
       </p>
     </motion.div>
