@@ -180,27 +180,26 @@ function Empty() {
           Three steps to full risk analysis and AI insights.
         </p>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 360, width: "100%", textAlign: "left" }}>
-        {steps.map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-            {i === 0 && (
-              <motion.div
-                animate={{ x: [4, -4, 4] }}
-                transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-                style={{ fontSize: 20, color: "var(--accent)", opacity: 0.7, flexShrink: 0, width: 28, textAlign: "center", lineHeight: "28px" }}>
-                ←
-              </motion.div>
-            )}
-            {i !== 0 && <div style={{ width: 28, flexShrink: 0 }} />}
-            <div style={{ width: 28, height: 28, borderRadius: "50%", border: "1.5px solid var(--accent)", background: "rgba(184,134,11,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>
-              {s.n}
+      <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+        <motion.div
+          animate={{ x: [4, -4, 4] }}
+          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+          style={{ fontSize: 20, color: "var(--accent)", opacity: 0.7, flexShrink: 0 }}>
+          ←
+        </motion.div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, textAlign: "left" }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "1.5px solid var(--accent)", background: "rgba(184,134,11,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>
+                {s.n}
+              </div>
+              <div style={{ paddingTop: 4 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{s.label}</p>
+                <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>{s.desc}</p>
+              </div>
             </div>
-            <div style={{ paddingTop: 4 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{s.label}</p>
-              <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>{s.desc}</p>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
       <p style={{ fontSize: 11, color: "var(--text3)", opacity: 0.5, letterSpacing: 0.3 }}>
         Or press Presets to start with a sample portfolio
