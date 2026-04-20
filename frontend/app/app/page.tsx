@@ -41,7 +41,6 @@ import OnboardingModal from "../../components/OnboardingModal";
 import { fetchPortfolio } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 import AlertsPanel from "../../components/AlertsPanel";
-import LivePriceStrip from "../../components/LivePriceStrip";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
 import StockCompare from "../../components/StockCompare";
 import Watchlist from "../../components/Watchlist";
@@ -1839,8 +1838,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   perfHistory={perfHistory}
                   portfolioValue={10000}
                 />
-                <LivePriceStrip assets={assets} active={!!data} />
-                <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
+<div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
                 <motion.div
                   className="c-metrics"
                   style={S.metricsGrid}
