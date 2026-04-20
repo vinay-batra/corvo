@@ -1,26 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
-
-function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
-      style={style}
-    >
-      {children}
-    </motion.div>
-  );
+function FadeUp({ children, style = {} }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
+  return <div style={style}>{children}</div>;
 }
 
 const ENTRIES = [
