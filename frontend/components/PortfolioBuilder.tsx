@@ -189,7 +189,10 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   }, []);
   const handlePortfolioValueChange = (v: string) => {
     setPortfolioValueState(v);
-    if (typeof window !== "undefined") localStorage.setItem("corvo_portfolio_value", v);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("corvo_portfolio_value", v);
+      window.dispatchEvent(new Event("storage"));
+    }
   };
 
   useEffect(() => {
