@@ -26,11 +26,14 @@ function Ring({ score, size=96 }: { score:number; size?:number }) {
   );
 }
 
-function Bar({ label, value, max, delay }: { label:string; value:number; max:number; delay:number }) {
+function Bar({ label, subtitle, value, max, delay }: { label:string; subtitle:string; value:number; max:number; delay:number }) {
   const pct=Math.max(0,Math.min(value/max,1));
   return (
     <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <span style={{fontSize:10,color:"var(--text3)",width:66,flexShrink:0}}>{label}</span>
+      <div style={{width:90,flexShrink:0,display:"flex",flexDirection:"column",gap:1}}>
+        <span style={{fontSize:10,color:"var(--text3)"}}>{label}</span>
+        <span style={{fontSize:9,color:"var(--text3)",opacity:0.65,lineHeight:1.2}}>{subtitle}</span>
+      </div>
       <div style={{flex:1,height:2,background:"var(--track)",borderRadius:1,overflow:"hidden"}}>
         <motion.div initial={{width:0}} animate={{width:`${pct*100}%`}} transition={{duration:1,delay,ease:"easeOut"}}
           style={{height:"100%",background:"#b8860b",borderRadius:1}}/>
@@ -54,10 +57,10 @@ export default function HealthScore({ data }: { data: any }) {
     <div ref={ref} style={{display:"flex",gap:14,alignItems:"center"}}>
       {inView&&<Ring score={score}/>}
       <div style={{flex:1,display:"flex",flexDirection:"column",gap:10}}>
-        <Bar label="Returns"    value={rS}  max={100} delay={0.5}/>
-        <Bar label="Risk-Adj"   value={shS} max={100} delay={0.6}/>
-        <Bar label="Stability"  value={vS}  max={100} delay={0.7}/>
-        <Bar label="Resilience" value={dS}  max={100} delay={0.8}/>
+        <Bar label="Returns"    subtitle={rS  < 70 ? "below market avg"      : "above market avg"}      value={rS}  max={100} delay={0.5}/>
+        <Bar label="Risk-Adj"   subtitle={shS < 60 ? "high risk/reward ratio" : "efficient risk use"}     value={shS} max={100} delay={0.6}/>
+        <Bar label="Stability"  subtitle={vS  < 60 ? "high volatility"        : "low volatility"}         value={vS}  max={100} delay={0.7}/>
+        <Bar label="Resilience" subtitle={dS  < 60 ? "large drawdowns"        : "recovers well"}          value={dS}  max={100} delay={0.8}/>
       </div>
     </div>
   );
