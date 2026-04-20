@@ -132,6 +132,25 @@ function localSearch(q: string): { ticker: string; name: string; type: string; e
   ).slice(0, 8);
 }
 
+function WeightInput({ weight, onCommit, inputStyle }: { weight: number; onCommit: (v: number) => void; inputStyle: React.CSSProperties }) {
+  const [draft, setDraft] = useState(String(Math.round(weight * 100)));
+  useEffect(() => { setDraft(String(Math.round(weight * 100))); }, [weight]);
+  return (
+    <input
+      type="text"
+      value={draft}
+      onFocus={e => e.target.select()}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={() => {
+        const n = Number(draft);
+        if (!isNaN(n) && n >= 0 && n <= 100) onCommit(n / 100);
+        else setDraft(String(Math.round(weight * 100)));
+      }}
+      style={{ ...inputStyle, width: 64, padding: "5px 4px", fontFamily: "Space Mono,monospace", fontWeight: 600, textAlign: "center" }}
+    />
+  );
+}
+
 // Shared input styles
 const INPUT_STYLE: React.CSSProperties = {
   background: "var(--input-bg)",
@@ -456,12 +475,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 </div>
 
                 {/* Weight % input */}
-                <input
-                  type="number" min="0" max="100" step="1"
-                  value={Math.round(a.weight*100)}
-                  onChange={e=>updateWeight(i,Math.max(0,Math.min(100,Number(e.target.value)))/100)}
-                  style={{...INPUT_STYLE, width:44, padding:"5px 4px", fontFamily:"Space Mono,monospace", fontWeight:600, textAlign:"center"}}
-                />
+                <WeightInput weight={a.weight} onCommit={v=>updateWeight(i,v)} inputStyle={INPUT_STYLE} />
                 <span style={{fontSize:11,color:C.cream3,flexShrink:0}}>%</span>
 
                 {/* Expand toggle */}
