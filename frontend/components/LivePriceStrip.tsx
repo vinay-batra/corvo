@@ -68,7 +68,7 @@ const LivePriceStrip = memo(function LivePriceStrip({ assets, active }: Props) {
   if (tickers.length === 0) return null;
 
   return (
-    <div style={{ padding: "8px 14px", borderTop: "0.5px solid var(--border)" }}>
+    <div style={{ padding: "0 14px", borderTop: "0.5px solid var(--border)", maxHeight: 36, display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
       <style>{`
         @keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
         @keyframes priceFlashUp{0%{color:#4caf7d;background:rgba(76,175,125,0.12)}100%{color:inherit;background:transparent}}
@@ -76,29 +76,33 @@ const LivePriceStrip = memo(function LivePriceStrip({ assets, active }: Props) {
         .price-flash-up{animation:priceFlashUp 0.7s ease-out forwards;border-radius:4px;padding:0 2px}
         .price-flash-down{animation:priceFlashDown 0.7s ease-out forwards;border-radius:4px;padding:0 2px}
       `}</style>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
-        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#5cb88a", animation: "livePulse 2s ease-in-out infinite" }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#5cb88a", animation: "livePulse 2s ease-in-out infinite" }} />
         <span style={{ fontSize: 8, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Live</span>
       </div>
-      {assets.filter(a => a.ticker && prices[a.ticker]).map(a => {
-        const s = prices[a.ticker];
-        const pos = (s?.change_pct ?? 0) >= 0;
-        const isFlashing = flashing.has(a.ticker);
-        return (
-          <div key={a.ticker} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--text2)" }}>
-              {a.ticker}
-            </span>
-            <span
-              className={isFlashing ? (flashDir[a.ticker] === "up" ? "price-flash-up" : "price-flash-down") : undefined}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: pos ? "#5cb88a" : "#e05c5c", transition: "color 0.3s" }}
-            >
-              {s.price != null ? `$${s.price.toFixed(2)}` : "-"}{" "}
-              <span style={{ fontSize: 9 }}>{pos ? "+" : ""}{s.change_pct != null ? s.change_pct.toFixed(2) : "-"}%</span>
-            </span>
-          </div>
-        );
-      })}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, overflow: "hidden", flex: 1 }}>
+        {assets.filter(a => a.ticker && prices[a.ticker]).map(a => {
+          const s = prices[a.ticker];
+          const pos = (s?.change_pct ?? 0) >= 0;
+          const isFlashing = flashing.has(a.ticker);
+          return (
+            <div key={a.ticker} style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--text2)" }}>
+                {a.ticker}
+              </span>
+              <span
+                className={isFlashing ? (flashDir[a.ticker] === "up" ? "price-flash-up" : "price-flash-down") : undefined}
+                style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: pos ? "#5cb88a" : "#e05c5c", transition: "color 0.3s" }}
+              >
+                {s.price != null ? `$${s.price.toFixed(2)}` : "-"}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: pos ? "#5cb88a" : "#e05c5c", opacity: 0.8 }}>
+                {pos ? "+" : ""}{s.change_pct != null ? s.change_pct.toFixed(2) : "-"}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 });

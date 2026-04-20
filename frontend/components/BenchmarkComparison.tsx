@@ -26,12 +26,14 @@ function BenchmarkSkeleton() {
 }
 
 export default function BenchmarkComparison({ data }: { data: any }) {
-  const portfolioReturn = data.portfolio_return ?? null;
-  const benchLabel = BENCHMARK_LABELS[data.benchmark_ticker] ?? data.benchmark_ticker ?? "Benchmark";
-  const benchArr = data.benchmark || [];
-  const benchReturn = benchArr.length >= 2 ? (benchArr[benchArr.length - 1] / benchArr[0]) - 1 : null;
+  const portfolioReturn = data?.portfolio_return ?? null;
+  const benchLabel = BENCHMARK_LABELS[data?.benchmark_ticker] ?? data?.benchmark_ticker ?? "Benchmark";
+  // Use pre-computed benchmark_return if available, fall back to deriving from array
+  const benchArr = data?.benchmark || [];
+  const benchReturnFromArr = benchArr.length >= 2 ? (benchArr[benchArr.length - 1] / benchArr[0]) - 1 : null;
+  const benchReturn = data?.benchmark_return ?? benchReturnFromArr;
 
-  if (portfolioReturn === null || benchReturn === null) {
+  if (!data || portfolioReturn === null || benchReturn === null) {
     return <BenchmarkSkeleton />;
   }
 
