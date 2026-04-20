@@ -192,8 +192,8 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
       <div style={{ background: "rgba(8,11,16,0.7)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           {([
-            { l: "Return", v: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1500} loopEvery={4000} />%</>, c: "#c9a84c" },
-            { l: "Sharpe", v: <LoopCounter target={0.66} decimals={2} duration={1500} loopEvery={4000} />, c: "#e8e0cc" },
+            { l: "Return", v: "+18.4%", c: "#c9a84c" },
+            { l: "Sharpe", v: "0.66", c: "#e8e0cc" },
             { l: "Drawdown", v: "-14.2%", c: "#e05c5c" },
             { l: "Beta", v: "0.84", c: "#e8e0cc" },
           ] as { l: string; v: React.ReactNode; c: string }[]).map((m, i) => (
@@ -518,10 +518,10 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, position: "relative", zIndex: 1 }}>
           {([
-            { label: "Sharpe", value: <LoopCounter target={0.66} decimals={2} duration={1200} loopEvery={5000} />, color: "#e8e0cc" },
-            { label: "Return", value: <><LoopCounter prefix="+" target={18.4} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#c9a84c" },
+            { label: "Sharpe", value: "0.66", color: "#e8e0cc" },
+            { label: "Return", value: "+18.4%", color: "#c9a84c" },
             { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
-            { label: "Volatility", value: <><LoopCounter target={12.1} decimals={1} duration={1200} loopEvery={5000} />%</>, color: "#e8e0cc" },
+            { label: "Volatility", value: "12.1%", color: "#e8e0cc" },
           ] as { label: string; value: React.ReactNode; color: string }[]).map((stat, i) => (
             <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
               <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
@@ -934,7 +934,7 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}
     >
-      <p style={{ fontFamily: "Georgia,serif", fontSize: 72, color: "#c9a84c", lineHeight: 0.75, marginBottom: 18, opacity: 0.7 }}>"</p>
+      <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
       <p style={{ fontSize: 14, color: "rgba(232,224,204,0.65)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, flex: 1 }}>{text}</p>
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 18 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{name}</p>
@@ -985,7 +985,7 @@ function MobileTestimonialCarousel() {
   return (
     <div style={{ position: "relative", width: "100%", paddingLeft: 28, paddingRight: 28 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", minHeight: 220 }}>
-        <p style={{ fontFamily: "Georgia,serif", fontSize: 72, color: "#c9a84c", lineHeight: 0.75, marginBottom: 18, opacity: 0.7 }}>"</p>
+        <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
         <p style={{ fontSize: 14, color: "rgba(232,224,204,0.65)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24 }}>{card.text}</p>
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 18 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{card.name}</p>
@@ -1348,7 +1348,7 @@ function EmailCaptureBottom() {
     } catch { setStatus("error"); }
   };
   return (
-    <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "80px 56px" }}>
+    <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "36px 56px" }}>
       <FadeUp>
       <div style={{
         maxWidth: 700, margin: "0 auto", textAlign: "center",
@@ -2135,7 +2135,7 @@ export default function Landing() {
             <div>
               <Reveal>
                 <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 18 }}>Live Demo</p>
-                <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(26px,3vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.15, marginBottom: 18 }}>See it in action.<br />No signup needed.</h2>
+                <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(26px,3vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.15, marginBottom: 18 }}>See it in action.<br /><span style={{ whiteSpace: "nowrap" }}>No signup needed.</span></h2>
                 <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", lineHeight: 1.8, fontWeight: 300, marginBottom: 36 }}>Explore a live portfolio with real market data. Ask the AI anything. Run Monte Carlo. All before you create an account.</p>
                 <Link href="/app?demo=true" className="demo-btn" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "16px 40px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", letterSpacing: 0.2 }}>
                   Try a live demo →
@@ -2151,22 +2151,19 @@ export default function Landing() {
       </section>
 
       {/* ─── TESTIMONIALS ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
+      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 24px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>What investors are saying</h2>
           </Reveal>
-          {/* Desktop: 3+2 grid */}
-          <div className="testi-desktop" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-              <TestimonialCard text="Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification." name="Marcus T." role="Retail Investor · 12yr experience" delay={0} />
-              <TestimonialCard text="I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it." name="Sarah K." role="Self-directed IRA · Former analyst" delay={0.12} />
-              <TestimonialCard text="The Monte Carlo simulator is genuinely impressive. I ran 8,500 paths against my retirement timeline and completely rethought my allocation." name="David R." role="Index Fund Investor · Engineer" delay={0.24} />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16, maxWidth: 740, margin: "0 auto", width: "100%" }}>
-              <TestimonialCard text="The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like." name="James L." role="Dividend Investor · 8yr experience" delay={0.1} />
-              <TestimonialCard text="I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 8,500 paths and realized I was way under-diversified." name="Priya M." role="Software Engineer · Long-term investor" delay={0.22} />
-            </div>
+          {/* Desktop: consistent 3-column grid */}
+          <div className="testi-desktop" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+            <TestimonialCard text="Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification." name="Marcus T." role="Retail Investor · 12yr experience" delay={0} />
+            <TestimonialCard text="I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it." name="Sarah K." role="Self-directed IRA · Former analyst" delay={0.08} />
+            <TestimonialCard text="The Monte Carlo simulator is genuinely impressive. I ran 8,500 paths against my retirement timeline and completely rethought my allocation." name="David R." role="Index Fund Investor · Engineer" delay={0.16} />
+            <TestimonialCard text="The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like." name="James L." role="Dividend Investor · 8yr experience" delay={0.08} />
+            <TestimonialCard text="I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 8,500 paths and realized I was way under-diversified." name="Priya M." role="Software Engineer · Long-term investor" delay={0.16} />
+            <TestimonialCard text="The benchmark comparison showed I was underperforming SPY by 4% annually. Two rebalances later, I'm beating it. The data makes everything obvious." name="Alex W." role="DIY Investor · Index fund advocate" delay={0.24} />
           </div>
           {/* Mobile: one-at-a-time carousel with arrows + dots */}
           <div className="testi-mobile" style={{ display: "none" }}>
