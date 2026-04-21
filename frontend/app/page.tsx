@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
 import { motion } from "framer-motion";
+import FeedbackButton from "../components/FeedbackButton";
 
 /* ─── Reveal hook ─── */
 function useReveal(threshold = 0.15) {
@@ -2212,6 +2213,7 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+      <FeedbackButton />
     </div>
   );
 }

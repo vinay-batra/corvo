@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
+import FeedbackButton from "../../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "What is Monte Carlo Simulation and Why Should Investors Care? | Corvo Blog",
@@ -223,6 +224,7 @@ export default function MonteCarloPage() {
         instantly visible.
       </p>
 
+      <FeedbackButton />
     </BlogPost>
   );
 }

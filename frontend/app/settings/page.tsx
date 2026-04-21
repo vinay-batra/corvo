@@ -7,6 +7,7 @@ import Cropper from "react-easy-crop";
 import { supabase } from "../../lib/supabase";
 import { SOUND_KEY } from "../../hooks/useSoundEffects";
 import ReferralsDashboard from "@/components/ReferralsDashboard";
+import FeedbackButton from "../../components/FeedbackButton";
 
 const PERIODS    = ["6mo", "1y", "2y", "5y"] as const;
 const BENCHMARKS = [
@@ -483,6 +484,7 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
           </motion.div>
         )}
       </AnimatePresence>
+      <FeedbackButton />
     </div>
   );
 }
