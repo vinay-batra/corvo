@@ -289,8 +289,8 @@ export default function StockCompare() {
             <div style={{ position: "relative", flex: 1, zIndex: 50 }}>
               <input
                 value={inputValue}
-                onChange={e => { setInputValue(e.target.value.toUpperCase()); setError(""); search(e.target.value.toUpperCase()); }}
-                onFocus={() => { setDropdownOpen(true); if (inputValue) search(inputValue); }}
+                onChange={e => { const v = e.target.value.toUpperCase(); setInputValue(v); setError(""); if (!v) setSearchResults(COMMON_TICKERS.filter(t => !tickers.includes(t.ticker)).slice(0, 8)); else search(v); }}
+                onFocus={() => { setDropdownOpen(true); if (inputValue) search(inputValue); else setSearchResults(COMMON_TICKERS.filter(t => !tickers.includes(t.ticker)).slice(0, 8)); }}
                 onBlur={() => { blurTimer.current = setTimeout(() => setDropdownOpen(false), 180); }}
                 onKeyDown={e => { if (e.key === "Enter" && inputValue) addTicker(inputValue); if (e.key === "Escape") setDropdownOpen(false); }}
                 placeholder="Search ticker or company name..."
