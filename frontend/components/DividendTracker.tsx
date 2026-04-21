@@ -54,12 +54,6 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
     const parsed = stored ? parseFloat(stored) : NaN;
     return !isNaN(parsed) && parsed > 0 ? parsed : 10000;
   });
-  const [inputValue, setInputValue] = useState(() => {
-    if (typeof window === "undefined") return "10000";
-    const stored = localStorage.getItem("corvo_portfolio_value");
-    const parsed = stored ? parseFloat(stored) : NaN;
-    return !isNaN(parsed) && parsed > 0 ? String(parsed) : "10000";
-  });
   const [showNonPayers, setShowNonPayers] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [dark, setDark] = useState(true);
@@ -100,15 +94,6 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
   // Donut chart data
   const donutData = payers.filter(h => h.annual_income > 0);
 
-  const handlePortfolioValueChange = (v: string) => {
-    setInputValue(v);
-    const n = parseFloat(v);
-    if (!isNaN(n) && n > 0) {
-      setPortfolioValue(n);
-      localStorage.setItem("corvo_portfolio_value", String(n));
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -119,7 +104,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
       <style>{`@keyframes divPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(201,168,76,0.6), transparent)" }} />
 
-      {/* Top: Annual Income + Portfolio Value Input */}
+      {/* Top: Annual Income + Next Ex-Div */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
         <div>
           <p style={{ fontSize: 8, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 3 }}>Est. Annual Income</p>
@@ -137,26 +122,12 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
           )}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: 1 }}>Portfolio Value</span>
-            <div style={{ display: "flex", alignItems: "center", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, overflow: "hidden" }}>
-              <span style={{ fontSize: 11, padding: "4px 6px", color: "var(--text-muted)" }}>$</span>
-              <input
-                type="number"
-                value={inputValue}
-                onChange={e => handlePortfolioValueChange(e.target.value)}
-                style={{ width: 80, padding: "4px 6px 4px 2px", background: "transparent", border: "none", color: "var(--text1)", fontSize: 11, fontFamily: "Space Mono, monospace", outline: "none" }}
-              />
-            </div>
+        {data?.next_ex_div_date && (
+          <div style={{ textAlign: "right" }}>
+            <p style={{ fontSize: 8, letterSpacing: 2, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 2 }}>Next Ex-Div</p>
+            <p style={{ fontSize: 11, color: dark ? "rgba(201,168,76,0.9)" : "#8b6914", margin: 0 }}>{formatDate(data.next_ex_div_date)}</p>
           </div>
-          {data?.next_ex_div_date && (
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: 8, letterSpacing: 2, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 2 }}>Next Ex-Div</p>
-              <p style={{ fontSize: 11, color: dark ? "rgba(201,168,76,0.9)" : "#8b6914", margin: 0 }}>{formatDate(data.next_ex_div_date)}</p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {loading ? (
