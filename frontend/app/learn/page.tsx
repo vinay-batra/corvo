@@ -1513,6 +1513,9 @@ export default function LearnPage() {
           currentStreak = 0;
           await supabase.from("profiles").update({ streak: 0, updated_at: new Date().toISOString() }).eq("id", user.id);
         }
+        if (currentStreak === 0 && lastDate === today) {
+          currentStreak = 1;
+        }
 
         // Set all profile display values before clearing the loading skeleton
         setDisplayName(profile?.display_name || user.email?.split("@")[0] || "");
@@ -1548,8 +1551,12 @@ export default function LearnPage() {
         const { data: ls } = await supabase.from("learn_scores").select("total_points").eq("user_id", user.id).single();
         if (ls) {
           setLearnPoints(ls.total_points ?? 0);
-          // If profiles.xp is missing but learn_scores has points, use that as XP
-          if (!profile?.xp && ls.total_points > 0) setXp(ls.total_points);
+          const profileXp = profile?.xp ?? 0;
+          const learnXp = ls.total_points ?? 0;
+          if (learnXp > profileXp) {
+            setXp(learnXp);
+            await supabase.from("profiles").update({ xp: learnXp, updated_at: new Date().toISOString() }).eq("id", user.id);
+          }
         }
       } finally {
         setProfileReady(true);
