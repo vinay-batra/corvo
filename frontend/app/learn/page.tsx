@@ -1504,7 +1504,7 @@ export default function LearnPage() {
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url, xp, streak, last_activity_date, lessons_completed, lesson_progress, last_daily_challenge")
+          .select("display_name, avatar_url, xp, streak, last_activity_date, lesson_progress, last_daily_challenge")
           .eq("id", user.id)
           .single();
         console.log("profile fetch:", { profile, profileError });
@@ -1528,10 +1528,6 @@ export default function LearnPage() {
         setStreak(currentStreak);
 
         if (profile) {
-          if (Array.isArray(profile.lessons_completed) && profile.lessons_completed.length > 0) {
-            setCompleted(profile.lessons_completed);
-            try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(profile.lessons_completed)); } catch {}
-          }
           if (profile.lesson_progress && typeof profile.lesson_progress === "object") {
             const lp = profile.lesson_progress as Record<string, any>;
             setLessonProgress(lp as Record<string, number[]>);
@@ -1669,20 +1665,15 @@ export default function LearnPage() {
     if (userId) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("lessons_completed, lesson_progress")
+        .select("lesson_progress")
         .eq("id", userId)
         .single();
 
-      const dbCompleted: string[] = profile?.lessons_completed || [];
       const dbProgress: Record<string, number[]> = (profile?.lesson_progress as Record<string, number[]>) || {};
-      const allCorrect = lesson && updatedProgress.length >= lesson.quiz.length;
 
       await supabase.from("profiles").upsert({
         id: userId,
         lesson_progress: { ...dbProgress, [lessonId]: updatedProgress },
-        ...(allCorrect && !dbCompleted.includes(lessonId)
-          ? { lessons_completed: [...dbCompleted, lessonId] }
-          : {}),
         updated_at: new Date().toISOString(),
       }, { onConflict: "id" });
     }
