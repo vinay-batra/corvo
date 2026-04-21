@@ -45,11 +45,21 @@ const GREEN = "#4caf7d";
 const RED   = "#e05c5c";
 
 const LEVELS = [
-  { min: 0,    max: 99,   name: "Beginner",  color: "#9b9b98" },
-  { min: 100,  max: 299,  name: "Investor",  color: "var(--accent)" },
-  { min: 300,  max: 599,  name: "Analyst",   color: AMBER },
-  { min: 600,  max: 999,  name: "Expert",    color: "#a78bfa" },
-  { min: 1000, max: Infinity, name: "Master", color: "#f97316" },
+  { min: 0,     max: 99,    name: "Novice",         color: "#9b9b98" },
+  { min: 100,   max: 199,   name: "Beginner",        color: "#a0a8b8" },
+  { min: 200,   max: 349,   name: "Learner",         color: "#6ab0de" },
+  { min: 350,   max: 499,   name: "Investor",        color: "#4a9eff" },
+  { min: 500,   max: 699,   name: "Analyst",         color: "#4caf7d" },
+  { min: 700,   max: 899,   name: "Strategist",      color: "#3ecf8e" },
+  { min: 900,   max: 1149,  name: "Portfolio Pro",   color: "var(--accent)" },
+  { min: 1150,  max: 1449,  name: "Market Watcher",  color: "#c9a84c" },
+  { min: 1450,  max: 1799,  name: "Risk Manager",    color: "#f59e0b" },
+  { min: 1800,  max: 2199,  name: "Fund Manager",    color: "#f97316" },
+  { min: 2200,  max: 2699,  name: "Quant",           color: "#a78bfa" },
+  { min: 2700,  max: 3299,  name: "Expert",          color: "#8b5cf6" },
+  { min: 3300,  max: 3999,  name: "Master",          color: "#ec4899" },
+  { min: 4000,  max: 4999,  name: "Elite",           color: "#ef4444" },
+  { min: 5000,  max: Infinity, name: "Legend",       color: "#f97316" },
 ];
 
 function getLevel(xp: number) { return LEVELS.findLast(l => xp >= l.min) ?? LEVELS[0]; }
