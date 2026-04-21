@@ -120,6 +120,7 @@ export default function StockCompare() {
     return () => obs.disconnect();
   }, []);
 
+  const [comparing, setComparing] = useState(false);
   const [inputValue, setInputValue]       = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching]         = useState(false);
@@ -206,6 +207,7 @@ export default function StockCompare() {
       next.forEach((ticker, i) => {
         setStocks(p => p[ticker] ? { ...p, [ticker]: { ...p[ticker], color: PALETTE[i] } } : p);
       });
+      if (next.length < 2) setComparing(false);
       return next;
     });
   };
@@ -284,17 +286,17 @@ export default function StockCompare() {
           </div>
         )}
 
-        {tickers.length < MAX && (
+        {!comparing && (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{ position: "relative", flex: 1, zIndex: 50 }}>
               <input
                 value={inputValue}
-                onChange={e => { const v = e.target.value.toUpperCase(); setInputValue(v); setError(""); if (!v) setSearchResults(COMMON_TICKERS.filter(t => !tickers.includes(t.ticker)).slice(0, 8)); else search(v); }}
+                onChange={e => { const v = e.target.value.toUpperCase(); setInputValue(v); setError(""); if (!v) { setSearchResults(COMMON_TICKERS.filter(t => !tickers.includes(t.ticker)).slice(0, 8)); } else search(v); }}
                 onFocus={() => { setDropdownOpen(true); if (inputValue) search(inputValue); else setSearchResults(COMMON_TICKERS.filter(t => !tickers.includes(t.ticker)).slice(0, 8)); }}
                 onBlur={() => { blurTimer.current = setTimeout(() => setDropdownOpen(false), 180); }}
                 onKeyDown={e => { if (e.key === "Enter" && inputValue) addTicker(inputValue); if (e.key === "Escape") setDropdownOpen(false); }}
                 placeholder="Search ticker or company name..."
-                style={{ width: "100%", padding: "8px 12px", background: "var(--bg3)", border: `0.5px solid ${dropdownOpen && inputValue ? AMBER + "66" : "var(--border)"}`, borderRadius: 8, color: "var(--text)", fontSize: 12, fontFamily: "var(--font-mono)", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "8px 12px", background: "var(--bg3)", border: `0.5px solid ${dropdownOpen ? AMBER + "66" : "var(--border)"}`, borderRadius: 8, color: "var(--text)", fontSize: 12, fontFamily: "var(--font-mono)", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
               />
               {searching && <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
               <AnimatePresence>
@@ -328,6 +330,17 @@ export default function StockCompare() {
           </div>
         )}
 
+        {tickers.length >= 2 && !comparing && (
+          <motion.button
+            initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+            onClick={() => setComparing(true)}
+            style={{ marginTop: 10, width: "100%", padding: "9px 0", background: "rgba(184,134,11,0.12)", border: "0.5px solid rgba(184,134,11,0.45)", borderRadius: 8, color: AMBER, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.04em" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(184,134,11,0.22)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(184,134,11,0.7)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(184,134,11,0.12)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(184,134,11,0.45)"; }}>
+            Compare {tickers.join(" vs ")}
+          </motion.button>
+        )}
+
         {error && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 8 }}>{error}</p>}
         {tickers.length === 0 && (
           <div style={{ marginTop: 12 }}>
@@ -355,7 +368,7 @@ export default function StockCompare() {
         )}
       </div>
 
-      {tickers.length >= 2 && chartData.filter((d: any) => d?.x?.length > 0).length >= 2 && (
+      {comparing && tickers.length >= 2 && chartData.filter((d: any) => d?.x?.length > 0).length >= 2 && (
         <>
           <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginBottom: 14 }}>
             <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Normalized Performance (Base 100, 1Y)</p>
