@@ -271,7 +271,14 @@ export default function PositionsTab({
     const queryParam = period === "custom"
       ? `start_date=${customStart}&end_date=${customEnd}`
       : `period=${PERIOD_API[period]}`;
-    fetch(`${API_URL}/portfolio?tickers=${encodeURIComponent(benchmark)}&weights=1&${queryParam}`)
+    const BENCH_PROXY: Record<string, string> = {
+      "^GSPC": "SPY",
+      "^IXIC": "QQQ",
+      "^DJI": "DIA",
+      "^RUT": "IWM",
+    };
+    const benchTicker = BENCH_PROXY[benchmark] ?? benchmark;
+    fetch(`${API_URL}/portfolio?tickers=${encodeURIComponent(benchTicker)}&weights=1&${queryParam}`)
       .then(r => r.json())
       .then(d => {
         setBenchData({
