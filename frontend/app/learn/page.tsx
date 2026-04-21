@@ -1068,8 +1068,46 @@ function ChallengeMode({
   );
 }
 
+// ── LevelsReference ───────────────────────────────────────────────────────────
+function LevelsReference({ currentXp }: { currentXp: number }) {
+  const currentLevel = getLevel(currentXp);
+  return (
+    <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 14, padding: "22px 24px", marginTop: 32 }}>
+      <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase", marginBottom: 6 }}>Progression</p>
+      <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 20, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Levels & XP</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {LEVELS.map((lvl, i) => {
+          const isCurrentLevel = currentLevel.name === lvl.name;
+          const isUnlocked = currentXp >= lvl.min;
+          const xpNeeded = lvl.min > currentXp ? lvl.min - currentXp : 0;
+          return (
+            <div key={lvl.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: isCurrentLevel ? `${lvl.color}12` : "var(--bg2)", border: `0.5px solid ${isCurrentLevel ? `${lvl.color}55` : "var(--border)"}`, borderRadius: 10, opacity: isUnlocked ? 1 : 0.5 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: isUnlocked ? lvl.color : "var(--border)", flexShrink: 0, boxShadow: isCurrentLevel ? `0 0 8px ${lvl.color}88` : "none" }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isUnlocked ? lvl.color : "var(--text3)" }}>{lvl.name}</span>
+                  {isCurrentLevel && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: `${lvl.color}22`, color: lvl.color, letterSpacing: 1 }}>YOU ARE HERE</span>}
+                </div>
+                <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>
+                  {lvl.max === Infinity ? `${lvl.min}+ XP` : `${lvl.min} – ${lvl.max} XP`}
+                </span>
+              </div>
+              {!isUnlocked && xpNeeded > 0 && (
+                <span style={{ fontSize: 10, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>{xpNeeded} XP away</span>
+              )}
+              {isUnlocked && !isCurrentLevel && (
+                <CheckCircle2 size={14} color={lvl.color} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
-interface LeaderEntry { display_name: string; total_points: number; rank: number; }
+interface LeaderEntry { display_name: string; total_points: number; rank: number; id?: string; }
 
 function Leaderboard({ myPoints }: { myPoints: number }) {
   const [entries, setEntries] = useState<LeaderEntry[]>([]);
@@ -1080,11 +1118,11 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
     supabase.auth.getUser().then(({ data }) => setUser(data.user)).catch(() => {});
     (async () => {
       const { data, error } = await supabase
-        .from("learn_scores")
-        .select("display_name,total_points")
-        .order("total_points", { ascending: false })
+        .from("profiles")
+        .select("display_name,xp,id")
+        .order("xp", { ascending: false })
         .limit(10);
-      if (!error && data) setEntries(data.map((r: any, i: number) => ({ ...r, rank: i + 1 })));
+      if (!error && data) setEntries(data.map((r: any, i: number) => ({ display_name: r.display_name, total_points: r.xp ?? 0, id: r.id, rank: i + 1 })));
       setLoading(false);
     })();
   }, []);
@@ -1113,7 +1151,7 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {entries.map(e => {
-            const isMe = user && (user?.user_metadata?.display_name === e.display_name || user?.email?.split("@")[0] === e.display_name);
+            const isMe = user && e.id === user.id;
             return (
               <motion.div initial={false} whileHover={{ x: 3 }} key={e.rank} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: isMe ? `${AMBER}12` : "var(--bg2)", border: `0.5px solid ${isMe ? `${AMBER}44` : "var(--border)"}`, borderRadius: 10 }}>
                 <span style={{ width: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1948,7 +1986,8 @@ export default function LearnPage() {
                 })}
               </motion.div>
 
-              <Leaderboard myPoints={learnPoints} />
+              <LevelsReference currentXp={xp} />
+              <Leaderboard myPoints={xp} />
             </motion.div>
           )}
 
