@@ -666,13 +666,6 @@ export default function AiChat({
 
           <div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1, minWidth: 0 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", letterSpacing: 0.5 }}>Corvo AI</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#5cb88a", boxShadow: "0 0 5px #5cb88a" }} />
-              <span style={{ fontSize: 9, color: "var(--text3)" }}>Online</span>
-            </div>
-            <span style={{ fontSize: 9, fontWeight: 600, color: "var(--accent)", background: "rgba(184,134,11,.1)", border: "0.5px solid rgba(184,134,11,.25)", padding: "2px 6px", borderRadius: 20, whiteSpace: "nowrap" }}>
-              Claude
-            </span>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
