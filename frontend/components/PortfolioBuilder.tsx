@@ -357,24 +357,26 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         borderBottom:`0.5px solid var(--border)`,
         backdropFilter:"blur(8px)", WebkitBackdropFilter:"blur(8px)",
       }}>
-        <span style={{fontSize:9,letterSpacing:3,color:C.cream3,textTransform:"uppercase",display:"block",marginBottom:6}}>Assets</span>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:6}}>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <button
-              onClick={()=>setShowPresetsModal(true)}
-              style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
-              Presets
-            </button>
-            <button onClick={()=>fileRef.current?.click()} disabled={importLoading}
-              style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
-              {importLoading?"...":"Screenshot"}
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
-            <button onClick={()=>{setShowCsvModal(true);setCsvPreview(null);setCsvError("");}}
-              style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
-              CSV
-            </button>
-          </div>
+        {/* Row 1: Presets / Screenshot / CSV */}
+        <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+          <button
+            onClick={()=>setShowPresetsModal(true)}
+            style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
+            Presets
+          </button>
+          <button onClick={()=>fileRef.current?.click()} disabled={importLoading}
+            style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
+            {importLoading?"...":"Screenshot"}
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
+          <button onClick={()=>{setShowCsvModal(true);setCsvPreview(null);setCsvError("");}}
+            style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
+            CSV
+          </button>
+        </div>
+        {/* Row 2: ASSETS label + weight totals */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:9,letterSpacing:3,color:C.cream3,textTransform:"uppercase"}}>Assets</span>
           <span
             onClick={!balanced && !overweight ? equalize : undefined}
             title={!balanced && !overweight ? "Click to equalize weights" : ""}
@@ -394,26 +396,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       </div>
 
       {importError&&<p style={{fontSize:10,color:"#e05c5c",margin:"8px 0"}}>{importError}</p>}
-
-      {/* ── Portfolio Value input ──────────────────────────────────── */}
-      <div style={{marginTop:16,marginBottom:16,padding:"12px 14px",background:"var(--bg3)",border:"0.5px solid var(--border2)",borderRadius:10}}>
-        <label style={LABEL_STYLE}>Portfolio Value</label>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontSize:15,color:"var(--text2)",lineHeight:1}}>$</span>
-          <input
-            type="number"
-            min="0"
-            step="1000"
-            value={portfolioValue}
-            onChange={e=>handlePortfolioValueChange(e.target.value)}
-            placeholder="10000"
-            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:600, maxWidth:180}}
-          />
-        </div>
-        <div style={{fontSize:10,color:"var(--text3)",marginTop:5,lineHeight:1.5}}>
-          Used for P&amp;L, tax loss harvesting, and dividend calculations
-        </div>
-      </div>
 
       {/* ── Asset list ────────────────────────────────────────────── */}
       <div style={{marginTop:4, paddingTop:12}}>
@@ -585,6 +567,26 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             Equal
           </button>
         )}
+      </div>
+
+      {/* ── Portfolio Value input ──────────────────────────────────── */}
+      <div style={{marginTop:4,marginBottom:16,padding:"12px 14px",background:"var(--bg3)",border:"0.5px solid var(--border2)",borderRadius:10}}>
+        <label style={LABEL_STYLE}>Portfolio Value</label>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:15,color:"var(--text2)",lineHeight:1}}>$</span>
+          <input
+            type="number"
+            min="0"
+            step="1000"
+            value={portfolioValue}
+            onChange={e=>handlePortfolioValueChange(e.target.value)}
+            placeholder="10000"
+            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:600, maxWidth:180}}
+          />
+        </div>
+        <div style={{fontSize:10,color:"var(--text3)",marginTop:5,lineHeight:1.5}}>
+          Used for P&amp;L, tax loss harvesting, and dividend calculations
+        </div>
       </div>
 
       {/* ── Presets Modal ─────────────────────────────────────────── */}
