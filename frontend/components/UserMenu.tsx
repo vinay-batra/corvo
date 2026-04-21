@@ -70,7 +70,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
   const label = resolvedName;
   const initials = label[0]?.toUpperCase() || "?";
 
-  const itemStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "rgba(232,224,204,0.75)", textDecoration: "none", transition: "background 0.15s", background: "transparent", border: "none", cursor: "pointer", width: "100%", textAlign: "left", fontFamily: "Inter,sans-serif" };
+  const itemStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s", background: "transparent", border: "none", cursor: "pointer", width: "100%", textAlign: "left", fontFamily: "Inter,sans-serif" };
 
   return (
     <div style={{ position: "relative" }}>
@@ -88,8 +88,8 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             {initials}
           </div>
         )}
-        <span style={{ fontSize: 12, color: "rgba(232,224,204,0.7)", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.4, flexShrink: 0 }}><path d="M2 3.5L5 6.5L8 3.5" stroke="#e8e0cc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <span style={{ fontSize: 12, color: "var(--text)", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.4, flexShrink: 0 }}><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </button>
 
       <AnimatePresence>
