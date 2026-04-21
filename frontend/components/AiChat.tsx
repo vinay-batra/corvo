@@ -658,21 +658,21 @@ export default function AiChat({
         </AnimatePresence>
 
         {/* ── Header ── */}
-        <div style={{ height: 48, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", paddingInline: 12, gap: 8, background: "var(--bg)" }}>
+        <div style={{ height: 48, flexShrink: 0, borderTop: "2px solid var(--accent)", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "14px 16px", gap: 8, background: "var(--bg)" }}>
           <button className="cv-icon-btn" onClick={() => setSidebarOpen(v => !v)} title="Chat history"
             style={{ width: 28, height: 28, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0, transition: "all .15s" }}>
             <Menu size={13} />
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", letterSpacing: 0.2 }}>Corvo AI</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", letterSpacing: 0.5 }}>Corvo AI</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#5cb88a", boxShadow: "0 0 5px #5cb88a" }} />
+              <span style={{ fontSize: 9, color: "var(--text3)" }}>Online</span>
+            </div>
             <span style={{ fontSize: 9, fontWeight: 600, color: "var(--accent)", background: "rgba(184,134,11,.1)", border: "0.5px solid rgba(184,134,11,.25)", padding: "2px 6px", borderRadius: 20, whiteSpace: "nowrap" }}>
               Claude
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#5cb88a", boxShadow: "0 0 4px #5cb88a" }} />
-              <span style={{ fontSize: 9, color: "var(--text3)" }}>Online</span>
-            </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -690,13 +690,13 @@ export default function AiChat({
         </div>
 
         {/* ── Context bar ── */}
-        <div style={{ borderBottom: "0.5px solid var(--border)", padding: "5px 12px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, background: "var(--bg)", flexWrap: "wrap" }}>
+        <div style={{ borderBottom: "0.5px solid var(--border)", padding: "8px 14px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, background: "var(--bg)", flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, flexWrap: "wrap", minWidth: 0 }}>
             <span style={{ fontSize: 9, letterSpacing: 1.5, fontWeight: 600, textTransform: "uppercase", color: portfolioCtxOn ? "#5cb88a" : "var(--text3)", whiteSpace: "nowrap" }}>
               {portfolioCtxOn ? "● Context" : "○ No context"}
             </span>
             {portfolioCtxOn && ctxItems.map((item, i) => (
-              <span key={i} style={{ fontSize: 9, color: "var(--text3)", background: "var(--bg3)", padding: "1px 5px", borderRadius: 3, border: "0.5px solid var(--border)", whiteSpace: "nowrap" }}>
+              <span key={i} style={{ fontSize: 10, color: "var(--text3)", background: "var(--bg3)", padding: "2px 7px", borderRadius: 3, border: "0.5px solid var(--border)", whiteSpace: "nowrap" }}>
                 {item}
               </span>
             ))}
