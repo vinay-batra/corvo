@@ -96,8 +96,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={false}
       transition={{ duration: 0.5 }}
       style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "20px 22px", position: "relative", overflow: "hidden" }}
     >
