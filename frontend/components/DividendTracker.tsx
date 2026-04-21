@@ -14,7 +14,7 @@ const GREEN = "#4caf7d";
 interface Holding {
   ticker: string;
   weight: number;
-  dividend_yield: number | null;  // raw decimal e.g. 0.0082
+  dividend_yield: number | null;  // percentage value e.g. 0.38 means 0.38%
   annual_income: number;
   ex_div_date: string | null;
   frequency: string | null;
@@ -132,7 +132,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
           ) : null}
           {data && weightedYield > 0 && (
             <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
-              Portfolio yield: <span style={{ color: AMBER, fontWeight: 600 }}>{(weightedYield * 100).toFixed(2)}%</span>
+              Portfolio yield: <span style={{ color: AMBER, fontWeight: 600 }}>{weightedYield.toFixed(2)}%</span>
             </p>
           )}
         </div>
@@ -223,7 +223,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
                     {sorted.map(h => {
                       const days = daysUntil(h.ex_div_date);
                       const soon = days !== null && days >= 0 && days <= 30;
-                      const yieldPct = h.dividend_yield != null ? h.dividend_yield * 100 : null;
+                      const yieldPct = h.dividend_yield != null ? h.dividend_yield : null;
                       return (
                         <tr key={h.ticker} style={{ borderBottom: "1px solid var(--border)", background: soon ? "rgba(201,168,76,0.06)" : "transparent" }}>
                           <td style={{ padding: "8px 8px", fontWeight: 600, color: "var(--text1)", textAlign: "left" }}>
