@@ -147,7 +147,7 @@ export default function StockCompare() {
   }, []);
 
   const fetchStock = async (ticker: string, color: string) => {
-    if (stocks[ticker] || stockLoading[ticker]) return;
+    if (stockLoading[ticker]) return;
     setStockLoading(p => ({ ...p, [ticker]: true }));
     try {
       const [infoRes, histRes] = await Promise.all([
@@ -191,6 +191,7 @@ export default function StockCompare() {
     setInputValue("");
     setSearchResults([]);
     setDropdownOpen(false);
+    search("");
     fetchStock(t, color);
   };
 
@@ -210,9 +211,18 @@ export default function StockCompare() {
   };
 
   const chartData = tickers
-    .map(t => stocks[t])
-    .filter(Boolean)
-    .map(s => {
+    .map((t, i) => {
+      const s = stocks[t];
+      if (!s) {
+        // Loading placeholder — empty trace shows in legend while data arrives
+        return stockLoading[t] ? {
+          x: [] as string[], y: [] as number[],
+          type: "scatter" as const, mode: "lines" as const,
+          name: `${t} (loading…)`,
+          line: { color: PALETTE[i], width: 1.5, dash: "dot" as const },
+          hovertemplate: `${t}: loading…<extra></extra>`,
+        } : null;
+      }
       const hist = s.history;
       if (!hist.length) return null;
       const base = hist[0].p;
@@ -279,7 +289,7 @@ export default function StockCompare() {
             <div style={{ position: "relative", flex: 1, zIndex: 50 }}>
               <input
                 value={inputValue}
-                onChange={e => { setInputValue(e.target.value.toUpperCase()); setError(""); search(e.target.value); }}
+                onChange={e => { setInputValue(e.target.value.toUpperCase()); setError(""); search(e.target.value.toUpperCase()); }}
                 onFocus={() => { setDropdownOpen(true); if (inputValue) search(inputValue); }}
                 onBlur={() => { blurTimer.current = setTimeout(() => setDropdownOpen(false), 180); }}
                 onKeyDown={e => { if (e.key === "Enter" && inputValue) addTicker(inputValue); if (e.key === "Escape") setDropdownOpen(false); }}
@@ -319,10 +329,33 @@ export default function StockCompare() {
         )}
 
         {error && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 8 }}>{error}</p>}
-        {tickers.length === 0 && <p style={{ fontSize: 12, color: "var(--text3)", marginTop: tickers.length < MAX ? 8 : 0 }}>Search and add up to 4 tickers to compare performance, stats, and correlation.</p>}
+        {tickers.length === 0 && (
+          <div style={{ marginTop: 12 }}>
+            <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 14 }}>Search and add up to 4 tickers to compare performance, stats, and correlation.</p>
+            {([
+              { label: "Stocks", tickers: ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","BRK-B","JPM"] },
+              { label: "ETFs",   tickers: ["SPY","QQQ","VTI","GLD","TLT","ARKK"] },
+              { label: "Crypto", tickers: ["BTC-USD","ETH-USD"] },
+            ] as { label: string; tickers: string[] }[]).map(group => (
+              <div key={group.label} style={{ marginBottom: 10 }}>
+                <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 6 }}>{group.label}</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                  {group.tickers.map(t => (
+                    <button key={t} onClick={() => addTicker(t)}
+                      style={{ padding: "4px 10px", fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700, borderRadius: 6, background: "rgba(184,134,11,0.07)", border: "0.5px solid rgba(184,134,11,0.25)", color: AMBER, cursor: "pointer", transition: "all 0.12s" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,0.15)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.5)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,0.07)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.25)"; }}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {tickers.length >= 2 && chartData.length >= 2 && (
+      {tickers.length >= 2 && chartData.filter((d: any) => d?.x?.length > 0).length >= 2 && (
         <>
           <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginBottom: 14 }}>
             <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Normalized Performance (Base 100, 1Y)</p>
