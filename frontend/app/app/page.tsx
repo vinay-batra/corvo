@@ -2087,24 +2087,24 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                         { label: "What's Good", text: "Consistently beating your benchmark by 2–5pp is exceptional. Even matching it while taking less risk is a win." },
                       ],
                     },
-                    {
-                      title: "Sector Exposure",
-                      content: <SectorExposureChart assets={assets} />,
-                      sections: [
-                        { label: "Plain English", text: "Shows how your portfolio weight is distributed across market sectors, aggregated from each holding's sector classification." },
-                        { label: "Example", text: "If AAPL and MSFT together make up 70% of your portfolio, Technology will show 70% exposure." },
-                        { label: "What's Good", text: "A diversified portfolio spreads across 4+ sectors. Heavy concentration in one sector amplifies both gains and losses." },
-                      ],
-                    },
                   ].map(({ title, content, sections }) => (
                     <motion.div key={title} initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }} style={{ display: "flex", flexDirection: "column" }}>
                       <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
                     </motion.div>
                   ))}
                 </motion.div>
-                <motion.div key="allocation-card" initial={false} style={{ marginTop: 12 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
-                  <Card><CardHeader title="Allocation" /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
-                </motion.div>
+                <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
+                  <motion.div key="allocation-card" initial={false} style={{ flex: 3 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
+                    <Card style={{ marginBottom: 0, height: "100%" }}><CardHeader title="Allocation" /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
+                  </motion.div>
+                  <motion.div key="sector-card" initial={false} style={{ flex: 2 }} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
+                    <Card style={{ marginBottom: 0, height: "100%" }}><TooltipCardHeader title="Sector Exposure" sections={[
+                      { label: "Plain English", text: "Shows how your portfolio weight is distributed across market sectors, aggregated from each holding's sector classification." },
+                      { label: "Example", text: "If AAPL and MSFT together make up 70% of your portfolio, Technology will show 70% exposure." },
+                      { label: "What's Good", text: "A diversified portfolio spreads across 4+ sectors. Heavy concentration in one sector amplifies both gains and losses." },
+                    ]} /><SectorExposureChart assets={assets} /></Card>
+                  </motion.div>
+                </div>
                 {data && !isPortfolioSaved && (
                   <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                     style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 0" }}>
