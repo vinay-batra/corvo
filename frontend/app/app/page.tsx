@@ -794,11 +794,58 @@ const STOCKS_SEARCH_GROUPS = [
   { label: "ETFs",   tickers: ["SPY","QQQ","VTI","VOO","GLD","TLT","ARKK","SCHD"] },
   { label: "Crypto", tickers: ["BTC-USD","ETH-USD","SOL-USD"] },
 ];
+
+const TAPE_TICKERS = ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","SPY","QQQ","BTC-USD"];
+const CARD_TICKERS = ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","SPY","BTC-USD"];
+const TICKER_NAMES: Record<string,string> = {
+  AAPL: "Apple Inc", MSFT: "Microsoft", NVDA: "NVIDIA", GOOGL: "Alphabet",
+  AMZN: "Amazon", TSLA: "Tesla", META: "Meta", SPY: "S&P 500 ETF",
+  QQQ: "NASDAQ 100 ETF", "BTC-USD": "Bitcoin",
+};
+
+const ORB_CONFIGS = [
+  { w: 320, h: 320, top: "5%",  left: "-8%",  color: "rgba(184,134,11,0.04)", dur: 9 },
+  { w: 260, h: 260, top: "60%", left: "85%",  color: "rgba(91,155,213,0.04)", dur: 11 },
+  { w: 200, h: 200, top: "30%", left: "70%",  color: "rgba(184,134,11,0.03)", dur: 8 },
+  { w: 400, h: 400, top: "70%", left: "10%",  color: "rgba(91,155,213,0.03)", dur: 12 },
+  { w: 240, h: 240, top: "10%", left: "55%",  color: "rgba(184,134,11,0.04)", dur: 10 },
+  { w: 180, h: 180, top: "45%", left: "35%",  color: "rgba(91,155,213,0.04)", dur: 13 },
+];
+
+function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }) {
+  if (!data || data.length < 2) return <div style={{ width: 60, height: 24 }} />;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const W = 60, H = 24;
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * W},${H - ((v - min) / range) * H}`).join(" ");
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+      <polyline points={pts} fill="none" stroke={positive ? "#5cb88a" : "#e05c5c"} strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+interface WatchlistStockData { ticker: string; name?: string; price: number | null; change: number | null; change_pct: number | null; sparkline: number[]; }
+
 function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
   const [busy, setBusy] = useState(false);
+  const [liveData, setLiveData] = useState<Record<string, WatchlistStockData>>({});
   const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  // Fetch live prices for tape + cards
+  useEffect(() => {
+    const tickers = [...new Set([...TAPE_TICKERS, ...CARD_TICKERS])].join(",");
+    fetch(`${API}/watchlist-data?tickers=${tickers}`)
+      .then(r => r.json())
+      .then(d => {
+        const map: Record<string, WatchlistStockData> = {};
+        ((d.results ?? []) as WatchlistStockData[]).forEach(s => { if (s?.ticker) map[s.ticker] = s; });
+        setLiveData(map);
+      })
+      .catch(() => {});
+  }, [API]);
 
   useEffect(() => {
     if (!q) { setResults([]); return; }
@@ -813,10 +860,56 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
     return () => clearTimeout(t);
   }, [q]);
 
+  const fmtPrice = (p: number | null) => p == null ? "—" : p >= 1000 ? `$${p.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : `$${p.toFixed(2)}`;
+  const fmtPct   = (p: number | null) => p == null ? "" : `${p >= 0 ? "+" : ""}${p.toFixed(2)}%`;
+
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto" }}>
-      <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Stock Lookup</p>
-      <div style={{ position: "relative", marginBottom: 20 }}>
+    <div style={{ maxWidth: 600, margin: "0 auto", position: "relative" }}>
+      <style>{`
+        @keyframes marquee-tape { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+        @keyframes orb-float { 0%,100% { transform: translateY(0px) } 50% { transform: translateY(-18px) } }
+      `}</style>
+
+      {/* Ambient orbs */}
+      {ORB_CONFIGS.map((o, i) => (
+        <div key={i} style={{
+          position: "absolute", pointerEvents: "none", zIndex: 0,
+          width: o.w, height: o.h, top: o.top, left: o.left,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${o.color} 0%, transparent 70%)`,
+          animation: `orb-float ${o.dur}s ease-in-out infinite`,
+          animationDelay: `${i * 1.3}s`,
+        }} />
+      ))}
+
+      {/* Live ticker tape */}
+      {TAPE_TICKERS.length > 0 && (
+        <div style={{ overflow: "hidden", height: 34, position: "relative", zIndex: 1, marginBottom: 20, borderRadius: 8, border: "0.5px solid var(--border)", background: "var(--bg2)" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 24, height: "100%",
+            animation: "marquee-tape 28s linear infinite", width: "max-content", padding: "0 16px",
+          }}>
+            {[...TAPE_TICKERS, ...TAPE_TICKERS].map((ticker, idx) => {
+              const s = liveData[ticker];
+              const pos = (s?.change_pct ?? 0) >= 0;
+              return (
+                <div key={`${ticker}-${idx}`} style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>{ticker}</span>
+                  <span style={{ fontSize: 11, color: "var(--text)" }}>{fmtPrice(s?.price ?? null)}</span>
+                  {s?.change_pct != null && (
+                    <span style={{ fontSize: 10, fontWeight: 600, color: pos ? "#5cb88a" : "#e05c5c" }}>{fmtPct(s.change_pct)}</span>
+                  )}
+                  <span style={{ width: 1, height: 14, background: "var(--border2)", marginLeft: 8 }} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Search bar */}
+      <div style={{ position: "relative", marginBottom: 20, zIndex: 1 }}>
+        <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Stock Lookup</p>
         <input
           className="accent-input"
           value={q} onChange={e => setQ(e.target.value)}
@@ -825,8 +918,10 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
         />
         {busy && <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
       </div>
+
+      {/* Search results */}
       {results.length > 0 ? (
-        <div style={{ border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden", position: "relative", zIndex: 1 }}>
           {results.map((r: any) => (
             <div key={r.ticker} onClick={() => onSelect(r.ticker)}
               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", cursor: "pointer", borderBottom: "0.5px solid var(--border)", transition: "background 0.1s" }}
@@ -840,7 +935,8 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
           ))}
         </div>
       ) : !q ? (
-        <div>
+        <div style={{ position: "relative", zIndex: 1 }}>
+          {/* Pill groups */}
           {STOCKS_SEARCH_GROUPS.map(group => (
             <div key={group.label} style={{ marginBottom: 12 }}>
               <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 7 }}>{group.label}</p>
@@ -856,6 +952,44 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
               </div>
             </div>
           ))}
+
+          {/* Animated stat cards grid */}
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Live Market</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              {CARD_TICKERS.map((ticker, i) => {
+                const s = liveData[ticker];
+                const pos = (s?.change_pct ?? 0) >= 0;
+                return (
+                  <motion.div
+                    key={ticker}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.06, duration: 0.3 }}
+                    onClick={() => onSelect(ticker)}
+                    style={{ padding: "10px 12px", borderRadius: 10, border: "0.5px solid var(--border)", background: "var(--bg2)", cursor: "pointer", transition: "border-color 0.15s, background 0.15s" }}
+                    whileHover={{ scale: 1.02 }}
+                    onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(184,134,11,0.4)"; }}
+                    onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg2)"; (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                      <div>
+                        <div style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>{ticker}</div>
+                        <div style={{ fontSize: 9, color: "var(--text3)", marginTop: 1, maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{TICKER_NAMES[ticker] ?? ticker}</div>
+                      </div>
+                      <MiniSparkline data={s?.sparkline ?? []} positive={pos} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{fmtPrice(s?.price ?? null)}</span>
+                      {s?.change_pct != null && (
+                        <span style={{ fontSize: 10, fontWeight: 600, color: pos ? "#5cb88a" : "#e05c5c" }}>{fmtPct(s.change_pct)}</span>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       ) : null}
     </div>
