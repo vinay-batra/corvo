@@ -831,15 +831,22 @@ function StocksSearch({ onSelect, onCompare }: { onSelect: (t: string) => void; 
 
   // Fetch live prices for cards
   useEffect(() => {
-    const tickers = CARD_TICKERS.join(",");
-    fetch(`${API}/watchlist-data?tickers=${tickers}`)
-      .then(r => r.json())
-      .then(d => {
-        const map: Record<string, WatchlistStockData> = {};
-        ((d.results ?? []) as WatchlistStockData[]).forEach(s => { if (s?.ticker) map[s.ticker] = s; });
-        setLiveData(map);
-      })
-      .catch(() => {});
+    const tickers = encodeURIComponent(CARD_TICKERS.join(","));
+    const url = `${API}/watchlist-data?tickers=${tickers}`;
+    const doFetch = () =>
+      fetch(url)
+        .then(r => r.json())
+        .then(d => {
+          console.log("[StocksSearch] watchlist-data response:", d);
+          const map: Record<string, WatchlistStockData> = {};
+          ((d.results ?? []) as WatchlistStockData[]).forEach(s => { if (s?.ticker) map[s.ticker] = s; });
+          if (Object.keys(map).length === 0) throw new Error("empty results");
+          setLiveData(map);
+        });
+    doFetch().catch(err => {
+      console.warn("[StocksSearch] watchlist-data failed, retrying in 1s:", err);
+      setTimeout(() => doFetch().catch(e => console.error("[StocksSearch] retry failed:", e)), 1000);
+    });
   }, [API]);
 
   useEffect(() => {
