@@ -51,8 +51,8 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
     .filter(a => Math.abs(a.normW - equalW) > 0.05)
     .map(a => {
       const diff = a.normW - equalW;
-      const action = diff > 0 ? "trim" : "add to";
-      return sanitize(`Consider ${action}ing ${a.ticker} from ${(a.normW*100).toFixed(0)}% toward ${(equalW*100).toFixed(0)}%`);
+      const action = diff > 0 ? "trimming" : "adding";
+      return sanitize(`Consider ${action} ${a.ticker} from ${(a.normW*100).toFixed(0)}% toward ${(equalW*100).toFixed(0)}%`);
     });
 
   return (
