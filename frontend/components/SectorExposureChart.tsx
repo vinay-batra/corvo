@@ -10,18 +10,14 @@ import EmptyState from "./EmptyState";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
-// Amber-anchored palette that stays readable on dark backgrounds
 const SECTOR_COLORS = [
+  "#5b9bd5",
+  "#4caf7d",
   "#b8860b",
-  "#a86e2e",
-  "#e8c97a",
-  "#7a6235",
-  "#d4a855",
-  "#8c5e20",
-  "#f0d898",
-  "#6b5030",
-  "#b8943c",
-  "#5a4020",
+  "#e05c5c",
+  "#b47ee0",
+  "#e0965c",
+  "#5cd4d4",
 ];
 
 const SectorExposureChart = memo(function SectorExposureChart({
@@ -82,25 +78,8 @@ const SectorExposureChart = memo(function SectorExposureChart({
         }}
       />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-        }}
-      >
-        <p
-          style={{
-            fontSize: 9,
-            letterSpacing: 3,
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-          }}
-        >
-          Sector Exposure
-        </p>
-        {data && (
+      {data && (
+        <div style={{ textAlign: "right", marginBottom: 16 }}>
           <span
             style={{
               fontFamily: "var(--font-display)",
@@ -111,8 +90,8 @@ const SectorExposureChart = memo(function SectorExposureChart({
           >
             {labels.length} sector{labels.length !== 1 ? "s" : ""}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "10px 0" }}>
@@ -139,6 +118,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
               hole: 0.52,
               labels,
               values,
+              domain: { x: [0, 0.5], y: [0, 1] },
               textinfo: "none",
               hovertemplate: "<b>%{label}</b><br>%{percent}<extra></extra>",
               marker: {
@@ -175,7 +155,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
             annotations: [
               {
                 text: `${labels.length}<br><span style="font-size:9px">sectors</span>`,
-                x: 0.38,
+                x: 0.25,
                 y: 0.5,
                 xref: "paper",
                 yref: "paper",
