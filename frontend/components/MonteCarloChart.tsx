@@ -52,6 +52,8 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
     const positiveProb = Math.round(data.positive_prob * 100);
 
     setInsightLoading(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     fetch(`${API_URL}/montecarlo/insight`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -64,11 +66,27 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
         expected_shortfall: data.expected_shortfall ?? data.final_p5,
         simulations: data.simulations ?? 8500,
       }),
+      signal: controller.signal,
     })
       .then(r => r.json())
-      .then(r => setInsight(r.insight ?? null))
-      .catch(() => setInsight(null))
-      .finally(() => setInsightLoading(false));
+      .then(r => {
+        if (r.detail === "Rate limit exceeded. Try again in an hour.") {
+          setInsight("Insight unavailable — rate limit reached. Try again shortly.");
+        } else {
+          setInsight(r.insight ?? null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === "AbortError") {
+          setInsight("Insight generation timed out.");
+        } else {
+          setInsight(null);
+        }
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setInsightLoading(false);
+      });
   }, [data]);
 
   // Derived display values - all bands are fractional gain/loss (0.0 = breakeven)
