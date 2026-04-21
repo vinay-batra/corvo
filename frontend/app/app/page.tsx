@@ -1625,7 +1625,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   onSelectTicker={t => { setStockTicker(t); setActiveTab("stocks"); }}
                 />
               </motion.div>
-            ) : activeTab === "news" ? (
+            ) : activeTab === "news" && data ? (
               <motion.div key="news" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Card><TooltipCardHeader title="Market News" sections={[{ label: "How it works", text: "Live news fetched for every ticker in your portfolio. Sentiment badges (Positive / Negative / Neutral) are determined by headline analysis." }]} /><NewsFeed assets={assets} /></Card>
               </motion.div>
