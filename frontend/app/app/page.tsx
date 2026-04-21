@@ -588,9 +588,6 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
         {busy && <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
       </div>
 
-      {!q && (
-      )}
-
       {/* Search results */}
       {results.length > 0 ? (
         <div style={{ border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden", position: "relative", zIndex: 1 }}>
