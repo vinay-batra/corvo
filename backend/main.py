@@ -515,9 +515,28 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     mu_daily = float(np.mean(port_returns))
     sigma_daily = float(np.std(port_returns))
 
+    # Override mu with long-term asset-class expected returns so recent bull/bear runs
+    # don't distort forward projections. Fall back to historical mu for unknown tickers.
+    ASSET_CLASS_MU = {
+        # Bonds/fixed income
+        "BND": 0.04, "AGG": 0.04, "TLT": 0.04, "IEF": 0.035, "SHY": 0.03,
+        "SGOV": 0.045, "BIL": 0.04, "VBTLX": 0.04, "LQD": 0.045, "HYG": 0.055,
+        # Gold/commodities
+        "GLD": 0.05, "IAU": 0.05, "SLV": 0.04, "DJP": 0.04,
+        # Broad equity
+        "SPY": 0.10, "VOO": 0.10, "VTI": 0.10, "IWM": 0.09, "QQQ": 0.11,
+    }
+
+    weighted_mu = 0.0
+    for t, w in zip(available, avail_w):
+        asset_mu = ASSET_CLASS_MU.get(t, mu_daily * 252)  # use historical for unknowns
+        weighted_mu += w * asset_mu
+
+    mu_daily = weighted_mu / 252
+
     # Enforce minimum daily volatility so simulation never shows 100% positive paths.
-    # Conservative portfolios can have very low historical vol — floor at ~5% annualised.
-    MIN_SIGMA_ANNUAL = 0.05
+    # Conservative portfolios can have very low historical vol — floor at 8% annualised.
+    MIN_SIGMA_ANNUAL = 0.08
     sigma_daily = max(sigma_daily, MIN_SIGMA_ANNUAL / np.sqrt(252))
 
     # Cap annualised mu at 25% to prevent bull-run portfolios from showing no downside paths.
