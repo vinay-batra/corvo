@@ -1526,7 +1526,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
-    const onScroll = () => setShowBackToTop(el.scrollTop > 400);
+    const onScroll = () => {
+      const next = el.scrollTop > 400;
+      setShowBackToTop(prev => prev === next ? prev : next);
+    };
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
