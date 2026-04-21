@@ -317,15 +317,28 @@ export default function StockCompare() {
     })
     .filter(Boolean);
 
-  const benchBase = benchHistory.length > 1 ? benchHistory[0].p : 0;
-  const benchTrace = benchHistory.length > 1 && viewMode === "pct" && benchBase ? {
-    x: benchHistory.map(h => h.t),
-    y: benchHistory.map(h => ((h.p - benchBase) / benchBase) * 100),
-    type: "scatter" as const, mode: "lines" as const,
-    name: BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark,
-    line: { color: "rgba(180,180,180,0.45)", width: 1.5, dash: "dash" as const },
-    hovertemplate: `${BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark}: %{y:.1f}%<extra></extra>`,
-  } : null;
+  const benchLabel = BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark;
+  const benchBase  = benchHistory.length > 1 ? benchHistory[0].p : 0;
+  const benchTrace = benchHistory.length > 1 && benchmark && benchBase ? (
+    viewMode === "pct"
+      ? {
+          x: benchHistory.map(h => h.t),
+          y: benchHistory.map(h => ((h.p - benchBase) / benchBase) * 100),
+          type: "scatter" as const, mode: "lines" as const,
+          name: benchLabel,
+          line: { color: "rgba(180,180,180,0.45)", width: 1.5, dash: "dash" as const },
+          hovertemplate: `${benchLabel}: %{y:.1f}%<extra></extra>`,
+        }
+      : {
+          x: benchHistory.map(h => h.t),
+          y: benchHistory.map(h => h.p),
+          type: "scatter" as const, mode: "lines" as const,
+          name: benchLabel,
+          yaxis: "y2" as const,
+          line: { color: "rgba(180,180,180,0.45)", width: 1.5, dash: "dash" as const },
+          hovertemplate: `${benchLabel}: $%{y:.2f}<extra></extra>`,
+        }
+  ) : null;
 
   const chartData = [...stockTraces, ...(benchTrace ? [benchTrace] : [])];
 
@@ -547,20 +560,18 @@ export default function StockCompare() {
                 ))}
               </div>
 
-              {/* Benchmark dropdown (only meaningful in % mode) */}
-              {viewMode === "pct" && (
-                <select value={benchmark} onChange={e => setBenchmark(e.target.value)} style={{
-                  padding: "3px 6px", fontSize: 10,
-                  background: "transparent", border: "0.5px solid var(--border)",
-                  borderRadius: 5, color: "var(--text3)", cursor: "pointer",
-                  fontFamily: "Space Mono, monospace", outline: "none",
-                }}>
-                  <option value="">No benchmark</option>
-                  {BENCHMARKS.map(b => (
-                    <option key={b.ticker} value={b.ticker}>{b.label}</option>
-                  ))}
-                </select>
-              )}
+              {/* Benchmark dropdown */}
+              <select value={benchmark} onChange={e => setBenchmark(e.target.value)} style={{
+                padding: "3px 6px", fontSize: 10,
+                background: "transparent", border: "0.5px solid var(--border)",
+                borderRadius: 5, color: "var(--text3)", cursor: "pointer",
+                fontFamily: "Space Mono, monospace", outline: "none",
+              }}>
+                <option value="">No benchmark</option>
+                {BENCHMARKS.map(b => (
+                  <option key={b.ticker} value={b.ticker}>{b.label}</option>
+                ))}
+              </select>
             </div>
 
             <Plot
@@ -573,6 +584,9 @@ export default function StockCompare() {
                 yaxis: viewMode === "pct"
                   ? { gridcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)", tickcolor: "transparent", ticksuffix: "%" }
                   : { gridcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)", tickcolor: "transparent", tickprefix: "$" },
+                ...(viewMode === "price" && benchTrace ? {
+                  yaxis2: { overlaying: "y", side: "right", showgrid: false, tickprefix: "$", tickcolor: "transparent", linecolor: "transparent", color: dark ? "rgba(180,180,180,0.5)" : "rgba(100,100,100,0.5)" },
+                } : {}),
                 legend: { orientation: "h", y: -0.15, font: { size: 11, color: dark ? "rgba(232,224,204,0.75)" : "#4a4a4a" }, bgcolor: "transparent" },
                 hovermode: "x unified",
                 hoverlabel: { bgcolor: "#0d1117", bordercolor: "rgba(201,168,76,0.4)", font: { color: "#e8e0cc", size: 11 } },
