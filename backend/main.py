@@ -515,6 +515,15 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     mu_daily = float(np.mean(port_returns))
     sigma_daily = float(np.std(port_returns))
 
+    # Enforce minimum daily volatility so simulation never shows 100% positive paths.
+    # Conservative portfolios can have very low historical vol — floor at ~5% annualised.
+    MIN_SIGMA_ANNUAL = 0.05
+    sigma_daily = max(sigma_daily, MIN_SIGMA_ANNUAL / np.sqrt(252))
+
+    # Cap annualised mu at 25% to prevent bull-run portfolios from showing no downside paths.
+    MAX_MU_ANNUAL = 0.25
+    mu_daily = min(mu_daily, MAX_MU_ANNUAL / 252)
+
     # Step 3: Annualise for the GBM formula with dt = 1/252
     # exp((mu - 0.5*sigma^2)*dt + sigma*sqrt(dt)*Z) with annualised params and dt=1/252
     # is mathematically equivalent to exp(mu_daily - 0.5*sigma_daily^2 + sigma_daily*Z) per day
