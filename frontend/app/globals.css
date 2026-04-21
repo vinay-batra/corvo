@@ -37,7 +37,7 @@
 
 /* ── Dark mode ── */
 [data-theme="dark"] {
-  --bg:          #06090e;
+  --bg:          #080c15;
   --bg2:         #09101a;
   --bg3:         #0f1923;
   --border:      rgba(255,255,255,0.06);
@@ -53,8 +53,8 @@
   --accent:      #c9a84c;
   --accent-text: #c9a84c;
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
-  --card-bg:     #0a1120;
-  --bg-card:     #0a1120;
+  --card-bg:     #0d1525;
+  --bg-card:     #0d1525;
   --card-glass:  rgba(255,255,255,0.025);
   --input-bg:    #111a26;
   --input-border: rgba(255,255,255,0.1);
