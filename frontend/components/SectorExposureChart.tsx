@@ -118,7 +118,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
               hole: 0.52,
               labels,
               values,
-              domain: { x: [0, 0.5], y: [0, 1] },
+              domain: { x: [0, 1], y: [0, 1] },
               textinfo: "none",
               hovertemplate: "<b>%{label}</b><br>%{percent}<extra></extra>",
               marker: {
@@ -139,7 +139,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
             showlegend: true,
             legend: {
               orientation: "v",
-              x: 1.02,
+              x: 1,
               y: 0.5,
               xanchor: "left",
               yanchor: "middle",
@@ -155,7 +155,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
             annotations: [
               {
                 text: `${labels.length}<br><span style="font-size:9px">sectors</span>`,
-                x: 0.25,
+                x: 0.5,
                 y: 0.5,
                 xref: "paper",
                 yref: "paper",
