@@ -334,9 +334,9 @@ export default function StockCompare() {
           <motion.button
             initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
             onClick={() => setComparing(true)}
-            style={{ marginTop: 10, width: "100%", padding: "9px 0", background: "rgba(184,134,11,0.12)", border: "0.5px solid rgba(184,134,11,0.45)", borderRadius: 8, color: AMBER, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.04em" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(184,134,11,0.22)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(184,134,11,0.7)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(184,134,11,0.12)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(184,134,11,0.45)"; }}>
+            style={{ marginTop: 10, width: "100%", padding: "10px 0", border: "1px solid " + AMBER, color: AMBER, background: "rgba(184,134,11,0.08)", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.03em" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = AMBER; (e.currentTarget as HTMLButtonElement).style.color = "#0d1117"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(184,134,11,0.08)"; (e.currentTarget as HTMLButtonElement).style.color = AMBER; }}>
             Compare {tickers.join(" vs ")}
           </motion.button>
         )}
