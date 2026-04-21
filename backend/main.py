@@ -1569,6 +1569,11 @@ def generate_questions(req: GenerateQuestionsRequest, request: Request):
     prompt = (
         f"Generate {count} multiple choice questions about {req.topic} at {req.difficulty} level."
         f"{wrong_clause}{exclude_clause} "
+        f"IMPORTANT RULES for answer options:\n"
+        f"1. All 4 options must be similar in length — within 3-4 words of each other.\n"
+        f"2. The correct answer must NOT be the longest option. Vary which position (0,1,2,3) is correct across questions.\n"
+        f"3. Wrong answers must be plausible and specific, not obviously wrong.\n"
+        f"4. Never make the correct answer stand out by being more detailed or verbose than the others.\n"
         f"Return ONLY a JSON array, no other text:\n"
         f'[{{"question": "...", "options": ["A","B","C","D"], "correct": 0, "explanation": "..."}}]'
     )
