@@ -190,7 +190,7 @@ export default function PositionsTab({
       }
     } catch {}
 
-    setSavedPortfolios(portfolios);
+    setSavedPortfolios(portfolios.filter(p => p.name !== "portfolio 1"));
     // If the selected portfolio no longer exists, fall back to "all"
     setSelectedId(prev => {
       if (prev === "all") return "all";
