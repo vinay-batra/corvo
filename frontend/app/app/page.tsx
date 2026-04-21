@@ -160,7 +160,7 @@ function useS() {
     section:    { padding: "10px 14px", borderBottom: "0.5px solid var(--border)" },
     label:      { fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 8 },
     main:       { flex: 1, display: "flex", flexDirection: "column" as const, background: "var(--bg)", minWidth: 0, overflow: "hidden" },
-    topbar:     { height: 44, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: "var(--bg2)", gap: 8 },
+    topbar:     { height: 52, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", background: "var(--bg2)", gap: 8 },
     content:    { flex: 1, overflowY: "auto" as const, overflowX: "hidden" as const, padding: "20px 24px" },
     card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 16, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)" } as React.CSSProperties,
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
@@ -1646,7 +1646,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               const isActive = activeTab === tab.id;
               const tabStyle: React.CSSProperties = {
                 position: "relative",
-                padding: "6px 11px", fontSize: 13, borderRadius: 0, flexShrink: 0,
+                padding: "10px 14px", fontSize: 13, borderRadius: 0, flexShrink: 0,
                 border: "none", background: "transparent",
                 color: isActive ? "var(--text)" : "var(--text3)",
                 cursor: "pointer", fontWeight: isActive ? 600 : 400,
