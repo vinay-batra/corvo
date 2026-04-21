@@ -57,8 +57,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={false}
       transition={{ duration: 0.5 }}
       style={{
         background: "var(--bg-card)",
