@@ -427,8 +427,8 @@ export default function StockCompare() {
               <Plot
                 data={[{
                   z: corrMatrix, x: tickers, y: tickers, type: "heatmap",
-                  colorscale: [[0,"rgba(224,92,92,0.8)"],[0.5,"rgba(30,30,40,0.9)"],[1,"rgba(201,168,76,0.9)"]],
-                  zmin: -1, zmax: 1,
+                  colorscale: [[0,"#e05c5c"],[0.5,"#1a1f2e"],[1,"#4caf7d"]],
+                  zmin: -1, zmax: 1, zmid: 0,
                   text: corrMatrix.map(row => row.map(v => v != null ? v.toFixed(2) : "-")),
                   texttemplate: "%{text}",
                   hovertemplate: "%{x} x %{y}: %{z:.2f}<extra></extra>",
