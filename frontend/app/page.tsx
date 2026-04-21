@@ -1905,11 +1905,11 @@ export default function Landing() {
               <div id="changelog-dropdown" style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, width: 280, background: "rgba(13,17,23,0.98)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, padding: "10px", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.7)", zIndex: 200 }}>
                 <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", padding: "4px 8px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", marginBottom: 6 }}>Recent updates</p>
                 {[
-                  { label: "AI Market Brief", desc: "Daily AI-generated market summary" },
-                  { label: "Sector Exposure", desc: "Portfolio sector breakdown chart" },
-                  { label: "Dividend Tracker", desc: "Estimated annual income" },
-                  { label: "Tax Loss Harvesting", desc: "AI-powered suggestions" },
-                  { label: "CSV Import", desc: "Import from Fidelity, Schwab, Robinhood" },
+                  { label: "Learn Overhaul", desc: "15 levels, XP fixes, leaderboard" },
+                  { label: "SEO & Sitemap", desc: "Schema markup, Google indexing" },
+                  { label: "Light Mode Fixes", desc: "CSS variables, preset modal" },
+                  { label: "Feedback Button", desc: "Now on every page" },
+                  { label: "News Tab Gated", desc: "Requires analyzed portfolio" },
                 ].map(({ label, desc }) => (
                   <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px", borderRadius: 8, transition: "background 0.15s", cursor: "default" }}
                     onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
