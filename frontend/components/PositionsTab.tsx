@@ -10,6 +10,7 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const LOCAL_KEY = "corvo_saved_portfolios";
+const isValidSavedId = (id: string) => /^[0-9a-f-]{36}$/.test(id) || id.length > 10;
 
 const COLORS = [
   "#b8860b", "#5b9bd5", "#e05c5c", "#5cb88a",
@@ -221,7 +222,7 @@ export default function PositionsTab({
     setPerfLoading(true);
     const apiPeriod = PERIOD_API[period];
     Promise.all(
-      savedPortfolios.map(async p => {
+      savedPortfolios.filter(p => isValidSavedId(p.id)).map(async p => {
         const tickers = p.assets.map(a => a.ticker).join(",");
         const weights = p.assets.map(a => a.weight).join(",");
         try {
