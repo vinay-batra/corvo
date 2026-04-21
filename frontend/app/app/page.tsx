@@ -789,7 +789,11 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
 }
 
 // ── Stocks search mini-component (module-level so hooks are stable) ───────────
-const STOCKS_SEARCH_POPULAR = ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","BRK-B","SPY","QQQ"];
+const STOCKS_SEARCH_GROUPS = [
+  { label: "Stocks", tickers: ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","BRK-B","JPM","LLY"] },
+  { label: "ETFs",   tickers: ["SPY","QQQ","VTI","VOO","GLD","TLT","ARKK","SCHD"] },
+  { label: "Crypto", tickers: ["BTC-USD","ETH-USD","SOL-USD"] },
+];
 function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
@@ -837,17 +841,21 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
         </div>
       ) : !q ? (
         <div>
-          <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 10 }}>Popular tickers</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {STOCKS_SEARCH_POPULAR.map(t => (
-              <button key={t} onClick={() => onSelect(t)}
-                style={{ padding: "6px 14px", fontSize: 12, fontFamily: "Space Mono, monospace", fontWeight: 700, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "all 0.15s" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
-                {t}
-              </button>
-            ))}
-          </div>
+          {STOCKS_SEARCH_GROUPS.map(group => (
+            <div key={group.label} style={{ marginBottom: 12 }}>
+              <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 7 }}>{group.label}</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {group.tickers.map(t => (
+                  <button key={t} onClick={() => onSelect(t)}
+                    style={{ padding: "5px 12px", fontSize: 11, fontFamily: "Space Mono, monospace", fontWeight: 700, borderRadius: 7, border: "0.5px solid rgba(184,134,11,0.28)", background: "rgba(184,134,11,0.07)", color: "var(--accent)", cursor: "pointer", transition: "all 0.12s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,0.16)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.5)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,0.07)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.28)"; }}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : null}
     </div>
