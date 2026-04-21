@@ -8,20 +8,22 @@ function Ring({ score, size=96 }: { score:number; size?:number }) {
   const label = score>=75?"Excellent":score>=50?"Good":score>=25?"Fair":"Weak";
   const ringColor = score>=75?"#4caf7d":score>=50?"#b8860b":"#e05c5c";
   return (
-    <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
-      <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--track)" strokeWidth={6}/>
-        <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={ringColor} strokeWidth={6}
-          strokeLinecap="round" strokeDasharray={circ}
-          initial={{strokeDashoffset:circ}} animate={{strokeDashoffset:offset}}
-          transition={{duration:1,ease:"easeOut",delay:0}}/>
-      </svg>
-      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-        <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.8}}
-          style={{fontFamily:"Space Mono,monospace",fontSize:20,fontWeight:700,color:ringColor,letterSpacing:-1,lineHeight:1}}>{score}</motion.p>
-        <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:1}}
-          style={{fontSize:10,letterSpacing:1,color:"var(--text3)",textTransform:"uppercase",marginTop:2}}>{label}</motion.p>
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0}}>
+      <div style={{position:"relative",width:size,height:size}}>
+        <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
+          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--track)" strokeWidth={6}/>
+          <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={ringColor} strokeWidth={6}
+            strokeLinecap="round" strokeDasharray={circ}
+            initial={{strokeDashoffset:circ}} animate={{strokeDashoffset:offset}}
+            transition={{duration:1,ease:"easeOut",delay:0}}/>
+        </svg>
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.8}}
+            style={{fontFamily:"Space Mono,monospace",fontSize:24,fontWeight:700,color:ringColor,letterSpacing:-1,lineHeight:1}}>{score}</motion.p>
+        </div>
       </div>
+      <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:1}}
+        style={{fontSize:9,letterSpacing:2,color:ringColor,textTransform:"uppercase",marginTop:6,textAlign:"center"}}>{label}</motion.p>
     </div>
   );
 }
