@@ -74,8 +74,8 @@
   --text:        #1a1a1a;
   --text1:       #1a1a1a;
   --text2:       #4a4a4a;
-  --text3:       #7a7a78;
-  --text-muted:  #7a7a78;
+  --text3:       #5a5a58;
+  --text-muted:  #5a5a58;
   --green:       #111110;
   --red:         #c0392b;
   --accent:      #b8860b;
@@ -88,7 +88,7 @@
   --input-border: rgba(0,0,0,0.15);
   --shadow:      0 1px 3px rgba(0,0,0,0.1);
   --shadow-md:   0 4px 12px rgba(0,0,0,0.12);
-  --track:       rgba(0,0,0,0.08);
+  --track:       rgba(0,0,0,0.12);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

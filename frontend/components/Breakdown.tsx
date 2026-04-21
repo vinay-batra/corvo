@@ -69,7 +69,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
               transition: "background 0.15s",
               borderBottom: i < normalized.length - 1 ? "0.5px solid var(--border-dim)" : undefined,
             }}
-            whileHover={{ backgroundColor: "rgba(232,224,204,0.06)" }}
+            whileHover={{ backgroundColor: "var(--bg3)" }}
           >
             {/* Color dot */}
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: a.color, flexShrink: 0 }} />
@@ -80,12 +80,12 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
             </span>
 
             {/* Percentage */}
-            <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "rgba(232,224,204,0.75)", textAlign: "right" }}>
+            <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "var(--text3)", textAlign: "right" }}>
               {(a.pct * 100).toFixed(1)}%
             </span>
 
             {/* Mini bar */}
-            <div style={{ height: 4, borderRadius: 2, background: "rgba(232,224,204,0.1)", overflow: "hidden" }}>
+            <div style={{ height: 4, borderRadius: 2, background: "var(--track)", overflow: "hidden" }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: equalWeight ? `${a.pct * 100}%` : `${(a.pct / maxPct) * 100}%` }}
@@ -96,7 +96,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
 
             {/* Dollar value */}
             {portfolioValue && (
-              <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "rgba(232,224,204,0.55)", textAlign: "right" }}>
+              <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "var(--text3)", textAlign: "right" }}>
                 {formatDollar(a.pct * portfolioValue)}
               </span>
             )}
