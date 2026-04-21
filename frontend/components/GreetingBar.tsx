@@ -201,7 +201,7 @@ export default function GreetingBar({
 
         {/* Holdings price pills row */}
         {holdingPrices.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, justifyContent: "flex-end", maxWidth: 320 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, justifyContent: "flex-start", maxWidth: 320 }}>
             {holdingPrices.map(h => (
               <HoldingPill
                 key={h.ticker}
@@ -265,23 +265,23 @@ function HoldingPill({ ticker, price, changePct, changeDollar }: {
       display: "inline-flex",
       alignItems: "center",
       gap: 5,
-      padding: "3px 8px",
-      borderRadius: 6,
+      padding: "5px 10px",
+      borderRadius: 8,
       background: bgColor,
       border: `0.5px solid ${borderColor}`,
       whiteSpace: "nowrap",
       fontFamily: "'Space Mono', monospace",
     }}>
-      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text2)", letterSpacing: "0.02em" }}>
+      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text2)", letterSpacing: "0.02em" }}>
         {ticker}
       </span>
-      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)" }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text3)" }}>
         ${price.toFixed(2)}
       </span>
-      <span style={{ fontSize: 10, fontWeight: 600, color }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color }}>
         {sign}${Math.abs(changeDollar).toFixed(2)}
       </span>
-      <span style={{ fontSize: 10, fontWeight: 600, color, opacity: 0.85 }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color, opacity: 0.85 }}>
         {sign}{changePct.toFixed(2)}%
       </span>
     </div>
