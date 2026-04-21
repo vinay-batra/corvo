@@ -2120,6 +2120,7 @@ export default function LearnPage() {
           />
         )}
       </AnimatePresence>
+      <FeedbackButton rightOffset={24} />
     </div>
   );
 }
@@ -2358,7 +2359,6 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
           </motion.div>
         )}
       </AnimatePresence>
-      <FeedbackButton rightOffset={24} />
     </motion.div>
   );
 }
