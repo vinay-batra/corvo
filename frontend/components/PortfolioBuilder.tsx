@@ -596,17 +596,17 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
             onClick={()=>{setShowPresetsModal(false);setPresetConfirm(null);}}>
             <motion.div initial={{scale:0.94,y:10}} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
-              style={{background:"#141413",border:"0.5px solid rgba(255,255,255,0.09)",borderRadius:16,width:"100%",maxWidth:380,boxShadow:"0 24px 80px rgba(0,0,0,0.55)",overflow:"hidden"}}
+              style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:380,boxShadow:"var(--shadow-md)",overflow:"hidden"}}
               onClick={e=>e.stopPropagation()}>
-              <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div>
-                  <div style={{fontSize:10,letterSpacing:2,color:"rgba(232,224,204,0.5)",textTransform:"uppercase",marginBottom:4}}>Portfolio</div>
+                  <div style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase",marginBottom:4}}>Portfolio</div>
                   <div style={{fontSize:14,fontWeight:600,color:"var(--text)"}}>Load a Preset</div>
                 </div>
                 <button onClick={()=>{setShowPresetsModal(false);setPresetConfirm(null);}}
-                  style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.3)",padding:4,display:"flex",alignItems:"center"}}
-                  onMouseEnter={e=>e.currentTarget.style.color="rgba(255,255,255,0.7)"}
-                  onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                  style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:4,display:"flex",alignItems:"center"}}
+                  onMouseEnter={e=>e.currentTarget.style.color="var(--text)"}
+                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
               {presetConfirm ? (
                 <div style={{padding:"20px"}}>
@@ -616,7 +616,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   </p>
                   <div style={{display:"flex",gap:8}}>
                     <button onClick={()=>setPresetConfirm(null)}
-                      style={{flex:1,padding:"9px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,color:"rgba(232,224,204,0.5)",fontSize:12,cursor:"pointer"}}>
+                      style={{flex:1,padding:"9px",background:"var(--bg2)",border:"0.5px solid var(--border)",borderRadius:8,color:"var(--text3)",fontSize:12,cursor:"pointer"}}>
                       Cancel
                     </button>
                     <button onClick={()=>{update(presetConfirm.assets);setShowPresetsModal(false);setPresetConfirm(null);}}
@@ -629,9 +629,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 <div style={{padding:"12px 20px 20px"}}>
                   {BUILDER_PRESETS.map(p=>(
                     <button key={p.label} onClick={()=>loadPreset(p)}
-                      style={{width:"100%",padding:"12px 14px",marginBottom:6,background:"rgba(255,255,255,0.02)",border:"0.5px solid rgba(255,255,255,0.07)",borderRadius:10,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}
+                      style={{width:"100%",padding:"12px 14px",marginBottom:6,background:"var(--bg2)",border:"0.5px solid var(--border)",borderRadius:10,cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}
                       onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,0.06)";e.currentTarget.style.borderColor="rgba(201,168,76,0.25)";}}
-                      onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.02)";e.currentTarget.style.borderColor="rgba(255,255,255,0.07)";}}>
+                      onMouseLeave={e=>{e.currentTarget.style.background="var(--bg2)";e.currentTarget.style.borderColor="var(--border)";}}>
                       <div style={{fontSize:12,fontWeight:600,color:"var(--text)",marginBottom:4}}>{p.label}</div>
                       <div style={{fontSize:10,color:"var(--text3)"}}>
                         {p.assets.map(a=>`${a.ticker} ${Math.round(a.weight*100)}%`).join(" · ")}
@@ -654,28 +654,28 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}>
             <motion.div initial={{scale:0.94,y:10}} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
               className="c-modal-sheet"
-              style={{background:"#141413",border:"0.5px solid rgba(255,255,255,0.09)",borderRadius:16,width:"100%",maxWidth:460,boxShadow:"0 24px 80px rgba(0,0,0,0.55)",overflow:"hidden"}}
+              style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:460,boxShadow:"var(--shadow-md)",overflow:"hidden"}}
               onClick={e=>e.stopPropagation()}>
-              <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div>
-                  <div style={{fontSize:10,letterSpacing:2,color:"rgba(232,224,204,0.5)",textTransform:"uppercase",marginBottom:4}}>Portfolio</div>
+                  <div style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase",marginBottom:4}}>Portfolio</div>
                   <div style={{fontSize:14,fontWeight:600,color:"var(--text)"}}>Import from CSV</div>
                 </div>
                 <button onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}
-                  style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.3)",padding:4,display:"flex",alignItems:"center"}}
-                  onMouseEnter={e=>e.currentTarget.style.color="rgba(255,255,255,0.7)"}
-                  onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                  style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:4,display:"flex",alignItems:"center"}}
+                  onMouseEnter={e=>e.currentTarget.style.color="var(--text)"}
+                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
               <div style={{padding:"16px 20px 20px"}}>
                 {!csvPreview&&(
                   <div style={{marginBottom:14}}>
-                    <div style={{fontSize:10,letterSpacing:2,color:"rgba(232,224,204,0.5)",textTransform:"uppercase",marginBottom:8}}>Supported Exports</div>
+                    <div style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase",marginBottom:8}}>Supported Exports</div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                       {["Fidelity","Schwab","Robinhood","Any CSV"].map(b=>(
                         <span key={b} style={{fontSize:11,padding:"3px 8px",background:"rgba(201,168,76,0.07)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:4,color:C.amber,letterSpacing:0.5}}>{b}</span>
                       ))}
                     </div>
-                    <div style={{marginTop:8,fontSize:11,color:"rgba(232,224,204,0.5)",lineHeight:1.6}}>
+                    <div style={{marginTop:8,fontSize:11,color:"var(--text3)",lineHeight:1.6}}>
                       Export holdings as CSV from your brokerage account, then upload the file below.
                       Any CSV with Symbol + Quantity or Value columns will work.
                     </div>
@@ -691,13 +691,13 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                     {csvLoading?(
                       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
                         <div style={{width:18,height:18,border:"2px solid rgba(201,168,76,0.2)",borderTopColor:C.amber,borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>
-                        <span style={{fontSize:10,color:"rgba(232,224,204,0.4)"}}>Parsing CSV…</span>
+                        <span style={{fontSize:10,color:"var(--text3)"}}>Parsing CSV…</span>
                       </div>
                     ):(
                       <>
                         <div style={{marginBottom:8,opacity:0.5,display:"flex",justifyContent:"center",color:"var(--text)"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
                         <div style={{fontSize:11,color:"var(--text)",marginBottom:4}}>Drop your CSV here</div>
-                        <div style={{fontSize:11,color:"rgba(232,224,204,0.5)"}}>or click to browse</div>
+                        <div style={{fontSize:11,color:"var(--text3)"}}>or click to browse</div>
                       </>
                     )}
                   </div>
@@ -712,18 +712,18 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 {csvPreview&&(
                   <div>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-                      <span style={{fontSize:10,letterSpacing:2,color:"rgba(232,224,204,0.5)",textTransform:"uppercase"}}>Detected</span>
+                      <span style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>Detected</span>
                       <span style={{fontSize:11,padding:"3px 9px",background:"rgba(201,168,76,0.1)",border:"1px solid rgba(201,168,76,0.3)",borderRadius:4,color:C.amber,letterSpacing:0.5}}>{csvPreview.detected_format}</span>
-                      <span style={{fontSize:11,color:"rgba(232,224,204,0.5)"}}>· {csvPreview.tickers.length} holdings</span>
+                      <span style={{fontSize:11,color:"var(--text3)"}}>· {csvPreview.tickers.length} holdings</span>
                     </div>
-                    <div style={{border:"0.5px solid rgba(255,255,255,0.07)",borderRadius:8,overflow:"hidden",marginBottom:14}}>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr auto",padding:"6px 12px",background:"rgba(255,255,255,0.03)",borderBottom:"0.5px solid rgba(255,255,255,0.06)"}}>
-                        <span style={{fontSize:10,letterSpacing:2,color:"rgba(232,224,204,0.5)",textTransform:"uppercase"}}>Ticker</span>
-                        <span style={{fontSize:10,letterSpacing:2,color:"rgba(232,224,204,0.5)",textTransform:"uppercase"}}>Weight</span>
+                    <div style={{border:"0.5px solid var(--border)",borderRadius:8,overflow:"hidden",marginBottom:14}}>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr auto",padding:"6px 12px",background:"var(--bg2)",borderBottom:"0.5px solid var(--border)"}}>
+                        <span style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>Ticker</span>
+                        <span style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>Weight</span>
                       </div>
                       <div style={{maxHeight:200,overflowY:"auto"}}>
                         {csvPreview.tickers.map((t,i)=>(
-                          <div key={t} style={{display:"grid",gridTemplateColumns:"1fr auto",padding:"7px 12px",borderBottom:i<csvPreview.tickers.length-1?"0.5px solid rgba(255,255,255,0.05)":"none",alignItems:"center"}}>
+                          <div key={t} style={{display:"grid",gridTemplateColumns:"1fr auto",padding:"7px 12px",borderBottom:i<csvPreview.tickers.length-1?"0.5px solid var(--border)":"none",alignItems:"center"}}>
                             <div style={{display:"flex",alignItems:"center",gap:7}}>
                               <div style={{width:4,height:4,borderRadius:"50%",background:DOTS[i%DOTS.length],flexShrink:0}}/>
                               <span style={{fontFamily:"Space Mono,monospace",fontSize:11,color:C.amber,fontWeight:700}}>{t}</span>
@@ -735,7 +735,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                     </div>
                     <div style={{display:"flex",gap:8}}>
                       <button onClick={()=>{setCsvPreview(null);setCsvError("");}}
-                        style={{flex:1,padding:"8px",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,color:"rgba(232,224,204,0.5)",fontSize:10,cursor:"pointer",letterSpacing:0.5}}>
+                        style={{flex:1,padding:"8px",background:"var(--bg2)",border:"0.5px solid var(--border)",borderRadius:8,color:"var(--text3)",fontSize:10,cursor:"pointer",letterSpacing:0.5}}>
                         Re-upload
                       </button>
                       <button onClick={confirmCsvImport}
