@@ -4,9 +4,19 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, ChevronDown } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import dynamic from "next/dynamic";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const LOCAL_KEY = "corvo_saved_portfolios";
+
+const COLORS = [
+  "#b8860b", "#5b9bd5", "#e05c5c", "#5cb88a",
+  "#b87fd4", "#e0965c", "#5cd4d4", "#d45cb8", "#8abd5b", "#d4c45c",
+];
+
+const PERIOD_API: Record<string, string> = { "6m": "6mo", "1y": "1y", "2y": "2y", "5y": "5y" };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -127,6 +137,12 @@ export default function PositionsTab({
   const prevPrices = useRef<Record<string, number>>({});
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Performance chart
+  const [perfData, setPerfData] = useState<Record<string, number[]>>({});
+  const [perfDates, setPerfDates] = useState<Record<string, string[]>>({});
+  const [period, setPeriod] = useState<"6m" | "1y" | "2y" | "5y">("1y");
+  const [perfLoading, setPerfLoading] = useState(false);
+
   // Table
   const [sortKey, setSortKey] = useState<SortKey>("weight");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -198,6 +214,37 @@ export default function PositionsTab({
       window.removeEventListener("corvo:portfolio-saved", onSaved);
     };
   }, [loadPortfolios]);
+
+  // ── Fetch performance data for all saved portfolios ───────────────────────
+  useEffect(() => {
+    if (savedPortfolios.length === 0) return;
+    setPerfLoading(true);
+    const apiPeriod = PERIOD_API[period];
+    Promise.all(
+      savedPortfolios.map(async p => {
+        const tickers = p.assets.map(a => a.ticker).join(",");
+        const weights = p.assets.map(a => a.weight).join(",");
+        try {
+          const r = await fetch(
+            `${API_URL}/portfolio?tickers=${encodeURIComponent(tickers)}&weights=${encodeURIComponent(weights)}&period=${apiPeriod}`
+          );
+          const d = await r.json();
+          return { id: p.id, cumulative: (d.portfolio_cumulative as number[]) ?? [], dates: (d.dates as string[]) ?? [] };
+        } catch {
+          return { id: p.id, cumulative: [], dates: [] };
+        }
+      })
+    ).then(results => {
+      const newPerf: Record<string, number[]> = {};
+      const newDates: Record<string, string[]> = {};
+      results.forEach(({ id, cumulative, dates }) => {
+        newPerf[id] = cumulative;
+        newDates[id] = dates;
+      });
+      setPerfData(newPerf);
+      setPerfDates(newDates);
+    }).finally(() => setPerfLoading(false));
+  }, [savedPortfolios, period]);
 
   // ── Derive all unique tickers across selection ─────────────────────────────
   const activePortfolios = selectedId === "all"
@@ -455,11 +502,87 @@ export default function PositionsTab({
         </div>
       )}
 
-      {/* ── Section header ───────────────────────────────────────────────── */}
+      {/* ── Performance chart ─────────────────────────────────────────────── */}
       {!portfoliosLoading && savedPortfolios.length > 0 && (
-        <div style={{ fontSize: 10, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
-          Portfolio Performance
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+          style={{ marginBottom: 20, border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 16px 8px", background: "var(--bg2)" }}
+        >
+          {/* Chart header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+            <span style={{ fontSize: 9, letterSpacing: 2.5, color: "rgba(232,224,204,0.3)", textTransform: "uppercase" }}>
+              Portfolio Performance
+            </span>
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              {/* Legend */}
+              {savedPortfolios.map((p, i) => (
+                <span key={p.id} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: COLORS[i % COLORS.length], marginRight: 4 }}>
+                  <span style={{ width: 14, height: 2, background: COLORS[i % COLORS.length], display: "inline-block", borderRadius: 1 }} />
+                  {p.name}
+                </span>
+              ))}
+              {/* Period buttons */}
+              {(["6m", "1y", "2y", "5y"] as const).map(p => (
+                <button key={p} onClick={() => setPeriod(p)} style={{
+                  padding: "3px 10px", fontSize: 10,
+                  background: period === p ? "rgba(184,134,11,0.15)" : "transparent",
+                  border: `0.5px solid ${period === p ? "rgba(184,134,11,0.4)" : "var(--border)"}`,
+                  borderRadius: 5, color: period === p ? "var(--accent)" : "var(--text3)",
+                  cursor: "pointer", fontFamily: "Space Mono, monospace", transition: "all 0.15s",
+                }}>
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Chart body */}
+          {perfLoading ? (
+            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>Loading…</span>
+            </div>
+          ) : (
+            <Plot
+              data={savedPortfolios
+                .map((p, i) => ({
+                  x: perfDates[p.id] ?? [],
+                  y: perfData[p.id] ?? [],
+                  type: "scatter",
+                  mode: "lines",
+                  name: p.name,
+                  line: { color: COLORS[i % COLORS.length], width: 1.5 },
+                }))
+                .filter(t => (t.y as number[]).length > 0)}
+              layout={{
+                paper_bgcolor: "transparent",
+                plot_bgcolor: "transparent",
+                font: { color: "rgba(232,224,204,0.35)", family: "Space Mono, monospace", size: 10 },
+                margin: { t: 0, b: 32, l: 48, r: 16 },
+                xaxis: {
+                  gridcolor: "rgba(255,255,255,0.04)",
+                  linecolor: "rgba(255,255,255,0.06)",
+                  tickcolor: "transparent",
+                },
+                yaxis: {
+                  gridcolor: "rgba(184,134,11,0.07)",
+                  linecolor: "rgba(255,255,255,0.06)",
+                  tickcolor: "transparent",
+                  tickformat: ".0%",
+                },
+                showlegend: false,
+                hovermode: "x unified",
+                hoverlabel: {
+                  bgcolor: "#0d1117",
+                  bordercolor: "rgba(184,134,11,0.55)",
+                  font: { color: "#e8e0cc", family: "Space Mono, monospace", size: 11 },
+                },
+              }}
+              config={{ displayModeBar: false, responsive: true }}
+              style={{ width: "100%", height: 220 }}
+              useResizeHandler
+            />
+          )}
+        </motion.div>
       )}
 
       {/* ── Table ────────────────────────────────────────────────────────── */}
