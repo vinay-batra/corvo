@@ -684,7 +684,7 @@ def portfolio_dividends(
     request: Request = None,
 ):
     """Return dividend info per ticker plus aggregated annual income estimate."""
-    cache_key = f"{tickers}|{weights}|{portfolio_value}"
+    cache_key = f"v2|{tickers}|{weights}|{portfolio_value}"
     if cache_key in _dividends_cache:
         cached_result, cached_ts = _dividends_cache[cache_key]
         if time.time() - cached_ts < 3600:
@@ -719,8 +719,9 @@ def portfolio_dividends(
                 info = {}
 
             raw_yield = info.get("dividendYield")
-            # Return as decimal (e.g. 0.0082 = 0.82%); frontend multiplies by 100 for display
-            div_yield_decimal = safe_float(raw_yield) if raw_yield is not None else None
+            # yfinance returns dividendYield in percentage form (e.g. 0.38 = 0.38%)
+            div_yield_pct = safe_float(raw_yield) if raw_yield is not None else None
+            div_yield_decimal = div_yield_pct / 100 if div_yield_pct is not None else None
 
             # ex-dividend date: yfinance returns Unix timestamp or None
             ex_div_ts = info.get("exDividendDate")
@@ -749,12 +750,12 @@ def portfolio_dividends(
                     frequency = f"{freq_count}x/yr"
 
             alloc_value = portfolio_value * weight
-            annual_income = round(alloc_value * safe_float(raw_yield), 2) if raw_yield else 0.0
+            annual_income = round(alloc_value * div_yield_decimal, 2) if div_yield_decimal else 0.0
 
             holdings.append({
                 "ticker": ticker,
                 "weight": round(weight, 4),
-                "dividend_yield": round(div_yield_decimal, 6) if div_yield_decimal is not None else 0.0,
+                "dividend_yield": round(div_yield_pct, 4) if div_yield_pct is not None else 0.0,
                 "annual_income": annual_income,
                 "ex_div_date": ex_div_date or "",
                 "frequency": frequency or "",
