@@ -26,8 +26,6 @@ import Breakdown from "../../components/Breakdown";
 import AiChat from "../../components/AiChat";
 import SavedPortfolios from "../../components/SavedPortfolios";
 import UserMenu from "../../components/UserMenu";
-import DrawdownChart from "../../components/DrawdownChart";
-import CorrelationHeatmap from "../../components/CorrelationHeatmap";
 import SectorExposureChart from "../../components/SectorExposureChart";
 import DividendTracker from "../../components/DividendTracker";
 import TaxLossHarvester from "../../components/TaxLossHarvester";
@@ -61,7 +59,7 @@ const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
   { id: "positions",  label: "Positions",  Icon: CandlestickChart, href: null },
   { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
-  { id: "risk",       label: "Risk",       Icon: ShieldAlert,      href: null },
+  { id: "risk",       label: "Income & Tax", Icon: ShieldAlert,      href: null },
   { id: "simulate",   label: "Simulations",Icon: FlaskConical,     href: null },
   { id: "compare",    label: "Compare",    Icon: Eye,              href: null },
   { id: "news",       label: "News",       Icon: Newspaper,        href: null },
@@ -2089,6 +2087,15 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                         { label: "What's Good", text: "Consistently beating your benchmark by 2–5pp is exceptional. Even matching it while taking less risk is a win." },
                       ],
                     },
+                    {
+                      title: "Sector Exposure",
+                      content: <SectorExposureChart assets={assets} />,
+                      sections: [
+                        { label: "Plain English", text: "Shows how your portfolio weight is distributed across market sectors, aggregated from each holding's sector classification." },
+                        { label: "Example", text: "If AAPL and MSFT together make up 70% of your portfolio, Technology will show 70% exposure." },
+                        { label: "What's Good", text: "A diversified portfolio spreads across 4+ sectors. Heavy concentration in one sector amplifies both gains and losses." },
+                      ],
+                    },
                   ].map(({ title, content, sections }) => (
                     <motion.div key={title} initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }} style={{ display: "flex", flexDirection: "column" }}>
                       <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
@@ -2115,16 +2122,21 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               </motion.div>
             ) : activeTab === "risk" ? (
               <motion.div key="risk" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <div className="c-risk-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Drawdown" sections={[{label:"Plain English",text:"Shows the biggest loss from a peak to a trough in your portfolio over the selected period."},{label:"Example",text:"A -20% drawdown means your portfolio fell from $100K to $80K before recovering."},{label:"What's Good",text:"Drawdowns under 15% are generally considered manageable for long-term investors. Deeper troughs signal higher risk."}]} /><DrawdownChart assets={assets} period={period} /></Card>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Correlation" sections={[{label:"Plain English",text:"Shows how your assets move in relation to each other. A value of 1.0 means they move in perfect lockstep."},{label:"Example",text:"AAPL and MSFT often have correlation near 0.8: when one drops, the other usually does too."},{label:"What's Good",text:"Aim for correlations below 0.5 between your major holdings. Low correlation = real diversification."}]} /><CorrelationHeatmap assets={assets} period={period} /></Card>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Sector Exposure" sections={[{label:"Plain English",text:"Shows how your portfolio weight is distributed across market sectors, aggregated from each holding's sector classification."},{label:"Example",text:"If AAPL and MSFT together make up 70% of your portfolio, Technology will show 70% exposure."},{label:"What's Good",text:"A diversified portfolio spreads across 4+ sectors. Heavy concentration in one sector amplifies both gains and losses."}]} /><SectorExposureChart assets={assets} /></Card>
-                </div>
-                <div style={{ marginTop: 12 }}>
+                <div style={{ marginBottom: 12 }}>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and a $10,000 portfolio value."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your $10k portfolio, you'd earn ~$90/year from it."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days. You must own the stock before that date to receive the dividend."}]} /><DividendTracker assets={assets} /></Card>
                 </div>
-                <div style={{ marginTop: 12 }}>
+                <div style={{ marginBottom: 12 }}>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} portfolioValue={portfolioInputValue} /></Card>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <Card style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
+                    <CardHeader title="Capital Gains Estimator" />
+                    <span style={{ color: "var(--text3)", fontSize: 13 }}>Coming soon</span>
+                  </Card>
+                  <Card style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
+                    <CardHeader title="Dividend Calendar" />
+                    <span style={{ color: "var(--text3)", fontSize: 13 }}>Coming soon</span>
+                  </Card>
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (
