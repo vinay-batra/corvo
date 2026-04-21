@@ -11,6 +11,23 @@ const PALETTE = ["#b8860b", "#b47ee0", "#5cb88a", "#e05c5c"];
 const MAX = 4;
 const AMBER = "#b8860b";
 
+const PERIOD_API: Record<string, string> = {
+  "1W": "5d", "1M": "1mo", "3M": "3mo", "1Y": "1y", "3Y": "3y", "5Y": "5y",
+};
+
+const BENCHMARKS = [
+  { ticker: "^GSPC", label: "S&P 500" },
+  { ticker: "^IXIC", label: "Nasdaq" },
+  { ticker: "^DJI",  label: "Dow Jones" },
+  { ticker: "^RUT",  label: "Russell 2000" },
+  { ticker: "QQQ",   label: "QQQ" },
+  { ticker: "GLD",   label: "Gold" },
+];
+
+const BENCH_PROXY: Record<string, string> = {
+  "^GSPC": "SPY", "^IXIC": "QQQ", "^DJI": "DIA", "^RUT": "IWM",
+};
+
 const COMMON_TICKERS: { ticker: string; name: string; type: string }[] = [
   { ticker:"AAPL",    name:"Apple Inc.",                type:"EQUITY" },
   { ticker:"MSFT",    name:"Microsoft Corp.",           type:"EQUITY" },
@@ -121,6 +138,16 @@ export default function StockCompare() {
   }, []);
 
   const [comparing, setComparing] = useState(false);
+
+  // Toolbar state
+  const [period, setPeriod]           = useState<string>("1Y");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd]     = useState("");
+  const [viewMode, setViewMode]       = useState<"pct" | "price">("pct");
+  const [benchmark, setBenchmark]     = useState("^GSPC");
+  const [benchHistory, setBenchHistory] = useState<{ t: string; p: number }[]>([]);
+  const [benchLoading, setBenchLoading] = useState(false);
+
   const [inputValue, setInputValue]       = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching]         = useState(false);
@@ -147,13 +174,15 @@ export default function StockCompare() {
     }, 300);
   }, []);
 
-  const fetchStock = async (ticker: string, color: string) => {
-    if (stockLoading[ticker]) return;
-    setStockLoading(p => ({ ...p, [ticker]: true }));
+  const fetchStock = async (ticker: string, color: string, p = period, start = customStart, end = customEnd) => {
+    setStockLoading(prev => ({ ...prev, [ticker]: true }));
+    const histParams = p === "Custom" && start && end
+      ? `start=${start}&end=${end}`
+      : `period=${PERIOD_API[p] ?? "1y"}`;
     try {
       const [infoRes, histRes] = await Promise.all([
         fetch(`${API_URL}/stock/${encodeURIComponent(ticker)}`),
-        fetch(`${API_URL}/stock/${encodeURIComponent(ticker)}/history?period=1y`),
+        fetch(`${API_URL}/stock/${encodeURIComponent(ticker)}/history?${histParams}`),
       ]);
       const info = await infoRes.json();
       const hist = await histRes.json();
@@ -211,11 +240,50 @@ export default function StockCompare() {
     });
   };
 
-  const chartData = tickers
+  const refetchAll = (p: string, start?: string, end?: string) => {
+    setStocks({});
+    tickers.forEach((ticker, i) => fetchStock(ticker, PALETTE[i], p, start ?? "", end ?? ""));
+  };
+
+  // Re-fetch history when period changes (non-custom)
+  useEffect(() => {
+    if (!comparing || tickers.length < 2 || period === "Custom") return;
+    refetchAll(period);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, comparing]);
+
+  // Re-fetch history when custom dates are both filled
+  useEffect(() => {
+    if (!comparing || tickers.length < 2 || period !== "Custom" || !customStart || !customEnd) return;
+    refetchAll(period, customStart, customEnd);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, customStart, customEnd, comparing]);
+
+  // Fetch benchmark history
+  useEffect(() => {
+    if (!comparing || tickers.length < 2) return;
+    if (period === "Custom" && (!customStart || !customEnd)) return;
+    const benchTicker = BENCH_PROXY[benchmark] ?? benchmark;
+    const histParams = period === "Custom" && customStart && customEnd
+      ? `start=${customStart}&end=${customEnd}`
+      : `period=${PERIOD_API[period] ?? "1y"}`;
+    setBenchLoading(true);
+    fetch(`${API_URL}/stock/${encodeURIComponent(benchTicker)}/history?${histParams}`)
+      .then(r => r.json())
+      .then(d => {
+        const history: { t: string; p: number }[] =
+          d.history || (d.dates || []).map((t: string, i: number) => ({ t, p: (d.prices || [])[i] ?? 0 }));
+        setBenchHistory(history);
+      })
+      .catch(() => setBenchHistory([]))
+      .finally(() => setBenchLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [benchmark, period, customStart, customEnd, comparing]);
+
+  const stockTraces = tickers
     .map((t, i) => {
       const s = stocks[t];
       if (!s) {
-        // Loading placeholder — empty trace shows in legend while data arrives
         return stockLoading[t] ? {
           x: [] as string[], y: [] as number[],
           type: "scatter" as const, mode: "lines" as const,
@@ -226,19 +294,40 @@ export default function StockCompare() {
       }
       const hist = s.history;
       if (!hist.length) return null;
+      if (viewMode === "price") {
+        return {
+          x: hist.map((h: any) => h.t),
+          y: hist.map((h: any) => h.p),
+          type: "scatter" as const, mode: "lines" as const,
+          name: s.ticker,
+          line: { color: s.color, width: 1.5 },
+          hovertemplate: `${s.ticker}: $%{y:.2f}<extra></extra>`,
+        };
+      }
       const base = hist[0].p;
       if (!base) return null;
       return {
         x: hist.map((h: any) => h.t),
         y: hist.map((h: any) => ((h.p - base) / base) * 100),
-        type: "scatter" as const,
-        mode: "lines" as const,
+        type: "scatter" as const, mode: "lines" as const,
         name: s.ticker,
         line: { color: s.color, width: 1.5 },
         hovertemplate: `${s.ticker}: %{y:.1f}%<extra></extra>`,
       };
     })
     .filter(Boolean);
+
+  const benchBase = benchHistory.length > 1 ? benchHistory[0].p : 0;
+  const benchTrace = benchHistory.length > 1 && viewMode === "pct" && benchBase ? {
+    x: benchHistory.map(h => h.t),
+    y: benchHistory.map(h => ((h.p - benchBase) / benchBase) * 100),
+    type: "scatter" as const, mode: "lines" as const,
+    name: BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark,
+    line: { color: "rgba(180,180,180,0.45)", width: 1.5, dash: "dash" as const },
+    hovertemplate: `${BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark}: %{y:.1f}%<extra></extra>`,
+  } : null;
+
+  const chartData = [...stockTraces, ...(benchTrace ? [benchTrace] : [])];
 
   const corrMatrix = tickers.map(t1 =>
     tickers.map(t2 => {
@@ -398,20 +487,92 @@ export default function StockCompare() {
       {comparing && tickers.length >= 2 && chartData.filter((d: any) => d?.x?.length > 0).length >= 2 && (
         <>
           <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginBottom: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Normalized Performance (Base 0%, 1Y)</p>
+            {/* Header row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>
+                {viewMode === "pct" ? "Normalized Performance (Base 0%)" : "Price History"}
+              </p>
               <button onClick={() => setModal("perf")} style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--bg3)", border: "0.5px solid var(--border)", color: "var(--text3)", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
                 onMouseEnter={e => { e.currentTarget.style.background = AMBER; e.currentTarget.style.color = "#0a0e14"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text3)"; }}>?</button>
             </div>
+
+            {/* Toolbar */}
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
+              {/* Period buttons */}
+              {(["1W", "1M", "3M", "1Y", "3Y", "5Y"] as const).map(p => (
+                <button key={p} onClick={() => setPeriod(p)} style={{
+                  padding: "3px 9px", fontSize: 10,
+                  background: period === p ? "rgba(184,134,11,0.15)" : "transparent",
+                  border: `0.5px solid ${period === p ? "rgba(184,134,11,0.4)" : "var(--border)"}`,
+                  borderRadius: 5, color: period === p ? AMBER : "var(--text3)",
+                  cursor: "pointer", fontFamily: "Space Mono, monospace", transition: "all 0.15s",
+                }}>
+                  {p}
+                </button>
+              ))}
+              <button onClick={() => setPeriod("Custom")} style={{
+                padding: "3px 9px", fontSize: 10,
+                background: period === "Custom" ? "rgba(184,134,11,0.15)" : "transparent",
+                border: `0.5px solid ${period === "Custom" ? "rgba(184,134,11,0.4)" : "var(--border)"}`,
+                borderRadius: 5, color: period === "Custom" ? AMBER : "var(--text3)",
+                cursor: "pointer", fontFamily: "Space Mono, monospace", transition: "all 0.15s",
+              }}>
+                Custom
+              </button>
+              {period === "Custom" && (
+                <>
+                  <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
+                    style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", color: "var(--text)", borderRadius: 6, fontSize: 11, padding: "2px 6px", outline: "none", fontFamily: "Space Mono, monospace" }} />
+                  <span style={{ fontSize: 10, color: "var(--text3)" }}>→</span>
+                  <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
+                    style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", color: "var(--text)", borderRadius: 6, fontSize: 11, padding: "2px 6px", outline: "none", fontFamily: "Space Mono, monospace" }} />
+                </>
+              )}
+
+              {/* Spacer */}
+              <div style={{ flex: 1 }} />
+
+              {/* % / $ toggle */}
+              <div style={{ display: "flex", border: "0.5px solid var(--border)", borderRadius: 6, overflow: "hidden" }}>
+                {(["pct", "price"] as const).map(m => (
+                  <button key={m} onClick={() => setViewMode(m)} style={{
+                    padding: "3px 10px", fontSize: 10, border: "none",
+                    background: viewMode === m ? "rgba(184,134,11,0.15)" : "transparent",
+                    color: viewMode === m ? AMBER : "var(--text3)",
+                    cursor: "pointer", fontFamily: "Space Mono, monospace", transition: "all 0.15s",
+                  }}>
+                    {m === "pct" ? "%" : "$"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Benchmark dropdown (only meaningful in % mode) */}
+              {viewMode === "pct" && (
+                <select value={benchmark} onChange={e => setBenchmark(e.target.value)} style={{
+                  padding: "3px 6px", fontSize: 10,
+                  background: "transparent", border: "0.5px solid var(--border)",
+                  borderRadius: 5, color: "var(--text3)", cursor: "pointer",
+                  fontFamily: "Space Mono, monospace", outline: "none",
+                }}>
+                  <option value="">No benchmark</option>
+                  {BENCHMARKS.map(b => (
+                    <option key={b.ticker} value={b.ticker}>{b.label}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
             <Plot
               data={chartData}
               layout={{
                 paper_bgcolor: "transparent", plot_bgcolor: "transparent",
                 font: { color: dark ? "rgba(232,224,204,0.75)" : "#4a4a4a", family: "Inter", size: 10 },
-                margin: { t: 8, b: 36, l: 50, r: 12 },
+                margin: { t: 8, b: 36, l: 54, r: 12 },
                 xaxis: { gridcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)", tickcolor: "transparent" },
-                yaxis: { gridcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)", tickcolor: "transparent", ticksuffix: "%" },
+                yaxis: viewMode === "pct"
+                  ? { gridcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)", tickcolor: "transparent", ticksuffix: "%" }
+                  : { gridcolor: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)", tickcolor: "transparent", tickprefix: "$" },
                 legend: { orientation: "h", y: -0.15, font: { size: 11, color: dark ? "rgba(232,224,204,0.75)" : "#4a4a4a" }, bgcolor: "transparent" },
                 hovermode: "x unified",
                 hoverlabel: { bgcolor: "#0d1117", bordercolor: "rgba(201,168,76,0.4)", font: { color: "#e8e0cc", size: 11 } },
