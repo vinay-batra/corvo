@@ -112,6 +112,7 @@ interface StockData {
   change: number | null;
   change_pct: number | null;
   sparkline: number[];
+  sector?: string;
 }
 interface Alert { ticker: string; targetPrice: number; direction: "above" | "below"; triggered?: boolean; }
 
@@ -528,7 +529,7 @@ export default function Watchlist() {
                     onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); saveRename(); } if (e.key === "Escape") setEditingListId(null); }}
                     style={{ flex: 1, padding: 0, background: "transparent", border: "none", color: "var(--text)", fontSize: 13, fontWeight: 500, outline: "none" }}
                   />
-                  <button onClick={saveRename} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
+                  <button onClick={saveRename} style={{ background: "var(--accent)", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: "#0a0e14", padding: "4px 12px", borderRadius: 6, lineHeight: 1, flexShrink: 0 }}>Save</button>
                   <button onClick={() => setEditingListId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 0, display: "flex", alignItems: "center" }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>
                 <IconPicker value={editIcon} onChange={setEditIcon} />
@@ -539,13 +540,13 @@ export default function Watchlist() {
                 <button
                   className="switcher-trigger"
                   onClick={() => setSwitcherOpen(o => !o)}
-                  style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "8px 11px", background: "var(--bg3)", border: `0.5px solid ${switcherOpen ? "rgba(184,134,11,0.3)" : "var(--border2)"}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}>
-                  <ListIcon iconKey={activeList?.icon || "folder"} size={13} color="var(--text3)" />
-                  <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 500, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  style={{ flex: 1, display: "flex", alignItems: "center", gap: 9, padding: "9px 13px", background: "var(--bg3)", border: `0.5px solid ${switcherOpen ? "rgba(184,134,11,0.4)" : "var(--border2)"}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}>
+                  <ListIcon iconKey={activeList?.icon || "folder"} size={14} color="var(--accent)" />
+                  <span style={{ flex: 1, textAlign: "left", fontSize: 15, fontWeight: 700, color: "var(--accent)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: -0.2 }}>
                     {activeList?.name ?? "Watchlist"}
                   </span>
                   {activeItems.length > 0 && (
-                    <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0 }}>{activeItems.length} {activeItems.length === 1 ? "asset" : "assets"}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text2)", background: "var(--bg2)", padding: "2px 8px", borderRadius: 6, flexShrink: 0 }}>{activeItems.length}</span>
                   )}
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0, color: "var(--text3)", transform: switcherOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
                     <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -554,8 +555,8 @@ export default function Watchlist() {
                 <button
                   onClick={() => { if (activeList) startRename(activeList.id, activeList.name, activeList.icon); }}
                   title="Rename list"
-                  style={{ height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: "pointer", color: "var(--text3)", fontSize: 11, flexShrink: 0, transition: "all 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.3)"; e.currentTarget.style.color = "var(--text)"; }}
+                  style={{ height: 38, padding: "0 12px", display: "flex", alignItems: "center", gap: 5, background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: "pointer", color: "var(--text3)", fontSize: 11, flexShrink: 0, transition: "all 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.color = "var(--text)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.color = "var(--text3)"; }}>
                   <PencilIcon size={11} /> <span style={{ letterSpacing: 0.2 }}>Rename</span>
                 </button>
@@ -611,7 +612,7 @@ export default function Watchlist() {
                           placeholder="List name…"
                           style={{ flex: 1, padding: "2px 0", background: "transparent", border: "none", color: "var(--text)", fontSize: 12, outline: "none" }}
                         />
-                        <button onClick={createList} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#5cb88a", padding: 0, lineHeight: 1 }}>✓</button>
+                        <button onClick={createList} style={{ background: "var(--accent)", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: "#0a0e14", padding: "4px 12px", borderRadius: 6, lineHeight: 1, flexShrink: 0 }}>Save</button>
                         <button onClick={() => { setCreatingList(false); setNewListName(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 0, display: "flex", alignItems: "center" }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                       </div>
                       <IconPicker value={newListIcon} onChange={setNewListIcon} />
@@ -685,7 +686,7 @@ export default function Watchlist() {
         {error && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 8 }}>{error}</p>}
       </div>
 
-      {/* Stock cards */}
+      {/* Watchlist table */}
       {activeItems.length === 0 ? (
         <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "48px 24px", background: "var(--card-bg)", textAlign: "center" }}>
           <div style={{ marginBottom: 10, opacity: 0.3 }}><ListIcon iconKey={activeList?.icon || "folder"} size={32} color="var(--text)" /></div>
@@ -693,66 +694,89 @@ export default function Watchlist() {
           <p style={{ fontSize: 12, color: "var(--text3)" }}>Add tickers above to track them here</p>
         </div>
       ) : (
-        <motion.div
-          className="c-watchlist-grid"
-          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}
-          initial="hidden" animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.06 } } }}>
-          <AnimatePresence>
-            {activeItems.map(item => {
-              const s = stockData[item.ticker];
-              const pos = (s?.change_pct ?? 0) >= 0;
-              const hasAlert = alerts.some(a => a.ticker === item.ticker);
-              return (
-                <motion.div key={item.ticker}
-                  variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  onClick={() => setSelected(item.ticker)}
-                  style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px", background: "var(--card-bg)", cursor: "pointer", transition: "border-color 0.15s, background 0.15s", position: "relative" }}
-                  whileHover={{ borderColor: "var(--border2)", backgroundColor: "var(--bg3)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                    <div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{item.ticker}</div>
-                      <div style={{ fontSize: 10, color: "var(--text3)", maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s?.name || "N/A"}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                      <button onClick={e => { e.stopPropagation(); setAlertFor(item.ticker); }}
-                        title={hasAlert ? "Alert set" : "Set price alert"}
-                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: hasAlert ? "rgba(184,134,11,0.1)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: hasAlert ? "var(--accent)" : "var(--text3)", transition: "all 0.15s" }}>
-                        ◎
-                      </button>
-                      <button onClick={e => { e.stopPropagation(); remove(item.ticker); }}
-                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", transition: "all 0.15s" }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = "#e05c5c"; e.currentTarget.style.color = "#e05c5c"; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                    <div>
-                      {s?.price != null && s.price > 0 ? (
-                        <>
-                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5 }}>${s.price.toFixed(2)}</div>
-                          {s.change_pct != null && (
-                            <div style={{ fontSize: 11, fontWeight: 600, color: pos ? "#5cb88a" : "#e05c5c", marginTop: 2 }}>
-                              {pos ? "+" : ""}{s.change_pct.toFixed(2)}%
-                            </div>
+        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  {["Ticker", "Company", "Price", "Change 1D", "Sparkline", "Sector", "Actions"].map(col => (
+                    <th key={col} style={{ padding: "8px 12px", fontSize: 10, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", textAlign: "left", background: "var(--bg2)", borderBottom: "0.5px solid var(--border)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence>
+                  {activeItems.map((item) => {
+                    const s = stockData[item.ticker];
+                    const pos = (s?.change_pct ?? 0) >= 0;
+                    const hasAlert = alerts.some(a => a.ticker === item.ticker);
+                    return (
+                      <motion.tr key={item.ticker}
+                        initial={false}
+                        exit={{ opacity: 0 }}
+                        className="pos-row"
+                        onClick={() => setSelected(item.ticker)}
+                        style={{ cursor: "pointer", borderBottom: "0.5px solid var(--border)", height: 48 }}>
+                        {/* Ticker */}
+                        <td style={{ padding: "0 12px" }}>
+                          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: "var(--accent)" }}>{item.ticker}</span>
+                        </td>
+                        {/* Company */}
+                        <td style={{ padding: "0 12px" }}>
+                          <span style={{ fontSize: 12, color: "var(--text2)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{s?.name || "—"}</span>
+                        </td>
+                        {/* Price */}
+                        <td style={{ padding: "0 12px" }}>
+                          {s?.price != null && s.price > 0 ? (
+                            <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--text)" }}>${s.price.toFixed(2)}</span>
+                          ) : (
+                            <span style={{ fontSize: 11, color: "var(--text3)" }}>{loadingAll ? "…" : "—"}</span>
                           )}
-                        </>
-                      ) : s && !loadingAll ? (
-                        <div style={{ fontSize: 11, color: "#e05c5c" }}>Ticker not found</div>
-                      ) : (
-                        <div style={{ fontSize: 11, color: "var(--text3)" }}>{loadingAll ? "Loading…" : "N/A"}</div>
-                      )}
-                    </div>
-                    {s?.sparkline && s.sparkline.length > 1 && <span className="c-sparkline-hide"><Sparkline data={s.sparkline} positive={pos} /></span>}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </motion.div>
+                        </td>
+                        {/* Change 1D */}
+                        <td style={{ padding: "0 12px" }}>
+                          {s?.change_pct != null ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 7px", borderRadius: 5, fontSize: 11, fontWeight: 600, background: pos ? "rgba(76,175,125,0.1)" : "rgba(224,92,92,0.1)", color: pos ? "#4caf7d" : "#e05c5c" }}>
+                              {pos ? "+" : ""}{s.change_pct.toFixed(2)}%
+                            </span>
+                          ) : <span style={{ color: "var(--text3)", fontSize: 11 }}>—</span>}
+                        </td>
+                        {/* Sparkline */}
+                        <td style={{ padding: "0 12px" }}>
+                          {s?.sparkline && s.sparkline.length > 1 ? <Sparkline data={s.sparkline} positive={pos} /> : <div style={{ width: 60 }} />}
+                        </td>
+                        {/* Sector */}
+                        <td style={{ padding: "0 12px" }}>
+                          {s?.sector ? (
+                            <span style={{ fontSize: 11, color: "var(--text3)", background: "var(--bg3)", padding: "3px 9px", borderRadius: 8, whiteSpace: "nowrap" }}>{s.sector}</span>
+                          ) : <span style={{ fontSize: 11, color: "var(--text3)" }}>—</span>}
+                        </td>
+                        {/* Actions */}
+                        <td style={{ padding: "0 12px" }}>
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }} onClick={e => e.stopPropagation()}>
+                            <button onClick={e => { e.stopPropagation(); setAlertFor(item.ticker); }}
+                              title={hasAlert ? "Alert set" : "Set price alert"}
+                              style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: hasAlert ? "rgba(184,134,11,0.1)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: hasAlert ? "var(--accent)" : "var(--text3)", transition: "all 0.15s" }}>
+                              ◎
+                            </button>
+                            <button onClick={e => { e.stopPropagation(); remove(item.ticker); }}
+                              style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", transition: "all 0.15s" }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = "#e05c5c"; e.currentTarget.style.color = "#e05c5c"; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* Notifications prompt */}
@@ -765,6 +789,42 @@ export default function Watchlist() {
           </button>
         </div>
       )}
+
+      {/* Suggested to Watch */}
+      {(() => {
+        const inList = new Set(activeItems.map(i => i.ticker));
+        const suggestions = WATCH_TICKERS.filter(t => !inList.has(t.ticker));
+        if (suggestions.length === 0) return null;
+        const groups: Record<string, typeof WATCH_TICKERS> = {};
+        suggestions.forEach(t => {
+          const g = t.type === "CRYPTOCURRENCY" ? "CRYPTO" : t.type;
+          if (!groups[g]) groups[g] = [];
+          groups[g].push(t);
+        });
+        const order = ["EQUITY", "ETF", "CRYPTO"];
+        return (
+          <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginTop: 12 }}>
+            <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Suggested to Watch</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {order.filter(g => groups[g]?.length).map(g => (
+                <div key={g}>
+                  <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8 }}>{g}</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {groups[g].map(t => (
+                      <button key={t.ticker} onClick={() => add(t.ticker)}
+                        style={{ padding: "4px 10px", borderRadius: 6, border: "0.5px solid var(--border)", background: "var(--bg3)", color: "var(--text2)", fontSize: 11, fontFamily: "var(--font-mono)", cursor: "pointer", transition: "all 0.15s", fontWeight: 600 }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.color = "var(--accent)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
+                        + {t.ticker}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Active alerts */}
       {alerts.length > 0 && (
@@ -798,6 +858,7 @@ export default function Watchlist() {
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         .switcher-trigger:hover .pencil-reveal { opacity: 1 !important; }
+        .pos-row:hover td { background: rgba(255,255,255,0.025) !important; }
       `}</style>
     </div>
   );
