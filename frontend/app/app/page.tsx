@@ -2129,14 +2129,18 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} portfolioValue={portfolioInputValue} /></Card>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <Card style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
-                    <CardHeader title="Capital Gains Estimator" />
-                    <span style={{ color: "var(--text3)", fontSize: 13 }}>Coming soon</span>
-                  </Card>
-                  <Card style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
-                    <CardHeader title="Dividend Calendar" />
-                    <span style={{ color: "var(--text3)", fontSize: 13 }}>Coming soon</span>
-                  </Card>
+                  <motion.div key="cge-card" initial={false}>
+                    <Card style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
+                      <CardHeader title="Capital Gains Estimator" />
+                      <span style={{ color: "var(--text3)", fontSize: 13 }}>Coming soon</span>
+                    </Card>
+                  </motion.div>
+                  <motion.div key="div-cal-card" initial={false}>
+                    <Card style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
+                      <CardHeader title="Dividend Calendar" />
+                      <span style={{ color: "var(--text3)", fontSize: 13 }}>Coming soon</span>
+                    </Card>
+                  </motion.div>
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (

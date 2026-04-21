@@ -22,64 +22,6 @@ interface TaxLossData {
   total_harvestable_loss: number;
 }
 
-const Tooltip = ({ text }: { text: string }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <span style={{ position: "relative", display: "inline-block", verticalAlign: "middle" }}>
-      <button
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
-        style={{
-          background: "rgba(255,255,255,0.07)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: "50%",
-          width: 15,
-          height: 15,
-          fontSize: 9,
-          color: "var(--text-muted)",
-          cursor: "default",
-          padding: 0,
-          lineHeight: "15px",
-          textAlign: "center",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        aria-label="What is tax loss harvesting?"
-      >
-        ?
-      </button>
-      {open && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "calc(100% + 6px)",
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "#1a2030",
-            border: "1px solid rgba(201,168,76,0.2)",
-            borderRadius: 8,
-            padding: "10px 14px",
-            width: 260,
-            fontSize: 11,
-            color: "var(--text2)",
-            lineHeight: 1.55,
-            zIndex: 99,
-            pointerEvents: "none",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-          }}
-        >
-          <strong style={{ color: "var(--accent)", display: "block", marginBottom: 4 }}>Tax Loss Harvesting</strong>
-          Selling a position at a loss to offset capital gains taxes, then immediately buying a similar (but not identical)
-          investment to maintain market exposure. The IRS wash-sale rule disallows the loss if you repurchase the same security
-          within 30 days before or after the sale.
-        </div>
-      )}
-    </span>
-  );
-};
 
 const TaxLossHarvester = memo(function TaxLossHarvester({ assets, portfolioValue = 10000 }: { assets: any[]; portfolioValue?: number }) {
   const [data, setData] = useState<TaxLossData | null>(null);
@@ -140,30 +82,22 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets, portfolioValue
         }}
       />
 
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-        <div>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-            Tax Loss Harvesting
-            <Tooltip text="" />
-          </p>
-          {data && data.losses.length > 0 && (
-            <p style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "#e05c5c", margin: 0, lineHeight: 1 }}>
-              {data.total_harvestable_loss < 0
-                ? `-$${Math.abs(data.total_harvestable_loss).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                : `$${data.total_harvestable_loss.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 6, fontFamily: "var(--font-body)" }}>
-                harvestable loss / $10k
-              </span>
-            </p>
-          )}
-          {data && data.losses.length === 0 && !loading && (
-            <p style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#5cb88a", margin: 0, lineHeight: 1 }}>
-              No loss harvesting opportunities
-            </p>
-          )}
-        </div>
-      </div>
+      {/* Harvestable loss summary */}
+      {data && data.losses.length > 0 && (
+        <p style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "#e05c5c", margin: "0 0 20px", lineHeight: 1 }}>
+          {data.total_harvestable_loss < 0
+            ? `-$${Math.abs(data.total_harvestable_loss).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            : `$${data.total_harvestable_loss.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 6, fontFamily: "var(--font-body)" }}>
+            harvestable loss / $10k
+          </span>
+        </p>
+      )}
+      {data && data.losses.length === 0 && !loading && (
+        <p style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#5cb88a", margin: "0 0 20px", lineHeight: 1 }}>
+          No loss harvesting opportunities
+        </p>
+      )}
 
       {loading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
