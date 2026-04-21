@@ -1504,7 +1504,7 @@ export default function LearnPage() {
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url, xp, streak, last_activity_date, lesson_progress, last_daily_challenge")
+          .select("display_name, avatar_url, xp, streak, last_activity_date, last_daily_challenge")
           .eq("id", user.id)
           .single();
         console.log("profile fetch:", { profile, profileError });
@@ -1528,12 +1528,12 @@ export default function LearnPage() {
         setStreak(currentStreak);
 
         if (profile) {
-          if (profile.lesson_progress && typeof profile.lesson_progress === "object") {
-            const lp = profile.lesson_progress as Record<string, any>;
-            setLessonProgress(lp as Record<string, number[]>);
-            const gameAwarded = Array.isArray(lp.game_xp_awarded) ? lp.game_xp_awarded as string[] : [];
+          try {
+            const lp = JSON.parse(localStorage.getItem("corvo_lesson_progress") || "{}");
+            setLessonProgress(lp);
+            const gameAwarded = JSON.parse(localStorage.getItem("corvo_game_xp_awarded") || "[]");
             setGameXpAwarded(gameAwarded);
-          }
+          } catch {}
           // Daily challenge: check completion, then cached questions, then fetch fresh
           if (profile.last_daily_challenge === today || checkLocalDaily()) {
             setDailyCompleted(true);
@@ -1641,41 +1641,18 @@ export default function LearnPage() {
     await awardXP(amount);
     const updated = [...gameXpAwarded, gameId];
     setGameXpAwarded(updated);
-    if (userId) {
-      const { data: profile } = await supabase.from("profiles").select("lesson_progress").eq("id", userId).single();
-      const dbLp = (profile?.lesson_progress as Record<string, any>) || {};
-      await supabase.from("profiles").upsert({
-        id: userId,
-        lesson_progress: { ...dbLp, game_xp_awarded: updated },
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "id" });
-    }
+    try { localStorage.setItem("corvo_game_xp_awarded", JSON.stringify(updated)); } catch {}
   }, [gameXpAwarded, awardXP, userId]);
 
   const handleLessonXP = async (amount: number, lessonId: string, updatedProgress: number[]) => {
     const newProgress = { ...lessonProgress, [lessonId]: updatedProgress };
     setLessonProgress(newProgress);
+    try { localStorage.setItem("corvo_lesson_progress", JSON.stringify(newProgress)); } catch {}
 
     const lesson = LESSONS.find(l => l.id === lessonId);
     if (lesson && updatedProgress.length >= lesson.quiz.length) {
       markComplete(lessonId);
       posthog.capture("learn_lesson_completed", { lesson: lesson.title, xp_earned: amount });
-    }
-
-    if (userId) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("lesson_progress")
-        .eq("id", userId)
-        .single();
-
-      const dbProgress: Record<string, number[]> = (profile?.lesson_progress as Record<string, number[]>) || {};
-
-      await supabase.from("profiles").upsert({
-        id: userId,
-        lesson_progress: { ...dbProgress, [lessonId]: updatedProgress },
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "id" });
     }
 
     if (amount > 0) awardXP(amount);
