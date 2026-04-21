@@ -150,7 +150,9 @@ export default function PositionsTab({
   // Performance chart
   const [perfData, setPerfData] = useState<Record<string, number[]>>({});
   const [perfDates, setPerfDates] = useState<Record<string, string[]>>({});
-  const [period, setPeriod] = useState<"6m" | "1y" | "2y" | "5y">("1y");
+  const [period, setPeriod] = useState<"6m" | "1y" | "2y" | "5y" | "custom">("1y");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [perfLoading, setPerfLoading] = useState(false);
   const [benchmark, setBenchmark] = useState("^GSPC");
   const [benchData, setBenchData] = useState<{ x: string[]; y: number[] }>({ x: [], y: [] });
@@ -231,15 +233,18 @@ export default function PositionsTab({
   // ── Fetch performance data for all saved portfolios ───────────────────────
   useEffect(() => {
     if (savedPortfolios.length === 0) return;
+    if (period === "custom" && (!customStart || !customEnd)) return;
     setPerfLoading(true);
-    const apiPeriod = PERIOD_API[period];
+    const queryParam = period === "custom"
+      ? `start_date=${customStart}&end_date=${customEnd}`
+      : `period=${PERIOD_API[period]}`;
     Promise.all(
       savedPortfolios.filter(p => isValidSavedId(p.id)).map(async p => {
         const tickers = p.assets.map(a => a.ticker).join(",");
         const weights = p.assets.map(a => a.weight).join(",");
         try {
           const r = await fetch(
-            `${API_URL}/portfolio?tickers=${encodeURIComponent(tickers)}&weights=${encodeURIComponent(weights)}&period=${apiPeriod}`
+            `${API_URL}/portfolio?tickers=${encodeURIComponent(tickers)}&weights=${encodeURIComponent(weights)}&${queryParam}`
           );
           const d = await r.json();
           return { id: p.id, cumulative: (d.portfolio_cumulative as number[]) ?? [], dates: (d.dates as string[]) ?? [] };
@@ -257,13 +262,16 @@ export default function PositionsTab({
       setPerfData(newPerf);
       setPerfDates(newDates);
     }).finally(() => setPerfLoading(false));
-  }, [savedPortfolios, period]);
+  }, [savedPortfolios, period, customStart, customEnd]);
 
   // ── Fetch benchmark series ────────────────────────────────────────────────
   useEffect(() => {
+    if (period === "custom" && (!customStart || !customEnd)) return;
     setBenchLoading(true);
-    const apiPeriod = PERIOD_API[period];
-    fetch(`${API_URL}/portfolio?tickers=${encodeURIComponent(benchmark)}&weights=1&period=${apiPeriod}`)
+    const queryParam = period === "custom"
+      ? `start_date=${customStart}&end_date=${customEnd}`
+      : `period=${PERIOD_API[period]}`;
+    fetch(`${API_URL}/portfolio?tickers=${encodeURIComponent(benchmark)}&weights=1&${queryParam}`)
       .then(r => r.json())
       .then(d => {
         setBenchData({
@@ -273,7 +281,7 @@ export default function PositionsTab({
       })
       .catch(() => setBenchData({ x: [], y: [] }))
       .finally(() => setBenchLoading(false));
-  }, [benchmark, period]);
+  }, [benchmark, period, customStart, customEnd]);
 
   // ── Derive all unique tickers across selection ─────────────────────────────
   const activePortfolios = selectedId === "all"
@@ -416,6 +424,7 @@ export default function PositionsTab({
         .pos-flash-up  td{animation:flashGreen .8s ease-out!important}
         .pos-flash-down td{animation:flashRed   .8s ease-out!important}
         .pos-row:hover td{background:rgba(255,255,255,0.025)!important}
+        input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.65);cursor:pointer}
       `}</style>
 
       {/* ── Controls row ─────────────────────────────────────────────────── */}
@@ -583,6 +592,41 @@ export default function PositionsTab({
                   {p}
                 </button>
               ))}
+              {/* Custom date range */}
+              <button onClick={() => setPeriod("custom")} style={{
+                padding: "3px 10px", fontSize: 10,
+                background: period === "custom" ? "rgba(184,134,11,0.15)" : "transparent",
+                border: `0.5px solid ${period === "custom" ? "rgba(184,134,11,0.4)" : "var(--border)"}`,
+                borderRadius: 5, color: period === "custom" ? "var(--accent)" : "var(--text3)",
+                cursor: "pointer", fontFamily: "Space Mono, monospace", transition: "all 0.15s",
+              }}>
+                Custom
+              </button>
+              {period === "custom" && (
+                <>
+                  <input
+                    type="date"
+                    value={customStart}
+                    onChange={e => setCustomStart(e.target.value)}
+                    style={{
+                      background: "var(--bg3)", border: "0.5px solid var(--border)",
+                      color: "var(--text)", borderRadius: 6, fontSize: 11,
+                      padding: "2px 6px", outline: "none", fontFamily: "Space Mono, monospace",
+                    }}
+                  />
+                  <span style={{ fontSize: 10, color: "var(--text3)" }}>→</span>
+                  <input
+                    type="date"
+                    value={customEnd}
+                    onChange={e => setCustomEnd(e.target.value)}
+                    style={{
+                      background: "var(--bg3)", border: "0.5px solid var(--border)",
+                      color: "var(--text)", borderRadius: 6, fontSize: 11,
+                      padding: "2px 6px", outline: "none", fontFamily: "Space Mono, monospace",
+                    }}
+                  />
+                </>
+              )}
             </div>
           </div>
 
