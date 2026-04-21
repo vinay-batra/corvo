@@ -2,7 +2,6 @@
 
 import { memo, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
 import { fetchSectors } from "../lib/api";
 import ErrorState from "./ErrorState";
 import EmptyState from "./EmptyState";
@@ -38,6 +37,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
     return () => obs.disconnect();
   }, []);
 
+  const assetsKey = assets.map(a => `${a.ticker}:${a.weight}`).join(",");
   useEffect(() => {
     if (!assets.length) return;
     setLoading(true);
@@ -46,24 +46,14 @@ const SectorExposureChart = memo(function SectorExposureChart({
       .then((res) => setData(res?.sectors ?? null))
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
-  }, [assets, retryCount]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assetsKey, retryCount]);
 
   const labels = data ? Object.keys(data) : [];
   const values = data ? Object.values(data) : [];
 
   return (
-    <motion.div
-      initial={false}
-      transition={{ duration: 0.5 }}
-      style={{
-        background: "var(--bg-card)",
-        border: "1px solid var(--border-dim)",
-        borderRadius: 14,
-        padding: "22px 24px",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
+    <>
       {/* Amber top-line accent */}
       <div
         style={{
@@ -191,7 +181,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
           minHeight={260}
         />
       ) : null}
-    </motion.div>
+    </>
   );
 });
 
