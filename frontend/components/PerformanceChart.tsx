@@ -189,7 +189,7 @@ const PerformanceChart = memo(function PerformanceChart({ data, savedLines = [],
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+    <motion.div initial={false} transition={{ duration: 0.5 }}>
       {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
         <p style={{ fontSize: 9, letterSpacing: 2.5, color: legendFg, textTransform: "uppercase" }}>
@@ -238,7 +238,7 @@ const PerformanceChart = memo(function PerformanceChart({ data, savedLines = [],
 
       {/* Custom date picker */}
       {showCustomPicker && onCustomDateChange && (
-        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+        <motion.div initial={false}
           style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap", padding: "10px 12px", background: "rgba(184,134,11,0.04)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 8 }}>
           <span style={{ fontSize: 10, color: legendFg, flexShrink: 0 }}>From</span>
           <input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)}
