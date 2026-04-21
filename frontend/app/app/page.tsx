@@ -859,7 +859,8 @@ function StocksSearch({ onSelect, onCompare }: { onSelect: (t: string) => void; 
   const fmtPct   = (p: number | null) => p == null ? "" : `${p >= 0 ? "+" : ""}${p.toFixed(2)}%`;
 
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto", position: "relative" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 120px)", padding: "0 24px" }}>
+    <div style={{ width: "100%", maxWidth: 760, position: "relative" }}>
       <style>{`
         @keyframes orb-float { 0%,100% { transform: translateY(0px) } 50% { transform: translateY(-18px) } }
       `}</style>
@@ -957,6 +958,7 @@ function StocksSearch({ onSelect, onCompare }: { onSelect: (t: string) => void; 
           </div>
         </div>
       ) : null}
+    </div>
     </div>
   );
 }
