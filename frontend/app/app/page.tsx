@@ -789,11 +789,6 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
 }
 
 // ── Stocks search mini-component (module-level so hooks are stable) ───────────
-const STOCKS_SEARCH_GROUPS = [
-  { label: "Stocks", tickers: ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","BRK-B","JPM","LLY"] },
-  { label: "ETFs",   tickers: ["SPY","QQQ","VTI","VOO","GLD","TLT","ARKK","SCHD"] },
-  { label: "Crypto", tickers: ["BTC-USD","ETH-USD","SOL-USD"] },
-];
 
 const TAPE_TICKERS = ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","SPY","QQQ","BTC-USD"];
 const CARD_TICKERS = ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","SPY","BTC-USD"];
@@ -827,16 +822,16 @@ function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }
 
 interface WatchlistStockData { ticker: string; name?: string; price: number | null; change: number | null; change_pct: number | null; sparkline: number[]; }
 
-function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
+function StocksSearch({ onSelect, onCompare }: { onSelect: (t: string) => void; onCompare: () => void }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
   const [busy, setBusy] = useState(false);
   const [liveData, setLiveData] = useState<Record<string, WatchlistStockData>>({});
   const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // Fetch live prices for tape + cards
+  // Fetch live prices for cards
   useEffect(() => {
-    const tickers = [...new Set([...TAPE_TICKERS, ...CARD_TICKERS])].join(",");
+    const tickers = CARD_TICKERS.join(",");
     fetch(`${API}/watchlist-data?tickers=${tickers}`)
       .then(r => r.json())
       .then(d => {
@@ -866,7 +861,6 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
   return (
     <div style={{ maxWidth: 600, margin: "0 auto", position: "relative" }}>
       <style>{`
-        @keyframes marquee-tape { from { transform: translateX(0) } to { transform: translateX(-50%) } }
         @keyframes orb-float { 0%,100% { transform: translateY(0px) } 50% { transform: translateY(-18px) } }
       `}</style>
 
@@ -882,33 +876,8 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
         }} />
       ))}
 
-      {/* Live ticker tape */}
-      {TAPE_TICKERS.length > 0 && (
-        <div style={{ overflow: "hidden", height: 34, position: "relative", zIndex: 1, marginBottom: 20, borderRadius: 8, border: "0.5px solid var(--border)", background: "var(--bg2)" }}>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 24, height: "100%",
-            animation: "marquee-tape 28s linear infinite", width: "max-content", padding: "0 16px",
-          }}>
-            {[...TAPE_TICKERS, ...TAPE_TICKERS].map((ticker, idx) => {
-              const s = liveData[ticker];
-              const pos = (s?.change_pct ?? 0) >= 0;
-              return (
-                <div key={`${ticker}-${idx}`} style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>{ticker}</span>
-                  <span style={{ fontSize: 11, color: "var(--text)" }}>{fmtPrice(s?.price ?? null)}</span>
-                  {s?.change_pct != null && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: pos ? "#5cb88a" : "#e05c5c" }}>{fmtPct(s.change_pct)}</span>
-                  )}
-                  <span style={{ width: 1, height: 14, background: "var(--border2)", marginLeft: 8 }} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Search bar */}
-      <div style={{ position: "relative", marginBottom: 20, zIndex: 1 }}>
+      <div style={{ position: "relative", marginBottom: 12, zIndex: 1 }}>
         <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Stock Lookup</p>
         <input
           className="accent-input"
@@ -918,6 +887,19 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
         />
         {busy && <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
       </div>
+
+      {/* Compare Stocks button */}
+      {!q && (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20, zIndex: 1, position: "relative" }}>
+          <button
+            onClick={onCompare}
+            style={{ border: "1px solid var(--accent)", color: "var(--accent)", background: "rgba(184,134,11,0.08)", padding: "8px 24px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.03em" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--accent)"; e.currentTarget.style.color = "var(--bg)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,0.08)"; e.currentTarget.style.color = "var(--accent)"; }}>
+            ⇄ Compare Stocks
+          </button>
+        </div>
+      )}
 
       {/* Search results */}
       {results.length > 0 ? (
@@ -936,25 +918,8 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
         </div>
       ) : !q ? (
         <div style={{ position: "relative", zIndex: 1 }}>
-          {/* Pill groups */}
-          {STOCKS_SEARCH_GROUPS.map(group => (
-            <div key={group.label} style={{ marginBottom: 12 }}>
-              <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 7 }}>{group.label}</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                {group.tickers.map(t => (
-                  <button key={t} onClick={() => onSelect(t)}
-                    style={{ padding: "5px 12px", fontSize: 11, fontFamily: "Space Mono, monospace", fontWeight: 700, borderRadius: 7, border: "0.5px solid rgba(184,134,11,0.28)", background: "rgba(184,134,11,0.07)", color: "var(--accent)", cursor: "pointer", transition: "all 0.12s" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,0.16)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.5)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,0.07)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.28)"; }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-
           {/* Animated stat cards grid */}
-          <div style={{ marginTop: 20 }}>
+          <div>
             <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Live Market</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
               {CARD_TICKERS.map((ticker, i) => {
@@ -1965,17 +1930,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 ) : stockTicker ? (
                   <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} onSelectTicker={t => setStockTicker(t)} />
                 ) : (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-                      <button onClick={() => setCompareMode(true)}
-                        style={{ padding: "7px 14px", fontSize: 11, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
-                        ⇄ Compare Stocks
-                      </button>
-                    </div>
-                    <StocksSearch onSelect={setStockTicker} />
-                  </>
+                  <StocksSearch onSelect={setStockTicker} onCompare={() => setCompareMode(true)} />
                 )}
               </motion.div>
             ) : activeTab === "positions" ? (
