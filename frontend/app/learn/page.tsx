@@ -36,6 +36,7 @@ import {
   CalendarCheck,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import FeedbackButton from "../../components/FeedbackButton";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -2347,6 +2348,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
           </motion.div>
         )}
       </AnimatePresence>
+      <FeedbackButton />
     </motion.div>
   );
 }

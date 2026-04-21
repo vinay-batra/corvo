@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import FeedbackButton from "../../components/FeedbackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -265,6 +266,7 @@ export default function ChangelogPage() {
 
       {/* Footer */}
       <PublicFooter />
+      <FeedbackButton />
     </div>
   );
 }

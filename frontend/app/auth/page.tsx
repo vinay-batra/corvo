@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { posthog } from "../../lib/posthog";
+import FeedbackButton from "../../components/FeedbackButton";
 
 const C = {
   navy: "#0a0e14", navy2: "#0d1117", navy3: "#111620",
@@ -269,6 +270,7 @@ function AuthForm() {
           </button>
         )}
       </motion.div>
+      <FeedbackButton />
     </div>
   );
 }

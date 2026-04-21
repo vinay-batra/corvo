@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import FeedbackButton from "../../components/FeedbackButton";
 
 type ReferralData = {
   referral_count: number;
@@ -309,6 +310,7 @@ export default function ReferralsPage() {
           {toast}
         </div>
       )}
+      <FeedbackButton />
     </div>
   );
 }

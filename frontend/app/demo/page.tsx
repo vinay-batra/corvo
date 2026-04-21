@@ -6,6 +6,7 @@ import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 import confetti from "canvas-confetti";
+import FeedbackButton from "../../components/FeedbackButton";
 
 /* ── Palette ── */
 const C = {
@@ -877,6 +878,7 @@ export default function DemoPage() {
       <div style={{ position: "fixed", top: "30%", left: "50%", transform: "translateX(-50%)", width: 700, height: 500, background: "radial-gradient(ellipse, rgba(201,168,76,0.04) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
     </div>
       <PublicFooter />
+      <FeedbackButton />
     </>
   );
 }

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import FeedbackButton from "../../components/FeedbackButton";
 
 /* ─── Data ─── */
 const SECTIONS = [
@@ -412,6 +413,7 @@ export default function FaqPage() {
       </main>
 
       <PublicFooter />
+      <FeedbackButton />
     </div>
   );
 }
