@@ -40,7 +40,6 @@ import { fetchPortfolio } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 import AlertsPanel from "../../components/AlertsPanel";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
-import StockCompare from "../../components/StockCompare";
 import Watchlist from "../../components/Watchlist";
 import MarketBrief from "../../components/MarketBrief";
 import EmailPreferences from "../../components/EmailPreferences";
@@ -61,7 +60,6 @@ const TABS = [
   { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
   { id: "risk",       label: "Income & Tax", Icon: ShieldAlert,      href: null },
   { id: "simulate",   label: "Simulations",Icon: FlaskConical,     href: null },
-  { id: "compare",    label: "Compare",    Icon: Eye,              href: null },
   { id: "news",       label: "News",       Icon: Newspaper,        href: null },
   { id: "watchlist",  label: "Watchlist",  Icon: Eye,              href: null },
   { id: "learn",      label: "Learn",      Icon: BookOpen,         href: "/learn" },
@@ -224,326 +222,7 @@ function Empty() {
   );
 }
 
-const COMPARE_COLORS = ["#b8860b", "#b47ee0", "#5cb88a", "#e05c5c"];
 const ComparePlot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
-
-// ── Portfolio Comparison ──────────────────────────────────────────────────────
-function CompareTab({ assets, period, benchmark, benchmarkLabel, currentData }: { assets: { ticker: string; weight: number }[]; period: string; benchmark: string; benchmarkLabel: string; currentData: any }) {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  const [savedPortfolios, setSavedPortfolios] = useState<any[]>([]);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [results, setResults] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState<Record<string, boolean>>({});
-  const [aiInsight, setAiInsight] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState(false);
-  const insightKeyRef = useRef<string>("");
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("corvo_saved_portfolios");
-      if (raw) setSavedPortfolios(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    const activeNow = [
-      { id: "__current__", name: "Current", result: currentData },
-      ...savedPortfolios
-        .filter(p => selected.includes(p.id) && results[p.id])
-        .map(p => ({ id: p.id, name: p.name, result: results[p.id] })),
-    ].filter(p => p.result);
-    if (activeNow.length < 2) return;
-    const key = activeNow.map(p => p.id).sort().join(",");
-    if (key === insightKeyRef.current) return;
-    insightKeyRef.current = key;
-    setAiLoading(true); setAiInsight(""); setAiError(false);
-    const summary = activeNow.map(p => `${p.name}: Return ${((p.result.portfolio_return||0)*100).toFixed(1)}%, Sharpe ${(p.result.sharpe_ratio||0).toFixed(2)}, Volatility ${((p.result.portfolio_volatility||0)*100).toFixed(1)}%, Drawdown ${((p.result.max_drawdown||0)*100).toFixed(1)}%`).join(" | ");
-    fetch(`${API_URL}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: `Compare these portfolios and give a clear 2-3 sentence recommendation on which is better and why: ${summary}. Focus on risk-adjusted returns and max drawdown.`,
-        history: [],
-        portfolio_context: {},
-      }),
-    })
-      .then(r => r.json())
-      .then(d => { setAiInsight(d.reply || ""); setAiLoading(false); })
-      .catch(() => { setAiError(true); setAiLoading(false); });
-  }, [selected, results, currentData, savedPortfolios]);
-
-  const analyzePortfolio = async (portfolio: any) => {
-    if (results[portfolio.id] || loading[portfolio.id]) return;
-    setLoading(p => ({ ...p, [portfolio.id]: true }));
-    try {
-      const total = portfolio.assets.reduce((s: number, a: any) => s + a.weight, 0);
-      const norm = portfolio.assets.map((a: any) => ({ ...a, weight: a.weight / total }));
-      const r = await fetch(`${API_URL}/portfolio?tickers=${norm.map((a: any) => a.ticker).join(",")}&weights=${norm.map((a: any) => a.weight.toFixed(4)).join(",")}&period=${period}&benchmark=${benchmark}`);
-      const d = await r.json(); setResults(p => ({ ...p, [portfolio.id]: d }));
-    } catch {}
-    setLoading(p => ({ ...p, [portfolio.id]: false }));
-  };
-
-  const toggleSelect = (id: string, portfolio: any) => {
-    setSelected(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
-    if (!selected.includes(id)) analyzePortfolio(portfolio);
-  };
-
-  const allPortfolios = [
-    { id: "__current__", name: "Current", result: currentData, loading: false, tickers: assets.map(a => a.ticker) },
-    ...savedPortfolios.map(p => ({ id: p.id, name: p.name, result: results[p.id] || null, loading: loading[p.id] || false, tickers: (p.assets || []).map((a: any) => a.ticker), raw: p })),
-  ];
-  const active = allPortfolios.filter(p => (p.id === "__current__" || selected.includes(p.id)) && p.result);
-
-  const generateAiInsight = async () => {
-    if (active.length < 2) return;
-    setAiLoading(true); setAiInsight(""); setAiError(false);
-    try {
-      const summary = active.map(p => `${p.name}: Return ${((p.result.portfolio_return||0)*100).toFixed(1)}%, Sharpe ${(p.result.sharpe_ratio||0).toFixed(2)}, Volatility ${((p.result.portfolio_volatility||0)*100).toFixed(1)}%, Drawdown ${((p.result.max_drawdown||0)*100).toFixed(1)}%`).join(" | ");
-      const res = await fetch(`${API_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: `Compare these portfolios and give a clear 2-3 sentence recommendation on which is better and why: ${summary}. Focus on risk-adjusted returns and max drawdown.`,
-          history: [],
-          portfolio_context: {},
-        }),
-      });
-      const d = await res.json();
-      setAiInsight(d.reply || "");
-    } catch { setAiError(true); }
-    setAiLoading(false);
-  };
-
-  const metrics = [
-    { key: "portfolio_return",    label: "Annual Return",  fmt: (v: number) => `${(v*100).toFixed(1)}%`,  positive: true },
-    { key: "portfolio_volatility",label: "Volatility",     fmt: (v: number) => `${(v*100).toFixed(1)}%`,  positive: false },
-    { key: "sharpe_ratio",        label: "Sharpe Ratio",   fmt: (v: number) => v.toFixed(2),               positive: true },
-    { key: "max_drawdown",        label: "Max Drawdown",   fmt: (v: number) => `${(v*100).toFixed(1)}%`,   positive: false },
-  ];
-
-  // Normalize value 0–100 for radar
-  const normalize = (val: number, min: number, max: number) => max === min ? 50 : Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
-
-  const radarData = active.length >= 2 ? (() => {
-    const dims = [
-      { label: "Return",       vals: active.map(p => (p.result.portfolio_return || 0) * 100) },
-      { label: "Sharpe",       vals: active.map(p => (p.result.sharpe_ratio || 0)) },
-      { label: "Stability",    vals: active.map(p => 100 - (p.result.portfolio_volatility || 0) * 100) },
-      { label: "Resilience",   vals: active.map(p => 100 - Math.abs((p.result.max_drawdown || 0) * 100)) },
-      { label: "Diversif.",    vals: active.map(p => Math.min(100, (p.tickers.length / 8) * 100)) },
-    ];
-    return active.map((p, pi) => {
-      const scores = dims.map(d => {
-        const min = Math.min(...d.vals); const max = Math.max(...d.vals);
-        return normalize(d.vals[pi], min, max);
-      });
-      return {
-        type: "scatterpolar" as const,
-        r: [...scores, scores[0]],
-        theta: [...dims.map(d => d.label), dims[0].label],
-        fill: "toself",
-        name: p.name,
-        line: { color: COMPARE_COLORS[pi % COMPARE_COLORS.length], width: 1.5 },
-        fillcolor: COMPARE_COLORS[pi % COMPARE_COLORS.length] + "22",
-      };
-    });
-  })() : [];
-
-  const overlapData = active.length >= 2 ? (() => {
-    const sets = active.map(p => new Set<string>(p.tickers));
-    const result: { a: string; b: string; shared: string[]; unique_a: string[]; unique_b: string[] }[] = [];
-    for (let i = 0; i < active.length; i++) {
-      for (let j = i + 1; j < active.length; j++) {
-        result.push({
-          a: active[i].name, b: active[j].name,
-          shared: (Array.from(sets[i]) as string[]).filter((t: string) => sets[j].has(t)),
-          unique_a: (Array.from(sets[i]) as string[]).filter((t: string) => !sets[j].has(t)),
-          unique_b: (Array.from(sets[j]) as string[]).filter((t: string) => !sets[i].has(t)),
-        });
-      }
-    }
-    return result;
-  })() : [];
-
-  return (
-    <div>
-      {/* Header + portfolio selector */}
-      <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 20px", background: "var(--card-bg)", marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: savedPortfolios.length > 0 || active.length > 0 ? 12 : 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
-            <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio Comparison</span>
-            <InfoModal title="Portfolio Comparison" sections={[{ label: "How it works", text: "Add multiple saved portfolios to compare their risk, return, and Sharpe ratio side by side. Save a portfolio first from the Dashboard." }]} />
-            {active.length > 0 && <span style={{ fontSize: 11, color: "var(--text3)" }}>· {active.length} portfolio{active.length !== 1 ? "s" : ""} · {period.toUpperCase()} · vs {benchmarkLabel}</span>}
-          </div>
-        </div>
-        {savedPortfolios.length > 0 ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {savedPortfolios.map(p => (
-              <button key={p.id} onClick={() => toggleSelect(p.id, p)}
-                style={{ padding: "6px 14px", fontSize: 12, borderRadius: 8, cursor: "pointer", transition: "all 0.15s", background: selected.includes(p.id) ? "var(--text)" : "transparent", border: "0.5px solid var(--border2)", color: selected.includes(p.id) ? "var(--bg)" : "var(--text2)" }}>
-                {loading[p.id] ? "..." : p.name}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
-            {[
-              { n: "1", title: "Build a portfolio", desc: "Add tickers and weights in the left sidebar." },
-              { n: "2", title: "Analyze it", desc: "Click Analyze (or press ↵) to run the full analysis." },
-              { n: "3", title: "Save it", desc: "Use the Save button in the sidebar, it works without an account." },
-              { n: "4", title: "Compare side by side", desc: "Return here to select saved portfolios and compare key metrics." },
-            ].map(step => (
-              <div key={step.n} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                <div style={{ width: 26, height: 26, borderRadius: "50%", border: "0.5px solid rgba(184,134,11,0.4)", background: "rgba(184,134,11,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "var(--accent)", flexShrink: 0, fontFamily: "var(--font-mono)" }}>{step.n}</div>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 2 }}>{step.title}</p>
-                  <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.55 }}>{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {active.length > 0 && (
-        <>
-          {/* Side-by-side metric cards */}
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(active.length, 4)}, 1fr)`, gap: 10, marginBottom: 12 }}>
-            {active.map((p, pi) => {
-              const color = COMPARE_COLORS[pi % COMPARE_COLORS.length];
-              return (
-                <div key={p.id} style={{ border: `0.5px solid ${color}44`, borderRadius: 12, overflow: "hidden", background: "var(--card-bg)" }}>
-                  <div style={{ padding: "12px 16px", background: `${color}10`, borderBottom: `0.5px solid ${color}22` }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color, marginBottom: 2 }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--text3)" }}>{p.tickers.slice(0, 4).join(" · ")}{p.tickers.length > 4 ? ` +${p.tickers.length - 4}` : ""}</div>
-                  </div>
-                  {metrics.map((m) => {
-                    const vals = active.map(q => q.result[m.key] ?? 0);
-                    const best = m.positive ? Math.max(...vals) : Math.min(...vals);
-                    const val = p.result[m.key] ?? 0;
-                    const allEqual = vals.every(v => v === vals[0]);
-                    const isBest = !allEqual && val === best;
-                    return (
-                      <div key={m.key} style={{ padding: "9px 16px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 11, color: "var(--text3)" }}>{m.label}</span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: isBest ? 700 : 400, color: isBest ? color : "var(--text2)" }}>
-                          {m.fmt(val)}{isBest && <span style={{ marginLeft: 4, fontSize: 11 }}>★</span>}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  <div style={{ padding: "10px 16px" }}>
-                    <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 5, letterSpacing: 2 }}>SHARPE SCORE</div>
-                    <div style={{ height: 3, background: "var(--bg3)", borderRadius: 2, marginBottom: 4 }}>
-                      <div style={{ width: `${Math.min(100, Math.max(0, ((p.result.sharpe_ratio || 0) / 3) * 100))}%`, height: "100%", background: color, borderRadius: 2 }} />
-                    </div>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color, fontWeight: 600 }}>{(p.result.sharpe_ratio || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Radar + Overlap grid */}
-          {active.length >= 2 && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-              <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
-                  <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Radar Comparison</span>
-                </div>
-                <ComparePlot
-                  data={radarData}
-                  layout={{
-                    polar: {
-                      bgcolor: "transparent",
-                      radialaxis: { visible: true, range: [0, 100], gridcolor: "rgba(255,255,255,0.06)", tickfont: { size: 8, color: "rgba(232,224,204,0.3)" }, showticklabels: false },
-                      angularaxis: { gridcolor: "rgba(255,255,255,0.06)", tickfont: { size: 9, color: "rgba(232,224,204,0.5)" } },
-                    },
-                    paper_bgcolor: "transparent",
-                    plot_bgcolor: "transparent",
-                    showlegend: true,
-                    legend: { font: { size: 10, color: "rgba(232,224,204,0.6)" }, bgcolor: "transparent" },
-                    margin: { t: 10, b: 10, l: 30, r: 30 },
-                    height: 260,
-                  }}
-                  config={{ displayModeBar: false, responsive: true }}
-                  style={{ width: "100%" }}
-                />
-              </div>
-              <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                  <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
-                  <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Holding Overlap</span>
-                </div>
-                {overlapData.map((ov, i) => (
-                  <div key={i} style={{ marginBottom: i < overlapData.length - 1 ? 16 : 0 }}>
-                    <p style={{ fontSize: 11, color: "var(--text2)", marginBottom: 8 }}>{ov.a} vs {ov.b}</p>
-                    {ov.shared.length > 0 && (
-                      <div style={{ marginBottom: 8 }}>
-                        <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", marginBottom: 5 }}>SHARED ({ov.shared.length})</p>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                          {ov.shared.map(t => <span key={t} style={{ padding: "2px 8px", fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 600, borderRadius: 4, background: "rgba(184,134,11,0.1)", color: "var(--accent)", border: "0.5px solid rgba(184,134,11,0.2)" }}>{t}</span>)}
-                        </div>
-                      </div>
-                    )}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {[{ label: ov.a, tickers: ov.unique_a, ci: 0 }, { label: ov.b, tickers: ov.unique_b, ci: 1 }].map(col => (
-                        <div key={col.label}>
-                          <p style={{ fontSize: 10, letterSpacing: 2, color: COMPARE_COLORS[col.ci], marginBottom: 5 }}>ONLY {col.label.toUpperCase()}</p>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                            {col.tickers.length > 0 ? col.tickers.map(t => <span key={t} style={{ padding: "2px 6px", fontSize: 11, fontFamily: "var(--font-mono)", borderRadius: 4, background: "var(--bg3)", color: "var(--text2)" }}>{t}</span>) : <span style={{ fontSize: 11, color: "var(--text3)" }}>N/A</span>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {ov.shared.length === 0 && <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 6 }}>No holdings in common. Highly independent portfolios.</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* AI insight: auto-generated */}
-          {active.length >= 2 && (aiInsight || aiLoading || aiError) && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              style={{ border: "0.5px solid rgba(184,134,11,0.2)", borderRadius: 12, padding: "16px 18px", background: "rgba(184,134,11,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <Sparkles size={14} color="var(--accent)" style={{ flexShrink: 0, marginTop: 2 }} />
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", marginBottom: 8 }}>AI Comparison Insight</p>
-                {aiLoading ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                    {[100, 88, 72].map((w, i) => (
-                      <div key={i} style={{ height: 12, width: `${w}%`, borderRadius: 4, background: "rgba(184,134,11,0.08)", animation: "pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
-                    ))}
-                    <style>{`@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.9}}`}</style>
-                  </div>
-                ) : aiError ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 12, color: "var(--text3)" }}>Could not generate insight.</span>
-                    <button
-                      onClick={generateAiInsight}
-                      style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "0.5px solid rgba(184,134,11,0.3)", borderRadius: 5, padding: "3px 9px", cursor: "pointer" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,0.08)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : (
-                  <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{aiInsight}</p>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
 
 const CURRENCIES = ["USD", "GBP", "EUR", "JPY", "CAD"];
 const CURRENCY_SYMBOLS: Record<string, string> = { USD: "$", GBP: "£", EUR: "€", JPY: "¥", CAD: "C$" };
@@ -820,7 +499,7 @@ function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }
 
 interface WatchlistStockData { ticker: string; name?: string; price: number | null; change: number | null; change_pct: number | null; sparkline: number[]; }
 
-function StocksSearch({ onSelect, onCompare }: { onSelect: (t: string) => void; onCompare: () => void }) {
+function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
   const [busy, setBusy] = useState(false);
@@ -909,17 +588,7 @@ function StocksSearch({ onSelect, onCompare }: { onSelect: (t: string) => void; 
         {busy && <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
       </div>
 
-      {/* Compare Stocks button */}
       {!q && (
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20, zIndex: 1, position: "relative" }}>
-          <button
-            onClick={onCompare}
-            style={{ border: "1px solid var(--accent)", color: "var(--accent)", background: "rgba(184,134,11,0.08)", padding: "8px 24px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.03em" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "var(--accent)"; e.currentTarget.style.color = "var(--bg)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,0.08)"; e.currentTarget.style.color = "var(--accent)"; }}>
-            ⇄ Compare Stocks
-          </button>
-        </div>
       )}
 
       {/* Search results */}
@@ -1006,7 +675,6 @@ export default function AppPage() {
   const [sidebarOpen, setSidebarOpen]     = useState(false);
 const [paletteOpen, setPaletteOpen]   = useState(false);
   const [stockTicker, setStockTicker]   = useState<string | null>(null);
-  const [compareMode, setCompareMode]   = useState(false);
   const sound = useSoundEffects();
   const [showAlerts, setShowAlerts]         = useState(false);
   const [showEmailPrefs, setShowEmailPrefs]     = useState(false);
@@ -1483,7 +1151,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         }
         const navMap: Record<string, string> = {
           d: "overview", r: "risk", s: "simulate",
-          c: "compare", n: "news", w: "watchlist",
+          n: "news", w: "watchlist",
         };
         if (navMap[e.key.toLowerCase()]) {
           e.preventDefault();
@@ -1941,21 +1609,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           <AnimatePresence mode="wait">
             {activeTab === "stocks" ? (
               <motion.div key="stocks" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                {compareMode ? (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                      <button onClick={() => setCompareMode(false)}
-                        style={{ padding: "6px 12px", fontSize: 11, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
-                        ← Back
-                      </button>
-                      <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Stock Comparison</span>
-                    </div>
-                    <StockCompare />
-                  </>
-                ) : stockTicker ? (
+                {stockTicker ? (
                   <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} onSelectTicker={t => setStockTicker(t)} />
                 ) : (
-                  <StocksSearch onSelect={setStockTicker} onCompare={() => setCompareMode(true)} />
+                  <StocksSearch onSelect={setStockTicker} />
                 )}
               </motion.div>
             ) : activeTab === "positions" ? (
@@ -2151,10 +1808,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 <Card><TooltipCardHeader title="Monte Carlo Simulation" sections={[
                   { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
                 ]} /><MonteCarloChart assets={assets} period={period} /></Card>
-              </motion.div>
-            ) : activeTab === "compare" ? (
-              <motion.div key="compare" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <CompareTab assets={assets} period={period} benchmark={benchmark} benchmarkLabel={benchLabel} currentData={data} />
               </motion.div>
             ) : activeTab === "news" ? (
               <motion.div key="news" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
