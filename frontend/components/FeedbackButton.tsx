@@ -9,7 +9,8 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
@@ -22,6 +23,8 @@ export default function FeedbackButton() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const handleSubmit = async () => {
     if (!message.trim()) { setError("Please enter a message."); return; }
@@ -53,7 +56,7 @@ export default function FeedbackButton() {
     setType("Bug");
   };
 
-  return (
+  return mounted ? createPortal(
     <>
       {/* Fixed button: bottom right */}
       <motion.button
@@ -64,7 +67,7 @@ export default function FeedbackButton() {
         title="Send feedback"
         aria-label="Send feedback"
         style={{
-          position: "fixed", bottom: 28, right: 88, zIndex: 240,
+          position: "fixed", bottom: 24, right: 80, zIndex: 240,
           width: 36, height: 36,
           background: "var(--card-bg)",
           border: "0.5px solid var(--border2)",
@@ -164,6 +167,7 @@ export default function FeedbackButton() {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
-  );
+    </>,
+    document.body
+  ) : null;
 }
