@@ -829,19 +829,34 @@ function StocksSearch({ onSelect, onCompare }: { onSelect: (t: string) => void; 
   const [liveData, setLiveData] = useState<Record<string, WatchlistStockData>>({});
   const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // Fetch live prices for cards
+  // Fetch live prices for cards, with localStorage cache (60s TTL)
   useEffect(() => {
+    const CACHE_KEY = "corvo_live_market_cache";
+    const TTL = 60000;
     const tickers = encodeURIComponent(CARD_TICKERS.join(","));
     const url = `${API}/watchlist-data?tickers=${tickers}`;
+
+    const applyData = (results: WatchlistStockData[]) => {
+      const map: Record<string, WatchlistStockData> = {};
+      results.forEach(s => { if (s?.ticker) map[s.ticker] = s; });
+      if (Object.keys(map).length > 0) setLiveData(map);
+    };
+
+    // Seed from cache immediately so cards render without waiting
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+      if (cached?.data) applyData(cached.data);
+      if (cached?.ts && Date.now() - cached.ts < TTL) return; // fresh — skip background fetch
+    } catch {}
+
     const doFetch = () =>
       fetch(url)
         .then(r => r.json())
         .then(d => {
-          console.log("[StocksSearch] watchlist-data response:", d);
-          const map: Record<string, WatchlistStockData> = {};
-          ((d.results ?? []) as WatchlistStockData[]).forEach(s => { if (s?.ticker) map[s.ticker] = s; });
-          if (Object.keys(map).length === 0) throw new Error("empty results");
-          setLiveData(map);
+          const results: WatchlistStockData[] = d.results ?? [];
+          if (results.length === 0) throw new Error("empty results");
+          applyData(results);
+          try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: results, ts: Date.now() })); } catch {}
         });
     doFetch().catch(err => {
       console.warn("[StocksSearch] watchlist-data failed, retrying in 1s:", err);
