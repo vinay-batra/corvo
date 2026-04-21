@@ -20,6 +20,7 @@ import {
   Flame,
   Lock,
   ChevronRight,
+  ChevronLeft,
   AlertCircle,
   TrendingUp,
   Target,
@@ -1624,7 +1625,7 @@ export default function LearnPage() {
       supabase.from("profiles").upsert({
         id: userId, xp: newXp, streak: newStreak,
         last_activity_date: today, updated_at: new Date().toISOString(),
-      }),
+      }, { onConflict: "id" }),
       supabase.from("learn_scores").upsert(
         { user_id: userId, display_name: displayName || "", total_points: newPts, updated_at: new Date().toISOString() },
         { onConflict: "user_id" }
@@ -1648,7 +1649,7 @@ export default function LearnPage() {
         id: userId,
         lesson_progress: { ...dbLp, game_xp_awarded: updated },
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: "id" });
     }
   }, [gameXpAwarded, awardXP, userId]);
 
@@ -1680,7 +1681,7 @@ export default function LearnPage() {
           ? { lessons_completed: [...dbCompleted, lessonId] }
           : {}),
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: "id" });
     }
 
     if (amount > 0) awardXP(amount);
@@ -1732,15 +1733,21 @@ export default function LearnPage() {
 
           {/* ── Home ── */}
           {activeSection === "home" && (
-            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="home" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
 
               {/* Daily Challenge */}
               <div style={{ marginBottom: 24 }}>
                 <div style={{
                   border: `0.5px solid ${dailyCompleted ? "rgba(76,175,125,0.3)" : `${AMBER}55`}`,
                   borderRadius: 16, background: dailyCompleted ? "rgba(76,175,125,0.04)" : `${AMBER}0a`,
-                  padding: "20px 24px", position: "relative", overflow: "hidden",
+                  padding: "24px 28px", position: "relative", overflow: "hidden",
                 }}>
+                  <motion.div
+                    initial={false}
+                    animate={{ x: ["-100%", "200%"] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ position: "absolute", top: 0, left: 0, width: "60%", height: "100%", opacity: 0.15, background: "linear-gradient(to right, #c9a84c, transparent)", pointerEvents: "none", zIndex: 1 }}
+                  />
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: dailyQuestions.length > 0 && !dailyCompleted ? 16 : 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 36, height: 36, borderRadius: 10, background: dailyCompleted ? "rgba(76,175,125,0.15)" : `${AMBER}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1770,7 +1777,7 @@ export default function LearnPage() {
                           <span style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 1 }}>Question {dailyIdx + 1} of {dailyQuestions.length}</span>
                           <div style={{ display: "flex", gap: 4 }}>
                             {dailyQuestions.map((_, i) => (
-                              <div key={i} style={{ width: 20, height: 3, borderRadius: 2, background: i < dailyIdx ? GREEN : i === dailyIdx ? AMBER : "var(--border)" }} />
+                              <div key={i} style={{ width: 28, height: 4, borderRadius: 3, background: i < dailyIdx ? GREEN : i === dailyIdx ? AMBER : "var(--border)" }} />
                             ))}
                           </div>
                         </div>
@@ -1828,18 +1835,19 @@ export default function LearnPage() {
 
               {/* Challenge Mode */}
               <div style={{ marginBottom: 40 }}>
-                <button
+                <motion.button
+                  initial={false}
+                  whileHover={challengeUnlocked ? { scale: 1.01 } : {}}
+                  whileTap={challengeUnlocked ? { scale: 0.99 } : {}}
                   onClick={() => { if (challengeUnlocked) setActiveSection("challenge"); }}
                   disabled={!challengeUnlocked}
                   style={{
-                    width: "100%", padding: "20px 24px",
+                    width: "100%", padding: "22px 28px",
                     background: challengeUnlocked ? `${AMBER}0e` : "var(--bg2)",
                     border: `0.5px solid ${challengeUnlocked ? `${AMBER}55` : "var(--border)"}`,
                     borderRadius: 16, cursor: challengeUnlocked ? "pointer" : "not-allowed",
-                    textAlign: "left", transition: "all 0.15s", opacity: challengeUnlocked ? 1 : 0.6,
-                  }}
-                  onMouseEnter={e => { if (challengeUnlocked) { e.currentTarget.style.background = `${AMBER}1a`; e.currentTarget.style.borderColor = `${AMBER}88`; } }}
-                  onMouseLeave={e => { if (challengeUnlocked) { e.currentTarget.style.background = `${AMBER}0e`; e.currentTarget.style.borderColor = `${AMBER}55`; } }}>
+                    textAlign: "left", opacity: challengeUnlocked ? 1 : 0.6,
+                  }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <div style={{ width: 42, height: 42, borderRadius: 12, background: challengeUnlocked ? `${AMBER}22` : "var(--bg3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1856,9 +1864,9 @@ export default function LearnPage() {
                     </div>
                     {challengeUnlocked
                       ? <ChevronRight size={16} color={AMBER} />
-                      : <Lock size={14} color="var(--text3)" />}
+                      : <motion.div initial={false} animate={{ opacity: [0.4, 0.7, 0.4] }} transition={{ duration: 2, repeat: Infinity }}><Lock size={14} color="var(--text3)" /></motion.div>}
                   </div>
-                </button>
+                </motion.button>
               </div>
 
               {/* Arcade Games */}
@@ -1866,7 +1874,8 @@ export default function LearnPage() {
                 <Gamepad2 size={16} color={AMBER} />
                 <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase" }}>Financial Arcade</p>
               </div>
-              <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Learn by doing</h2>
+              <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 10 }}>Learn by doing</h2>
+              <div style={{ height: 1, background: "linear-gradient(to right, var(--accent)44, transparent)", marginBottom: 18, marginTop: -10 }} />
               <motion.div
                 className="c-arcade-grid"
                 style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 40 }}
@@ -1877,21 +1886,23 @@ export default function LearnPage() {
                   const isLastOdd = idx === ARCADE_GAMES.length - 1 && ARCADE_GAMES.length % 2 !== 0;
                   return (
                     <motion.button
+                      initial={false}
                       variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                      whileHover={{ y: -3, boxShadow: `0 8px 32px ${g.color}22` }}
+                      whileTap={{ scale: 0.97 }}
                       key={g.id} onClick={() => { setActiveGame(g.id); setActiveSection("game"); }}
-                      style={{ padding: "16px 18px", background: "var(--card-bg)", border: `0.5px solid ${g.color}33`, borderRadius: 14, cursor: "pointer", textAlign: "left", transition: "all 0.2s", position: "relative", overflow: "hidden", gridColumn: isLastOdd ? "1 / -1" : undefined }}
-                      onMouseEnter={e => { e.currentTarget.style.background = `${g.color}0d`; e.currentTarget.style.borderColor = `${g.color}66`; e.currentTarget.style.boxShadow = `0 0 0 1px ${g.color}33`; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "var(--card-bg)"; e.currentTarget.style.borderColor = `${g.color}33`; e.currentTarget.style.boxShadow = "none"; }}>
+                      style={{ padding: "20px 22px", background: "var(--card-bg)", border: `0.5px solid ${g.color}33`, borderRadius: 14, cursor: "pointer", textAlign: "left", position: "relative", overflow: "hidden", gridColumn: isLastOdd ? "1 / -1" : undefined }}>
+                      <div style={{ position: "absolute", top: 0, right: 0, width: 80, height: 80, background: `radial-gradient(circle at top right, ${g.color}15, transparent)`, borderRadius: "0 14px 0 80px", pointerEvents: "none" }} />
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: `${g.color}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: `${g.color}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <GIcon size={16} color={g.color} strokeWidth={1.5} />
                         </div>
                         <div style={{ display: "flex", gap: 5 }}>
-                          <span style={{ fontSize: 9, padding: "2px 7px", background: `${g.color}18`, color: g.color, borderRadius: 5, fontWeight: 700 }}>+{g.xp} XP</span>
+                          <span style={{ fontSize: 10, padding: "3px 9px", background: `${g.color}18`, color: g.color, borderRadius: 5, fontWeight: 700, fontFamily: "Space Mono, monospace" }}>+{g.xp} XP</span>
                           <span style={{ fontSize: 9, padding: "2px 7px", background: "var(--bg3)", color: "var(--text3)", borderRadius: 5 }}>{g.difficulty}</span>
                         </div>
                       </div>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 4 }}>{g.title}</p>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text)", marginBottom: 4 }}>{g.title}</p>
                       <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.5 }}>{g.desc}</p>
                     </motion.button>
                   );
@@ -1903,7 +1914,8 @@ export default function LearnPage() {
                 <GraduationCap size={16} color={AMBER} />
                 <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase" }}>Lessons</p>
               </div>
-              <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Core concepts</h2>
+              <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 10 }}>Core concepts</h2>
+              <div style={{ height: 1, background: "linear-gradient(to right, var(--accent)44, transparent)", marginBottom: 18, marginTop: -10 }} />
               <motion.div
                 className="c-lesson-grid"
                 style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
