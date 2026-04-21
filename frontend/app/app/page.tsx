@@ -2106,7 +2106,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   </motion.div>
                 </div>
                 {data && !isPortfolioSaved && (
-                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                  <motion.div initial={false}
                     style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 0" }}>
                     <span style={{ fontSize: 12, color: "var(--text3)" }}>Want to compare this later?</span>
                     <button
