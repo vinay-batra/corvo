@@ -109,16 +109,16 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
         const barColor = isBullish ? "#5cb88a" : bulls < bears ? "#e05c5c" : "var(--text3)";
         return (
           <div style={{ marginBottom: 14, padding: "10px 14px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 10, color: "var(--text3)" }}>
-                <span style={{ color: barColor, fontWeight: 600 }}>{activeTab} sentiment</span>
-                {" · "}{bulls} bullish · {bears} bearish · {neutrals} neutral
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: barColor }}>{bullPct}% bullish</span>
-            </div>
-            <div style={{ height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden", display: "flex" }}>
-              <div style={{ width: `${bullPct}%`, background: "#5cb88a", transition: "width 0.4s ease" }} />
-              <div style={{ width: `${bearPct}%`, background: "#e05c5c", transition: "width 0.4s ease" }} />
+            <span style={{ fontSize: 10, color: "var(--text3)", display: "block", marginBottom: 6 }}>
+              <span style={{ color: barColor, fontWeight: 600 }}>{activeTab} sentiment</span>
+              {" · "}{bulls} bullish · {bears} bearish · {neutrals} neutral
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ flex: 1, height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden", display: "flex" }}>
+                <div style={{ width: `${bullPct}%`, background: "#5cb88a", transition: "width 0.4s ease" }} />
+                <div style={{ width: `${bearPct}%`, background: "#e05c5c", transition: "width 0.4s ease" }} />
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: barColor, flexShrink: 0 }}>{bullPct}% bullish</span>
             </div>
           </div>
         );
@@ -202,7 +202,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                       {article.title}
                     </p>
                     {article.summary && (
-                      <p style={{ fontSize: 11.5, color: "var(--text2)", lineHeight: 1.55, marginBottom: 5 }}>
+                      <p style={{ fontSize: 11.5, color: "var(--text2)", lineHeight: 1.55, marginBottom: 5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
                         {article.summary}
                       </p>
                     )}
@@ -233,7 +233,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                         </span>
                       )}
                       {article.url && (
-                        <span style={{ color: "var(--text)", fontWeight: 500 }}>↗ Read</span>
+                        <a href={article.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>Read →</a>
                       )}
                     </div>
                   </div>
