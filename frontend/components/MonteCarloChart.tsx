@@ -18,7 +18,7 @@ const C = {
   red: "#e05c5c", green: "#5cb88a",
 };
 
-const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { assets: any[]; period: string }) {
+const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfolioValue }: { assets: any[]; period: string; portfolioValue?: number }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
@@ -192,23 +192,6 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
         .mc-table tr:last-child td{border-bottom:none}
       `}</style>
 
-      {/* ── Percentile stat cards ── */}
-      {data && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
-          {[
-            { label: "5th Pct: Worst Case",  value: `${Number(p5)  >= 0 ? "+" : ""}${p5}%`,  color: Number(p5)  >= 0 ? (dark ? C.amber : "#b8860b") : C.red },
-            { label: "Median: Most Likely",   value: `${Number(p50) >= 0 ? "+" : ""}${p50}%`, color: dark ? C.amber : "#b8860b" },
-            { label: "95th Pct: Best Case",   value: `${Number(p95) >= 0 ? "+" : ""}${p95}%`, color: dark ? C.green : "#15803d" },
-          ].map((card, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "14px 16px" }}>
-              <p style={{ fontSize: 8, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8 }}>{card.label}</p>
-              <p style={{ fontFamily: "Space Mono, monospace", fontSize: 24, fontWeight: 700, color: card.color, letterSpacing: -0.5 }}>{card.value}</p>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
       {/* ── Chart or loader ── */}
       {loading ? (
         <div style={{ height: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
@@ -357,41 +340,62 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period }: { asse
             </motion.div>
           )}
 
-          {/* ── Probability Breakdown Table ── */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-            style={{ marginTop: 20, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px 8px", borderBottom: "0.5px solid var(--border)" }}>
-              <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Probability Breakdown</p>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table className="mc-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th>Scenario</th>
-                    <th>Probability</th>
-                    <th>Expected Return</th>
-                    <th style={{ minWidth: 200 }}>What it means</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {probRows.map((row, i) => (
-                    <tr key={i} style={{ background: row.bg }}>
-                      <td>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: row.color, flexShrink: 0 }} />
-                          <span style={{ color: row.color, fontWeight: 600 }}>{row.scenario}</span>
-                        </span>
-                        <span style={{ display: "block", fontSize: 9, color: "var(--text3)", marginTop: 2, paddingLeft: 15 }}>{row.range}</span>
-                      </td>
-                      <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: row.color }}>{row.prob}</td>
-                      <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: row.color }}>{row.ret}</td>
-                      <td style={{ color: "var(--text2)", fontSize: 11 }}>{row.meaning}</td>
+          {/* ── What Would Your Money Become? ── */}
+          {data && portfolioValue != null && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              style={{ marginTop: 20, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+              <div style={{ padding: "12px 16px 8px", borderBottom: "0.5px solid var(--border)" }}>
+                <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>What Would Your Money Become?</p>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table className="mc-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th>Scenario</th>
+                      <th>Probability</th>
+                      <th>Starting Value</th>
+                      <th>Ending Value</th>
+                      <th>Change</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const pv = portfolioValue;
+                      const fmt = (n: number) => "$" + Math.round(n).toLocaleString();
+                      const midRet = (a: number, b: number) => (a + b) / 2;
+                      const scenarios = [
+                        { name: "Bear Case",      prob: "5%",  mult: data.final_p5 ?? 0, color: C.red, bg: "rgba(224,92,92,0.06)" },
+                        { name: "Below Average",  prob: "20%", mult: midRet(data.final_p5 ?? 0, data.final_p25 ?? 0), color: dark ? "#c9a84c" : "#b8860b", bg: dark ? "rgba(201,168,76,0.04)" : "rgba(184,134,11,0.04)" },
+                        { name: "Average",        prob: "50%", mult: data.final_p50 ?? 0, color: "var(--text2)", bg: "transparent" },
+                        { name: "Above Average",  prob: "20%", mult: midRet(data.final_p75 ?? 0, data.final_p95 ?? 0), color: "#7dc98f", bg: "rgba(92,184,138,0.04)" },
+                        { name: "Bull Case",      prob: "5%",  mult: data.final_p95 ?? 0, color: C.green, bg: "rgba(92,184,138,0.08)" },
+                      ];
+                      return scenarios.map((s, i) => {
+                        const ending = pv * (1 + s.mult);
+                        const change = ending - pv;
+                        const positive = change >= 0;
+                        const valColor = positive ? C.green : C.red;
+                        return (
+                          <tr key={i} style={{ background: s.bg }}>
+                            <td>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                                <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
+                                <span style={{ color: s.color, fontWeight: 600 }}>{s.name}</span>
+                              </span>
+                            </td>
+                            <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: s.color }}>{s.prob}</td>
+                            <td style={{ fontFamily: "Space Mono, monospace", color: "var(--text2)" }}>{fmt(pv)}</td>
+                            <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: valColor }}>{fmt(ending)}</td>
+                            <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: valColor }}>{positive ? "+$" : "-$"}{Math.round(Math.abs(change)).toLocaleString()}</td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
 
           {/* ── Risk Metrics Panel ── */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
