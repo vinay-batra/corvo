@@ -70,18 +70,18 @@ html, body {
 
 /* ── Light mode explicit overrides ── */
 [data-theme="light"] {
-  --bg:          #f8f6f1;
-  --bg2:         #f0ede6;
-  --bg3:         #e8e5de;
-  --border:      #d4cfc8;
-  --border2:     rgba(0,0,0,0.18);
-  --border-dim:  #d4cfc8;
-  --text:        #1a1a1a;
-  --text1:       #1a1a1a;
-  --text2:       #4a4a4a;
-  --text3:       #5a5a58;
-  --text-muted:  #5a5a58;
-  --green:       #111110;
+  --bg:          #f5f7fa;
+  --bg2:         #eef0f5;
+  --bg3:         #e4e8ef;
+  --border:      #d0d5e0;
+  --border2:     rgba(0,0,0,0.15);
+  --border-dim:  #d0d5e0;
+  --text:        #111827;
+  --text1:       #111827;
+  --text2:       #374151;
+  --text3:       #6b7280;
+  --text-muted:  #6b7280;
+  --green:       #2d7a4f;
   --red:         #c0392b;
   --accent:      #b8860b;
   --accent-text: #8b6914;
@@ -90,7 +90,7 @@ html, body {
   --bg-card:     #ffffff;
   --card-glass:  rgba(255,255,255,0.8);
   --input-bg:    #ffffff;
-  --input-border: rgba(0,0,0,0.15);
+  --input-border: rgba(0,0,0,0.12);
   --shadow:      0 1px 3px rgba(0,0,0,0.1);
   --shadow-md:   0 4px 12px rgba(0,0,0,0.12);
   --track:       rgba(0,0,0,0.12);
