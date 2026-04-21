@@ -27,6 +27,13 @@ function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode
 
 const ENTRIES = [
   {
+    date: "Apr 21, 2026",
+    version: "v0.15",
+    title: "Learn Overhaul, SEO, Light Mode Fixes & XP System Improvements",
+    desc: "Major Learn page improvements: XP and streak now load correctly on page refresh, fixed a profiles database query that was silently failing. Expanded progression system from 5 to 15 levels (Novice through Legend) with a visual levels reference card. Global leaderboard now pulls from profiles.xp for accurate rankings. AI Practice unlocks after first quiz attempt instead of requiring full mastery. Daily challenge fail state added with retry button. Arcade grid last card now spans full width. Lesson step number badges added. Challenge Mode now has a Play Again button. Back buttons standardized with amber hover and ChevronLeft icon. Console logs removed from production. Light mode visual overhaul: preset modal, CSV modal, and component colors now use CSS variables throughout. Green values fixed in light mode (was showing near-black). Background colors shifted from warm beige to clean blue-tinted neutrals. News tab now requires an analyzed portfolio to access, consistent with other data tabs. Feedback button added to every page via React portal so it always floats correctly regardless of parent container. SEO upgrades: sitemap.xml created, JSON-LD upgraded to schema @graph with WebApplication, Organization, WebSite and FAQPage types, Google Search Console verification added, learn and pricing pages now indexable with proper metadata. Answer option length bias fixed in AI-generated quiz questions.",
+    tags: ["Learn", "XP", "SEO", "Light Mode", "UX"],
+  },
+  {
     date: "Apr 16, 2026",
     version: "v0.14",
     title: "Cash Tickers, Guided Tour, Custom Date Range & 6 More Features",
