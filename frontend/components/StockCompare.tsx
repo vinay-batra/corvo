@@ -192,7 +192,6 @@ export default function StockCompare() {
     setTickers(newTickers);
     setInputValue("");
     setSearchResults(COMMON_TICKERS.filter(s => !newTickers.includes(s.ticker)).slice(0, 8));
-    setDropdownOpen(true);
     fetchStock(t, color);
   };
 
@@ -342,28 +341,30 @@ export default function StockCompare() {
         )}
 
         {error && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 8 }}>{error}</p>}
-        <div style={{ marginTop: 12 }}>
-          {tickers.length === 0 && <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 14 }}>Search and add up to 4 tickers to compare performance, stats, and correlation.</p>}
-          {([
-            { label: "Stocks", tickers: ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","BRK-B","JPM"] },
-            { label: "ETFs",   tickers: ["SPY","QQQ","VTI","GLD","TLT","ARKK"] },
-            { label: "Crypto", tickers: ["BTC-USD","ETH-USD"] },
-          ] as { label: string; tickers: string[] }[]).map(group => (
-            <div key={group.label} style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 6 }}>{group.label}</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                {group.tickers.map(t => (
-                  <button key={t} onClick={() => addTicker(t)}
-                    style={{ padding: "4px 10px", fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700, borderRadius: 6, background: "rgba(184,134,11,0.07)", border: "0.5px solid rgba(184,134,11,0.25)", color: AMBER, cursor: "pointer", transition: "all 0.12s" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,0.15)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.5)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,0.07)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.25)"; }}>
-                    {t}
-                  </button>
-                ))}
+        {!comparing && (
+          <div style={{ marginTop: 12 }}>
+            {tickers.length === 0 && <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 14 }}>Search and add up to 4 tickers to compare performance, stats, and correlation.</p>}
+            {([
+              { label: "Stocks", tickers: ["AAPL","MSFT","NVDA","GOOGL","AMZN","TSLA","META","BRK-B","JPM"] },
+              { label: "ETFs",   tickers: ["SPY","QQQ","VTI","GLD","TLT","ARKK"] },
+              { label: "Crypto", tickers: ["BTC-USD","ETH-USD"] },
+            ] as { label: string; tickers: string[] }[]).map(group => (
+              <div key={group.label} style={{ marginBottom: 10 }}>
+                <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 6 }}>{group.label}</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                  {group.tickers.map(t => (
+                    <button key={t} onClick={() => addTicker(t)}
+                      style={{ padding: "4px 10px", fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700, borderRadius: 6, background: "rgba(184,134,11,0.07)", border: "0.5px solid rgba(184,134,11,0.25)", color: AMBER, cursor: "pointer", transition: "all 0.12s" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,0.15)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.5)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,0.07)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.25)"; }}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {comparing && tickers.length >= 2 && chartData.filter((d: any) => d?.x?.length > 0).length >= 2 && (
