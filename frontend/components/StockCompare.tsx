@@ -269,6 +269,34 @@ export default function StockCompare() {
 
   const anyLoading = Object.values(stockLoading).some(Boolean);
 
+  const [modal, setModal] = useState<"perf" | "stats" | "corr" | null>(null);
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setModal(null); };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
+
+  const EXPLAINERS = {
+    perf: {
+      title: "Normalized Performance",
+      simple: "Shows each stock's % return from the same starting point (base 0%), so you can compare growth rates regardless of price.",
+      example: "If AAPL starts at $150 and NVDA at $400, both reset to 0% so you can see who grew faster — not who was more expensive.",
+      good: "Steeper slope = stronger momentum. A stock up 80% beats one up 20% regardless of share price.",
+    },
+    stats: {
+      title: "Side-by-Side Stats",
+      simple: "Compares key fundamental and price metrics across all selected stocks side by side.",
+      example: "A P/E of 35x means investors pay $35 for every $1 of earnings. Beta of 1.5 means 50% more volatile than the market.",
+      good: "Lower P/E may signal value; higher beta means more volatility and potential upside or downside.",
+    },
+    corr: {
+      title: "Correlation",
+      simple: "Measures how similarly two stocks move together, from -1 (opposite) to +1 (identical).",
+      example: "A correlation of 0.9 between AAPL and MSFT means they almost always move in the same direction on any given day.",
+      good: "High correlation between your holdings means less diversification benefit — a downturn hits everything at once.",
+    },
+  } as const;
+
   return (
     <div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -370,7 +398,12 @@ export default function StockCompare() {
       {comparing && tickers.length >= 2 && chartData.filter((d: any) => d?.x?.length > 0).length >= 2 && (
         <>
           <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginBottom: 14 }}>
-            <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Normalized Performance (Base 100, 1Y)</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Normalized Performance (Base 0%, 1Y)</p>
+              <button onClick={() => setModal("perf")} style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--bg3)", border: "0.5px solid var(--border)", color: "var(--text3)", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.background = AMBER; e.currentTarget.style.color = "#0a0e14"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text3)"; }}>?</button>
+            </div>
             <Plot
               data={chartData}
               layout={{
@@ -389,8 +422,11 @@ export default function StockCompare() {
           </div>
 
           <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, background: "var(--card-bg)", overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ padding: "12px 16px", borderBottom: "0.5px solid var(--border)" }}>
+            <div style={{ padding: "12px 16px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Side-by-Side Stats</p>
+              <button onClick={() => setModal("stats")} style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--bg3)", border: "0.5px solid var(--border)", color: "var(--text3)", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.background = AMBER; e.currentTarget.style.color = "#0a0e14"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text3)"; }}>?</button>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -423,7 +459,12 @@ export default function StockCompare() {
 
           {corrMatrix[0][0] !== null && (
             <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)" }}>
-              <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Correlation (1Y Daily Returns)</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Correlation (1Y Daily Returns)</p>
+                <button onClick={() => setModal("corr")} style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--bg3)", border: "0.5px solid var(--border)", color: "var(--text3)", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = AMBER; e.currentTarget.style.color = "#0a0e14"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text3)"; }}>?</button>
+              </div>
               <Plot
                 data={[{
                   z: corrMatrix, x: tickers, y: tickers, type: "heatmap",
@@ -448,6 +489,33 @@ export default function StockCompare() {
           )}
         </>
       )}
+      <AnimatePresence>
+        {modal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setModal(null)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, padding: 28, maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
+              <button onClick={() => setModal(null)} style={{ position: "absolute", top: 14, right: 14, background: "var(--bg3)", border: "none", borderRadius: "50%", width: 24, height: 24, cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+              <p style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 6 }}>About</p>
+              <h3 style={{ fontSize: 18, fontWeight: 500, color: "var(--text)", marginBottom: 18 }}>{EXPLAINERS[modal].title}</h3>
+              {([
+                { label: "Plain English", text: EXPLAINERS[modal].simple },
+                { label: "Example",       text: EXPLAINERS[modal].example },
+                { label: "What to look for", text: EXPLAINERS[modal].good },
+              ] as { label: string; text: string }[]).map(({ label, text }) => (
+                <div key={label} style={{ background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "10px 12px", marginBottom: 6 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase", marginBottom: 4 }}>{label}</p>
+                  <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.65 }}>{text}</p>
+                </div>
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
