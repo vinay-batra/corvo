@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     images: ["https://corvo.capital/og-image.png"],
     creator: "@corvocapital",
   },
-  verification: { google: "corvo-google-verification" },
+  verification: { google: "lIQ8IhN0F6sjZp1eqzlcmvmd3M30zQ0a3H4GCYV_dNI" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
