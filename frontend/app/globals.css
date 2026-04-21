@@ -37,10 +37,10 @@
 
 /* ── Dark mode ── */
 [data-theme="dark"] {
-  --bg:          #080c14;
-  --bg2:         #0b1019;
-  --bg3:         #111927;
-  --border:      rgba(255,255,255,0.07);
+  --bg:          #06090e;
+  --bg2:         #09101a;
+  --bg3:         #0f1923;
+  --border:      rgba(255,255,255,0.06);
   --border2:     rgba(255,255,255,0.13);
   --border-dim:  rgba(255,255,255,0.05);
   --text:        #e8e0cc;
@@ -53,10 +53,10 @@
   --accent:      #c9a84c;
   --accent-text: #c9a84c;
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
-  --card-bg:     #0c1220;
-  --bg-card:     #0c1220;
+  --card-bg:     #0a1120;
+  --bg-card:     #0a1120;
   --card-glass:  rgba(255,255,255,0.025);
-  --input-bg:    #131c27;
+  --input-bg:    #111a26;
   --input-border: rgba(255,255,255,0.1);
   --shadow:      0 1px 4px rgba(0,0,0,0.5);
   --shadow-md:   0 4px 16px rgba(0,0,0,0.5);
