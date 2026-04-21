@@ -52,7 +52,7 @@ export default function BenchmarkComparison({ data }: { data: any }) {
   const benchWidth = Math.abs(benchReturn) / maxVal;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+    <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
       {/* Outperformance headline */}
       <div style={{ marginBottom: 14, padding: "8px 12px", background: isBeating ? "rgba(76,175,125,0.06)" : "rgba(224,92,92,0.06)", border: `0.5px solid ${isBeating ? "rgba(76,175,125,0.25)" : "rgba(224,92,92,0.25)"}`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 11, color: "var(--text2)" }}>

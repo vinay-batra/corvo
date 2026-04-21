@@ -58,7 +58,7 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
   return (
     <div style={{display:"flex",flexDirection:"column",gap:4}}>
       {insights.map((ins,i)=>(
-        <motion.div key={i} initial={{opacity:0,x:-6}} animate={{opacity:1,x:0}} transition={{delay:i*0.08}}
+        <motion.div key={i} initial={false} animate={{opacity:1,x:0}} transition={{delay:i*0.08}}
           onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}
           style={{display:"flex",gap:8,alignItems:"flex-start",padding:"7px 8px",background:hovered===i?"rgba(184,134,11,0.05)":"transparent",border:"1px solid",borderColor:hovered===i?"rgba(184,134,11,0.15)":"transparent",borderRadius:8,transition:"all 0.15s"}}>
           <div style={{width:18,height:18,borderRadius:"50%",border:`1px solid rgba(184,134,11,0.2)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0,marginTop:1,background:"rgba(184,134,11,0.08)",color:C.amber}}>{ins.icon}</div>
@@ -67,7 +67,7 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
       ))}
 
       {rebalanceSuggestions.length > 0 && (
-        <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.3}}
+        <motion.div initial={false} animate={{opacity:1}} transition={{delay:0.3}}
           style={{marginTop:6,padding:"10px 12px",background:"rgba(184,134,11,0.04)",border:"1px solid rgba(184,134,11,0.12)",borderRadius:8}}>
           <p style={{fontSize:8,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>Rebalancing</p>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>

@@ -34,7 +34,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
   const equalWeight = maxPct === minPct;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
+    <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
       {/* Stacked bar */}
       <div style={{ display: "flex", height: 14, borderRadius: 6, overflow: "hidden", marginBottom: 16, gap: 2 }}>
         {normalized.map((a, i) => (
