@@ -128,15 +128,6 @@ function IconBtn({ onClick, title, children }: { onClick: () => void; title?: st
 function useTheme() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
-    const handler = () => {
-      const stored = localStorage.getItem("corvo_portfolio_value");
-      if (stored) setPortfolioInputValue(Number(stored));
-    };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, []);
-
-  useEffect(() => {
     const stored = localStorage.getItem("corvo_theme");
     const isDark = stored ? stored === "dark" : true; // default: dark
     setDark(isDark);
@@ -915,6 +906,26 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     const stored = localStorage.getItem("corvo_portfolio_value");
     return stored ? Number(stored) : 10000;
   });
+  // Sync portfolioInputValue from localStorage: fire on mount + cross-tab storage events
+  useEffect(() => {
+    const handler = () => {
+      const stored = localStorage.getItem("corvo_portfolio_value");
+      if (stored) setPortfolioInputValue(Number(stored));
+    };
+    handler(); // read immediately on mount to catch any value set before this effect ran
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+  // Short-lived polling fallback: catches same-tab writes that don't fire storage events
+  useEffect(() => {
+    const end = Date.now() + 5000;
+    const id = setInterval(() => {
+      const stored = localStorage.getItem("corvo_portfolio_value");
+      if (stored) setPortfolioInputValue(Number(stored));
+      if (Date.now() >= end) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
   const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
