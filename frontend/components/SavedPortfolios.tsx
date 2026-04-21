@@ -83,6 +83,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
   const [showSave, setShowSave] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [focused, setFocused] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: authData }) => {
@@ -201,9 +202,22 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
                 <p style={{ fontSize: 11, color: C.cream2, marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</p>
                 <p style={{ fontSize: 11, color: C.cream3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.assets.map((a: Asset) => a.ticker).join(", ")}</p>
               </div>
-              <button onClick={e => { e.stopPropagation(); remove(p.id); }} style={{ background: "none", border: "none", color: "rgba(224,92,92,0.3)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
-                onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
-                onMouseLeave={e => e.currentTarget.style.color = "rgba(224,92,92,0.3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              {deleteConfirm === p.id ? (
+                <div style={{ display: "flex", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                  <button onClick={() => { remove(p.id); setDeleteConfirm(null); }}
+                    style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, cursor: "pointer", background: "rgba(224,92,92,0.15)", border: "1px solid rgba(224,92,92,0.4)", color: "#e05c5c" }}>
+                    Delete
+                  </button>
+                  <button onClick={() => setDeleteConfirm(null)}
+                    style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)", color: "var(--text3)" }}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button onClick={e => { e.stopPropagation(); setDeleteConfirm(p.id); }} style={{ background: "none", border: "none", color: "rgba(224,92,92,0.3)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
+                  onMouseLeave={e => e.currentTarget.style.color = "rgba(224,92,92,0.3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              )}
             </motion.div>
           ))}
         </div>
