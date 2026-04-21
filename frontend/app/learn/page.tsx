@@ -2358,7 +2358,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
           </motion.div>
         )}
       </AnimatePresence>
-      <FeedbackButton />
+      <FeedbackButton rightOffset={24} />
     </motion.div>
   );
 }
