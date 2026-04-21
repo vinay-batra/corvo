@@ -1097,14 +1097,16 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
   };
 
   return (
-    <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 14, padding: "22px 24px", marginTop: 40 }}>
+    <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderTop: `1.5px solid ${AMBER}44`, borderRadius: 14, padding: "22px 24px", marginTop: 40 }}>
       <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase", marginBottom: 6 }}>Global Leaderboard</p>
       <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 20, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Top learners</h2>
       {loading ? (
         <p style={{ fontSize: 12, color: "var(--text3)" }}>Loading...</p>
       ) : entries.length === 0 ? (
         <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <Trophy size={32} color="var(--text3)" style={{ marginBottom: 10, opacity: 0.4 }} />
+          <motion.div initial={false} animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }} style={{ display: "inline-flex", marginBottom: 10, opacity: 0.4 }}>
+            <Trophy size={32} color="var(--text3)" />
+          </motion.div>
           <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>No scores yet</p>
           <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>Complete Challenge Mode to post your score. You could be #1.</p>
         </div>
@@ -1113,14 +1115,14 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
           {entries.map(e => {
             const isMe = user && (user?.user_metadata?.display_name === e.display_name || user?.email?.split("@")[0] === e.display_name);
             return (
-              <div key={e.rank} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: isMe ? `${AMBER}12` : "var(--bg2)", border: `0.5px solid ${isMe ? `${AMBER}44` : "var(--border)"}`, borderRadius: 10 }}>
+              <motion.div initial={false} whileHover={{ x: 3 }} key={e.rank} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: isMe ? `${AMBER}12` : "var(--bg2)", border: `0.5px solid ${isMe ? `${AMBER}44` : "var(--border)"}`, borderRadius: 10 }}>
                 <span style={{ width: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {rankLabel(e.rank)}
                 </span>
                 <span style={{ flex: 1, fontSize: 13, color: isMe ? AMBER : "var(--text2)" }}>{e.display_name}{isMe ? " (you)" : ""}</span>
                 <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: AMBER }}>{e.total_points}</span>
                 <span style={{ fontSize: 9, color: "var(--text3)" }}>pts</span>
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -1929,18 +1931,21 @@ export default function LearnPage() {
                   const borderColor = isMastered ? "rgba(167,139,250,0.35)" : isStarted ? "rgba(76,175,125,0.3)" : "var(--border)";
                   return (
                     <motion.div key={l.id}
+                      initial={false}
                       variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.98 }}
                       style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                       <button
                         onClick={() => { if (!isLocked) { setActiveLesson(l); setActiveSection("lesson"); posthog.capture("learn_lesson_started", { lesson: l.title }); } }}
                         disabled={isLocked}
-                        style={{ padding: "18px", background: "var(--card-bg)", border: `0.5px solid ${borderColor}`, borderRadius: isMastered ? "14px 14px 0 0" : 14, cursor: isLocked ? "not-allowed" : "pointer", textAlign: "left", transition: "all 0.15s", opacity: isLocked ? 0.55 : 1 }}
+                        style={{ padding: "20px", background: "var(--card-bg)", border: `0.5px solid ${borderColor}`, borderLeft: `2px solid ${isMastered ? "rgba(167,139,250,0.6)" : isStarted ? "rgba(76,175,125,0.5)" : isLocked ? "transparent" : "rgba(201,168,76,0.4)"}`, borderRadius: isMastered ? "14px 14px 0 0" : 14, cursor: isLocked ? "not-allowed" : "pointer", textAlign: "left", transition: "all 0.15s", opacity: isLocked ? 0.55 : 1 }}
                         onMouseEnter={e => { if (!isLocked) { e.currentTarget.style.borderColor = `${AMBER}44`; e.currentTarget.style.background = "var(--bg2)"; } }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.background = "var(--card-bg)"; }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                           <div style={{ position: "relative", display: "inline-flex" }}>
                             <LessonIconComponent iconKey={l.iconKey} size={20} color={isLocked ? "var(--text3)" : AMBER} />
-                            <span style={{ position: "absolute", top: -6, left: -6, width: 14, height: 14, borderRadius: "50%", background: isLocked ? "var(--bg3)" : `${AMBER}22`, border: `0.5px solid ${isLocked ? "var(--border)" : `${AMBER}55`}`, fontSize: 8, fontWeight: 700, color: isLocked ? "var(--text3)" : AMBER, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono, monospace" }}>{idx + 1}</span>
+                            <span style={{ position: "absolute", top: -6, left: -6, width: 16, height: 16, borderRadius: "50%", background: isLocked ? "var(--bg3)" : `${AMBER}22`, border: `0.5px solid ${isLocked ? "var(--border)" : `${AMBER}55`}`, fontSize: 9, fontWeight: 700, color: isLocked ? "var(--text3)" : AMBER, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono, monospace" }}>{idx + 1}</span>
                           </div>
                           {isLocked
                             ? <Lock size={14} color="var(--text3)" />
@@ -1951,9 +1956,14 @@ export default function LearnPage() {
                                 : <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", background: `${AMBER}18`, color: AMBER, borderRadius: 6 }}>+{l.xpReward} XP</span>
                           }
                         </div>
-                        <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 3 }}>{l.title}</p>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 3 }}>{l.title}</p>
                         <p style={{ fontSize: 11, color: "var(--text3)" }}>{l.time} read</p>
                         {isLocked && <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 5 }}>Complete "{LESSONS[idx - 1].title}" first</p>}
+                        {isStarted && (
+                          <div style={{ height: 2, background: "var(--border)", borderRadius: 1, marginTop: 10 }}>
+                            <div style={{ width: `${(prog.length / l.quiz.length) * 100}%`, height: "100%", background: GREEN, borderRadius: 1, transition: "width 0.4s ease" }} />
+                          </div>
+                        )}
                       </button>
                       {(isMastered || prog.length > 0) && (
                         <button
@@ -1976,7 +1986,7 @@ export default function LearnPage() {
           {/* ── Game ── */}
           {activeSection === "game" && (
             <motion.div key="game" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }} onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; }} onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}>← Back to Learn</button>
+              <motion.button initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
               {(() => {
                 const meta = ARCADE_GAMES.find(g => g.id === activeGame);
                 if (!meta) return null;
@@ -2028,7 +2038,7 @@ export default function LearnPage() {
           {/* ── AI Practice ── */}
           {activeSection === "ai-practice" && activePracticeLesson && (
             <motion.div key="ai-practice" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }} onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; }} onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}>← Back to Learn</button>
+              <motion.button initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
               <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 18, padding: "26px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
                   <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
@@ -2047,7 +2057,7 @@ export default function LearnPage() {
           {/* ── Challenge ── */}
           {activeSection === "challenge" && (
             <motion.div key="challenge" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }} onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; }} onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}>← Back to Learn</button>
+              <motion.button initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
               <div style={{ background: "var(--card-bg)", border: `0.5px solid ${AMBER}55`, borderRadius: 18, padding: "26px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
                   <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
@@ -2155,9 +2165,9 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>
-        ← Back to lessons
-      </button>
+      <motion.button initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>
+        <ChevronLeft size={14} /> Back to lessons
+      </motion.button>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
         <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
