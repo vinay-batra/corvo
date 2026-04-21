@@ -308,7 +308,7 @@ function SharpGame({ onXP }: { onXP: (n: number) => void }) {
 
   useEffect(() => {
     if (done && !xpAwarded && finalScore >= 3) { onXP(20); setXpAwarded(true); }
-  }, [done]);
+  }, [done, xpAwarded, finalScore, onXP]);
 
   const reset = () => { setRound(0); setGuess(""); setSubmitted(false); setScore(0); setDone(false); setHistory([]); setXpAwarded(false); };
 
@@ -718,7 +718,6 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
     if (!forceRefresh) {
       try {
         const storedDate = localStorage.getItem(dateCacheKey);
-        console.log("AI Practice stored date:", storedDate, "today date:", todayUTC, "match?", storedDate === todayUTC);
         if (storedDate === todayUTC) {
           const raw = localStorage.getItem(cacheKey);
           if (raw) {
@@ -995,7 +994,8 @@ function ChallengeMode({
       </div>
       <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>Challenge Complete</p>
       <p style={{ fontFamily: "Space Mono, monospace", fontSize: 36, fontWeight: 700, color: AMBER, marginBottom: 4 }}>{totalScore}</p>
-      <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 24 }}>{correctCount}/{questions.length} correct · score posted to leaderboard</p>
+      <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 8 }}>{correctCount}/{questions.length} correct</p>
+      <p style={{ fontSize: 11, color: GREEN, marginBottom: 24 }}>Score posted to leaderboard</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 24, textAlign: "left" }}>
         {questions.map((q, i) => (
           <div key={i} style={{ display: "flex", gap: 10, padding: "10px 14px", background: "var(--bg2)", borderRadius: 10, border: `0.5px solid ${results[i] ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, alignItems: "center" }}>
@@ -1004,7 +1004,10 @@ function ChallengeMode({
           </div>
         ))}
       </div>
-      <button onClick={onBack} style={{ padding: "10px 24px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Back to Learn</button>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+        <button onClick={() => { setPhase("loading"); setQi(0); setSelected(null); setAnswered(false); setTimeLeft(60); setQuestionScores([]); setResults([]); }} style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>Play Again</button>
+        <button onClick={onBack} style={{ padding: "10px 24px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Back to Learn</button>
+      </div>
     </motion.div>
   );
 
@@ -1099,7 +1102,11 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
       {loading ? (
         <p style={{ fontSize: 12, color: "var(--text3)" }}>Loading...</p>
       ) : entries.length === 0 ? (
-        <p style={{ fontSize: 12, color: "var(--text3)" }}>No scores yet. Be the first!</p>
+        <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <Trophy size={32} color="var(--text3)" style={{ marginBottom: 10, opacity: 0.4 }} />
+          <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>No scores yet</p>
+          <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>Complete Challenge Mode to post your score. You could be #1.</p>
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {entries.map(e => {
@@ -1142,7 +1149,7 @@ function CrashSimulator({ onXP }: { onXP: (n: number) => void }) {
   const q = CRASH_SCENARIOS[qi];
   const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.correct) setScore(s => s + 1); };
   const next = () => { if (qi >= CRASH_SCENARIOS.length - 1) { setDone(true); return; } setQi(i => i + 1); setSel(null); };
-  useEffect(() => { if (done && !awarded && score >= 2) { onXP(15); setAwarded(true); } }, [done]);
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(15); setAwarded(true); } }, [done, awarded, score, onXP]);
   if (done) return (
     <div style={{ textAlign: "center", padding: "20px 0" }}>
       <Trophy size={40} color={AMBER} style={{ marginBottom: 12 }} />
@@ -1189,7 +1196,7 @@ function OptionsGame({ onXP }: { onXP: (n: number) => void }) {
   const q = OPTIONS_QS[qi];
   const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.correct) setScore(s => s + 1); };
   const next = () => { if (qi >= OPTIONS_QS.length - 1) { setDone(true); return; } setQi(i => i + 1); setSel(null); };
-  useEffect(() => { if (done && !awarded && score >= 2) { onXP(15); setAwarded(true); } }, [done]);
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(15); setAwarded(true); } }, [done, awarded, score, onXP]);
   if (done) return (
     <div style={{ textAlign: "center", padding: "20px 0" }}>
       <Calculator size={40} color="#a78bfa" style={{ marginBottom: 12 }} />
@@ -1226,7 +1233,7 @@ function InflationGame({ onXP }: { onXP: (n: number) => void }) {
   const q = INFLATION_QS[qi];
   const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.correct) setScore(s => s + 1); };
   const next = () => { if (qi >= INFLATION_QS.length - 1) { setDone(true); return; } setQi(i => i + 1); setSel(null); };
-  useEffect(() => { if (done && !awarded && score >= 2) { onXP(10); setAwarded(true); } }, [done]);
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(10); setAwarded(true); } }, [done, awarded, score, onXP]);
   if (done) return (
     <div style={{ textAlign: "center", padding: "20px 0" }}>
       <Percent size={40} color="#4a9eff" style={{ marginBottom: 12 }} />
@@ -1262,7 +1269,7 @@ function FedGame({ onXP }: { onXP: (n: number) => void }) {
   const q = FED_SCENARIOS[qi];
   const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.correct) setScore(s => s + 1); };
   const next = () => { if (qi >= FED_SCENARIOS.length - 1) { setDone(true); return; } setQi(i => i + 1); setSel(null); };
-  useEffect(() => { if (done && !awarded && score >= 2) { onXP(15); setAwarded(true); } }, [done]);
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(15); setAwarded(true); } }, [done, awarded, score, onXP]);
   if (done) return (
     <div style={{ textAlign: "center", padding: "20px 0" }}>
       <Building2 size={40} color="#4caf7d" style={{ marginBottom: 12 }} />
@@ -1305,7 +1312,7 @@ function ValuationShowdown({ onXP }: { onXP: (n: number) => void }) {
   const q = VALUATION_ROUNDS[round];
   const submit = (i: number) => { if (sel !== null) return; setSel(i); if (i === q.winner) setScore(s => s + 1); };
   const next = () => { if (round >= VALUATION_ROUNDS.length - 1) { setDone(true); return; } setRound(r => r + 1); setSel(null); };
-  useEffect(() => { if (done && !awarded && score >= 2) { onXP(20); setAwarded(true); } }, [done]);
+  useEffect(() => { if (done && !awarded && score >= 2) { onXP(20); setAwarded(true); } }, [done, awarded, score, onXP]);
   if (done) return (
     <div style={{ textAlign: "center", padding: "20px 0" }}>
       <GitCompare size={40} color={AMBER} style={{ marginBottom: 12 }} />
@@ -1419,7 +1426,6 @@ export default function LearnPage() {
   const loadCachedDailyQuestions = (): boolean => {
     try {
       const storedDate = localStorage.getItem(LS_DAILY_DATE_KEY);
-      console.log("stored date:", storedDate, "today date:", today, "match?", storedDate === today);
       if (storedDate !== today) {
         localStorage.removeItem(LS_DAILY_QS_KEY);
         localStorage.removeItem(LS_DAILY_DATE_KEY);
@@ -1744,7 +1750,7 @@ export default function LearnPage() {
                       </div>
                     </div>
                     <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 20, background: dailyCompleted ? "rgba(76,175,125,0.15)" : `${AMBER}18`, color: dailyCompleted ? GREEN : AMBER }}>
-                      {dailyCompleted ? "Done" : "+75 XP"}
+                      {dailyCompleted ? "Done" : "+25 XP each"}
                     </span>
                   </div>
 
@@ -1803,9 +1809,12 @@ export default function LearnPage() {
                   })()}
 
                   {!dailyCompleted && dailyQuestions.length === 0 && !dailyLoading && (
-                    <button onClick={fetchDailyQuestion} style={{ marginTop: 8, padding: "8px 16px", fontSize: 12, borderRadius: 8, border: `0.5px solid ${AMBER}44`, background: `${AMBER}0d`, color: AMBER, cursor: "pointer" }}>
-                      Load questions
-                    </button>
+                    <div style={{ marginTop: 12, textAlign: "center" }}>
+                      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 10 }}>Could not load today's challenge. Check your connection.</p>
+                      <button onClick={fetchDailyQuestion} style={{ padding: "8px 16px", fontSize: 12, borderRadius: 8, border: `0.5px solid ${AMBER}44`, background: `${AMBER}0d`, color: AMBER, cursor: "pointer" }}>
+                        Try again
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1854,15 +1863,16 @@ export default function LearnPage() {
               <motion.div
                 className="c-arcade-grid"
                 style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 40 }}
-                initial="hidden" animate="visible"
+                initial={false} animate="visible"
                 variants={{ visible: { transition: { staggerChildren: 0.07 } } }}>
-                {ARCADE_GAMES.map(g => {
+                {ARCADE_GAMES.map((g, idx) => {
                   const GIcon = g.Icon;
+                  const isLastOdd = idx === ARCADE_GAMES.length - 1 && ARCADE_GAMES.length % 2 !== 0;
                   return (
                     <motion.button
                       variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
                       key={g.id} onClick={() => { setActiveGame(g.id); setActiveSection("game"); }}
-                      style={{ padding: "16px 18px", background: "var(--card-bg)", border: `0.5px solid ${g.color}33`, borderRadius: 14, cursor: "pointer", textAlign: "left", transition: "all 0.2s", position: "relative", overflow: "hidden" }}
+                      style={{ padding: "16px 18px", background: "var(--card-bg)", border: `0.5px solid ${g.color}33`, borderRadius: 14, cursor: "pointer", textAlign: "left", transition: "all 0.2s", position: "relative", overflow: "hidden", gridColumn: isLastOdd ? "1 / -1" : undefined }}
                       onMouseEnter={e => { e.currentTarget.style.background = `${g.color}0d`; e.currentTarget.style.borderColor = `${g.color}66`; e.currentTarget.style.boxShadow = `0 0 0 1px ${g.color}33`; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "var(--card-bg)"; e.currentTarget.style.borderColor = `${g.color}33`; e.currentTarget.style.boxShadow = "none"; }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
@@ -1890,7 +1900,7 @@ export default function LearnPage() {
               <motion.div
                 className="c-lesson-grid"
                 style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
-                initial="hidden" animate="visible"
+                initial={false} animate="visible"
                 variants={{ visible: { transition: { staggerChildren: 0.08 } } }}>
                 {LESSONS.map((l, idx) => {
                   const prog = lessonProgress[l.id] ?? [];
@@ -1909,7 +1919,10 @@ export default function LearnPage() {
                         onMouseEnter={e => { if (!isLocked) { e.currentTarget.style.borderColor = `${AMBER}44`; e.currentTarget.style.background = "var(--bg2)"; } }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.background = "var(--card-bg)"; }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                          <LessonIconComponent iconKey={l.iconKey} size={20} color={isLocked ? "var(--text3)" : AMBER} />
+                          <div style={{ position: "relative", display: "inline-flex" }}>
+                            <LessonIconComponent iconKey={l.iconKey} size={20} color={isLocked ? "var(--text3)" : AMBER} />
+                            <span style={{ position: "absolute", top: -6, left: -6, width: 14, height: 14, borderRadius: "50%", background: isLocked ? "var(--bg3)" : `${AMBER}22`, border: `0.5px solid ${isLocked ? "var(--border)" : `${AMBER}55`}`, fontSize: 8, fontWeight: 700, color: isLocked ? "var(--text3)" : AMBER, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono, monospace" }}>{idx + 1}</span>
+                          </div>
                           {isLocked
                             ? <Lock size={14} color="var(--text3)" />
                             : isMastered
@@ -1923,7 +1936,7 @@ export default function LearnPage() {
                         <p style={{ fontSize: 11, color: "var(--text3)" }}>{l.time} read</p>
                         {isLocked && <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 5 }}>Complete "{LESSONS[idx - 1].title}" first</p>}
                       </button>
-                      {isMastered && (
+                      {(isMastered || prog.length > 0) && (
                         <button
                           onClick={() => { setActivePracticeLesson(l); setActiveSection("ai-practice"); }}
                           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px", background: `${AMBER}0d`, border: `0.5px solid ${AMBER}44`, borderTop: "none", borderRadius: "0 0 14px 14px", cursor: "pointer", transition: "all 0.15s", color: AMBER, fontSize: 12, fontWeight: 500 }}
@@ -1944,7 +1957,7 @@ export default function LearnPage() {
           {/* ── Game ── */}
           {activeSection === "game" && (
             <motion.div key="game" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>← Back</button>
+              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }} onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; }} onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}>← Back to Learn</button>
               {(() => {
                 const meta = ARCADE_GAMES.find(g => g.id === activeGame);
                 if (!meta) return null;
@@ -1996,7 +2009,7 @@ export default function LearnPage() {
           {/* ── AI Practice ── */}
           {activeSection === "ai-practice" && activePracticeLesson && (
             <motion.div key="ai-practice" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>← Back</button>
+              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }} onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; }} onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}>← Back to Learn</button>
               <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 18, padding: "26px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
                   <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
@@ -2015,7 +2028,7 @@ export default function LearnPage() {
           {/* ── Challenge ── */}
           {activeSection === "challenge" && (
             <motion.div key="challenge" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>← Back</button>
+              <button onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }} onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; }} onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}>← Back to Learn</button>
               <div style={{ background: "var(--card-bg)", border: `0.5px solid ${AMBER}55`, borderRadius: 18, padding: "26px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
                   <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
