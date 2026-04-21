@@ -122,7 +122,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
       {items.map(({label,value,fmt,neg,neutral,bar,pnlDollars},i) => {
         const color = neutral ? C.amber : neg ? C.red : "#4caf7d";
         return (
-        <motion.div key={label} initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:i*0.07}}
+        <motion.div key={label} initial={false} transition={{delay:i*0.07}}
           style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"18px 16px 14px"}}>
           <p style={{fontFamily:"Space Mono,monospace",fontSize:30,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,marginBottom:pnlDollars!=null?4:10}}>
             <Num value={value} fmt={fmt}/>
