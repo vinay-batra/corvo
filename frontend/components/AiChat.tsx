@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const PANEL_WIDTH = 380;
+const PANEL_SLIDE_OFFSET = 500; // px used only for slide-in/out animation
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -532,13 +532,13 @@ export default function AiChat({
 
       {/* Slide-in panel */}
       <motion.div
-        initial={{ x: PANEL_WIDTH }}
+        initial={{ x: PANEL_SLIDE_OFFSET }}
         animate={{ x: 0 }}
-        exit={{ x: PANEL_WIDTH }}
+        exit={{ x: PANEL_SLIDE_OFFSET }}
         transition={{ type: "spring", damping: 32, stiffness: 320 }}
         style={{
           position: "fixed", right: 0, top: 0, bottom: 0,
-          width: PANEL_WIDTH,
+          width: "25vw", minWidth: 360,
           zIndex: 300,
           display: "flex", flexDirection: "column",
           background: "var(--bg)",
