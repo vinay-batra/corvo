@@ -13,6 +13,17 @@ const STORAGE_KEY = "corvo_watchlist";
 const LISTS_KEY = "corvo_watchlist_lists";
 const ALERTS_KEY = "corvo_watchlist_alerts";
 
+const SECTOR_OVERRIDES: Record<string, string> = {
+  "SPY": "ETF — Broad Market", "VOO": "ETF — Broad Market", "VTI": "ETF — Broad Market",
+  "QQQ": "ETF — Technology", "IWM": "ETF — Small Cap", "ARKK": "ETF — Innovation",
+  "GLD": "ETF — Gold", "IAU": "ETF — Gold", "SLV": "ETF — Silver",
+  "BND": "ETF — Bonds", "TLT": "ETF — Bonds", "AGG": "ETF — Bonds",
+  "SCHD": "ETF — Dividend", "VYM": "ETF — Dividend",
+  "BTC-USD": "Crypto", "ETH-USD": "Crypto", "SOL-USD": "Crypto",
+  "TSL": "ETF — Leveraged", "TQQQ": "ETF — Leveraged", "SQQQ": "ETF — Leveraged",
+  "UVXY": "ETF — Volatility", "VXX": "ETF — Volatility",
+};
+
 function PencilIcon({ size = 11, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
@@ -749,9 +760,12 @@ export default function Watchlist() {
                         </td>
                         {/* Sector */}
                         <td style={{ padding: "0 12px" }}>
-                          {s?.sector ? (
-                            <span style={{ fontSize: 11, color: "var(--text3)", background: "var(--bg3)", padding: "3px 9px", borderRadius: 8, whiteSpace: "nowrap" }}>{s.sector}</span>
-                          ) : <span style={{ fontSize: 11, color: "var(--text3)" }}>—</span>}
+                          {(() => {
+                            const sectorLabel = SECTOR_OVERRIDES[item.ticker] ?? s?.sector ?? null;
+                            return sectorLabel
+                              ? <span style={{ fontSize: 11, color: "var(--text3)", background: "var(--bg3)", padding: "3px 9px", borderRadius: 8, whiteSpace: "nowrap" }}>{sectorLabel}</span>
+                              : <span style={{ fontSize: 11, color: "var(--text3)" }}>—</span>;
+                          })()}
                         </td>
                         {/* Actions */}
                         <td style={{ padding: "0 12px" }}>
