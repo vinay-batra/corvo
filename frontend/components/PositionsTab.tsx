@@ -439,19 +439,26 @@ export default function PositionsTab({
       {!portfoliosLoading && !liveLoading && allRows.length > 0 && (best || worst) && (
         <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
           {best && best.change1d !== null && (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 12px", background: "rgba(76,175,125,0.07)", border: "0.5px solid rgba(76,175,125,0.22)", borderRadius: 20 }}>
-              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(76,175,125,0.7)", textTransform: "uppercase" }}>Best today</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4caf7d", fontFamily: "Space Mono, monospace" }}>{best.ticker}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", background: "rgba(76,175,125,0.07)", border: "0.5px solid rgba(76,175,125,0.22)", borderRadius: 20 }}>
+              <span style={{ fontSize: 11, letterSpacing: 1.5, color: "rgba(76,175,125,0.7)", textTransform: "uppercase" }}>Best today</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#4caf7d", fontFamily: "Space Mono, monospace" }}>{best.ticker}</span>
               <Pill value={best.change1d} />
             </div>
           )}
           {worst && worst.change1d !== null && worst.ticker !== best?.ticker && (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 12px", background: "rgba(224,92,92,0.07)", border: "0.5px solid rgba(224,92,92,0.22)", borderRadius: 20 }}>
-              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(224,92,92,0.7)", textTransform: "uppercase" }}>Worst today</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#e05c5c", fontFamily: "Space Mono, monospace" }}>{worst.ticker}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", background: "rgba(224,92,92,0.07)", border: "0.5px solid rgba(224,92,92,0.22)", borderRadius: 20 }}>
+              <span style={{ fontSize: 11, letterSpacing: 1.5, color: "rgba(224,92,92,0.7)", textTransform: "uppercase" }}>Worst today</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#e05c5c", fontFamily: "Space Mono, monospace" }}>{worst.ticker}</span>
               <Pill value={worst.change1d} />
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Section header ───────────────────────────────────────────────── */}
+      {!portfoliosLoading && savedPortfolios.length > 0 && (
+        <div style={{ fontSize: 10, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
+          Portfolio Performance
         </div>
       )}
 
@@ -568,66 +575,66 @@ function PositionRowEl({
       style={{ cursor: "pointer", borderBottom: "0.5px solid var(--border)" }}
     >
       {/* Ticker */}
-      <td style={{ padding: "11px 12px" }}>
-        <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>
+      <td style={{ padding: "17px 12px" }}>
+        <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: "var(--accent)" }}>
           {row.ticker}
         </span>
       </td>
 
       {/* Company */}
-      <td style={{ padding: "11px 12px" }}>
-        <span style={{ fontSize: 12, color: "var(--text2)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+      <td style={{ padding: "17px 12px" }}>
+        <span style={{ fontSize: 13, color: "var(--text2)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
           {row.company}
         </span>
       </td>
 
       {/* Portfolio col (only in "All" view) */}
       {showPortfolioCol && (
-        <td style={{ padding: "11px 12px" }}>
-          <span style={{ fontSize: 11, color: "var(--text3)", background: "var(--bg3)", padding: "2px 8px", borderRadius: 4, whiteSpace: "nowrap" }}>
+        <td style={{ padding: "17px 12px" }}>
+          <span style={{ fontSize: 12, color: "var(--text3)", background: "var(--bg3)", padding: "2px 8px", borderRadius: 8, whiteSpace: "nowrap" }}>
             {row.portfolioName}
           </span>
         </td>
       )}
 
       {/* Weight */}
-      <td style={{ padding: "11px 12px" }}>
+      <td style={{ padding: "17px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 40, height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
             <div style={{ height: "100%", width: `${Math.min(row.weightFrac * 100, 100)}%`, background: "var(--accent)", borderRadius: 2 }} />
           </div>
-          <span style={{ fontSize: 12, color: "var(--text)", fontFamily: "Space Mono, monospace", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: 13, color: "var(--text)", fontFamily: "Space Mono, monospace", whiteSpace: "nowrap" }}>
             {(row.weightFrac * 100).toFixed(1)}%
           </span>
         </div>
       </td>
 
       {/* Value */}
-      <td style={{ padding: "11px 12px" }}>
-        <span style={{ fontSize: 12, color: "var(--text)", fontFamily: "Space Mono, monospace", whiteSpace: "nowrap" }}>
+      <td style={{ padding: "17px 12px" }}>
+        <span style={{ fontSize: 13, color: "var(--text)", fontFamily: "Space Mono, monospace", whiteSpace: "nowrap" }}>
           ${(row.value ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}
         </span>
       </td>
 
       {/* 1D change */}
-      <td style={{ padding: "11px 12px" }}>
+      <td style={{ padding: "17px 12px" }}>
         <Pill value={row.change1d} />
       </td>
 
       {/* 7D change */}
-      <td style={{ padding: "11px 12px" }}>
+      <td style={{ padding: "17px 12px" }}>
         <Pill value={row.change7d} />
       </td>
 
       {/* Sector */}
-      <td style={{ padding: "11px 12px" }}>
-        <span style={{ fontSize: 11, color: "var(--text3)", background: "var(--bg3)", padding: "2px 8px", borderRadius: 4, whiteSpace: "nowrap" }}>
+      <td style={{ padding: "17px 12px" }}>
+        <span style={{ fontSize: 12, color: "var(--text3)", background: "var(--bg3)", padding: "3px 9px", borderRadius: 8, whiteSpace: "nowrap" }}>
           {row.sector}
         </span>
       </td>
 
       {/* Row action */}
-      <td style={{ padding: "11px 12px" }}>
+      <td style={{ padding: "17px 12px" }}>
         <ExternalLink size={12} style={{ color: "var(--text3)" }} />
       </td>
     </motion.tr>
