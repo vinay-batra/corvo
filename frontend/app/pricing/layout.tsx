@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing | Corvo",
-  description: "Corvo is 100% free during beta. Institutional-grade portfolio analytics with no credit card required. Pro tier with advanced features coming soon.",
-  openGraph: {
-    title: "Pricing | Corvo",
-    description: "Free during beta: institutional-grade portfolio analytics for everyone. Pro tier coming soon.",
-    url: "https://corvo.capital/pricing",
-    siteName: "Corvo",
-    images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630 }],
-  },
+  title: "Pricing | Free Portfolio Analytics Tools",
+  description: "Corvo is free forever for core features. See what's included in the free plan vs Pro. No credit card required to get started.",
+  openGraph: { title: "Corvo Pricing | Free Portfolio Analytics", description: "Free forever for core portfolio analytics. Compare free vs Pro features.", url: "https://corvo.capital/pricing" },
 };
 
 export default function PricingLayout({ children }: { children: React.ReactNode }) {

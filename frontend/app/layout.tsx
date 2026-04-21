@@ -11,48 +11,47 @@ import ParticleCanvas from "@/components/ParticleCanvas";
 import PublicAIChatLoader from "@/components/PublicAIChatLoader";
 
 export const metadata: Metadata = {
-  title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
-  description: "Free institutional-grade portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+  title: { default: "Corvo: Free Portfolio Analytics & AI Investing Tools", template: "%s | Corvo" },
+  description: "Free institutional-grade portfolio analytics for retail investors. Sharpe ratio, Monte Carlo simulation, AI portfolio chat, tax loss harvesting, dividend tracking and more. No subscription required.",
+  keywords: ["portfolio analytics", "free portfolio tracker", "sharpe ratio calculator", "monte carlo simulation", "AI investing tools", "portfolio diversification", "tax loss harvesting", "dividend tracker", "stock portfolio analyzer", "retail investor tools", "bloomberg alternative", "corvo capital"],
+  authors: [{ name: "Corvo", url: "https://corvo.capital" }],
+  creator: "Corvo",
+  publisher: "Corvo",
+  metadataBase: new URL("https://corvo.capital"),
+  alternates: { canonical: "https://corvo.capital" },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large', 'max-snippet': -1 } },
   manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Corvo",
-  },
-  other: {
-    "mobile-web-app-capable": "yes",
-  },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Corvo" },
+  other: { "mobile-web-app-capable": "yes" },
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180" },
-      { url: "/icon-192.png", sizes: "192x192" },
-    ],
+    icon: [{ url: "/favicon.ico", sizes: "any" }, { url: "/favicon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }, { url: "/icon-192.png", sizes: "192x192" }],
   },
   openGraph: {
     title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
-    description: "Free institutional-grade portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+    description: "Free institutional-grade portfolio analytics for retail investors. Sharpe ratio, Monte Carlo simulation, AI portfolio chat, tax loss harvesting and more. No subscription required.",
     url: "https://corvo.capital",
     siteName: "Corvo",
-    images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630, alt: "Corvo: Free Portfolio Analytics & AI Investing Tools" }],
+    images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630, alt: "Corvo Portfolio Analytics Dashboard" }],
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
-    description: "Free institutional-grade portfolio analytics for retail investors. Monte Carlo simulation, Sharpe ratio, AI chat, real-time alerts and more. No subscription required.",
+    description: "Free institutional-grade portfolio analytics for retail investors. No subscription required.",
     images: ["https://corvo.capital/og-image.png"],
+    creator: "@corvocapital",
   },
+  verification: { google: "corvo-google-verification" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-theme="dark" style={{ background: "#0a0e14" }}>
       <head>
-        <meta name="theme-color" content="#1a1a1a" />
+        <link rel="canonical" href="https://corvo.capital" />
+        <meta name="theme-color" content="#c9a84c" />
       </head>
       <body style={{ margin: 0, background: "#0d1117" }}>
         <ParticleCanvas />
