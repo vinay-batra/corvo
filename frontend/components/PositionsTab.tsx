@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, ChevronDown, DollarSign } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, ChevronDown } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -99,9 +99,20 @@ export default function PositionsTab({
 }: {
   onSelectTicker: (t: string) => void;
 }) {
-  // Portfolio value input
-  const [portfolioValue, setPortfolioValue] = useState(10000);
-  const [pvInput, setPvInput] = useState("10000");
+  // Portfolio value — synced with localStorage (set in sidebar)
+  const [portfolioValue, setPortfolioValue] = useState<number>(() => {
+    if (typeof window === "undefined") return 10000;
+    const s = localStorage.getItem("corvo_portfolio_value");
+    return s ? Number(s) : 10000;
+  });
+  useEffect(() => {
+    const handler = () => {
+      const s = localStorage.getItem("corvo_portfolio_value");
+      if (s) setPortfolioValue(Number(s));
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
 
   // Saved portfolios
   const [savedPortfolios, setSavedPortfolios] = useState<SavedPortfolio[]>([]);
@@ -376,27 +387,6 @@ export default function PositionsTab({
               ))}
             </div>
           )}
-        </div>
-
-        {/* Portfolio value input */}
-        <div style={{ display: "flex", alignItems: "center", gap: 0, border: "0.5px solid var(--border2)", borderRadius: 9, overflow: "hidden", background: "var(--card-bg)" }}>
-          <span style={{ padding: "7px 10px", fontSize: 12, color: "var(--text3)", borderRight: "0.5px solid var(--border)", background: "var(--bg2)", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
-            <DollarSign size={11} /> Portfolio Value
-          </span>
-          <input
-            value={pvInput}
-            onChange={e => {
-              setPvInput(e.target.value);
-              const n = parseFloat(e.target.value.replace(/,/g, ""));
-              if (!isNaN(n) && n > 0) setPortfolioValue(n);
-            }}
-            onBlur={() => setPvInput(portfolioValue.toLocaleString("en-US"))}
-            style={{
-              width: 110, padding: "7px 10px", fontSize: 12,
-              background: "transparent", border: "none", color: "var(--text)",
-              outline: "none", fontFamily: "Space Mono, monospace",
-            }}
-          />
         </div>
 
         {/* Live indicator */}
