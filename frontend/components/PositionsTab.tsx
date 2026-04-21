@@ -19,6 +19,15 @@ const COLORS = [
 
 const PERIOD_API: Record<string, string> = { "6m": "6mo", "1y": "1y", "2y": "2y", "5y": "5y" };
 
+const BENCHMARKS = [
+  { ticker: "^GSPC", label: "S&P 500" },
+  { ticker: "^IXIC", label: "Nasdaq" },
+  { ticker: "^DJI",  label: "Dow Jones" },
+  { ticker: "^RUT",  label: "Russell 2000" },
+  { ticker: "QQQ",   label: "QQQ" },
+  { ticker: "GLD",   label: "Gold" },
+];
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type SortKey = "ticker" | "company" | "weight" | "value" | "change1d" | "change7d" | "sector";
@@ -143,6 +152,9 @@ export default function PositionsTab({
   const [perfDates, setPerfDates] = useState<Record<string, string[]>>({});
   const [period, setPeriod] = useState<"6m" | "1y" | "2y" | "5y">("1y");
   const [perfLoading, setPerfLoading] = useState(false);
+  const [benchmark, setBenchmark] = useState("^GSPC");
+  const [benchData, setBenchData] = useState<{ x: string[]; y: number[] }>({ x: [], y: [] });
+  const [benchLoading, setBenchLoading] = useState(false);
 
   // Table
   const [sortKey, setSortKey] = useState<SortKey>("weight");
@@ -246,6 +258,22 @@ export default function PositionsTab({
       setPerfDates(newDates);
     }).finally(() => setPerfLoading(false));
   }, [savedPortfolios, period]);
+
+  // ── Fetch benchmark series ────────────────────────────────────────────────
+  useEffect(() => {
+    setBenchLoading(true);
+    const apiPeriod = PERIOD_API[period];
+    fetch(`${API_URL}/portfolio?tickers=${encodeURIComponent(benchmark)}&weights=1&period=${apiPeriod}`)
+      .then(r => r.json())
+      .then(d => {
+        setBenchData({
+          x: (d.dates as string[]) ?? [],
+          y: (d.portfolio_cumulative as number[]) ?? [],
+        });
+      })
+      .catch(() => setBenchData({ x: [], y: [] }))
+      .finally(() => setBenchLoading(false));
+  }, [benchmark, period]);
 
   // ── Derive all unique tickers across selection ─────────────────────────────
   const activePortfolios = selectedId === "all"
@@ -522,6 +550,27 @@ export default function PositionsTab({
                   {p.name}
                 </span>
               ))}
+              {benchData.y.length > 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "var(--text3)", marginRight: 4 }}>
+                  <span style={{ width: 14, height: 0, borderTop: "2px dashed rgba(180,180,180,0.5)", display: "inline-block" }} />
+                  {BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark}
+                </span>
+              )}
+              {/* Benchmark dropdown */}
+              <select
+                value={benchmark}
+                onChange={e => setBenchmark(e.target.value)}
+                style={{
+                  padding: "3px 6px", fontSize: 10,
+                  background: "transparent", border: "0.5px solid var(--border)",
+                  borderRadius: 5, color: "var(--text3)", cursor: "pointer",
+                  fontFamily: "Space Mono, monospace", outline: "none",
+                }}
+              >
+                {BENCHMARKS.map(b => (
+                  <option key={b.ticker} value={b.ticker}>{b.label}</option>
+                ))}
+              </select>
               {/* Period buttons */}
               {(["6m", "1y", "2y", "5y"] as const).map(p => (
                 <button key={p} onClick={() => setPeriod(p)} style={{
@@ -538,22 +587,32 @@ export default function PositionsTab({
           </div>
 
           {/* Chart body */}
-          {perfLoading ? (
+          {perfLoading || benchLoading ? (
             <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>Loading…</span>
             </div>
           ) : (
             <Plot
-              data={savedPortfolios
-                .map((p, i) => ({
-                  x: perfDates[p.id] ?? [],
-                  y: perfData[p.id] ?? [],
+              data={[
+                ...savedPortfolios
+                  .map((p, i) => ({
+                    x: perfDates[p.id] ?? [],
+                    y: perfData[p.id] ?? [],
+                    type: "scatter",
+                    mode: "lines",
+                    name: p.name,
+                    line: { color: COLORS[i % COLORS.length], width: 1.5 },
+                  }))
+                  .filter(t => (t.y as number[]).length > 0),
+                ...(benchData.y.length > 0 ? [{
+                  x: benchData.x,
+                  y: benchData.y,
                   type: "scatter",
                   mode: "lines",
-                  name: p.name,
-                  line: { color: COLORS[i % COLORS.length], width: 1.5 },
-                }))
-                .filter(t => (t.y as number[]).length > 0)}
+                  name: BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark,
+                  line: { color: "rgba(180,180,180,0.45)", width: 1.5, dash: "dash" },
+                }] : []),
+              ]}
               layout={{
                 paper_bgcolor: "transparent",
                 plot_bgcolor: "transparent",
