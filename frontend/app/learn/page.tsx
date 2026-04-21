@@ -1502,11 +1502,12 @@ export default function LearnPage() {
         }
         setUserId(user.id);
 
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("display_name, avatar_url, xp, streak, last_activity_date, lessons_completed, lesson_progress, last_daily_challenge")
           .eq("id", user.id)
           .single();
+        console.log("profile fetch:", { profile, profileError });
 
         // ── Streak reset: if last activity was more than 1 day ago, streak is broken
         const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
