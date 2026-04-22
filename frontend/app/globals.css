@@ -100,6 +100,7 @@ html, body {
 
 html {
   scroll-behavior: smooth;
+  overscroll-behavior: none;
   /* Firefox scrollbar */
   scrollbar-width: thin;
   scrollbar-color: rgba(184,134,11,0.4) transparent;
