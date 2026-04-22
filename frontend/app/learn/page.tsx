@@ -2120,7 +2120,7 @@ export default function LearnPage() {
           />
         )}
       </AnimatePresence>
-      <FeedbackButton rightOffset={24} />
+      <FeedbackButton rightOffset={80} />
     </div>
   );
 }
