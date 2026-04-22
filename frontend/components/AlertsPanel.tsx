@@ -253,7 +253,8 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
       const { data, error } = await supabase
         .from("price_alerts")
         .insert({ user_id: userId, type: newAlert.type, ticker: newAlert.ticker ?? null, portfolio_id: newAlert.portfolioId ?? null, condition: newAlert.condition, threshold: newAlert.threshold })
-        .select().single();
+        .select("id, user_id, ticker, type, condition, threshold, triggered, created_at, portfolio_id")
+        .single();
       if (!error && data) {
         await fetchAlerts(userId);
         setTicker(""); setThreshold("10");
