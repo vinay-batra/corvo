@@ -2147,20 +2147,26 @@ def market_summary(tickers: str = Query(default="")):
 
     # Check per-ticker cache first
     cached = _market_per_ticker_cache.get(ticker_key)
-    if cached and time.time() - cached.get("ts", 0) < 300:
+    if cached and time.time() - cached.get("ts", 0) < 60:
         return cached
 
     # Refresh base market data (indexes + news) if stale
     now = time.time()
-    if now - _market_base_cache["ts"] > 300:
+    if now - _market_base_cache["ts"] > 60:
         index_data = {}
         for sym in ["SPY", "QQQ", "DIA", "^VIX"]:
             try:
-                info = yf.Ticker(sym).fast_info
-                price = safe_float(getattr(info, "last_price", 0) or 0)
-                prev_close = safe_float(getattr(info, "previous_close", 0) or 0)
-                pct = ((price - prev_close) / prev_close * 100) if price > 0 and prev_close > 0 else 0.0
-                index_data[sym] = {"price": price, "pct": pct}
+                df = yf.download(sym, period="2d", interval="1d", progress=False, auto_adjust=True)
+                if df.empty or len(df) < 1:
+                    index_data[sym] = {"price": 0.0, "pct": 0.0}
+                    continue
+                price = float(df["Close"].iloc[-1])
+                if len(df) >= 2:
+                    prev_close = float(df["Close"].iloc[-2])
+                else:
+                    prev_close = price
+                pct = ((price - prev_close) / prev_close * 100) if prev_close > 0 else 0.0
+                index_data[sym] = {"price": round(price, 2), "pct": round(pct, 4)}
             except Exception as e:
                 print(f"market-summary index error for {sym}: {e}")
                 index_data[sym] = {"price": 0.0, "pct": 0.0}
