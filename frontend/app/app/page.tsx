@@ -1025,13 +1025,13 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       try {
         const savedRaw = localStorage.getItem("corvo_saved_portfolios");
         const localPfs: any[] = savedRaw ? JSON.parse(savedRaw) : [];
-        const { data: dbPfs } = await supabase.from("portfolios").select("id,tickers,assets").eq("user_id", userId);
+        const { data: dbPfs } = await supabase.from("portfolios").select("id,tickers,name").eq("user_id", userId);
         const allPfs = [...(dbPfs || []).map((p: any) => ({ id: p.id, assets: p.assets || [] })), ...localPfs.map((p: any) => ({ id: p.id, assets: p.assets || [] }))];
         const uniqueIds = new Set<string>();
         for (const pf of allPfs) {
           if (!pf.id || uniqueIds.has(pf.id) || !pf.assets?.length) continue;
           uniqueIds.add(pf.id);
-          const { data: hist } = await supabase.from("portfolio_snapshots").select("date").eq("portfolio_id", pf.id).eq("user_id", userId).gte("date", today).limit(1);
+          const { data: hist } = await supabase.from("portfolio_snapshots").select("date").eq("portfolio_id", pf.id).gte("date", today).limit(1);
           if (hist && hist.length > 0) continue;
           const valid = pf.assets.filter((a: any) => a.ticker && a.weight > 0);
           if (!valid.length) continue;
