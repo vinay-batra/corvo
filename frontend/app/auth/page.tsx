@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { posthog } from "../../lib/posthog";
 import FeedbackButton from "../../components/FeedbackButton";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 const C = {
   navy: "#0a0e14", navy2: "#0d1117", navy3: "#111620",
@@ -37,15 +38,16 @@ function AuthForm() {
   const [error, setError] = useState<string|null>(null);
   const [success, setSuccess] = useState<string|null>(null);
   const [focused, setFocused] = useState<string|null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handle = async () => {
     setLoading(true); setError(null); setSuccess(null);
     if (mode === "login") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken: captchaToken ?? undefined } });
       if (error) setError(error.message);
       else window.location.href = nextPath;
     } else if (mode === "signup") {
-      const { data: signUpData, error } = await supabase.auth.signUp({ email, password });
+      const { data: signUpData, error } = await supabase.auth.signUp({ email, password, options: { captchaToken: captchaToken ?? undefined } });
       if (error) setError(error.message);
       else {
         posthog.capture("signup_completed", { method: "email_password" });
@@ -62,13 +64,14 @@ function AuthForm() {
     } else if (mode === "magic") {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${nextPath}` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${nextPath}`, captchaToken: captchaToken ?? undefined },
       });
       if (error) setError(error.message);
       else setSuccess("Magic link sent! Check your email.");
     } else {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+        captchaToken: captchaToken ?? undefined,
       });
       if (error) setError(error.message);
       else setSuccess("Password reset email sent.");
@@ -240,8 +243,16 @@ function AuthForm() {
           )}
         </AnimatePresence>
 
-        <button onClick={handle} disabled={loading}
-          style={{ width: "100%", padding: "12px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: loading ? "rgba(201,168,76,0.3)" : C.amber, border: "none", color: loading ? C.cream3 : C.navy, cursor: loading ? "default" : "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, letterSpacing: 0.3 }}>
+        <Turnstile
+          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAADBKdPhKjxEVElBi"}
+          onSuccess={(token) => setCaptchaToken(token)}
+          onExpire={() => setCaptchaToken(null)}
+          options={{ theme: "dark", size: "normal" }}
+          style={{ marginBottom: 12 }}
+        />
+
+        <button onClick={handle} disabled={loading || !captchaToken}
+          style={{ width: "100%", padding: "12px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: (loading || !captchaToken) ? "rgba(201,168,76,0.3)" : C.amber, border: "none", color: (loading || !captchaToken) ? C.cream3 : C.navy, cursor: (loading || !captchaToken) ? "default" : "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, letterSpacing: 0.3 }}>
           {loading ? (
             <><div style={{ width: 12, height: 12, border: `1.5px solid rgba(10,14,20,0.3)`, borderTopColor: C.navy, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />Processing...</>
           ) : mode === "login" ? "Log In" : mode === "signup" ? "Create Account" : mode === "magic" ? "Send Magic Link" : "Send Reset Email"}
