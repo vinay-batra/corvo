@@ -18,11 +18,11 @@ function Ring({ score, size=96 }: { score:number; size?:number }) {
             transition={{duration:1,ease:"easeOut",delay:0}}/>
         </svg>
         <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.8}}
+          <motion.p initial={false} animate={{opacity:1}} transition={{delay:0.8}}
             style={{fontFamily:"Space Mono,monospace",fontSize:24,fontWeight:700,color:ringColor,letterSpacing:-1,lineHeight:1}}>{score}</motion.p>
         </div>
       </div>
-      <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:1}}
+      <motion.p initial={false} animate={{opacity:1}} transition={{delay:1}}
         style={{fontSize:9,letterSpacing:2,color:ringColor,textTransform:"uppercase",marginTop:6,textAlign:"center"}}>{label}</motion.p>
     </div>
   );
@@ -40,7 +40,7 @@ function Bar({ label, subtitle, value, max, delay }: { label:string; subtitle:st
         <motion.div initial={{width:0}} animate={{width:`${pct*100}%`}} transition={{duration:1,delay,ease:"easeOut"}}
           style={{height:"100%",background:"#b8860b",borderRadius:1}}/>
       </div>
-      <motion.span initial={{opacity:0}} animate={{opacity:1}} transition={{delay:delay+0.4}}
+      <motion.span initial={false} animate={{opacity:1}} transition={{delay:delay+0.4}}
         style={{fontSize:11,fontFamily:"Space Mono,monospace",color:"var(--text3)",width:22,textAlign:"right"}}>{Math.round(pct*100)}</motion.span>
     </div>
   );

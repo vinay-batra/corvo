@@ -39,7 +39,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
       <div style={{ display: "flex", height: 14, borderRadius: 6, overflow: "hidden", marginBottom: 16, gap: 2 }}>
         {normalized.map((a, i) => (
           <motion.div key={a.ticker}
-            initial={{ flex: 0, opacity: 0 }}
+            initial={false}
             animate={{ flex: a.pct, opacity: 1 }}
             transition={{ duration: 1, delay: 0.3 + i * 0.08, ease: "easeOut" }}
             title={`${a.ticker}: ${(a.pct * 100).toFixed(1)}%`}
@@ -52,7 +52,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
         {normalized.map((a, i) => (
           <motion.div
             key={a.ticker}
-            initial={{ opacity: 0, y: 4 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 + i * 0.07 }}
             style={{
