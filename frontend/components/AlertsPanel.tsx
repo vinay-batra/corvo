@@ -180,6 +180,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
   const [threshold, setThreshold] = useState("10");
   const [userId, setUserId] = useState<string | null>(null);
   const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
+  const [notifBlocked, setNotifBlocked] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser()
@@ -191,6 +192,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
       .catch(() => fetchAlerts(null));
     if (typeof Notification !== "undefined") {
       setPushEnabled(Notification.permission === "granted");
+      setNotifBlocked(Notification.permission === "denied");
     }
   }, []);
 
@@ -300,10 +302,27 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
         {pushEnabled === false && (
           <div style={{ margin: "10px 18px 0", padding: "10px 12px", background: "rgba(224,92,92,0.08)", border: "0.5px solid rgba(224,92,92,0.3)", borderRadius: 9, display: "flex", alignItems: "center", gap: 8 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e05c5c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <p style={{ fontSize: 11, color: "#e05c5c", flex: 1, lineHeight: 1.5 }}>Browser notifications are off. Alerts are saved but you won't receive push notifications.</p>
-            <button onClick={async () => { const p = await Notification.requestPermission(); setPushEnabled(p === "granted"); }}
+            <p style={{ fontSize: 11, color: "#e05c5c", flex: 1, lineHeight: 1.5 }}>
+              {notifBlocked
+                ? "Notifications are blocked in your browser. Click the lock icon in the address bar to allow them."
+                : "Browser notifications are off. Alerts are saved but you won't receive push notifications."}
+            </p>
+            <button
+              onClick={async () => {
+                if (notifBlocked) {
+                  alert("To enable notifications:\n1. Click the lock/info icon in your browser address bar\n2. Find 'Notifications' and set it to 'Allow'\n3. Refresh the page");
+                  return;
+                }
+                if (Notification.permission === "denied") {
+                  alert("Notifications are blocked. Please click the lock icon in your browser address bar and allow notifications for corvo.capital, then refresh the page.");
+                  return;
+                }
+                const p = await Notification.requestPermission();
+                setPushEnabled(p === "granted");
+                setNotifBlocked(p === "denied");
+              }}
               style={{ fontSize: 10, padding: "4px 8px", borderRadius: 5, border: "0.5px solid rgba(224,92,92,0.4)", background: "rgba(224,92,92,0.1)", color: "#e05c5c", cursor: "pointer", whiteSpace: "nowrap" }}>
-              Enable
+              {notifBlocked ? "How to fix" : "Enable"}
             </button>
           </div>
         )}
