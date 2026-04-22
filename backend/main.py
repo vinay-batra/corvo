@@ -2660,6 +2660,91 @@ async def check_price_alerts():
     except Exception as e:
         print(f"[alerts] check_price_alerts error: {e}")
 
+        # ── Portfolio alerts ──────────────────────────────────────────────
+        port_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/price_alerts?triggered=eq.false&type=eq.portfolio&select=id,user_id,portfolio_id,condition,threshold",
+            headers=_sb_headers(), timeout=10,
+        )
+        if port_resp.status_code == 200:
+            port_alerts = port_resp.json()
+            for alert in port_alerts:
+                try:
+                    user_id = alert["user_id"]
+                    portfolio_id = alert.get("portfolio_id")
+                    condition = alert["condition"]
+                    threshold = float(alert["threshold"])
+                    alert_id = alert["id"]
+
+                    if not portfolio_id:
+                        continue
+
+                    # Fetch last 2 snapshots for this portfolio
+                    snap_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots?portfolio_id=eq.{portfolio_id}&select=date,portfolio_value&order=date.desc&limit=2",
+                        headers=_sb_headers(), timeout=8,
+                    )
+                    if snap_resp.status_code != 200:
+                        continue
+                    snaps = snap_resp.json()
+                    if len(snaps) < 2:
+                        continue
+
+                    latest_val = float(snaps[0]["portfolio_value"])
+                    prev_val = float(snaps[1]["portfolio_value"])
+                    if prev_val <= 0:
+                        continue
+                    pct_change = ((latest_val - prev_val) / prev_val) * 100
+
+                    triggered = (
+                        (condition == "drops" and pct_change <= -threshold) or
+                        (condition == "rises" and pct_change >= threshold)
+                    )
+                    if not triggered:
+                        continue
+
+                    # Fetch portfolio name
+                    pf_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/portfolios?id=eq.{portfolio_id}&select=name",
+                        headers=_sb_headers(), timeout=5,
+                    )
+                    pf_name = "Your portfolio"
+                    if pf_resp.status_code == 200 and pf_resp.json():
+                        pf_name = pf_resp.json()[0].get("name") or "Your portfolio"
+
+                    # Mark as triggered
+                    requests.patch(
+                        f"{SUPABASE_URL}/rest/v1/price_alerts?id=eq.{alert_id}",
+                        headers={**_sb_headers(), "Prefer": "return=minimal"},
+                        json={"triggered": True, "triggered_at": datetime.now(timezone.utc).isoformat()},
+                        timeout=5,
+                    )
+
+                    notif_title = "Corvo Portfolio Alert"
+                    notif_body = f"{pf_name} has {'dropped' if condition == 'drops' else 'risen'} {threshold}% (now ${latest_val:,.0f})"
+
+                    # Send push
+                    subs_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                        headers=_sb_headers(), timeout=5,
+                    )
+                    if subs_resp.status_code == 200:
+                        for row in subs_resp.json():
+                            _send_push(row["subscription"], notif_title, notif_body)
+
+                    # Send email
+                    user_resp = requests.get(
+                        f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                        headers=_sb_headers(), timeout=5,
+                    )
+                    if user_resp.status_code == 200:
+                        email = user_resp.json().get("email", "")
+                        if email:
+                            _send_alert_email(email, pf_name, latest_val, condition, threshold)
+
+                    print(f"[alerts] portfolio triggered: {pf_name} {condition} {threshold}% for user {user_id}")
+                except Exception as e:
+                    print(f"[alerts] portfolio alert error: {e}")
+
 
 class SnapshotRequest(BaseModel):
     user_id: str
