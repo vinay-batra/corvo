@@ -1,9 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
-html, body {
-  overscroll-behavior: none;
-  overscroll-behavior-y: none;
+html {
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
+}
+
+body {
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
+  touch-action: pan-x pan-y;
+}
+
+* {
+  -webkit-overflow-scrolling: auto !important;
 }
 
 /* ── Light mode (default) ── */
