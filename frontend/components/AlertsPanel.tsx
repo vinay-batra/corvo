@@ -256,10 +256,13 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
         .insert({ user_id: userId, type: newAlert.type, ticker: newAlert.ticker ?? null, portfolio_id: newAlert.portfolioId ?? null, condition: newAlert.condition, threshold: newAlert.threshold })
         .select("id, user_id, ticker, type, condition, threshold, triggered, created_at, portfolio_id")
         .single();
+      console.log("insert result:", { data, error });
       if (!error && data) {
         await fetchAlerts(userId);
         setTicker(""); setThreshold("10");
         return;
+      } else if (error) {
+        console.error("insert error details:", JSON.stringify(error));
       }
     }
 
