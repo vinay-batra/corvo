@@ -212,9 +212,11 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
     if (uid) {
       const { data, error } = await supabase
         .from("price_alerts")
-        .select("*")
+        .select("id, user_id, ticker, type, condition, threshold, triggered, created_at, portfolio_id")
         .eq("user_id", uid)
+        .eq("triggered", false)
         .order("created_at", { ascending: false });
+      if (error) console.error("price_alerts fetch error:", error);
       if (!error && data) {
         const mapped: Alert[] = data.map((r: any) => ({
           id: r.id, type: r.type, ticker: r.ticker,
