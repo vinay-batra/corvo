@@ -48,6 +48,7 @@ export default function GreetingBar({
   });
 
   const [market, setMarket] = useState<MarketSummary | null>(null);
+  const [indexPrices, setIndexPrices] = useState<{ spy: number | null; qqq: number | null; dia: number | null }>({ spy: null, qqq: null, dia: null });
   const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
 
@@ -65,6 +66,28 @@ export default function GreetingBar({
       .then(d => { console.log("[GreetingBar] market-summary response:", d); setMarket(d); })
       .catch(err => console.error("[GreetingBar] market-summary error:", err));
   }, [assets]);
+
+  // Fetch index prices directly from watchlist-data
+  useEffect(() => {
+    const fetchIndexes = async () => {
+      try {
+        const r = await fetch(`${API_URL}/watchlist-data?tickers=SPY,QQQ,DIA`);
+        const d = await r.json();
+        const results = d.results || [];
+        const spy = results.find((x: any) => x.ticker === "SPY");
+        const qqq = results.find((x: any) => x.ticker === "QQQ");
+        const dia = results.find((x: any) => x.ticker === "DIA");
+        setIndexPrices({
+          spy: spy?.change_pct ?? null,
+          qqq: qqq?.change_pct ?? null,
+          dia: dia?.change_pct ?? null,
+        });
+      } catch {}
+    };
+    fetchIndexes();
+    const interval = setInterval(fetchIndexes, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch live holdings prices from watchlist-data
   const assetsRef = useRef(assets);
@@ -185,7 +208,7 @@ export default function GreetingBar({
       <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
 
         {/* Index pills row */}
-        {market === null ? (
+        {indexPrices.spy === null ? (
           <div style={{ display: "flex", gap: 8 }}>
             <style>{`
               @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.9; } }
@@ -204,18 +227,18 @@ export default function GreetingBar({
           <div style={{ display: "flex", gap: 8 }}>
             <StatPill
               label="S&P 500"
-              value={market.spy_pct != null ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
-              color={market.spy_pct != null ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
+              value={indexPrices.spy != null ? `${fmtSign(indexPrices.spy)}${indexPrices.spy.toFixed(2)}%` : "-"}
+              color={indexPrices.spy != null ? (pos(indexPrices.spy) ? green : red) : "var(--text3)"}
             />
             <StatPill
               label="Nasdaq"
-              value={market.qqq_pct != null ? `${fmtSign(market.qqq_pct)}${market.qqq_pct.toFixed(2)}%` : "-"}
-              color={market.qqq_pct != null ? (pos(market.qqq_pct) ? green : red) : "var(--text3)"}
+              value={indexPrices.qqq != null ? `${fmtSign(indexPrices.qqq)}${indexPrices.qqq.toFixed(2)}%` : "-"}
+              color={indexPrices.qqq != null ? (pos(indexPrices.qqq) ? green : red) : "var(--text3)"}
             />
             <StatPill
               label="Dow"
-              value={market.dia_pct != null ? `${fmtSign(market.dia_pct)}${market.dia_pct.toFixed(2)}%` : "-"}
-              color={market.dia_pct != null ? (pos(market.dia_pct) ? green : red) : "var(--text3)"}
+              value={indexPrices.dia != null ? `${fmtSign(indexPrices.dia)}${indexPrices.dia.toFixed(2)}%` : "-"}
+              color={indexPrices.dia != null ? (pos(indexPrices.dia) ? green : red) : "var(--text3)"}
             />
           </div>
         )}
