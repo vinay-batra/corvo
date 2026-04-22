@@ -190,6 +190,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
     supabase.auth.getUser()
       .then(async ({ data }) => {
         const uid = data.user?.id ?? null;
+        console.log("AlertsPanel uid:", uid);
         setUserId(uid);
         fetchAlerts(uid);
         if (uid) {
@@ -201,7 +202,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
           if (pfData) setSavedPortfolios(pfData);
         }
       })
-      .catch(() => fetchAlerts(null));
+      .catch((e) => { console.error("AlertsPanel auth error:", e); fetchAlerts(null); });
     if (typeof Notification !== "undefined") {
       setPushEnabled(Notification.permission === "granted");
       setNotifBlocked(Notification.permission === "denied");
