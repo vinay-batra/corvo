@@ -11,6 +11,8 @@ interface Alert {
   id: string;
   type: "price" | "portfolio";
   ticker?: string;
+  portfolioId?: string;
+  portfolioName?: string;
   condition: "drops" | "rises";
   threshold: number;
   createdAt: string;
@@ -181,13 +183,23 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
   const [userId, setUserId] = useState<string | null>(null);
   const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
   const [notifBlocked, setNotifBlocked] = useState(false);
+  const [savedPortfolios, setSavedPortfolios] = useState<{ id: string; name: string }[]>([]);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         const uid = data.user?.id ?? null;
         setUserId(uid);
         fetchAlerts(uid);
+        if (uid) {
+          const { data: pfData } = await supabase
+            .from("portfolios")
+            .select("id, name")
+            .eq("user_id", uid)
+            .order("created_at", { ascending: false });
+          if (pfData) setSavedPortfolios(pfData);
+        }
       })
       .catch(() => fetchAlerts(null));
     if (typeof Notification !== "undefined") {
@@ -206,6 +218,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
       if (!error && data) {
         const mapped: Alert[] = data.map((r: any) => ({
           id: r.id, type: r.type, ticker: r.ticker,
+          portfolioId: r.portfolio_id,
           condition: r.condition, threshold: r.threshold, createdAt: r.created_at,
         }));
         setAlerts(mapped);
@@ -220,6 +233,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
     const t = parseFloat(threshold);
     if (isNaN(t) || t <= 0) return;
     if (tab === "price" && !ticker.trim()) return;
+    if (tab === "portfolio" && !selectedPortfolioId) return;
 
     posthog.capture("alert_created", { alert_type: tab, condition });
 
@@ -227,6 +241,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
       id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`,
       type: tab,
       ticker: tab === "price" ? ticker.trim().toUpperCase() : undefined,
+      portfolioId: tab === "portfolio" ? selectedPortfolioId : undefined,
       condition,
       threshold: t,
       createdAt: new Date().toISOString(),
@@ -235,7 +250,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
     if (userId) {
       const { data, error } = await supabase
         .from("price_alerts")
-        .insert({ user_id: userId, type: newAlert.type, ticker: newAlert.ticker ?? null, condition: newAlert.condition, threshold: newAlert.threshold })
+        .insert({ user_id: userId, type: newAlert.type, ticker: newAlert.ticker ?? null, portfolio_id: newAlert.portfolioId ?? null, condition: newAlert.condition, threshold: newAlert.threshold })
         .select().single();
       if (!error && data) {
         await fetchAlerts(userId);
@@ -263,7 +278,8 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
 
   const formatAlert = (a: Alert) => {
     if (a.type === "price") return `${a.ticker} ${a.condition} ${a.threshold}%`;
-    return `Portfolio ${a.condition} ${a.threshold}%`;
+    const pf = savedPortfolios.find(p => p.id === a.portfolioId);
+    return `${pf?.name || "Portfolio"} ${a.condition} ${a.threshold}%`;
   };
 
   return (
@@ -352,6 +368,24 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
               )}
             </div>
           )}
+          {tab === "portfolio" && (
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Portfolio</label>
+              {savedPortfolios.length === 0 ? (
+                <div style={{ padding: "10px 12px", background: "var(--bg3)", borderRadius: 7, fontSize: 12, color: "var(--text3)" }}>
+                  No saved portfolios. Save a portfolio first from the analyzer.
+                </div>
+              ) : (
+                <select value={selectedPortfolioId} onChange={e => setSelectedPortfolioId(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 7, color: selectedPortfolioId ? "var(--text)" : "var(--text3)", fontSize: 12, outline: "none", cursor: "pointer" }}>
+                  <option value="">Select a portfolio...</option>
+                  {savedPortfolios.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
             <div>
@@ -372,7 +406,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
           <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 10, padding: "10px 12px", background: "var(--bg3)", borderRadius: 8, lineHeight: 1.55, borderLeft: "2px solid var(--accent)" }}>
             {tab === "price"
               ? `Notify when ${ticker || "ticker"} ${condition} more than ${threshold || "?"}%`
-              : `Notify when portfolio ${condition} more than ${threshold || "?"}%`}
+              : `Notify when ${savedPortfolios.find(p => p.id === selectedPortfolioId)?.name || "portfolio"} ${condition} more than ${threshold || "?"}%`}
           </div>
 
           <button onClick={addAlert}
@@ -407,7 +441,8 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                        {a.ticker && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{a.ticker}</span>}
+                        {a.type === "price" && a.ticker && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{a.ticker}</span>}
+                        {a.type === "portfolio" && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{savedPortfolios.find(p => p.id === a.portfolioId)?.name || "Portfolio"}</span>}
                         <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: a.type === "price" ? "rgba(184,134,11,0.12)" : "rgba(76,175,125,0.12)", color: a.type === "price" ? "var(--accent)" : "#4caf7d", letterSpacing: 0.5, textTransform: "uppercase" as const }}>{a.type}</span>
                       </div>
                       <p style={{ fontSize: 11, color: "var(--text2)" }}>
