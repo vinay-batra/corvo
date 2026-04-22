@@ -744,6 +744,26 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       if (raw) setAlertCount(JSON.parse(raw).length);
     } catch {}
 
+    // Restore portfolio state saved before navigating to Learn
+    try {
+      const savedAssets = localStorage.getItem("corvo_saved_assets");
+      const savedData = localStorage.getItem("corvo_saved_data");
+      if (savedAssets) {
+        const parsed = JSON.parse(savedAssets);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAssets(parsed);
+          localStorage.removeItem("corvo_saved_assets");
+        }
+      }
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        if (parsed) {
+          setData(parsed);
+          localStorage.removeItem("corvo_saved_data");
+        }
+      }
+    } catch {}
+
     const params = new URLSearchParams(window.location.search);
 
     // Capture referral code from ?ref= and persist it for the first portfolio analysis
@@ -1441,7 +1461,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             const TabIcon = tab.Icon;
             const isActive = activeTab === tab.id;
             const mobStyle: React.CSSProperties = { padding: "10px 10px", fontSize: 11, borderRadius: 6, border: "none", background: isActive ? "var(--bg3)" : "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 500 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" };
-            if (tab.href) return <Link key={tab.id} href={tab.href} style={mobStyle}><TabIcon size={11} /> {tab.label}</Link>;
+            if (tab.href) return <Link key={tab.id} href={tab.href} style={mobStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}><TabIcon size={11} /> {tab.label}</Link>;
             return <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={mobStyle}><TabIcon size={11} /> {tab.label}</button>;
           })}
         </div>
@@ -1475,7 +1495,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   </span>
                 </>
               );
-              if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle}>{content}</Link>;
+              if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{content}</Link>;
               return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); }} style={tabStyle}>{content}</button>;
             })}
           </div>
