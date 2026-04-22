@@ -179,6 +179,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
   const [condition, setCondition] = useState<"drops" | "rises">("drops");
   const [threshold, setThreshold] = useState("10");
   const [userId, setUserId] = useState<string | null>(null);
+  const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser()
@@ -188,6 +189,9 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
         fetchAlerts(uid);
       })
       .catch(() => fetchAlerts(null));
+    if (typeof Notification !== "undefined") {
+      setPushEnabled(Notification.permission === "granted");
+    }
   }, []);
 
   const fetchAlerts = async (uid: string | null) => {
@@ -292,6 +296,24 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
           ))}
         </div>
 
+        {/* Push notification banner */}
+        {pushEnabled === false && (
+          <div style={{ margin: "10px 18px 0", padding: "10px 12px", background: "rgba(224,92,92,0.08)", border: "0.5px solid rgba(224,92,92,0.3)", borderRadius: 9, display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e05c5c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <p style={{ fontSize: 11, color: "#e05c5c", flex: 1, lineHeight: 1.5 }}>Browser notifications are off. Alerts are saved but you won't receive push notifications.</p>
+            <button onClick={async () => { const p = await Notification.requestPermission(); setPushEnabled(p === "granted"); }}
+              style={{ fontSize: 10, padding: "4px 8px", borderRadius: 5, border: "0.5px solid rgba(224,92,92,0.4)", background: "rgba(224,92,92,0.1)", color: "#e05c5c", cursor: "pointer", whiteSpace: "nowrap" }}>
+              Enable
+            </button>
+          </div>
+        )}
+        {pushEnabled === true && (
+          <div style={{ margin: "10px 18px 0", padding: "8px 12px", background: "rgba(76,175,125,0.08)", border: "0.5px solid rgba(76,175,125,0.25)", borderRadius: 9, display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4caf7d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <p style={{ fontSize: 11, color: "#4caf7d" }}>Push notifications enabled</p>
+          </div>
+        )}
+
         {/* Form */}
         <div style={{ padding: "16px 18px", borderBottom: "0.5px solid var(--border)", flexShrink: 0 }}>
           {tab === "price" && (
@@ -328,14 +350,14 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
             </div>
           </div>
 
-          <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 10, padding: "8px 10px", background: "var(--bg3)", borderRadius: 7, lineHeight: 1.55 }}>
+          <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 10, padding: "10px 12px", background: "var(--bg3)", borderRadius: 8, lineHeight: 1.55, borderLeft: "2px solid var(--accent)" }}>
             {tab === "price"
-              ? `Notify me if ${ticker || "this ticker"} ${condition} more than ${threshold || "?"}%`
-              : `Notify me if my portfolio ${condition} more than ${threshold || "?"}%`}
+              ? `Notify when ${ticker || "ticker"} ${condition} more than ${threshold || "?"}%`
+              : `Notify when portfolio ${condition} more than ${threshold || "?"}%`}
           </div>
 
           <button onClick={addAlert}
-            style={{ width: "100%", padding: "9px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 1.5, textTransform: "uppercase", background: "var(--text)", color: "var(--bg)", border: "none", borderRadius: 8, cursor: "pointer", transition: "opacity 0.15s" }}
+            style={{ width: "100%", padding: "9px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 1.5, textTransform: "uppercase", background: "var(--accent)", color: "#0a0e14", border: "none", borderRadius: 8, cursor: "pointer", transition: "opacity 0.15s" }}
             onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
             onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
             + Set Alert
@@ -344,26 +366,41 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
 
         {/* Alert list */}
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 18px" }}>
-          {alerts.length === 0 ? (
+          {alerts.filter(a => a.type === tab).length === 0 ? (
             <div style={{ textAlign: "center", paddingTop: 32 }}>
-              <div style={{ marginBottom: 10, display: "flex", justifyContent: "center", color: "var(--text3)" }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
-              <p style={{ fontSize: 12, color: "var(--text3)" }}>No alerts set yet</p>
+              <div style={{ marginBottom: 10, display: "flex", justifyContent: "center", opacity: 0.3 }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              </div>
+              <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>No {tab} alerts yet</p>
+              <p style={{ fontSize: 11, color: "var(--text3)" }}>Set a threshold above to get notified</p>
             </div>
           ) : (
             <AnimatePresence initial={false}>
-              {alerts.map(a => (
+              {alerts.filter(a => a.type === tab).map(a => (
                 <motion.div key={a.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", border: "0.5px solid var(--border)", borderRadius: 9, marginBottom: 6, background: "var(--card-bg)" }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: a.type === "price" ? "rgba(184,134,11,0.12)" : "rgba(21,128,61,0.12)", color: a.type === "price" ? "var(--accent)" : "#15803d", letterSpacing: 1, textTransform: "uppercase" as const }}>
-                          {a.type}
-                        </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", border: "0.5px solid var(--border)", borderRadius: 10, marginBottom: 7, background: "var(--card-bg)", transition: "border-color 0.15s" }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = "var(--border2)"}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: a.condition === "drops" ? "rgba(224,92,92,0.1)" : "rgba(76,175,125,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={a.condition === "drops" ? "#e05c5c" : "#4caf7d"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        {a.condition === "drops" ? <><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></> : <><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></>}
+                      </svg>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                        {a.ticker && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{a.ticker}</span>}
+                        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: a.type === "price" ? "rgba(184,134,11,0.12)" : "rgba(76,175,125,0.12)", color: a.type === "price" ? "var(--accent)" : "#4caf7d", letterSpacing: 0.5, textTransform: "uppercase" as const }}>{a.type}</span>
                       </div>
-                      <p style={{ fontSize: 12, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{formatAlert(a)}</p>
+                      <p style={{ fontSize: 11, color: "var(--text2)" }}>
+                        {a.condition === "drops" ? "Drops" : "Rises"} more than <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: a.condition === "drops" ? "#e05c5c" : "#4caf7d" }}>{a.threshold}%</span>
+                      </p>
                     </div>
                     <button onClick={() => removeAlert(a.id)}
-                      style={{ width: 22, height: 22, borderRadius: 5, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                      style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(224,92,92,0.4)"; e.currentTarget.style.color = "#e05c5c"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                   </div>
                 </motion.div>
               ))}
