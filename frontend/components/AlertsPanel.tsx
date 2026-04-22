@@ -190,7 +190,6 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
     supabase.auth.getUser()
       .then(async ({ data }) => {
         const uid = data.user?.id ?? null;
-        console.log("AlertsPanel uid:", uid);
         setUserId(uid);
         fetchAlerts(uid);
         if (uid) {
@@ -202,7 +201,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
           if (pfData) setSavedPortfolios(pfData);
         }
       })
-      .catch((e) => { console.error("AlertsPanel auth error:", e); fetchAlerts(null); });
+      .catch(() => { fetchAlerts(null); });
     if (typeof Notification !== "undefined") {
       setPushEnabled(Notification.permission === "granted");
       setNotifBlocked(Notification.permission === "denied");
@@ -217,7 +216,6 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
         .eq("user_id", uid)
         .eq("triggered", false)
         .order("created_at", { ascending: false });
-      if (error) console.error("price_alerts fetch error:", error);
       if (!error && data) {
         const mapped: Alert[] = data.map((r: any) => ({
           id: r.id, type: r.type, ticker: r.ticker,
@@ -256,13 +254,10 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
         .insert({ user_id: userId, type: newAlert.type, ticker: newAlert.ticker ?? null, portfolio_id: newAlert.portfolioId ?? null, condition: newAlert.condition, threshold: newAlert.threshold })
         .select("id, user_id, ticker, type, condition, threshold, triggered, created_at, portfolio_id")
         .single();
-      console.log("insert result:", { data, error });
       if (!error && data) {
         await fetchAlerts(userId);
         setTicker(""); setThreshold("10");
         return;
-      } else if (error) {
-        console.error("insert error details:", JSON.stringify(error));
       }
     }
 
