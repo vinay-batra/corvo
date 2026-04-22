@@ -2156,9 +2156,9 @@ def market_summary(tickers: str = Query(default="")):
         index_data = {}
         for sym in ["SPY", "QQQ", "DIA", "^VIX"]:
             try:
-                info = yf.Ticker(sym).fast_info
-                price = safe_float(getattr(info, "last_price", 0) or 0)
-                prev_close = safe_float(getattr(info, "previous_close", 0) or 0)
+                info = yf.Ticker(sym).info or {}
+                price = safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0)
+                prev_close = safe_float(info.get("previousClose") or info.get("regularMarketPreviousClose") or 0)
                 pct = ((price - prev_close) / prev_close * 100) if price > 0 and prev_close > 0 else 0.0
                 index_data[sym] = {"price": round(price, 2), "pct": round(pct, 4)}
             except Exception as e:
