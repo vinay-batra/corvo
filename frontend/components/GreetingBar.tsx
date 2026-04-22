@@ -129,7 +129,22 @@ export default function GreetingBar({
         <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, marginBottom: 0, letterSpacing: "0.01em" }}>
           {dateStr}
         </p>
-        {summaryText ? (
+        {market === null ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <style>{`
+              @keyframes spin { to { transform: rotate(360deg); } }
+            `}</style>
+            <div style={{
+              width: 16, height: 16,
+              border: "1.5px solid rgba(201,168,76,0.3)",
+              borderTopColor: "var(--accent)",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              flexShrink: 0,
+            }} />
+            <span style={{ fontSize: 12, color: "var(--text3)" }}>Fetching market brief...</span>
+          </div>
+        ) : summaryText ? (
           <div style={{ marginTop: 6 }}>
             <p style={{
               fontSize: 13,
@@ -160,18 +175,7 @@ export default function GreetingBar({
               {summaryExpanded ? "less" : "more"}
             </button>
           </div>
-        ) : (
-          <p style={{
-            fontSize: 13,
-            color: "var(--text3)",
-            lineHeight: 1.7,
-            marginTop: 8,
-            marginBottom: 0,
-            opacity: 0.5,
-          }}>
-            Fetching market brief...
-          </p>
-        )}
+        ) : null}
       </div>
 
       {/* DIVIDER */}
@@ -181,23 +185,40 @@ export default function GreetingBar({
       <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
 
         {/* Index pills row */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <StatPill
-            label="S&P 500"
-            value={market?.spy_pct != null ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
-            color={market?.spy_pct != null ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
-          />
-          <StatPill
-            label="Nasdaq"
-            value={market?.qqq_pct != null ? `${fmtSign(market.qqq_pct)}${market.qqq_pct.toFixed(2)}%` : "-"}
-            color={market?.qqq_pct != null ? (pos(market.qqq_pct) ? green : red) : "var(--text3)"}
-          />
-          <StatPill
-            label="Dow"
-            value={market?.dia_pct != null ? `${fmtSign(market.dia_pct)}${market.dia_pct.toFixed(2)}%` : "-"}
-            color={market?.dia_pct != null ? (pos(market.dia_pct) ? green : red) : "var(--text3)"}
-          />
-        </div>
+        {market === null ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <style>{`
+              @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.9; } }
+            `}</style>
+            {[1, 2, 3].map(i => (
+              <div key={i} style={{
+                width: 80, height: 52, borderRadius: 10,
+                background: "var(--bg2)",
+                border: "0.5px solid var(--border2)",
+                animation: "pulse 1.5s ease-in-out infinite",
+                animationDelay: `${i * 0.15}s`,
+              }} />
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 8 }}>
+            <StatPill
+              label="S&P 500"
+              value={market.spy_pct != null ? `${fmtSign(market.spy_pct)}${market.spy_pct.toFixed(2)}%` : "-"}
+              color={market.spy_pct != null ? (pos(market.spy_pct) ? green : red) : "var(--text3)"}
+            />
+            <StatPill
+              label="Nasdaq"
+              value={market.qqq_pct != null ? `${fmtSign(market.qqq_pct)}${market.qqq_pct.toFixed(2)}%` : "-"}
+              color={market.qqq_pct != null ? (pos(market.qqq_pct) ? green : red) : "var(--text3)"}
+            />
+            <StatPill
+              label="Dow"
+              value={market.dia_pct != null ? `${fmtSign(market.dia_pct)}${market.dia_pct.toFixed(2)}%` : "-"}
+              color={market.dia_pct != null ? (pos(market.dia_pct) ? green : red) : "var(--text3)"}
+            />
+          </div>
+        )}
 
         {/* Holdings price pills — scrolling marquee */}
         {holdingPrices.length > 0 && (
