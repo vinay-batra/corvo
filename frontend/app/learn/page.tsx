@@ -226,7 +226,12 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
           <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
         </Link>
         <span style={{ fontSize: 9, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase" }}>Learn & Practice</span>
-        <Link href="/app" style={{ fontSize: 12, color: "var(--text3)", textDecoration: "none" }}>← Analyzer</Link>
+        <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500, color: "var(--text2)", textDecoration: "none", padding: "6px 12px", borderRadius: 8, border: "0.5px solid var(--border)", background: "var(--bg3)", transition: "all 0.15s" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </Link>
       </nav>
 
       <div className="c-learn-header" style={{ maxWidth: 1200, margin: "0 auto", padding: "14px 28px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
