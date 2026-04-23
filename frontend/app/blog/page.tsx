@@ -35,11 +35,11 @@ export default function BlogIndexPage() {
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block" }} />
           <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>Corvo Blog</span>
         </div>
-        <h1 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,5vw,58px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.08, marginBottom: 20, animation: "fadeinUp 0.8s ease 0.15s both" }}>
+        <h1 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,5vw,58px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.08, marginBottom: 20, animation: "fadeinUp 0.8s ease 0.15s both" }}>
           Investing insights.<br />
           <span style={{ color: "#c9a84c" }}>Portfolio strategy.</span>
         </h1>
-        <p style={{ fontSize: 17, color: "rgba(232,224,204,0.42)", fontWeight: 300, lineHeight: 1.75, maxWidth: 560, animation: "fadeinUp 0.8s ease 0.25s both" }}>
+        <p style={{ fontSize: 17, color: "var(--text2)", fontWeight: 300, lineHeight: 1.75, maxWidth: 560, animation: "fadeinUp 0.8s ease 0.25s both" }}>
           Investing insights, product updates, and portfolio strategy from the Corvo team.
         </p>
       </div>
