@@ -801,33 +801,33 @@ function VisualComparisonSection() {
       {/* Side-by-side panels */}
       <div className="vs-panels" style={{ display: "flex", gap: 0, alignItems: "stretch", maxWidth: 960, margin: "0 auto 28px", position: "relative" }}>
         {/* Yahoo Finance / traditional tools side */}
-        <SlideIn direction="left" style={{ flex: 1, borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid rgba(150,150,150,0.15)", borderRight: "none" }}>
+        <SlideIn direction="left" style={{ flex: 1, borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid var(--border)", borderRight: "none" }}>
           <div style={{ background: "var(--bg3)", height: "100%", padding: "22px 20px 20px", fontFamily: "sans-serif", position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 10, marginBottom: 14 }}>
-              <span style={{ fontSize: 9, color: "rgba(150,150,150,0.9)", letterSpacing: 2, textTransform: "uppercase" }}>YAHOO FINANCE</span>
-              <span style={{ fontSize: 10, color: "rgba(180,180,180,0.7)", fontWeight: 600, background: "var(--bg2)", border: "1px solid var(--border)", padding: "2px 8px", borderRadius: 4 }}>No insights</span>
+              <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 2, textTransform: "uppercase" }}>YAHOO FINANCE</span>
+              <span style={{ fontSize: 10, color: "var(--text3)", fontWeight: 600, background: "var(--bg2)", border: "1px solid var(--border)", padding: "2px 8px", borderRadius: 4 }}>No insights</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {[
-                { label: "Price", val: "260.14", clr: "rgba(200,200,200,0.9)" },
+                { label: "Price", val: "260.14", clr: "var(--text2)" },
                 { label: "Change", val: "+1.24 (0.48%)", clr: "rgba(92,184,138,0.7)" },
-                { label: "Volume", val: "48.2M", clr: "rgba(160,160,160,0.7)" },
-                { label: "52W High", val: "273.54", clr: "rgba(160,160,160,0.7)" },
-                { label: "52W Low", val: "183.86", clr: "rgba(160,160,160,0.7)" },
-                { label: "Market Cap", val: "3.94T", clr: "rgba(160,160,160,0.7)" },
+                { label: "Volume", val: "48.2M", clr: "var(--text3)" },
+                { label: "52W High", val: "273.54", clr: "var(--text3)" },
+                { label: "52W Low", val: "183.86", clr: "var(--text3)" },
+                { label: "Market Cap", val: "3.94T", clr: "var(--text3)" },
               ].map((row, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid var(--border)" }}>
-                  <span style={{ fontSize: 9, color: "rgba(120,120,120,0.8)", letterSpacing: 0.5 }}>{row.label}</span>
+                  <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>{row.label}</span>
                   <span style={{ fontSize: 9, color: row.clr, fontWeight: 600 }}>{row.val}</span>
                 </div>
               ))}
             </div>
             <div style={{ marginTop: 14, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-              <span style={{ fontSize: 8, color: "rgba(120,120,120,0.5)", lineHeight: 1.6 }}>No portfolio health score. No risk analysis. No AI insights. Just a number.</span>
+              <span style={{ fontSize: 8, color: "var(--text3)", lineHeight: 1.6 }}>No portfolio health score. No risk analysis. No AI insights. Just a number.</span>
             </div>
             <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
               {["Sharpe ratio?", "Drawdown?", "Correlation?", "Monte Carlo?"].map((t, i) => (
-                <span key={i} style={{ fontSize: 7, color: "rgba(120,120,120,0.35)", background: "var(--bg2)", padding: "2px 6px", borderRadius: 3 }}>{t}</span>
+                <span key={i} style={{ fontSize: 7, color: "var(--text3)", opacity: 0.5, background: "var(--bg2)", padding: "2px 6px", borderRadius: 3 }}>{t}</span>
               ))}
             </div>
           </div>
