@@ -1388,6 +1388,29 @@ def process_referral_bonus(user_id: str, referral_code: str):
         print(f"[referral] process_referral_bonus error: {e}")
 
 
+@app.get("/referrals")
+def get_referrals(user_id: str = ""):
+    """Return referral data for a user."""
+    if not user_id or not SUPABASE_URL:
+        return {"referral_link": "", "referrals_count": 0, "bonus_messages": 0}
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/referrals?referrer_id=eq.{user_id}&select=id,referred_id,created_at",
+            headers=_sb_headers(), timeout=5,
+        )
+        referrals = resp.json() if resp.status_code == 200 else []
+        code = user_id.replace("-", "")[:8]
+        return {
+            "referral_link": f"https://corvo.capital/app?ref={code}",
+            "referral_code": code,
+            "referrals_count": len(referrals),
+            "bonus_messages": len(referrals) * 5,
+        }
+    except Exception:
+        code = user_id.replace("-", "")[:8]
+        return {"referral_link": f"https://corvo.capital/app?ref={code}", "referral_code": code, "referrals_count": 0, "bonus_messages": 0}
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list = []
