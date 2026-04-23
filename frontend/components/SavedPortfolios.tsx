@@ -202,26 +202,43 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
                 <p style={{ fontSize: 11, color: C.cream2, marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</p>
                 <p style={{ fontSize: 11, color: C.cream3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.assets.map((a: Asset) => a.ticker).join(", ")}</p>
               </div>
-              {deleteConfirm === p.id ? (
-                <div style={{ display: "flex", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                  <button onClick={() => { remove(p.id); setDeleteConfirm(null); }}
-                    style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, cursor: "pointer", background: "rgba(224,92,92,0.15)", border: "1px solid rgba(224,92,92,0.4)", color: "#e05c5c" }}>
-                    Delete
-                  </button>
-                  <button onClick={() => setDeleteConfirm(null)}
-                    style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, cursor: "pointer", background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)", color: "var(--text3)" }}>
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button onClick={e => { e.stopPropagation(); setDeleteConfirm(p.id); }} style={{ background: "none", border: "none", color: "rgba(224,92,92,0.3)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
-                  onMouseLeave={e => e.currentTarget.style.color = "rgba(224,92,92,0.3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-              )}
+              <button onClick={e => { e.stopPropagation(); setDeleteConfirm(p.id); }} style={{ background: "none", border: "none", color: "rgba(224,92,92,0.3)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
+                onMouseLeave={e => e.currentTarget.style.color = "rgba(224,92,92,0.3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </motion.div>
           ))}
         </div>
       )}
+
+      {/* Delete confirmation modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
+            onClick={() => setDeleteConfirm(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              onClick={e => e.stopPropagation()}
+              style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 14, padding: "24px 28px", maxWidth: 340, width: "90%", boxShadow: "var(--shadow)" }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>Delete portfolio?</p>
+              <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.5, marginBottom: 20 }}>
+                This will permanently delete this portfolio and all its history. This cannot be undone.
+              </p>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button onClick={() => setDeleteConfirm(null)}
+                  style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg3)", color: "var(--text2)", fontSize: 12, cursor: "pointer" }}>
+                  Cancel
+                </button>
+                <button onClick={() => { remove(deleteConfirm); setDeleteConfirm(null); }}
+                  style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#e05c5c", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
