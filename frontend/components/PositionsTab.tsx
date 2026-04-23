@@ -133,6 +133,7 @@ export default function PositionsTab({
 }: {
   onSelectTicker: (t: string) => void;
 }) {
+  const cssVar = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   // Portfolio value — synced with localStorage (set in sidebar)
   const [portfolioValue, setPortfolioValue] = useState<number>(() => {
     if (typeof window === "undefined") return 10000;
@@ -684,15 +685,20 @@ export default function PositionsTab({
                 font: { color: "rgba(232,224,204,0.35)", family: "Space Mono, monospace", size: 10 },
                 margin: { t: 0, b: 32, l: 48, r: 16 },
                 xaxis: {
-                  gridcolor: "rgba(255,255,255,0.04)",
+                  gridcolor: cssVar('--border'),
                   linecolor: "rgba(255,255,255,0.06)",
-                  tickcolor: "transparent",
+                  tickcolor: cssVar('--text3'),
+                  tickfont: { size: 9, color: cssVar('--text3') },
+                  showticklabels: true,
                 },
                 yaxis: {
-                  gridcolor: "rgba(184,134,11,0.07)",
+                  gridcolor: cssVar('--border'),
                   linecolor: "rgba(255,255,255,0.06)",
-                  tickcolor: "transparent",
+                  tickcolor: cssVar('--text3'),
+                  tickfont: { size: 9, color: cssVar('--text3') },
+                  showticklabels: true,
                   tickformat: ".0%",
+                  ticksuffix: "%",
                 },
                 showlegend: false,
                 hovermode: "x unified",
