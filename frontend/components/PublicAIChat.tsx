@@ -114,7 +114,7 @@ function PublicAIChatInner() {
             zIndex: 9998,
             width: 340,
             maxWidth: "calc(100vw - 48px)",
-            background: "#0d1117",
+            background: "var(--card-bg)",
             border: "1px solid rgba(201,168,76,0.2)",
             borderRadius: 16,
             boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.06)",
@@ -127,7 +127,7 @@ function PublicAIChatInner() {
           <div
             style={{
               padding: "14px 18px",
-              borderBottom: "1px solid rgba(255,255,255,0.05)",
+              borderBottom: "1px solid var(--border)",
               display: "flex",
               alignItems: "center",
               gap: 10,
@@ -154,8 +154,8 @@ function PublicAIChatInner() {
               C
             </div>
             <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#e8e0cc", margin: 0 }}>Corvo AI</p>
-              <p style={{ fontSize: 10, color: "rgba(232,224,204,0.35)", margin: 0 }}>Ask anything about investing</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", margin: 0 }}>Corvo AI</p>
+              <p style={{ fontSize: 10, color: "var(--text3)", margin: 0 }}>Ask anything about investing</p>
             </div>
           </div>
 
@@ -173,7 +173,7 @@ function PublicAIChatInner() {
             }}
           >
             {messages.length === 0 && (
-              <p style={{ fontSize: 12, color: "rgba(232,224,204,0.3)", textAlign: "center", marginTop: 40, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 12, color: "var(--text3)", textAlign: "center", marginTop: 40, lineHeight: 1.6 }}>
                 Ask about Corvo features, investing concepts, or your portfolio strategy.
               </p>
             )}
@@ -193,11 +193,11 @@ function PublicAIChatInner() {
                     background:
                       msg.role === "user"
                         ? "#c9a84c"
-                        : "rgba(255,255,255,0.05)",
-                    border: msg.role === "assistant" ? "1px solid rgba(255,255,255,0.06)" : "none",
+                        : "var(--bg3)",
+                    border: msg.role === "assistant" ? "1px solid var(--border)" : "none",
                     fontSize: 13,
                     lineHeight: 1.6,
-                    color: msg.role === "user" ? "#0a0e14" : "rgba(232,224,204,0.85)",
+                    color: msg.role === "user" ? "#0a0e14" : "var(--text)",
                     fontWeight: msg.role === "user" ? 500 : 300,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
@@ -213,10 +213,10 @@ function PublicAIChatInner() {
                   style={{
                     padding: "9px 16px",
                     borderRadius: "12px 12px 12px 3px",
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    background: "var(--bg3)",
+                    border: "1px solid var(--border)",
                     fontSize: 18,
-                    color: "rgba(232,224,204,0.4)",
+                    color: "var(--text3)",
                     letterSpacing: 2,
                   }}
                 >
@@ -231,7 +231,7 @@ function PublicAIChatInner() {
           <div
             style={{
               padding: "10px 12px 12px",
-              borderTop: "1px solid rgba(255,255,255,0.05)",
+              borderTop: "1px solid var(--border)",
               display: "flex",
               gap: 8,
             }}
@@ -246,16 +246,16 @@ function PublicAIChatInner() {
               style={{
                 flex: 1,
                 padding: "9px 12px",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                background: "var(--bg3)",
+                border: "1px solid var(--border)",
                 borderRadius: 10,
-                color: "#e8e0cc",
+                color: "var(--text)",
                 fontSize: 13,
                 outline: "none",
                 transition: "border-color 0.2s",
               }}
               onFocus={(e) => (e.target.style.borderColor = "rgba(201,168,76,0.35)")}
-              onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.07)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
             />
             <button
               onClick={send}
