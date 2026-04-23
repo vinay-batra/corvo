@@ -4,14 +4,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import StockDetail from "./StockDetail";
 import InfoModal from "./InfoModal";
-import { usePushNotifications } from "../hooks/usePushNotifications";
 import { supabase } from "../lib/supabase";
 import { posthog } from "../lib/posthog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const STORAGE_KEY = "corvo_watchlist";
 const LISTS_KEY = "corvo_watchlist_lists";
-const ALERTS_KEY = "corvo_watchlist_alerts";
 
 const SECTOR_OVERRIDES: Record<string, string> = {
   "SPY": "ETF — Broad Market", "VOO": "ETF — Broad Market", "VTI": "ETF — Broad Market",
@@ -125,8 +123,6 @@ interface StockData {
   sparkline: number[];
   sector?: string;
 }
-interface Alert { ticker: string; targetPrice: number; direction: "above" | "below"; triggered?: boolean; }
-
 function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
   if (!data || data.length < 2) return <div style={{ width: 60, height: 28 }} />;
   const min = Math.min(...data);
@@ -146,44 +142,6 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
   );
 }
 
-function AlertModal({ ticker, onSave, onClose }: { ticker: string; onSave: (a: Alert) => void; onClose: () => void }) {
-  const [price, setPrice] = useState("");
-  const [dir, setDir] = useState<"above" | "below">("above");
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="c-modal-backdrop-mobile"
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-      onClick={onClose}>
-      <motion.div initial={{ scale: 0.94, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 12 }}
-        className="c-modal-sheet"
-        style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, padding: "24px", width: "100%", maxWidth: 340 }}
-        onClick={e => e.stopPropagation()}>
-        <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 14 }}>Set Price Alert: {ticker}</p>
-        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-          {(["above", "below"] as const).map(d => (
-            <button key={d} onClick={() => setDir(d)}
-              style={{ flex: 1, padding: "8px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border2)", background: dir === d ? "var(--text)" : "transparent", color: dir === d ? "var(--bg)" : "var(--text2)", cursor: "pointer", transition: "all 0.15s" }}>
-              Price {d}
-            </button>
-          ))}
-        </div>
-        <input
-          type="number" placeholder="Target price (USD)" value={price}
-          onChange={e => setPrice(e.target.value)}
-          style={{ width: "100%", padding: "10px 12px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 14, outline: "none", marginBottom: 14, fontFamily: "var(--font-mono)" }}
-        />
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: "9px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>Cancel</button>
-          <button onClick={() => { if (!price) return; onSave({ ticker, targetPrice: parseFloat(price), direction: dir }); onClose(); }}
-            style={{ flex: 1, padding: "9px", fontSize: 12, borderRadius: 8, border: "none", background: "var(--text)", color: "var(--bg)", fontWeight: 600, cursor: "pointer" }}>
-            Set Alert
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
 export default function Watchlist() {
@@ -198,9 +156,6 @@ export default function Watchlist() {
   const [searchBusy, setSearchBusy] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
-  const [alertFor, setAlertFor] = useState<string | null>(null);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [notifGranted, setNotifGranted] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
   // Creating a new list
@@ -215,8 +170,6 @@ export default function Watchlist() {
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
   const userIdRef = useRef<string | null>(null);
-  const { requestPermission, isGranted, notify } = usePushNotifications();
-  const alertCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const switcherRef = useRef<HTMLDivElement>(null);
@@ -228,7 +181,6 @@ export default function Watchlist() {
       const uid = authData?.user?.id ?? null;
       setUserId(uid);
       userIdRef.current = uid;
-      setNotifGranted(isGranted());
 
       if (uid) {
         // ── Logged-in: load from Supabase ──────────────────────────────
@@ -255,17 +207,6 @@ export default function Watchlist() {
         setItems(loadedItems);
         setActiveListId(loadedLists[0].id);
 
-        // Alerts from Supabase
-        const { data: alertRows } = await supabase.from("price_alerts").select("*").eq("user_id", uid);
-        if (alertRows && alertRows.length > 0) {
-          const mapped: Alert[] = alertRows.map((r: any) => ({
-            ticker: r.ticker, targetPrice: r.target_price, direction: r.direction, triggered: r.triggered ?? false,
-          }));
-          setAlerts(mapped);
-          try { localStorage.setItem(ALERTS_KEY, JSON.stringify(mapped)); } catch {}
-        } else {
-          try { const ar = localStorage.getItem(ALERTS_KEY); if (ar) setAlerts(JSON.parse(ar)); } catch {}
-        }
       } else {
         // ── Logged-out: load from localStorage ────────────────────────
         let loadedLists: WatchList[] = [];
@@ -293,50 +234,9 @@ export default function Watchlist() {
         setLists(loadedLists);
         setItems(loadedItems);
         setActiveListId(loadedLists[0].id);
-
-        try { const ar = localStorage.getItem(ALERTS_KEY); if (ar) setAlerts(JSON.parse(ar)); } catch {}
       }
     })();
   }, []);
-
-  // Alert checking
-  useEffect(() => {
-    const checkAlerts = () => {
-      setAlerts(current => {
-        if (!current.length) return current;
-        let changed = false;
-        const next = current.map(a => {
-          if (a.triggered) return a;
-          const priceData = stockData[a.ticker];
-          if (!priceData?.price) return a;
-          if (a.targetPrice == null || !a.direction) return a;
-          const triggered =
-            (a.direction === "above" && priceData.price >= a.targetPrice) ||
-            (a.direction === "below" && priceData.price <= a.targetPrice);
-          if (triggered) {
-            try { notify(`${a.ticker} Price Alert`, `${a.ticker} crossed $${a.targetPrice.toFixed(2)} (now $${priceData.price?.toFixed(2) ?? "?"})`, `alert-${a.ticker}-${a.targetPrice}`); } catch {}
-            changed = true;
-            return { ...a, triggered: true };
-          }
-          return a;
-        });
-        if (changed) {
-          try { localStorage.setItem(ALERTS_KEY, JSON.stringify(next)); } catch {}
-          const uid = userIdRef.current;
-          if (uid) {
-            next.filter(a => a.triggered).forEach(a => {
-              supabase.from("price_alerts").update({ triggered: true }).eq("user_id", uid).eq("ticker", a.ticker).eq("target_price", a.targetPrice).then(() => {});
-            });
-          }
-          return next;
-        }
-        return current;
-      });
-    };
-    checkAlerts();
-    alertCheckRef.current = setInterval(checkAlerts, 5 * 60 * 1000);
-    return () => { if (alertCheckRef.current) clearInterval(alertCheckRef.current); };
-  }, [stockData]);
 
   const fetchData = useCallback(async (tickerList: string[]) => {
     if (!tickerList.length) return;
@@ -373,20 +273,6 @@ export default function Watchlist() {
     setItems(newItems);
     if (!userId) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems)); } catch {}
-    }
-  };
-
-  const saveAlerts = async (list: Alert[]) => {
-    setAlerts(list);
-    try { localStorage.setItem(ALERTS_KEY, JSON.stringify(list)); } catch {}
-    if (list.length > 0 && !isGranted()) requestPermission().then(ok => setNotifGranted(ok));
-    if (userId) {
-      await supabase.from("price_alerts").delete().eq("user_id", userId);
-      if (list.length > 0) {
-        await supabase.from("price_alerts").insert(
-          list.map(a => ({ user_id: userId, ticker: a.ticker, target_price: a.targetPrice, direction: a.direction, triggered: a.triggered ?? false }))
-        );
-      }
     }
   };
 
@@ -722,7 +608,6 @@ export default function Watchlist() {
                   {activeItems.map((item) => {
                     const s = stockData[item.ticker];
                     const pos = (s?.change_pct ?? 0) >= 0;
-                    const hasAlert = alerts.some(a => a.ticker === item.ticker);
                     return (
                       <motion.tr key={item.ticker}
                         initial={false}
@@ -770,11 +655,6 @@ export default function Watchlist() {
                         {/* Actions */}
                         <td style={{ padding: "0 12px" }}>
                           <div style={{ display: "flex", gap: 4, alignItems: "center" }} onClick={e => e.stopPropagation()}>
-                            <button onClick={e => { e.stopPropagation(); setAlertFor(item.ticker); }}
-                              title={hasAlert ? "Alert set" : "Set price alert"}
-                              style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: hasAlert ? "rgba(184,134,11,0.1)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: hasAlert ? "var(--accent)" : "var(--text3)", transition: "all 0.15s" }}>
-                              ◎
-                            </button>
                             <button onClick={e => { e.stopPropagation(); remove(item.ticker); }}
                               style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", transition: "all 0.15s" }}
                               onMouseEnter={e => { e.currentTarget.style.borderColor = "#e05c5c"; e.currentTarget.style.color = "#e05c5c"; }}
@@ -790,17 +670,6 @@ export default function Watchlist() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
-
-      {/* Notifications prompt */}
-      {!notifGranted && (
-        <div className="c-notif-prompt" style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "12px 16px", background: "var(--card-bg)", marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: "var(--text2)" }}>Get browser alerts when price targets are hit</span>
-          <button onClick={async () => { const ok = await requestPermission(); setNotifGranted(ok); }}
-            style={{ padding: "6px 14px", fontSize: 11, borderRadius: 8, border: "0.5px solid rgba(184,134,11,0.3)", background: "rgba(184,134,11,0.08)", color: "var(--accent)", cursor: "pointer", flexShrink: 0, marginLeft: 12, minHeight: 44 }}>
-            Enable Notifications
-          </button>
         </div>
       )}
 
@@ -840,35 +709,6 @@ export default function Watchlist() {
         );
       })()}
 
-      {/* Active alerts */}
-      {alerts.length > 0 && (
-        <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--card-bg)", marginTop: 12 }}>
-          <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Active Alerts</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {alerts.map((a, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "var(--bg3)", borderRadius: 8 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text)", fontWeight: 700 }}>{a.ticker}</span>
-                <span style={{ fontSize: 11, color: "var(--text2)" }}>Price {a.direction ?? "N/A"} ${a.targetPrice != null ? a.targetPrice.toFixed(2) : "N/A"}</span>
-                <button onClick={() => saveAlerts(alerts.filter((_, idx) => idx !== i))}
-                  style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 12, padding: "0 4px" }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
-                  onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Alert modal */}
-      <AnimatePresence>
-        {alertFor && (
-          <AlertModal
-            ticker={alertFor}
-            onSave={a => saveAlerts([...alerts.filter(x => !(x.ticker === a.ticker && x.direction === a.direction)), a])}
-            onClose={() => setAlertFor(null)}
-          />
-        )}
-      </AnimatePresence>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         .switcher-trigger:hover .pencil-reveal { opacity: 1 !important; }

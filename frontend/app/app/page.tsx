@@ -187,37 +187,64 @@ function Spinner() {
 
 function Empty() {
   const steps = [
-    { n: "1", label: "Add a ticker", desc: "Search any stock, ETF, or fund in the sidebar" },
-    { n: "2", label: "Set your weight", desc: "Enter how much of your portfolio it represents" },
-    { n: "3", label: "Hit Analyze", desc: "Get Sharpe ratio, Monte Carlo, drawdown, and more" },
+    { n: "1", label: "Add a ticker", desc: "Search any stock, ETF, or crypto in the sidebar", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
+    { n: "2", label: "Set your weight", desc: "Enter how much of your portfolio each holding represents", icon: "M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-1m6 0l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-1m0-1v-1m0 1l-6 1" },
+    { n: "3", label: "Hit Analyze", desc: "Get Sharpe ratio, Monte Carlo, drawdown, AI insights and more", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
   ];
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 96px)", gap: 32, textAlign: "center", padding: "0 32px" }}>
-      <div>
-        <p style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.3px", color: "var(--text)", marginBottom: 6, fontFamily: "var(--font-mono)" }}>BUILD YOUR PORTFOLIO</p>
-        <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.7, maxWidth: 300 }}>
+    <motion.div
+      initial={false}
+      animate={{ opacity: 1 }}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 96px)", gap: 0, textAlign: "center", padding: "0 32px" }}>
+
+      {/* Header */}
+      <motion.div initial={false} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 48 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+        </div>
+        <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 10 }}>Build your portfolio</h2>
+        <p style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.7, maxWidth: 320 }}>
           Three steps to full risk analysis and AI insights.
         </p>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, textAlign: "left" }}>
-          {steps.map((s, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "1.5px solid var(--accent)", background: "rgba(184,134,11,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>
-                {s.n}
-              </div>
-              <div style={{ paddingTop: 4 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{s.label}</p>
-                <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>{s.desc}</p>
-              </div>
+      </motion.div>
+
+      {/* Steps */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 0, maxWidth: 380, width: "100%", marginBottom: 48 }}>
+        {steps.map((s, i) => (
+          <motion.div
+            key={i}
+            initial={false}
+            animate={{ opacity: 1, x: 0 }}
+            style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 0", borderBottom: i < steps.length - 1 ? "0.5px solid var(--border)" : "none" }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, border: "0.5px solid rgba(201,168,76,0.4)", background: "rgba(201,168,76,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>{s.n}</span>
             </div>
-          ))}
-        </div>
+            <div style={{ textAlign: "left", paddingTop: 2 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 3 }}>{s.label}</p>
+              <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.6 }}>{s.desc}</p>
+            </div>
+            <div style={{ marginLeft: "auto", paddingTop: 6, flexShrink: 0, opacity: 0.25 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d={s.icon} />
+              </svg>
+            </div>
+          </motion.div>
+        ))}
       </div>
-      <p style={{ fontSize: 11, color: "var(--text3)", opacity: 1, letterSpacing: 0.3 }}>
-        Or press Presets to start with a sample portfolio
-      </p>
+
+      {/* Presets hint */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, border: "0.5px solid var(--border)", background: "var(--bg2)" }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        <p style={{ fontSize: 12, color: "var(--text3)" }}>
+          Or click <span style={{ color: "var(--accent)", fontWeight: 600 }}>Presets</span> in the sidebar to load a sample portfolio instantly
+        </p>
+      </div>
     </motion.div>
   );
 }
