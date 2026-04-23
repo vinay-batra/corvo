@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import FeedbackButton from "../../components/FeedbackButton";
@@ -15,13 +16,14 @@ type ReferralData = {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase" as const, marginBottom: 14, paddingBottom: 8, borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{title}</div>
+      <div style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 14, paddingBottom: 8, borderBottom: "0.5px solid var(--border)" }}>{title}</div>
       {children}
     </div>
   );
 }
 
 export default function ReferralsPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [referralData, setReferralData] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -183,11 +185,11 @@ export default function ReferralsPage() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       <header style={{ height: 52, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
+        <button onClick={() => router.back()} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", padding: 0, fontSize: 12, cursor: "pointer", transition: "color 0.15s" }}
           onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
           onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
           ← Back
-        </Link>
+        </button>
         <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
         <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Referrals</span>
@@ -195,7 +197,7 @@ export default function ReferralsPage() {
 
       <main style={{ maxWidth: 560, margin: "0 auto", padding: "32px 24px 80px", animation: "fadein 0.5s ease" }}>
         {loading ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(232,224,204,0.35)", fontSize: 13, paddingTop: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text3)", fontSize: 13, paddingTop: 20 }}>
             <div style={{ width: 14, height: 14, border: "2px solid rgba(184,134,11,0.2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
             Loading…
           </div>
@@ -203,13 +205,13 @@ export default function ReferralsPage() {
           <>
             <Section title="Your Impact">
               <div style={{ display: "flex", gap: 12, paddingBottom: 14 }}>
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.025)", borderRadius: 12, padding: "16px 18px", border: "0.5px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: 12, padding: "16px 18px", border: "0.5px solid var(--border)" }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace" }}>{referralData?.referral_count ?? 0}</div>
-                  <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 3 }}>Referrals completed</div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Referrals completed</div>
                 </div>
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.025)", borderRadius: 12, padding: "16px 18px", border: "0.5px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: 12, padding: "16px 18px", border: "0.5px solid var(--border)" }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace" }}>+{referralData?.bonus_messages_earned ?? 0}</div>
-                  <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 3 }}>Bonus messages earned</div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Bonus messages earned</div>
                 </div>
               </div>
               {(() => {
@@ -219,12 +221,12 @@ export default function ReferralsPage() {
                 return (
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <span style={{ fontSize: 12, color: "rgba(232,224,204,0.65)" }}>
+                      <span style={{ fontSize: 12, color: "var(--text2)" }}>
                         {capped ? "Max bonus reached (40 messages)" : `${count} referral${count !== 1 ? "s" : ""} → next +5 messages`}
                       </span>
-                      <span style={{ fontSize: 11, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace" }}>{bonus}/40</span>
+                      <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono,monospace" }}>{bonus}/40</span>
                     </div>
-                    <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                    <div style={{ height: 5, borderRadius: 3, background: "var(--border)", overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${Math.min((bonus / 40) * 100, 100)}%`, background: capped ? "#5cb88a" : "var(--accent)", borderRadius: 3, transition: "width 0.6s ease" }} />
                     </div>
                   </div>
@@ -234,11 +236,11 @@ export default function ReferralsPage() {
 
             <Section title="Your Referral Link">
               <div style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
-                <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontFamily: "Space Mono,monospace", background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "rgba(232,224,204,0.65)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontFamily: "Space Mono,monospace", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
                   {refLink}
                 </div>
                 <button onClick={copyLink}
-                  style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: linkCopied ? "#5cb88a" : "var(--accent)", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s", whiteSpace: "nowrap" as const, flexShrink: 0, display: "flex", alignItems: "center", gap: 5 }}>
+                  style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: linkCopied ? "#5cb88a" : "var(--accent)", color: "var(--bg)", cursor: "pointer", transition: "background 0.2s", whiteSpace: "nowrap" as const, flexShrink: 0, display: "flex", alignItems: "center", gap: 5 }}>
                   {linkCopied ? (
                     <>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
@@ -255,11 +257,11 @@ export default function ReferralsPage() {
               <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8, paddingBottom: 4 }}>
                 {platforms.map(p => (
                   <button key={p.name} onClick={p.action} title={p.name}
-                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 5, padding: "10px 14px", background: "rgba(255,255,255,0.025)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")}>
+                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 5, padding: "10px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
                     <span style={{ color: p.color, display: "flex", alignItems: "center" }}>{p.icon}</span>
-                    <span style={{ fontSize: 9, letterSpacing: 0.5, color: "rgba(232,224,204,0.35)", whiteSpace: "nowrap" as const }}>{p.name}</span>
+                    <span style={{ fontSize: 9, letterSpacing: 0.5, color: "var(--text3)", whiteSpace: "nowrap" as const }}>{p.name}</span>
                   </button>
                 ))}
               </div>
@@ -272,19 +274,19 @@ export default function ReferralsPage() {
                   { step: "2", text: "When someone signs up using your link, you both get credited." },
                   { step: "3", text: "Each referral adds +5 AI chat messages to your daily quota." },
                 ].map(({ step, text }) => (
-                  <div key={step} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", background: "rgba(255,255,255,0.025)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 10 }}>
+                  <div key={step} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
                     <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent)", flexShrink: 0, fontFamily: "Space Mono,monospace" }}>{step}</div>
-                    <span style={{ fontSize: 13, color: "rgba(232,224,204,0.6)", lineHeight: 1.5 }}>{text}</span>
+                    <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5 }}>{text}</span>
                   </div>
                 ))}
                 <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                   <div style={{ flex: 1, padding: "14px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 10, textAlign: "center" as const }}>
                     <div style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace", lineHeight: 1 }}>+5</div>
-                    <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 4 }}>messages per referral</div>
+                    <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>messages per referral</div>
                   </div>
                   <div style={{ flex: 1, padding: "14px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 10, textAlign: "center" as const }}>
                     <div style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace", lineHeight: 1 }}>40</div>
-                    <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 4 }}>referrals = unlimited / month</div>
+                    <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>referrals = unlimited / month</div>
                   </div>
                 </div>
               </div>
@@ -294,7 +296,7 @@ export default function ReferralsPage() {
               <Section title="Referred Users">
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
                   {referralData!.referred_emails.map((email, i) => (
-                    <div key={i} style={{ fontSize: 12, color: "rgba(232,224,204,0.65)", fontFamily: "Space Mono,monospace", padding: "6px 10px", background: "rgba(255,255,255,0.025)", borderRadius: 7, border: "0.5px solid rgba(255,255,255,0.06)" }}>
+                    <div key={i} style={{ fontSize: 12, color: "var(--text2)", fontFamily: "Space Mono,monospace", padding: "6px 10px", background: "var(--card-bg)", borderRadius: 7, border: "0.5px solid var(--border)" }}>
                       {email}
                     </div>
                   ))}
@@ -306,7 +308,7 @@ export default function ReferralsPage() {
       </main>
 
       {toast && (
-        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,0.025)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "10px 18px", fontSize: 13, color: "#e8e0cc", zIndex: 100, boxShadow: "0 4px 24px rgba(0,0,0,0.4)", whiteSpace: "nowrap" as const }}>
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "10px 18px", fontSize: 13, color: "var(--text)", zIndex: 100, boxShadow: "0 4px 24px rgba(0,0,0,0.4)", whiteSpace: "nowrap" as const }}>
           {toast}
         </div>
       )}
