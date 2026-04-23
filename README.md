@@ -1,70 +1,70 @@
-# Corvo — Portfolio Intelligence
+# Corvo — Free Portfolio Analytics & AI Investing Tools
 
-> Your portfolio. Intelligently analyzed.
-
-Corvo is a full-stack portfolio analytics platform that replaces the need for Bloomberg, Yahoo Finance, and Robinhood's research tools — without the cost. Built for serious retail investors who want institutional-grade analysis.
-
-Stop guessing. Start knowing exactly what your money is doing and why.
+Institutional-grade portfolio analytics for retail investors. Free.
 
 **Live at [corvo.capital](https://corvo.capital)**
 
 ---
 
+## What is Corvo?
+
+Corvo is a full-stack portfolio analytics platform that gives retail investors access to the kind of analysis previously reserved for institutional tools. It connects to live market data, runs quantitative risk models, and uses AI to surface actionable insights — all without a subscription fee.
+
+Upload a portfolio via CSV or build one manually, and Corvo handles the rest: risk-adjusted performance metrics, Monte Carlo simulations, AI chat, dividend tracking, tax-loss harvesting signals, and a built-in financial education platform with a progression system.
+
+---
+
 ## Features
 
-### Portfolio Analytics
-- Sharpe ratio, volatility, max drawdown, alpha, beta
-- Monte Carlo simulation with 300+ paths
-- Health score across returns, risk, stability, resilience
-- Benchmark comparison vs S&P 500, NASDAQ, and more
+### Portfolio Analysis
+- Sharpe ratio, volatility, alpha, beta, max drawdown
+- Monte Carlo simulation (8,500 paths) for projected outcomes
+- Portfolio health score across returns, risk, stability, and resilience
+- Benchmark comparison vs. S&P 500, NASDAQ, and more
+- Sector exposure breakdown and correlation heatmap
 - What-If mode — test portfolio changes side by side
 
-### Stock Research
-- Full stock detail: price, financials, analyst ratings, news
-- Compare up to 4 stocks simultaneously with normalized charts
-- Correlation heatmap between holdings
-- Live prices injected into every AI response
+### AI Tools
+- AI portfolio chat with real-time market context (Claude-powered)
+- AI market brief — daily summary of macro and portfolio-relevant news
+- AI insights — plain-English analysis of your holdings
+- AI practice questions — infinite drill mode for financial concepts
 
-### AI-Powered Insights
-- Claude-powered chat with real-time market context
-- Plain-English portfolio analysis
-- Rebalancing suggestions based on your goals
+### Tracking
+- Watchlist with live prices and 7-day sparklines
+- Price alerts with browser push notifications
+- Dividend tracker
+- Tax-loss harvesting signals
 
-### Financial Education
-- 8 hand-crafted lessons with worked examples
-- AI-generated practice questions (infinite drill mode)
-- Challenge Mode — timed, scored, leaderboard
-- XP system, streaks, level progression (Beginner → Master)
-- 6 financial mini-games
-
-### Watchlist & Alerts
-- Live prices with 7-day sparklines
-- Browser push notifications for price alerts
-- One-click add from any stock detail view
+### Education
+- Learn tab with XP system and 15 progression levels
+- Daily challenges with a global leaderboard
+- Challenge Mode — timed and scored
+- Arcade: 6 financial mini-games
+- Hand-crafted lessons with worked examples
 
 ### Platform
-- Dark/light mode
-- Multi-currency (USD, GBP, EUR, JPY, CAD)
-- CSV + PDF export
-- Portfolio sharing via URL
-- Goal tracking — retirement age, salary, and contribution targets with on-track status
-- Universal search — any stock, ETF, or crypto worldwide; screenshot import for Fidelity, Robinhood, and Schwab
-- Cloud sync — portfolios saved to your account, accessible anywhere
-- Mobile responsive
+- PWA — installable on desktop and mobile
+- CSV import and PDF export
+- Dark and light mode
+- Referral system
+- Cloud sync across devices
+- Multi-currency support (USD, GBP, EUR, JPY, CAD)
 
 ---
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|------------|
-| Frontend | [Next.js](https://nextjs.org) 16, TypeScript, Tailwind, Framer Motion, Plotly |
-| Backend | [FastAPI](https://fastapi.tiangolo.com) (Python 3.13), yfinance, Anthropic SDK |
-| Database | [Supabase](https://supabase.com) (PostgreSQL + Auth) |
-| Auth | Supabase Auth — Google, GitHub, Magic Link |
-| Emails | Resend |
-| Frontend Hosting | [Vercel](https://vercel.com) |
-| API Server | [Railway](https://railway.app) |
+|---|---|
+| Frontend | Next.js 14, TypeScript, Framer Motion, Recharts, Supabase SSR |
+| Backend | FastAPI (Python), Railway, yfinance, Anthropic Claude API |
+| Database | Supabase (PostgreSQL) with Row-Level Security |
+| Auth | Supabase Auth with Cloudflare Turnstile CAPTCHA |
+| Email | Resend |
+| Frontend Hosting | Vercel |
+| API Server | Railway |
+| DNS / Security | Cloudflare |
 
 ---
 
@@ -73,65 +73,104 @@ Stop guessing. Start knowing exactly what your money is doing and why.
 ```
 Browser
   └─ Next.js (Vercel)
-       ├─ /app          — React Server + Client Components
+       ├─ /app          — React Server + Client Components (App Router)
        ├─ /api          — Next.js API routes (auth callbacks, proxying)
        └─ Supabase SSR  — session management, row-level security
 
 FastAPI (Railway)
-  ├─ /portfolio        — analytics engine (Sharpe, VaR, drawdown, Monte Carlo)
-  ├─ /ai               — Claude API integration for portfolio analyst
-  ├─ /stocks           — market data fetching & caching
+  ├─ /portfolio        — analytics engine (Sharpe, drawdown, Monte Carlo)
+  ├─ /ai               — Claude API integration
+  ├─ /stocks           — market data fetching and caching
   └─ /stats            — live user metrics
 
 Supabase
-  ├─ Auth              — magic link + OAuth
+  ├─ Auth              — magic link, Google, GitHub, Turnstile
   ├─ portfolios        — cloud-saved portfolio state
-  └─ challenges        — daily challenge leaderboard
+  └─ challenges        — daily challenge scores and leaderboard
 ```
 
-Data flows: the browser fetches session-gated data from the FastAPI backend on Railway; the backend calls market data APIs and the Anthropic API. Supabase handles auth tokens and persistent user data.
-
-**Directory structure:**
-
 ```
-corvo/
-├── frontend/          # Next.js app
+portfolio_v2/
+├── frontend/          # Next.js application
 │   ├── app/
-│   │   ├── app/       # Main analyzer
+│   │   ├── app/       # Main dashboard and analyzer
 │   │   ├── learn/     # Education platform
-│   │   ├── auth/      # Authentication
+│   │   ├── auth/      # Authentication flows
 │   │   └── settings/  # User settings
-│   └── components/
+│   └── components/    # Shared UI components
 └── backend/           # FastAPI server
     └── main.py        # All API endpoints
 ```
 
 ---
 
-## Local Development
+## Getting Started
+
+### Frontend
 
 ```bash
-# Frontend
 cd frontend
 npm install
-cp .env.example .env.local   # fill in Supabase + API keys
-npm run dev                   # http://localhost:3000
+cp .env.example .env.local
+# Fill in environment variables (see below)
+npm run dev
+# Runs at http://localhost:3000
+```
 
-# Backend
+### Backend
+
+```bash
 cd backend
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # fill in keys
-uvicorn main:app --reload     # http://localhost:8000
+cp .env.example .env
+# Fill in environment variables (see below)
+uvicorn main:app --reload
+# Runs at http://localhost:8000
 ```
+
+---
+
+## Environment Variables
+
+### Frontend (`frontend/.env.local`)
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_cloudflare_turnstile_site_key
+RESEND_API_KEY=your_resend_api_key
+```
+
+### Backend (`backend/.env`)
+
+```
+ANTHROPIC_API_KEY=your_anthropic_api_key
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+ALLOWED_ORIGINS=http://localhost:3000
+```
+
+---
+
+## Status
+
+**Current version:** v0.16 (beta)
+
+Targeting v1.0 with the following remaining work:
+- Light mode polish
+- Mobile layout fixes
+- Options chain viewer
+- Paper trading
 
 ---
 
 ## License
 
-This project is licensed under the [Business Source License 1.1](LICENSE).  
-You may view and reference the code, but may not use it to build a competing commercial product.  
-The source converts to the MIT License on **2029-04-08**.
+Licensed under the [Business Source License 1.1](LICENSE).
+You may view and reference the code, but may not use it to build a competing commercial product.
+Converts to the MIT License on **2029-04-08**.
 
 ---
 
