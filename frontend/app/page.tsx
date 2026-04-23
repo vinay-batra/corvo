@@ -990,7 +990,7 @@ function MobileTestimonialCarousel() {
         <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24 }}>{card.text}</p>
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{card.name}</p>
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.28)", marginTop: 3 }}>{card.role}</p>
+          <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{card.role}</p>
         </div>
       </div>
       <button onClick={prev} aria-label="Previous testimonial" style={{ position: "absolute", left: -2, top: "45%", transform: "translateY(-50%)", background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
@@ -1823,7 +1823,7 @@ export default function Landing() {
         @keyframes xpLoop{0%,5%{width:0%}55%,82%{width:72%}92%,100%{width:0%}}
         .cta{transition:all 0.25s!important}.cta:hover{background:#d4b558!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(201,168,76,0.25)!important}
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(201,168,76,0.4)!important;color:#c9a84c!important}
-        .nl:hover{color:#c9a84c!important}
+        .nl:hover{color:var(--accent)!important}
         .demo-btn{animation:amberPulse 3s ease-in-out infinite}
         @media(max-width:900px){
           .hero-metric-card{display:none!important}
@@ -1884,12 +1884,12 @@ export default function Landing() {
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.025) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.025) 1px, transparent 1px)", backgroundSize: "80px 80px" }} />
       </div>
       {/* NAV */}
-      <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "rgba(10,14,20,0.97)" : "rgba(10,14,20,0.6)", backdropFilter: "blur(20px)", borderBottom: navSolid ? "1px solid rgba(201,168,76,0.1)" : "1px solid rgba(201,168,76,0.04)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
+      <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "var(--bg)" : "color-mix(in srgb, var(--bg) 60%, transparent)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
         {/* Logo + What's New */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
-            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "#e8e0cc" }}>CORVO</span>
+            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
           </div>
           <div style={{ position: "relative" }}>
             <button
@@ -1902,8 +1902,8 @@ export default function Landing() {
               <span style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(201,168,76,0.85)", fontFamily: "Space Mono,monospace", textTransform: "uppercase" as const }}>What&apos;s New</span>
             </button>
             {changelogOpen && (
-              <div id="changelog-dropdown" style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, width: 280, background: "rgba(13,17,23,0.98)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, padding: "10px", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.7)", zIndex: 200 }}>
-                <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", padding: "4px 8px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", marginBottom: 6 }}>Recent updates</p>
+              <div id="changelog-dropdown" style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, width: 280, background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, padding: "10px", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", zIndex: 200 }}>
+                <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", padding: "4px 8px 10px", borderBottom: "1px solid var(--border)", marginBottom: 6 }}>Recent updates</p>
                 {[
                   { label: "Learn Overhaul", desc: "15 levels, XP fixes, leaderboard" },
                   { label: "SEO & Sitemap", desc: "Schema markup, Google indexing" },
@@ -1912,16 +1912,16 @@ export default function Landing() {
                   { label: "News Tab Gated", desc: "Requires analyzed portfolio" },
                 ].map(({ label, desc }) => (
                   <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px", borderRadius: 8, transition: "background 0.15s", cursor: "default" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <span style={{ flexShrink: 0, marginTop: 2, fontSize: 7, fontWeight: 700, letterSpacing: 0.5, color: "#0a0e14", background: "#5cb88a", padding: "2px 5px", borderRadius: 4 }}>NEW</span>
                     <div>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "#e8e0cc", marginBottom: 2 }}>{label}</p>
-                      <p style={{ fontSize: 10, color: "rgba(232,224,204,0.4)", lineHeight: 1.4 }}>{desc}</p>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{label}</p>
+                      <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.4 }}>{desc}</p>
                     </div>
                   </div>
                 ))}
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: 6, paddingTop: 8, paddingLeft: 8 }}>
+                <div style={{ borderTop: "1px solid var(--border)", marginTop: 6, paddingTop: 8, paddingLeft: 8 }}>
                   <a href="/changelog" style={{ fontSize: 11, color: "rgba(201,168,76,0.7)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}
                     onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")}
                     onMouseLeave={e => (e.currentTarget.style.color = "rgba(201,168,76,0.7)")}>View full changelog →</a>
@@ -1932,45 +1932,45 @@ export default function Landing() {
         </div>
         {/* Desktop nav links */}
         <div className="nav-links" style={{ display: "flex", gap: 2, alignItems: "center", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
-          <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", background: "none", border: "none", cursor: "pointer", letterSpacing: 0.3, transition: "color 0.2s", fontFamily: "Inter,sans-serif" }} onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.45)")}>Features</button>
-          <Link href="/app?demo=true" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Demo</Link>
-          <Link href="/pricing" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Pricing</Link>
-          <Link href="/blog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Blog</Link>
-          <Link href="/changelog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
-          <Link href="/faq" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "rgba(232,224,204,0.45)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
+          <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", letterSpacing: 0.3, transition: "color 0.2s", fontFamily: "Inter,sans-serif" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Features</button>
+          <Link href="/app?demo=true" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Demo</Link>
+          <Link href="/pricing" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Pricing</Link>
+          <Link href="/blog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Blog</Link>
+          <Link href="/changelog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
+          <Link href="/faq" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
         </div>
         {/* Right side */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {loggedIn ? (
             <div style={{ position: "relative" }}>
-              <button id="user-menu-btn" onClick={e => { e.stopPropagation(); setUserMenuOpen(v => !v); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)")} onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}>
+              <button id="user-menu-btn" onClick={e => { e.stopPropagation(); setUserMenuOpen(v => !v); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)")} onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
                 {userProfile?.avatarUrl ? (
                   <img src={userProfile.avatarUrl} alt="" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" as const }} />
                 ) : (
                   <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c" }}>{userProfile?.initials ?? "?"}</div>
                 )}
-                <span className="nav-user-name" style={{ fontSize: 12, color: "rgba(232,224,204,0.7)", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{userProfile?.displayName}</span>
+                <span className="nav-user-name" style={{ fontSize: 12, color: "var(--text2)", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{userProfile?.displayName}</span>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.4, flexShrink: 0 }}><path d="M2 3.5L5 6.5L8 3.5" stroke="#e8e0cc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
               {userMenuOpen && (
-                <div id="user-menu-dropdown" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, minWidth: 182, background: "rgba(13,17,23,0.98)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "6px", backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)", zIndex: 200 }}>
-                  <Link href="/account" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "rgba(232,224,204,0.75)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                <div id="user-menu-dropdown" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, minWidth: 182, background: "var(--card-bg)", border: "1px solid var(--border2)", borderRadius: 12, padding: "6px", backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", zIndex: 200 }}>
+                  <Link href="/account" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                     My Account
                   </Link>
-                  <Link href="/referrals" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "rgba(232,224,204,0.75)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  <Link href="/referrals" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                     Referrals
                   </Link>
-                  <Link href="/settings" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "rgba(232,224,204,0.75)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  <Link href="/settings" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                     Settings
                   </Link>
-                  <Link href="/app" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "rgba(232,224,204,0.75)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  <Link href="/app" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                     Go to App
                   </Link>
-                  <div style={{ height: "0.5px", background: "rgba(255,255,255,0.07)", margin: "4px 6px" }} />
+                  <div style={{ height: "0.5px", background: "var(--border)", margin: "4px 6px" }} />
                   <button onClick={signOut} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "rgba(224,92,92,0.8)", background: "none", border: "none", cursor: "pointer", textAlign: "left" as const, transition: "background 0.15s", fontFamily: "Inter,sans-serif" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(224,92,92,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
                     Sign Out
@@ -1980,7 +1980,7 @@ export default function Landing() {
             </div>
           ) : (
             <>
-              <Link href="/auth" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "rgba(232,224,204,0.4)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Sign In</Link>
+              <Link href="/auth" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Sign In</Link>
               <Link href="/auth" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Get Started Free</Link>
             </>
           )}
@@ -2014,7 +2014,7 @@ export default function Landing() {
             </>
           ) : (
             <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-              <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "rgba(232,224,204,0.6)", textDecoration: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10 }}>Sign In</Link>
+              <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Sign In</Link>
               <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 10 }}>Get Started Free</Link>
             </div>
           )}
@@ -2225,7 +2225,7 @@ export default function Landing() {
       </div>
 
       {/* FOOTER */}
-      <footer className="footer-root" style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.04)", padding: "26px 56px" }}>
+      <footer className="footer-root" style={{ position: "relative", zIndex: 1, borderTop: "1px solid var(--border)", padding: "26px 56px" }}>
         <div className="footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
