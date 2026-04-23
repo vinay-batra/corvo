@@ -270,6 +270,9 @@ export default function AiChat({
     period:               data?.period,
     health_score:         data?.health_score,
     benchmark_return:     data?.benchmark_return,
+    portfolio_value:      data?.portfolio_value,
+    individual_returns:   data?.individual_returns,
+    beta:                 data?.beta,
     user_goals: goals ? {
       age: goals.age, salary: goals.salary, invested: goals.invested,
       monthly_contribution: goals.monthlyContribution, retirement_age: goals.retirementAge,
@@ -554,9 +557,9 @@ export default function AiChat({
                 style={{ position: "fixed", inset: 0, zIndex: 301, background: "transparent" }}
               />
               <motion.div
-                initial={{ x: -260 }}
+                initial={{ x: 240 }}
                 animate={{ x: 0 }}
-                exit={{ x: -260 }}
+                exit={{ x: 240 }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
                 style={{
                   position: "fixed", top: 0, bottom: 0,

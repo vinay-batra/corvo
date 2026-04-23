@@ -1499,7 +1499,19 @@ def chat(req: ChatRequest, request: Request):
         health_text = f"\n- Portfolio Health Score: {health_score}/100" if health_score is not None else ""
         market_text = f"\n\nREAL-TIME MARKET PRICES (fetched seconds ago):\n{req.market_context}" if req.market_context else ""
 
-        system = f"""You are Corvo AI, a personal portfolio analyst who knows this investor deeply. You have their full financial profile from onboarding and always tailor advice specifically to their situation: their age, goals, risk tolerance, and timeline.
+        portfolio_value = ctx.get("portfolio_value") or (goals.get("invested") if goals else None)
+        beta = ctx.get("beta")
+        individual_returns = ctx.get("individual_returns")
+
+        portfolio_value_text = f"\n- Portfolio Value: ${int(portfolio_value):,}" if portfolio_value is not None else ""
+        beta_text = f"\n- Beta: {beta:.2f}" if beta is not None else ""
+        individual_returns_text = ""
+        if individual_returns and isinstance(individual_returns, dict):
+            returns_list = ", ".join(f"{t}: {r:.1%}" for t, r in individual_returns.items() if r is not None)
+            if returns_list:
+                individual_returns_text = f"\n- Individual Returns: {returns_list}"
+
+        system = f"""You are Corvo AI, a sharp and direct personal portfolio analyst. You have full context on this investor's portfolio and financial profile.
 
 CURRENT PORTFOLIO:
 - Holdings: {', '.join(f"{t} ({w:.1%})" for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"}
@@ -1507,10 +1519,10 @@ CURRENT PORTFOLIO:
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f}
 - Max Drawdown: {dd:.2%}
-- Period: {period}{benchmark_text}{health_text}{market_text}{investor_profile}
+- Period: {period}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{market_text}{investor_profile}
 
 RESPONSE RULES:
-• Be concise and direct, max 180 words
+• Be concise and direct, max 250 words
 • Use bullet points (•) for lists
 • Always reference specific numbers from the portfolio
 • When the investor has a profile, reference their goals/age/timeline in your answer
@@ -1523,7 +1535,7 @@ RESPONSE RULES:
 
         response = client.messages.create(
             model="claude-sonnet-4-5",
-            max_tokens=600,
+            max_tokens=1000,
             system=system,
             messages=messages,
         )
