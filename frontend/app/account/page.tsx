@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import PublicFooter from "@/components/PublicFooter";
@@ -30,6 +31,7 @@ function xpToLevel(xp: number): { level: number; progress: number; xpForNext: nu
 }
 
 export default function AccountPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -71,11 +73,11 @@ export default function AccountPage() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       <header style={{ height: 52, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg2)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
-        <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
+        <button onClick={() => router.back()} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", padding: 0, fontSize: 12, cursor: "pointer", transition: "color 0.15s" }}
           onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
           onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
           ← Back
-        </Link>
+        </button>
         <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
         <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Account</span>
@@ -147,14 +149,14 @@ export default function AccountPage() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
               <span style={{ fontSize: 14, fontWeight: 500, color: "var(--accent)" }}>Go to App</span>
             </div>
-            <span style={{ fontSize: 14, color: "rgba(184,134,11,0.5)" }}>→</span>
+            <span style={{ fontSize: 14, color: "var(--accent)" }}>→</span>
           </Link>
           <Link href="/settings" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border2)")}
             onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(232,224,204,0.5)" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(232,224,204,0.65)" }}>Settings</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text)" }}>Settings</span>
             </div>
             <span style={{ fontSize: 14, color: "var(--text3)" }}>→</span>
           </Link>
@@ -162,8 +164,8 @@ export default function AccountPage() {
             onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border2)")}
             onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(232,224,204,0.5)" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(232,224,204,0.65)" }}>Referrals</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text)" }}>Referrals</span>
             </div>
             <span style={{ fontSize: 14, color: "var(--text3)" }}>→</span>
           </Link>
