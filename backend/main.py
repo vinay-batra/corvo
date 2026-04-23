@@ -3193,49 +3193,67 @@ def portfolio_share_image(
     sharpe: float = 1.92,
     health: int = 78,
     drawdown: float = -14.2,
+    vol: float = 0.0,
+    theme: str = "dark",
 ):
     """Generate a 1200x630 OG-style portfolio card image."""
     from fastapi.responses import StreamingResponse
-    import io
+    import io, datetime
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
         raise HTTPException(status_code=500, detail="Pillow not installed")
 
     W, H = 1200, 630
-    BG       = (10, 14, 20)
-    AMBER    = (201, 168, 76)
-    AMBER_DIM = (201, 168, 76, 40)
-    CREAM    = (232, 224, 204)
-    CREAM_DIM = (232, 224, 204, 100)
-    GREEN    = (92, 184, 138)
-    RED      = (224, 92, 92)
-    CARD_BG  = (255, 255, 255, 12)
+    is_light = theme == "light"
+    GREEN = (92, 184, 138)
+    RED   = (224, 92, 92)
+    AMBER = (201, 168, 76)
 
-    img = Image.new("RGBA", (W, H), (*BG, 255))
+    if is_light:
+        BG           = (248, 246, 241)
+        TEXT         = (26, 26, 26)
+        AMBER_DIM    = (201, 168, 76, 120)
+        CARD_BG      = (255, 255, 255, 180)
+        CARD_OUTLINE = (0, 0, 0, 25)
+        GRID_LINE    = (201, 168, 76, 20)
+        DIVIDER      = (0, 0, 0, 30)
+        PILL_BG      = (201, 168, 76, 22)
+        PILL_OUT     = (201, 168, 76, 100)
+    else:
+        BG           = (10, 14, 20)
+        TEXT         = (232, 224, 204)
+        AMBER_DIM    = (201, 168, 76, 40)
+        CARD_BG      = (255, 255, 255, 12)
+        CARD_OUTLINE = (255, 255, 255, 22)
+        GRID_LINE    = (201, 168, 76, 15)
+        DIVIDER      = (255, 255, 255, 18)
+        PILL_BG      = (201, 168, 76, 18)
+        PILL_OUT     = (201, 168, 76, 55)
+
+    img  = Image.new("RGBA", (W, H), (*BG, 255))
     draw = ImageDraw.Draw(img, "RGBA")
 
     # ── Grid lines ──
     for x in range(0, W, 80):
-        draw.line([(x, 0), (x, H)], fill=(201, 168, 76, 15), width=1)
+        draw.line([(x, 0), (x, H)], fill=GRID_LINE, width=1)
     for y in range(0, H, 80):
-        draw.line([(0, y), (W, y)], fill=(201, 168, 76, 15), width=1)
+        draw.line([(0, y), (W, y)], fill=GRID_LINE, width=1)
 
-    # ── Ambient glow (top-left radial) ──
-    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow, "RGBA")
-    for r in range(300, 0, -1):
-        alpha = int(18 * (1 - r / 300))
-        gd.ellipse([-r + 160, -r + 100, r + 160, r + 100], fill=(201, 168, 76, alpha))
-    img = Image.alpha_composite(img, glow)
-    draw = ImageDraw.Draw(img, "RGBA")
+    # ── Ambient glow (dark mode only) ──
+    if not is_light:
+        glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        gd   = ImageDraw.Draw(glow, "RGBA")
+        for r in range(300, 0, -1):
+            alpha = int(18 * (1 - r / 300))
+            gd.ellipse([-r + 160, -r + 100, r + 160, r + 100], fill=(201, 168, 76, alpha))
+        img  = Image.alpha_composite(img, glow)
+        draw = ImageDraw.Draw(img, "RGBA")
 
     # ── Fonts ──
     def try_font(path, size):
-        try:
-            return ImageFont.truetype(path, size)
-        except Exception:
-            return ImageFont.load_default()
+        try:    return ImageFont.truetype(path, size)
+        except: return ImageFont.load_default()
 
     FONT_PATHS = [
         "/System/Library/Fonts/Helvetica.ttc",
@@ -3250,131 +3268,151 @@ def portfolio_share_image(
     fp = next((p for p in FONT_PATHS if os.path.exists(p)), None)
     mp = next((p for p in MONO_PATHS if os.path.exists(p)), None)
 
-    font_tiny   = try_font(fp, 18)  if fp else ImageFont.load_default()
-    font_small  = try_font(fp, 22)  if fp else ImageFont.load_default()
-    font_med    = try_font(fp, 28)  if fp else ImageFont.load_default()
-    font_large  = try_font(mp, 88)  if mp else ImageFont.load_default()
-    font_xl     = try_font(mp, 110) if mp else ImageFont.load_default()
-    font_label  = try_font(mp, 17)  if mp else ImageFont.load_default()
-    font_ticker = try_font(mp, 20)  if mp else ImageFont.load_default()
+    font_tiny   = try_font(fp, 18) if fp else ImageFont.load_default()
+    font_small  = try_font(fp, 22) if fp else ImageFont.load_default()
+    font_med    = try_font(fp, 30) if fp else ImageFont.load_default()
+    font_large  = try_font(mp, 82) if mp else ImageFont.load_default()
+    font_xl     = try_font(mp, 96) if mp else ImageFont.load_default()
+    font_label  = try_font(mp, 16) if mp else ImageFont.load_default()
+    font_ticker = try_font(mp, 19) if mp else ImageFont.load_default()
+
+    PAD         = 52
+    COL_SPLIT   = 490   # left column right edge
+    COL_GAP     = 36
+    RIGHT_X     = COL_SPLIT + COL_GAP
+    TOP_Y       = 112
+    BOT_Y       = 522
 
     # ── Top bar ──
-    # Logo (text stand-in since we can't easily render SVG)
-    draw.text((52, 44), "◈  CORVO", font=font_med, fill=AMBER)
-    label_text = "PORTFOLIO ANALYSIS"
-    bbox = draw.textbbox((0, 0), label_text, font=font_tiny)
-    lw = bbox[2] - bbox[0]
-    draw.text((W - 52 - lw, 49), label_text, font=font_tiny, fill=(201, 168, 76, 180))
+    draw.text((PAD, 38), "◈  CORVO", font=font_med, fill=AMBER)
+    date_str = datetime.date.today().strftime("%b %d, %Y").upper()
+    bbox = draw.textbbox((0, 0), date_str, font=font_tiny)
+    draw.text((W - PAD - (bbox[2] - bbox[0]), 44), date_str, font=font_tiny, fill=(*AMBER, 160))
 
-    # ── Divider ──
-    draw.line([(52, 96), (W - 52, 96)], fill=(255, 255, 255, 18), width=1)
+    # Amber divider under top bar
+    draw.line([(PAD, 92), (W - PAD, 92)], fill=(*AMBER, 55), width=1)
 
-    # ── Big return number (center) ──
-    ret_sign = "+" if ret >= 0 else ""
+    # Vertical column divider
+    vdiv_x = COL_SPLIT + COL_GAP // 2
+    draw.line([(vdiv_x, TOP_Y + 16), (vdiv_x, BOT_Y - 16)], fill=DIVIDER, width=1)
+
+    # ── Left column: big return ──
+    ret_sign  = "+" if ret >= 0 else ""
     ret_color = GREEN if ret >= 0 else RED
-    ret_str = f"{ret_sign}{ret:.1f}%"
+    ret_str   = f"{ret_sign}{ret:.1f}%"
+    left_cx   = (PAD + COL_SPLIT) // 2
+
     bbox = draw.textbbox((0, 0), ret_str, font=font_xl)
-    tw = bbox[2] - bbox[0]
-    draw.text(((W - tw) // 2, 148), ret_str, font=font_xl, fill=ret_color)
+    rw, rh = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    ret_y = TOP_Y + 8
+    draw.text((left_cx - rw // 2, ret_y), ret_str, font=font_xl, fill=ret_color)
 
-    # Sub-label under return
-    sub_label = "PORTFOLIO RETURN"
-    bbox = draw.textbbox((0, 0), sub_label, font=font_label)
-    slw = bbox[2] - bbox[0]
-    draw.text(((W - slw) // 2, 270), sub_label, font=font_label, fill=(201, 168, 76, 140))
+    lbl = "ANNUALIZED RETURN"
+    bbox = draw.textbbox((0, 0), lbl, font=font_label)
+    draw.text((left_cx - (bbox[2] - bbox[0]) // 2, ret_y + rh + 10), lbl, font=font_label, fill=(*AMBER, 155))
 
-    # ── Stat pills (Sharpe | Health | Drawdown) ──
-    stats = [
-        ("SHARPE RATIO", f"{sharpe:.2f}"),
-        ("HEALTH SCORE", f"{health}/100"),
-        ("MAX DRAWDOWN", f"{drawdown:.1f}%"),
+    # Thin separator
+    sep_y = ret_y + rh + 40
+    draw.line([(PAD + 24, sep_y), (COL_SPLIT - 24, sep_y)], fill=DIVIDER, width=1)
+
+    # Health score below separator
+    hlbl = "HEALTH SCORE"
+    bbox = draw.textbbox((0, 0), hlbl, font=font_label)
+    draw.text((left_cx - (bbox[2] - bbox[0]) // 2, sep_y + 12), hlbl, font=font_label, fill=(*AMBER, 140))
+
+    hval = f"{health}/100"
+    health_color = GREEN if health >= 70 else (AMBER if health >= 50 else RED)
+    bbox = draw.textbbox((0, 0), hval, font=font_large)
+    hw, hh = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.text((left_cx - hw // 2, sep_y + 34), hval, font=font_large, fill=health_color)
+
+    # ── Right column: 2×2 metric cards ──
+    right_w  = W - PAD - RIGHT_X
+    card_gap = 14
+    card_w   = (right_w - card_gap) // 2
+    card_h   = (BOT_Y - TOP_Y - card_gap) // 2
+
+    vol_display = vol if vol >= 1.0 else vol * 100
+    metrics = [
+        ("SHARPE RATIO", f"{sharpe:.2f}",        TEXT),
+        ("VOLATILITY",   f"{vol_display:.1f}%",  TEXT),
+        ("MAX DRAWDOWN", f"{drawdown:.1f}%",      RED),
+        ("HEALTH SCORE", f"{health}/100",
+            GREEN if health >= 70 else (AMBER if health >= 50 else RED)),
     ]
-    pill_w, pill_h = 280, 88
-    total_pills = len(stats) * pill_w + (len(stats) - 1) * 20
-    pill_x_start = (W - total_pills) // 2
-    pill_y = 322
 
-    for i, (label, val) in enumerate(stats):
-        px = pill_x_start + i * (pill_w + 20)
-        # Pill background
-        draw.rounded_rectangle([px, pill_y, px + pill_w, pill_y + pill_h], radius=12, fill=(255, 255, 255, 10), outline=(255, 255, 255, 22), width=1)
-        # Label
-        bbox = draw.textbbox((0, 0), label, font=font_label)
-        lw2 = bbox[2] - bbox[0]
-        draw.text((px + (pill_w - lw2) // 2, pill_y + 14), label, font=font_label, fill=(201, 168, 76, 140))
-        # Value
-        bbox = draw.textbbox((0, 0), val, font=font_med)
-        vw = bbox[2] - bbox[0]
-        val_color = CREAM
-        if label == "MAX DRAWDOWN":
-            val_color = RED
-        elif label == "HEALTH SCORE":
-            val_color = GREEN if health >= 70 else AMBER
-        draw.text((px + (pill_w - vw) // 2, pill_y + 40), val, font=font_med, fill=val_color)
+    for i, (mlabel, mval, mcolor) in enumerate(metrics):
+        col_i = i % 2
+        row_i = i // 2
+        cx = RIGHT_X + col_i * (card_w + card_gap)
+        cy = TOP_Y   + row_i * (card_h + card_gap)
 
-    # ── Divider before tickers ──
-    draw.line([(52, 450), (W - 52, 450)], fill=(255, 255, 255, 14), width=1)
+        draw.rounded_rectangle(
+            [cx, cy, cx + card_w, cy + card_h],
+            radius=12, fill=CARD_BG, outline=CARD_OUTLINE, width=1,
+        )
+        # label
+        bbox = draw.textbbox((0, 0), mlabel, font=font_label)
+        lw2  = bbox[2] - bbox[0]
+        draw.text((cx + (card_w - lw2) // 2, cy + 14), mlabel, font=font_label, fill=(*AMBER, 140))
+        # value
+        bbox = draw.textbbox((0, 0), mval, font=font_med)
+        vw, vh = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        draw.text((cx + (card_w - vw) // 2, cy + (card_h - vh) // 2 + 6), mval, font=font_med, fill=mcolor)
 
-    # ── Ticker pills ──
+    # ── Bottom bar: tickers + watermark ──
+    draw.line([(PAD, BOT_Y + 8), (W - PAD, BOT_Y + 8)], fill=DIVIDER, width=1)
+
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     weight_list_raw = [w.strip() for w in weights.split(",") if w.strip()]
     try:
-        wts = [float(w) for w in weight_list_raw]
+        wts     = [float(w) for w in weight_list_raw]
         total_w = sum(wts) or 1
-        wts = [w / total_w * 100 for w in wts]
+        wts     = [w / total_w * 100 for w in wts]
     except Exception:
         wts = [100 / len(ticker_list)] * len(ticker_list)
 
-    # Layout tickers
-    pill_gap = 12
-    ticker_y = 476
-    # Measure all pills first
+    pill_gap   = 10
+    ticker_y   = BOT_Y + 22
     pill_sizes = []
     for t, w in zip(ticker_list, wts):
-        text = f"{t}  {w:.0f}%"
-        bbox = draw.textbbox((0, 0), text, font=font_ticker)
-        tw2 = bbox[2] - bbox[0]
-        pill_sizes.append((text, tw2 + 28))
+        txt  = f"{t}  {w:.0f}%"
+        bbox = draw.textbbox((0, 0), txt, font=font_ticker)
+        pill_sizes.append((txt, (bbox[2] - bbox[0]) + 24))
 
-    # Wrap into rows if needed
     MAX_ROW_W = W - 104
     rows: list[list[tuple[str, int]]] = []
-    cur_row: list[tuple[str, int]] = []
+    cur_row: list[tuple[str, int]]    = []
     cur_row_w = 0
     for item in pill_sizes:
-        if cur_row_w + item[1] + (pill_gap if cur_row else 0) > MAX_ROW_W:
-            if cur_row:
-                rows.append(cur_row)
-            cur_row = [item]
-            cur_row_w = item[1]
+        needed = item[1] + (pill_gap if cur_row else 0)
+        if cur_row_w + needed > MAX_ROW_W:
+            if cur_row: rows.append(cur_row)
+            cur_row, cur_row_w = [item], item[1]
         else:
-            cur_row_w += item[1] + (pill_gap if cur_row else 0)
-            cur_row.append(item)
-    if cur_row:
-        rows.append(cur_row)
-    rows = rows[:2]  # max 2 rows
+            cur_row.append(item); cur_row_w += needed
+    if cur_row: rows.append(cur_row)
+    rows = rows[:1]  # single row in compact layout
 
     for row_idx, row in enumerate(rows):
-        row_total_w = sum(s for _, s in row) + pill_gap * (len(row) - 1)
-        rx = (W - row_total_w) // 2
-        ry = ticker_y + row_idx * 46
-        for text, pw in row:
-            # pill bg
-            draw.rounded_rectangle([rx, ry, rx + pw, ry + 34], radius=8, fill=(201, 168, 76, 18), outline=(201, 168, 76, 55), width=1)
-            bbox = draw.textbbox((0, 0), text, font=font_ticker)
-            th = bbox[3] - bbox[1]
-            draw.text((rx + 14, ry + (34 - th) // 2 - 1), text, font=font_ticker, fill=AMBER)
-            rx += pw + pill_gap
+        row_w = sum(s for _, s in row) + pill_gap * (len(row) - 1)
+        rx    = (W - row_w) // 2
+        ry    = ticker_y + row_idx * 40
+        for txt, pw in row:
+            draw.rounded_rectangle([rx, ry, rx + pw, ry + 30], radius=7, fill=PILL_BG, outline=PILL_OUT, width=1)
+            bbox = draw.textbbox((0, 0), txt, font=font_ticker)
+            th   = bbox[3] - bbox[1]
+            draw.text((rx + 12, ry + (30 - th) // 2 - 1), txt, font=font_ticker, fill=AMBER)
+            rx  += pw + pill_gap
 
-    # ── Watermark ──
+    # Watermark
     wmark = "Analyzed with Corvo  |  corvo.capital"
-    bbox = draw.textbbox((0, 0), wmark, font=font_small)
-    wmw = bbox[2] - bbox[0]
-    draw.text(((W - wmw) // 2, H - 46), wmark, font=font_small, fill=(201, 168, 76, 120))
+    bbox  = draw.textbbox((0, 0), wmark, font=font_tiny)
+    draw.text(((W - (bbox[2] - bbox[0])) // 2, H - 34), wmark, font=font_tiny, fill=(*AMBER, 110))
 
     # ── Export ──
     final = img.convert("RGB")
-    buf = io.BytesIO()
+    buf   = io.BytesIO()
     final.save(buf, format="PNG", optimize=True)
     buf.seek(0)
     return StreamingResponse(buf, media_type="image/png", headers={
