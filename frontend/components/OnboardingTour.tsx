@@ -181,10 +181,10 @@ export default function OnboardingTour({ assets, dataAvailable, onComplete }: Pr
               padding: "7px 15px",
               fontSize: 12,
               fontWeight: 600,
-              background: "#b8860b",
+              background: "var(--accent)",
               border: "none",
               borderRadius: 7,
-              color: "#ffffff",
+              color: "var(--bg)",
               cursor: "pointer",
               letterSpacing: 0.3,
             }}

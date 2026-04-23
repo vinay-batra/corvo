@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const C = {
-  navy: "var(--bg)", navy3: "var(--card-bg)", navy4: "#161c26",
+  navy: "var(--bg)", navy3: "var(--card-bg)",
   border: "var(--border)", cream: "var(--text)",
   cream2: "var(--text2)", cream3: "var(--text3)",
   amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)",

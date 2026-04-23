@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 const C = {
-  navy3: "#111620", navy4: "#161c26", border: "rgba(255,255,255,0.07)",
-  cream: "#e8e0cc", cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)",
+  navy3: "var(--card-bg)", border: "var(--border)",
+  cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)",
   amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)",
 };
 
@@ -41,7 +41,7 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
 
   const inputStyle = (k: string): React.CSSProperties => ({
     width: "100%", padding: "10px 12px",
-    background: "rgba(255,255,255,0.03)",
+    background: "var(--input-bg)",
     border: `1px solid ${focused === k ? C.amber : C.border}`,
     borderRadius: 9, color: C.cream, fontSize: 13,
     fontFamily: "'Inter', sans-serif", outline: "none", transition: "border-color 0.15s",
@@ -58,7 +58,7 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(10,14,20,0.8)", backdropFilter: "blur(6px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
 
       <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
         onClick={e => e.stopPropagation()}
@@ -69,7 +69,7 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
             <p style={{ fontSize: 9, letterSpacing: 2, color: C.amber, textTransform: "uppercase", marginBottom: 4 }}>Settings</p>
             <h3 style={{ fontSize: 18, fontWeight: 500, color: C.cream }}>Profile & Goals</h3>
           </div>
-          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, color: C.cream2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--bg3)", border: `1px solid ${C.border}`, color: C.cream2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
         {/* Fields */}
@@ -91,7 +91,7 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
           <div style={{ display: "flex", gap: 6 }}>
             {RISK_OPTIONS.map(o => (
               <button key={o} onClick={() => set("riskTolerance", o)}
-                style={{ flex: 1, padding: "8px", background: form.riskTolerance === o ? C.amber2 : "rgba(255,255,255,0.02)", border: `1px solid ${form.riskTolerance === o ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 8, color: form.riskTolerance === o ? C.amber : C.cream2, fontSize: 11, fontWeight: 500, cursor: "pointer", textTransform: "capitalize", transition: "all 0.15s" }}>
+                style={{ flex: 1, padding: "8px", background: form.riskTolerance === o ? C.amber2 : "var(--bg3)", border: `1px solid ${form.riskTolerance === o ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 8, color: form.riskTolerance === o ? C.amber : C.cream2, fontSize: 11, fontWeight: 500, cursor: "pointer", textTransform: "capitalize", transition: "all 0.15s" }}>
                 {o}
               </button>
             ))}
@@ -104,7 +104,7 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             {GOAL_OPTIONS.map(o => (
               <button key={o.value} onClick={() => set("goal", o.value)}
-                style={{ padding: "9px", background: form.goal === o.value ? C.amber2 : "rgba(255,255,255,0.02)", border: `1px solid ${form.goal === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 8, color: form.goal === o.value ? C.amber : C.cream2, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" }}>
+                style={{ padding: "9px", background: form.goal === o.value ? C.amber2 : "var(--bg3)", border: `1px solid ${form.goal === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 8, color: form.goal === o.value ? C.amber : C.cream2, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" }}>
                 {o.label}
               </button>
             ))}
@@ -112,8 +112,8 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: "11px", background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 9, color: C.cream2, fontSize: 13, cursor: "pointer" }}>Cancel</button>
-          <button onClick={() => onSave(form)} style={{ flex: 2, padding: "11px", background: C.amber, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer", letterSpacing: 0.3 }}>Save Changes</button>
+          <button onClick={onClose} style={{ flex: 1, padding: "11px", background: "var(--input-bg)", border: `1px solid ${C.border}`, borderRadius: 9, color: C.cream2, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={() => onSave(form)} style={{ flex: 2, padding: "11px", background: C.amber, border: "none", borderRadius: 9, color: "var(--bg)", fontSize: 13, fontWeight: 600, cursor: "pointer", letterSpacing: 0.3 }}>Save Changes</button>
         </div>
       </motion.div>
     </motion.div>
