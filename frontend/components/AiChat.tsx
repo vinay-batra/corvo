@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 import { posthog } from "../lib/posthog";
 import {
   X, Copy, Check, Download, RefreshCw, Plus, Trash2,
-  MessageSquare, ToggleLeft, ToggleRight, Menu, Info, Zap,
+  MessageSquare, ToggleLeft, ToggleRight, Menu, Info, Zap, Pencil,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -147,13 +147,13 @@ function MessageContent({ content }: { content: string }) {
       elements.push(
         <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", margin: "3px 0" }}>
           <span style={{ color: "var(--accent)", fontSize: 9, marginTop: 5, flexShrink: 0 }}>▸</span>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, margin: 0 }}>{parseInline(text)}</p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, margin: 0 }}>{parseInline(text)}</p>
         </div>
       );
       i++; continue;
     }
     if (!line.trim()) { i++; continue; }
-    elements.push(<p key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.65, margin: "2px 0" }}>{parseInline(line)}</p>);
+    elements.push(<p key={i} style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.65, margin: "2px 0" }}>{parseInline(line)}</p>);
     i++;
   }
   return <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>{elements}</div>;
@@ -518,7 +518,6 @@ export default function AiChat({
       <style>{`
         .cv-chip:hover{border-color:rgba(184,134,11,.4)!important;background:rgba(184,134,11,.07)!important;color:var(--text)!important}
         .cv-conv:hover{background:rgba(255,255,255,.04)!important}
-        .cv-conv:hover .cv-del{opacity:1!important}
         .cv-icon-btn:hover{background:var(--bg3)!important;color:var(--text)!important}
         .cv-input:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 2px rgba(184,134,11,.15)!important}
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -546,13 +545,13 @@ export default function AiChat({
           boxShadow: "-8px 0 40px rgba(0,0,0,0.4)",
         }}
       >
-        {/* History sidebar: absolute overlay within panel */}
+        {/* History sidebar: fixed, slides out to the LEFT of the AI panel */}
         <AnimatePresence>
           {sidebarOpen && (
             <>
               <div
                 onClick={() => setSidebarOpen(false)}
-                style={{ position: "absolute", inset: 0, zIndex: 5, background: "rgba(0,0,0,0.35)" }}
+                style={{ position: "fixed", inset: 0, zIndex: 301, background: "transparent" }}
               />
               <motion.div
                 initial={{ x: -260 }}
@@ -560,10 +559,12 @@ export default function AiChat({
                 exit={{ x: -260 }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
                 style={{
-                  position: "absolute", left: 0, top: 0, bottom: 0,
-                  width: 240, zIndex: 6,
+                  position: "fixed", top: 0, bottom: 0,
+                  right: "max(25vw, 360px)",
+                  width: 240, zIndex: 302,
                   background: "var(--bg)",
                   borderRight: "0.5px solid var(--border)",
+                  boxShadow: "-4px 0 28px rgba(0,0,0,0.35)",
                   display: "flex", flexDirection: "column",
                 }}
               >
@@ -623,29 +624,37 @@ export default function AiChat({
                               />
                             ) : (
                               <span
-                                onDoubleClick={e => {
-                                  e.stopPropagation();
-                                  setEditingConvId(conv.id);
-                                  setEditingTitle(conv.title || "");
-                                }}
-                                title="Double-click to rename"
                                 style={{ fontSize: 12, color: currentConvId === conv.id ? "var(--text)" : "var(--text2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}
                               >
                                 {conv.title || "Untitled"}
                               </span>
                             )}
-                            <button
-                              className="cv-del"
-                              onClick={e => { e.stopPropagation(); deleteConversation(conv.id); }}
-                              style={{ opacity: 0, transition: "opacity .15s, color .15s", background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2, flexShrink: 0, display: "flex" }}
-                              onMouseEnter={e => { e.currentTarget.style.color = "#ff6b6b"; }}
-                              onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}
-                            >
-                              {deletingId === conv.id
-                                ? <div style={{ width: 10, height: 10, border: "1.5px solid var(--text3)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
-                                : <Trash2 size={11} />
-                              }
-                            </button>
+                            {editingConvId !== conv.id && (
+                              <>
+                                <button
+                                  onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title || ""); }}
+                                  title="Rename"
+                                  style={{ opacity: 0.4, transition: "opacity .15s, color .15s", background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4, flexShrink: 0, display: "flex" }}
+                                  onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "var(--accent)"; }}
+                                  onMouseLeave={e => { e.currentTarget.style.opacity = "0.4"; e.currentTarget.style.color = "var(--text3)"; }}
+                                >
+                                  <Pencil size={12} />
+                                </button>
+                                <button
+                                  className="cv-del"
+                                  onClick={e => { e.stopPropagation(); deleteConversation(conv.id); }}
+                                  title="Delete"
+                                  style={{ opacity: 0.4, transition: "opacity .15s, color .15s", background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4, flexShrink: 0, display: "flex" }}
+                                  onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "#ff6b6b"; }}
+                                  onMouseLeave={e => { e.currentTarget.style.opacity = "0.4"; e.currentTarget.style.color = "var(--text3)"; }}
+                                >
+                                  {deletingId === conv.id
+                                    ? <div style={{ width: 12, height: 12, border: "1.5px solid var(--text3)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+                                    : <Trash2 size={14} />
+                                  }
+                                </button>
+                              </>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -728,17 +737,17 @@ export default function AiChat({
                   <img src="/corvo-logo.svg" width={30} height={30} alt="Corvo" />
                 </div>
                 <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>
-                  {goals?.age ? "Hi, I know your profile." : "Ask about your portfolio"}
+                  {goals?.age ? "Hi! I have context on your portfolio and goals." : "Ask about your portfolio"}
                 </p>
                 <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
                   {goals?.age
-                    ? `${goals.age}yo, ${goals.riskTolerance?.replace("_time", "") ?? ""} risk`
+                    ? `${goals.age}yo · ${goals.riskTolerance?.replace("_time", "") ?? ""} risk`
                     : "Analyze risks, get rebalancing advice, and more."}
                 </p>
               </div>
 
-              {/* Suggestions: single column for narrow panel */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 10 }}>
+              {/* Suggestions: 2-column grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
                 {suggestions.map((s, i) => (
                   <motion.button
                     key={`${s}-${i}`}
@@ -790,14 +799,14 @@ export default function AiChat({
                     )}
                     <div style={{
                       maxWidth: "88%",
-                      padding: "10px 13px",
+                      padding: "12px 16px",
                       borderRadius: m.role === "user" ? "16px 16px 3px 16px" : "3px 16px 16px 16px",
                       background: m.role === "user" ? "var(--accent)" : "#141414",
                       border: m.role === "user" ? "none" : "1px solid rgba(255,255,255,.07)",
-                      boxShadow: m.role === "user" ? "0 2px 8px rgba(184,134,11,.15)" : "0 2px 8px rgba(0,0,0,.2)",
+                      boxShadow: m.role === "user" ? "0 2px 12px rgba(184,134,11,.3)" : "0 2px 8px rgba(0,0,0,.2)",
                     }}>
                       {m.role === "user"
-                        ? <p style={{ fontSize: 12, color: "#000", lineHeight: 1.5, margin: 0 }}>{m.content}</p>
+                        ? <p style={{ fontSize: 13, color: "#000", lineHeight: 1.5, margin: 0 }}>{m.content}</p>
                         : <MessageContent content={m.content} />
                       }
                     </div>
