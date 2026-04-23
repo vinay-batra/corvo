@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
 import { motion } from "framer-motion";
+import { Sun, Moon } from "lucide-react";
 import FeedbackButton from "../components/FeedbackButton";
 
 /* ─── Reveal hook ─── */
@@ -1685,6 +1686,21 @@ export default function Landing() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [navSolid, setNavSolid] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [dark, setDark] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("corvo_theme");
+    const isDark = stored ? stored === "dark" : true;
+    setDark(isDark);
+    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
+    localStorage.setItem("corvo_theme", next ? "dark" : "light");
+  };
   const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -1941,6 +1957,16 @@ export default function Landing() {
         </div>
         {/* Right side */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            title={dark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, background: "transparent", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text2)", transition: "color 0.2s, border-color 0.2s, background 0.2s" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
+          >
+            {dark ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
           {loggedIn ? (
             <div style={{ position: "relative" }}>
               <button id="user-menu-btn" onClick={e => { e.stopPropagation(); setUserMenuOpen(v => !v); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)")} onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
