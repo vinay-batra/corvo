@@ -1304,7 +1304,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 whileHover={canAnalyze ? { scale: 1.02 } : {}}
                 whileTap={canAnalyze ? { scale: 0.97 } : {}}
                 transition={{ duration: 0.35 }}
-                style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : canAnalyze ? "var(--bg)" : "var(--bg3)", color: loading || !canAnalyze ? "var(--text3)" : "var(--accent)", border: canAnalyze ? "1px solid rgba(201,168,76,0.55)" : "0.5px solid var(--border2)", borderRadius: 9, cursor: canAnalyze ? "pointer" : "not-allowed", transition: "background 0.2s, color 0.2s, border-color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none" }}>
+                style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : canAnalyze ? "var(--bg)" : "var(--bg3)", color: loading || !canAnalyze ? "var(--text3)" : "var(--accent)", border: canAnalyze ? "1px solid rgba(201,168,76,0.55)" : "0.5px solid var(--border2)", borderRadius: 9, cursor: canAnalyze ? "pointer" : "not-allowed", transition: "background 0.2s, color 0.2s, border-color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : canAnalyze ? "analyzePulse 2.5s ease-in-out infinite" : "none" }}>
                 {loading ? "Analyzing..." : "Analyze"}
               </motion.button>
               {hasHoldings && !isBalanced && (
@@ -1393,6 +1393,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
         @keyframes analyze-ring{0%{box-shadow:0 0 0 0 rgba(184,134,11,0.5)}70%{box-shadow:0 0 0 8px rgba(184,134,11,0)}100%{box-shadow:0 0 0 0 rgba(184,134,11,0)}}
+        @keyframes analyzePulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4)}50%{box-shadow:0 0 0 6px rgba(201,168,76,0)}}
         @media(max-width:768px){
           .c-sidebar{display:none!important}
           .c-topbar{display:none!important}
