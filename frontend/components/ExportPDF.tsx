@@ -276,43 +276,56 @@ function computeHealthScore(data: any): number {
 }
 
 // ── HTML print fallback (AI report) ──────────────────────────────────────────
-const PRINT_CSS = `
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { background: #0a0e14 !important; color: #e8e0cc !important;
-    -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  @page { margin: 0; size: A4; }
-  body { font-family: 'Courier New', monospace; padding: 48px; line-height: 1.6; }
-  .amber { color: #c9a84c !important; } .red { color: #e05c5c !important; } .green { color: #5cb88a !important; }
-`;
-
 function buildAiReport(analysis: string, data: any, assets: any[]): string {
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+
+  const bg = isLight ? "#ffffff" : "#0a0e14";
+  const fg = isLight ? "#1a1a1a" : "#e8e0cc";
+  const hdrBg = isLight ? "#f5f5f0" : "#0d1117";
+  const cardBg = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
+  const cardBorder = isLight ? "1px solid rgba(201,168,76,0.3)" : "1px solid rgba(201,168,76,0.15)";
+  const mutedText = (a: number) => isLight ? `rgba(0,0,0,${a})` : `rgba(232,224,204,${a})`;
+  const subtleBg = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)";
+  const subtleBorder = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)";
+  const wbgColor = isLight ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.07)";
+  const strongColor = isLight ? "#1a1a1a" : "#e8e0cc";
+
+  const printCss = `
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: ${bg} !important; color: ${fg} !important;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { margin: 0; size: A4; }
+    body { font-family: 'Courier New', monospace; padding: 48px; line-height: 1.6; }
+    .amber { color: #c9a84c !important; } .red { color: #e05c5c !important; } .green { color: #5cb88a !important; }
+  `;
+
   const ret = data.portfolio_return, vol = data.portfolio_volatility;
   const sharpe = (data.sharpe_ratio ?? ((data.annualized_return ?? ret) - 0.04) / vol).toFixed(2), dd = (data.max_drawdown * 100).toFixed(2);
   const weights: number[] = data.weights ?? assets.map((a: any) => a.weight);
   const total = weights.reduce((s, w) => s + w, 1);
   const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const fmt = (text: string) => text
-    .replace(/^## (.+)$/gm, '<div style="font-size:9px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid rgba(201,168,76,0.2);padding-bottom:4px">$1</div>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#e8e0cc">$1</strong>')
-    .replace(/^[•\-] (.+)$/gm, '<div style="display:flex;gap:8px;margin:5px 0"><span style="color:#c9a84c">▸</span><span>$1</span></div>')
-    .replace(/\n\n/g, '</p><p style="margin:10px 0;color:rgba(232,224,204,0.8);font-family:Georgia,serif;font-size:13px;line-height:1.8">');
+    .replace(/^## (.+)$/gm, `<div style="font-size:9px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid rgba(201,168,76,0.2);padding-bottom:4px">$1</div>`)
+    .replace(/\*\*(.+?)\*\*/g, `<strong style="color:${strongColor}">$1</strong>`)
+    .replace(/^[•\-] (.+)$/gm, `<div style="display:flex;gap:8px;margin:5px 0"><span style="color:#c9a84c">▸</span><span>$1</span></div>`)
+    .replace(/\n\n/g, `</p><p style="margin:10px 0;color:${mutedText(0.8)};font-family:Georgia,serif;font-size:13px;line-height:1.8">`);
 
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${PRINT_CSS}
-    .hdr{background:#0d1117;border-bottom:2px solid #c9a84c;padding:32px 48px 24px;margin:-48px -48px 32px;display:flex;justify-content:space-between;align-items:flex-end}
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${printCss}
+    .hdr{background:${hdrBg};border-bottom:2px solid #c9a84c;padding:32px 48px 24px;margin:-48px -48px 32px;display:flex;justify-content:space-between;align-items:flex-end}
     .brand{font-size:26px;font-weight:900;letter-spacing:10px;color:#c9a84c}
     .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px}
-    .m{background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:8px;padding:12px 14px}
+    .m{background:${cardBg};border:${cardBorder};border-radius:8px;padding:12px 14px}
     .mv{font-size:20px;font-weight:700;font-family:'Courier New',monospace}
-    .ml{font-size:7px;letter-spacing:3px;color:rgba(232,224,204,0.35);text-transform:uppercase;margin-top:3px}
+    .ml{font-size:7px;letter-spacing:3px;color:${mutedText(0.35)};text-transform:uppercase;margin-top:3px}
     .wrow{display:flex;align-items:center;gap:12px;margin-bottom:8px}
     .wtk{color:#c9a84c;width:70px;font-weight:700;font-size:11px}
-    .wbg{flex:1;height:3px;background:rgba(255,255,255,0.07);border-radius:2px}
+    .wbg{flex:1;height:3px;background:${wbgColor};border-radius:2px}
     .wbar{height:100%;background:#c9a84c;border-radius:2px}
-    .wpct{font-size:11px;width:40px;text-align:right;color:rgba(232,224,204,0.6)}
+    .wpct{font-size:11px;width:40px;text-align:right;color:${mutedText(0.6)}}
   </style></head><body>
   <div class="hdr">
-    <div><div class="brand">CORVO</div><div style="font-size:8px;letter-spacing:3px;color:rgba(232,224,204,0.3);margin-top:5px">AI PORTFOLIO ANALYSIS · ${now}</div></div>
-    <div style="text-align:right;font-size:10px;color:rgba(232,224,204,0.3)">${assets.map(a => a.ticker).join(" · ")}</div>
+    <div><div class="brand">CORVO</div><div style="font-size:8px;letter-spacing:3px;color:${mutedText(0.3)};margin-top:5px">AI PORTFOLIO ANALYSIS · ${now}</div></div>
+    <div style="text-align:right;font-size:10px;color:${mutedText(0.3)}">${assets.map(a => a.ticker).join(" · ")}</div>
   </div>
   <div class="metrics">
     <div class="m"><div class="mv ${ret >= 0 ? "amber" : "red"}">${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%</div><div class="ml">Return</div></div>
@@ -320,15 +333,15 @@ function buildAiReport(analysis: string, data: any, assets: any[]): string {
     <div class="m"><div class="mv ${Number(sharpe) >= 1 ? "green" : "amber"}">${sharpe}</div><div class="ml">Sharpe</div></div>
     <div class="m"><div class="mv red">-${Math.abs(Number(dd))}%</div><div class="ml">Max Drawdown</div></div>
   </div>
-  <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px 20px;margin-bottom:28px">
+  <div style="background:${subtleBg};border:1px solid ${subtleBorder};border-radius:10px;padding:16px 20px;margin-bottom:28px">
     <div style="font-size:7px;letter-spacing:4px;color:rgba(201,168,76,0.5);text-transform:uppercase;margin-bottom:12px">Composition</div>
     ${assets.map((a, i) => `<div class="wrow"><span class="wtk">${a.ticker}</span><div class="wbg"><div class="wbar" style="width:${((weights[i] ?? a.weight) / total * 100).toFixed(0)}%"></div></div><span class="wpct">${((weights[i] ?? a.weight) / total * 100).toFixed(1)}%</span></div>`).join("")}
   </div>
-  <hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin:0 0 24px"/>
-  <p style="margin:10px 0;color:rgba(232,224,204,0.8);font-family:Georgia,serif;font-size:13px;line-height:1.8">${fmt(analysis)}</p>
-  <div style="margin-top:40px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.07);display:flex;justify-content:space-between">
+  <hr style="border:none;border-top:1px solid ${subtleBorder};margin:0 0 24px"/>
+  <p style="margin:10px 0;color:${mutedText(0.8)};font-family:Georgia,serif;font-size:13px;line-height:1.8">${fmt(analysis)}</p>
+  <div style="margin-top:40px;padding-top:14px;border-top:1px solid ${subtleBorder};display:flex;justify-content:space-between">
     <span style="color:#c9a84c;font-size:10px;letter-spacing:3px">CORVO</span>
-    <span style="font-size:8px;color:rgba(232,224,204,0.2)">AI analysis by Claude · Not financial advice</span>
+    <span style="font-size:8px;color:${mutedText(0.2)}">AI analysis by Claude · Not financial advice</span>
   </div>
   </body></html>`;
 }
@@ -410,17 +423,17 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose }: Pr
       <AnimatePresence>
         {open && (
           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, overflow: "hidden", zIndex: 100, width: 220, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+            style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", zIndex: 100, width: 220, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
             {[
               { value: "jspdf", label: "↓ Multi-page PDF", desc: "Cover · metrics · allocation · returns" },
               { value: "ai",    label: "AI Narrative PDF", desc: "Claude writes full analysis (print)" },
             ].map(opt => (
               <button key={opt.value} onClick={() => { setMode(opt.value as "jspdf" | "ai"); setOpen(false); }}
                 style={{ width: "100%", textAlign: "left", padding: "11px 14px", background: mode === opt.value ? C.amber2 : "transparent", border: "none", cursor: "pointer", transition: "background 0.1s" }}
-                onMouseEnter={e => { if (mode !== opt.value) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+                onMouseEnter={e => { if (mode !== opt.value) e.currentTarget.style.background = "var(--bg3)"; }}
                 onMouseLeave={e => { if (mode !== opt.value) e.currentTarget.style.background = "transparent"; }}>
-                <div style={{ fontSize: 12, color: mode === opt.value ? C.amber : "#e8e0cc", fontWeight: mode === opt.value ? 500 : 400 }}>{opt.label}</div>
-                <div style={{ fontSize: 10, color: "rgba(232,224,204,0.4)", marginTop: 2 }}>{opt.desc}</div>
+                <div style={{ fontSize: 12, color: mode === opt.value ? C.amber : "var(--text)", fontWeight: mode === opt.value ? 500 : 400 }}>{opt.label}</div>
+                <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>{opt.desc}</div>
               </button>
             ))}
           </motion.div>
