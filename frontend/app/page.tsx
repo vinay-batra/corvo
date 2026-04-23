@@ -1895,11 +1895,11 @@ export default function Landing() {
             <button
               id="changelog-btn"
               onClick={e => { e.stopPropagation(); setChangelogOpen(v => !v); }}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 20, cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.14)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.08)"; }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite", flexShrink: 0 }} />
-              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "rgba(201,168,76,0.85)", fontFamily: "Space Mono,monospace", textTransform: "uppercase" as const }}>What&apos;s New</span>
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.35)", borderRadius: 20, cursor: "pointer", transition: "all 0.2s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.1)"; }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite", flexShrink: 0 }} />
+              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text2)", fontFamily: "Space Mono,monospace", textTransform: "uppercase" as const }}>What&apos;s New</span>
             </button>
             {changelogOpen && (
               <div id="changelog-dropdown" style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, width: 280, background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, padding: "10px", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", zIndex: 200 }}>
