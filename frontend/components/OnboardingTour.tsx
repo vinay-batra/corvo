@@ -126,12 +126,12 @@ export default function OnboardingTour({ assets, dataAvailable, onComplete }: Pr
         height: 0,
         borderTop: "7px solid transparent",
         borderBottom: "7px solid transparent",
-        borderRight: "7px solid #1a1a1a",
+        borderRight: "7px solid var(--card-bg)",
       }} />
 
       {/* Card */}
       <div style={{
-        background: "#1a1a1a",
+        background: "var(--card-bg)",
         borderTop: "0.5px solid rgba(201,168,76,0.22)",
         borderRight: "0.5px solid rgba(201,168,76,0.22)",
         borderBottom: "0.5px solid rgba(201,168,76,0.22)",
@@ -153,7 +153,7 @@ export default function OnboardingTour({ assets, dataAvailable, onComplete }: Pr
 
         <p style={{
           fontSize: 13,
-          color: "#e8e0cc",
+          color: "var(--text)",
           lineHeight: 1.65,
           marginBottom: 14,
         }}>
@@ -165,7 +165,7 @@ export default function OnboardingTour({ assets, dataAvailable, onComplete }: Pr
             onClick={onComplete}
             style={{
               fontSize: 11,
-              color: "rgba(232,224,204,0.35)",
+              color: "var(--text3)",
               background: "none",
               border: "none",
               cursor: "pointer",
