@@ -350,7 +350,7 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
         </p>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={enable} disabled={loading}
-            style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: "var(--accent)", color: "#0a0e14", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+            style={{ flex: 1, padding: "8px 12px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: "var(--accent)", color: "var(--bg)", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
             {loading ? "Enabling…" : "Enable"}
           </button>
           <button onClick={dismiss}
@@ -1620,7 +1620,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                   <button onClick={() => { setShowSetupBanner(false); setShowOnboarding(true); }}
-                    style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "#0a0e14", cursor: "pointer", transition: "opacity 0.15s" }}
+                    style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "var(--bg)", cursor: "pointer", transition: "opacity 0.15s" }}
                     onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
                     onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
                     Complete Setup
@@ -1701,7 +1701,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     </span>
                     <button
                       onClick={handleAnalyze}
-                      style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "#0a0e14", cursor: "pointer", flexShrink: 0 }}>
+                      style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "var(--bg)", cursor: "pointer", flexShrink: 0 }}>
                       Reanalyze
                     </button>
                   </motion.div>
@@ -1902,7 +1902,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         onMouseEnter={e => { if (!chatOpen) e.currentTarget.style.background = "#d4b05a"; }}
         onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.background = "var(--accent)"; }}
       >
-        <MessageSquare size={20} color={chatOpen ? "var(--text2)" : "#0a0e14"} />
+        <MessageSquare size={20} color={chatOpen ? "var(--text2)" : "var(--bg)"} />
       </motion.button>
 
       {/* Mobile bottom navigation */}
@@ -2084,7 +2084,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       <AnimatePresence>
         {shareToast && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
-            style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", background: "#5cb88a", color: "#0a0e14", padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, zIndex: 999, pointerEvents: "none", whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
+            style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", background: "#5cb88a", color: "var(--bg)", padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, zIndex: 999, pointerEvents: "none", whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
             ✓ Link copied to clipboard
           </motion.div>
         )}

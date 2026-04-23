@@ -7,7 +7,7 @@ const STEPS = [
   {
     id: "basics",
     title: "Let's personalize your portfolio",
-    subtitle: "A few quick questions so ALPHAi can give you smarter insights",
+    subtitle: "A few quick questions so Corvo can give you smarter insights",
     icon: "◈",
   },
   {
@@ -49,9 +49,9 @@ function InputField({ label, value, onChange, placeholder, prefix, type = "text"
   const [focused, setFocused] = useState(false);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 10, letterSpacing: 2, color: "rgba(226,232,240,0.45)", textTransform: "uppercase" }}>{label}</label>
+      <label style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{label}</label>
       <div style={{ position: "relative" }}>
-        {prefix && <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: focused ? "var(--green)" : "rgba(226,232,240,0.3)", pointerEvents: "none" }}>{prefix}</span>}
+        {prefix && <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: focused ? "var(--green)" : "var(--text3)", pointerEvents: "none" }}>{prefix}</span>}
         <input
           type={type}
           value={value}
@@ -62,10 +62,10 @@ function InputField({ label, value, onChange, placeholder, prefix, type = "text"
           style={{
             width: "100%",
             padding: prefix ? "10px 12px 10px 26px" : "10px 12px",
-            background: "rgba(255,255,255,0.04)",
-            border: `1px solid ${focused ? "var(--green)" : "rgba(255,255,255,0.1)"}`,
+            background: "var(--input-bg)",
+            border: `1px solid ${focused ? "var(--green)" : "var(--input-border)"}`,
             borderRadius: 8,
-            color: "#e2e8f0",
+            color: "var(--text)",
             fontSize: 14,
             fontFamily: "var(--font-body)",
             outline: "none",
@@ -80,17 +80,17 @@ function InputField({ label, value, onChange, placeholder, prefix, type = "text"
 function OptionButton({ label, sublabel, selected, onClick, color = "var(--green)" }: any) {
   return (
     <button onClick={onClick} style={{
-      padding: "14px 16px", background: selected ? `${color}10` : "rgba(255,255,255,0.03)",
-      border: `1px solid ${selected ? color : "rgba(255,255,255,0.08)"}`,
+      padding: "14px 16px", background: selected ? `${color}10` : "var(--bg3)",
+      border: `1px solid ${selected ? color : "var(--border)"}`,
       borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all 0.2s", width: "100%",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${selected ? color : "rgba(255,255,255,0.2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${selected ? color : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           {selected && <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />}
         </div>
         <div>
-          <p style={{ fontSize: 13, color: selected ? "#e2e8f0" : "rgba(226,232,240,0.6)", fontWeight: selected ? 600 : 400 }}>{label}</p>
-          {sublabel && <p style={{ fontSize: 11, color: "rgba(226,232,240,0.35)", marginTop: 2 }}>{sublabel}</p>}
+          <p style={{ fontSize: 13, color: selected ? "var(--text)" : "var(--text2)", fontWeight: selected ? 600 : 400 }}>{label}</p>
+          {sublabel && <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{sublabel}</p>}
         </div>
       </div>
     </button>
@@ -125,13 +125,13 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
         initial={{ opacity: 0, scale: 0.94, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{ background: "#080f1e", border: "1px solid rgba(0,255,160,0.2)", borderRadius: 20, width: "100%", maxWidth: 520, overflow: "hidden", position: "relative" }}
+        style={{ background: "var(--card-bg)", border: "1px solid rgba(0,255,160,0.2)", borderRadius: 20, width: "100%", maxWidth: 520, overflow: "hidden", position: "relative" }}
       >
         {/* Top accent line */}
         <div style={{ height: 2, background: "linear-gradient(90deg, transparent, var(--green), var(--cyan), transparent)" }} />
 
         {/* Progress bar */}
-        <div style={{ height: 2, background: "rgba(255,255,255,0.05)" }}>
+        <div style={{ height: 2, background: "var(--border)" }}>
           <motion.div
             animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
             transition={{ duration: 0.4 }}
@@ -144,18 +144,18 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
             <div style={{ display: "flex", gap: 6 }}>
               {STEPS.map((_, i) => (
-                <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i <= step ? "var(--green)" : "rgba(255,255,255,0.1)", transition: "all 0.3s" }} />
+                <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i <= step ? "var(--green)" : "var(--border)", transition: "all 0.3s" }} />
               ))}
             </div>
-            <button onClick={onSkip} style={{ fontSize: 11, color: "rgba(226,232,240,0.3)", background: "none", border: "none", cursor: "pointer", letterSpacing: 1 }}>SKIP</button>
+            <button onClick={onSkip} style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", letterSpacing: 1 }}>SKIP</button>
           </div>
 
           {/* Step header */}
           <AnimatePresence mode="wait">
             <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
               <p style={{ fontSize: 28, fontFamily: "var(--font-display)", color: "var(--green)", marginBottom: 4 }}>{STEPS[step].icon}</p>
-              <h2 style={{ fontSize: 20, color: "#e2e8f0", fontWeight: 600, marginBottom: 6, lineHeight: 1.3 }}>{STEPS[step].title}</h2>
-              <p style={{ fontSize: 13, color: "rgba(226,232,240,0.45)", marginBottom: 28, lineHeight: 1.5 }}>{STEPS[step].subtitle}</p>
+              <h2 style={{ fontSize: 20, color: "var(--text)", fontWeight: 600, marginBottom: 6, lineHeight: 1.3 }}>{STEPS[step].title}</h2>
+              <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 28, lineHeight: 1.5 }}>{STEPS[step].subtitle}</p>
 
               {/* Step 0: Basics */}
               {step === 0 && (
@@ -227,7 +227,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
           {/* Navigation */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
             <button onClick={() => step > 0 ? setStep(s => s - 1) : onSkip()}
-              style={{ fontSize: 12, color: "rgba(226,232,240,0.35)", background: "none", border: "none", cursor: "pointer", letterSpacing: 1 }}>
+              style={{ fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", letterSpacing: 1 }}>
               {step === 0 ? "SKIP FOR NOW" : "← BACK"}
             </button>
             <motion.button
@@ -236,8 +236,8 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
               whileHover={canNext() ? { scale: 1.02 } : {}}
               whileTap={canNext() ? { scale: 0.98 } : {}}
               style={{
-                padding: "12px 28px", background: canNext() ? "var(--green)" : "rgba(255,255,255,0.08)",
-                border: "none", borderRadius: 10, color: canNext() ? "#020408" : "rgba(226,232,240,0.2)",
+                padding: "12px 28px", background: canNext() ? "var(--green)" : "var(--bg3)",
+                border: "none", borderRadius: 10, color: canNext() ? "var(--bg)" : "var(--text3)",
                 fontSize: 12, fontWeight: 700, letterSpacing: 2, cursor: canNext() ? "pointer" : "not-allowed",
                 fontFamily: "var(--font-display)", transition: "all 0.2s",
               }}
