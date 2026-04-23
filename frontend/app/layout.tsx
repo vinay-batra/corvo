@@ -48,12 +48,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" style={{ background: "#0a0e14" }}>
+    <html lang="en" data-theme="dark">
       <head>
         <link rel="canonical" href="https://corvo.capital" />
         <meta name="theme-color" content="#c9a84c" />
       </head>
-      <body style={{ margin: 0, background: "#0d1117" }}>
+      <body style={{ margin: 0 }}>
         <ParticleCanvas />
         <Suspense>
           <PostHogProvider>

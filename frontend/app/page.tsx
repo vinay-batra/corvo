@@ -482,7 +482,7 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: 0 }}>
       {/* Dark PDF preview */}
-      <div style={{ background: "#06090e", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ background: "var(--bg2)", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderBottom: "1px solid var(--border)" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
           {[30, 60, 90, 120].map(y => (
             <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
@@ -802,7 +802,7 @@ function VisualComparisonSection() {
       <div className="vs-panels" style={{ display: "flex", gap: 0, alignItems: "stretch", maxWidth: 960, margin: "0 auto 28px", position: "relative" }}>
         {/* Yahoo Finance / traditional tools side */}
         <SlideIn direction="left" style={{ flex: 1, borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid rgba(150,150,150,0.15)", borderRight: "none" }}>
-          <div style={{ background: "#0e0e0e", height: "100%", padding: "22px 20px 20px", fontFamily: "sans-serif", position: "relative" }}>
+          <div style={{ background: "var(--bg3)", height: "100%", padding: "22px 20px 20px", fontFamily: "sans-serif", position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 10, marginBottom: 14 }}>
               <span style={{ fontSize: 9, color: "rgba(150,150,150,0.9)", letterSpacing: 2, textTransform: "uppercase" }}>YAHOO FINANCE</span>
               <span style={{ fontSize: 10, color: "rgba(180,180,180,0.7)", fontWeight: 600, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", padding: "2px 8px", borderRadius: 4 }}>No insights</span>
@@ -834,15 +834,15 @@ function VisualComparisonSection() {
         </SlideIn>
 
         {/* VS divider */}
-        <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", background: "rgba(10,14,20,1)", position: "relative", zIndex: 2 }}>
+        <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", background: "var(--bg)", position: "relative", zIndex: 2 }}>
           <div style={{ width: 1, flex: 1, background: "rgba(201,168,76,0.1)" }} />
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(10,14,20,1)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c", fontFamily: "Space Mono,monospace", flexShrink: 0, zIndex: 3 }}>VS</div>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--bg)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c", fontFamily: "Space Mono,monospace", flexShrink: 0, zIndex: 3 }}>VS</div>
           <div style={{ width: 1, flex: 1, background: "rgba(201,168,76,0.1)" }} />
         </div>
 
         {/* Corvo side */}
         <SlideIn direction="right" delay={0.08} style={{ flex: 1, borderRadius: "0 16px 16px 0", overflow: "hidden", border: "1px solid rgba(201,168,76,0.2)", borderLeft: "none" }}>
-          <div style={{ background: "#080b10", height: "100%", padding: "22px 20px 20px" }}>
+          <div style={{ background: "var(--bg2)", height: "100%", padding: "22px 20px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(201,168,76,0.1)", paddingBottom: 10, marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                 <img src="/corvo-logo.svg" width={16} height={13} alt="" />
@@ -1260,7 +1260,7 @@ function EmailPopupModal() {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: "#0d1117", border: "1px solid rgba(201,168,76,0.18)",
+          background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.18)",
           borderRadius: 20, padding: "40px 36px", width: "100%", maxWidth: 420,
           position: "relative", boxShadow: "0 40px 120px rgba(0,0,0,0.8), 0 0 60px rgba(201,168,76,0.08)",
         }}>
@@ -1832,7 +1832,7 @@ export default function Landing() {
           .how-line{display:none!important}
           .demo-grid{display:flex!important;flex-direction:column!important}
           .compare-table th,.compare-table td{padding:10px 8px!important;font-size:10px!important}
-          .compare-table th:first-child,.compare-table td:first-child{position:sticky!important;left:0!important;background:#0a0e14!important;z-index:1!important}
+          .compare-table th:first-child,.compare-table td:first-child{position:sticky!important;left:0!important;background:var(--bg)!important;z-index:1!important}
           .tagline-h2{font-size:clamp(24px,5vw,44px)!important}
           .testi-grid{display:flex!important;flex-direction:column!important}
           .testi-desktop{display:none!important}
@@ -1872,7 +1872,7 @@ export default function Landing() {
         .x-social-link:hover{color:#c9a84c!important}
         .mobile-desktop-banner{display:none!important}
         @media(max-width:767px){
-          .mobile-desktop-banner{display:flex!important;align-items:center;gap:8px;background:#0d1017;border-bottom:1px solid rgba(201,168,76,0.12);padding:7px 14px;position:relative;z-index:200}
+          .mobile-desktop-banner{display:flex!important;align-items:center;gap:8px;background:var(--bg2);border-bottom:1px solid rgba(201,168,76,0.12);padding:7px 14px;position:relative;z-index:200}
         }
       `}</style>
 
