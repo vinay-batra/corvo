@@ -16,7 +16,7 @@ import { supabase } from "../lib/supabase";
 
 const FEEDBACK_TYPES = ["Bug", "Feature Request", "Other"] as const;
 
-export default function FeedbackButton({ rightOffset = 80 }: { rightOffset?: number }) {
+export default function FeedbackButton({ rightOffset = 90 }: { rightOffset?: number }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<typeof FEEDBACK_TYPES[number]>("Bug");
   const [message, setMessage] = useState("");
