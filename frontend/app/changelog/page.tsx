@@ -27,6 +27,13 @@ function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode
 
 const ENTRIES = [
   {
+    date: "Apr 23, 2026",
+    version: "v0.16",
+    title: "Alerts Overhaul, Empty State Redesign, TypeScript Fixes & UI Polish",
+    desc: "Portfolio alerts fully built end-to-end: select a saved portfolio, set a drop/rise threshold, and receive push notifications and email when triggered. Watchlist alerts section removed in favor of the unified AlertsPanel. Empty state redesigned with larger layout, Space Mono header, step icons, and a Presets shortcut hint. Metric cards upgraded with colored top borders and per-metric corner glow. Positions table now shows real company names and live 1D price changes. Analyze button pulses when portfolio is ready. XP progress bar thicker. Back button on Learn page redesigned with chevron icon and amber hover. Portfolio state now saved to localStorage when navigating to Learn so analyzed portfolio survives the tab switch. Watchlist controls reorganized: Rename moved into dropdown, Add button fixed to amber in light mode, refresh button labeled. Four TypeScript errors fixed across page.tsx, StockDetail, and UserMenu. Re-animation on scroll permanently fixed with initial={false} on all motion components.",
+    tags: ["Alerts", "UX", "Fixes", "TypeScript"],
+  },
+  {
     date: "Apr 21, 2026",
     version: "v0.15",
     title: "Learn Overhaul, SEO, Light Mode Fixes & XP System Improvements",
