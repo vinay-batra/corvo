@@ -120,13 +120,13 @@ function MobileDesktopBanner() {
         <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="#c9a84c" strokeWidth="1.4" />
         <path d="M5.5 14h5M8 12v2" stroke="#c9a84c" strokeWidth="1.4" strokeLinecap="round" />
       </svg>
-      <span style={{ flex: 1, fontSize: 11, color: "rgba(232,224,204,0.7)", letterSpacing: 0.2 }}>
+      <span style={{ flex: 1, fontSize: 11, color: "var(--text2)", letterSpacing: 0.2 }}>
         For the best experience, view Corvo on desktop
       </span>
       <button
         onClick={dismiss}
         aria-label="Dismiss"
-        style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "rgba(232,224,204,0.4)", lineHeight: 1, flexShrink: 0 }}
+        style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text3)", lineHeight: 1, flexShrink: 0 }}
       >
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
           <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -145,7 +145,7 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
       <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(32px,3.5vw,48px)", fontWeight: 700, color: "#c9a84c", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>
         <Counter target={target} suffix={suffix} />
       </p>
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "rgba(232,224,204,0.25)", textTransform: "uppercase" }}>{label}</p>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>{label}</p>
     </FadeUp>
   );
 }
@@ -188,8 +188,8 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "portfolio", padding: "32px 32px 28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Portfolio Analyzer</p>
-      <h3 style={{ fontSize: 21, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>Full portfolio intelligence</h3>
-      <p style={{ fontSize: 13, color: "rgba(232,224,204,0.4)", marginBottom: 24, lineHeight: 1.7, maxWidth: 360 }}>Sharpe ratio, volatility, max drawdown, and benchmark comparison, updated live as markets move.</p>
+      <h3 style={{ fontSize: 21, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Full portfolio intelligence</h3>
+      <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 24, lineHeight: 1.7, maxWidth: 360 }}>Sharpe ratio, volatility, max drawdown, and benchmark comparison, updated live as markets move.</p>
       <div style={{ background: "rgba(8,11,16,0.7)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           {([
@@ -237,15 +237,15 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "aichat", padding: "28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>AI Chat</p>
-      <h3 style={{ fontSize: 19, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>Ask anything, get answers</h3>
-      <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", marginBottom: 20, lineHeight: 1.7 }}>Your AI knows your exact holdings, goals, and risk tolerance.</p>
+      <h3 style={{ fontSize: 19, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Ask anything, get answers</h3>
+      <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 20, lineHeight: 1.7 }}>Your AI knows your exact holdings, goals, and risk tolerance.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
         <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.7)" }}>Am I taking too much risk?</p>
+          <p style={{ fontSize: 11, color: "var(--text)" }}>Am I taking too much risk?</p>
         </div>
         <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "12px 12px 12px 2px", padding: "10px 13px", display: "flex", gap: 8, minHeight: 56 }}>
           <img src="/corvo-logo.svg" width={12} height={10} alt="" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.65)", lineHeight: 1.65 }}>
+          <p style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.65 }}>
             {displayed}
             {displayed.length < FULL_TEXT.length && (
               <span style={{ display: "inline-block", width: 1.5, height: 11, background: "#c9a84c", marginLeft: 1, verticalAlign: "middle", animation: "pdot 0.7s step-end infinite" }} />
@@ -253,7 +253,7 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
           </p>
         </div>
         <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.7)" }}>What's my Sharpe ratio?</p>
+          <p style={{ fontSize: 11, color: "var(--text)" }}>What's my Sharpe ratio?</p>
         </div>
         <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "12px 12px 12px 2px", padding: "12px 16px", display: "flex", gap: 5, alignItems: "center" }}>
           {[0, 1, 2].map(i => (
@@ -291,8 +291,8 @@ function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "watchlist", padding: "28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Watchlist + Alerts</p>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>Never miss a move</h3>
-      <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", marginBottom: 18, lineHeight: 1.6 }}>Set price & percent alerts on any ticker worldwide.</p>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Never miss a move</h3>
+      <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Set price & percent alerts on any ticker worldwide.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         {stocks.map((s, i) => (
           <div key={s.ticker} style={{
@@ -303,7 +303,7 @@ function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
               <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#c9a84c", fontFamily: "Space Mono,monospace" }}>{s.ticker[0]}</div>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#e8e0cc", fontFamily: "Space Mono,monospace" }}>{s.ticker}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>{s.ticker}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 10, color: "rgba(232,224,204,0.35)", fontFamily: "Space Mono,monospace" }}>${s.price}</span>
@@ -363,8 +363,8 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
     <BentoCard delay={delay} style={{ gridArea: "learnxp", padding: "28px" }}>
       <div ref={ref} style={{ position: "absolute" }} />
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Learn & Earn XP</p>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>Level up your knowledge</h3>
-      <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", marginBottom: 18, lineHeight: 1.6 }}>Finance lessons that earn XP and unlock real features.</p>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Level up your knowledge</h3>
+      <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Finance lessons that earn XP and unlock real features.</p>
       <div style={{ background: "rgba(8,11,16,0.6)", borderRadius: 12, padding: "16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <div>
@@ -402,14 +402,14 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
     <BentoCard delay={delay} style={{ gridArea: "deepdives", padding: "28px" }}>
       <div style={{ position: "absolute", top: -30, left: -30, width: 160, height: 160, background: "radial-gradient(ellipse, rgba(92,184,138,0.05) 0%, transparent 70%)", pointerEvents: "none", borderRadius: "50%" }} />
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Stock Deep Dives</p>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>Research any stock, instantly</h3>
-      <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", marginBottom: 18, lineHeight: 1.6 }}>AI-powered fundamentals, news sentiment, and price history analysis.</p>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Research any stock, instantly</h3>
+      <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>AI-powered fundamentals, news sentiment, and price history analysis.</p>
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#e8e0cc", fontFamily: "Space Mono,monospace" }}>AAPL</div>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>AAPL</div>
             <div>
-              <p style={{ fontSize: 16, fontWeight: 700, color: "#e8e0cc", fontFamily: "Space Mono,monospace" }}>$189.40</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>$189.40</p>
               <p style={{ fontSize: 10, color: "#5cb88a" }}>+1.82% today</p>
             </div>
           </div>
@@ -440,8 +440,8 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "montecarlo", padding: "28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Monte Carlo Simulation</p>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 6, letterSpacing: -0.5 }}>See your future in 8,500 paths</h3>
-      <p style={{ fontSize: 12, color: "rgba(232,224,204,0.4)", marginBottom: 18, lineHeight: 1.6 }}>Simulate outcomes based on your actual volatility and correlation.</p>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>See your future in 8,500 paths</h3>
+      <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Simulate outcomes based on your actual volatility and correlation.</p>
       <div style={{ background: "rgba(8,11,16,0.6)", borderRadius: 12, padding: "14px" }}>
         <svg width="100%" height="110" viewBox="0 0 280 110" preserveAspectRatio="none">
           <defs>
@@ -534,13 +534,13 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
       {/* Text content */}
       <div style={{ padding: "16px 28px 28px" }}>
         <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 5 }}>PDF Reports</p>
-        <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 5, letterSpacing: -0.3 }}>Export & share</p>
-        <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.65, marginBottom: 10 }}>Generate a full portfolio report in one click.</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 5, letterSpacing: -0.3 }}>Export & share</p>
+        <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, marginBottom: 10 }}>Generate a full portfolio report in one click.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, animation: `fadein 0.5s ease ${0.3 + i * 0.12}s both` }}>
               <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
-              <span style={{ fontSize: 11, color: "rgba(232,224,204,0.4)" }}>{item}</span>
+              <span style={{ fontSize: 11, color: "var(--text2)" }}>{item}</span>
             </div>
           ))}
         </div>
@@ -646,8 +646,8 @@ function StockTeaserSection() {
       <div style={{ maxWidth: 780, margin: "0 auto" }}>
         <FadeUp style={{ textAlign: "center", marginBottom: 40 }}>
           <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Interactive Preview</p>
-          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1, marginBottom: 12 }}>Try it right now</h2>
-          <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", fontWeight: 300 }}>Search any stock and see what Corvo finds</p>
+          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,40px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.1, marginBottom: 12 }}>Try it right now</h2>
+          <p style={{ fontSize: 15, color: "var(--text2)", fontWeight: 300 }}>Search any stock and see what Corvo finds</p>
         </FadeUp>
 
         {/* Search bar */}
@@ -663,7 +663,7 @@ function StockTeaserSection() {
               onChange={e => setQuery(e.target.value.toUpperCase())}
               onKeyDown={e => e.key === "Enter" && handleSearch()}
               placeholder="AAPL, TSLA, NVDA, BTC-USD…"
-              style={{ width: "100%", padding: "14px 16px 14px 40px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#e8e0cc", fontSize: 14, outline: "none", fontFamily: "Space Mono,monospace", transition: "border-color 0.2s", letterSpacing: 0.5 }}
+              style={{ width: "100%", padding: "14px 16px 14px 40px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", fontFamily: "Space Mono,monospace", transition: "border-color 0.2s", letterSpacing: 0.5 }}
               onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.5)")}
               onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
             />
@@ -729,7 +729,7 @@ function StockTeaserSection() {
                 </div>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: "#e8e0cc", letterSpacing: -0.3 }}>{result.name}</p>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3 }}>{result.name}</p>
                     {result.isLive && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 7px", background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.2)", borderRadius: 10, fontSize: 8, color: "#5cb88a", letterSpacing: 0.5 }}>
                         <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#5cb88a", display: "inline-block", animation: "pdot 2s infinite" }} />
@@ -761,10 +761,10 @@ function StockTeaserSection() {
             {/* Metrics row */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
               {[
-                { label: "Sharpe (Est.)", value: result.sharpe, color: "#e8e0cc" },
+                { label: "Sharpe (Est.)", value: result.sharpe, color: "var(--text)" },
                 result.peRatio != null
-                  ? { label: "P/E Ratio", value: result.peRatio, color: "#e8e0cc" }
-                  : { label: "Volatility", value: result.volatility, color: result.volatility !== "-" && parseFloat(result.volatility) > 40 ? "#e05c5c" : "#e8e0cc" },
+                  ? { label: "P/E Ratio", value: result.peRatio, color: "var(--text)" }
+                  : { label: "Volatility", value: result.volatility, color: result.volatility !== "-" && parseFloat(result.volatility) > 40 ? "#e05c5c" : "var(--text)" },
                 { label: "Health (Est.)", value: result.health > 0 ? `${result.health}/100` : "-", color: healthColor(result.health) },
               ].map((m, i) => (
                 <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
@@ -776,11 +776,11 @@ function StockTeaserSection() {
             {/* AI insight */}
             <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.04)", background: "rgba(201,168,76,0.03)", display: "flex", alignItems: "flex-start", gap: 10 }}>
               <img src="/corvo-logo.svg" width={14} height={11} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
-              <p style={{ fontSize: 12, color: "rgba(232,224,204,0.65)", lineHeight: 1.65, fontStyle: "italic" as const }}>{result.insight}</p>
+              <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, fontStyle: "italic" as const }}>{result.insight}</p>
             </div>
             {/* CTA */}
             <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <p style={{ fontSize: 11, color: "rgba(232,224,204,0.25)" }}>{result.isLive ? "Live market data · Preview only" : "Powered by Corvo · Preview only"}</p>
+              <p style={{ fontSize: 11, color: "var(--text3)" }}>{result.isLive ? "Live market data · Preview only" : "Powered by Corvo · Preview only"}</p>
               <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "#c9a84c", borderRadius: 9, fontSize: 12, fontWeight: 700, color: "#0a0e14", textDecoration: "none", transition: "background 0.2s" }}
                 onMouseEnter={e => (e.currentTarget.style.background = "#d4b558")}
                 onMouseLeave={e => (e.currentTarget.style.background = "#c9a84c")}>
@@ -872,7 +872,7 @@ function VisualComparisonSection() {
             </div>
             <div style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 8, padding: "9px 12px", display: "flex", gap: 7, alignItems: "flex-start" }}>
               <img src="/corvo-logo.svg" width={11} height={9} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
-              <p style={{ fontSize: 10, color: "rgba(232,224,204,0.6)", lineHeight: 1.6 }}>Strong cash flow and buyback program supports price stability.</p>
+              <p style={{ fontSize: 10, color: "var(--text2)", lineHeight: 1.6 }}>Strong cash flow and buyback program supports price stability.</p>
             </div>
           </div>
         </SlideIn>
@@ -919,8 +919,8 @@ function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon:
     >
       <div style={{ width: 80, height: 80, borderRadius: 22, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.22)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 0 40px rgba(201,168,76,0.18), 0 0 80px rgba(201,168,76,0.08)" }}>{icon}</div>
       <p style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, color: "rgba(201,168,76,0.4)", letterSpacing: 2, marginBottom: 12 }}>{n}</p>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: "#e8e0cc", marginBottom: 10, letterSpacing: -0.4 }}>{title}</h3>
-      <p style={{ fontSize: 13, color: "rgba(232,224,204,0.38)", lineHeight: 1.85, fontWeight: 300, maxWidth: 230, margin: "0 auto" }}>{desc}</p>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 10, letterSpacing: -0.4 }}>{title}</h3>
+      <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 230, margin: "0 auto" }}>{desc}</p>
     </motion.div>
   );
 }
@@ -936,10 +936,10 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
       style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}
     >
       <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
-      <p style={{ fontSize: 14, color: "rgba(232,224,204,0.65)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, flex: 1 }}>{text}</p>
+      <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, flex: 1 }}>{text}</p>
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 18 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{name}</p>
-        <p style={{ fontSize: 11, color: "rgba(232,224,204,0.28)", marginTop: 3 }}>{role}</p>
+        <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{role}</p>
       </div>
     </motion.div>
   );
@@ -987,7 +987,7 @@ function MobileTestimonialCarousel() {
     <div style={{ position: "relative", width: "100%", paddingLeft: 28, paddingRight: 28 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", minHeight: 220 }}>
         <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
-        <p style={{ fontSize: 14, color: "rgba(232,224,204,0.65)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24 }}>{card.text}</p>
+        <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24 }}>{card.text}</p>
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 18 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{card.name}</p>
           <p style={{ fontSize: 11, color: "rgba(232,224,204,0.28)", marginTop: 3 }}>{card.role}</p>
@@ -1073,14 +1073,14 @@ function TickerTape() {
   }, []);
   const doubled = [...items, ...items];
   return (
-    <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "hidden", background: "rgba(10,14,20,0.88)" }}>
+    <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "hidden", background: "var(--bg)" }}>
       <div style={{ display: "flex", gap: 48, animation: "ticker 30s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
         {doubled.map((item, i) => {
           const up = item.change_pct >= 0;
           return (
             <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11, fontFamily: "Space Mono,monospace" }}>
               <span style={{ color: "#c9a84c", letterSpacing: 1 }}>{item.ticker}</span>
-              <span style={{ color: "rgba(232,224,204,0.4)", letterSpacing: 0.5 }}>{item.price != null ? (item.price < 100 ? `$${item.price.toFixed(2)}` : `$${item.price.toLocaleString()}`) : "-"}</span>
+              <span style={{ color: "var(--text3)", letterSpacing: 0.5 }}>{item.price != null ? (item.price < 100 ? `$${item.price.toFixed(2)}` : `$${item.price.toLocaleString()}`) : "-"}</span>
               <span style={{ color: up ? "#5cb88a" : "#e05c5c", fontWeight: 600 }}>{up ? "+" : ""}{item.change_pct != null ? item.change_pct.toFixed(2) : "-"}%</span>
             </span>
           );
@@ -1271,7 +1271,7 @@ function EmailPopupModal() {
             position: "absolute", top: 14, right: 14,
             background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 8, width: 30, height: 30, cursor: "pointer",
-            color: "rgba(232,224,204,0.4)", display: "flex",
+            color: "var(--text3)", display: "flex",
             alignItems: "center", justifyContent: "center",
           }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1283,10 +1283,10 @@ function EmailPopupModal() {
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, letterSpacing: 3, color: "#c9a84c" }}>CORVO</span>
         </div>
 
-        <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: 22, fontWeight: 700, color: "#e8e0cc", letterSpacing: -0.5, marginBottom: 8, lineHeight: 1.2 }}>
+        <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 8, lineHeight: 1.2 }}>
           Get market insights in your inbox
         </h2>
-        <p style={{ fontSize: 13, color: "rgba(232,224,204,0.45)", lineHeight: 1.7, marginBottom: 26, fontWeight: 300 }}>
+        <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, marginBottom: 26, fontWeight: 300 }}>
           Weekly portfolio digest, market briefs, and tips.
         </p>
 
@@ -1306,7 +1306,7 @@ function EmailPopupModal() {
               style={{
                 padding: "13px 16px", background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10,
-                color: "#e8e0cc", fontSize: 14, outline: "none",
+                color: "var(--text)", fontSize: 14, outline: "none",
                 transition: "border-color 0.2s",
               }}
               onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
@@ -1328,7 +1328,7 @@ function EmailPopupModal() {
           </div>
         )}
 
-        <p style={{ fontSize: 10, color: "rgba(232,224,204,0.2)", marginTop: 16, textAlign: "center", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 16, textAlign: "center", lineHeight: 1.5 }}>
           No spam, unsubscribe anytime.
         </p>
       </div>
@@ -1361,10 +1361,10 @@ function EmailCaptureBottom() {
           <img src="/corvo-logo.svg" width={36} height={36} alt="Corvo" style={{ opacity: 0.7 }} />
         </div>
         <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Stay Ahead</p>
-        <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 12, lineHeight: 1.2 }}>
+        <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,40px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 12, lineHeight: 1.2 }}>
           Your edge starts here
         </h2>
-        <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", marginBottom: 36, lineHeight: 1.8, fontWeight: 300, maxWidth: 500, margin: "0 auto 36px" }}>
+        <p style={{ fontSize: 15, color: "var(--text2)", marginBottom: 36, lineHeight: 1.8, fontWeight: 300, maxWidth: 500, margin: "0 auto 36px" }}>
           Weekly portfolio digest, daily market briefs, and personalized tips. Join investors already using Corvo to stay ahead.
         </p>
         {status === "done" ? (
@@ -1375,7 +1375,7 @@ function EmailCaptureBottom() {
         ) : (
           <div className="email-cap-row" style={{ display: "flex", gap: 10, maxWidth: 480, margin: "0 auto" }}>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="your@email.com"
-              style={{ flex: 1, minWidth: 0, padding: "15px 20px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#e8e0cc", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+              style={{ flex: 1, minWidth: 0, padding: "15px 20px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
               onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
               onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")} />
             <button onClick={submit} disabled={status === "loading"} className="cta-shimmer"
@@ -1385,7 +1385,7 @@ function EmailCaptureBottom() {
           </div>
         )}
         {status === "error" && <p style={{ fontSize: 12, color: "#e05c5c", marginTop: 12 }}>Something went wrong. Try again.</p>}
-        <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", marginTop: 18 }}>No spam. Unsubscribe at any time.</p>
+        <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 18 }}>No spam. Unsubscribe at any time.</p>
       </div>
       </FadeUp>
     </section>
@@ -1447,7 +1447,7 @@ function FeaturedInBar() {
             style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px" }}
           >
             {p.icon}
-            <span style={{ fontSize: 12, color: "rgba(232,224,204,0.45)", fontWeight: 500, letterSpacing: 0.2 }}>{p.name}</span>
+            <span style={{ fontSize: 12, color: "var(--text2)", fontWeight: 500, letterSpacing: 0.2 }}>{p.name}</span>
           </motion.div>
         ))}
       </div>
@@ -1507,8 +1507,8 @@ function GrowthCalculatorSection() {
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
         <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
           <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Portfolio Calculator</p>
-          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 12 }}>See your money grow</h2>
-          <p style={{ fontSize: 15, color: "rgba(232,224,204,0.38)", fontWeight: 300 }}>Adjust the inputs and watch your portfolio project forward</p>
+          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 12 }}>See your money grow</h2>
+          <p style={{ fontSize: 15, color: "var(--text2)", fontWeight: 300 }}>Adjust the inputs and watch your portfolio project forward</p>
         </Reveal>
 
         <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 20, padding: "40px 48px", boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}>
@@ -1516,28 +1516,28 @@ function GrowthCalculatorSection() {
           <div className="calc-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, marginBottom: 44 }}>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-                <p style={{ fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.4)", textTransform: "uppercase" }}>Starting Portfolio</p>
+                <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Starting Portfolio</p>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -0.5 }}>${principal.toLocaleString()}</p>
               </div>
               <input type="range" min={1000} max={500000} step={1000} value={principal}
                 onChange={e => setPrincipal(Number(e.target.value))}
                 style={{ width: "100%", accentColor: "#c9a84c", cursor: "pointer", height: 4 }} />
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-                <span style={{ fontSize: 9, color: "rgba(232,224,204,0.2)" }}>$1K</span>
-                <span style={{ fontSize: 9, color: "rgba(232,224,204,0.2)" }}>$500K</span>
+                <span style={{ fontSize: 9, color: "var(--text3)" }}>$1K</span>
+                <span style={{ fontSize: 9, color: "var(--text3)" }}>$500K</span>
               </div>
             </div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-                <p style={{ fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.4)", textTransform: "uppercase" }}>Monthly Contribution</p>
+                <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Monthly Contribution</p>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -0.5 }}>${monthly.toLocaleString()}</p>
               </div>
               <input type="range" min={0} max={5000} step={50} value={monthly}
                 onChange={e => setMonthly(Number(e.target.value))}
                 style={{ width: "100%", accentColor: "#c9a84c", cursor: "pointer", height: 4 }} />
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-                <span style={{ fontSize: 9, color: "rgba(232,224,204,0.2)" }}>$0</span>
-                <span style={{ fontSize: 9, color: "rgba(232,224,204,0.2)" }}>$5K/mo</span>
+                <span style={{ fontSize: 9, color: "var(--text3)" }}>$0</span>
+                <span style={{ fontSize: 9, color: "var(--text3)" }}>$5K/mo</span>
               </div>
             </div>
           </div>
@@ -1549,9 +1549,9 @@ function GrowthCalculatorSection() {
               { label: "30-Year Projection", value: fmt(project(30)), sublabel: "at 8% avg annual return" },
             ].map(({ label, value, sublabel }) => (
               <div key={label} style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 12, padding: "20px 24px" }}>
-                <p style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 8 }}>{label}</p>
+                <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8 }}>{label}</p>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, marginBottom: 4 }}>{value}</p>
-                <p style={{ fontSize: 10, color: "rgba(232,224,204,0.25)" }}>{sublabel}</p>
+                <p style={{ fontSize: 10, color: "var(--text3)" }}>{sublabel}</p>
               </div>
             ))}
           </div>
@@ -1574,7 +1574,7 @@ function GrowthCalculatorSection() {
                         boxShadow: "0 0 16px rgba(201,168,76,0.15)",
                       }} />
                     </div>
-                    <p style={{ fontSize: 9, color: "rgba(232,224,204,0.35)", letterSpacing: 0.5 }}>{yr}yr</p>
+                    <p style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>{yr}yr</p>
                   </div>
                 );
               })}
@@ -1582,7 +1582,7 @@ function GrowthCalculatorSection() {
           </div>
 
           {/* Disclaimer + CTA */}
-          <p style={{ fontSize: 10, color: "rgba(232,224,204,0.25)", lineHeight: 1.7, marginBottom: 24, textAlign: "center" as const }}>
+          <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.7, marginBottom: 24, textAlign: "center" as const }}>
             These are estimates based on historical S&amp;P 500 average returns. Corvo runs 8,500 Monte Carlo simulations for your actual portfolio.
           </p>
           <div style={{ textAlign: "center" as const }}>
@@ -1610,8 +1610,8 @@ function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title:
         {icon}
       </div>
       <div>
-        <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", marginBottom: 8, letterSpacing: -0.3 }}>{title}</p>
-        <p style={{ fontSize: 12, color: "rgba(232,224,204,0.38)", lineHeight: 1.75, fontWeight: 300 }}>{desc}</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 8, letterSpacing: -0.3 }}>{title}</p>
+        <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.75, fontWeight: 300 }}>{desc}</p>
       </div>
     </motion.div>
   );
@@ -1668,7 +1668,7 @@ function SecurityTrustSection() {
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
           <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Security & Trust</p>
-          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>Your data, protected</h2>
+          <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>Your data, protected</h2>
         </Reveal>
         <div className="trust-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
           {trustItems.map((item, i) => (
@@ -1802,7 +1802,7 @@ export default function Landing() {
   };
 
   return (
-    <div ref={containerRef} className="page-fadein" style={{ height: "100vh", overflowY: "auto", overflowX: "hidden", background: "transparent", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
+    <div ref={containerRef} className="page-fadein" style={{ height: "100vh", overflowY: "auto", overflowX: "hidden", background: "transparent", color: "var(--text)", fontFamily: "Inter,sans-serif" }}>
       <EmailPopupModal />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <style>{`
@@ -2033,7 +2033,7 @@ export default function Landing() {
           style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4.5vw,56px)", fontWeight: 700, lineHeight: 1.06, letterSpacing: -2, marginBottom: 28, maxWidth: 840 }}
           variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
           initial="hidden" animate="visible">
-          <span style={{ display: "block", color: "#e8e0cc" }}>
+          <span style={{ display: "block", color: "var(--text)" }}>
             {["Your", "portfolio", "deserves"].map((w, i) => (
               <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200 } } }}
                 style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
@@ -2049,7 +2049,7 @@ export default function Landing() {
         </motion.h1>
 
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
-          style={{ fontSize: 17, color: "rgba(232,224,204,0.45)", lineHeight: 1.85, fontWeight: 300, maxWidth: 520, marginBottom: 48 }}>
+          style={{ fontSize: 17, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 520, marginBottom: 48 }}>
           AI-powered analytics: Sharpe ratio, Monte Carlo, sector exposure, and more. Free.
         </motion.p>
 
@@ -2135,7 +2135,7 @@ export default function Landing() {
 
       {/* ─── STATS BAR ─── */}
       <section style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ background: "rgba(10,14,20,0.7)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(201,168,76,0.08)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+        <div style={{ background: "var(--bg2)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(201,168,76,0.08)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
           <div className="stats-grid" style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
             <StatItem target={liveUserCount ?? 847} suffix="+" label="Active Users" delay={0} borderRight />
             <StatItem target={5500} suffix="+" label="Portfolios Analyzed" delay={0.1} borderRight />
@@ -2151,7 +2151,7 @@ export default function Landing() {
       <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "64px 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,44px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1 }}>Everything your portfolio<br />actually needs</h2>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,44px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.1 }}>Everything your portfolio<br />actually needs</h2>
           </Reveal>
           <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist exportshare" "learnxp deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
             <BentoPortfolioCard delay={0} />
@@ -2174,12 +2174,12 @@ export default function Landing() {
             <div>
               <Reveal>
                 <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 18 }}>Live Demo</p>
-                <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(26px,3vw,40px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.15, marginBottom: 18 }}>See it in action.<br /><span style={{ whiteSpace: "nowrap" }}>No signup needed.</span></h2>
-                <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", lineHeight: 1.8, fontWeight: 300, marginBottom: 36 }}>Explore a live portfolio with real market data. Ask the AI anything. Run Monte Carlo. All before you create an account.</p>
+                <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(26px,3vw,40px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.15, marginBottom: 18 }}>See it in action.<br /><span style={{ whiteSpace: "nowrap" }}>No signup needed.</span></h2>
+                <p style={{ fontSize: 15, color: "var(--text2)", lineHeight: 1.8, fontWeight: 300, marginBottom: 36 }}>Explore a live portfolio with real market data. Ask the AI anything. Run Monte Carlo. All before you create an account.</p>
                 <Link href="/app?demo=true" className="demo-btn" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "16px 40px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", letterSpacing: 0.2 }}>
                   Try a live demo →
                 </Link>
-                <p style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", marginTop: 16 }}>No credit card · No account required</p>
+                <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 16 }}>No credit card · No account required</p>
               </Reveal>
             </div>
             <Reveal delay={0.15}>
@@ -2193,7 +2193,7 @@ export default function Landing() {
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 24px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>What investors are saying</h2>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>What investors are saying</h2>
           </Reveal>
           {/* Desktop: consistent 3-column grid */}
           <div className="testi-desktop" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
@@ -2229,21 +2229,21 @@ export default function Landing() {
         <div className="footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
-            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "rgba(232,224,204,0.2)" }}>CORVO</span>
-            <span style={{ fontSize: 11, color: "rgba(232,224,204,0.15)", marginLeft: 8 }}>© 2026 Corvo. All rights reserved.</span>
+            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "var(--text3)" }}>CORVO</span>
+            <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>© 2026 Corvo. All rights reserved.</span>
           </div>
           <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-            <a href="/blog" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Blog</a>
-            <a href="/pricing" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Pricing</a>
-            <a href="/privacy" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Privacy</a>
-            <a href="/terms" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Terms</a>
-            <a href="/faq" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>FAQ</a>
-            <a href="/changelog" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>Changelog</a>
+            <a href="/blog" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Blog</a>
+            <a href="/pricing" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Pricing</a>
+            <a href="/privacy" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Privacy</a>
+            <a href="/terms" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Terms</a>
+            <a href="/faq" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>FAQ</a>
+            <a href="/changelog" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Changelog</a>
             <a href="https://www.producthunt.com/posts/corvo" target="_blank" rel="noopener noreferrer" aria-label="Corvo on Product Hunt" style={{ display: "flex", alignItems: "center", opacity: 0.6, transition: "opacity 0.2s" }} onMouseEnter={e => (e.currentTarget.style.opacity = "1")} onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}>
               <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=corvo&theme=dark" alt="Corvo on Product Hunt" style={{ height: 20, width: "auto" }} />
             </a>
-            <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>GitHub</a>
-            <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="x-social-link" style={{ color: "rgba(232,224,204,0.35)", textDecoration: "none", display: "flex", alignItems: "center", transition: "color 0.2s" }}>
+            <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>GitHub</a>
+            <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="x-social-link" style={{ color: "var(--text3)", textDecoration: "none", display: "flex", alignItems: "center", transition: "color 0.2s" }}>
               <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"/>
               </svg>
