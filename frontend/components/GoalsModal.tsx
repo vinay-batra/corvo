@@ -77,11 +77,11 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: "fixed", inset: 0, background: "rgba(10,14,20,0.85)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       <motion.div initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
-        style={{ width: "min(480px, 95vw)", background: C.navy3, border: `1px solid rgba(255,255,255,0.07)`, borderRadius: 18, padding: "36px 36px 32px", position: "relative" }}>
+        style={{ width: "min(480px, 95vw)", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 18, padding: "36px 36px 32px", position: "relative" }}>
 
         {/* Progress bar */}
         <div style={{ height: 2, background: "var(--bg3)", borderRadius: 1, marginBottom: 32, overflow: "hidden" }}>
