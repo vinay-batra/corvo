@@ -37,7 +37,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
           const name = data.display_name || user.email?.split("@")[0] || "User";
           setProfile({ displayName: name, avatarUrl: data.avatar_url || null });
         }
-      }).catch(() => {});
+      }).then(() => {}).catch(() => {});
   }, [user, displayNameProp]);
 
   // Close on outside click
