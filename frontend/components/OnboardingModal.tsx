@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PortfolioBuilder from "./PortfolioBuilder";
 
 const C = {
-  navy: "var(--bg)", navy3: "var(--card-bg)", navy4: "#161c26",
+  navy: "var(--bg)", navy3: "var(--card-bg)", navy4: "var(--bg2)",
   border: "var(--border)", cream: "var(--text)",
   cream2: "var(--text2)", cream3: "var(--text3)",
   amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", amber3: "rgba(184,134,11,0.25)",
@@ -58,7 +58,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
       exit={{ opacity: 0 }}
       style={{
         position: "fixed", inset: 0,
-        background: "rgba(10,14,20,0.92)",
+        background: "var(--modal-overlay, rgba(0,0,0,0.6))",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
         zIndex: 1000,
@@ -276,7 +276,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                   style={{
                     padding: "14px 16px", marginBottom: 14,
-                    background: "rgba(255,255,255,0.02)",
+                    background: "var(--bg3)",
                     border: `1px solid ${C.border}`,
                     borderRadius: 12,
                   }}
