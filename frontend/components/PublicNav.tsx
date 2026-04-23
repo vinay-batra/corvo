@@ -25,7 +25,6 @@ function useTheme() {
 }
 
 export default function PublicNav() {
-  const [navSolid, setNavSolid] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const pathname = usePathname();
@@ -39,17 +38,9 @@ export default function PublicNav() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const onScroll = () => setNavSolid(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   const active = (path: string) => pathname === path || pathname?.startsWith(path + "/");
 
-  const navBg = navSolid
-    ? "var(--bg)"
-    : "color-mix(in srgb, var(--bg) 60%, transparent)";
+  const navBg = "var(--bg)";
 
   const drawerBg = "var(--bg)";
 
@@ -66,7 +57,7 @@ export default function PublicNav() {
           .pnav-mobile-link { min-height: 44px !important; display: flex !important; align-items: center !important; }
         }
       `}</style>
-      <nav className="pnav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navBg, backdropFilter: "blur(20px)", borderBottom: navSolid ? "1px solid var(--border)" : "1px solid rgba(201,168,76,0.04)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
+      <nav className="pnav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navBg, borderBottom: "1px solid var(--border)" }}>
         {/* Logo */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
           <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
@@ -98,7 +89,7 @@ export default function PublicNav() {
           ) : (
             <>
               <Link href="/auth" className="pnav-link" style={{ padding: "7px 16px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Log in</Link>
-              <Link href="/auth" className="pnav-cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "var(--accent)", borderRadius: 8, color: "#0a0e14", textDecoration: "none", transition: "all 0.2s" }}>Get Started</Link>
+              <Link href="/auth" className="pnav-cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "var(--accent)", borderRadius: 8, color: "var(--bg)", textDecoration: "none", transition: "all 0.2s" }}>Get Started</Link>
             </>
           )}
         </div>
@@ -130,11 +121,11 @@ export default function PublicNav() {
           </button>
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             {loggedIn ? (
-              <Link href="/app" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Go to App</Link>
+              <Link href="/app" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Go to App</Link>
             ) : (
               <>
                 <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Log in</Link>
-                <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Get Started</Link>
+                <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Get Started</Link>
               </>
             )}
           </div>
