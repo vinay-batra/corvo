@@ -11,10 +11,13 @@ function getColors(isDark: boolean) {
       }
     : {
         amber: "rgba(184,134,11,0.45)",
-        regular: "rgba(15,30,60,0.22)",
-        line: (a: number) => `rgba(100,80,20,${a * 1.5})`,
+        regular: "rgba(30,50,100,0.25)",
+        line: (a: number) => `rgba(30,50,100,${(a * 5 / 3).toFixed(3)})`,
       };
 }
+
+const N_DARK = 55;
+const N_LIGHT = Math.round(N_DARK * 1.5); // 83
 
 export default function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -39,8 +42,7 @@ export default function ParticleCanvas() {
     };
     resize();
     window.addEventListener("resize", resize);
-    const N = 55;
-    const particles = Array.from({ length: N }, () => ({
+    const particles = Array.from({ length: N_LIGHT }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
       vx: (Math.random() - 0.5) * 0.35,
@@ -49,9 +51,12 @@ export default function ParticleCanvas() {
       amber: Math.random() < 0.35,
     }));
     const draw = () => {
-      const colors = getColors(isDarkRef.current);
+      const isDark = isDarkRef.current;
+      const colors = getColors(isDark);
+      const n = isDark ? N_DARK : N_LIGHT;
+      const rScale = isDark ? 1 : 1.3;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < N; i++) {
+      for (let i = 0; i < n; i++) {
         const p = particles[i];
         p.x += p.vx; p.y += p.vy;
         if (p.x < 0) p.x = canvas.width;
@@ -59,10 +64,10 @@ export default function ParticleCanvas() {
         if (p.y < 0) p.y = canvas.height;
         if (p.y > canvas.height) p.y = 0;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.r * rScale, 0, Math.PI * 2);
         ctx.fillStyle = p.amber ? colors.amber : colors.regular;
         ctx.fill();
-        for (let j = i + 1; j < N; j++) {
+        for (let j = i + 1; j < n; j++) {
           const q = particles[j];
           const dx = p.x - q.x, dy = p.y - q.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
