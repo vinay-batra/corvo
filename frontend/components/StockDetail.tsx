@@ -255,7 +255,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Underlying</span>
-          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: accentColor }}>${livePrice.toFixed(2)}</span>
+          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: "var(--accent)" }}>${livePrice.toFixed(2)}</span>
         </div>
       </div>
 
@@ -311,7 +311,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
           <div style={{ display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 4 }}>Max Pain Strike</div>
-              <div style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: accentColor, letterSpacing: -0.5 }}>${maxPain.toFixed(2)}</div>
+              <div style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5 }}>${maxPain.toFixed(2)}</div>
             </div>
             {livePrice > 0 && (
               <div>
