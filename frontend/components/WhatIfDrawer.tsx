@@ -107,7 +107,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
   };
 
   const metrics = [
-    { key: "portfolio_return",    label: "Annual Return", fmt: (v: number) => `${(v * 100).toFixed(1)}%`, positive: true },
+    { key: "portfolio_return",    label: "Period Return", fmt: (v: number) => `${(v * 100).toFixed(1)}%`, positive: true },
     { key: "portfolio_volatility",label: "Volatility",    fmt: (v: number) => `${(v * 100).toFixed(1)}%`, positive: false },
     { key: "sharpe_ratio",        label: "Sharpe",        fmt: (v: number) => v.toFixed(2),                positive: true },
     { key: "max_drawdown",        label: "Max Drawdown",  fmt: (v: number) => `${(v * 100).toFixed(1)}%`,  positive: false },

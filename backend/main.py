@@ -405,7 +405,9 @@ def portfolio(
     return {
         "tickers": available,
         "weights": [safe_float(w) for w in avail_weights],
-        "portfolio_return": ann_return,
+        "portfolio_return": port_cum[-1] if port_cum else ann_return,
+        "annualized_return": ann_return,
+        "benchmark_return": bench_cum[-1] if bench_cum else None,
         "portfolio_volatility": ann_vol,
         "sharpe_ratio": sharpe,
         "max_drawdown": max_dd,

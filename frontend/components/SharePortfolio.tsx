@@ -108,7 +108,7 @@ export default function SharePortfolio({ data, assets, period, benchmark }: Shar
                   {[
                     { label: "Volatility", val: vol + "%" },
                     { label: "Max Drawdown", val: (data.max_drawdown * 100).toFixed(1) + "%" },
-                    { label: "Sharpe", val: ((data.portfolio_return - 0.04) / data.portfolio_volatility).toFixed(2) },
+                    { label: "Sharpe", val: (data.sharpe_ratio ?? ((data.annualized_return ?? data.portfolio_return) - 0.04) / data.portfolio_volatility).toFixed(2) },
                   ].map(m => (
                     <div key={m.label}>
                       <p style={{ fontSize: 8, letterSpacing: 2, color: C.cream3, textTransform: "uppercase", marginBottom: 2 }}>{m.label}</p>
