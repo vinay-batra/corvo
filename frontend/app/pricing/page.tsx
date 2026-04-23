@@ -598,10 +598,10 @@ export default function PricingPage() {
             alignItems: "center",
             gap: 8,
             padding: "6px 16px",
-            border: "0.5px solid rgba(201,168,76,0.18)",
+            border: "1px solid rgba(201,168,76,0.4)",
             borderRadius: 24,
             marginBottom: 28,
-            background: "rgba(201,168,76,0.06)",
+            background: "rgba(201,168,76,0.08)",
           }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
             <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>Pricing</span>

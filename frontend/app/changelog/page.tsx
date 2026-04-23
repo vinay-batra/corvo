@@ -165,7 +165,7 @@ export default function ChangelogPage() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .nl { color: var(--text2); text-decoration: none; font-size: 12px; padding: 7px 14px; letter-spacing: 0.3px; transition: color 0.2s; }
         .nl:hover { color: var(--text); }
-        .tag { padding: 3px 10px; background: rgba(201,168,76,0.07); border: 1px solid rgba(201,168,76,0.18); border-radius: 20px; font-size: 10px; color: var(--accent); letter-spacing: 0.5px; }
+        .tag { padding: 3px 10px; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.4); border-radius: 20px; font-size: 10px; color: var(--accent); letter-spacing: 0.5px; }
         @media(max-width:768px) {
           .cl-timeline { padding-left: 24px !important; }
           .cl-entry { padding-left: 20px !important; }
@@ -211,7 +211,7 @@ export default function ChangelogPage() {
                 {/* Content */}
                 <div style={{ paddingLeft: 36, flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "#c9a84c", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.2)", padding: "3px 10px", borderRadius: 20 }}>
+                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "#c9a84c", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.4)", padding: "3px 10px", borderRadius: 20 }}>
                       {entry.version}
                     </span>
                     {entry.tags.map(tag => (
