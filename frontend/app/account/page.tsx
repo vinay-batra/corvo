@@ -46,11 +46,9 @@ export default function AccountPage() {
         ? new Date(user.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
         : "");
 
-      const { data: prof, error: profError } = await supabase.from("profiles").select("display_name,avatar_url,xp").eq("id", user.id).single();
-      console.log("account profile:", { prof, profError });
+      const { data: prof } = await supabase.from("profiles").select("display_name,avatar_url,xp").eq("id", user.id).single();
       setDisplayName(prof?.display_name || user.email?.split("@")[0] || "User");
       setAvatarUrl(prof?.avatar_url || null);
-      console.log("avatarUrl set to:", prof?.avatar_url);
       setXp(prof?.xp ?? 0);
       setLoading(false);
     })();
@@ -88,7 +86,10 @@ export default function AccountPage() {
         {/* Avatar + name */}
         <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 36 }}>
           {avatarUrl ? (
-            <img src={avatarUrl} alt="Avatar" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(184,134,11,0.25)" }} />
+            <img src={avatarUrl} alt="Avatar"
+              style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(184,134,11,0.25)" }}
+              onError={e => { (e.target as HTMLImageElement).style.display = "none"; setAvatarUrl(null); }}
+            />
           ) : (
             <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(184,134,11,0.12)", border: "2px solid rgba(184,134,11,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700, color: "var(--accent)" }}>
               {initials}
