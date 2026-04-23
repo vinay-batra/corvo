@@ -449,14 +449,6 @@ export default function Watchlist() {
                     <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
-                <button
-                  onClick={() => { if (activeList) startRename(activeList.id, activeList.name, activeList.icon); }}
-                  title="Rename list"
-                  style={{ height: 38, padding: "0 12px", display: "flex", alignItems: "center", gap: 5, background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 9, cursor: "pointer", color: "var(--text3)", fontSize: 11, flexShrink: 0, transition: "all 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.color = "var(--text)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.color = "var(--text3)"; }}>
-                  <PencilIcon size={11} /> <span style={{ letterSpacing: 0.2 }}>Rename</span>
-                </button>
               </div>
             )}
 
@@ -570,13 +562,15 @@ export default function Watchlist() {
           </div>
 
           <button onClick={() => { add(); setSearchOpen(false); }} disabled={validating}
-            style={{ padding: "9px 18px", background: "var(--text)", border: "none", borderRadius: 8, color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: validating ? "default" : "pointer", flexShrink: 0, opacity: validating ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
+            style={{ padding: "9px 18px", background: "var(--accent)", border: "none", borderRadius: 8, color: "#0a0e14", fontSize: 12, fontWeight: 600, cursor: validating ? "default" : "pointer", flexShrink: 0, opacity: validating ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
             {validating ? <><div style={{ width: 10, height: 10, border: "1.5px solid rgba(0,0,0,0.2)", borderTopColor: "var(--bg)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />Checking</> : "+ Add"}
           </button>
           {activeItems.length > 0 && (
             <button onClick={() => fetchData(activeItems.map(i => i.ticker))}
-              style={{ padding: "9px 14px", background: "transparent", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text3)", fontSize: 11, cursor: "pointer", flexShrink: 0 }}>
-              ↻
+              style={{ padding: "9px 12px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text2)", fontSize: 11, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 5 }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.color = "var(--accent)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
           )}
         </div>

@@ -100,7 +100,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        borderBottom: "1px solid var(--bg3)",
         borderLeft: hovered ? "2px solid rgba(201,168,76,0.55)" : "2px solid transparent",
         paddingLeft: hovered ? 12 : 12,
         overflow: "hidden",
@@ -126,7 +126,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
           style={{
             fontSize: 15,
             fontWeight: 500,
-            color: open ? "#e8e0cc" : "rgba(232,224,204,0.75)",
+            color: open ? "var(--text)" : "var(--text2)",
             lineHeight: 1.5,
             transition: "color 0.2s",
           }}
@@ -144,10 +144,10 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
             width: 24,
             height: 24,
             borderRadius: 6,
-            background: open ? "rgba(201,168,76,0.12)" : "rgba(255,255,255,0.04)",
-            border: `1px solid ${open ? "rgba(201,168,76,0.25)" : "rgba(255,255,255,0.06)"}`,
+            background: open ? "rgba(201,168,76,0.12)" : "var(--bg3)",
+            border: `1px solid ${open ? "rgba(201,168,76,0.25)" : "var(--bg3)"}`,
             fontSize: 16,
-            color: open ? "#c9a84c" : "rgba(232,224,204,0.35)",
+            color: open ? "#c9a84c" : "var(--text3)",
             transition: "background 0.2s, border-color 0.2s, color 0.2s",
           }}
         >
@@ -168,7 +168,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
             <p
               style={{
                 fontSize: 14,
-                color: "rgba(232,224,204,0.55)",
+                color: "var(--text2)",
                 lineHeight: 1.8,
                 paddingBottom: 20,
                 fontWeight: 300,
@@ -227,20 +227,20 @@ function FAQAIChat() {
       }}
     >
       {/* Header */}
-      <div style={{ padding: "18px 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ padding: "18px 24px", borderBottom: "1px solid var(--bg3)", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
           C
         </div>
         <div>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc", margin: 0 }}>Corvo AI</p>
-          <p style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", margin: 0 }}>Ask anything about Corvo or investing</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", margin: 0 }}>Corvo AI</p>
+          <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>Ask anything about Corvo or investing</p>
         </div>
       </div>
 
       {/* Messages */}
       <div style={{ padding: "20px 20px 8px", display: "flex", flexDirection: "column", gap: 12, minHeight: 180, maxHeight: 360, overflowY: "auto" }}>
         {messages.length === 0 && (
-          <p style={{ fontSize: 13, color: "rgba(232,224,204,0.28)", textAlign: "center", marginTop: 48, lineHeight: 1.7 }}>
+          <p style={{ fontSize: 13, color: "var(--text3)", textAlign: "center", marginTop: 48, lineHeight: 1.7 }}>
             Ask about Sharpe ratio, Monte Carlo simulation, portfolio diversification, or how Corvo works.
           </p>
         )}
@@ -250,11 +250,11 @@ function FAQAIChat() {
               maxWidth: "78%",
               padding: "10px 14px",
               borderRadius: msg.role === "user" ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
-              background: msg.role === "user" ? "#c9a84c" : "rgba(255,255,255,0.04)",
-              border: msg.role === "assistant" ? "1px solid rgba(255,255,255,0.06)" : "none",
+              background: msg.role === "user" ? "#c9a84c" : "var(--bg3)",
+              border: msg.role === "assistant" ? "1px solid var(--bg3)" : "none",
               fontSize: 13,
               lineHeight: 1.65,
-              color: msg.role === "user" ? "#0a0e14" : "rgba(232,224,204,0.85)",
+              color: msg.role === "user" ? "var(--bg)" : "var(--text2)",
               fontWeight: msg.role === "user" ? 500 : 300,
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
@@ -265,23 +265,23 @@ function FAQAIChat() {
         ))}
         {loading && (
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <div style={{ padding: "10px 16px", borderRadius: "12px 12px 12px 3px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 18, color: "rgba(232,224,204,0.4)", letterSpacing: 2 }}>...</div>
+            <div style={{ padding: "10px 16px", borderRadius: "12px 12px 12px 3px", background: "var(--bg3)", border: "1px solid var(--bg3)", fontSize: 18, color: "var(--text3)", letterSpacing: 2 }}>...</div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
       {/* Input */}
-      <div style={{ padding: "12px 16px 16px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 10 }}>
+      <div style={{ padding: "12px 16px 16px", borderTop: "1px solid var(--bg3)", display: "flex", gap: 10 }}>
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
           placeholder="Ask a question about Corvo or investing..."
-          style={{ flex: 1, padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, color: "#e8e0cc", fontSize: 13, outline: "none", transition: "border-color 0.2s" }}
+          style={{ flex: 1, padding: "11px 14px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text)", fontSize: 13, outline: "none", transition: "border-color 0.2s" }}
           onFocus={(e) => (e.target.style.borderColor = "rgba(201,168,76,0.35)")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.07)")}
+          onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
         />
         <button
           onClick={send}
@@ -290,7 +290,7 @@ function FAQAIChat() {
           onMouseEnter={e => { if (!loading && input.trim()) (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0e14" strokeWidth="2.5">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" strokeWidth="2.5">
             <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
           </svg>
         </button>
@@ -306,7 +306,7 @@ export default function FaqPage() {
       style={{
         minHeight: "100vh",
         background: "transparent",
-        color: "#e8e0cc",
+        color: "var(--text)",
         fontFamily: "Inter, system-ui, sans-serif",
       }}
     >
@@ -345,7 +345,7 @@ export default function FaqPage() {
               fontFamily: "Space Mono, monospace",
               fontSize: "clamp(32px, 5vw, 56px)",
               fontWeight: 700,
-              color: "#e8e0cc",
+              color: "var(--text)",
               letterSpacing: -1.5,
               marginBottom: 16,
               lineHeight: 1.15,
@@ -363,7 +363,7 @@ export default function FaqPage() {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           style={{
             fontSize: 15,
-            color: "rgba(232,224,204,0.4)",
+            color: "var(--text3)",
             maxWidth: 480,
             margin: "0 auto 56px",
             lineHeight: 1.7,

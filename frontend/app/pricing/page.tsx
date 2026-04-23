@@ -59,7 +59,7 @@ function FeatureItem({ text, delay }: { text: string; delay: number }) {
       }}>
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </span>
-      <span style={{ fontSize: 13.5, color: "rgba(232,224,204,0.7)", lineHeight: 1.6 }}>{text}</span>
+      <span style={{ fontSize: 13.5, color: "var(--text2)", lineHeight: 1.6 }}>{text}</span>
     </div>
   );
 }
@@ -72,7 +72,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
     <div
       ref={ref}
       style={{
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: "1px solid var(--bg3)",
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(16px)",
         transition: "opacity 0.6s ease, transform 0.6s ease",
@@ -93,7 +93,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
           gap: 16,
         }}
       >
-        <span style={{ fontSize: 15, fontWeight: 500, color: "#e8e0cc" }}>{q}</span>
+        <span style={{ fontSize: 15, fontWeight: 500, color: "var(--text)" }}>{q}</span>
         <span style={{
           fontSize: 18,
           color: "#c9a84c",
@@ -108,7 +108,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         maxHeight: open ? 200 : 0,
         transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
       }}>
-        <p style={{ fontSize: 14, color: "rgba(232,224,204,0.45)", lineHeight: 1.8, paddingBottom: 20 }}>{a}</p>
+        <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.8, paddingBottom: 20 }}>{a}</p>
       </div>
     </div>
   );
@@ -166,15 +166,15 @@ function WaitlistCapture() {
             flex: 1,
             minWidth: 200,
             padding: "11px 16px",
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "var(--bg3)",
+            border: "1px solid var(--border)",
             borderRadius: 9,
-            color: "#e8e0cc",
+            color: "var(--text)",
             fontSize: 13,
             outline: "none",
           }}
           onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
-          onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+          onBlur={e => (e.target.style.borderColor = "var(--border)")}
         />
         <button
           onClick={submit}
@@ -184,7 +184,7 @@ function WaitlistCapture() {
             background: "#c9a84c",
             border: "none",
             borderRadius: 9,
-            color: "#0a0e14",
+            color: "var(--bg)",
             fontSize: 12,
             fontWeight: 700,
             cursor: status === "loading" ? "wait" : "pointer",
@@ -269,10 +269,10 @@ function PricingCard({
         maxWidth: 420,
         background: isPro
           ? "rgba(201,168,76,0.04)"
-          : "rgba(255,255,255,0.018)",
+          : "var(--bg3)",
         border: isPro
           ? "0.5px solid rgba(201,168,76,0.35)"
-          : "0.5px solid rgba(255,255,255,0.07)",
+          : "0.5px solid var(--border)",
         borderRadius: 20,
         padding: "36px 32px 40px",
         position: "relative",
@@ -301,19 +301,19 @@ function PricingCard({
       </div>
 
       {/* Plan name */}
-      <p style={{ fontFamily: "Space Mono,monospace", fontSize: 13, letterSpacing: 3, color: "rgba(232,224,204,0.4)", textTransform: "uppercase", marginBottom: 10 }}>
+      <p style={{ fontFamily: "Space Mono,monospace", fontSize: 13, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>
         {isPro ? "Pro" : "Free"}
       </p>
 
       {/* Price */}
       <div style={{ marginBottom: 6 }}>
-        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 44, fontWeight: 700, letterSpacing: -2, color: isPro ? "#c9a84c" : "#e8e0cc" }}>
+        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 44, fontWeight: 700, letterSpacing: -2, color: isPro ? "#c9a84c" : "var(--text)" }}>
           {isPro ? "$X" : "$0"}
         </span>
-        <span style={{ fontSize: 14, color: "rgba(232,224,204,0.35)", marginLeft: 4 }}>/mo</span>
+        <span style={{ fontSize: 14, color: "var(--text3)", marginLeft: 4 }}>/mo</span>
       </div>
 
-      <p style={{ fontSize: 13.5, color: "rgba(232,224,204,0.45)", marginBottom: 28, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 13.5, color: "var(--text2)", marginBottom: 28, lineHeight: 1.6 }}>
         {isPro ? "For serious investors" : "Everything you need to get started"}
       </p>
 
@@ -331,7 +331,7 @@ function PricingCard({
             fontSize: 13,
             fontWeight: 700,
             background: "#c9a84c",
-            color: "#0a0e14",
+            color: "var(--bg)",
             textDecoration: "none",
             letterSpacing: 0.3,
             transition: "opacity 0.2s",
@@ -344,10 +344,10 @@ function PricingCard({
       )}
 
       {/* Divider */}
-      <div style={{ height: "0.5px", background: "rgba(255,255,255,0.07)", margin: "28px 0" }} />
+      <div style={{ height: "0.5px", background: "var(--border)", margin: "28px 0" }} />
 
       {/* Features heading */}
-      <p style={{ fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 18 }}>
+      <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 18 }}>
         {isPro ? "Everything in Free, plus" : "What's included"}
       </p>
 
@@ -375,10 +375,10 @@ function FoundingMemberSection() {
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
               <span style={{ fontSize: 10, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase" }}>Limited Spots</span>
             </div>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,34px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 14, lineHeight: 1.2 }}>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,34px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 14, lineHeight: 1.2 }}>
               Be a founding member
             </h2>
-            <p style={{ fontSize: 14, color: "rgba(232,224,204,0.45)", lineHeight: 1.8, maxWidth: 480, margin: "0 auto 12px", fontWeight: 300 }}>
+            <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.8, maxWidth: 480, margin: "0 auto 12px", fontWeight: 300 }}>
               Pro is coming soon. Founding members lock in <strong style={{ color: "#c9a84c", fontWeight: 600 }}>50% off forever</strong>. Join the waitlist now before the price is set.
             </p>
             <p style={{ fontSize: 12, color: "rgba(201,168,76,0.55)", marginBottom: 32 }}>
@@ -387,7 +387,7 @@ function FoundingMemberSection() {
             <div style={{ maxWidth: 440, margin: "0 auto" }}>
               <WaitlistCapture />
             </div>
-            <p style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", marginTop: 16 }}>
+            <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 16 }}>
               No spam. Founding pricing is locked at signup, forever.
             </p>
           </div>
@@ -488,10 +488,10 @@ function FeatureVoteSection() {
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
         <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,32px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 10 }}>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,32px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 10 }}>
               Shape what we build next
             </h2>
-            <p style={{ fontSize: 14, color: "rgba(232,224,204,0.35)", fontWeight: 300 }}>
+            <p style={{ fontSize: 14, color: "var(--text3)", fontWeight: 300 }}>
               Most requested features get built first. Vote for what matters to you.
             </p>
           </div>
@@ -501,7 +501,7 @@ function FeatureVoteSection() {
               const voteCount = votes[f.id] ?? 0;
               const hasVoted = voted[f.id] ?? false;
               return (
-                <div key={f.id} style={{ background: "rgba(255,255,255,0.018)", border: `0.5px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 14, padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: `opacity 0.6s ease ${i * 0.07}s, transform 0.6s ease ${i * 0.07}s`, position: "relative", overflow: "hidden" }}>
+                <div key={f.id} style={{ background: "var(--bg3)", border: `0.5px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "var(--bg3)"}`, borderRadius: 14, padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: `opacity 0.6s ease ${i * 0.07}s, transform 0.6s ease ${i * 0.07}s`, position: "relative", overflow: "hidden" }}>
                   {hasVoted && <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />}
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -509,27 +509,27 @@ function FeatureVoteSection() {
                         {f.icon}
                       </div>
                       <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: "#e8e0cc", marginBottom: 3 }}>{f.label}</p>
-                        <p style={{ fontSize: 11, color: "rgba(232,224,204,0.35)" }}>{f.desc}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 3 }}>{f.label}</p>
+                        <p style={{ fontSize: 11, color: "var(--text3)" }}>{f.desc}</p>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => handleVote(f.id)}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: hasVoted ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)", border: `0.5px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: 8, cursor: "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: hasVoted ? "rgba(201,168,76,0.1)" : "var(--bg3)", border: `0.5px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "var(--border)"}`, borderRadius: 8, cursor: "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = hasVoted ? "rgba(201,168,76,0.06)" : "rgba(201,168,76,0.08)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = hasVoted ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = hasVoted ? "rgba(201,168,76,0.1)" : "var(--bg3)"; }}
                   >
-                    <span style={{ fontSize: 13, color: hasVoted ? "#c9a84c" : "rgba(232,224,204,0.4)" }}>{hasVoted ? "▲" : "△"}</span>
-                    <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: hasVoted ? "#c9a84c" : "rgba(232,224,204,0.4)" }}>{loading ? "…" : voteCount}</span>
-                    <span style={{ fontSize: 11, color: hasVoted ? "rgba(201,168,76,0.7)" : "rgba(232,224,204,0.3)" }}>{hasVoted ? "voted" : "upvote"}</span>
+                    <span style={{ fontSize: 13, color: hasVoted ? "#c9a84c" : "var(--text3)" }}>{hasVoted ? "▲" : "△"}</span>
+                    <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: hasVoted ? "#c9a84c" : "var(--text3)" }}>{loading ? "…" : voteCount}</span>
+                    <span style={{ fontSize: 11, color: hasVoted ? "rgba(201,168,76,0.7)" : "var(--text3)" }}>{hasVoted ? "voted" : "upvote"}</span>
                   </button>
                 </div>
               );
             })}
           </div>
 
-          <p style={{ textAlign: "center", fontSize: 11, color: "rgba(232,224,204,0.2)", marginTop: 24 }}>
+          <p style={{ textAlign: "center", fontSize: 11, color: "var(--text3)", marginTop: 24 }}>
             {loading ? "Loading votes…" : "Votes are shared across all users. Results directly inform our roadmap."}
           </p>
         </div>
@@ -542,7 +542,7 @@ export default function PricingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div style={{ minHeight: "100vh", background: "transparent", color: "#e8e0cc", fontFamily: "Inter,system-ui,sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "transparent", color: "var(--text)", fontFamily: "Inter,system-ui,sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -612,7 +612,7 @@ export default function PricingPage() {
             fontSize: "clamp(32px,5vw,60px)",
             fontWeight: 700,
             lineHeight: 1.1,
-            color: "#e8e0cc",
+            color: "var(--text)",
             marginBottom: 20,
             letterSpacing: -1,
           }}>
