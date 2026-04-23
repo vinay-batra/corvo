@@ -190,7 +190,7 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Portfolio Analyzer</p>
       <h3 style={{ fontSize: 21, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Full portfolio intelligence</h3>
       <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 24, lineHeight: 1.7, maxWidth: 360 }}>Sharpe ratio, volatility, max drawdown, and benchmark comparison, updated live as markets move.</p>
-      <div style={{ background: "rgba(8,11,16,0.7)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px" }}>
+      <div data-theme="dark" style={{ background: "#080b10", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: "14px 16px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           {([
             { l: "Return", v: "+18.4%", c: "#c9a84c" },
@@ -198,8 +198,8 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
             { l: "Drawdown", v: "-14.2%", c: "#e05c5c" },
             { l: "Beta", v: "0.84", c: "#e8e0cc" },
           ] as { l: string; v: React.ReactNode; c: string }[]).map((m, i) => (
-            <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.025)", borderRadius: 9, padding: "9px 10px" }}>
-              <p style={{ fontSize: 6, letterSpacing: 1.5, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
+            <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 9, padding: "9px 10px" }}>
+              <p style={{ fontSize: 6, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
               <p style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, color: m.c }}>{m.v}</p>
             </div>
           ))}
@@ -239,7 +239,7 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>AI Chat</p>
       <h3 style={{ fontSize: 19, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Ask anything, get answers</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 20, lineHeight: 1.7 }}>Your AI knows your exact holdings, goals, and risk tolerance.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+      <div data-theme="dark" style={{ display: "flex", flexDirection: "column", gap: 9, background: "#080b10", borderRadius: 12, padding: "12px" }}>
         <div style={{ background: "var(--bg2)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
           <p style={{ fontSize: 11, color: "var(--text)" }}>Am I taking too much risk?</p>
         </div>
@@ -293,11 +293,11 @@ function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Watchlist + Alerts</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Never miss a move</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Set price & percent alerts on any ticker worldwide.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <div data-theme="dark" style={{ display: "flex", flexDirection: "column", gap: 7, background: "#080b10", borderRadius: 12, padding: "8px" }}>
         {stocks.map((s, i) => (
           <div key={s.ticker} style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            background: flash === i ? (s.up ? "rgba(92,184,138,0.08)" : "rgba(224,92,92,0.08)") : "rgba(255,255,255,0.025)",
+            background: flash === i ? (s.up ? "rgba(92,184,138,0.12)" : "rgba(224,92,92,0.12)") : "rgba(255,255,255,0.08)",
             borderRadius: 9, padding: "9px 12px",
             transition: "background 0.3s ease",
           }}>
@@ -306,7 +306,7 @@ function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>{s.ticker}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 10, color: "rgba(232,224,204,0.35)", fontFamily: "Space Mono,monospace" }}>${s.price}</span>
+              <span style={{ fontSize: 10, color: "rgba(232,224,204,0.6)", fontFamily: "Space Mono,monospace" }}>${s.price}</span>
               {s.alert && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />}
               <span style={{ fontSize: 10, fontFamily: "Space Mono,monospace", color: s.up ? "#5cb88a" : "#e05c5c", fontWeight: 600, transition: "color 0.3s ease" }}>
                 {s.change >= 0 ? "+" : ""}{Math.abs(s.change).toFixed(1)}%
@@ -365,10 +365,10 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Learn & Earn XP</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Level up your knowledge</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Finance lessons that earn XP and unlock real features.</p>
-      <div style={{ background: "rgba(8,11,16,0.6)", borderRadius: 12, padding: "16px" }}>
+      <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <div>
-            <p style={{ fontSize: 7, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 4 }}>Level 7 · Portfolio Pro</p>
+            <p style={{ fontSize: 7, letterSpacing: 2, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 4 }}>Level 7 · Portfolio Pro</p>
             <p style={{ fontFamily: "Space Mono,monospace", fontSize: 24, fontWeight: 700, color: "#c9a84c", letterSpacing: -1 }}>{xp.toLocaleString()} XP</p>
           </div>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -383,7 +383,7 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
             <div key={i} style={{
               fontSize: 9, padding: "4px 9px", borderRadius: 6,
               background: i < 2 ? "rgba(201,168,76,0.1)" : "var(--bg3)",
-              color: i < 2 ? "#c9a84c" : "rgba(232,224,204,0.3)",
+              color: i < 2 ? "#c9a84c" : "rgba(232,224,204,0.6)",
               border: i < 2 ? "1px solid rgba(201,168,76,0.18)" : "1px solid var(--border)",
               opacity: visChecks > i ? 1 : 0,
               transform: visChecks > i ? "translateY(0)" : "translateY(5px)",
@@ -404,7 +404,7 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Stock Deep Dives</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Research any stock, instantly</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>AI-powered fundamentals, news sentiment, and price history analysis.</p>
-      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+      <div data-theme="dark" style={{ display: "flex", gap: 14, alignItems: "flex-start", background: "#080b10", borderRadius: 12, padding: "12px" }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--bg3)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>AAPL</div>
@@ -415,8 +415,8 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             {[{ l: "P/E Ratio", v: "28.4", c: "#e8e0cc" }, { l: "Revenue", v: "$391B", c: "#e8e0cc" }, { l: "EPS", v: "$6.57", c: "#e8e0cc" }, { l: "Sentiment", v: "Bullish", c: "#5cb88a" }].map((s, i) => (
-              <div key={i} style={{ background: "rgba(255,255,255,0.025)", borderRadius: 8, padding: "8px 10px" }}>
-                <p style={{ fontSize: 6, letterSpacing: 1.5, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 3 }}>{s.l}</p>
+              <div key={i} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 8, padding: "8px 10px" }}>
+                <p style={{ fontSize: 6, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 3 }}>{s.l}</p>
                 <p style={{ fontSize: 11, fontWeight: 600, color: s.c, display: "flex", alignItems: "center", gap: 4 }}>
                   {i === 3 && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#5cb88a", display: "inline-block", flexShrink: 0 }} />}
                   {s.v}
@@ -442,7 +442,7 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Monte Carlo Simulation</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>See your future in 8,500 paths</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Simulate outcomes based on your actual volatility and correlation.</p>
-      <div style={{ background: "rgba(8,11,16,0.6)", borderRadius: 12, padding: "14px" }}>
+      <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "14px" }}>
         <svg width="100%" height="110" viewBox="0 0 280 110" preserveAspectRatio="none">
           <defs>
             <linearGradient id="mcFan" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="rgba(92,184,138,0.12)" /><stop offset="100%" stopColor="rgba(201,168,76,0.04)" /></linearGradient>
@@ -462,14 +462,14 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
         </svg>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
           <div>
-            <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 3 }}>Median at Retirement</p>
+            <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 3 }}>Median at Retirement</p>
             <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1 }}>
               <LoopCounter prefix="$" target={2.3} decimals={1} suffix="M" duration={2000} loopEvery={5000} />
             </p>
           </div>
           <div style={{ textAlign: "right" }}>
-            <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 3 }}>Paths · Horizon</p>
-            <p style={{ fontSize: 11, color: "rgba(232,224,204,0.5)", fontFamily: "Space Mono,monospace" }}>300 · 30yr</p>
+            <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 3 }}>Paths · Horizon</p>
+            <p style={{ fontSize: 11, color: "rgba(232,224,204,0.8)", fontFamily: "Space Mono,monospace" }}>300 · 30yr</p>
           </div>
         </div>
       </div>
@@ -482,7 +482,7 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: 0 }}>
       {/* Dark PDF preview */}
-      <div style={{ background: "var(--bg2)", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderBottom: "1px solid var(--border)" }}>
+      <div data-theme="dark" style={{ background: "#080b10", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
           {[30, 60, 90, 120].map(y => (
             <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
@@ -525,7 +525,7 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
             { label: "Volatility", value: "12.1%", color: "#e8e0cc" },
           ] as { label: string; value: React.ReactNode; color: string }[]).map((stat, i) => (
             <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
-              <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
+              <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.6)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
               <p style={{ fontSize: 9, fontWeight: 700, color: stat.color, fontFamily: "Space Mono,monospace" }}>{stat.value}</p>
             </div>
           ))}
@@ -753,7 +753,7 @@ function StockTeaserSection() {
                 </div>
               </div>
               <div style={{ textAlign: "right" as const }}>
-                <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", marginBottom: 4 }}>Health (Est.)</p>
+                <p style={{ fontSize: 8, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 4 }}>Health (Est.)</p>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 22, fontWeight: 700, color: healthColor(result.health), letterSpacing: -1 }}>{result.health > 0 ? result.health : "-"}</p>
                 {result.health > 0 && <p style={{ fontSize: 9, color: healthColor(result.health), letterSpacing: 1 }}>{healthLabel(result.health)}</p>}
               </div>
@@ -768,7 +768,7 @@ function StockTeaserSection() {
                 { label: "Health (Est.)", value: result.health > 0 ? `${result.health}/100` : "-", color: healthColor(result.health) },
               ].map((m, i) => (
                 <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid var(--border)" : "none" }}>
-                  <p style={{ fontSize: 7, letterSpacing: 2, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 6 }}>{m.label}</p>
+                  <p style={{ fontSize: 7, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 6 }}>{m.label}</p>
                   <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: m.color, letterSpacing: -0.5 }}>{m.value}</p>
                 </div>
               ))}
@@ -1167,23 +1167,23 @@ function DemoPreview() {
     "AI insight ready: high tech concentration detected",
   ];
   return (
-    <div style={{ background: "rgba(8,11,16,0.9)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 16, overflow: "hidden", boxShadow: "0 0 80px rgba(201,168,76,0.06), 0 32px 80px rgba(0,0,0,0.6)" }}>
+    <div data-theme="dark" style={{ background: "#080b10", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 16, overflow: "hidden", boxShadow: "0 0 80px rgba(201,168,76,0.06), 0 32px 80px rgba(0,0,0,0.6)" }}>
       {/* Terminal bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
         {["#e05c5c", "#c9a84c", "#5cb88a"].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.6 }} />)}
-        <span style={{ fontSize: 9, color: "rgba(232,224,204,0.2)", marginLeft: 8, fontFamily: "Space Mono,monospace" }}>corvo.capital/app?demo=true</span>
+        <span style={{ fontSize: 9, color: "rgba(232,224,204,0.5)", marginLeft: 8, fontFamily: "Space Mono,monospace" }}>corvo.capital/app?demo=true</span>
       </div>
       {/* Metrics row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, padding: "16px 16px 8px" }}>
         {[{ l: "Portfolio Return", v: "+18.4%", c: "#c9a84c" }, { l: "Health Score", v: "78/100", c: "#5cb88a" }, { l: "Risk Level", v: "Moderate", c: "#e8e0cc" }].map((m, i) => (
-          <div key={i} style={{ background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "10px 12px" }}>
-            <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
+          <div key={i} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 12px" }}>
+            <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
             <p style={{ fontFamily: "Space Mono,monospace", fontSize: 14, fontWeight: 700, color: m.c }}>{m.v}</p>
           </div>
         ))}
       </div>
       {/* Chart placeholder */}
-      <div style={{ margin: "0 16px 8px", background: "rgba(255,255,255,0.018)", borderRadius: 10, padding: "12px", height: 72, display: "flex", alignItems: "flex-end" }}>
+      <div style={{ margin: "0 16px 8px", background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "12px", height: 72, display: "flex", alignItems: "flex-end" }}>
         <svg width="100%" height="52" viewBox="0 0 400 52" preserveAspectRatio="none">
           <defs><linearGradient id="demoGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a84c" stopOpacity="0.18" /><stop offset="100%" stopColor="#c9a84c" stopOpacity="0" /></linearGradient></defs>
           <path d="M0,44 C55,40 110,31 180,19 C250,7 310,5 370,3 C385,3 395,4 400,2 L400,52 L0,52Z" fill="url(#demoGrd)" />
@@ -2069,41 +2069,41 @@ export default function Landing() {
           <HeroMetricCard label="Portfolio Return" value="+41.3%" color="#5cb88a" animDelay="0s" style={{ top: 40, left: "-4%", zIndex: 4 }} />
           <HeroMetricCard label="Sharpe Ratio" value="1.92" color="#c9a84c" animDelay="1.2s" style={{ top: 40, right: "-4%", zIndex: 4 }} />
           <HeroMetricCard label="Health Score" value="78 / 100" color="#8eb4c8" animDelay="0.6s" style={{ bottom: 80, right: "-4%", zIndex: 4 }} />
-          <div style={{ background: "rgba(10,14,20,0.97)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 16, overflow: "hidden", boxShadow: "0 48px 128px rgba(0,0,0,0.7), inset 0 1px 0 rgba(201,168,76,0.08)", display: "flex" }}>
-            <div className="hero-preview-sidebar" style={{ width: 180, background: "rgba(8,11,16,0.95)", borderRight: "1px solid rgba(255,255,255,0.05)", padding: "16px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
-              <div style={{ padding: "0 14px 14px", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 12 }}>
+          <div data-theme="dark" style={{ background: "#0a0e14", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 16, overflow: "hidden", boxShadow: "0 48px 128px rgba(0,0,0,0.7), inset 0 1px 0 rgba(201,168,76,0.08)", display: "flex" }}>
+            <div className="hero-preview-sidebar" style={{ width: 180, background: "#080b10", borderRight: "1px solid rgba(255,255,255,0.12)", padding: "16px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
+              <div style={{ padding: "0 14px 14px", borderBottom: "1px solid rgba(255,255,255,0.1)", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                   <img src="/corvo-logo.svg" width={18} height={14} alt="Corvo" />
                   <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#e8e0cc" }}>CORVO</span>
                 </div>
               </div>
               {["◈  Overview", "◬  Risk", "◎  Simulate", "⊞  Compare", "◷  News", "◆  AI Chat"].map((t, i) => (
-                <div key={i} style={{ padding: "7px 14px", fontSize: 10, color: i === 0 ? "#c9a84c" : "rgba(232,224,204,0.35)", background: i === 0 ? "rgba(201,168,76,0.06)" : "transparent", borderLeft: i === 0 ? "2px solid #c9a84c" : "2px solid transparent" }}>{t}</div>
+                <div key={i} style={{ padding: "7px 14px", fontSize: 10, color: i === 0 ? "#c9a84c" : "rgba(232,224,204,0.6)", background: i === 0 ? "rgba(201,168,76,0.06)" : "transparent", borderLeft: i === 0 ? "2px solid #c9a84c" : "2px solid transparent" }}>{t}</div>
               ))}
-              <div style={{ marginTop: "auto", padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                <div style={{ fontSize: 9, color: "rgba(232,224,204,0.2)", letterSpacing: 1 }}>AAPL · MSFT · NVDA</div>
+              <div style={{ marginTop: "auto", padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                <div style={{ fontSize: 9, color: "rgba(232,224,204,0.5)", letterSpacing: 1 }}>AAPL · MSFT · NVDA</div>
               </div>
             </div>
             <div style={{ flex: 1, padding: "14px 16px", minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <div style={{ display: "flex", gap: 6 }}>
                   {["Overview", "Risk", "Simulate", "Compare"].map((t, i) => (
-                    <div key={i} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 9, background: i === 0 ? "rgba(255,255,255,0.06)" : "transparent", color: i === 0 ? "#e8e0cc" : "rgba(232,224,204,0.3)", border: i === 0 ? "1px solid rgba(255,255,255,0.08)" : "1px solid transparent" }}>{t}</div>
+                    <div key={i} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 9, background: i === 0 ? "rgba(255,255,255,0.14)" : "transparent", color: i === 0 ? "#e8e0cc" : "rgba(232,224,204,0.6)", border: i === 0 ? "1px solid rgba(255,255,255,0.2)" : "1px solid transparent" }}>{t}</div>
                   ))}
                 </div>
                 <div style={{ fontSize: 9, color: "rgba(201,168,76,0.4)", fontFamily: "Space Mono,monospace" }}>1Y · S&amp;P 500</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 7, marginBottom: 10 }}>
                 {[{ l: "Return", v: "+18.4%", c: "#c9a84c" }, { l: "Volatility", v: "22.1%", c: "#e8e0cc" }, { l: "Sharpe", v: "0.66", c: "#e8e0cc" }, { l: "Drawdown", v: "-14.2%", c: "#e05c5c" }].map((m, i) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 8, padding: "10px 10px 8px" }}>
-                    <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.2)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
+                  <div key={i} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "10px 10px 8px" }}>
+                    <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.5)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
                     <p style={{ fontFamily: "Space Mono,monospace", fontSize: 15, fontWeight: 700, color: m.c, letterSpacing: -0.5 }}>{m.v}</p>
                   </div>
                 ))}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 8, marginBottom: 10 }}>
-                <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 8, padding: "10px 12px" }}>
-                  <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.2)", textTransform: "uppercase", marginBottom: 6 }}>Performance vs S&amp;P 500</p>
+                <div style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 12px" }}>
+                  <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.5)", textTransform: "uppercase", marginBottom: 6 }}>Performance vs S&amp;P 500</p>
                   <svg width="100%" height="52" viewBox="0 0 600 52" preserveAspectRatio="none">
                     <defs><linearGradient id="grd2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a84c" stopOpacity="0.18" /><stop offset="100%" stopColor="#c9a84c" stopOpacity="0" /></linearGradient></defs>
                     <path d="M0,44 C60,40 120,34 180,26 C240,18 300,14 360,11 C420,8 480,12 600,4 L600,52 L0,52Z" fill="url(#grd2)" />
@@ -2111,18 +2111,18 @@ export default function Landing() {
                     <path d="M0,44 C80,42 160,39 240,35 C320,31 400,27 480,24 C540,22 570,25 600,20" fill="none" stroke="rgba(232,224,204,0.15)" strokeWidth="1" strokeDasharray="3 3" />
                   </svg>
                 </div>
-                <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 8, padding: "10px 12px" }}>
-                  <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.2)", textTransform: "uppercase", marginBottom: 8 }}>Health Score</p>
+                <div style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 12px" }}>
+                  <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.5)", textTransform: "uppercase", marginBottom: 8 }}>Health Score</p>
                   <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "#c9a84c", letterSpacing: -2, lineHeight: 1 }}>78</p>
                   <p style={{ fontSize: 8, color: "#5cb88a", letterSpacing: 1, marginTop: 3 }}>GOOD</p>
-                  <div style={{ marginTop: 8, height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
+                  <div style={{ marginTop: 8, height: 3, background: "rgba(255,255,255,0.14)", borderRadius: 2 }}>
                     <div style={{ width: "78%", height: "100%", background: "#c9a84c", borderRadius: 2 }} />
                   </div>
                 </div>
               </div>
               <div style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.14)", borderRadius: 8, padding: "9px 12px", display: "flex", alignItems: "flex-start", gap: 8 }}>
                 <img src="/corvo-logo.svg" width={14} height={11} alt="" style={{ marginTop: 2, opacity: 0.8 }} />
-                <p style={{ fontSize: 10, color: "rgba(232,224,204,0.65)", lineHeight: 1.55 }}>Your tech concentration is high at 67%. Consider adding BND or GLD to reduce correlation risk.</p>
+                <p style={{ fontSize: 10, color: "rgba(232,224,204,0.85)", lineHeight: 1.55 }}>Your tech concentration is high at 67%. Consider adding BND or GLD to reduce correlation risk.</p>
               </div>
             </div>
           </div>
