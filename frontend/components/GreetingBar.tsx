@@ -78,12 +78,12 @@ export default function GreetingBar({
   useEffect(() => {
     const fetchIndexes = async () => {
       try {
-        const r = await fetch(`${API_URL}/watchlist-data?tickers=SPY,QQQ,DIA`);
+        const r = await fetch(`${API_URL}/watchlist-data?tickers=^GSPC,^IXIC,^DJI`);
         const d = await r.json();
         const results = d.results || [];
-        const spy = results.find((x: any) => x.ticker === "SPY");
-        const qqq = results.find((x: any) => x.ticker === "QQQ");
-        const dia = results.find((x: any) => x.ticker === "DIA");
+        const spy = results.find((x: any) => x.ticker === "^GSPC");
+        const qqq = results.find((x: any) => x.ticker === "^IXIC");
+        const dia = results.find((x: any) => x.ticker === "^DJI");
         setIndexPrices({
           spy: spy?.change_pct ?? null,
           qqq: qqq?.change_pct ?? null,
