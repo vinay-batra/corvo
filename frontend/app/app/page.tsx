@@ -1614,7 +1614,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ color: "var(--accent)", fontSize: 13, flexShrink: 0 }}>◎</span>
-                  <span style={{ fontSize: 13, color: "rgba(232,224,204,0.65)", lineHeight: 1.4 }}>
+                  <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.4 }}>
                     Complete your setup: add your portfolio to unlock AI insights and risk analysis.
                   </span>
                 </div>
@@ -1626,7 +1626,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     Complete Setup
                   </button>
                   <button onClick={() => { setShowSetupBanner(false); localStorage.setItem("corvo_setup_banner_dismissed", "true"); }}
-                    style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "rgba(184,134,11,0.1)", color: "rgba(232,224,204,0.4)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "rgba(184,134,11,0.1)", color: "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
