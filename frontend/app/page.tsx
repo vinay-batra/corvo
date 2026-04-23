@@ -176,7 +176,7 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
       style={{ gridArea, height: "100%", position: "relative" }}
     >
       <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
-        style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
+        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "hidden", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
         {children}
       </div>
     </motion.div>
@@ -240,7 +240,7 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
       <h3 style={{ fontSize: 19, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Ask anything, get answers</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 20, lineHeight: 1.7 }}>Your AI knows your exact holdings, goals, and risk tolerance.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-        <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
+        <div style={{ background: "var(--bg2)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
           <p style={{ fontSize: 11, color: "var(--text)" }}>Am I taking too much risk?</p>
         </div>
         <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "12px 12px 12px 2px", padding: "10px 13px", display: "flex", gap: 8, minHeight: 56 }}>
@@ -252,7 +252,7 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
             )}
           </p>
         </div>
-        <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
+        <div style={{ background: "var(--bg2)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
           <p style={{ fontSize: 11, color: "var(--text)" }}>What's my Sharpe ratio?</p>
         </div>
         <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "12px 12px 12px 2px", padding: "12px 16px", display: "flex", gap: 5, alignItems: "center" }}>
@@ -375,16 +375,16 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M11.5 2L3.5 12h6L8 18 16.5 8h-6L11.5 2z" stroke="#c9a84c" strokeWidth="1.4" strokeLinejoin="round" fill="rgba(201,168,76,0.18)"/></svg>
           </div>
         </div>
-        <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 12 }}>
+        <div style={{ height: 5, background: "var(--bg3)", borderRadius: 3, overflow: "hidden", marginBottom: 12 }}>
           <div style={{ height: "100%", width: "0%", background: "linear-gradient(90deg, #c9a84c, #f59e0b)", borderRadius: 3, animation: visible ? "xpLoop 5s ease-in-out infinite" : "none" }} />
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {["Risk Basics ✓", "Diversification ✓", "Options →"].map((b, i) => (
             <div key={i} style={{
               fontSize: 9, padding: "4px 9px", borderRadius: 6,
-              background: i < 2 ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)",
+              background: i < 2 ? "rgba(201,168,76,0.1)" : "var(--bg3)",
               color: i < 2 ? "#c9a84c" : "rgba(232,224,204,0.3)",
-              border: i < 2 ? "1px solid rgba(201,168,76,0.18)" : "1px solid rgba(255,255,255,0.05)",
+              border: i < 2 ? "1px solid rgba(201,168,76,0.18)" : "1px solid var(--border)",
               opacity: visChecks > i ? 1 : 0,
               transform: visChecks > i ? "translateY(0)" : "translateY(5px)",
               transition: "opacity 0.35s ease, transform 0.35s ease",
@@ -407,7 +407,7 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>AAPL</div>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--bg3)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>AAPL</div>
             <div>
               <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>$189.40</p>
               <p style={{ fontSize: 10, color: "#5cb88a" }}>+1.82% today</p>
@@ -663,9 +663,9 @@ function StockTeaserSection() {
               onChange={e => setQuery(e.target.value.toUpperCase())}
               onKeyDown={e => e.key === "Enter" && handleSearch()}
               placeholder="AAPL, TSLA, NVDA, BTC-USD…"
-              style={{ width: "100%", padding: "14px 16px 14px 40px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", fontFamily: "Space Mono,monospace", transition: "border-color 0.2s", letterSpacing: 0.5 }}
+              style={{ width: "100%", padding: "14px 16px 14px 40px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", fontFamily: "Space Mono,monospace", transition: "border-color 0.2s", letterSpacing: 0.5 }}
               onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.5)")}
-              onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+              onBlur={e => (e.target.style.borderColor = "var(--border)")}
             />
           </div>
           <button
@@ -693,36 +693,36 @@ function StockTeaserSection() {
 
         {/* Loading skeleton */}
         {loading && (
-          <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 18, overflow: "hidden" }}>
-            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 18, overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out infinite" }} />
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--bg3)", animation: "skeletonPulse 1.4s ease-in-out infinite" }} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ width: 140, height: 12, borderRadius: 4, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out infinite" }} />
-                  <div style={{ width: 80, height: 18, borderRadius: 4, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out 0.15s infinite" }} />
+                  <div style={{ width: 140, height: 12, borderRadius: 4, background: "var(--bg3)", animation: "skeletonPulse 1.4s ease-in-out infinite" }} />
+                  <div style={{ width: 80, height: 18, borderRadius: 4, background: "var(--bg3)", animation: "skeletonPulse 1.4s ease-in-out 0.15s infinite" }} />
                 </div>
               </div>
-              <div style={{ width: 60, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out 0.3s infinite" }} />
+              <div style={{ width: 60, height: 36, borderRadius: 8, background: "var(--bg3)", animation: "skeletonPulse 1.4s ease-in-out 0.3s infinite" }} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
               {[0, 0.1, 0.2].map((d, i) => (
-                <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                  <div style={{ width: 60, height: 8, borderRadius: 3, background: "rgba(255,255,255,0.04)", marginBottom: 10, animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
-                  <div style={{ width: 48, height: 20, borderRadius: 4, background: "rgba(255,255,255,0.04)", animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
+                <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid var(--border)" : "none" }}>
+                  <div style={{ width: 60, height: 8, borderRadius: 3, background: "var(--bg3)", marginBottom: 10, animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
+                  <div style={{ width: 48, height: 20, borderRadius: 4, background: "var(--bg3)", animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
                 </div>
               ))}
             </div>
-            <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.04)", background: "rgba(201,168,76,0.02)" }}>
-              <div style={{ width: "70%", height: 10, borderRadius: 4, background: "rgba(255,255,255,0.04)", animation: "skeletonPulse 1.4s ease-in-out 0.2s infinite" }} />
+            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", background: "rgba(201,168,76,0.02)" }}>
+              <div style={{ width: "70%", height: 10, borderRadius: 4, background: "var(--bg3)", animation: "skeletonPulse 1.4s ease-in-out 0.2s infinite" }} />
             </div>
           </div>
         )}
 
         {/* Analysis card */}
         {!loading && result && (
-          <div style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.97)", transition: "opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1)", background: "rgba(255,255,255,0.018)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 18, overflow: "hidden", boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)" }}>
+          <div style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.97)", transition: "opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1)", background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 18, overflow: "hidden", boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)" }}>
             {/* Card header */}
-            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 8, fontWeight: 700, color: "#c9a84c", letterSpacing: 0.5, textAlign: "center" as const, padding: 2 }}>
                   {query || "-"}
@@ -767,19 +767,19 @@ function StockTeaserSection() {
                   : { label: "Volatility", value: result.volatility, color: result.volatility !== "-" && parseFloat(result.volatility) > 40 ? "#e05c5c" : "var(--text)" },
                 { label: "Health (Est.)", value: result.health > 0 ? `${result.health}/100` : "-", color: healthColor(result.health) },
               ].map((m, i) => (
-                <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid var(--border)" : "none" }}>
                   <p style={{ fontSize: 7, letterSpacing: 2, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 6 }}>{m.label}</p>
                   <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: m.color, letterSpacing: -0.5 }}>{m.value}</p>
                 </div>
               ))}
             </div>
             {/* AI insight */}
-            <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.04)", background: "rgba(201,168,76,0.03)", display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", background: "rgba(201,168,76,0.03)", display: "flex", alignItems: "flex-start", gap: 10 }}>
               <img src="/corvo-logo.svg" width={14} height={11} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, fontStyle: "italic" as const }}>{result.insight}</p>
             </div>
             {/* CTA */}
-            <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ fontSize: 11, color: "var(--text3)" }}>{result.isLive ? "Live market data · Preview only" : "Powered by Corvo · Preview only"}</p>
               <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "#c9a84c", borderRadius: 9, fontSize: 12, fontWeight: 700, color: "#0a0e14", textDecoration: "none", transition: "background 0.2s" }}
                 onMouseEnter={e => (e.currentTarget.style.background = "#d4b558")}
@@ -803,9 +803,9 @@ function VisualComparisonSection() {
         {/* Yahoo Finance / traditional tools side */}
         <SlideIn direction="left" style={{ flex: 1, borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid rgba(150,150,150,0.15)", borderRight: "none" }}>
           <div style={{ background: "var(--bg3)", height: "100%", padding: "22px 20px 20px", fontFamily: "sans-serif", position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 10, marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 10, marginBottom: 14 }}>
               <span style={{ fontSize: 9, color: "rgba(150,150,150,0.9)", letterSpacing: 2, textTransform: "uppercase" }}>YAHOO FINANCE</span>
-              <span style={{ fontSize: 10, color: "rgba(180,180,180,0.7)", fontWeight: 600, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", padding: "2px 8px", borderRadius: 4 }}>No insights</span>
+              <span style={{ fontSize: 10, color: "rgba(180,180,180,0.7)", fontWeight: 600, background: "var(--bg2)", border: "1px solid var(--border)", padding: "2px 8px", borderRadius: 4 }}>No insights</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {[
@@ -816,18 +816,18 @@ function VisualComparisonSection() {
                 { label: "52W Low", val: "183.86", clr: "rgba(160,160,160,0.7)" },
                 { label: "Market Cap", val: "3.94T", clr: "rgba(160,160,160,0.7)" },
               ].map((row, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid var(--border)" }}>
                   <span style={{ fontSize: 9, color: "rgba(120,120,120,0.8)", letterSpacing: 0.5 }}>{row.label}</span>
                   <span style={{ fontSize: 9, color: row.clr, fontWeight: 600 }}>{row.val}</span>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 14, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+            <div style={{ marginTop: 14, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
               <span style={{ fontSize: 8, color: "rgba(120,120,120,0.5)", lineHeight: 1.6 }}>No portfolio health score. No risk analysis. No AI insights. Just a number.</span>
             </div>
             <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
               {["Sharpe ratio?", "Drawdown?", "Correlation?", "Monte Carlo?"].map((t, i) => (
-                <span key={i} style={{ fontSize: 7, color: "rgba(120,120,120,0.35)", background: "rgba(255,255,255,0.03)", padding: "2px 6px", borderRadius: 3 }}>{t}</span>
+                <span key={i} style={{ fontSize: 7, color: "rgba(120,120,120,0.35)", background: "var(--bg2)", padding: "2px 6px", borderRadius: 3 }}>{t}</span>
               ))}
             </div>
           </div>
@@ -933,11 +933,11 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
-      style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}
+      style={{ padding: "32px", border: "1px solid var(--border)", borderRadius: 18, background: "var(--card-bg)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}
     >
       <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
       <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, flex: 1 }}>{text}</p>
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 18 }}>
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{name}</p>
         <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{role}</p>
       </div>
@@ -985,10 +985,10 @@ function MobileTestimonialCarousel() {
   const card = MOBILE_TESTIMONIALS[idx];
   return (
     <div style={{ position: "relative", width: "100%", paddingLeft: 28, paddingRight: 28 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div style={{ padding: "32px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, background: "rgba(255,255,255,0.012)", backdropFilter: "blur(10px)", minHeight: 220 }}>
+      <div style={{ padding: "32px", border: "1px solid var(--border)", borderRadius: 18, background: "var(--card-bg)", backdropFilter: "blur(10px)", minHeight: 220 }}>
         <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
         <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24 }}>{card.text}</p>
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 18 }}>
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{card.name}</p>
           <p style={{ fontSize: 11, color: "rgba(232,224,204,0.28)", marginTop: 3 }}>{card.role}</p>
         </div>
@@ -1146,7 +1146,7 @@ function AnimatedTableRow({ children, delay }: { children: React.ReactNode; dela
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.5, ease: ANIM_EASE, delay }}
-      style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}
+      style={{ borderBottom: "1px solid var(--border)" }}
     >
       {children}
     </motion.tr>
@@ -1269,7 +1269,7 @@ function EmailPopupModal() {
           onClick={dismiss}
           style={{
             position: "absolute", top: 14, right: 14,
-            background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+            background: "var(--bg3)", border: "1px solid var(--border)",
             borderRadius: 8, width: 30, height: 30, cursor: "pointer",
             color: "var(--text3)", display: "flex",
             alignItems: "center", justifyContent: "center",
@@ -1304,13 +1304,13 @@ function EmailPopupModal() {
               onKeyDown={e => e.key === "Enter" && submit()}
               placeholder="your@email.com"
               style={{
-                padding: "13px 16px", background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10,
+                padding: "13px 16px", background: "var(--bg3)",
+                border: "1px solid var(--border)", borderRadius: 10,
                 color: "var(--text)", fontSize: 14, outline: "none",
                 transition: "border-color 0.2s",
               }}
               onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
-              onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+              onBlur={e => (e.target.style.borderColor = "var(--border)")}
             />
             <button
               onClick={submit}
@@ -1375,9 +1375,9 @@ function EmailCaptureBottom() {
         ) : (
           <div className="email-cap-row" style={{ display: "flex", gap: 10, maxWidth: 480, margin: "0 auto" }}>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="your@email.com"
-              style={{ flex: 1, minWidth: 0, padding: "15px 20px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+              style={{ flex: 1, minWidth: 0, padding: "15px 20px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
               onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
-              onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")} />
+              onBlur={e => (e.target.style.borderColor = "var(--border)")} />
             <button onClick={submit} disabled={status === "loading"} className="cta-shimmer"
               style={{ padding: "15px 28px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 14, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, minHeight: 44 }}>
               {status === "loading" ? "..." : "Subscribe Free"}
@@ -1511,7 +1511,7 @@ function GrowthCalculatorSection() {
           <p style={{ fontSize: 15, color: "var(--text2)", fontWeight: 300 }}>Adjust the inputs and watch your portfolio project forward</p>
         </Reveal>
 
-        <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 20, padding: "40px 48px", boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}>
+        <div style={{ background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 20, padding: "40px 48px", boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}>
           {/* Sliders */}
           <div className="calc-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, marginBottom: 44 }}>
             <div>
@@ -1604,7 +1604,7 @@ function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title:
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
-      style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 16 }}
+      style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 18, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 16 }}
     >
       <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.18)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(201,168,76,0.1)" }}>
         {icon}
@@ -1985,7 +1985,7 @@ export default function Landing() {
             </>
           )}
           {/* Hamburger */}
-          <button className="hamburger" aria-label="Open menu" onClick={() => setMobileMenuOpen(v => !v)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 36, height: 36, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, cursor: "pointer", flexShrink: 0, color: "#e8e0cc" }}>
+          <button className="hamburger" aria-label="Open menu" onClick={() => setMobileMenuOpen(v => !v)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 36, height: 36, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", flexShrink: 0, color: "var(--text)" }}>
             {mobileMenuOpen ? (
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
             ) : (
@@ -1997,19 +1997,19 @@ export default function Landing() {
 
       {/* Mobile drawer */}
       {mobileMenuOpen && (
-        <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 99, background: "rgba(10,14,20,0.98)", borderBottom: "1px solid rgba(201,168,76,0.1)", backdropFilter: "blur(20px)", padding: "16px 24px 24px", display: "flex", flexDirection: "column" as const, gap: 0 }}>
-          <button onClick={() => { document.getElementById("features")?.scrollIntoView({ behavior: "smooth" }); setMobileMenuOpen(false); }} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", background: "none", border: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", cursor: "pointer", textAlign: "left" as const, fontFamily: "Inter,sans-serif" }}>Features</button>
-          <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Pricing</Link>
-          <Link href="/faq" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>FAQ</Link>
-          <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Blog</Link>
-          <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Changelog</Link>
-          <Link href="/app?demo=true" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Demo</Link>
+        <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 99, background: "var(--bg)", borderBottom: "1px solid var(--border)", backdropFilter: "blur(20px)", padding: "16px 24px 24px", display: "flex", flexDirection: "column" as const, gap: 0 }}>
+          <button onClick={() => { document.getElementById("features")?.scrollIntoView({ behavior: "smooth" }); setMobileMenuOpen(false); }} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", background: "none", border: "none", borderBottom: "0.5px solid var(--border)", cursor: "pointer", textAlign: "left" as const, fontFamily: "Inter,sans-serif" }}>Features</button>
+          <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Pricing</Link>
+          <Link href="/faq" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>FAQ</Link>
+          <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Blog</Link>
+          <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>
+          <Link href="/app?demo=true" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Demo</Link>
           {loggedIn ? (
             <>
-              <Link href="/account" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>My Account</Link>
-              <Link href="/referrals" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Referrals</Link>
-              <Link href="/settings" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(232,224,204,0.7)", textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Settings</Link>
-              <Link href="/app" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "#c9a84c", fontWeight: 600, textDecoration: "none", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "block" }}>Go to App →</Link>
+              <Link href="/account" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>My Account</Link>
+              <Link href="/referrals" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Referrals</Link>
+              <Link href="/settings" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Settings</Link>
+              <Link href="/app" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "#c9a84c", fontWeight: 600, textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Go to App →</Link>
               <button onClick={signOut} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(224,92,92,0.8)", background: "none", border: "none", cursor: "pointer", textAlign: "left" as const, fontFamily: "Inter,sans-serif", marginTop: 4 }}>Sign Out</button>
             </>
           ) : (
@@ -2167,7 +2167,7 @@ export default function Landing() {
 
       {/* ─── INTERACTIVE DEMO CTA ─── */}
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", background: "rgba(255,255,255,0.014)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 24, overflow: "hidden", position: "relative" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 24, overflow: "hidden", position: "relative" }}>
           <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.018) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.018) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
           <div style={{ position: "absolute", top: "-30%", right: "-10%", width: "50%", height: "150%", background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 60%)", pointerEvents: "none" }} />
           <div className="demo-grid demo-inner" style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center", padding: "64px 56px" }}>
