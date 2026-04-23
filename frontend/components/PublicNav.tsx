@@ -57,7 +57,7 @@ export default function PublicNav() {
           .pnav-mobile-link { min-height: 44px !important; display: flex !important; align-items: center !important; }
         }
       `}</style>
-      <nav className="pnav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navBg, borderBottom: "1px solid var(--border)" }}>
+      <nav className="pnav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navBg, backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
         {/* Logo */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
           <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
