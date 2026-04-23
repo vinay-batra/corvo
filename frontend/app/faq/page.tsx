@@ -223,11 +223,11 @@ function FAQAIChat() {
         border: "1px solid rgba(201,168,76,0.18)",
         borderRadius: 20,
         overflow: "hidden",
-        background: "transparent",
+        background: "var(--card-bg)",
       }}
     >
       {/* Header */}
-      <div style={{ padding: "18px 24px", borderBottom: "1px solid var(--bg3)", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ padding: "18px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
           C
         </div>
@@ -272,7 +272,7 @@ function FAQAIChat() {
       </div>
 
       {/* Input */}
-      <div style={{ padding: "12px 16px 16px", borderTop: "1px solid var(--bg3)", display: "flex", gap: 10 }}>
+      <div style={{ padding: "12px 16px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: 10 }}>
         <input
           type="text"
           value={input}
