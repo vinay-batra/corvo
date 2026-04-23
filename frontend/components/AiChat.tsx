@@ -733,7 +733,11 @@ export default function AiChat({
                   <img src="/corvo-logo.svg" width={30} height={30} alt="Corvo" />
                 </div>
                 <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>
-                  {goals?.age ? "Hi! I have context on your portfolio and goals." : "Ask about your portfolio"}
+                  {!portfolioCtxOn
+                    ? "Context is off. Enable it above for personalized recommendations."
+                    : data
+                    ? "Ask anything about your portfolio."
+                    : "Add your portfolio and run Analyze for personalized insights."}
                 </p>
                 <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
                   {goals?.age
