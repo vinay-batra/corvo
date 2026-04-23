@@ -783,11 +783,13 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         }
       }
       if (savedData) {
-        const parsed = JSON.parse(savedData);
-        if (parsed) {
-          setData(parsed);
-          localStorage.removeItem("corvo_saved_data");
-        }
+        try {
+          const parsed = JSON.parse(savedData);
+          if (parsed && typeof parsed === "object" && "portfolio_return" in parsed) {
+            setData(parsed);
+          }
+        } catch {}
+        localStorage.removeItem("corvo_saved_data");
       }
     } catch {}
 

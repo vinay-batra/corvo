@@ -386,7 +386,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               borderRadius:4,
               cursor: balanced ? "default" : !overweight ? "pointer" : "default",
               color: overweight ? "#e05c5c" : !balanced ? C.amber : C.cream3,
-              background: overweight ? "rgba(224,92,92,0.06)" : "rgba(255,255,255,0.02)",
+              background: overweight ? "rgba(224,92,92,0.06)" : "transparent",
               fontFamily:"Space Mono,monospace",
               transition:"all 0.15s", flexShrink:0,
             }}>
@@ -438,10 +438,10 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   <AnimatePresence>
                     {active===i&&res.length>0&&(
                       <motion.div initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-                        style={{position:"absolute",top:"calc(100% + 3px)",left:0,right:0,background:dark?"#0d1117":"#ffffff",border:`1px solid ${dark?"rgba(255,255,255,0.1)":"#d4cfc8"}`,borderRadius:10,zIndex:100,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+                        style={{position:"absolute",top:"calc(100% + 3px)",left:0,right:0,background:"var(--card-bg)",border:`1px solid var(--border)`,borderRadius:10,zIndex:100,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
                         {res.map((r,idx)=>(
                           <div key={idx} onMouseDown={e=>{e.preventDefault();clearTimeout(blurT.current[i]);select(i,r);}}
-                            style={{padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",borderBottom:idx<res.length-1?`1px solid ${dark?"rgba(255,255,255,0.05)":"#d4cfc8"}`:"none",transition:"background 0.1s"}}
+                            style={{padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",borderBottom:idx<res.length-1?`1px solid var(--border)`:"none",transition:"background 0.1s"}}
                             onMouseEnter={e=>e.currentTarget.style.background=dark?"rgba(201,168,76,0.06)":"rgba(184,134,11,0.05)"}
                             onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                             <div>
@@ -687,7 +687,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                     onDragLeave={()=>setCsvDragOver(false)}
                     onDrop={e=>{e.preventDefault();setCsvDragOver(false);const f=e.dataTransfer.files[0];if(f)handleCsvFile(f);}}
                     onClick={()=>csvFileRef.current?.click()}
-                    style={{border:`1.5px dashed ${csvDragOver?"rgba(201,168,76,0.6)":"rgba(201,168,76,0.2)"}`,borderRadius:10,padding:"28px 20px",textAlign:"center",cursor:"pointer",background:csvDragOver?"rgba(201,168,76,0.04)":"rgba(255,255,255,0.01)",transition:"all 0.15s",marginBottom:4}}>
+                    style={{border:`1.5px dashed ${csvDragOver?"rgba(201,168,76,0.6)":"rgba(201,168,76,0.2)"}`,borderRadius:10,padding:"28px 20px",textAlign:"center",cursor:"pointer",background:csvDragOver?"rgba(201,168,76,0.04)":"transparent",transition:"all 0.15s",marginBottom:4}}>
                     {csvLoading?(
                       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
                         <div style={{width:18,height:18,border:"2px solid rgba(201,168,76,0.2)",borderTopColor:C.amber,borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>
