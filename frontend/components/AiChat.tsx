@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 import { posthog } from "../lib/posthog";
 import {
   X, Copy, Check, Download, RefreshCw, Plus, Trash2,
-  MessageSquare, ToggleLeft, ToggleRight, Menu, Info, Zap, Pencil,
+  MessageSquare, Menu, Info, Zap, Pencil,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -501,15 +501,6 @@ export default function AiChat({
 
   // ── Derived ──
 
-  const ctxItems: string[] = [];
-  if (portfolioCtxOn) {
-    const t: string[] = data?.tickers || assets?.map((a: any) => a.ticker) || [];
-    if (t.length > 0) ctxItems.push(`${t.length} holdings`);
-    if (data?.sharpe_ratio != null) ctxItems.push(`Sharpe ${data.sharpe_ratio.toFixed(2)}`);
-    if (data?.health_score !== undefined) ctxItems.push(`Health ${data.health_score}/100`);
-    if (goals?.age) ctxItems.push(`Age ${goals.age}`);
-  }
-
   const pct         = messagesLimit > 0 ? messagesUsed / messagesLimit : 0;
   const remaining   = Math.max(0, messagesLimit - messagesUsed);
   const limitColor  = pct > 0.8 ? "#ff6b6b" : pct > 0.6 ? "#f59e0b" : "var(--accent)";
@@ -527,9 +518,13 @@ export default function AiChat({
       `}</style>
 
       {/* Semi-transparent backdrop */}
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.35 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
         onClick={onClose}
-        style={{ position: "fixed", inset: 0, zIndex: 299, background: "rgba(0,0,0,0.25)" }}
+        style={{ position: "fixed", inset: 0, zIndex: 299, background: "rgba(0,0,0,1)" }}
       />
 
       {/* Slide-in panel */}
@@ -560,7 +555,7 @@ export default function AiChat({
                 initial={{ x: 240 }}
                 animate={{ x: 0 }}
                 exit={{ x: 240 }}
-                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                transition={{ type: "spring", damping: 28, stiffness: 260 }}
                 style={{
                   position: "fixed", top: 0, bottom: 0,
                   right: "max(25vw, 360px)",
@@ -695,20 +690,18 @@ export default function AiChat({
         </div>
 
         {/* ── Context bar ── */}
-        <div style={{ borderBottom: "0.5px solid var(--border)", padding: "8px 14px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, background: "var(--bg)", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, flexWrap: "wrap", minWidth: 0 }}>
-            <span style={{ fontSize: 9, letterSpacing: 1.5, fontWeight: 600, textTransform: "uppercase", color: portfolioCtxOn ? "#5cb88a" : "var(--text3)", whiteSpace: "nowrap" }}>
-              {portfolioCtxOn ? "● Context" : "○ No context"}
-            </span>
-            {portfolioCtxOn && ctxItems.map((item, i) => (
-              <span key={i} style={{ fontSize: 10, color: "var(--text3)", background: "var(--bg3)", padding: "2px 7px", borderRadius: 3, border: "0.5px solid var(--border)", whiteSpace: "nowrap" }}>
-                {item}
-              </span>
-            ))}
-          </div>
-          <button onClick={() => setPortfolioCtxOn(v => !v)} title={portfolioCtxOn ? "Disable portfolio context" : "Enable portfolio context"}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: portfolioCtxOn ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", flexShrink: 0 }}>
-            {portfolioCtxOn ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+        <div style={{ borderBottom: "0.5px solid var(--border)", padding: "6px 14px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, background: "var(--bg)" }}>
+          <span style={{ fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 5, border: "0.5px solid var(--border)", borderRadius: 5, padding: "3px 8px", userSelect: "none" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: portfolioCtxOn ? "#5cb88a" : "var(--border)", flexShrink: 0, transition: "background .2s" }} />
+            Context
+          </span>
+          {/* Toggle switch */}
+          <button
+            onClick={() => setPortfolioCtxOn(v => !v)}
+            title={portfolioCtxOn ? "Disable portfolio context" : "Enable portfolio context"}
+            style={{ position: "relative", width: 28, height: 16, borderRadius: 8, border: "none", cursor: "pointer", padding: 0, background: portfolioCtxOn ? "#5cb88a" : "var(--border)", transition: "background .2s", flexShrink: 0 }}
+          >
+            <span style={{ position: "absolute", top: 2, left: portfolioCtxOn ? 14 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left .15s", boxShadow: "0 1px 3px rgba(0,0,0,.3)" }} />
           </button>
         </div>
 
