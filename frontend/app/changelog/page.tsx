@@ -30,14 +30,14 @@ const ENTRIES = [
     date: "Apr 23, 2026",
     version: "v0.16",
     title: "Alerts Overhaul, Empty State Redesign, TypeScript Fixes & UI Polish",
-    desc: "Portfolio alerts fully built end-to-end: select a saved portfolio, set a drop/rise threshold, and receive push notifications and email when triggered. Watchlist alerts section removed in favor of the unified AlertsPanel. Empty state redesigned with larger layout, Space Mono header, step icons, and a Presets shortcut hint. Metric cards upgraded with colored top borders and per-metric corner glow. Positions table now shows real company names and live 1D price changes. Analyze button pulses when portfolio is ready. XP progress bar thicker. Back button on Learn page redesigned with chevron icon and amber hover. Portfolio state now saved to localStorage when navigating to Learn so analyzed portfolio survives the tab switch. Watchlist controls reorganized: Rename moved into dropdown, Add button fixed to amber in light mode, refresh button labeled. Four TypeScript errors fixed across page.tsx, StockDetail, and UserMenu. Re-animation on scroll permanently fixed with initial={false} on all motion components.",
+    desc: "Portfolio alerts built end-to-end: select a saved portfolio, set a drop/rise threshold, and receive push or email notifications when triggered. Watchlist alerts section removed in favor of the unified AlertsPanel. Empty state redesigned with Space Mono header, step icons, and a Presets shortcut hint. Metric cards upgraded with colored top borders and per-metric corner glow. Positions table now shows real company names and live 1D price changes. Analyze button pulses when portfolio is ready. XP progress bar thickened. TypeScript errors fixed across page.tsx, StockDetail, and UserMenu. Re-animation on scroll permanently fixed with initial={false} on all motion components.",
     tags: ["Alerts", "UX", "Fixes", "TypeScript"],
   },
   {
     date: "Apr 21, 2026",
     version: "v0.15",
     title: "Learn Overhaul, SEO, Light Mode Fixes & XP System Improvements",
-    desc: "Major Learn page improvements: XP and streak now load correctly on page refresh, fixed a profiles database query that was silently failing. Expanded progression system from 5 to 15 levels (Novice through Legend) with a visual levels reference card. Global leaderboard now pulls from profiles.xp for accurate rankings. AI Practice unlocks after first quiz attempt instead of requiring full mastery. Daily challenge fail state added with retry button. Arcade grid last card now spans full width. Lesson step number badges added. Challenge Mode now has a Play Again button. Back buttons standardized with amber hover and ChevronLeft icon. Console logs removed from production. Light mode visual overhaul: preset modal, CSV modal, and component colors now use CSS variables throughout. Green values fixed in light mode (was showing near-black). Background colors shifted from warm beige to clean blue-tinted neutrals. News tab now requires an analyzed portfolio to access, consistent with other data tabs. Feedback button added to every page via React portal so it always floats correctly regardless of parent container. SEO upgrades: sitemap.xml created, JSON-LD upgraded to schema @graph with WebApplication, Organization, WebSite and FAQPage types, Google Search Console verification added, learn and pricing pages now indexable with proper metadata. Answer option length bias fixed in AI-generated quiz questions.",
+    desc: "Learn page overhauled: XP and streak now load correctly on refresh, expanded to 15 levels (Novice through Legend) with a visual reference card. Leaderboard pulls from profiles.xp for accuracy. AI Practice unlocks after first quiz attempt. Daily challenge fail state added with retry button. Arcade grid and lesson step badges improved. Light mode visual overhaul: all component colors now use CSS variables. News tab now requires an analyzed portfolio, consistent with other tabs. Feedback button added to every page via React portal. SEO upgrades: sitemap.xml created, JSON-LD upgraded to schema @graph, Google Search Console verified. Answer option length bias fixed in AI quiz questions.",
     tags: ["Learn", "XP", "SEO", "Light Mode", "UX"],
   },
   {
@@ -165,7 +165,7 @@ export default function ChangelogPage() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .nl { color: var(--text2); text-decoration: none; font-size: 12px; padding: 7px 14px; letter-spacing: 0.3px; transition: color 0.2s; }
         .nl:hover { color: var(--text); }
-        .tag { padding: 3px 10px; background: rgba(201,168,76,0.07); border: 1px solid rgba(201,168,76,0.18); border-radius: 20px; font-size: 10px; color: rgba(201,168,76,0.75); letter-spacing: 0.5px; }
+        .tag { padding: 3px 10px; background: rgba(201,168,76,0.07); border: 1px solid rgba(201,168,76,0.18); border-radius: 20px; font-size: 10px; color: var(--accent); letter-spacing: 0.5px; }
         @media(max-width:768px) {
           .cl-timeline { padding-left: 24px !important; }
           .cl-entry { padding-left: 20px !important; }
@@ -195,7 +195,7 @@ export default function ChangelogPage() {
       <div className="cl-body" style={{ maxWidth: 860, margin: "0 auto", padding: "0 56px 0" }}>
         <div className="cl-timeline" style={{ position: "relative", paddingLeft: 0 }}>
           {/* Vertical line */}
-          <div style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "rgba(201,168,76,0.12)" }} />
+          <div style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "var(--border)" }} />
 
           {ENTRIES.map((entry, i) => (
             <FadeUp key={i} delay={i * 0.06}>
@@ -206,7 +206,7 @@ export default function ChangelogPage() {
                 </div>
 
                 {/* Dot */}
-                <div style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--bg)", border: "2px solid #c9a84c", zIndex: 2 }} />
+                <div style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--card-bg)", border: "2px solid #c9a84c", zIndex: 2 }} />
 
                 {/* Content */}
                 <div style={{ paddingLeft: 36, flex: 1 }}>
