@@ -220,7 +220,7 @@ function FAQAIChat() {
       id="faq-ai-chat"
       style={{
         marginTop: 48,
-        border: "1px solid rgba(201,168,76,0.18)",
+        border: "1px solid rgba(201,168,76,0.4)",
         borderRadius: 20,
         overflow: "hidden",
         background: "var(--card-bg)",
