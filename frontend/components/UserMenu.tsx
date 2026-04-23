@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
 const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", border: "var(--border)", navy: "var(--bg)", cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)" };
@@ -18,6 +19,8 @@ interface UserMenuProps {
 }
 
 export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfile, onReplayOnboarding, onReplayTour, avatarUrl: avatarUrlProp, displayName: displayNameProp }: UserMenuProps) {
+  const pathname = usePathname();
+  const isInApp = pathname?.startsWith("/app");
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<{ displayName: string; avatarUrl: string | null } | null>(null);
   const [open, setOpen] = useState(false);
@@ -77,9 +80,9 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
       <button
         id="usermenu-btn"
         onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
-        style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }}
+        style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }}
         onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"}
-        onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}
       >
         {resolvedAvatar ? (
           <img src={resolvedAvatar} alt="Avatar" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
@@ -100,9 +103,9 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 182, background: "rgba(13,17,23,0.98)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 6, backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)", zIndex: 200 }}
+            style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 182, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 6, backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)", zIndex: 200 }}
           >
-            <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
               {resolvedAvatar ? (
                 <img src={resolvedAvatar} alt="Avatar" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
               ) : (
@@ -115,7 +118,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
 
             {/* My Account */}
             <Link href="/account" onClick={() => setOpen(false)} style={itemStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
               My Account
@@ -124,14 +127,14 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             {/* Referrals */}
             {onReferral ? (
               <button onClick={() => { setOpen(false); onReferral(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                 Referrals
               </button>
             ) : (
               <Link href="/referrals" onClick={() => setOpen(false)} style={itemStyle}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                 Referrals
@@ -141,14 +144,14 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             {/* Settings */}
             {onSettings ? (
               <button id="tour-settings-btn" onClick={() => { setOpen(false); onSettings(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                 Settings
               </button>
             ) : (
               <Link href="/settings" onClick={() => setOpen(false)} style={itemStyle}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                 Settings
@@ -158,7 +161,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             {/* Goals & Profile — in-app only */}
             {onProfile && (
               <button onClick={() => { setOpen(false); onProfile(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Goals &amp; Profile
@@ -168,7 +171,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             {/* Email Prefs — in-app only */}
             {onEmailPrefs && (
               <button onClick={() => { setOpen(false); onEmailPrefs(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 Email Preferences
@@ -178,7 +181,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             {/* Replay Onboarding — in-app only */}
             {onReplayOnboarding && (
               <button onClick={() => { setOpen(false); onReplayOnboarding(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
                 Replay Onboarding
@@ -188,22 +191,26 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             {/* Replay Tour — in-app only */}
             {onReplayTour && (
               <button onClick={() => { setOpen(false); onReplayTour(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
                 Replay Tour
               </button>
             )}
 
-            {/* Go to App */}
-            <Link href="/app" onClick={() => setOpen(false)} style={itemStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              Go to App
-            </Link>
+            {!isInApp && (
+              <>
+                {/* Go to App */}
+                <Link href="/app" onClick={() => setOpen(false)} style={itemStyle}
+                  onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                  Go to App
+                </Link>
+              </>
+            )}
 
-            <div style={{ height: "0.5px", background: "rgba(255,255,255,0.07)", margin: "4px 6px" }} />
+            <div style={{ height: "0.5px", background: "var(--border)", margin: "4px 6px" }} />
 
             <button onClick={signOut} style={{ ...itemStyle, color: "rgba(224,92,92,0.8)" }}
               onMouseEnter={e => e.currentTarget.style.background = "rgba(224,92,92,0.06)"}
