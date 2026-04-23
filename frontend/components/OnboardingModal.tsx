@@ -59,8 +59,6 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
       style={{
         position: "fixed", inset: 0,
         background: "var(--modal-overlay, rgba(0,0,0,0.6))",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
         zIndex: 1000,
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 24,
