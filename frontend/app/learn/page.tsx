@@ -249,8 +249,8 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
           {loading ? (
             <>
               <div style={{ height: 14, width: 160, borderRadius: 4, background: "rgba(255,255,255,0.06)", marginBottom: 8 }} />
-              <div style={{ height: 5, background: "var(--track)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ width: "0%", height: "100%", background: "rgba(255,255,255,0.06)", borderRadius: 3 }} />
+              <div style={{ height: 7, background: "var(--track)", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ width: "0%", height: "100%", background: "rgba(255,255,255,0.06)", borderRadius: 4 }} />
               </div>
             </>
           ) : (
@@ -261,9 +261,9 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
                   {xp} XP{nxt ? <span style={{ color: "var(--text3)" }}> · {nxt.min - xp} to {nxt.name}</span> : " · Max level!"}
                 </span>
               </div>
-              <div style={{ height: 5, background: "var(--track)", borderRadius: 3, overflow: "hidden", position: "relative" }}>
+              <div style={{ height: 7, background: "var(--track)", borderRadius: 4, overflow: "hidden", position: "relative" }}>
                 <motion.div animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: "easeOut" }}
-                  style={{ height: "100%", background: lvl.color, borderRadius: 3, position: "relative", overflow: "hidden" }}>
+                  style={{ height: "100%", background: lvl.color, borderRadius: 4, position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)", animation: "xpShimmer 2.2s ease-in-out infinite", willChange: "transform" }} />
                 </motion.div>
               </div>

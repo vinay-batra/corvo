@@ -10,6 +10,20 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const LOCAL_KEY = "corvo_saved_portfolios";
+
+const TICKER_NAMES: Record<string, string> = {
+  AAPL: "Apple Inc.", MSFT: "Microsoft", NVDA: "NVIDIA", GOOGL: "Alphabet",
+  AMZN: "Amazon", META: "Meta", TSLA: "Tesla", JPM: "JPMorgan",
+  V: "Visa", JNJ: "Johnson & Johnson", "BRK-B": "Berkshire Hathaway",
+  SPY: "S&P 500 ETF", QQQ: "Nasdaq 100 ETF", VTI: "Vanguard Total Mkt",
+  GLD: "Gold ETF", TLT: "20yr Treasury ETF", BND: "Total Bond ETF",
+  "BTC-USD": "Bitcoin", "ETH-USD": "Ethereum", SCHD: "Schwab Dividend ETF",
+  VOO: "Vanguard S&P 500", IWM: "Russell 2000 ETF", VNQ: "Real Estate ETF",
+  ARKK: "ARK Innovation ETF", AMD: "AMD", INTC: "Intel", KO: "Coca-Cola",
+  PG: "Procter & Gamble", DIS: "Walt Disney", NFLX: "Netflix",
+  UBER: "Uber", GS: "Goldman Sachs", BA: "Boeing", WMT: "Walmart",
+  XOM: "ExxonMobil", CVX: "Chevron", PFE: "Pfizer", MRK: "Merck",
+};
 const isValidSavedId = (id: string) => /^[0-9a-f-]{36}$/.test(id) || id.length > 10;
 
 const COLORS = [
@@ -361,7 +375,7 @@ export default function PositionsTab({
         const wFrac = a.weight / total;
         return {
           ticker: a.ticker,
-          company: live?.name ?? a.ticker,
+          company: live?.name ?? TICKER_NAMES[a.ticker] ?? a.ticker,
           sector: live?.sector ?? "-",
           portfolioId: p.id,
           portfolioName: p.name,
