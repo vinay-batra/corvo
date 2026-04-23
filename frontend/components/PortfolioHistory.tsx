@@ -73,7 +73,16 @@ export default function PortfolioHistory() {
     return () => obs.disconnect();
   }, []);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Retry if lines came back empty after load completed (e.g. first render timing)
+  useEffect(() => {
+    if (!loading && !noPortfolios && lines.length === 0) {
+      const timer = setTimeout(() => loadData(), 2000);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lines.length, loading, noPortfolios]);
 
   async function loadData() {
     setLoading(true);

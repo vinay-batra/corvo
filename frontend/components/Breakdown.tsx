@@ -87,7 +87,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
             {/* Mini bar */}
             <div style={{ height: 4, borderRadius: 2, background: "var(--track)", overflow: "hidden" }}>
               <motion.div
-                initial={{ width: 0 }}
+                initial={false}
                 animate={{ width: equalWeight ? `${a.pct * 100}%` : `${(a.pct / maxPct) * 100}%` }}
                 transition={{ duration: 0.9, delay: 0.4 + i * 0.08, ease: "easeOut" }}
                 style={{ height: "100%", background: a.color, borderRadius: 2 }}

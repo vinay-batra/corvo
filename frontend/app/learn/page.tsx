@@ -914,11 +914,13 @@ function ChallengeMode({
   const [timeLeft, setTimeLeft] = useState(60);
   const [questionScores, setQuestionScores] = useState<number[]>([]);
   const [results, setResults] = useState<boolean[]>([]);
+  const [fetchKey, setFetchKey] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const topics = masteredLessons.map(l => l.title).join(", ");
 
   useEffect(() => {
+    setLoadError(null);
     (async () => {
       try {
         const res = await fetch(`${API_URL}/generate-questions`, {
@@ -935,7 +937,7 @@ function ChallengeMode({
       }
     })();
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, []);
+  }, [fetchKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Timer
   useEffect(() => {
@@ -1022,7 +1024,7 @@ function ChallengeMode({
         ))}
       </div>
       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-        <button onClick={() => { setPhase("loading"); setQi(0); setSelected(null); setAnswered(false); setTimeLeft(60); setQuestionScores([]); setResults([]); }} style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>Play Again</button>
+        <button onClick={() => { setFetchKey(k => k + 1); setPhase("loading"); setQi(0); setSelected(null); setAnswered(false); setTimeLeft(60); setQuestionScores([]); setResults([]); }} style={{ padding: "10px 20px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 13, cursor: "pointer" }}>Play Again</button>
         <button onClick={onBack} style={{ padding: "10px 24px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Back to Learn</button>
       </div>
     </motion.div>
@@ -1561,7 +1563,6 @@ export default function LearnPage() {
           .select("display_name, avatar_url, xp, streak, last_activity_date, last_daily_challenge")
           .eq("id", user.id)
           .single();
-        console.log("profile fetch:", { profile, profileError });
 
         // ── Streak reset: if last activity was more than 1 day ago, streak is broken
         const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];

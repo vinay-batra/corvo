@@ -48,9 +48,16 @@ export default function GreetingBar({
   });
 
   const [market, setMarket] = useState<MarketSummary | null>(null);
+  const [marketTimedOut, setMarketTimedOut] = useState(false);
   const [indexPrices, setIndexPrices] = useState<{ spy: number | null; qqq: number | null; dia: number | null }>({ spy: null, qqq: null, dia: null });
   const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
+
+  // 10-second timeout for market data
+  useEffect(() => {
+    const timer = setTimeout(() => setMarketTimedOut(true), 10000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Fetch AI market summary + index data
   useEffect(() => {
@@ -63,8 +70,8 @@ export default function GreetingBar({
       : `${API_URL}/market-summary`;
     fetch(url)
       .then(r => r.json())
-      .then(d => { console.log("[GreetingBar] market-summary response:", d); setMarket(d); })
-      .catch(err => console.error("[GreetingBar] market-summary error:", err));
+      .then(d => { setMarket(d); })
+      .catch(() => {});
   }, [assets]);
 
   // Fetch index prices directly from watchlist-data
@@ -129,7 +136,9 @@ export default function GreetingBar({
   // Combine the three AI text fields into one flowing paragraph
   const summaryText = [market?.market, market?.holdings, market?.context]
     .filter(Boolean)
-    .join(" ");
+    .join(" ")
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "");
 
   return (
     <div style={{
@@ -152,7 +161,7 @@ export default function GreetingBar({
         <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, marginBottom: 0, letterSpacing: "0.01em" }}>
           {dateStr}
         </p>
-        {market === null ? (
+        {market === null && !marketTimedOut ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
             <style>{`
               @keyframes spin { to { transform: rotate(360deg); } }
@@ -167,6 +176,8 @@ export default function GreetingBar({
             }} />
             <span style={{ fontSize: 12, color: "var(--text3)" }}>Fetching market brief...</span>
           </div>
+        ) : market === null && marketTimedOut ? (
+          <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>Market data unavailable</p>
         ) : summaryText ? (
           <div style={{ marginTop: 6 }}>
             <p style={{
