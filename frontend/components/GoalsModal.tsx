@@ -4,9 +4,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const C = {
-  navy: "#0a0e14", navy3: "#111620", navy4: "#161c26",
-  border: "rgba(255,255,255,0.07)", cream: "#e8e0cc",
-  cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)",
+  navy: "var(--bg)", navy3: "var(--card-bg)", navy4: "#161c26",
+  border: "var(--border)", cream: "var(--text)",
+  cream2: "var(--text2)", cream3: "var(--text3)",
   amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)",
 };
 
@@ -69,8 +69,8 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
 
   const inputStyle = (k: string): React.CSSProperties => ({
     width: "100%", padding: "11px 14px",
-    background: "rgba(255,255,255,0.03)",
-    border: `1px solid ${focused === k ? C.amber : C.border}`,
+    background: "var(--input-bg)",
+    border: `1px solid ${focused === k ? C.amber : "var(--input-border)"}`,
     borderRadius: 10, color: C.cream, fontSize: 14,
     fontFamily: "'Inter', sans-serif", outline: "none", transition: "border-color 0.15s",
   });
@@ -84,7 +84,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
         style={{ width: "min(480px, 95vw)", background: C.navy3, border: `1px solid rgba(255,255,255,0.07)`, borderRadius: 18, padding: "36px 36px 32px", position: "relative" }}>
 
         {/* Progress bar */}
-        <div style={{ height: 2, background: "rgba(255,255,255,0.06)", borderRadius: 1, marginBottom: 32, overflow: "hidden" }}>
+        <div style={{ height: 2, background: "var(--bg3)", borderRadius: 1, marginBottom: 32, overflow: "hidden" }}>
           <motion.div animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }} transition={{ duration: 0.4 }}
             style={{ height: "100%", background: C.amber, borderRadius: 1 }} />
         </div>
@@ -93,7 +93,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
           <div style={{ display: "flex", gap: 6 }}>
             {STEPS.map((_, i) => (
-              <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i <= step ? C.amber : "rgba(255,255,255,0.1)", transition: "all 0.3s" }} />
+              <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i <= step ? C.amber : "var(--border)", transition: "all 0.3s" }} />
             ))}
           </div>
           <button onClick={onSkip} style={{ fontSize: 11, color: C.cream3, background: "none", border: "none", cursor: "pointer", letterSpacing: 1 }}>SKIP</button>
@@ -128,7 +128,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {RISK_OPTIONS.map(o => (
                       <button key={o.value} onClick={() => set("riskTolerance", o.value)}
-                        style={{ padding: "12px 14px", background: goals.riskTolerance === o.value ? C.amber2 : "rgba(255,255,255,0.02)", border: `1px solid ${goals.riskTolerance === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all 0.15s", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        style={{ padding: "12px 14px", background: goals.riskTolerance === o.value ? C.amber2 : "var(--bg3)", border: `1px solid ${goals.riskTolerance === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all 0.15s", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
                           <p style={{ fontSize: 13, fontWeight: 500, color: goals.riskTolerance === o.value ? C.amber : C.cream, marginBottom: 2 }}>{o.label}</p>
                           <p style={{ fontSize: 11, color: C.cream3 }}>{o.desc}</p>
@@ -144,7 +144,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                     {GOAL_OPTIONS.map(o => (
                       <button key={o.value} onClick={() => set("goal", o.value)}
-                        style={{ padding: "11px 14px", background: goals.goal === o.value ? C.amber2 : "rgba(255,255,255,0.02)", border: `1px solid ${goals.goal === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 10, cursor: "pointer", color: goals.goal === o.value ? C.amber : C.cream2, fontSize: 12, fontWeight: 500, transition: "all 0.15s" }}>
+                        style={{ padding: "11px 14px", background: goals.goal === o.value ? C.amber2 : "var(--bg3)", border: `1px solid ${goals.goal === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 10, cursor: "pointer", color: goals.goal === o.value ? C.amber : C.cream2, fontSize: 12, fontWeight: 500, transition: "all 0.15s" }}>
                         {o.label}
                       </button>
                     ))}

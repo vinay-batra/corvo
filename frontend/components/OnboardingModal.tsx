@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import PortfolioBuilder from "./PortfolioBuilder";
 
 const C = {
-  navy: "#0a0e14", navy3: "#111620", navy4: "#161c26",
-  border: "rgba(255,255,255,0.07)", cream: "#e8e0cc",
-  cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)",
+  navy: "var(--bg)", navy3: "var(--card-bg)", navy4: "#161c26",
+  border: "var(--border)", cream: "var(--text)",
+  cream2: "var(--text2)", cream3: "var(--text3)",
   amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", amber3: "rgba(184,134,11,0.25)",
   green: "#5cb88a", green2: "rgba(92,184,138,0.12)", green3: "rgba(92,184,138,0.3)",
 };
@@ -86,7 +86,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
         }}
       >
         {/* Progress bar */}
-        <div style={{ height: 2, background: "rgba(255,255,255,0.05)", borderRadius: 1, marginBottom: 26, overflow: "hidden" }}>
+        <div style={{ height: 2, background: "var(--bg3)", borderRadius: 1, marginBottom: 26, overflow: "hidden" }}>
           <motion.div
             animate={{ width: `${((step + 1) / 3) * 100}%` }}
             transition={{ duration: 0.45, ease: "easeOut" }}
@@ -103,7 +103,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
                 animate={{ width: i === step ? 20 : 6 }}
                 style={{
                   height: 5, borderRadius: 3,
-                  background: i <= step ? C.amber : "rgba(255,255,255,0.08)",
+                  background: i <= step ? C.amber : "var(--border)",
                 }}
               />
             ))}
@@ -150,7 +150,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
                     style={{
                       display: "flex", gap: 14, alignItems: "flex-start",
                       padding: "13px 15px",
-                      background: "rgba(255,255,255,0.02)",
+                      background: "var(--bg3)",
                       border: `1px solid ${C.border}`,
                       borderRadius: 12,
                     }}
@@ -222,7 +222,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
                   onClick={handleNext}
                   style={{
                     padding: "11px 28px",
-                    background: hasAssets ? C.amber : "rgba(255,255,255,0.05)",
+                    background: hasAssets ? C.amber : "var(--bg3)",
                     border: `1px solid ${hasAssets ? C.amber3 : C.border}`,
                     borderRadius: 10,
                     color: hasAssets ? C.navy : C.cream3,
