@@ -7,259 +7,220 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface Props { data: any; assets: any[]; goals?: any; menuItem?: boolean; onClose?: () => void; }
 
-// ── jsPDF dark-theme PDF builder ─────────────────────────────────────────────
+// ── jsPDF single-page PDF builder ────────────────────────────────────────────
 async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
 
   const W = 210, H = 297;
-  const navy = [10, 14, 20] as [number, number, number];
-  const amber = [201, 168, 76] as [number, number, number];
-  const cream = [232, 224, 204] as [number, number, number];
-  const dim: [number, number, number] = [100, 110, 115];
-  const red = [224, 92, 92] as [number, number, number];
-  const green = [92, 184, 138] as [number, number, number];
+  const ML = 14, MR = 14;
+  const CW = W - ML - MR;
+
+  const bg:        [number,number,number] = isLight ? [255,255,255] : [10,14,20];
+  const text:      [number,number,number] = isLight ? [26,26,26]    : [232,224,204];
+  const cardBg:    [number,number,number] = isLight ? [245,245,240] : [20,28,40];
+  const cardBorder:[number,number,number] = isLight ? [224,216,200] : [40,50,65];
+  const dim:       [number,number,number] = isLight ? [136,136,136] : [100,110,115];
+  const hdrBg:     [number,number,number] = isLight ? [245,245,240] : [14,20,30];
+  const barTrack:  [number,number,number] = isLight ? [224,216,200] : [30,40,55];
+  const amber:     [number,number,number] = [201,168,76];
+  const red:       [number,number,number] = [224,92,92];
+  const green:     [number,number,number] = [92,184,138];
 
   const ret = data.portfolio_return ?? 0;
   const vol = data.portfolio_volatility ?? 0;
   const sharpe = vol > 0 ? (ret - 0.04) / vol : 0;
   const dd = data.max_drawdown ?? 0;
+  const score = computeHealthScore(data);
+  const scoreColor = score >= 75 ? green : score >= 50 ? amber : red;
   const weights: number[] = data.weights ?? assets.map((a: any) => a.weight);
   const total = weights.reduce((s, w) => s + w, 0) || 1;
   const normWeights = weights.map(w => w / total);
   const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const indRet: Record<string, number> = data.individual_returns ?? {};
+  const tickerStr = assets.map((a: any) => a.ticker).join("  ·  ");
 
-  // ── PAGE 1: Cover ────────────────────────────────────────────────────────
-  doc.setFillColor(...navy);
+  // Background
+  doc.setFillColor(...bg);
   doc.rect(0, 0, W, H, "F");
 
-  // Amber accent bar on left
+  // ── HEADER BAR ──────────────────────────────────────────────────────────────
   doc.setFillColor(...amber);
-  doc.rect(0, 0, 4, H, "F");
+  doc.rect(0, 0, W, 1.5, "F");
 
-  // CORVO brand
+  doc.setFillColor(...hdrBg);
+  doc.rect(0, 1.5, W, 18, "F");
+
   doc.setFont("courier", "bold");
-  doc.setFontSize(36);
+  doc.setFontSize(14);
   doc.setTextColor(...amber);
-  doc.text("CORVO", 24, 54);
+  doc.text("CORVO", ML, 13);
 
   doc.setFont("courier", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...dim);
-  doc.setCharSpace(3);
-  doc.text("PORTFOLIO INTELLIGENCE REPORT", 24, 62);
-  doc.setCharSpace(0);
-
-  // Divider
-  doc.setDrawColor(...amber);
-  doc.setLineWidth(0.5);
-  doc.line(24, 68, W - 24, 68);
-
-  // Portfolio name
-  doc.setFont("courier", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(5.5);
   doc.setTextColor(...dim);
   doc.setCharSpace(2);
-  doc.text("PORTFOLIO", 24, 84);
+  doc.text("PORTFOLIO INTELLIGENCE", ML, 17);
   doc.setCharSpace(0);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(...cream);
-  const tickerStr = assets.map((a: any) => a.ticker).join("  ·  ");
-  doc.text(tickerStr, 24, 96);
-
-  // Date
-  doc.setFont("courier", "normal");
   doc.setFontSize(9);
-  doc.setTextColor(...dim);
-  doc.setCharSpace(1);
-  doc.text(`GENERATED  ${now.toUpperCase()}`, 24, 108);
-  doc.setCharSpace(0);
+  doc.setTextColor(...text);
+  doc.text(tickerStr, W / 2, 13, { align: "center" });
 
-  // Large health score ring (drawn with arc)
-  const score = computeHealthScore(data);
-  const scoreColor = score >= 75 ? green : score >= 50 ? amber : red;
-  const cx = W / 2, cy = 185, r = 44;
-  doc.setFillColor(...navy);
-  doc.circle(cx, cy, r + 6, "F");
-  // Track ring
-  doc.setDrawColor(40, 48, 58);
-  doc.setLineWidth(5);
-  doc.circle(cx, cy, r, "S");
-  // Score arc (approximate with small segments)
-  const pct = score / 100;
-  const steps = Math.ceil(pct * 60);
-  doc.setDrawColor(...scoreColor);
-  doc.setLineWidth(5);
-  for (let i = 0; i < steps; i++) {
-    const a0 = (-Math.PI / 2) + (i / 60) * 2 * Math.PI;
-    const a1 = (-Math.PI / 2) + ((i + 1) / 60) * 2 * Math.PI;
-    const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
-    const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
-    doc.line(x0, y0, x1, y1);
-  }
-  // Score text
-  doc.setFont("courier", "bold");
-  doc.setFontSize(32);
-  doc.setTextColor(...scoreColor);
-  doc.text(String(score), cx - (score >= 100 ? 9 : 7), cy + 4, { align: "center" });
   doc.setFont("courier", "normal");
   doc.setFontSize(7);
   doc.setTextColor(...dim);
-  doc.setCharSpace(2);
-  doc.text("HEALTH SCORE", cx, cy + 12, { align: "center" });
-  doc.setCharSpace(0);
+  doc.text(now.toUpperCase(), W - MR, 13, { align: "right" });
 
-  // Footer
-  doc.setFont("courier", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...dim);
-  doc.text("corvo.capital", 24, H - 16);
-  doc.text("Not financial advice · Data from Yahoo Finance", W - 24, H - 16, { align: "right" });
-
-  // ── PAGE 2: Metrics + Allocation ─────────────────────────────────────────
-  doc.addPage();
-  doc.setFillColor(...navy);
-  doc.rect(0, 0, W, H, "F");
-  doc.setFillColor(...amber);
-  doc.rect(0, 0, 4, H, "F");
-
-  // Page title
-  doc.setFont("courier", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...amber);
-  doc.setCharSpace(3);
-  doc.text("PERFORMANCE METRICS", 24, 24);
-  doc.setCharSpace(0);
   doc.setDrawColor(...amber);
   doc.setLineWidth(0.3);
-  doc.line(24, 27, W - 24, 27);
+  doc.line(0, 19.5, W, 19.5);
 
-  // Metric cards (2×2 grid)
+  let y = 27;
+
+  // ── METRICS + HEALTH SCORE ──────────────────────────────────────────────────
+  doc.setFont("courier", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(...amber);
+  doc.setCharSpace(3);
+  doc.text("PERFORMANCE METRICS", ML, y);
+  doc.setCharSpace(0);
+
+  // Health score inline (right-aligned on same row)
+  doc.setFont("courier", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(...scoreColor);
+  doc.setCharSpace(1);
+  doc.text(`HEALTH SCORE  ${score}`, W - MR, y, { align: "right" });
+  doc.setCharSpace(0);
+  y += 4;
+
+  const cardW = (CW - 3 * 3) / 4;
+  const cardH = 26;
   const metricData = [
     { label: "Annual Return", value: `${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, color: ret >= 0 ? amber : red },
-    { label: "Volatility",    value: `${(vol * 100).toFixed(2)}%`,                        color: cream },
+    { label: "Volatility",    value: `${(vol * 100).toFixed(2)}%`,                        color: text },
     { label: "Sharpe Ratio",  value: sharpe.toFixed(2),                                   color: sharpe >= 1 ? green : sharpe >= 0 ? amber : red },
     { label: "Max Drawdown",  value: `${(dd * 100).toFixed(2)}%`,                         color: red },
   ];
 
   metricData.forEach((m, i) => {
-    const col = i % 2, row = Math.floor(i / 2);
-    const mx = 24 + col * 92, my = 38 + row * 44;
-    doc.setFillColor(20, 28, 40);
-    doc.roundedRect(mx, my, 84, 36, 2, 2, "F");
-    doc.setDrawColor(40, 50, 65);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(mx, my, 84, 36, 2, 2, "S");
+    const mx = ML + i * (cardW + 3);
+    doc.setFillColor(...cardBg);
+    doc.roundedRect(mx, y, cardW, cardH, 1.5, 1.5, "F");
+    doc.setDrawColor(...cardBorder);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(mx, y, cardW, cardH, 1.5, 1.5, "S");
 
     doc.setFont("courier", "bold");
-    doc.setFontSize(20);
+    doc.setFontSize(15);
     doc.setTextColor(...m.color);
-    doc.text(m.value, mx + 8, my + 18);
+    doc.text(m.value, mx + 5, y + 13);
 
     doc.setFont("courier", "normal");
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setTextColor(...dim);
-    doc.setCharSpace(2);
-    doc.text(m.label.toUpperCase(), mx + 8, my + 28);
+    doc.setCharSpace(1.5);
+    doc.text(m.label.toUpperCase(), mx + 5, y + 21);
     doc.setCharSpace(0);
   });
+  y += cardH + 8;
 
-  // Allocation section
+  // ── PORTFOLIO ALLOCATION ─────────────────────────────────────────────────────
   doc.setFont("courier", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(7);
   doc.setTextColor(...amber);
   doc.setCharSpace(3);
-  doc.text("PORTFOLIO ALLOCATION", 24, 140);
+  doc.text("PORTFOLIO ALLOCATION", ML, y);
   doc.setCharSpace(0);
-  doc.setLineWidth(0.3);
-  doc.line(24, 143, W - 24, 143);
+  doc.setDrawColor(...cardBorder);
+  doc.setLineWidth(0.2);
+  doc.line(ML, y + 2, W - MR, y + 2);
+  y += 7;
+
+  const allocTickW = 24;
+  const allocPctW = 16;
+  const allocBarX = ML + allocTickW;
+  const allocBarW = CW - allocTickW - allocPctW;
+  const barH = 3.5;
+  const allocRowH = 9;
 
   assets.forEach((a: any, i: number) => {
     const w = normWeights[i] ?? 0;
-    const by = 152 + i * 14;
-    if (by > H - 40) return;
+    if (y + allocRowH > H - 16) return;
 
     doc.setFont("courier", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(8);
     doc.setTextColor(...amber);
-    doc.text(a.ticker, 24, by);
+    doc.text(a.ticker, ML, y + barH);
 
-    // Bar background
-    const barX = 60, barW = W - 24 - barX - 18;
-    doc.setFillColor(30, 40, 55);
-    doc.roundedRect(barX, by - 5, barW, 4, 1, 1, "F");
-
-    // Bar fill
+    doc.setFillColor(...barTrack);
+    doc.roundedRect(allocBarX, y, allocBarW, barH, 1, 1, "F");
     doc.setFillColor(...amber);
-    doc.roundedRect(barX, by - 5, barW * w, 4, 1, 1, "F");
+    doc.roundedRect(allocBarX, y, allocBarW * w, barH, 1, 1, "F");
 
-    // Percentage
     doc.setFont("courier", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...cream);
-    doc.text(`${(w * 100).toFixed(1)}%`, W - 24, by, { align: "right" });
+    doc.setFontSize(8);
+    doc.setTextColor(...text);
+    doc.text(`${(w * 100).toFixed(1)}%`, W - MR, y + barH, { align: "right" });
+
+    y += allocRowH;
   });
+  y += 6;
 
-  // ── PAGE 3: Individual Returns + AI Insights (if available) ─────────────
-  if (Object.keys(indRet).length > 0) {
-    doc.addPage();
-    doc.setFillColor(...navy);
-    doc.rect(0, 0, W, H, "F");
-    doc.setFillColor(...amber);
-    doc.rect(0, 0, 4, H, "F");
-
+  // ── INDIVIDUAL RETURNS ───────────────────────────────────────────────────────
+  if (Object.keys(indRet).length > 0 && y + 20 < H - 16) {
     doc.setFont("courier", "bold");
-    doc.setFontSize(9);
+    doc.setFontSize(7);
     doc.setTextColor(...amber);
     doc.setCharSpace(3);
-    doc.text("INDIVIDUAL PERFORMANCE", 24, 24);
+    doc.text("INDIVIDUAL PERFORMANCE", ML, y);
     doc.setCharSpace(0);
-    doc.setDrawColor(...amber);
-    doc.setLineWidth(0.3);
-    doc.line(24, 27, W - 24, 27);
+    doc.setDrawColor(...cardBorder);
+    doc.setLineWidth(0.2);
+    doc.line(ML, y + 2, W - MR, y + 2);
+    y += 7;
+
+    const retTickW = 24;
+    const retBarX = ML + retTickW;
+    const retBarMaxW = 80;
+    const retValW = 22;
+    const retRowH = 8;
 
     const retEntries = Object.entries(indRet).sort((a, b) => (b[1] as number) - (a[1] as number));
-    retEntries.forEach(([ticker, r], i) => {
+    retEntries.forEach(([ticker, r]) => {
       const rv = r as number;
-      const by = 40 + i * 18;
-      if (by > H - 40) return;
+      if (y + retRowH > H - 16) return;
       const col = rv >= 0 ? green : red;
-
-      doc.setFillColor(20, 28, 40);
-      doc.roundedRect(24, by - 6, W - 48, 14, 2, 2, "F");
-
-      doc.setFont("courier", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(...amber);
-      doc.text(ticker, 30, by + 3);
-
-      doc.setFont("courier", "bold");
-      doc.setFontSize(13);
-      doc.setTextColor(...col);
-      doc.text(`${rv >= 0 ? "+" : ""}${(rv * 100).toFixed(1)}%`, W - 30, by + 3, { align: "right" });
-
-      // Mini bar
-      const barX = 68, barW = 80;
       const pct = Math.min(Math.abs(rv) / 0.5, 1);
-      doc.setFillColor(35, 48, 60);
-      doc.roundedRect(barX, by - 2, barW, 3, 1, 1, "F");
+
+      doc.setFont("courier", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...amber);
+      doc.text(ticker, ML, y + 3);
+
+      doc.setFillColor(...barTrack);
+      doc.roundedRect(retBarX, y, retBarMaxW, 3, 1, 1, "F");
       doc.setFillColor(...col);
-      doc.roundedRect(barX, by - 2, barW * pct, 3, 1, 1, "F");
+      doc.roundedRect(retBarX, y, retBarMaxW * pct, 3, 1, 1, "F");
+
+      doc.setFont("courier", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...col);
+      doc.text(`${rv >= 0 ? "+" : ""}${(rv * 100).toFixed(1)}%`, retBarX + retBarMaxW + retValW, y + 3, { align: "right" });
+
+      y += retRowH;
     });
   }
 
-  // ── Footer on every page ─────────────────────────────────────────────────
-  const pageCount = (doc as any).internal.getNumberOfPages();
-  for (let pg = 1; pg <= pageCount; pg++) {
-    doc.setPage(pg);
-    doc.setFont("courier", "normal");
-    doc.setFontSize(7);
-    doc.setTextColor(...dim);
-    doc.text(`${pg} / ${pageCount}`, W - 24, H - 16, { align: "right" });
-  }
+  // ── FOOTER ───────────────────────────────────────────────────────────────────
+  doc.setFont("courier", "normal");
+  doc.setFontSize(6.5);
+  doc.setTextColor(...dim);
+  doc.text("corvo.capital", ML, H - 8);
+  doc.text("Not financial advice · Data from Yahoo Finance", W - MR, H - 8, { align: "right" });
 
   doc.save(`corvo_${assets.map((a: any) => a.ticker).join("-")}_report.pdf`);
 }
@@ -425,7 +386,7 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose }: Pr
           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", zIndex: 100, width: 220, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
             {[
-              { value: "jspdf", label: "↓ Multi-page PDF", desc: "Cover · metrics · allocation · returns" },
+              { value: "jspdf", label: "↓ Single-page PDF", desc: "Metrics · allocation · returns · health" },
               { value: "ai",    label: "AI Narrative PDF", desc: "Claude writes full analysis (print)" },
             ].map(opt => (
               <button key={opt.value} onClick={() => { setMode(opt.value as "jspdf" | "ai"); setOpen(false); }}
