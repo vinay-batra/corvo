@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Settings | Corvo",
+  title: "Settings",
   description: "Manage your Corvo account settings: update your profile, notification preferences, connected accounts, and subscription details all in one place.",
   robots: { index: false, follow: false },
 };
