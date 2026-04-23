@@ -760,6 +760,18 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const { currency, rate, setCurrency } = useCurrency();
   const S = useS();
 
+  // Warn before tab close/refresh if unsaved assets exist
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (assets.length > 0 && !savedPortfolioId) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [assets, savedPortfolioId]);
+
   useEffect(() => {
     const g = localStorage.getItem("corvo_goals");
     if (g && g !== "skipped") { try { setGoals(JSON.parse(g)); } catch {} }
