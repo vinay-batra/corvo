@@ -11,7 +11,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
         ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:2px}
-        .blog-card{background:rgba(255,255,255,0.022);border:1px solid rgba(201,168,76,0.1);border-radius:16px;padding:28px;text-decoration:none;color:inherit;display:block;transition:all 0.25s;position:relative;overflow:hidden}
+        .blog-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:28px;text-decoration:none;color:inherit;display:block;transition:all 0.25s;position:relative;overflow:hidden}
         .blog-card:hover{border-color:rgba(201,168,76,0.25);background:rgba(255,255,255,0.035);transform:translateY(-2px);box-shadow:0 16px 48px rgba(0,0,0,0.4)}
         .toc-link{display:block;padding:6px 0 6px 12px;font-size:12px;color:rgba(232,224,204,0.38);text-decoration:none;border-left:2px solid transparent;transition:all 0.2s;line-height:1.45}
         .toc-link:hover{color:rgba(232,224,204,0.7);border-left-color:rgba(201,168,76,0.3)}
