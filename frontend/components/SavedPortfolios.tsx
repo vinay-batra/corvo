@@ -51,7 +51,7 @@ export function saveHistorySnapshot(portfolioId: string, data: any) {
       date: new Date().toISOString(),
       return: data.portfolio_return ?? 0,
       volatility: data.portfolio_volatility ?? 0,
-      sharpe: data.portfolio_volatility > 0 ? (data.portfolio_return - 0.04) / data.portfolio_volatility : 0,
+      sharpe: data.sharpe_ratio ?? (data.portfolio_volatility > 0 ? ((data.annualized_return ?? data.portfolio_return) - 0.04) / data.portfolio_volatility : 0),
       health: computeHealth(data),
     };
     const today = snapshot.date.slice(0, 10);

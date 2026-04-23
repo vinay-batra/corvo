@@ -287,7 +287,7 @@ const PRINT_CSS = `
 
 function buildAiReport(analysis: string, data: any, assets: any[]): string {
   const ret = data.portfolio_return, vol = data.portfolio_volatility;
-  const sharpe = ((ret - 0.04) / vol).toFixed(2), dd = (data.max_drawdown * 100).toFixed(2);
+  const sharpe = (data.sharpe_ratio ?? ((data.annualized_return ?? ret) - 0.04) / vol).toFixed(2), dd = (data.max_drawdown * 100).toFixed(2);
   const weights: number[] = data.weights ?? assets.map((a: any) => a.weight);
   const total = weights.reduce((s, w) => s + w, 1);
   const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });

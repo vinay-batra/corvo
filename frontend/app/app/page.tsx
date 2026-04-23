@@ -1256,7 +1256,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       ...assets.map(a => [a.ticker, ((a.weight / total) * 100).toFixed(1)]),
       [],
       ["Portfolio Summary"],
-      ["Annual Return (%)", (data.portfolio_return * 100).toFixed(2)],
+      ["Period Return (%)", (data.portfolio_return * 100).toFixed(2)],
       ["Volatility (%)", (data.portfolio_volatility * 100).toFixed(2)],
       ["Sharpe Ratio", data.sharpe_ratio?.toFixed(2) ?? ""],
       ["Max Drawdown (%)", (data.max_drawdown * 100).toFixed(2)],

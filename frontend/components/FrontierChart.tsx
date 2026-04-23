@@ -67,7 +67,7 @@ export default function FrontierChart({ data }: { data: any }) {
           },
           {
             x: [data.portfolio_volatility],
-            y: [data.portfolio_return],
+            y: [data.annualized_return ?? data.portfolio_return],
             mode: "markers",
             type: "scatter",
             name: "Your Portfolio",
