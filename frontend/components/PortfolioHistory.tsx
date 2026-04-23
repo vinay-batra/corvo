@@ -64,14 +64,7 @@ export default function PortfolioHistory() {
   const [noPortfolios, setNoPortfolios] = useState(false);
   const [timeframe, setTimeframe] = useState<Timeframe>("1Y");
   const [selected, setSelected] = useState<string>("all");
-  const [dark, setDark] = useState(true);
-  useEffect(() => {
-    const check = () => setDark(document.documentElement.dataset.theme !== "light");
-    check();
-    const obs = new MutationObserver(check);
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => obs.disconnect();
-  }, []);
+  const cssVar = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
   useEffect(() => { loadData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -248,15 +241,15 @@ export default function PortfolioHistory() {
               xaxis: {
                 showgrid: false,
                 zeroline: false,
-                tickfont: { size: 9, color: dark ? "#8a8a8a" : "#7a7a78" },
+                tickfont: { size: 9, color: cssVar('--text3') },
                 type: "date",
               },
               yaxis: {
                 showgrid: true,
-                gridcolor: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.07)",
+                gridcolor: cssVar('--border'),
                 zeroline: true,
-                zerolinecolor: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.12)",
-                tickfont: { size: 9, color: dark ? "#8a8a8a" : "#7a7a78" },
+                zerolinecolor: cssVar('--border'),
+                tickfont: { size: 9, color: cssVar('--text3') },
                 tickformat: ".1f",
                 ticksuffix: "%",
               },
@@ -265,7 +258,7 @@ export default function PortfolioHistory() {
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: "100%" }}
           />
-          <p style={{ fontSize: 11, color: dark ? "#8a8a8a" : "#7a7a78", textAlign: "right", margin: "2px 0 4px", opacity: 0.7 }}>Double-click chart to reset zoom</p>
+          <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "right", margin: "2px 0 4px", opacity: 0.7 }}>Double-click chart to reset zoom</p>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
             {chartLines.map(l => {
