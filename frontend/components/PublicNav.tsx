@@ -49,9 +49,9 @@ export default function PublicNav() {
 
   const navBg = navSolid
     ? "var(--bg)"
-    : dark ? "rgba(8,12,21,0.6)" : "rgba(245,247,250,0.6)";
+    : "color-mix(in srgb, var(--bg) 60%, transparent)";
 
-  const drawerBg = dark ? "rgba(8,12,21,0.98)" : "rgba(245,247,250,0.98)";
+  const drawerBg = "var(--bg)";
 
   return (
     <>
@@ -70,7 +70,7 @@ export default function PublicNav() {
         {/* Logo */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
           <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text1)" }}>CORVO</span>
+          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
         </Link>
         {/* Center links */}
         <div className="pnav-links" style={{ display: "flex", gap: 2, alignItems: "center", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
@@ -113,7 +113,7 @@ export default function PublicNav() {
       </nav>
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 99, background: drawerBg, borderBottom: "1px solid rgba(201,168,76,0.1)", backdropFilter: "blur(20px)", padding: "16px 24px 24px", display: "flex", flexDirection: "column" as const, gap: 0 }}>
+        <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 99, background: drawerBg, borderBottom: "1px solid var(--border)", backdropFilter: "blur(20px)", padding: "16px 24px 24px", display: "flex", flexDirection: "column" as const, gap: 0 }}>
           <a href="/#features" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Features</a>
           <Link href="/app?demo=true" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Demo</Link>
           <Link href="/pricing" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Pricing</Link>
