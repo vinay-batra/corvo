@@ -2600,13 +2600,15 @@ async def check_price_alerts():
                 df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
                 if df.empty:
                     continue
-                current_price = float(df["Close"].iloc[-1])
+                raw_price = df["Close"].iloc[-1]
+                current_price = float(raw_price.iloc[0] if hasattr(raw_price, 'iloc') else raw_price)
 
                 # Get reference price (close from previous day)
                 df_prev = yf.download(ticker, period="5d", progress=False, auto_adjust=True)
                 if df_prev.empty or len(df_prev) < 2:
                     continue
-                prev_close = float(df_prev["Close"].iloc[-2])
+                raw_prev = df_prev["Close"].iloc[-2]
+                prev_close = float(raw_prev.iloc[0] if hasattr(raw_prev, 'iloc') else raw_prev)
                 if prev_close <= 0:
                     continue
                 pct_change = ((current_price - prev_close) / prev_close) * 100
@@ -2656,6 +2658,10 @@ async def check_price_alerts():
 
                     print(f"[alerts] triggered: {ticker} {condition} {threshold}% for user {user_id}")
             except Exception as e:
+                err_str = str(e)
+                if "401" in err_str or "Unauthorized" in err_str or "Crumb" in err_str:
+                    print(f"[alerts] yfinance session expired, skipping cycle")
+                    break  # Stop this cycle, will retry on next scheduled run
                 print(f"[alerts] error checking {ticker}: {e}")
     except Exception as e:
         print(f"[alerts] check_price_alerts error: {e}")
