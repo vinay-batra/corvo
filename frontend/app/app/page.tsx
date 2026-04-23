@@ -926,7 +926,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       // Record the portfolio state that produced these results so we can detect drift
       lastAnalyzedAssetsRef.current = valid
         .map(a => `${a.ticker}:${a.weight.toFixed(4)}`)
-        .sort().join(",");
+        .sort().join(",") + `|${period}|${benchmark}`;
       setPortfolioStale(false);
       sound.success();
       posthog.capture("portfolio_analyzed", { ticker_count: valid.length, tickers: valid.map(a => a.ticker) });
@@ -990,17 +990,17 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     }).catch(() => {});
   }, [localBenchmark]);
 
-  // Mark results stale whenever the portfolio changes after a successful analysis
+  // Mark results stale whenever the portfolio, period, or benchmark changes after a successful analysis
   useEffect(() => {
     if (!data) return;
     const key = assets
       .filter(a => a.ticker && a.weight > 0)
       .map(a => `${a.ticker}:${a.weight.toFixed(4)}`)
-      .sort().join(",");
+      .sort().join(",") + `|${period}|${benchmark}`;
     if (lastAnalyzedAssetsRef.current && key !== lastAnalyzedAssetsRef.current) {
       setPortfolioStale(true);
     }
-  }, [assets, data]);
+  }, [assets, data, period, benchmark]);
 
   // ── Detect saved portfolio from assets (pre-analysis) ───────────────────────
   useEffect(() => {
@@ -1326,6 +1326,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
       {/* Analyze button */}
       <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
+        {portfolioStale && (
+          <div style={{ marginBottom: 8, padding: "7px 11px", borderRadius: 7, border: "0.5px solid rgba(184,134,11,0.35)", background: "rgba(184,134,11,0.07)", fontSize: 11, color: "var(--text2)", lineHeight: 1.5 }}>
+            Settings changed. Click Analyze to update results.
+          </div>
+        )}
         {(() => {
           const validA = assets.filter(a => a.ticker && a.weight > 0);
           const totalW = validA.reduce((s, a) => s + a.weight, 0);
