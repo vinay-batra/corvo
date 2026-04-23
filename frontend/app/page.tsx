@@ -1435,7 +1435,7 @@ function FeaturedInBar() {
   return (
     <FadeUp className="featured-bar" style={{ position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(201,168,76,0.07)" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 9, letterSpacing: 3, color: "rgba(201,168,76,0.45)", textTransform: "uppercase", flexShrink: 0 }}>As Seen On</span>
+        <span style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", flexShrink: 0 }}>As Seen On</span>
         <div style={{ width: 1, height: 20, background: "rgba(201,168,76,0.1)", flexShrink: 0 }} />
         {platforms.map((p, i) => (
           <motion.div
@@ -2135,7 +2135,7 @@ export default function Landing() {
 
       {/* ─── STATS BAR ─── */}
       <section style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ background: "var(--bg2)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(201,168,76,0.08)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+        <div style={{ background: "var(--bg)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(201,168,76,0.08)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
           <div className="stats-grid" style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
             <StatItem target={liveUserCount ?? 847} suffix="+" label="Active Users" delay={0} borderRight />
             <StatItem target={5500} suffix="+" label="Portfolios Analyzed" delay={0.1} borderRight />
