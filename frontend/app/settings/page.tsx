@@ -23,7 +23,7 @@ const CURRENCIES = ["USD", "GBP", "EUR", "JPY", "CAD"] as const;
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 9, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase" as const, marginBottom: 14, paddingBottom: 8, borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{title}</div>
+      <div style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 14, paddingBottom: 8, borderBottom: "0.5px solid var(--bg3)" }}>{title}</div>
       {children}
     </div>
   );
@@ -31,10 +31,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "0.5px solid var(--bg3)" }}>
       <div>
-        <div style={{ fontSize: 13, color: "#e8e0cc", fontWeight: 500 }}>{label}</div>
-        {desc && <div style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", marginTop: 2 }}>{desc}</div>}
+        <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>{label}</div>
+        {desc && <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{desc}</div>}
       </div>
       <div style={{ flexShrink: 0, marginLeft: 16 }}>{children}</div>
     </div>
@@ -43,8 +43,8 @@ function Row({ label, desc, children }: { label: string; desc?: string; children
 
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   return (
-    <div onClick={onChange} style={{ width: 38, height: 22, borderRadius: 11, background: on ? "#c9a84c" : "rgba(255,255,255,0.1)", position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0 }}>
-      <div style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "#0a0e14", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+    <div onClick={onChange} style={{ width: 38, height: 22, borderRadius: 11, background: on ? "#c9a84c" : "var(--border)", position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0 }}>
+      <div style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "var(--bg)", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
     </div>
   );
 }
@@ -233,8 +233,8 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
 
   const inputStyle: React.CSSProperties = {
     padding: "8px 12px", fontSize: 13, borderRadius: 8,
-    border: "0.5px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)",
-    color: "#e8e0cc", outline: "none", width: "100%",
+    border: "0.5px solid var(--border)", background: "var(--bg3)",
+    color: "var(--text)", outline: "none", width: "100%",
   };
 
   const selectStyle: React.CSSProperties = {
@@ -242,27 +242,27 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
   };
 
   return (
-    <div style={{ minHeight: "100vh", overflowY: "auto", background: "transparent", color: "#e8e0cc", fontFamily: "Inter,sans-serif" }}>
+    <div style={{ minHeight: "100vh", overflowY: "auto", background: "transparent", color: "var(--text)", fontFamily: "Inter,sans-serif" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       {/* Header */}
-      <header style={{ height: 52, borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "rgba(10,14,20,0.95)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
+      <header style={{ height: 52, borderBottom: "0.5px solid var(--bg3)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
         {onClose ? (
-          <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", background: "none", border: "none", fontSize: 12, cursor: "pointer", transition: "color 0.15s", padding: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")}
-            onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>
+          <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", fontSize: 12, cursor: "pointer", transition: "color 0.15s", padding: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
             ← Back
           </button>
         ) : (
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(232,224,204,0.35)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#e8e0cc")}
-            onMouseLeave={e => (e.currentTarget.style.color = "rgba(232,224,204,0.35)")}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
             ← Back
           </Link>
         )}
-        <div style={{ width: "0.5px", height: 16, background: "rgba(255,255,255,0.06)" }} />
+        <div style={{ width: "0.5px", height: 16, background: "var(--bg3)" }} />
         <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
-        <span style={{ fontSize: 14, fontWeight: 600, color: "#e8e0cc" }}>Settings</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Settings</span>
       </header>
 
       <main style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px", animation: "fadein 0.5s ease" }}>
@@ -380,9 +380,9 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
             {onReplayOnboarding && (
               <Row label="Replay Onboarding" desc="Restart the setup wizard from step 1">
                 <button onClick={onReplayOnboarding}
-                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(232,224,204,0.65)", cursor: "pointer", transition: "border-color 0.15s" }}
+                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}>
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
                   Restart
                 </button>
               </Row>
@@ -390,9 +390,9 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
             {onReplayTour && (
               <Row label="Replay Dashboard Tour" desc="Re-run the guided tooltip tour of dashboard features">
                 <button onClick={onReplayTour}
-                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid rgba(255,255,255,0.12)", background: "transparent", color: "rgba(232,224,204,0.65)", cursor: "pointer", transition: "border-color 0.15s" }}
+                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}>
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
                   Start Tour
                 </button>
               </Row>

@@ -153,11 +153,11 @@ export default function ChangelogPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "Inter, sans-serif", color: "#e8e0cc" }}>
+    <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "Inter, sans-serif", color: "var(--text)" }}>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        .nl { color: rgba(232,224,204,0.45); text-decoration: none; font-size: 12px; padding: 7px 14px; letter-spacing: 0.3px; transition: color 0.2s; }
-        .nl:hover { color: #e8e0cc; }
+        .nl { color: var(--text2); text-decoration: none; font-size: 12px; padding: 7px 14px; letter-spacing: 0.3px; transition: color 0.2s; }
+        .nl:hover { color: var(--text); }
         .tag { padding: 3px 10px; background: rgba(201,168,76,0.07); border: 1px solid rgba(201,168,76,0.18); border-radius: 20px; font-size: 10px; color: rgba(201,168,76,0.75); letter-spacing: 0.5px; }
         @media(max-width:768px) {
           .cl-timeline { padding-left: 24px !important; }
@@ -175,10 +175,10 @@ export default function ChangelogPage() {
       {/* Hero */}
       <div className="cl-hero" style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
         <FadeUp>
-          <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2, lineHeight: 1.1, marginBottom: 16 }}>
+          <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.1, marginBottom: 16 }}>
             What&apos;s new in Corvo
           </h1>
-          <p style={{ fontSize: 16, color: "rgba(232,224,204,0.45)", fontWeight: 300, maxWidth: 480, margin: "0 auto" }}>
+          <p style={{ fontSize: 16, color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "0 auto" }}>
             We ship fast. Here&apos;s everything we&apos;ve built.
           </p>
         </FadeUp>
@@ -195,11 +195,11 @@ export default function ChangelogPage() {
               <div className="cl-entry" style={{ display: "flex", gap: 0, marginBottom: 48, position: "relative" }}>
                 {/* Date column */}
                 <div className="cl-date-col" style={{ width: 140, flexShrink: 0, paddingRight: 28, textAlign: "right", paddingTop: 4 }}>
-                  <span style={{ fontSize: 11, color: "rgba(232,224,204,0.3)", fontFamily: "Space Mono, monospace" }}>{entry.date}</span>
+                  <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>{entry.date}</span>
                 </div>
 
                 {/* Dot */}
-                <div style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--bg, #0a0e14)", border: "2px solid #c9a84c", zIndex: 2 }} />
+                <div style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--bg)", border: "2px solid #c9a84c", zIndex: 2 }} />
 
                 {/* Content */}
                 <div style={{ paddingLeft: 36, flex: 1 }}>
@@ -211,10 +211,10 @@ export default function ChangelogPage() {
                       <span key={tag} className="tag">{tag}</span>
                     ))}
                   </div>
-                  <h3 style={{ fontSize: 17, fontWeight: 600, color: "#e8e0cc", marginBottom: 8, lineHeight: 1.35 }}>
+                  <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", marginBottom: 8, lineHeight: 1.35 }}>
                     {entry.title}
                   </h3>
-                  <p style={{ fontSize: 13, color: "rgba(232,224,204,0.45)", lineHeight: 1.75, fontWeight: 300 }}>
+                  <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.75, fontWeight: 300 }}>
                     {entry.desc}
                   </p>
                 </div>
@@ -226,14 +226,14 @@ export default function ChangelogPage() {
       </div>
 
       {/* Subscribe section */}
-      <div className="cl-footer" style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "60px 56px 96px" }}>
+      <div className="cl-footer" style={{ borderTop: "1px solid var(--bg3)", padding: "60px 56px 96px" }}>
         <FadeUp>
           <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Stay in the loop</p>
-            <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 32px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1, marginBottom: 10, lineHeight: 1.2 }}>
+            <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 32px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1, marginBottom: 10, lineHeight: 1.2 }}>
               Subscribe to updates
             </h2>
-            <p style={{ fontSize: 14, color: "rgba(232,224,204,0.4)", marginBottom: 32, fontWeight: 300 }}>
+            <p style={{ fontSize: 14, color: "var(--text3)", marginBottom: 32, fontWeight: 300 }}>
               Get notified when we ship something new. No spam, ever.
             </p>
             {status === "done" ? (
@@ -249,14 +249,14 @@ export default function ChangelogPage() {
                   onChange={e => setEmail(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && submit()}
                   placeholder="your@email.com"
-                  style={{ flex: 1, padding: "14px 18px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#e8e0cc", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+                  style={{ flex: 1, padding: "14px 18px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
                   onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
-                  onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+                  onBlur={e => (e.target.style.borderColor = "var(--border)")}
                 />
                 <button
                   onClick={submit}
                   disabled={status === "loading"}
-                  style={{ padding: "14px 24px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, transition: "filter 0.15s, opacity 0.2s", opacity: status === "loading" ? 0.8 : 1 }}
+                  style={{ padding: "14px 24px", background: "#c9a84c", border: "none", borderRadius: 12, color: "var(--bg)", fontSize: 13, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, transition: "filter 0.15s, opacity 0.2s", opacity: status === "loading" ? 0.8 : 1 }}
                   onMouseEnter={e => { if (status !== "loading") (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; }}>
                   {status === "loading" ? "..." : "Subscribe Free"}
@@ -266,7 +266,7 @@ export default function ChangelogPage() {
             {status === "error" && (
               <p style={{ fontSize: 12, color: "#e05c5c", marginTop: 10 }}>Something went wrong. Please try again.</p>
             )}
-            <p style={{ fontSize: 11, color: "rgba(232,224,204,0.2)", marginTop: 16 }}>No spam. Unsubscribe at any time.</p>
+            <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 16 }}>No spam. Unsubscribe at any time.</p>
           </div>
         </FadeUp>
       </div>

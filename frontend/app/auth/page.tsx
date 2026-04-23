@@ -9,9 +9,9 @@ import FeedbackButton from "../../components/FeedbackButton";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 const C = {
-  navy: "#0a0e14", navy2: "#0d1117", navy3: "#111620",
-  border: "rgba(255,255,255,0.07)", border2: "rgba(255,255,255,0.12)",
-  cream: "#e8e0cc", cream2: "rgba(232,224,204,0.5)", cream3: "rgba(232,224,204,0.25)",
+  navy: "var(--bg)", navy2: "var(--bg)", navy3: "var(--bg2)",
+  border: "var(--border)", border2: "var(--border2)",
+  cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)",
   amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)",
 };
 
@@ -107,7 +107,7 @@ function AuthForm() {
 
   const inputStyle = (field: string): React.CSSProperties => ({
     width: "100%", padding: "12px 14px",
-    background: "rgba(255,255,255,0.03)",
+    background: "var(--bg3)",
     border: `1px solid ${focused === field ? C.amber : C.border}`,
     borderRadius: 10, color: C.cream, fontSize: 14,
     outline: "none", transition: "border-color 0.15s",
@@ -122,7 +122,7 @@ function AuthForm() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       {/* Grid bg */}
-      <div style={{ position: "fixed", inset: 0, backgroundImage: `linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)`, backgroundSize: "60px 60px" }} />
+      <div style={{ position: "fixed", inset: 0, backgroundImage: `linear-gradient(var(--bg3) 1px, transparent 1px), linear-gradient(90deg, var(--bg3) 1px, transparent 1px)`, backgroundSize: "60px 60px" }} />
       {/* Amber glow */}
       <div style={{ position: "fixed", top: "20%", left: "50%", transform: "translateX(-50%)", width: 600, height: 400, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
 
@@ -146,7 +146,7 @@ function AuthForm() {
 
         {/* Mode tabs */}
         {mode !== "reset" && mode !== "magic" && (
-          <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 3, marginBottom: 22, border: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", background: "var(--bg3)", borderRadius: 10, padding: 3, marginBottom: 22, border: `1px solid ${C.border}` }}>
             {(["login","signup"] as const).map(m => (
               <button key={m} onClick={() => { setMode(m); setError(null); setSuccess(null); }}
                 style={{ flex: 1, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: m===mode?500:400, background: m===mode ? "rgba(201,168,76,0.12)" : "transparent", border: m===mode ? `1px solid rgba(201,168,76,0.3)` : "1px solid transparent", color: m===mode ? C.amber : C.cream3, cursor: "pointer", transition: "all 0.15s", letterSpacing: 0.3 }}>
@@ -160,7 +160,7 @@ function AuthForm() {
         {(mode === "login" || mode === "signup") && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
             <button onClick={handleGoogle}
-              style={{ width: "100%", padding: "11px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, color: C.cream, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "border-color 0.15s" }}
+              style={{ width: "100%", padding: "11px", borderRadius: 10, background: "var(--bg3)", border: `1px solid ${C.border}`, color: C.cream, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "border-color 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = C.border2}
               onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
               <svg width="16" height="16" viewBox="0 0 24 24">
@@ -172,7 +172,7 @@ function AuthForm() {
               Continue with Google
             </button>
             <button onClick={handleGitHub}
-              style={{ width: "100%", padding: "11px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, color: C.cream, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "border-color 0.15s" }}
+              style={{ width: "100%", padding: "11px", borderRadius: 10, background: "var(--bg3)", border: `1px solid ${C.border}`, color: C.cream, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "border-color 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = C.border2}
               onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill={C.cream}>
@@ -288,7 +288,7 @@ function AuthForm() {
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#0d1117" }} />}>
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
       <AuthForm />
     </Suspense>
   );
