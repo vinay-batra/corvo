@@ -797,12 +797,12 @@ export default function AiChat({
                       maxWidth: "88%",
                       padding: "12px 16px",
                       borderRadius: m.role === "user" ? "16px 16px 3px 16px" : "3px 16px 16px 16px",
-                      background: m.role === "user" ? "var(--accent)" : "#141414",
-                      border: m.role === "user" ? "none" : "1px solid rgba(255,255,255,.07)",
-                      boxShadow: m.role === "user" ? "0 2px 12px rgba(184,134,11,.3)" : "0 2px 8px rgba(0,0,0,.2)",
+                      background: m.role === "user" ? "rgba(201,168,76,0.15)" : "var(--bg3)",
+                      border: m.role === "user" ? "1px solid rgba(201,168,76,0.3)" : "1px solid var(--border)",
+                      boxShadow: m.role === "user" ? "0 1px 8px rgba(184,134,11,.15)" : "0 1px 4px rgba(0,0,0,.1)",
                     }}>
                       {m.role === "user"
-                        ? <p style={{ fontSize: 13, color: "#000", lineHeight: 1.5, margin: 0 }}>{m.content}</p>
+                        ? <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.5, margin: 0 }}>{m.content}</p>
                         : <MessageContent content={m.content} />
                       }
                     </div>
