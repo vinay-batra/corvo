@@ -1686,11 +1686,11 @@ export default function Landing() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [navSolid, setNavSolid] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("corvo_theme");
-    const isDark = stored ? stored === "dark" : true;
+    const isDark = stored ? stored === "dark" : false;
     setDark(isDark);
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, []);
