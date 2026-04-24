@@ -370,7 +370,9 @@ def portfolio(
 
     # Every ticker is now present — none are excluded from analysis
     available = tickers_list
-    prices = prices[available].dropna()
+    prices = prices[available]
+    prices = prices.ffill().bfill()
+    prices = prices.dropna()
     if prices.empty or len(prices) < 2:
         raise HTTPException(status_code=500, detail="Insufficient price data")
 
