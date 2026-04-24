@@ -24,7 +24,7 @@ function Num({ value, fmt }: { value: number; fmt: (v: number) => string }) {
 }
 
 const EXPLAINERS = [
-  { title: "Annual Return", simple: "How much your portfolio grew over the period.", example: "$10,000 → $11,500 = +15% return.", good: "Beating the S&P 500 (~10%/yr) is excellent." },
+  { title: "CAGR (Annualized Return)", simple: "Compound Annual Growth Rate — the smoothed yearly return over the selected period. Unlike a simple average, CAGR accounts for compounding.", example: "$10,000 grows to $12,100 over 2 years → CAGR = 10%/yr (not 10.5% arithmetic avg).", good: "Beating the S&P 500 (~10%/yr CAGR) is excellent. Longer periods give more reliable CAGR readings." },
   { title: "Volatility", simple: "How wildly your portfolio swings day to day.", example: "30% vol = could swing ±30% in a year.", good: "Under 15% is low. 15–25% moderate. 30%+ is high." },
   { title: "Sharpe Ratio", simple: "Return per unit of risk. Higher = more efficient.", example: "Sharpe 2.0 = great returns for the risk taken.", good: "Above 1.0 good. Above 2.0 excellent. Below 0 bad." },
   { title: "Max Drawdown", simple: "Biggest drop from peak to trough that happened.", example: "$50k drops to $35k = -30% max drawdown.", good: "Closer to 0% is better. Under 10% very stable." },
@@ -110,7 +110,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
   const unrealizedPnlPct = hasPnlData && portfolioValue! > 0 ? unrealizedPnlDollars / portfolioValue! : 0;
 
   const items = [
-    { label: `Return (${periodLabel})`, value: portReturn, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: portReturn<0, neutral: false, bar: null },
+    { label: `CAGR (${periodLabel})`, value: portReturn, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: portReturn<0, neutral: false, bar: null },
     { label: "Volatility",              value: portVol,    fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: false,        neutral: true,  bar: portVol/0.6 },
     { label: "Sharpe Ratio",            value: sharpe,     fmt: (v:number) => v.toFixed(2),                           neg: sharpe<0,     neutral: false, bar: Math.min(Math.max(sharpe/3,0),1) },
     { label: "Max Drawdown",            value: portDD,     fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: true,         neutral: false, bar: null },
