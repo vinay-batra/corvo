@@ -242,7 +242,19 @@ def delete_user(request: Request):
     return {"ok": True}
 
 
-CASH_TICKERS = {"FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX", "SGOV", "BIL", "SHV", "CASH"}
+CASH_TICKERS = {
+    # Explicit money market funds
+    "FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX",
+    "VMMXX", "FZDXX", "GABXX", "MMPXX", "PRTXX", "AWSHX",
+    # Short-duration cash-like ETFs (near-zero volatility)
+    "SGOV", "BIL", "SHV",
+    # Generic cash placeholder
+    "CASH",
+}
+
+def is_cash_ticker(t: str) -> bool:
+    """Return True if t should be treated as a cash/money-market equivalent."""
+    return t in CASH_TICKERS or (len(t) == 5 and t.endswith("XX"))
 print(f"CASH_TICKERS loaded: {CASH_TICKERS}")
 
 def make_synthetic_prices(annual_return: float, n_days: int, start_date=None) -> pd.Series:
@@ -348,7 +360,7 @@ def portfolio(
 
     for i, t in enumerate(tickers_list):
         mr = manual_returns_list[i] if i < len(manual_returns_list) else None
-        if mr is not None and (t not in prices.columns or t in CASH_TICKERS):
+        if mr is not None and (t not in prices.columns or is_cash_ticker(t)):
             synthetic = _align_synthetic(make_synthetic_prices(mr, n_days, start_date))
             prices[t] = np.nan
             common = prices.index.intersection(synthetic.index)
@@ -363,9 +375,9 @@ def portfolio(
             or len(dropped) < 5
             or pd.isna(std)
             or std < 0.001
-            or (t in CASH_TICKERS)
+            or is_cash_ticker(t)
         )
-        print(f"[debug] {t}: needs_synthetic={needs_synthetic}, in_cash={t in CASH_TICKERS}")
+        print(f"[debug] {t}: needs_synthetic={needs_synthetic}, in_cash={is_cash_ticker(t)}")
         if needs_synthetic:
             print(f"[synthetic] {t}")
             synthetic = _align_synthetic(make_synthetic_prices(0.045, n_days, start_date))
@@ -373,7 +385,7 @@ def portfolio(
                 prices[t] = np.nan
             common = prices.index.intersection(synthetic.index)
             prices.loc[common, t] = synthetic.loc[common].values
-            if t not in CASH_TICKERS:
+            if not is_cash_ticker(t):
                 print(f"[skipped] {t}")
                 skipped_tickers.append(t)
 
@@ -381,7 +393,7 @@ def portfolio(
     available = tickers_list
     prices = prices[available]
     prices = prices.ffill().bfill()
-    non_cash = [t for t in tickers_list if t not in CASH_TICKERS]
+    non_cash = [t for t in tickers_list if not is_cash_ticker(t)]
     if non_cash:
         prices = prices.dropna(subset=non_cash)
     else:
@@ -464,7 +476,7 @@ def portfolio(
         "individual_returns": individual_returns,
         "period": period,
         "rf_rate": rf_rate,
-        "skipped_tickers": [t for t in skipped_tickers if t not in CASH_TICKERS],
+        "skipped_tickers": [t for t in skipped_tickers if not is_cash_ticker(t)],
     }
 
 
@@ -1097,9 +1109,8 @@ def generate_report(req: ReportRequest, request: Request):
             if age:
                 goals_text = f"\n\nInvestor Profile: Age {age}, Goal: {goal}, Risk tolerance: {risk}, Timeline: {timeline} years."
 
-        _cash_set_report = {"FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX", "SGOV", "BIL", "SHV", "CASH"}
         def _report_label(t: str, w: float) -> str:
-            kind = "cash/money market" if t in _cash_set_report else "stock/ETF"
+            kind = "cash/money market" if is_cash_ticker(t) else "stock/ETF"
             return f"{t} ({w:.1%}, {kind})"
 
         holdings_report = ", ".join(_report_label(t, w) for t, w in zip(tickers, weights))
@@ -1572,9 +1583,8 @@ def chat(req: ChatRequest, request: Request):
             if returns_list:
                 individual_returns_text = f"\n- Individual Returns (CAGR): {returns_list}"
 
-        _cash_set = {"FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX", "SGOV", "BIL", "SHV", "CASH"}
         def _holding_label(t: str, w: float) -> str:
-            kind = "cash/money market" if t in _cash_set else "ETF" if len(t) >= 3 and t.isupper() and not t.endswith("X") else "stock/ETF"
+            kind = "cash/money market" if is_cash_ticker(t) else "ETF" if len(t) >= 3 and t.isupper() and not t.endswith("X") else "stock/ETF"
             return f"{t} ({w:.1%}, {kind})"
 
         holdings_str = ', '.join(_holding_label(t, w) for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"
