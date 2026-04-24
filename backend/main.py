@@ -398,13 +398,24 @@ def portfolio(
     if returns.empty:
         raise HTTPException(status_code=500, detail="Could not calculate returns")
 
+    # Fetch current risk-free rate from 3-month T-bill
+    try:
+        tbill = yf.Ticker("^IRX")
+        rf_rate = tbill.fast_info.last_price / 100
+        if not rf_rate or rf_rate < 0:
+            rf_rate = 0.04
+    except Exception:
+        rf_rate = 0.04
+
     # Portfolio returns
     port_returns = returns[available].values @ weights_arr
 
-    # Annualized stats (252 trading days)
-    ann_return = safe_float(np.mean(port_returns) * 252)
+    # Annualized stats — CAGR and 252-day vol
+    total_return = safe_float(float((1 + port_returns).prod() - 1))
+    n_years = len(port_returns) / 252
+    ann_return = safe_float((1 + total_return) ** (1 / n_years) - 1) if n_years > 0 else total_return
     ann_vol = safe_float(np.std(port_returns) * np.sqrt(252))
-    sharpe = safe_float((ann_return - 0.04) / ann_vol) if ann_vol > 0 else 0.0
+    sharpe = safe_float((ann_return - rf_rate) / ann_vol) if ann_vol > 0 else 0.0
 
     # Max drawdown
     cum = np.cumprod(1 + port_returns)
@@ -429,10 +440,13 @@ def portfolio(
         bench_cum = bench_cum[:min_len]
         dates = dates[:min_len]
 
-    # Individual stock returns for breakdown
+    # Individual stock returns for breakdown — CAGR per ticker
     individual_returns = {}
     for t in available:
-        t_ret = safe_float(np.mean(returns[t].values) * 252)
+        t_rets = returns[t].values
+        t_total = float((1 + t_rets).prod() - 1)
+        t_years = len(t_rets) / 252
+        t_ret = safe_float((1 + t_total) ** (1 / t_years) - 1) if t_years > 0 else safe_float(t_total)
         individual_returns[t] = t_ret
 
     return {
