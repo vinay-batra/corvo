@@ -235,6 +235,23 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const searchT = useRef<Record<number,ReturnType<typeof setTimeout>>>({});
   const fileRef = useRef<HTMLInputElement>(null);
   const csvFileRef = useRef<HTMLInputElement>(null);
+  const fetchedNamesRef = useRef<Set<string>>(new Set());
+
+  // Fetch names for any ticker not already known
+  useEffect(() => {
+    const missing = assets
+      .map(a => a.ticker)
+      .filter(t => t && !names[t] && !COMMON_TICKERS.find(c => c.ticker === t) && !fetchedNamesRef.current.has(t));
+    missing.forEach(async (ticker) => {
+      fetchedNamesRef.current.add(ticker);
+      try {
+        const r = await fetch(`${API_URL}/search-ticker?q=${encodeURIComponent(ticker)}`);
+        const d = await r.json();
+        const match = (d.results || []).find((x: Result) => x.ticker === ticker);
+        if (match) setNames(p => ({ ...p, [ticker]: match.name }));
+      } catch {}
+    });
+  }, [assets]);
 
   const search = useCallback(async (i: number, q: string) => {
     if (!q) { setResults(p => ({...p,[i]:[]})); return; }
@@ -407,7 +424,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
           const staticEntry = COMMON_TICKERS.find(t => t.ticker === a.ticker);
           const displayName = isCash
             ? (staticEntry?.name || "Cash / Money Market")
-            : (names[a.ticker] || "");
+            : (names[a.ticker] || staticEntry?.name || "");
           const isExpanded = expandedSecondary.has(i);
           return (
             <motion.div key={i} initial={{opacity:0,x:-6}} animate={{opacity:1,x:0}} exit={{opacity:0,height:0}} transition={{duration:0.15}} style={{marginBottom:12,position:"relative"}}>

@@ -9,6 +9,7 @@ import { SOUND_KEY } from "../../hooks/useSoundEffects";
 import ReferralsDashboard from "@/components/ReferralsDashboard";
 import FeedbackButton from "../../components/FeedbackButton";
 import ProfileEditor from "../../components/ProfileEditor";
+import GoalsModal from "../../components/GoalsModal";
 
 const PERIODS    = ["6mo", "1y", "2y", "5y"] as const;
 const BENCHMARKS = [
@@ -72,11 +73,9 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
   const [dark, setDark]           = useState(false);
 
   // Notifications (Supabase)
-  const [notifLoading, setNotifLoading]           = useState(false);
   const [weeklyDigest, setWeeklyDigest]           = useState(true);
   const [priceAlerts, setPriceAlerts]             = useState(true);
   const [newsSummary, setNewsSummary]             = useState(false);
-  const [notifSaved, setNotifSaved]               = useState(false);
 
   // Sound effects (localStorage)
   const [soundEnabled, setSoundEnabled] = useState(false);
@@ -84,6 +83,7 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
   // Goals
   const [goals, setGoals]               = useState<any>(null);
   const [showGoalsEditor, setShowGoalsEditor] = useState(false);
+  const [showGoalsModal, setShowGoalsModal] = useState(false);
 
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -180,11 +180,12 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
         if (cropSrc) setCropSrc(null);
         if (showDeleteConfirm) setShowDeleteConfirm(false);
         if (showGoalsEditor) setShowGoalsEditor(false);
+        if (showGoalsModal) setShowGoalsModal(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cropSrc, showDeleteConfirm, showGoalsEditor]);
+  }, [cropSrc, showDeleteConfirm, showGoalsEditor, showGoalsModal]);
 
   const onFileSelect = (file: File) => {
     const reader = new FileReader();
@@ -201,11 +202,9 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
     localStorage.setItem("corvo_theme", next ? "dark" : "light");
   };
 
-  const saveNotifs = async () => {
+  const saveNotifs = async (wd: boolean, pa: boolean, ns: boolean) => {
     if (!user) return;
-    setNotifLoading(true);
-    await supabase.from("email_preferences").upsert({ user_id: user.id, weekly_digest: weeklyDigest, price_alerts: priceAlerts, news_summary: newsSummary, updated_at: new Date().toISOString() });
-    setNotifLoading(false); setNotifSaved(true); setTimeout(() => setNotifSaved(false), 1500);
+    await supabase.from("email_preferences").upsert({ user_id: user.id, weekly_digest: wd, price_alerts: pa, news_summary: ns, updated_at: new Date().toISOString() });
   };
 
   const deleteAccount = async () => {
@@ -361,20 +360,14 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
         {/* NOTIFICATIONS */}
         <Section title="Notifications">
           <Row label="Weekly portfolio digest" desc="Portfolio performance summary every Monday">
-            <Toggle on={weeklyDigest} onChange={() => setWeeklyDigest(v => !v)} />
+            <Toggle on={weeklyDigest} onChange={() => { const v = !weeklyDigest; setWeeklyDigest(v); saveNotifs(v, priceAlerts, newsSummary); }} />
           </Row>
           <Row label="Price alerts" desc="Alerts when holdings hit your set thresholds">
-            <Toggle on={priceAlerts} onChange={() => setPriceAlerts(v => !v)} />
+            <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); saveNotifs(weeklyDigest, v, newsSummary); }} />
           </Row>
           <Row label="Market news summary" desc="Weekly roundup of market news for your holdings">
-            <Toggle on={newsSummary} onChange={() => setNewsSummary(v => !v)} />
+            <Toggle on={newsSummary} onChange={() => { const v = !newsSummary; setNewsSummary(v); saveNotifs(weeklyDigest, priceAlerts, v); }} />
           </Row>
-          <div style={{ paddingTop: 14 }}>
-            <button onClick={saveNotifs} disabled={notifLoading}
-              style={{ padding: "9px 20px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: notifSaved ? "#5cb88a" : "var(--accent)", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s" }}>
-              {notifSaved ? "✓ Saved" : notifLoading ? "Saving…" : "Save Notifications"}
-            </button>
-          </div>
         </Section>
 
         {/* REFERRALS */}
@@ -410,35 +403,14 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
 
         {/* PROFILE & GOALS */}
         <Section title="Profile &amp; Goals">
-          <Row label="Age" desc="Used to personalize analysis and retirement projections">
-            <span style={{ fontSize: 13, color: "var(--text3)" }}>{goals?.age || "—"}</span>
-          </Row>
-          <Row label="Retirement age">
-            <span style={{ fontSize: 13, color: "var(--text3)" }}>{goals?.retirementAge || "—"}</span>
-          </Row>
-          <Row label="Annual salary">
-            <span style={{ fontSize: 13, color: "var(--text3)" }}>{goals?.salary ? `$${Number(goals.salary).toLocaleString()}` : "—"}</span>
-          </Row>
-          <Row label="Risk tolerance">
-            <span style={{ fontSize: 13, color: "var(--text3)", textTransform: "capitalize" }}>{goals?.riskTolerance || "—"}</span>
-          </Row>
-          <Row label="Primary goal">
-            <span style={{ fontSize: 13, color: "var(--text3)" }}>
-              {goals?.goal === "retirement" ? "Retirement"
-                : goals?.goal === "wealth" ? "Wealth Building"
-                : goals?.goal === "income" ? "Passive Income"
-                : goals?.goal === "short" ? "Short-Term Gain"
-                : "—"}
-            </span>
-          </Row>
-          <div style={{ paddingTop: 14 }}>
-            <button onClick={() => setShowGoalsEditor(true)}
-              style={{ padding: "9px 20px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
+          <Row label="Investor Profile" desc="Customize your age, salary, risk tolerance, and investment goals">
+            <button onClick={() => setShowGoalsModal(true)}
+              style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
               onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
               onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
               Edit
             </button>
-          </div>
+          </Row>
         </Section>
 
         {/* DANGER ZONE */}
@@ -525,13 +497,23 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Goals editor modal */}
+      {/* Goals editor modal (ProfileEditor, for legacy use) */}
       <AnimatePresence>
         {showGoalsEditor && (
           <ProfileEditor
             goals={goals}
             onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoalsEditor(false); }}
             onClose={() => setShowGoalsEditor(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Goals modal */}
+      <AnimatePresence>
+        {showGoalsModal && (
+          <GoalsModal
+            onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoalsModal(false); }}
+            onSkip={() => setShowGoalsModal(false)}
           />
         )}
       </AnimatePresence>
