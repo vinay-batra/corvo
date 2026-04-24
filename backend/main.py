@@ -4090,3 +4090,4 @@ async def test_weekly_digest(user_id: str = ""):
     """Manually trigger the weekly digest for a specific user (or all opted-in users)."""
     result = await send_weekly_digest(target_user_id=user_id or None)
     return result
+# force redeploy Fri Apr 24 10:36:18 EDT 2026
