@@ -183,6 +183,20 @@ export default function PortfolioHistory() {
     return { ...l, dates, returns };
   }).filter(l => l.dates.length >= 2);
 
+  // Clip all series to their shared date intersection after timeframe filtering
+  if (chartLines.length > 1) {
+    const minStart = chartLines.reduce((max, l) => l.dates[0] > max ? l.dates[0] : max, chartLines[0]?.dates[0] || "");
+    const maxEnd = chartLines.reduce((min, l) => l.dates[l.dates.length-1] < min ? l.dates[l.dates.length-1] : min, chartLines[0]?.dates[chartLines[0]?.dates.length-1] || "");
+    chartLines.forEach(l => {
+      let start = 0;
+      while (start < l.dates.length && l.dates[start] < minStart) start++;
+      let end = l.dates.length - 1;
+      while (end >= 0 && l.dates[end] > maxEnd) end--;
+      l.dates = l.dates.slice(start, end + 1);
+      l.returns = l.returns.slice(start, end + 1);
+    });
+  }
+
   const hasData = chartLines.length > 0;
 
   return (
