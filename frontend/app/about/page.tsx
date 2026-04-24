@@ -2,7 +2,6 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 import FeedbackButton from "../../components/FeedbackButton";
@@ -28,12 +27,10 @@ export default function AboutPage() {
     <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "Inter, sans-serif", color: "var(--text)" }}>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        .ab-cta-btn:hover { filter: brightness(1.08) !important; transform: translateY(-1px) !important; }
         @media(max-width: 768px) {
           .ab-hero { padding: 100px 20px 56px !important; }
           .ab-body { padding: 48px 20px 64px !important; }
-          .ab-founder { padding: 0 20px 64px !important; }
-          .ab-cta { padding: 56px 20px 80px !important; }
+          .ab-founder { padding: 0 20px 80px !important; }
           .ab-divider { padding: 0 20px !important; }
         }
       `}</style>
@@ -89,7 +86,7 @@ export default function AboutPage() {
                   Vinay Batra
                 </h2>
                 <p style={{ fontSize: 13, color: "var(--text3)", fontWeight: 300, lineHeight: 1.5 }}>
-                  Builder, finance nerd, perpetual work in progress.
+                  Builder, finance aficionado, perpetual work in progress.
                 </p>
               </div>
               <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.35)", padding: "4px 12px", borderRadius: 20, flexShrink: 0, letterSpacing: 0.5, alignSelf: "flex-start" }}>
@@ -97,26 +94,6 @@ export default function AboutPage() {
               </span>
             </div>
           </div>
-        </FadeUp>
-      </div>
-
-      {/* CTA */}
-      <div className="ab-cta" style={{ borderTop: "1px solid var(--border)", padding: "72px 56px 96px", textAlign: "center" }}>
-        <FadeUp>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 14 }}>Try it</p>
-          <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(22px, 3.5vw, 36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1, marginBottom: 32, lineHeight: 1.2 }}>
-            See it for yourself.
-          </h2>
-          <Link
-            href="/app"
-            className="ab-cta-btn"
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "14px 32px", background: "var(--accent)", borderRadius: 10, color: "var(--bg)", fontSize: 13, fontWeight: 700, textDecoration: "none", letterSpacing: 0.5, transition: "filter 0.15s, transform 0.15s" }}
-          >
-            Go to Dashboard
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </Link>
         </FadeUp>
       </div>
 
