@@ -340,6 +340,7 @@ export default function FaqPage() {
               filter: "blur(40px)",
             }}
           />
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 20 }}>FAQ</p>
           <h1
             style={{
               fontFamily: "Space Mono, monospace",

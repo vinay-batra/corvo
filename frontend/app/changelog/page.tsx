@@ -182,6 +182,7 @@ export default function ChangelogPage() {
       {/* Hero */}
       <div className="cl-hero" style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
         <FadeUp>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 20 }}>Changelog</p>
           <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.1, marginBottom: 16 }}>
             What&apos;s new in Corvo
           </h1>
