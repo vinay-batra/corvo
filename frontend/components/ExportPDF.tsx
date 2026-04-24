@@ -119,7 +119,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
   const cardW = (CW - 4 * 3) / 5;
   const cardH = 32;
   const metricData = [
-    { label: "Annual Return", value: `${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, color: ret >= 0 ? amber : red },
+    { label: "CAGR (1Y)",     value: `${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, color: ret >= 0 ? amber : red },
     { label: "Volatility",    value: `${(vol * 100).toFixed(2)}%`,                       color: text },
     { label: "Sharpe Ratio",  value: sharpe.toFixed(2),                                  color: sharpe >= 1 ? green : sharpe >= 0 ? amber : red },
     { label: "Max Drawdown",  value: `${(dd * 100).toFixed(2)}%`,                        color: red },
@@ -142,10 +142,10 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
 
     // Label — helvetica, dim, spaced
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(6);
+    doc.setFontSize(5.5);
     doc.setTextColor(...dim);
-    doc.setCharSpace(1.5);
-    const labelLines = doc.splitTextToSize(m.label.toUpperCase(), cardW - 4);
+    doc.setCharSpace(0.8);
+    const labelLines = doc.splitTextToSize(m.label.toUpperCase(), cardW - 2);
     doc.text(labelLines[0], mx + cardW / 2, y + 27, { align: "center" });
     doc.setCharSpace(0);
   });
@@ -201,7 +201,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     retEntries.forEach(([ticker, r]) => {
       const rv = r as number;
       if (y + retRowH > FOOTER_Y - 6) return;
-      const col = rv >= 0 ? green : red;
+      const col = rv >= 0 ? amber : red;
       const pct = Math.min(Math.abs(rv) / 0.5, 1);
 
       doc.setFont("helvetica", "bold");
@@ -226,13 +226,29 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
 
   // ── INVESTOR PROFILE ──────────────────────────────────────────────────────────
   const profileRows: [string, string][] = [];
+
+  // Portfolio-derived rows (always present)
+  const riskLabel = vol < 0.10 ? "Low" : vol < 0.20 ? "Moderate" : "High";
+  const topHoldings = assets
+    .map((a: any, i: number) => ({ ticker: a.ticker, w: normWeights[i] ?? 0 }))
+    .sort((a, b) => b.w - a.w)
+    .slice(0, 3)
+    .map(h => `${h.ticker} ${(h.w * 100).toFixed(0)}%`)
+    .join("  ·  ");
+
+  if (data.portfolio_value != null) profileRows.push(["Portfolio Value", `$${Number(data.portfolio_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`]);
+  profileRows.push(["Risk Profile",   `${riskLabel}  (Vol ${(vol * 100).toFixed(1)}%)`]);
+  profileRows.push(["Top Holdings",   topHoldings]);
+  if (data.period)                  profileRows.push(["Period Analyzed",  String(data.period)]);
+
+  // Goals rows
   if (goals?.age)                 profileRows.push(["Age",                  String(goals.age)]);
   if (goals?.riskTolerance)       profileRows.push(["Risk Tolerance",       goals.riskTolerance.replace(/_/g, " ")]);
   if (goals?.goal)                profileRows.push(["Goal",                 goals.goal]);
   if (goals?.monthlyContribution) profileRows.push(["Monthly Contribution", `$${Number(goals.monthlyContribution).toLocaleString()}`]);
   if (goals?.retirementAge)       profileRows.push(["Retirement Age",       String(goals.retirementAge)]);
 
-  if (profileRows.length > 0 && y + 18 < FOOTER_Y - 6) {
+  if (y + 18 < FOOTER_Y - 6) {
     sectionLabel("INVESTOR PROFILE", y);
     y += 8;
 
