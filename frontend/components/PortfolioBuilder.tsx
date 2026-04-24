@@ -300,7 +300,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     clearTimeout(blurT.current[i]);
     setActive(i);
     setQuery(p=>({...p,[i]:v}));
-    const n=[...assets]; n[i]={...n[i],ticker:v.toUpperCase()}; update(n);
     search(i,v);
   };
   const select = (i: number, r: Result) => {
@@ -440,7 +439,17 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   <input
                     value={query[i]??a.ticker}
                     onFocus={()=>setActive(i)}
-                    onBlur={()=>{blurT.current[i]=setTimeout(()=>{setActive(p=>p===i?null:p);setResults(p=>({...p,[i]:[]}));},200);}}
+                    onBlur={()=>{
+                      const typed = (query[i] ?? a.ticker).toUpperCase();
+                      blurT.current[i]=setTimeout(()=>{
+                        setActive(p=>p===i?null:p);
+                        setResults(p=>({...p,[i]:[]}));
+                        const isKnown = COMMON_TICKERS.some(t=>t.ticker===typed) || (results[i]||[]).some(r=>r.ticker===typed);
+                        if (isKnown && typed !== a.ticker) {
+                          const n=[...assets]; n[i]={...n[i],ticker:typed}; update(n);
+                        }
+                      },200);
+                    }}
                     onChange={e=>updateTicker(i,e.target.value)}
                     placeholder="Search ticker..."
                     className="accent-input"
