@@ -297,6 +297,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     update(n);
   };
   const updateTicker = (i: number, v: string) => {
+    clearTimeout(blurT.current[i]);
+    setActive(i);
     setQuery(p=>({...p,[i]:v}));
     const n=[...assets]; n[i]={...n[i],ticker:v.toUpperCase()}; update(n);
     search(i,v);
