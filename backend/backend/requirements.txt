@@ -16,3 +16,4 @@ pywebpush
 apscheduler
 beautifulsoup4
 curl_cffi
+sentry-sdk
