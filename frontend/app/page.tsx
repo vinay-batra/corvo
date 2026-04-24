@@ -1921,11 +1921,11 @@ export default function Landing() {
               <div id="changelog-dropdown" style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, width: 280, background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, padding: "10px", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", zIndex: 200 }}>
                 <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", padding: "4px 8px 10px", borderBottom: "1px solid var(--border)", marginBottom: 6 }}>Recent updates</p>
                 {[
+                  { label: "About Page", desc: "Story, nav polish, light mode default" },
                   { label: "Light Mode", desc: "Instant theme switching, no flash, all pages" },
                   { label: "AI Chat Overhaul", desc: "History sidebar, suggestions, richer context" },
                   { label: "CAGR & Sharpe Fixes", desc: "Live T-bill rate, accurate return metrics" },
                   { label: "Money Market Support", desc: "FDRXX, SPAXX, VMFXX yield tracking" },
-                  { label: "Learn Overhaul", desc: "15 levels, XP fixes, leaderboard" },
                 ].map(({ label, desc }) => (
                   <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px", borderRadius: 8, transition: "background 0.15s", cursor: "default" }}
                     onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
