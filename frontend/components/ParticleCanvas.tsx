@@ -52,6 +52,11 @@ export default function ParticleCanvas() {
     }));
     const draw = () => {
       const isDark = isDarkRef.current;
+      if (!isDark) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        raf = requestAnimationFrame(draw);
+        return;
+      }
       const colors = getColors(isDark);
       const n = isDark ? N_DARK : N_LIGHT;
       const rScale = isDark ? 1 : 1.3;
