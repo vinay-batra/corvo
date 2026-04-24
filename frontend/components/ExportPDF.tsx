@@ -16,23 +16,37 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
   const W = 210, H = 297;
   const ML = 14, MR = 14;
   const CW = W - ML - MR;
+  const FOOTER_Y = 280;  // fixed footer top
 
-  const bg:        [number,number,number] = isLight ? [255,255,255] : [10,14,20];
-  const text:      [number,number,number] = isLight ? [26,26,26]    : [232,224,204];
-  const cardBg:    [number,number,number] = isLight ? [245,245,240] : [20,28,40];
-  const cardBorder:[number,number,number] = isLight ? [224,216,200] : [40,50,65];
-  const dim:       [number,number,number] = isLight ? [136,136,136] : [100,110,115];
-  const hdrBg:     [number,number,number] = isLight ? [245,245,240] : [14,20,30];
-  const barTrack:  [number,number,number] = isLight ? [224,216,200] : [30,40,55];
-  const amber:     [number,number,number] = [201,168,76];
-  const red:       [number,number,number] = [224,92,92];
-  const green:     [number,number,number] = [92,184,138];
+  const bg:         [number,number,number] = isLight ? [255,255,255]  : [10,14,20];
+  const text:       [number,number,number] = isLight ? [26,26,26]     : [232,224,204];
+  const cardBg:     [number,number,number] = isLight ? [245,240,232]  : [20,28,40];   // warmer in light
+  const cardBorder: [number,number,number] = isLight ? [224,216,200]  : [40,50,65];
+  const dim:        [number,number,number] = isLight ? [136,130,112]  : [100,110,115];
+  const hdrBg:      [number,number,number] = isLight ? [245,240,232]  : [14,20,30];
+  const barTrack:   [number,number,number] = isLight ? [224,216,200]  : [30,40,55];
+  const amber:      [number,number,number] = [201,168,76];
+  const red:        [number,number,number] = [224,92,92];
+  const green:      [number,number,number] = [92,184,138];
 
-  const ret = data.portfolio_return ?? 0;
-  const vol = data.portfolio_volatility ?? 0;
+  // helpers
+  const sectionLabel = (label: string, yy: number) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...amber);
+    doc.setCharSpace(3);
+    doc.text(label, ML, yy);
+    doc.setCharSpace(0);
+    doc.setDrawColor(...cardBorder);
+    doc.setLineWidth(0.2);
+    doc.line(ML, yy + 2, W - MR, yy + 2);
+  };
+
+  const ret    = data.portfolio_return    ?? 0;
+  const vol    = data.portfolio_volatility ?? 0;
   const sharpe = vol > 0 ? (ret - 0.04) / vol : 0;
-  const dd = data.max_drawdown ?? 0;
-  const score = computeHealthScore(data);
+  const dd     = data.max_drawdown ?? 0;
+  const score  = computeHealthScore(data);
   const scoreColor = score >= 75 ? green : score >= 50 ? amber : red;
   const weights: number[] = data.weights ?? assets.map((a: any) => a.weight);
   const total = weights.reduce((s, w) => s + w, 0) || 1;
@@ -41,29 +55,34 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
   const indRet: Record<string, number> = data.individual_returns ?? {};
   const tickerRaw = assets.slice(0, 5).map((a: any) => a.ticker).join("  ·  ") + (assets.length > 5 ? "  ·  …" : "");
 
-  // Background
+  // ── BACKGROUND ───────────────────────────────────────────────────────────────
   doc.setFillColor(...bg);
   doc.rect(0, 0, W, H, "F");
 
-  // ── HEADER BAR ──────────────────────────────────────────────────────────────
+  // ── HEADER ───────────────────────────────────────────────────────────────────
+  // 4px amber top stripe
   doc.setFillColor(...amber);
   doc.rect(0, 0, W, 1.5, "F");
 
+  // header background
   doc.setFillColor(...hdrBg);
   doc.rect(0, 1.5, W, 18, "F");
 
+  // CORVO — courier bold amber (keep mono for brand)
   doc.setFont("courier", "bold");
   doc.setFontSize(14);
   doc.setTextColor(...amber);
-  doc.text("CORVO", ML, 13);
+  doc.text("CORVO", ML, 12.5);
 
+  // Subtitle — smaller, tighter, less crowding
   doc.setFont("courier", "normal");
-  doc.setFontSize(5.5);
+  doc.setFontSize(4.5);
   doc.setTextColor(...dim);
-  doc.setCharSpace(2);
-  doc.text("PORTFOLIO INTELLIGENCE", ML, 17);
+  doc.setCharSpace(3);
+  doc.text("PORTFOLIO INTELLIGENCE", ML, 17.5);
   doc.setCharSpace(0);
 
+  // Tickers centered — helvetica bold
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(...text);
@@ -73,43 +92,53 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     while (parts.length > 1 && doc.getTextWidth(parts.join("  ·  ") + "...") > 80) parts.pop();
     tickerStr = parts.join("  ·  ") + "...";
   }
-  doc.text(tickerStr, W / 2, 13, { align: "center" });
+  doc.text(tickerStr, W / 2, 12.5, { align: "center" });
 
-  doc.setFont("courier", "normal");
+  // Date top-right
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(...dim);
-  doc.text(now.toUpperCase(), W - MR, 13, { align: "right" });
+  doc.text(now.toUpperCase(), W - MR, 12.5, { align: "right" });
 
+  // Period below date
+  if (data.period) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+    doc.setTextColor(...dim);
+    doc.text(String(data.period).toUpperCase(), W - MR, 17.5, { align: "right" });
+  }
+
+  // Amber divider under header
   doc.setDrawColor(...amber);
   doc.setLineWidth(0.3);
   doc.line(0, 19.5, W, 19.5);
 
-  let y = 27;
+  let y = 28;
 
-  // ── METRICS + HEALTH SCORE ──────────────────────────────────────────────────
-  doc.setFont("courier", "bold");
+  // ── PERFORMANCE METRICS ───────────────────────────────────────────────────────
+  // Section label + health score on same line
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
   doc.setTextColor(...amber);
   doc.setCharSpace(3);
   doc.text("PERFORMANCE METRICS", ML, y);
   doc.setCharSpace(0);
 
-  // Health score at fixed position (avoids cut-off near margin)
   doc.setFont("courier", "bold");
   doc.setFontSize(7);
   doc.setTextColor(...scoreColor);
   doc.setCharSpace(0.5);
-  doc.text(`HEALTH SCORE  ${score}`, ML + 100, y);
+  doc.text(`HEALTH SCORE  ${score}`, W - MR, y, { align: "right" });
   doc.setCharSpace(0);
-  y += 4;
+  y += 5;
 
   const cardW = (CW - 3 * 3) / 4;
-  const cardH = 26;
+  const cardH = 30;
   const metricData = [
     { label: "Annual Return", value: `${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, color: ret >= 0 ? amber : red },
-    { label: "Volatility",    value: `${(vol * 100).toFixed(2)}%`,                        color: text },
-    { label: "Sharpe Ratio",  value: sharpe.toFixed(2),                                   color: sharpe >= 1 ? green : sharpe >= 0 ? amber : red },
-    { label: "Max Drawdown",  value: `${(dd * 100).toFixed(2)}%`,                         color: red },
+    { label: "Volatility",    value: `${(vol * 100).toFixed(2)}%`,                       color: text },
+    { label: "Sharpe Ratio",  value: sharpe.toFixed(2),                                  color: sharpe >= 1 ? green : sharpe >= 0 ? amber : red },
+    { label: "Max Drawdown",  value: `${(dd * 100).toFixed(2)}%`,                        color: red },
   ];
 
   metricData.forEach((m, i) => {
@@ -120,42 +149,36 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     doc.setLineWidth(0.2);
     doc.roundedRect(mx, y, cardW, cardH, 1.5, 1.5, "S");
 
+    // Value — courier bold, large (keep mono for numbers)
     doc.setFont("courier", "bold");
-    doc.setFontSize(15);
+    doc.setFontSize(18);
     doc.setTextColor(...m.color);
-    doc.text(m.value, mx + 5, y + 13);
+    doc.text(m.value, mx + cardW / 2, y + 16, { align: "center" });
 
-    doc.setFont("courier", "normal");
-    doc.setFontSize(6.5);
+    // Label — helvetica, dim, spaced
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
     doc.setTextColor(...dim);
     doc.setCharSpace(1.5);
-    doc.text(m.label.toUpperCase(), mx + 5, y + 21);
+    doc.text(m.label.toUpperCase(), mx + cardW / 2, y + 26, { align: "center" });
     doc.setCharSpace(0);
   });
-  y += cardH + 8;
+  y += cardH + 12;
 
-  // ── PORTFOLIO ALLOCATION ─────────────────────────────────────────────────────
-  doc.setFont("courier", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(...amber);
-  doc.setCharSpace(3);
-  doc.text("PORTFOLIO ALLOCATION", ML, y);
-  doc.setCharSpace(0);
-  doc.setDrawColor(...cardBorder);
-  doc.setLineWidth(0.2);
-  doc.line(ML, y + 2, W - MR, y + 2);
-  y += 7;
+  // ── PORTFOLIO ALLOCATION ──────────────────────────────────────────────────────
+  sectionLabel("PORTFOLIO ALLOCATION", y);
+  y += 8;
 
   const allocTickW = 24;
-  const allocPctW = 16;
-  const allocBarX = ML + allocTickW;
-  const allocBarW = CW - allocTickW - allocPctW;
-  const barH = 3.5;
-  const allocRowH = 9;
+  const allocBarX  = ML + allocTickW;
+  const allocPctW  = 16;
+  const allocBarW  = CW - allocTickW - allocPctW;
+  const barH       = 3.5;
+  const allocRowH  = 9;
 
   assets.forEach((a: any, i: number) => {
     const w = normWeights[i] ?? 0;
-    if (y + allocRowH > H - 16) return;
+    if (y + allocRowH > FOOTER_Y - 6) return;
 
     doc.setFont("courier", "bold");
     doc.setFontSize(8);
@@ -167,38 +190,30 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     doc.setFillColor(...amber);
     doc.roundedRect(allocBarX, y, allocBarW * w, barH, 1, 1, "F");
 
-    doc.setFont("courier", "normal");
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...text);
     doc.text(`${(w * 100).toFixed(1)}%`, W - MR, y + barH, { align: "right" });
 
     y += allocRowH;
   });
-  y += 6;
+  y += 10;
 
-  // ── INDIVIDUAL RETURNS ───────────────────────────────────────────────────────
-  if (Object.keys(indRet).length > 0 && y + 20 < H - 16) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(...amber);
-    doc.setCharSpace(3);
-    doc.text("INDIVIDUAL PERFORMANCE", ML, y);
-    doc.setCharSpace(0);
-    doc.setDrawColor(...cardBorder);
-    doc.setLineWidth(0.2);
-    doc.line(ML, y + 2, W - MR, y + 2);
-    y += 7;
+  // ── INDIVIDUAL PERFORMANCE ────────────────────────────────────────────────────
+  if (Object.keys(indRet).length > 0 && y + 20 < FOOTER_Y - 6) {
+    sectionLabel("INDIVIDUAL PERFORMANCE", y);
+    y += 8;
 
-    const retTickW = 24;
-    const retBarX = ML + retTickW;
+    const retTickW   = 24;
+    const retBarX    = ML + retTickW;
     const retBarMaxW = 80;
-    const retValW = 22;
-    const retRowH = 8;
+    const retValW    = 22;
+    const retRowH    = 8;
 
     const retEntries = Object.entries(indRet).sort((a, b) => (b[1] as number) - (a[1] as number));
     retEntries.forEach(([ticker, r]) => {
       const rv = r as number;
-      if (y + retRowH > H - 16) return;
+      if (y + retRowH > FOOTER_Y - 6) return;
       const col = rv >= 0 ? green : red;
       const pct = Math.min(Math.abs(rv) / 0.5, 1);
 
@@ -219,59 +234,126 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
 
       y += retRowH;
     });
+    y += 10;
   }
 
-  // ── INVESTOR PROFILE ────────────────────────────────────────────────────────
-  if ((data.ai_insights || goals) && y + 20 < H - 20) {
-    y += 4;
-    doc.setFont("courier", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(...amber);
-    doc.setCharSpace(3);
-    doc.text("INVESTOR PROFILE", ML, y);
-    doc.setCharSpace(0);
-    doc.setDrawColor(...amber);
-    doc.setLineWidth(0.2);
-    doc.line(ML, y + 2, W - MR, y + 2);
+  // ── INVESTOR PROFILE ──────────────────────────────────────────────────────────
+  const profileRows: [string, string][] = [];
+  if (goals?.age)                 profileRows.push(["Age",                  String(goals.age)]);
+  if (goals?.riskTolerance)       profileRows.push(["Risk Tolerance",       goals.riskTolerance.replace(/_/g, " ")]);
+  if (goals?.goal)                profileRows.push(["Goal",                 goals.goal]);
+  if (goals?.monthlyContribution) profileRows.push(["Monthly Contribution", `$${Number(goals.monthlyContribution).toLocaleString()}`]);
+  if (goals?.retirementAge)       profileRows.push(["Retirement Age",       String(goals.retirementAge)]);
+
+  if (profileRows.length > 0 && y + 18 < FOOTER_Y - 6) {
+    sectionLabel("INVESTOR PROFILE", y);
     y += 8;
 
-    const profileRows: [string, string][] = [];
-    if (goals?.age)                   profileRows.push(["Age",                  String(goals.age)]);
-    if (goals?.riskTolerance)         profileRows.push(["Risk Tolerance",       goals.riskTolerance.replace(/_/g, " ")]);
-    if (goals?.goal)                  profileRows.push(["Goal",                 goals.goal]);
-    if (goals?.monthlyContribution)   profileRows.push(["Monthly Contribution", `$${Number(goals.monthlyContribution).toLocaleString()}`]);
-    if (data.ai_insights)             profileRows.push(["AI Insight",           String(data.ai_insights).slice(0, 80)]);
+    // 2-column layout
+    const colW = CW / 2;
+    for (let i = 0; i < profileRows.length; i += 2) {
+      if (y + 8 > FOOTER_Y - 6) break;
+      ([0, 1] as const).forEach(col => {
+        const row = profileRows[i + col];
+        if (!row) return;
+        const rx = ML + col * colW;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6);
+        doc.setTextColor(...dim);
+        doc.setCharSpace(1);
+        doc.text(row[0].toUpperCase(), rx, y);
+        doc.setCharSpace(0);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8.5);
+        doc.setTextColor(...text);
+        doc.text(row[1], rx, y + 5.5);
+      });
+      y += 11;
+    }
+    y += 10;
+  }
 
-    profileRows.forEach(([label, value]) => {
-      if (y + 7 > H - 20) return;
-      doc.setFont("courier", "normal");
-      doc.setFontSize(7);
-      doc.setTextColor(...dim);
-      doc.text(label.toUpperCase(), ML, y);
-      doc.setTextColor(...text);
+  // ── BENCHMARK COMPARISON ──────────────────────────────────────────────────────
+  const benchRet: number | null = data.benchmark_return ?? null;
+  if (benchRet !== null && y + 22 < FOOTER_Y - 6) {
+    sectionLabel("BENCHMARK COMPARISON", y);
+    y += 8;
+
+    const bHalfW = (CW - 10) / 2;
+    const bBarH  = 4;
+    const bX2    = ML + bHalfW + 10;
+    const maxVal = Math.max(Math.abs(ret), Math.abs(benchRet), 0.01);
+    const pCol   = ret      >= 0 ? green : red;
+    const bCol   = benchRet >= 0 ? green : red;
+
+    // Labels
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...dim);
+    doc.setCharSpace(1);
+    doc.text("PORTFOLIO", ML, y);
+    const bLabel = data.benchmark_ticker ? `BENCHMARK (${data.benchmark_ticker})` : "BENCHMARK (S&P 500)";
+    doc.text(bLabel, bX2, y);
+    doc.setCharSpace(0);
+    y += 4;
+
+    // Portfolio bar
+    const pBarW = bHalfW * Math.min(Math.abs(ret) / maxVal, 1);
+    doc.setFillColor(...barTrack);
+    doc.roundedRect(ML, y, bHalfW, bBarH, 1, 1, "F");
+    doc.setFillColor(...pCol);
+    doc.roundedRect(ML, y, pBarW, bBarH, 1, 1, "F");
+
+    // Benchmark bar
+    const benchBarW = bHalfW * Math.min(Math.abs(benchRet) / maxVal, 1);
+    doc.setFillColor(...barTrack);
+    doc.roundedRect(bX2, y, bHalfW, bBarH, 1, 1, "F");
+    doc.setFillColor(...bCol);
+    doc.roundedRect(bX2, y, benchBarW, bBarH, 1, 1, "F");
+    y += bBarH + 3.5;
+
+    // Values
+    doc.setFont("courier", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...pCol);
+    doc.text(`${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, ML, y);
+    doc.setTextColor(...bCol);
+    doc.text(`${benchRet >= 0 ? "+" : ""}${(benchRet * 100).toFixed(2)}%`, bX2, y);
+    y += 10;
+  }
+
+  // ── KEY INSIGHTS ──────────────────────────────────────────────────────────────
+  const insights: string[] = Array.isArray(data.ai_insights) ? data.ai_insights.slice(0, 3) : [];
+  if (insights.length > 0 && y + 16 < FOOTER_Y - 6) {
+    sectionLabel("KEY INSIGHTS", y);
+    y += 8;
+
+    insights.forEach(insight => {
+      if (y + 6 > FOOTER_Y - 6) return;
+      doc.setFillColor(...amber);
+      doc.circle(ML + 1.5, y - 1.2, 0.9, "F");
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
-      doc.text(value, ML + 44, y);
+      doc.setTextColor(...text);
+      const lines = doc.splitTextToSize(String(insight), CW - 8);
+      doc.text(lines[0], ML + 5, y);
       y += 7;
     });
+    y += 6;
   }
 
-  // ── FOOTER BAR (fill empty bottom space) ─────────────────────────────────────
-  if (y < H - 60) {
-    const footerY = H - 22;
-    doc.setDrawColor(...amber);
-    doc.setLineWidth(0.4);
-    doc.line(ML, footerY, W - MR, footerY);
-    doc.setFont("courier", "normal");
-    doc.setFontSize(7);
-    doc.setTextColor(...dim);
-    doc.text("Generated by Corvo Portfolio Intelligence · corvo.capital", W / 2, footerY + 7, { align: "center" });
-  }
+  // ── FOOTER BAR (y=280, always at fixed position) ─────────────────────────────
+  doc.setDrawColor(...amber);
+  doc.setLineWidth(0.5);
+  doc.line(0, FOOTER_Y, W, FOOTER_Y);
 
-  // ── FOOTER NOTE ──────────────────────────────────────────────────────────────
-  doc.setFont("courier", "normal");
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
   doc.setTextColor(...dim);
-  doc.text("corvo.capital · Not financial advice · Data from Yahoo Finance", W / 2, H - 8, { align: "center" });
+  doc.text(
+    "CORVO PORTFOLIO INTELLIGENCE  ·  corvo.capital  ·  Not financial advice  ·  Data from Yahoo Finance",
+    W / 2, FOOTER_Y + 7, { align: "center" },
+  );
 
   doc.save(`corvo_${assets.map((a: any) => a.ticker).join("-")}_report.pdf`);
 }
