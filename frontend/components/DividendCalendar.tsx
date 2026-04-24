@@ -60,7 +60,7 @@ const DividendCalendar = memo(function DividendCalendar(_props: { assets?: any[]
           </span>
         </div>
         <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.65, maxWidth: 320, margin: "0 auto" }}>
-          Track upcoming ex-dividend dates across all your holdings in a monthly calendar view, with projected income based on your position sizes.
+          Track upcoming ex-dividend dates, payment dates, and projected income across all your holdings.
         </p>
       </div>
     </div>

@@ -1768,7 +1768,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 <motion.div
                   key="stats-row"
                   className="c-metrics"
-                  style={S.metricsGrid}
+                  style={{ ...S.metricsGrid, gridTemplateColumns: assets.some(a => (a.purchasePrice ?? 0) > 0) && (portfolioInputValue ?? 0) > 0 ? "repeat(5,1fr)" : "repeat(4,1fr)" }}
                   initial={false}
                   animate="visible"
                   variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>

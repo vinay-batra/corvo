@@ -59,7 +59,7 @@ const CapitalGainsEstimator = memo(function CapitalGainsEstimator(_props: {
           </span>
         </div>
         <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.65, maxWidth: 320, margin: "0 auto" }}>
-          Enter your purchase prices and dates to see realized and unrealized gains, short vs long-term classification, and estimated tax liability per holding.
+          Automatically calculate short and long-term capital gains across your holdings based on purchase price and date.
         </p>
       </div>
     </div>
