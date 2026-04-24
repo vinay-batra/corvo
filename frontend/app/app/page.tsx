@@ -561,9 +561,8 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
           applyData(results);
           try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: results, ts: Date.now() })); } catch {}
         });
-    doFetch().catch(err => {
-      console.warn("[StocksSearch] watchlist-data failed, retrying in 1s:", err);
-      setTimeout(() => doFetch().catch(e => console.error("[StocksSearch] retry failed:", e)), 1000);
+    doFetch().catch(() => {
+      setTimeout(() => doFetch().catch(() => {}), 1000);
     });
   }, [API]);
 

@@ -153,7 +153,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
       <AnimatePresence>
         {modal!==null&&(
           <motion.div initial={false} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setModal(null)}
-            style={{position:"fixed",inset:0,background:"rgba(10,14,20,0.8)",backdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+            style={{position:"fixed",inset:0,background:"var(--overlay-bg, rgba(0,0,0,0.75))",backdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
             <motion.div initial={false} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0}}
               onClick={e=>e.stopPropagation()}
               style={{background:"var(--card-bg)",border:"0.5px solid var(--border2)",borderRadius:16,padding:28,maxWidth:400,width:"100%",maxHeight:"90vh",overflowY:"auto",position:"relative"}}>

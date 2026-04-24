@@ -570,7 +570,7 @@ export default function PositionsTab({
         >
           {/* Chart header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-            <span style={{ fontSize: 9, letterSpacing: 2.5, color: "rgba(232,224,204,0.3)", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>
               Portfolio Performance
             </span>
             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
@@ -682,7 +682,7 @@ export default function PositionsTab({
               layout={{
                 paper_bgcolor: "transparent",
                 plot_bgcolor: "transparent",
-                font: { color: "rgba(232,224,204,0.35)", family: "Space Mono, monospace", size: 10 },
+                font: { color: cssVar('--text3'), family: "Space Mono, monospace", size: 10 },
                 margin: { t: 0, b: 32, l: 48, r: 16 },
                 xaxis: {
                   gridcolor: cssVar('--border'),
@@ -703,9 +703,9 @@ export default function PositionsTab({
                 showlegend: false,
                 hovermode: "x unified",
                 hoverlabel: {
-                  bgcolor: "#0d1117",
+                  bgcolor: cssVar('--card-bg'),
                   bordercolor: "rgba(184,134,11,0.55)",
-                  font: { color: "#e8e0cc", family: "Space Mono, monospace", size: 11 },
+                  font: { color: cssVar('--text'), family: "Space Mono, monospace", size: 11 },
                 },
               }}
               config={{ displayModeBar: false, responsive: true }}

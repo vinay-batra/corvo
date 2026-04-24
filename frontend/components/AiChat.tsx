@@ -110,8 +110,8 @@ function MessageContent({ content }: { content: string }) {
       elements.push(
         <div key={i} style={{ overflowX: "auto", margin: "6px 0" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-            <thead><tr>{headers.map((h, hi) => <th key={hi} style={{ padding: "5px 8px", textAlign: "left", color: "#c9a84c", fontSize: 9, letterSpacing: 1, borderBottom: "1px solid #333", background: "#0d1117" }}>{h}</th>)}</tr></thead>
-            <tbody>{rows.map((row, ri) => <tr key={ri} style={{ background: ri % 2 === 0 ? "#111" : "#0a0a0a" }}>{row.map((cell, ci) => <td key={ci} style={{ padding: "5px 8px", color: "#e8e0cc", borderBottom: "1px solid #1e1e1e" }}>{cell}</td>)}</tr>)}</tbody>
+            <thead><tr>{headers.map((h, hi) => <th key={hi} style={{ padding: "5px 8px", textAlign: "left", color: "var(--accent)", fontSize: 9, letterSpacing: 1, borderBottom: "1px solid var(--border)", background: "var(--bg2)" }}>{h}</th>)}</tr></thead>
+            <tbody>{rows.map((row, ri) => <tr key={ri} style={{ background: ri % 2 === 0 ? "var(--bg3)" : "var(--bg2)" }}>{row.map((cell, ci) => <td key={ci} style={{ padding: "5px 8px", color: "var(--text)", borderBottom: "1px solid var(--border)" }}>{cell}</td>)}</tr>)}</tbody>
           </table>
         </div>
       );
@@ -157,7 +157,7 @@ function TypingDots() {
 
 function CorvoAvatar({ size = 22 }: { size?: number }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #1e1e1e, #0d0d0d)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: "50%", background: "var(--bg3)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       <img src="/corvo-logo.svg" width={size * 0.58} height={size * 0.58} alt="" />
     </div>
   );
@@ -436,7 +436,6 @@ export default function AiChat({
 
       if (d.messages_used !== undefined) setMessagesUsed(d.messages_used);
       if (d.messages_limit !== undefined) setMessagesLimit(d.messages_limit);
-      console.log("[AiChat] usage:", { user_id: userIdRef.current, messages_used: d.messages_used, messages_limit: d.messages_limit });
 
       // Save to Supabase using refs (always current values)
       await saveConversation(full, msg);
