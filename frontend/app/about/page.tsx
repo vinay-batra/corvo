@@ -40,7 +40,10 @@ export default function AboutPage() {
       {/* Hero */}
       <div className="ab-hero" style={{ padding: "140px 56px 72px", textAlign: "center" }}>
         <FadeUp>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 20 }}>About</p>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.4)", borderRadius: 24, marginBottom: 28, background: "rgba(201,168,76,0.08)" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block" }} />
+            <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>About</span>
+          </div>
           <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(30px, 6vw, 58px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.05, marginBottom: 22 }}>
             Built out of frustration.
           </h1>
