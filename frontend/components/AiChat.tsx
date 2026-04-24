@@ -737,7 +737,7 @@ export default function AiChat({
                     ? "Context is off. Enable it above for personalized recommendations."
                     : data
                     ? "Ask anything about your portfolio."
-                    : "Add your portfolio and run Analyze for personalized insights."}
+                    : "What's on your mind? I can help with portfolio analysis, market questions, or investing strategy."}
                 </p>
                 <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
                   {goals?.age
