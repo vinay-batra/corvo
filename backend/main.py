@@ -381,7 +381,11 @@ def portfolio(
     available = tickers_list
     prices = prices[available]
     prices = prices.ffill().bfill()
-    prices = prices.dropna()
+    non_cash = [t for t in tickers_list if t not in CASH_TICKERS]
+    if non_cash:
+        prices = prices.dropna(subset=non_cash)
+    else:
+        prices = prices.dropna()
     if prices.empty or len(prices) < 2:
         raise HTTPException(status_code=500, detail="Insufficient price data")
 
@@ -445,7 +449,7 @@ def portfolio(
         "benchmark_cumulative": bench_cum,
         "individual_returns": individual_returns,
         "period": period,
-        "skipped_tickers": skipped_tickers,
+        "skipped_tickers": [t for t in skipped_tickers if t not in CASH_TICKERS],
     }
 
 
