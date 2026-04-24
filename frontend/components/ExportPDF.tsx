@@ -324,7 +324,7 @@ function buildAiReport(analysis: string, data: any, assets: any[]): string {
     .replace(/\n\n/g, `</p><p style="margin:10px 0;color:${mutedText(0.8)};font-family:Georgia,serif;font-size:13px;line-height:1.8">`);
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${printCss}
-    .hdr{background:${hdrBg};border-bottom:2px solid #c9a84c;padding:32px 48px 24px;margin:-48px -48px 32px;display:flex;justify-content:space-between;align-items:flex-end}
+    .hdr{background:${hdrBg};border-bottom:2px solid #c9a84c;padding:32px 48px 36px;margin:-48px -48px 40px;display:flex;justify-content:space-between;align-items:flex-end}
     .brand{font-size:26px;font-weight:900;letter-spacing:10px;color:#c9a84c}
     .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px}
     .m{background:${cardBg};border:${cardBorder};border-radius:8px;padding:12px 14px}
@@ -337,8 +337,11 @@ function buildAiReport(analysis: string, data: any, assets: any[]): string {
     .wpct{font-size:11px;width:40px;text-align:right;color:${mutedText(0.6)}}
   </style></head><body>
   <div class="hdr">
-    <div><div class="brand">CORVO</div><div style="font-size:8px;letter-spacing:3px;color:${mutedText(0.3)};margin-top:5px">AI PORTFOLIO ANALYSIS · ${now}</div></div>
-    <div style="text-align:right;font-size:10px;color:${mutedText(0.3)}">${assets.map(a => a.ticker).join(" · ")}</div>
+    <div><div class="brand">CORVO</div></div>
+    <div style="text-align:right">
+      <div style="font-size:16px;font-weight:700;color:#c9a84c;letter-spacing:1px">${assets.map((a: any) => a.ticker).join("  ·  ")}</div>
+      <div style="font-size:10px;color:${mutedText(0.5)};margin-top:4px">${now}${data.period ? "  ·  " + data.period : ""}</div>
+    </div>
   </div>
   <div class="metrics">
     <div class="m"><div class="mv ${ret >= 0 ? "amber" : "red"}">${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%</div><div class="ml">Return</div></div>
