@@ -280,7 +280,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         if (local.length === 0) setResults(p => ({...p,[i]:[]}));
       }
       setSearching(p => ({...p,[i]:false}));
-    }, 300);
+    }, 200);
   }, []);
 
   const updateWeight = (i: number, v: number) => { const n=[...assets]; n[i]={...n[i],weight:v}; update(n); };
@@ -455,7 +455,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   />
                   {searching[i]&&<div style={{position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:9,height:9,border:"1.5px solid rgba(201,168,76,0.2)",borderTopColor:C.amber,borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
                   <AnimatePresence>
-                    {active===i&&res.length>0&&(
+                    {active===i&&(res.length>0||!!searching[i])&&(
                       <motion.div initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}}
                         style={{position:"absolute",top:"calc(100% + 3px)",left:0,right:0,background:"var(--card-bg)",border:`1px solid var(--border)`,borderRadius:10,zIndex:100,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
                         {res.map((r,idx)=>(
