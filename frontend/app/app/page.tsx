@@ -821,6 +821,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [unsubscribeMode, setUnsubscribeMode]   = useState(false);
   const [showReferral, setShowReferral]         = useState(false);
   const [errorMsg, setErrorMsg]                 = useState<string | null>(null);
+  const [skippedTickers, setSkippedTickers]     = useState<string[]>([]);
   const errorDismissRef                         = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tourNeededRef                           = useRef<boolean>(false);
   const [alertCount, setAlertCount]   = useState(0);
@@ -1023,16 +1024,24 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const handleAnalyze = async () => {
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
-    setLoading(true); setData(null); setErrorMsg(null); setAnalyzeComplete(false);
+    setLoading(true); setData(null); setErrorMsg(null); setSkippedTickers([]); setAnalyzeComplete(false);
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
       const pendingRef = referralCodeRef.current;
       const result = await fetchPortfolio(valid, period, benchmark, userId || "", pendingRef);
+      // Handle backend error responses (e.g. no price data for all tickers)
+      if (result.error) {
+        setErrorMsg(result.error);
+        errorDismissRef.current = setTimeout(() => setErrorMsg(null), 10000);
+        setLoading(false);
+        return;
+      }
       // Clear pending referral after first successful analysis
       if (pendingRef) {
         referralCodeRef.current = "";
         localStorage.removeItem("corvo_pending_referral");
       }
+      if (result.skipped_tickers?.length) setSkippedTickers(result.skipped_tickers);
       setData(result);
       setActiveTab("overview");
       setAnalyzeComplete(true);
@@ -1695,6 +1704,25 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Skipped tickers warning banner */}
+          <AnimatePresence>
+            {skippedTickers.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ color: "var(--accent)", fontSize: 13, flexShrink: 0 }}>⚠</span>
+                  <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.4 }}>
+                    No price data found for: <strong style={{ color: "var(--accent)" }}>{skippedTickers.join(", ")}</strong>. Analysis ran with remaining holdings.
+                  </span>
+                </div>
+                <button onClick={() => setSkippedTickers([])}
+                  style={{ width: 22, height: 22, borderRadius: 6, border: "none", background: "rgba(184,134,11,0.1)", color: "var(--accent)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
