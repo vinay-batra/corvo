@@ -17,15 +17,17 @@ Upload a portfolio via CSV or build one manually, and Corvo handles the rest: ri
 ## Features
 
 ### Portfolio Analysis
-- Sharpe ratio, volatility, alpha, beta, max drawdown
+- Sharpe ratio (using live ^IRX T-bill rate), volatility, alpha, beta, max drawdown
+- CAGR (1Y) for portfolio returns and individual holdings
 - Monte Carlo simulation (8,500 paths) for projected outcomes
 - Portfolio health score across returns, risk, stability, and resilience
-- Benchmark comparison vs. S&P 500, NASDAQ, and more
+- Benchmark comparison vs. S&P 500 (^GSPC), NASDAQ (^IXIC), Dow (^DJI)
 - Sector exposure breakdown and correlation heatmap
 - What-If mode — test portfolio changes side by side
+- Cash and money market position support (VMFXX, SPAXX, FDRXX, and XX-suffix tickers)
 
 ### AI Tools
-- AI portfolio chat with real-time market context (Claude-powered)
+- AI portfolio chat with persistent history, rename/delete, and real-time market context (Claude-powered)
 - AI market brief — daily summary of macro and portfolio-relevant news
 - AI insights — plain-English analysis of your holdings
 - AI practice questions — infinite drill mode for financial concepts
@@ -45,8 +47,8 @@ Upload a portfolio via CSV or build one manually, and Corvo handles the rest: ri
 
 ### Platform
 - PWA — installable on desktop and mobile
-- CSV import and PDF export
-- Dark and light mode
+- CSV import; PDF export with metric cards, benchmark comparison, and investor profile
+- Dark and light mode with theme toggle on all pages
 - Referral system
 - Cloud sync across devices
 - Multi-currency support (USD, GBP, EUR, JPY, CAD)
@@ -159,7 +161,6 @@ ALLOWED_ORIGINS=http://localhost:3000
 **Current version:** v0.16 (beta)
 
 Targeting v1.0 with the following remaining work:
-- Light mode polish
 - Mobile layout fixes
 - Options chain viewer
 - Paper trading
