@@ -562,8 +562,8 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
     showlegend: false,
     hovermode: "x unified",
     hoverlabel: {
-      bgcolor: "#0d1117", bordercolor: AMBER + "66",
-      font: { color: "#e8e0cc", family: "Space Mono", size: 11 },
+      bgcolor: dark ? "#0d1117" : "#ffffff", bordercolor: AMBER + "66",
+      font: { color: dark ? "#e8e0cc" : "#1a1a1a", family: "Space Mono", size: 11 },
     },
   };
 

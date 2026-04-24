@@ -169,7 +169,7 @@ export default function DashboardTour({ onComplete }: Props) {
                 }}>{stop.label}</span>
               </div>
 
-              <p style={{ fontSize: 13, color: "#e8e0cc", lineHeight: 1.65, marginBottom: 14 }}>
+              <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, marginBottom: 14 }}>
                 {stop.description}
               </p>
 
@@ -187,7 +187,7 @@ export default function DashboardTour({ onComplete }: Props) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <button
                   onClick={handleDone}
-                  style={{ fontSize: 11, color: "rgba(232,224,204,0.35)", background: "none", border: "none", cursor: "pointer", padding: 0, letterSpacing: 0.2 }}>
+                  style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0, letterSpacing: 0.2 }}>
                   Skip Tour
                 </button>
                 <button

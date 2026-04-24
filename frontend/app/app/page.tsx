@@ -1667,7 +1667,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           {/* Skipped tickers warning banner */}
           <AnimatePresence>
             {skippedTickers.length > 0 && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+              <motion.div initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ color: "var(--accent)", fontSize: 13, flexShrink: 0 }}>⚠</span>
