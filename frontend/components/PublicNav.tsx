@@ -95,7 +95,7 @@ export default function PublicNav() {
           )}
         </div>
         {/* Hamburger */}
-        <button className="pnav-hamburger" aria-label="Open menu" onClick={() => setMobileOpen(v => !v)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 44, height: 44, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", flexShrink: 0, color: "var(--text)" }}>
+        <button className="pnav-hamburger" aria-label="Open menu" onClick={() => setMobileOpen(v => !v)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 48, height: 48, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", flexShrink: 0, color: "var(--text)" }}>
           {mobileOpen ? (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
           ) : (

@@ -210,10 +210,19 @@ export default function AiChat({
   const [copiedMsgIdx, setCopiedMsgIdx]     = useState<number | null>(null);
   const [portfolioCtxOn, setPortfolioCtxOn] = useState(true);
   const [suggestionSet, setSuggestionSet]   = useState(0);
+  const [isMobile, setIsMobile]             = useState(false);
 
   const bottomRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
   const renameRef  = useRef<HTMLInputElement>(null);
+
+  // Mobile detection
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // Keep refs in sync
   useEffect(() => { userIdRef.current = userId; }, [userId]);
@@ -506,11 +515,12 @@ export default function AiChat({
         transition={{ type: "spring", damping: 32, stiffness: 320 }}
         style={{
           position: "fixed", right: 0, top: 0, bottom: 0,
-          width: "25vw", minWidth: 360,
+          width: isMobile ? "100%" : "25vw",
+          minWidth: isMobile ? 0 : 360,
           zIndex: 300,
           display: "flex", flexDirection: "column",
           background: "var(--bg)",
-          borderLeft: "0.5px solid var(--border)",
+          borderLeft: isMobile ? "none" : "0.5px solid var(--border)",
           boxShadow: "-8px 0 40px rgba(0,0,0,0.4)",
         }}
       >
@@ -523,17 +533,19 @@ export default function AiChat({
                 style={{ position: "fixed", inset: 0, zIndex: 301, background: "transparent" }}
               />
               <motion.div
-                initial={{ x: 240 }}
+                initial={{ x: isMobile ? "100%" : 240 }}
                 animate={{ x: 0 }}
-                exit={{ x: 240 }}
+                exit={{ x: isMobile ? "100%" : 240 }}
                 transition={{ type: "spring", damping: 28, stiffness: 260 }}
                 style={{
                   position: "fixed", top: 0, bottom: 0,
-                  right: "max(25vw, 360px)",
-                  width: 240, zIndex: 302,
+                  right: isMobile ? 0 : "max(25vw, 360px)",
+                  width: isMobile ? "100%" : 240,
+                  zIndex: 310,
                   background: "var(--bg)",
-                  borderRight: "0.5px solid var(--border)",
-                  boxShadow: "-4px 0 28px rgba(0,0,0,0.35)",
+                  borderRight: isMobile ? "none" : "0.5px solid var(--border)",
+                  borderLeft: isMobile ? "0.5px solid var(--border)" : "none",
+                  boxShadow: isMobile ? "none" : "-4px 0 28px rgba(0,0,0,0.35)",
                   display: "flex", flexDirection: "column",
                 }}
               >
@@ -765,7 +777,7 @@ export default function AiChat({
                       </div>
                     )}
                     <div style={{
-                      maxWidth: "88%",
+                      maxWidth: isMobile ? "92%" : "88%",
                       padding: "12px 16px",
                       borderRadius: m.role === "user" ? "16px 16px 3px 16px" : "3px 16px 16px 16px",
                       background: m.role === "user" ? "rgba(201,168,76,0.15)" : "var(--card-bg)",

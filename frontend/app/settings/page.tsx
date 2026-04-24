@@ -250,7 +250,15 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
 
   return (
     <div style={{ minHeight: "100vh", overflowY: "auto", background: "transparent", color: "var(--text)", fontFamily: "Inter,sans-serif" }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        @media(max-width:600px){
+          .settings-main{padding:20px 16px!important}
+          .settings-row{flex-wrap:wrap!important;gap:8px!important}
+          .settings-row>div:last-child{flex-shrink:0}
+        }
+      `}</style>
 
       {/* Header */}
       <header style={{ height: 52, borderBottom: "0.5px solid var(--bg3)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
@@ -272,7 +280,7 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Settings</span>
       </header>
 
-      <main style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px", animation: "fadein 0.5s ease" }}>
+      <main className="settings-main" style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px", animation: "fadein 0.5s ease" }}>
 
         {/* PROFILE */}
         <Section title="Profile">

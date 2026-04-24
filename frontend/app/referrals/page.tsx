@@ -254,10 +254,10 @@ export default function ReferralsPage() {
             </Section>
 
             <Section title="Share">
-              <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8, paddingBottom: 4 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, paddingBottom: 4 }}>
                 {platforms.map(p => (
                   <button key={p.name} onClick={p.action} title={p.name}
-                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 5, padding: "10px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
+                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 5, padding: "10px 8px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s", minHeight: 60 }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border)")}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
                     <span style={{ color: p.color, display: "flex", alignItems: "center" }}>{p.icon}</span>

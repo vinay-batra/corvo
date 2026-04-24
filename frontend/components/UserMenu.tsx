@@ -103,7 +103,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 182, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 6, backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)", zIndex: 200 }}
+            style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 182, maxWidth: "calc(100vw - 32px)", background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 6, backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)", zIndex: 200 }}
           >
             <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
               {resolvedAvatar ? (

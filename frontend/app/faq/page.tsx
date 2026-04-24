@@ -141,9 +141,11 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            width: 24,
-            height: 24,
-            borderRadius: 6,
+            minWidth: 44,
+            minHeight: 44,
+            width: 44,
+            height: 44,
+            borderRadius: 8,
             background: open ? "rgba(201,168,76,0.12)" : "var(--bg3)",
             border: `1px solid ${open ? "rgba(201,168,76,0.25)" : "var(--bg3)"}`,
             fontSize: 16,
@@ -310,9 +312,17 @@ export default function FaqPage() {
         fontFamily: "Inter, system-ui, sans-serif",
       }}
     >
+      <style>{`
+        @media(max-width:600px){
+          .faq-main{padding:72px 16px 64px!important}
+          .faq-section{padding:0!important}
+          .faq-card{padding:12px 14px!important}
+        }
+      `}</style>
       <PublicNav />
 
       <main
+        className="faq-main"
         style={{
           maxWidth: 760,
           margin: "0 auto",
@@ -324,7 +334,7 @@ export default function FaqPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          style={{ textAlign: "center", marginBottom: 56, position: "relative" }}
+          style={{ textAlign: "center", marginBottom: 56, position: "relative", overflow: "hidden" }}
         >
           {/* Ambient glow */}
           <div
