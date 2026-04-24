@@ -371,7 +371,8 @@ def portfolio(
                 prices[t] = np.nan
             common = prices.index.intersection(synthetic.index)
             prices.loc[common, t] = synthetic.loc[common].values
-            skipped_tickers.append(t)
+            if t not in CASH_TICKERS:
+                skipped_tickers.append(t)
 
     # Every ticker is now present — none are excluded from analysis
     available = tickers_list
