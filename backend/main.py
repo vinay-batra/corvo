@@ -330,50 +330,51 @@ def portfolio(
         bench_prices = prices[benchmark].dropna()
         prices = prices.drop(columns=[benchmark])
 
-    # Inject synthetic price series for cash tickers that failed to load or have manual return
+    # Inject synthetic price series for any ticker with missing/sparse data
     n_days = len(bench_prices) if bench_prices is not None and len(bench_prices) > 1 else 252
     start_date = bench_prices.index[0] if bench_prices is not None and len(bench_prices) > 0 else None
+
+    def _align_synthetic(s: pd.Series) -> pd.Series:
+        """Match synthetic index timezone to prices.index."""
+        if hasattr(prices.index, 'tz') and prices.index.tz is not None:
+            s = s.tz_localize(prices.index.tz) if s.index.tz is None else s.tz_convert(prices.index.tz)
+        elif s.index.tz is not None:
+            s.index = s.index.tz_localize(None)
+        return s
+
+    # Track tickers assigned synthetic cash data (informational only — no ticker is excluded)
+    skipped_tickers = []
+
     for i, t in enumerate(tickers_list):
         mr = manual_returns_list[i] if i < len(manual_returns_list) else None
         if mr is not None and (t not in prices.columns or t in CASH_TICKERS):
-            synthetic = make_synthetic_prices(mr, n_days, start_date)
-            synthetic.index = synthetic.index[:len(synthetic)]
+            synthetic = _align_synthetic(make_synthetic_prices(mr, n_days, start_date))
             prices[t] = np.nan
             common = prices.index.intersection(synthetic.index)
             prices.loc[common, t] = synthetic.loc[common].values
-        if t in CASH_TICKERS and (t not in prices.columns or prices[t].isna().all()):
-            # Treat as cash: ~4.5% annual return, near-zero volatility
-            synthetic = make_synthetic_prices(0.045, n_days, start_date)
-            common = prices.index.intersection(synthetic.index)
+            continue
+        needs_synthetic = (
+            t not in prices.columns
+            or prices[t].isna().all()
+            or prices[t].dropna().empty
+            or len(prices[t].dropna()) < 5
+        )
+        if needs_synthetic:
+            synthetic = _align_synthetic(make_synthetic_prices(0.045, n_days, start_date))
             if t not in prices.columns:
                 prices[t] = np.nan
+            common = prices.index.intersection(synthetic.index)
             prices.loc[common, t] = synthetic.loc[common].values
+            skipped_tickers.append(t)
 
-    # Keep only requested tickers that loaded
-    available = [t for t in tickers_list if t in prices.columns]
-    if not available:
-        raise HTTPException(status_code=500, detail="No valid ticker data returned")
-
-    # Identify tickers with all-NaN or empty price data
-    skipped_tickers = [t for t in available if prices[t].isna().all() or prices[t].dropna().empty]
-    available = [t for t in available if t not in skipped_tickers]
-
-    if not available:
-        return {"error": "No price data available for the provided tickers", "skipped_tickers": skipped_tickers}
-
+    # Every ticker is now present — none are excluded from analysis
+    available = tickers_list
     prices = prices[available].dropna()
     if prices.empty or len(prices) < 2:
-        if skipped_tickers:
-            return {"error": "Insufficient price data after removing invalid tickers", "skipped_tickers": skipped_tickers}
         raise HTTPException(status_code=500, detail="Insufficient price data")
 
-    # Align weights to available tickers (renormalize after any skips)
-    avail_weights = []
-    for t in available:
-        idx = tickers_list.index(t) if t in tickers_list else None
-        avail_weights.append(w_list[idx] if idx is not None else 1.0 / len(available))
-    total_avail = sum(avail_weights)
-    avail_weights = [w / total_avail for w in avail_weights]
+    # Weights are already normalized to tickers_list — no renormalization needed
+    avail_weights = w_list
     weights_arr = np.array(avail_weights)
 
     # Daily returns
