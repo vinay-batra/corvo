@@ -27,11 +27,11 @@ function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode
 
 const ENTRIES = [
   {
-    date: "Apr 23, 2026",
+    date: "Apr 24, 2026",
     version: "v0.16",
-    title: "Alerts Overhaul, Empty State Redesign, TypeScript Fixes & UI Polish",
-    desc: "Portfolio alerts built end-to-end: select a saved portfolio, set a drop/rise threshold, and receive push or email notifications when triggered. Watchlist alerts section removed in favor of the unified AlertsPanel. Empty state redesigned with Space Mono header, step icons, and a Presets shortcut hint. Metric cards upgraded with colored top borders and per-metric corner glow. Positions table now shows real company names and live 1D price changes. Analyze button pulses when portfolio is ready. XP progress bar thickened. TypeScript errors fixed across page.tsx, StockDetail, and UserMenu. Re-animation on scroll permanently fixed with initial={false} on all motion components.",
-    tags: ["Alerts", "UX", "Fixes", "TypeScript"],
+    title: "Full Light Mode, CAGR Metrics, Money Market Fix, AI Chat Upgrades & PDF Redesign",
+    desc: "Full light mode shipped across the entire app: theme toggle on all public pages and the dashboard, particle canvas hidden in light mode, CSS variables applied to every component (PublicNav, PublicFooter, BlogPost, OnboardingModal, GoalsModal, Settings, FAQ, Changelog, and more), with a no-flash inline script in layout.tsx preventing theme flicker on load. Dashboard metrics upgraded: returns card now shows CAGR (1Y) using the proper annualized formula, Sharpe ratio pulls a live ^IRX T-bill rate as the risk-free rate, and benchmark index pills now use ^GSPC, ^IXIC, and ^DJI. A stale-results banner appears when assets change without re-analyzing, and a beforeunload warning guards against accidental data loss. Money market fix: the backend injects a synthetic 4.5% price series for cash tickers auto-detected by the XX suffix, and cash tickers are excluded from the skipped_tickers warning. AI Chat improved: greeting changed to \"What's on the agenda today?\", suggestions appear in a 2×2 grid with a Refresh button, user message bubbles have an amber tint, the history sidebar slides in from the left, rename and delete actions are always visible, the system prompt enforces a 220–300 word cap, and the AI now receives individual returns, beta, portfolio value, and live rf_rate as context. Export redesigned: Share card removed, order is now AI Report → PDF → CSV, AI Report shows an immediate toast, and the PDF is rebuilt with 5 metric cards, a benchmark comparison section, and an investor profile. Asset management fixes: wrong asset removal corrected with keyed components, confirm dialog added before removal, search dropdown glitch resolved, and ticker tape is static for three or fewer holdings. Capital Gains Estimator and Dividend Calendar replaced with clean Coming Soon cards; UserMenu reordered; back buttons use router.back().",
+    tags: ["Light Mode", "Dashboard", "AI Chat", "Export", "Fixes"],
   },
   {
     date: "Apr 21, 2026",
