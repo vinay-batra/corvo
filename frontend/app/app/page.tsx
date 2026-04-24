@@ -45,7 +45,6 @@ import MarketBrief from "../../components/MarketBrief";
 import EmailPreferences from "../../components/EmailPreferences";
 import ReferralModal from "../../components/ReferralModal";
 import SettingsPage from "../settings/page";
-import ShareImageModal from "../../components/ShareImageModal";
 import GreetingBar from "../../components/GreetingBar";
 import KeyboardShortcutsModal from "../../components/KeyboardShortcutsModal";
 import PositionsTab from "../../components/PositionsTab";
@@ -717,8 +716,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [userId, setUserId]         = useState<string | null>(null);
   const [navProfile, setNavProfile] = useState<{ displayName: string; avatarUrl: string | null | undefined }>({ displayName: "", avatarUrl: undefined });
   const referralCodeRef             = useRef<string>("");
-  const [shareToast, setShareToast] = useState(false);
-  const [showShareCard, setShowShareCard] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(340);
@@ -1149,15 +1146,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     if (!asked) setTimeout(() => setShowNotifPrompt(true), 3000);
   }, [userId]);
 
-  const sharePortfolio = () => {
-    if (!assets.length) return;
-    const encoded = btoa(JSON.stringify(assets));
-    const url = `${window.location.origin}/app?portfolio=${encoded}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setShareToast(true);
-      setTimeout(() => setShareToast(false), 2500);
-    }).catch(() => {});
-  };
 
   const isPortfolioSaved = (() => {
     if (!assets.length) return false;
@@ -1230,7 +1218,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         if (showAlerts) { setShowAlerts(false); return; }
         if (showEmailPrefs) { setShowEmailPrefs(false); return; }
         if (showReferral) { setShowReferral(false); return; }
-        if (showShareCard) { setShowShareCard(false); return; }
         return;
       }
       if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
@@ -1239,7 +1226,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [paletteOpen, stockTicker, whatIfOpen, showGoals, showProfile, showSettings, showAlerts, showEmailPrefs, showReferral, showShareCard, showHelpModal]);
+  }, [paletteOpen, stockTicker, whatIfOpen, showGoals, showProfile, showSettings, showAlerts, showEmailPrefs, showReferral, showHelpModal]);
 
   // Unlock Web Audio API on first user interaction
   useEffect(() => {
@@ -1576,21 +1563,13 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setOverflowOpen(false)} />
                   <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 160, boxShadow: "var(--shadow-md)" }}>
+                    <ExportPDF data={data} assets={assets} menuItem onClose={() => setOverflowOpen(false)} />
                     {data && (
                       <button onClick={() => { exportCSV(); setOverflowOpen(false); }}
                         style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
                         onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
                         onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                        ↓ Export CSV
-                      </button>
-                    )}
-                    <ExportPDF data={data} assets={assets} menuItem onClose={() => setOverflowOpen(false)} />
-                    {data && (
-                      <button onClick={() => { setShowShareCard(true); setOverflowOpen(false); }}
-                        style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                        ↗ Share
+                        ↓ Download CSV
                       </button>
                     )}
                   </div>
@@ -2085,27 +2064,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         currentData={data}
         onApply={(a) => { setAssets(a); setWhatIfOpen(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
       />
-
-      {/* Share card modal */}
-      <AnimatePresence>
-        {showShareCard && data && (
-          <ShareImageModal
-            assets={assets}
-            data={data}
-            onClose={() => setShowShareCard(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Share toast */}
-      <AnimatePresence>
-        {shareToast && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
-            style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", background: "#5cb88a", color: "var(--bg)", padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, zIndex: 999, pointerEvents: "none", whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
-            ✓ Link copied to clipboard
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Push notification prompt */}
       <AnimatePresence>

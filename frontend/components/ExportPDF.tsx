@@ -414,7 +414,7 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose }: Pr
         {loading && mode === m ? (m === "jspdf" ? "Building…" : "Writing…") : label}
       </button>
     );
-    return <>{row("↓ Export PDF", "jspdf")}{row("AI Report", "ai")}</>;
+    return <>{row("AI Report", "ai")}{row("↓ Download PDF", "jspdf")}</>;
   }
 
   return (
