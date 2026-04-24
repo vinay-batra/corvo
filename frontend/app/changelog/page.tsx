@@ -28,6 +28,13 @@ function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode
 const ENTRIES = [
   {
     date: "Apr 24, 2026",
+    version: "v0.17",
+    title: "About Page, Nav Polish & Public Page Redesign",
+    desc: "New About page at corvo.capital/about tells the story behind Corvo. Nav updated with About link across all pages. Public pages now show pill-style eyebrow badges above headings. Light mode is now the default for all new and logged-out visitors. Nav order standardized to Features, Demo, Pricing, Blog, Changelog, FAQ, About.",
+    tags: ["About", "UI", "Light Mode"],
+  },
+  {
+    date: "Apr 24, 2026",
     version: "v0.16",
     title: "Light Mode, AI Chat Overhaul, CAGR Metrics & Dashboard Polish",
     desc: "Full light mode support across all pages — every component now uses CSS variables with instant theme switching and no flash on load. Dashboard now shows CAGR instead of simple return, Sharpe ratio uses live T-bill rate (^IRX), and a stale results banner appears when holdings change after analysis. Money market funds (FDRXX, SPAXX, VMFXX, and others) now tracked with accurate yield-based price series. AI chat redesigned with conversation history sidebar, refreshable suggestions, and a richer system prompt with live portfolio context. Asset removal fixed for multi-asset portfolios. PDF export redesigned with metric cards, benchmark comparison, and investor profile section. Capital Gains Estimator and Dividend Calendar show Coming Soon cards.",
