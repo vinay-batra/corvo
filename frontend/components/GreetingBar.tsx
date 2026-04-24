@@ -242,25 +242,13 @@ export default function GreetingBar({
           </div>
         )}
 
-        {/* Holdings price pills — scrolling marquee */}
+        {/* Holdings price pills — static row or scrolling marquee */}
         {holdingPrices.length > 0 && (
-          <div style={{ overflow: "hidden", height: 32, position: "relative", width: 320 }}>
-            <style>{`
-              @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
-            `}</style>
-            <div style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-              padding: "0 8px",
-              animation: "marquee 30s linear infinite",
-              width: "max-content",
-              height: "100%",
-            }}>
-              {[...holdingPrices, ...holdingPrices].map((h, idx) => (
+          holdingPrices.length <= 3 ? (
+            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8 }}>
+              {holdingPrices.map(h => (
                 <HoldingPill
-                  key={`${h.ticker}-${idx}`}
+                  key={h.ticker}
                   ticker={h.ticker}
                   price={h.price}
                   changePct={h.change_pct}
@@ -268,7 +256,33 @@ export default function GreetingBar({
                 />
               ))}
             </div>
-          </div>
+          ) : (
+            <div style={{ overflow: "hidden", height: 32, position: "relative", width: 320 }}>
+              <style>{`
+                @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+              `}</style>
+              <div style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                padding: "0 8px",
+                animation: "marquee 30s linear infinite",
+                width: "max-content",
+                height: "100%",
+              }}>
+                {[...holdingPrices, ...holdingPrices].map((h, idx) => (
+                  <HoldingPill
+                    key={`${h.ticker}-${idx}`}
+                    ticker={h.ticker}
+                    price={h.price}
+                    changePct={h.change_pct}
+                    changeDollar={h.change_dollar}
+                  />
+                ))}
+              </div>
+            </div>
+          )
         )}
 
       </div>
