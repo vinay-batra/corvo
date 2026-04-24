@@ -496,7 +496,7 @@ function FeatureVoteSection() {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))", gap: 14 }}>
             {sorted.map((f, i) => {
               const voteCount = votes[f.id] ?? 0;
               const hasVoted = voted[f.id] ?? false;
@@ -554,10 +554,11 @@ export default function PricingPage() {
         @keyframes fadeinUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pdot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         @media (max-width: 700px) {
-          .pricing-cards { flex-direction: column !important; align-items: center !important; }
-          .pricing-cards > * { width: 100% !important; max-width: 420px !important; }
+          .pricing-cards { flex-direction: column !important; align-items: stretch !important; }
+          .pricing-cards > * { width: 100% !important; max-width: 100% !important; flex: none !important; }
           .nav-links { display: none !important; }
           .pricing-section { padding-left: 20px !important; padding-right: 20px !important; }
+          .pricing-section-inner { padding: 0 !important; }
         }
       `}</style>
 

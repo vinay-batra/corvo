@@ -64,9 +64,16 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
         padding: 24,
       }}
     >
-      <style>{`@keyframes ob-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}`}</style>
+      <style>{`
+        @keyframes ob-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
+        @media(max-width:480px){
+          .ob-modal{padding:24px 20px 20px!important}
+          .ob-scroll{max-height:240px!important}
+        }
+      `}</style>
 
       <motion.div
+        className="ob-modal"
         initial={{ opacity: 0, scale: 0.93, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
@@ -201,7 +208,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
                 Add tickers and weights to get started, or import from a CSV file.
               </p>
 
-              <div style={{ maxHeight: 360, overflowY: "auto", marginBottom: 22 }}>
+              <div className="ob-scroll" style={{ maxHeight: 360, overflowY: "auto", marginBottom: 22 }}>
                 <PortfolioBuilder
                   assets={assets}
                   onAssetsChange={setAssets}

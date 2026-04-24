@@ -174,9 +174,12 @@ export default function ChangelogPage() {
         .nl:hover { color: var(--text); }
         .tag { padding: 3px 10px; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.4); border-radius: 20px; font-size: 10px; color: var(--accent); letter-spacing: 0.5px; }
         @media(max-width:768px) {
-          .cl-timeline { padding-left: 24px !important; }
-          .cl-entry { padding-left: 20px !important; }
+          .cl-timeline { padding-left: 0 !important; }
+          .cl-entry { padding-left: 0 !important; display: block !important; }
           .cl-date-col { display: none !important; }
+          .cl-dot { display: none !important; }
+          .cl-vline { display: none !important; }
+          .cl-entry-content { padding-left: 0 !important; }
           .cl-hero { padding: 100px 20px 48px !important; }
           .cl-body { padding: 0 20px 80px !important; }
           .cl-footer { padding: 60px 20px 80px !important; }
@@ -206,7 +209,7 @@ export default function ChangelogPage() {
       <div className="cl-body" style={{ maxWidth: 860, margin: "0 auto", padding: "0 56px 0" }}>
         <div className="cl-timeline" style={{ position: "relative", paddingLeft: 0 }}>
           {/* Vertical line */}
-          <div style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "var(--border)" }} />
+          <div className="cl-vline" style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "var(--border)" }} />
 
           {ENTRIES.map((entry, i) => (
             <FadeUp key={i} delay={i * 0.06}>
@@ -217,10 +220,10 @@ export default function ChangelogPage() {
                 </div>
 
                 {/* Dot */}
-                <div style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--card-bg)", border: "2px solid #c9a84c", zIndex: 2 }} />
+                <div className="cl-dot" style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--card-bg)", border: "2px solid #c9a84c", zIndex: 2 }} />
 
                 {/* Content */}
-                <div style={{ paddingLeft: 36, flex: 1 }}>
+                <div className="cl-entry-content" style={{ paddingLeft: 36, flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
                     <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "#c9a84c", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.4)", padding: "3px 10px", borderRadius: 20 }}>
                       {entry.version}
