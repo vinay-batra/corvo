@@ -317,6 +317,7 @@ function buildAiReport(analysis: string, data: any, assets: any[]): string {
   const total = weights.reduce((s, w) => s + w, 1);
   const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const fmt = (text: string) => text
+    .replace(/^# (.+)$/gm, `<div style="font-size:11px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;margin:0 0 16px;border-bottom:2px solid rgba(201,168,76,0.3);padding-bottom:6px;font-family:'Courier New',monospace">$1</div>`)
     .replace(/^## (.+)$/gm, `<div style="font-size:9px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid rgba(201,168,76,0.2);padding-bottom:4px">$1</div>`)
     .replace(/\*\*(.+?)\*\*/g, `<strong style="color:${strongColor}">$1</strong>`)
     .replace(/^[•\-] (.+)$/gm, `<div style="display:flex;gap:8px;margin:5px 0"><span style="color:#c9a84c">▸</span><span>$1</span></div>`)
