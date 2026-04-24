@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", navy: "#0a0e14", cream: "#e8e0cc", cream3: "rgba(232,224,204,0.35)" };
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-interface Props { data: any; assets: any[]; goals?: any; menuItem?: boolean; onClose?: () => void; }
+interface Props { data: any; assets: any[]; goals?: any; menuItem?: boolean; onClose?: () => void; onAiGenerationStart?: () => void; onAiGenerationEnd?: () => void; }
 
 // ── jsPDF single-page PDF builder ────────────────────────────────────────────
 async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> {
@@ -444,7 +444,7 @@ function buildAiReport(analysis: string, data: any, assets: any[]): string {
   </body></html>`;
 }
 
-export default function ExportPDF({ data, assets, goals, menuItem, onClose }: Props) {
+export default function ExportPDF({ data, assets, goals, menuItem, onClose, onAiGenerationStart, onAiGenerationEnd }: Props) {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"jspdf" | "ai">("jspdf");
   const [open, setOpen] = useState(false);
@@ -453,6 +453,7 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose }: Pr
     if (!data) return;
     const m = exportMode ?? mode;
     setLoading(true); setOpen(false); onClose?.();
+    if (m === "ai") onAiGenerationStart?.();
     try {
       if (m === "jspdf") {
         await buildJsPDF(data, assets, goals);
@@ -488,6 +489,7 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose }: Pr
       // silently ignore, user can try again
     } finally {
       setLoading(false);
+      if (m === "ai") onAiGenerationEnd?.();
     }
   };
 

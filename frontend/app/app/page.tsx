@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { posthog } from "@/lib/posthog";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -675,6 +675,123 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
   );
 }
 
+interface TopbarActionsProps {
+  dark: boolean;
+  toggleDark: () => void;
+  alertCount: number;
+  avatarUrl: string | null | undefined;
+  displayName: string;
+  data: any;
+  assets: any[];
+  exportCSV: () => void;
+  setShowAlerts: (v: boolean) => void;
+  setShowEmailPrefs: (v: boolean) => void;
+  setShowReferral: (v: boolean) => void;
+  setShowSettings: (v: boolean) => void;
+  setShowProfile: (v: boolean) => void;
+  setShowOnboarding: (v: boolean) => void;
+  setShowDashboardTour: (v: boolean) => void;
+}
+
+const TopbarActions = memo(function TopbarActions({
+  dark, toggleDark, alertCount, avatarUrl, displayName,
+  data, assets, exportCSV,
+  setShowAlerts, setShowEmailPrefs, setShowReferral, setShowSettings,
+  setShowProfile, setShowOnboarding, setShowDashboardTour,
+}: TopbarActionsProps) {
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const [aiToast, setAiToast] = useState(false);
+
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        {/* Alerts bell */}
+        <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
+          style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          {alertCount > 0 && (
+            <span style={{ position: "absolute", top: 4, right: 4, width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg3)" }} />
+          )}
+        </button>
+
+        {/* Dark mode */}
+        <div id="tour-dark-mode-toggle">
+          <button onClick={toggleDark} title={dark ? "Light mode" : "Dark mode"}
+            style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+            {dark ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
+        </div>
+
+        {/* Export dropdown */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <button
+            onClick={() => setOverflowOpen(o => !o)}
+            title="Export"
+            style={{ height: 32, padding: "0 12px", borderRadius: 8, border: "0.5px solid var(--border)", background: overflowOpen ? "var(--bg3)" : "transparent", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-mono)", color: overflowOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, letterSpacing: 0.5, transition: "all 0.15s", whiteSpace: "nowrap" }}
+            onMouseEnter={e => { if (!overflowOpen) { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}}
+            onMouseLeave={e => { if (!overflowOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
+            Export ↓
+          </button>
+          {overflowOpen && (
+            <>
+              <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setOverflowOpen(false)} />
+              <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 160, boxShadow: "var(--shadow-md)" }}>
+                <ExportPDF data={data} assets={assets} menuItem onClose={() => setOverflowOpen(false)} onAiGenerationStart={() => setAiToast(true)} onAiGenerationEnd={() => setAiToast(false)} />
+                {data && (
+                  <button onClick={() => { exportCSV(); setOverflowOpen(false); }}
+                    style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    ↓ Download CSV
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* User menu */}
+        <div id="tour-profile-btn" style={{ display: "flex", alignItems: "center" }}>
+          <UserMenu
+            onEmailPrefs={() => setShowEmailPrefs(true)}
+            onReferral={() => setShowReferral(true)}
+            onSettings={() => setShowSettings(true)}
+            onProfile={() => setShowProfile(true)}
+            onReplayOnboarding={() => {
+              localStorage.removeItem("corvo_onboarding_skipped");
+              localStorage.removeItem("corvo_setup_banner_dismissed");
+              setShowSettings(false);
+              setShowOnboarding(true);
+            }}
+            onReplayTour={() => {
+              localStorage.removeItem("corvo_tour_completed");
+              setShowSettings(false);
+              setShowDashboardTour(true);
+            }}
+            avatarUrl={avatarUrl}
+            displayName={displayName}
+          />
+        </div>
+      </div>
+
+      {/* AI Report generation toast */}
+      {aiToast && (
+        <div style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", zIndex: 9999, background: "var(--card-bg)", border: "0.5px solid rgba(201,168,76,0.4)", borderRadius: 10, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 4px 24px rgba(0,0,0,0.4)", pointerEvents: "none" }}>
+          <div style={{ width: 12, height: 12, border: "1.5px solid rgba(201,168,76,0.3)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: "var(--text2)", whiteSpace: "nowrap" }}>Generating your AI report... this may take a minute.</span>
+        </div>
+      )}
+    </>
+  );
+});
+
 export default function AppPage() {
   const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number }[]>([]);
   const [portfolioStale, setPortfolioStale] = useState(false);
@@ -717,7 +834,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [navProfile, setNavProfile] = useState<{ displayName: string; avatarUrl: string | null | undefined }>({ displayName: "", avatarUrl: undefined });
   const referralCodeRef             = useRef<string>("");
   const [showHelpModal, setShowHelpModal] = useState(false);
-  const [overflowOpen, setOverflowOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [portfolioInputValue, setPortfolioInputValue] = useState<number>(() => {
     if (typeof window === "undefined") return 10000;
@@ -1534,84 +1650,23 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             })}
           </div>
 
-          {useMemo(() => (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-              {/* Alerts bell */}
-              <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
-                style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-                {alertCount > 0 && (
-                  <span style={{ position: "absolute", top: 4, right: 4, width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg3)" }} />
-                )}
-              </button>
-
-              {/* Dark mode */}
-              <div id="tour-dark-mode-toggle">
-                <button onClick={toggleDark} title={dark ? "Light mode" : "Dark mode"}
-                  style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
-                  {dark ? <Sun size={14} /> : <Moon size={14} />}
-                </button>
-              </div>
-
-              {/* Export dropdown */}
-              <div style={{ position: "relative", flexShrink: 0 }}>
-                <button
-                  onClick={() => setOverflowOpen(o => !o)}
-                  title="Export"
-                  style={{ height: 32, padding: "0 12px", borderRadius: 8, border: "0.5px solid var(--border)", background: overflowOpen ? "var(--bg3)" : "transparent", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-mono)", color: overflowOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, letterSpacing: 0.5, transition: "all 0.15s", whiteSpace: "nowrap" }}
-                  onMouseEnter={e => { if (!overflowOpen) { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}}
-                  onMouseLeave={e => { if (!overflowOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
-                  Export ↓
-                </button>
-                {overflowOpen && (
-                  <>
-                    <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setOverflowOpen(false)} />
-                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 160, boxShadow: "var(--shadow-md)" }}>
-                      <ExportPDF data={data} assets={assets} menuItem onClose={() => setOverflowOpen(false)} />
-                      {data && (
-                        <button onClick={() => { exportCSV(); setOverflowOpen(false); }}
-                          style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
-                          onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                          ↓ Download CSV
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* User menu */}
-              <div id="tour-profile-btn" style={{ display: "flex", alignItems: "center" }}>
-                <UserMenu
-                  onEmailPrefs={() => setShowEmailPrefs(true)}
-                  onReferral={() => setShowReferral(true)}
-                  onSettings={() => setShowSettings(true)}
-                  onProfile={() => setShowProfile(true)}
-                  onReplayOnboarding={() => {
-                    localStorage.removeItem("corvo_onboarding_skipped");
-                    localStorage.removeItem("corvo_setup_banner_dismissed");
-                    setShowSettings(false);
-                    setShowOnboarding(true);
-                  }}
-                  onReplayTour={() => {
-                    localStorage.removeItem("corvo_tour_completed");
-                    setShowSettings(false);
-                    setShowDashboardTour(true);
-                  }}
-                  avatarUrl={navProfile.avatarUrl}
-                  displayName={navProfile.displayName}
-                />
-              </div>
-            </div>
-          ), [overflowOpen, dark, alertCount, navProfile.avatarUrl, navProfile.displayName, data, assets])}
+          <TopbarActions
+            dark={dark}
+            toggleDark={toggleDark}
+            alertCount={alertCount}
+            avatarUrl={navProfile.avatarUrl}
+            displayName={navProfile.displayName}
+            data={data}
+            assets={assets}
+            exportCSV={exportCSV}
+            setShowAlerts={setShowAlerts}
+            setShowEmailPrefs={setShowEmailPrefs}
+            setShowReferral={setShowReferral}
+            setShowSettings={setShowSettings}
+            setShowProfile={setShowProfile}
+            setShowOnboarding={setShowOnboarding}
+            setShowDashboardTour={setShowDashboardTour}
+          />
         </header>
 
         {/* Content */}
