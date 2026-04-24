@@ -1,5 +1,7 @@
 "use client";
 
+export const revalidate = 0;
+
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
