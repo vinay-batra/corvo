@@ -607,7 +607,6 @@ export default function PricingPage() {
             <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>Pricing</span>
           </div>
 
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 20 }}>Pricing</p>
           <h1 style={{
             fontFamily: "var(--font-mono)",
             fontSize: "clamp(32px,5vw,60px)",
