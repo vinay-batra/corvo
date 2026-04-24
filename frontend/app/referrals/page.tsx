@@ -257,7 +257,7 @@ export default function ReferralsPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, paddingBottom: 4 }}>
                 {platforms.map(p => (
                   <button key={p.name} onClick={p.action} title={p.name}
-                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 5, padding: "10px 8px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s", minHeight: 60 }}
+                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 8px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s", minHeight: 64 }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border)")}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
                     <span style={{ color: p.color, display: "flex", alignItems: "center" }}>{p.icon}</span>

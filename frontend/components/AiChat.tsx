@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { posthog } from "../lib/posthog";
@@ -216,8 +216,8 @@ export default function AiChat({
   const inputRef   = useRef<HTMLTextAreaElement>(null);
   const renameRef  = useRef<HTMLInputElement>(null);
 
-  // Mobile detection
-  useEffect(() => {
+  // Mobile detection — useLayoutEffect runs before paint, eliminating the SSR flash
+  useLayoutEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
     check();
     window.addEventListener("resize", check);
@@ -549,6 +549,19 @@ export default function AiChat({
                   display: "flex", flexDirection: "column",
                 }}
               >
+                {/* Mobile header with close button */}
+                {isMobile && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", height: 52, borderBottom: "0.5px solid var(--border)", flexShrink: 0 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", letterSpacing: 0.5 }}>Chat History</span>
+                    <button
+                      onClick={() => setSidebarOpen(false)}
+                      aria-label="Close history"
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, background: "transparent", border: "none", cursor: "pointer", color: "var(--text3)", borderRadius: 8 }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                )}
                 {/* New chat button */}
                 <div style={{ padding: "12px 10px", borderBottom: "0.5px solid var(--border)", flexShrink: 0 }}>
                   <button

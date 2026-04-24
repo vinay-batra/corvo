@@ -134,6 +134,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
           {q}
         </span>
         <motion.span
+          className="faq-toggle"
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ duration: 0.22, ease: "easeInOut" }}
           style={{
@@ -141,11 +142,6 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            minWidth: 44,
-            minHeight: 44,
-            width: 44,
-            height: 44,
-            borderRadius: 8,
             background: open ? "rgba(201,168,76,0.12)" : "var(--bg3)",
             border: `1px solid ${open ? "rgba(201,168,76,0.25)" : "var(--bg3)"}`,
             fontSize: 16,
@@ -317,6 +313,10 @@ export default function FaqPage() {
           .faq-main{padding:72px 16px 64px!important}
           .faq-section{padding:0!important}
           .faq-card{padding:12px 14px!important}
+        }
+        .faq-toggle{width:24px;height:24px;min-width:24px;min-height:24px;border-radius:6px}
+        @media(max-width:768px){
+          .faq-toggle{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;border-radius:8px!important}
         }
       `}</style>
       <PublicNav />

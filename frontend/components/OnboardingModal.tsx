@@ -68,7 +68,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
         @keyframes ob-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
         @media(max-width:480px){
           .ob-modal{padding:24px 20px 20px!important}
-          .ob-scroll{max-height:240px!important}
+          .ob-scroll{max-height:calc(60vh - 120px)!important}
         }
       `}</style>
 
