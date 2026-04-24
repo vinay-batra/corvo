@@ -10,7 +10,7 @@ const C = { amber: "var(--accent)", cream: "var(--text)", cream3: "var(--text3)"
 const DOTS = ["#b8860b","rgba(184,134,11,0.7)","rgba(184,134,11,0.5)","rgba(184,134,11,0.35)","rgba(184,134,11,0.25)","rgba(184,134,11,0.6)","rgba(184,134,11,0.45)","rgba(184,134,11,0.55)"];
 const TYPE_LABELS: Record<string,string> = { EQUITY:"Stock", ETF:"ETF", CRYPTOCURRENCY:"Crypto", MUTUALFUND:"Fund", INDEX:"Index", CASH:"Cash" };
 
-const CASH_TICKERS = new Set(["CASH", "FDRXX", "SPAXX", "BND", "SGOV"]);
+const CASH_TICKERS = new Set(["CASH", "FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX", "VMMXX", "BND", "SGOV", "BIL", "SHV"]);
 
 const COMMON_TICKERS: { ticker: string; name: string; type: string; exchange: string }[] = [
   { ticker:"AAPL",    name:"Apple Inc.",                type:"EQUITY",         exchange:"NASDAQ" },
@@ -112,8 +112,13 @@ const COMMON_TICKERS: { ticker: string; name: string; type: string; exchange: st
   { ticker:"CASH",    name:"Cash / Money Market",            type:"CASH",       exchange:"N/A" },
   { ticker:"FDRXX",   name:"Fidelity Gov't Cash Reserves",   type:"CASH",       exchange:"N/A" },
   { ticker:"SPAXX",   name:"Fidelity Gov't Money Market",    type:"CASH",       exchange:"N/A" },
+  { ticker:"VMFXX",   name:"Vanguard Federal Money Market",  type:"CASH",       exchange:"N/A" },
+  { ticker:"VUSXX",   name:"Vanguard Treasury Money Market", type:"CASH",       exchange:"N/A" },
+  { ticker:"SWVXX",   name:"Schwab Value Advantage Money Mkt",type:"CASH",      exchange:"N/A" },
   { ticker:"BND",     name:"Vanguard Total Bond Mkt ETF",    type:"CASH",       exchange:"NASDAQ" },
   { ticker:"SGOV",    name:"iShares 0-3 Month Treasury ETF", type:"CASH",       exchange:"CBOE" },
+  { ticker:"BIL",     name:"SPDR 1-3 Month T-Bill ETF",      type:"CASH",       exchange:"NYSE" },
+  { ticker:"SHV",     name:"iShares Short Treasury Bond ETF",type:"CASH",       exchange:"NASDAQ" },
 ];
 
 const BUILDER_PRESETS = [
@@ -428,7 +433,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             : (names[a.ticker] || staticEntry?.name || "");
           const isExpanded = expandedSecondary.has(i);
           return (
-            <motion.div key={a.ticker} initial={{opacity:0,x:-6}} animate={{opacity:1,x:0}} exit={{opacity:0,height:0}} transition={{duration:0.15}} style={{marginBottom:12,position:"relative"}}>
+            <motion.div key={`${a.ticker}-${i}`} initial={{opacity:0,x:-6}} animate={{opacity:1,x:0}} exit={{opacity:0,height:0}} transition={{duration:0.15}} style={{marginBottom:12,position:"relative"}}>
 
               {/* Main row: dot · ticker · weight · expand · remove */}
               <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -501,7 +506,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 </button>
 
                 {/* Remove */}
-                <button onClick={(e)=>{ e.stopPropagation(); if(window.confirm(`Remove ${a.ticker} from your portfolio?`)) remove(i); }}
+                <button onClick={(e)=>{ e.stopPropagation(); if(window.confirm(`Remove ${assets[i].ticker} from your portfolio?`)) remove(i); }}
                   style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center",flexShrink:0}}
                   onMouseEnter={e=>e.currentTarget.style.color="#e05c5c"}
                   onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}>
