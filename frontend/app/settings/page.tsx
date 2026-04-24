@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase";
 import { SOUND_KEY } from "../../hooks/useSoundEffects";
 import ReferralsDashboard from "@/components/ReferralsDashboard";
 import FeedbackButton from "../../components/FeedbackButton";
+import ProfileEditor from "../../components/ProfileEditor";
 
 const PERIODS    = ["6mo", "1y", "2y", "5y"] as const;
 const BENCHMARKS = [
@@ -80,6 +81,10 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
   // Sound effects (localStorage)
   const [soundEnabled, setSoundEnabled] = useState(false);
 
+  // Goals
+  const [goals, setGoals]               = useState<any>(null);
+  const [showGoalsEditor, setShowGoalsEditor] = useState(false);
+
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting]                   = useState(false);
@@ -107,6 +112,8 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
       setDark(isDark);
       document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
       setSoundEnabled(localStorage.getItem(SOUND_KEY) === "true");
+      const raw = localStorage.getItem("corvo_goals");
+      if (raw && raw !== "skipped") { try { setGoals(JSON.parse(raw)); } catch { /* ignore */ } }
     })();
   }, []);
 
@@ -172,11 +179,12 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
       if (e.key === "Escape") {
         if (cropSrc) setCropSrc(null);
         if (showDeleteConfirm) setShowDeleteConfirm(false);
+        if (showGoalsEditor) setShowGoalsEditor(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cropSrc, showDeleteConfirm]);
+  }, [cropSrc, showDeleteConfirm, showGoalsEditor]);
 
   const onFileSelect = (file: File) => {
     const reader = new FileReader();
@@ -400,6 +408,39 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
           </Section>
         )}
 
+        {/* PROFILE & GOALS */}
+        <Section title="Profile &amp; Goals">
+          <Row label="Age" desc="Used to personalize analysis and retirement projections">
+            <span style={{ fontSize: 13, color: "var(--text3)" }}>{goals?.age || "—"}</span>
+          </Row>
+          <Row label="Retirement age">
+            <span style={{ fontSize: 13, color: "var(--text3)" }}>{goals?.retirementAge || "—"}</span>
+          </Row>
+          <Row label="Annual salary">
+            <span style={{ fontSize: 13, color: "var(--text3)" }}>{goals?.salary ? `$${Number(goals.salary).toLocaleString()}` : "—"}</span>
+          </Row>
+          <Row label="Risk tolerance">
+            <span style={{ fontSize: 13, color: "var(--text3)", textTransform: "capitalize" }}>{goals?.riskTolerance || "—"}</span>
+          </Row>
+          <Row label="Primary goal">
+            <span style={{ fontSize: 13, color: "var(--text3)" }}>
+              {goals?.goal === "retirement" ? "Retirement"
+                : goals?.goal === "wealth" ? "Wealth Building"
+                : goals?.goal === "income" ? "Passive Income"
+                : goals?.goal === "short" ? "Short-Term Gain"
+                : "—"}
+            </span>
+          </Row>
+          <div style={{ paddingTop: 14 }}>
+            <button onClick={() => setShowGoalsEditor(true)}
+              style={{ padding: "9px 20px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+              Edit
+            </button>
+          </div>
+        </Section>
+
         {/* DANGER ZONE */}
         <Section title="Danger Zone">
           <div style={{ padding: "16px", border: "0.5px solid rgba(224,92,92,0.25)", borderRadius: 10, background: "rgba(224,92,92,0.04)" }}>
@@ -484,6 +525,17 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Goals editor modal */}
+      <AnimatePresence>
+        {showGoalsEditor && (
+          <ProfileEditor
+            goals={goals}
+            onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoalsEditor(false); }}
+            onClose={() => setShowGoalsEditor(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <FeedbackButton />
     </div>
   );
