@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { posthog } from "@/lib/posthog";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -1534,70 +1534,87 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             })}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            {/* Alerts bell */}
-            <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
-              style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text2)" }}>
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-              {alertCount > 0 && (
-                <span style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg)" }} />
-              )}
-            </button>
-            <div id="tour-dark-mode-toggle"><DarkModeToggle dark={dark} toggle={toggleDark} /></div>
-            {/* Export dropdown */}
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <button
-                onClick={() => setOverflowOpen(o => !o)}
-                title="Export"
-                style={{ height: 32, padding: "0 10px", borderRadius: 8, border: `0.5px solid ${overflowOpen ? "rgba(184,134,11,0.4)" : "var(--border)"}`, background: overflowOpen ? "rgba(184,134,11,0.06)" : "transparent", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-mono)", color: overflowOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, letterSpacing: 0.5, transition: "all 0.15s", whiteSpace: "nowrap" }}
-                onMouseEnter={e => { if (!overflowOpen) { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}}
-                onMouseLeave={e => { if (!overflowOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
-                Export ↓
+          {useMemo(() => (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 12, padding: 4, flexShrink: 0 }}>
+              {/* Alerts bell */}
+              <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
+                style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.color = "var(--text)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                {alertCount > 0 && (
+                  <span style={{ position: "absolute", top: 4, right: 4, width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg3)" }} />
+                )}
               </button>
-              {overflowOpen && (
-                <>
-                  <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setOverflowOpen(false)} />
-                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 160, boxShadow: "var(--shadow-md)" }}>
-                    <ExportPDF data={data} assets={assets} menuItem onClose={() => setOverflowOpen(false)} />
-                    {data && (
-                      <button onClick={() => { exportCSV(); setOverflowOpen(false); }}
-                        style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                        ↓ Download CSV
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
+
+              {/* Dark mode */}
+              <div id="tour-dark-mode-toggle">
+                <button onClick={toggleDark} title={dark ? "Light mode" : "Dark mode"}
+                  style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.color = "var(--text)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+                  {dark ? <Sun size={14} /> : <Moon size={14} />}
+                </button>
+              </div>
+
+              {/* Export dropdown */}
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button
+                  onClick={() => setOverflowOpen(o => !o)}
+                  title="Export"
+                  style={{ height: 28, padding: "0 10px", borderRadius: 8, border: "none", background: overflowOpen ? "var(--bg)" : "transparent", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-mono)", color: overflowOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, letterSpacing: 0.5, transition: "all 0.15s", whiteSpace: "nowrap" }}
+                  onMouseEnter={e => { if (!overflowOpen) { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.color = "var(--text)"; }}}
+                  onMouseLeave={e => { if (!overflowOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
+                  Export ↓
+                </button>
+                {overflowOpen && (
+                  <>
+                    <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setOverflowOpen(false)} />
+                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 160, boxShadow: "var(--shadow-md)" }}>
+                      <ExportPDF data={data} assets={assets} menuItem onClose={() => setOverflowOpen(false)} />
+                      {data && (
+                        <button onClick={() => { exportCSV(); setOverflowOpen(false); }}
+                          style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                          ↓ Download CSV
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div style={{ width: "0.5px", height: 16, background: "var(--border)", flexShrink: 0 }} />
+
+              {/* User menu */}
+              <div id="tour-profile-btn" style={{ display: "flex", alignItems: "center" }}>
+                <UserMenu
+                  onEmailPrefs={() => setShowEmailPrefs(true)}
+                  onReferral={() => setShowReferral(true)}
+                  onSettings={() => setShowSettings(true)}
+                  onProfile={() => setShowProfile(true)}
+                  onReplayOnboarding={() => {
+                    localStorage.removeItem("corvo_onboarding_skipped");
+                    localStorage.removeItem("corvo_setup_banner_dismissed");
+                    setShowSettings(false);
+                    setShowOnboarding(true);
+                  }}
+                  onReplayTour={() => {
+                    localStorage.removeItem("corvo_tour_completed");
+                    setShowSettings(false);
+                    setShowDashboardTour(true);
+                  }}
+                  avatarUrl={navProfile.avatarUrl}
+                  displayName={navProfile.displayName}
+                />
+              </div>
             </div>
-            <div id="tour-profile-btn">
-              <UserMenu
-                onEmailPrefs={() => setShowEmailPrefs(true)}
-                onReferral={() => setShowReferral(true)}
-                onSettings={() => setShowSettings(true)}
-                onProfile={() => setShowProfile(true)}
-                onReplayOnboarding={() => {
-                  localStorage.removeItem("corvo_onboarding_skipped");
-                  localStorage.removeItem("corvo_setup_banner_dismissed");
-                  setShowSettings(false);
-                  setShowOnboarding(true);
-                }}
-                onReplayTour={() => {
-                  localStorage.removeItem("corvo_tour_completed");
-                  setShowSettings(false);
-                  setShowDashboardTour(true);
-                }}
-                avatarUrl={navProfile.avatarUrl}
-                displayName={navProfile.displayName}
-              />
-            </div>
-          </div>
+          ), [overflowOpen, dark, alertCount, navProfile.avatarUrl, navProfile.displayName, data, assets])}
         </header>
 
         {/* Content */}
