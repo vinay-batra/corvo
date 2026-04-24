@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { posthog } from "../lib/posthog";
 import {
-  X, Copy, Check, Download, RefreshCw, Plus, Trash2,
+  X, Copy, Check, Download, Plus, Trash2,
   MessageSquare, Menu, Info, Zap, Pencil,
 } from "lucide-react";
 
@@ -52,42 +52,11 @@ function groupByDate(convs: Conversation[]): { label: string; items: Conversatio
   return Object.entries(map).map(([label, items]) => ({ label, items }));
 }
 
-const PROMPT_SETS: string[][] = [
-  [
-    "Am I taking too much risk?",
-    "How diversified is my portfolio?",
-    "What is my Sharpe ratio telling me?",
-    "Should I rebalance my portfolio?",
-    "What sectors am I exposed to?",
-  ],
-  [
-    "How does my portfolio compare to SPY?",
-    "What is my biggest risk right now?",
-    "Which holdings are dragging my returns?",
-    "How much volatility am I taking on?",
-    "What would happen if tech stocks dropped 20%?",
-  ],
-  [
-    "What is my portfolio's health score?",
-    "How can I reduce my drawdown risk?",
-    "Is my portfolio too concentrated?",
-    "What is the correlation between my holdings?",
-    "How much should I allocate to bonds?",
-  ],
-  [
-    "What are the best ETFs to diversify with?",
-    "How do I calculate my real return after inflation?",
-    "What is a good Sharpe ratio to aim for?",
-    "How much risk should I take for my age?",
-    "What is dollar cost averaging?",
-  ],
-  [
-    "What stocks pair well with my current holdings?",
-    "How can I hedge against a market downturn?",
-    "What is my portfolio's beta?",
-    "How do dividends affect my total return?",
-    "What would a 10% market crash do to my portfolio?",
-  ],
+const SUGGESTIONS: string[] = [
+  "What stocks pair well with my current holdings?",
+  "How can I hedge against a market downturn?",
+  "What is my biggest risk right now?",
+  "How do dividends affect my total return?",
 ];
 
 // ── Markdown renderer ─────────────────────────────────────────────────────────
@@ -226,15 +195,6 @@ export default function AiChat({
   // UI
   const [copiedMsgIdx, setCopiedMsgIdx]     = useState<number | null>(null);
   const [portfolioCtxOn, setPortfolioCtxOn] = useState(true);
-  const [suggestions, setSuggestions]       = useState<string[]>([]);
-  const [promptSetIdx, setPromptSetIdx]     = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    const stored = localStorage.getItem("corvo_prompt_set_index");
-    if (stored !== null) return parseInt(stored, 10) % PROMPT_SETS.length;
-    const random = Math.floor(Math.random() * PROMPT_SETS.length);
-    localStorage.setItem("corvo_prompt_set_index", String(random));
-    return random;
-  });
 
   const bottomRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
@@ -303,10 +263,6 @@ export default function AiChat({
       loadConversations(uid);
     }).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    setSuggestions(PROMPT_SETS[promptSetIdx]);
-  }, [promptSetIdx]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -736,7 +692,7 @@ export default function AiChat({
                   {!portfolioCtxOn
                     ? "Context is off. Enable it above for personalized recommendations."
                     : data
-                    ? "Ask anything about your portfolio."
+                    ? "What's on the agenda today?"
                     : "What's on your mind? I can help with portfolio analysis, market questions, or investing strategy."}
                 </p>
                 <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
@@ -746,9 +702,9 @@ export default function AiChat({
                 </p>
               </div>
 
-              {/* Suggestions: 2-column grid */}
+              {/* Suggestions: 2x2 grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
-                {suggestions.map((s, i) => (
+                {SUGGESTIONS.map((s, i) => (
                   <motion.button
                     key={`${s}-${i}`}
                     className="cv-chip"
@@ -763,20 +719,6 @@ export default function AiChat({
                 ))}
               </div>
 
-              <div style={{ textAlign: "center" }}>
-                <button
-                  onClick={() => {
-                    const next = (promptSetIdx + 1) % PROMPT_SETS.length;
-                    setPromptSetIdx(next);
-                    localStorage.setItem("corvo_prompt_set_index", String(next));
-                  }}
-                  style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 5, padding: "4px 10px", cursor: "pointer", color: "var(--text3)", fontSize: 10, fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: 4 }}
-                  onMouseEnter={e => { e.currentTarget.style.color = "var(--text2)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}
-                >
-                  <RefreshCw size={9} /> Refresh suggestions
-                </button>
-              </div>
             </div>
           ) : (
             /* Message thread */
