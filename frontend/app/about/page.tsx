@@ -1,5 +1,7 @@
 "use client";
 
+export const revalidate = 0;
+
 import React from "react";
 import { motion } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
