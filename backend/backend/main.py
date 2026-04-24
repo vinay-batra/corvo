@@ -243,6 +243,7 @@ def delete_user(request: Request):
 
 
 CASH_TICKERS = {"FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX", "SGOV", "BIL", "SHV", "CASH"}
+print(f"CASH_TICKERS loaded: {CASH_TICKERS}")
 
 def make_synthetic_prices(annual_return: float, n_days: int, start_date=None) -> pd.Series:
     """Generate synthetic daily price series from an annual return rate."""
@@ -364,6 +365,7 @@ def portfolio(
             or std < 0.001
             or (t in CASH_TICKERS)
         )
+        print(f"[debug] {t}: needs_synthetic={needs_synthetic}, in_cash={t in CASH_TICKERS}")
         if needs_synthetic:
             print(f"[synthetic] {t}")
             synthetic = _align_synthetic(make_synthetic_prices(0.045, n_days, start_date))
@@ -371,13 +373,19 @@ def portfolio(
                 prices[t] = np.nan
             common = prices.index.intersection(synthetic.index)
             prices.loc[common, t] = synthetic.loc[common].values
-            skipped_tickers.append(t)
+            if t not in CASH_TICKERS:
+                print(f"[skipped] {t}")
+                skipped_tickers.append(t)
 
     # Every ticker is now present — none are excluded from analysis
     available = tickers_list
     prices = prices[available]
     prices = prices.ffill().bfill()
-    prices = prices.dropna()
+    non_cash = [t for t in tickers_list if t not in CASH_TICKERS]
+    if non_cash:
+        prices = prices.dropna(subset=non_cash)
+    else:
+        prices = prices.dropna()
     if prices.empty or len(prices) < 2:
         raise HTTPException(status_code=500, detail="Insufficient price data")
 
@@ -390,13 +398,24 @@ def portfolio(
     if returns.empty:
         raise HTTPException(status_code=500, detail="Could not calculate returns")
 
+    # Fetch current risk-free rate from 3-month T-bill
+    try:
+        tbill = yf.Ticker("^IRX")
+        rf_rate = tbill.fast_info.last_price / 100
+        if not rf_rate or rf_rate < 0:
+            rf_rate = 0.04
+    except Exception:
+        rf_rate = 0.04
+
     # Portfolio returns
     port_returns = returns[available].values @ weights_arr
 
-    # Annualized stats (252 trading days)
-    ann_return = safe_float(np.mean(port_returns) * 252)
+    # Annualized stats — CAGR and 252-day vol
+    total_return = safe_float(float((1 + port_returns).prod() - 1))
+    n_years = len(port_returns) / 252
+    ann_return = safe_float((1 + total_return) ** (1 / n_years) - 1) if n_years > 0 else total_return
     ann_vol = safe_float(np.std(port_returns) * np.sqrt(252))
-    sharpe = safe_float((ann_return - 0.04) / ann_vol) if ann_vol > 0 else 0.0
+    sharpe = safe_float((ann_return - rf_rate) / ann_vol) if ann_vol > 0 else 0.0
 
     # Max drawdown
     cum = np.cumprod(1 + port_returns)
@@ -421,10 +440,13 @@ def portfolio(
         bench_cum = bench_cum[:min_len]
         dates = dates[:min_len]
 
-    # Individual stock returns for breakdown
+    # Individual stock returns for breakdown — CAGR per ticker
     individual_returns = {}
     for t in available:
-        t_ret = safe_float(np.mean(returns[t].values) * 252)
+        t_rets = returns[t].values
+        t_total = float((1 + t_rets).prod() - 1)
+        t_years = len(t_rets) / 252
+        t_ret = safe_float((1 + t_total) ** (1 / t_years) - 1) if t_years > 0 else safe_float(t_total)
         individual_returns[t] = t_ret
 
     return {
@@ -441,7 +463,7 @@ def portfolio(
         "benchmark_cumulative": bench_cum,
         "individual_returns": individual_returns,
         "period": period,
-        "skipped_tickers": skipped_tickers,
+        "skipped_tickers": [t for t in skipped_tickers if t not in CASH_TICKERS],
     }
 
 
@@ -4089,3 +4111,4 @@ async def test_weekly_digest(user_id: str = ""):
     """Manually trigger the weekly digest for a specific user (or all opted-in users)."""
     result = await send_weekly_digest(target_user_id=user_id or None)
     return result
+# force redeploy Fri Apr 24 10:36:18 EDT 2026
