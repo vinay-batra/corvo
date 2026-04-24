@@ -93,7 +93,7 @@ function BenchmarkDropdown({ localBenchmark, benchmarks, onSelect }: { localBenc
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 130, boxShadow: "var(--shadow)" }}>
             {benchmarks.map(b => (
               <button key={b.ticker} onClick={() => { onSelect(b.ticker); setOpen(false); }}
@@ -1413,6 +1413,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 id="tour-analyze-btn"
                 onClick={canAnalyze ? handleAnalyze : undefined}
                 disabled={!canAnalyze}
+                initial={false}
                 animate={analyzeComplete ? { scale: [1, 1.05, 1] } : { scale: 1 }}
                 whileHover={canAnalyze ? { scale: 1.02 } : {}}
                 whileTap={canAnalyze ? { scale: 0.97 } : {}}
@@ -1458,7 +1459,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         </button>
         <AnimatePresence>
           {benchOpen && (
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            <motion.div initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{ position: "absolute", bottom: "100%", left: 14, right: 14, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 50, marginBottom: 4, boxShadow: "var(--shadow)" }}>
               {BENCHMARKS.map(b => (
                 <button key={b.ticker} onClick={() => { setBenchmark(b.ticker); setBenchOpen(false); }}
@@ -1546,10 +1547,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       <AnimatePresence>
         {sidebarOpen && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
               style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200 }} />
-            <motion.div initial={{ x: -260 }} animate={{ x: 0 }} exit={{ x: -260 }} transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            <motion.div initial={false} animate={{ x: 0 }} exit={{ x: -260 }} transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="c-mob-drawer"
               style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: "var(--bg2)", borderRight: "0.5px solid var(--border)", zIndex: 201, display: "flex", flexDirection: "column", overflow: "hidden" }}>
               {SidebarInner()}
@@ -1600,6 +1601,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   {isActive && (
                     <motion.span
                       layoutId="tab-indicator"
+                      initial={false}
                       style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: 2, borderRadius: 1, background: "var(--accent)", zIndex: 0 }}
                       transition={{ type: "spring", damping: 30, stiffness: 300 }}
                     />
@@ -1703,7 +1705,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           </AnimatePresence>
           <AnimatePresence mode="wait">
             {activeTab === "stocks" ? (
-              <motion.div key="stocks" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="stocks" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 {stockTicker ? (
                   <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} onSelectTicker={t => setStockTicker(t)} />
                 ) : (
@@ -1711,7 +1713,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 )}
               </motion.div>
             ) : activeTab === "positions" ? (
-              <motion.div key="positions" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="positions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <div style={S.cardAccent} />
@@ -1724,25 +1726,25 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 />
               </motion.div>
             ) : activeTab === "news" && data ? (
-              <motion.div key="news" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="news" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Card><TooltipCardHeader title="Market News" sections={[{ label: "How it works", text: "Live news fetched for every ticker in your portfolio. Sentiment badges (Positive / Negative / Neutral) are determined by headline analysis." }]} /><NewsFeed assets={assets} /></Card>
               </motion.div>
             ) : activeTab === "watchlist" ? (
-              <motion.div key="watchlist" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="watchlist" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Watchlist />
               </motion.div>
             ) : !data && !loading ? (
-              <motion.div key="empty" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="empty" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Empty />
               </motion.div>
             ) : loading ? (
-              <motion.div key="loading" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
+              <motion.div key="loading" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
             ) : activeTab === "overview" ? (
-              <motion.div key="overview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="overview" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 {/* Stale-portfolio banner */}
                 {portfolioStale && (
                   <motion.div
-                    initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                    initial={false} animate={{ opacity: 1, y: 0 }}
                     style={{ border: "0.5px solid rgba(184,134,11,0.35)", borderRadius: 10, padding: "10px 16px", background: "rgba(184,134,11,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                     <span style={{ fontSize: 12, color: "var(--text2)" }}>
                       Your portfolio has changed. Results below may not reflect your current holdings.
@@ -1884,7 +1886,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 )}
               </motion.div>
             ) : activeTab === "risk" ? (
-              <motion.div key="risk" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="risk" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <div style={{ marginBottom: 12 }}>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and a $10,000 portfolio value."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your $10k portfolio, you'd earn ~$90/year from it."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days. You must own the stock before that date to receive the dividend."}]} /><DividendTracker assets={assets} /></Card>
                 </div>
@@ -1907,7 +1909,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (
-              <motion.div key="simulate" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Card><TooltipCardHeader title="Monte Carlo Simulation" sections={[
                   { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
                 ]} /><MonteCarloChart assets={assets} period={period} portfolioValue={portfolioInputValue} /></Card>
@@ -1934,7 +1936,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         id="tour-ai-chat-fab"
         onClick={() => setChatOpen(v => !v)}
         title="AI Chat (A)"
-        initial={{ scale: 0, opacity: 0 }}
+        initial={false}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5, type: "spring", damping: 20 }}
         style={{
@@ -1965,7 +1967,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       <motion.button
         className="c-mob-add"
         onClick={() => setSidebarOpen(true)}
-        initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
+        initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
         style={{ position: "fixed", bottom: 80, left: 16, zIndex: 149, padding: "12px 18px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-body)", background: "var(--card-bg)", color: "var(--text2)", border: "0.5px solid var(--border2)", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)", display: "none", alignItems: "center", gap: 6 }}>
         <PanelLeftOpen size={13} /> Tickers
       </motion.button>
@@ -1975,6 +1977,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         className="c-mob-analyze"
         onClick={handleAnalyze}
         disabled={loading || !assets.some(a => a.ticker && a.weight > 0 && a.ticker !== "")}
+        initial={false}
         animate={analyzeComplete ? { scale: [1, 1.08, 1] } : { scale: 1 }}
         transition={{ duration: 0.35 }}
         style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 150, padding: "13px 40px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "var(--bg3)" : assets.some(a => a.ticker && a.weight > 0) ? "var(--text)" : "var(--bg3)", color: loading || !assets.some(a => a.ticker && a.weight > 0) ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 24, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.3)", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none", display: "none" }}>
@@ -2045,7 +2048,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       <AnimatePresence>
         {showSettings && (
           <motion.div
-            initial={{ opacity: 0, x: "100%" }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: "100%" }}
+            initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 280 }}
             style={{ position: "fixed", inset: 0, zIndex: 490, background: "var(--bg)", overflowY: "auto" }}>
             <SettingsPage

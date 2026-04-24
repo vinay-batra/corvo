@@ -123,13 +123,13 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 500 }}
           />
           {/* Drawer */}
           <motion.div
-            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+            initial={false} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 280 }}
             style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(900px, 95vw)", background: "var(--bg2)", borderLeft: dark ? "0.5px solid var(--border2)" : "1px solid #d4cfc8", zIndex: 501, display: "flex", flexDirection: "column", overflow: "hidden" }}
           >

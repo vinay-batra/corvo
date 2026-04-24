@@ -1598,6 +1598,15 @@ def chat(req: ChatRequest, request: Request):
         weights_equal = len(set(round(w, 3) for w in weights)) == 1 if weights else False
         weights_note = " (equally weighted)" if weights_equal else ""
 
+        # Detect tied largest holdings to prevent incorrect "single largest holding" phrasing
+        tied_largest_note = ""
+        if tickers and weights and len(weights) > 1:
+            max_w = max(weights)
+            tied = [t for t, w in zip(tickers, weights) if abs(w - max_w) < 0.001]
+            if len(tied) > 1:
+                tied_str = " and ".join(tied)
+                tied_largest_note = f"\n- Note: {tied_str} are tied as the largest holdings at {max_w:.1%} each"
+
         system = f"""You are Corvo AI, a sharp and direct personal portfolio analyst. You have full context on this investor's portfolio and financial profile.
 
 CURRENT PORTFOLIO:
@@ -1606,7 +1615,7 @@ CURRENT PORTFOLIO:
 - Annualized Return (CAGR): {ret:.2%}
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f} (risk-free rate used: {rf_rate_ctx:.2%})
-- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{market_text}{investor_profile}
+- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}
 
 RESPONSE RULES:
 • Max 220 words for simple questions; up to 300 words for complex multi-part questions
@@ -1616,6 +1625,7 @@ RESPONSE RULES:
 • When portfolio_value is known, use dollar amounts not just percentages
 • Compare portfolio metrics to the benchmark when benchmark data is available
 • Verify weight percentages before stating them — if equally weighted, say so explicitly
+• If multiple holdings share the same maximum weight, never call one of them "the largest holding" — instead say "[ticker] and [ticker] are your two largest holdings at X% each" or similar
 • Never confuse cash or money market positions with equity positions
 • When the investor has a profile, reference their goals/age/timeline in your answer
 • If they ask about risk, factor in their stated risk tolerance

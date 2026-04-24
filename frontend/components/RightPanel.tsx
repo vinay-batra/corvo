@@ -35,6 +35,7 @@ function LiveRow({
   return (
     <motion.div
       onClick={onSelect}
+      initial={false}
       animate={flash ? { backgroundColor: up ? "rgba(76,175,125,0.12)" : "rgba(224,92,92,0.12)" } : { backgroundColor: "transparent" }}
       transition={{ duration: 0.8 }}
       style={{
@@ -138,7 +139,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
     <AnimatePresence>
       {open && (
         <motion.aside
-          initial={{ width: 0, opacity: 0 }}
+          initial={false}
           animate={{ width: 420, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ type: "spring", damping: 28, stiffness: 260 }}
@@ -183,7 +184,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
             <AnimatePresence>
               {!briefCollapsed && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
+                  initial={false}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   style={{ overflow: "hidden", padding: "0 14px 14px" }}
