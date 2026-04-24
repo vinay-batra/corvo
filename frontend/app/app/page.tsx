@@ -124,7 +124,7 @@ function useTheme() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
     const stored = localStorage.getItem("corvo_theme");
-    const isDark = stored ? stored === "dark" : true; // default: dark
+    const isDark = stored ? stored === "dark" : false;
     setDark(isDark);
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, []);
