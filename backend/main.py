@@ -356,8 +356,9 @@ def portfolio(
         needs_synthetic = (
             t not in prices.columns
             or prices[t].isna().all()
-            or prices[t].dropna().empty
-            or len(prices[t].dropna()) < 5
+            or prices[t].dropna().shape[0] < 5
+            or (t in CASH_TICKERS)
+            or (t in prices.columns and prices[t].dropna().std() < 0.001)
         )
         if needs_synthetic:
             synthetic = _align_synthetic(make_synthetic_prices(0.045, n_days, start_date))
