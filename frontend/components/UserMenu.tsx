@@ -141,6 +141,26 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
               </Link>
             )}
 
+            {/* Replay Tour — in-app only */}
+            {onReplayTour && (
+              <button onClick={() => { setOpen(false); onReplayTour(); }} style={itemStyle}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                Replay Tour
+              </button>
+            )}
+
+            {/* Replay Onboarding — in-app only */}
+            {onReplayOnboarding && (
+              <button onClick={() => { setOpen(false); onReplayOnboarding(); }} style={itemStyle}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                Replay Onboarding
+              </button>
+            )}
+
             {/* Settings */}
             {onSettings ? (
               <button id="tour-settings-btn" onClick={() => { setOpen(false); onSettings(); }} style={itemStyle}
@@ -156,46 +176,6 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                 Settings
               </Link>
-            )}
-
-            {/* Goals & Profile — in-app only */}
-            {onProfile && (
-              <button onClick={() => { setOpen(false); onProfile(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Goals &amp; Profile
-              </button>
-            )}
-
-            {/* Email Prefs — in-app only */}
-            {onEmailPrefs && (
-              <button onClick={() => { setOpen(false); onEmailPrefs(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                Email Preferences
-              </button>
-            )}
-
-            {/* Replay Onboarding — in-app only */}
-            {onReplayOnboarding && (
-              <button onClick={() => { setOpen(false); onReplayOnboarding(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-                Replay Onboarding
-              </button>
-            )}
-
-            {/* Replay Tour — in-app only */}
-            {onReplayTour && (
-              <button onClick={() => { setOpen(false); onReplayTour(); }} style={itemStyle}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                Replay Tour
-              </button>
             )}
 
             {!isInApp && (
