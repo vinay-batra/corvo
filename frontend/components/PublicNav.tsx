@@ -8,10 +8,10 @@ import UserMenu from "./UserMenu";
 import { Sun, Moon } from "lucide-react";
 
 function useTheme() {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
   useEffect(() => {
     const stored = localStorage.getItem("corvo_theme");
-    const isDark = stored ? stored === "dark" : true;
+    const isDark = stored ? stored === "dark" : false;
     setDark(isDark);
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, []);
@@ -68,10 +68,10 @@ export default function PublicNav() {
           <a href="/#features" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Features</a>
           <Link href="/app?demo=true" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Demo</Link>
           <Link href="/pricing" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/pricing") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Pricing</Link>
-          <Link href="/changelog" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/changelog") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
           <Link href="/blog" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/blog") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Blog</Link>
-          <Link href="/faq" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/faq") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
           <Link href="/about" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/about") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>About</Link>
+          <Link href="/changelog" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/changelog") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
+          <Link href="/faq" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/faq") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
         </div>
         {/* Right side */}
         <div className="pnav-actions" style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -109,10 +109,10 @@ export default function PublicNav() {
           <a href="/#features" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Features</a>
           <Link href="/app?demo=true" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Demo</Link>
           <Link href="/pricing" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Pricing</Link>
-          <Link href="/changelog" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>
           <Link href="/blog" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Blog</Link>
-          <Link href="/faq" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>FAQ</Link>
           <Link href="/about" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>About</Link>
+          <Link href="/changelog" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>
+          <Link href="/faq" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>FAQ</Link>
           {/* Mobile theme toggle */}
           <button
             onClick={() => { toggle(); }}
