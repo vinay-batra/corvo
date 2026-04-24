@@ -1073,7 +1073,8 @@ Write a full analysis with these sections:
 ## Conclusion
 
 Be specific with numbers. Use bullet points (- item) for lists. 500-700 words total.
-Never use em dashes in your response. Never use asterisks (*) or markdown bold/italic. Write in plain prose only."""
+Never use em dashes in your response. Never use asterisks (*) or markdown bold/italic. Write in plain prose only.
+Use ## for section headers only. Never use # (single hash) headers."""
 
         response = client.messages.create(
             model="claude-sonnet-4-5",
