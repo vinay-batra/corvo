@@ -52,11 +52,25 @@ function groupByDate(convs: Conversation[]): { label: string; items: Conversatio
   return Object.entries(map).map(([label, items]) => ({ label, items }));
 }
 
-const SUGGESTIONS: string[] = [
-  "What stocks pair well with my current holdings?",
-  "How can I hedge against a market downturn?",
-  "What is my biggest risk right now?",
-  "How do dividends affect my total return?",
+const SUGGESTION_SETS: string[][] = [
+  [
+    "What stocks pair well with my current holdings?",
+    "How can I hedge against a market downturn?",
+    "What is my biggest risk right now?",
+    "How do dividends affect my total return?",
+  ],
+  [
+    "Should I rebalance my portfolio right now?",
+    "Which of my holdings has the best risk-adjusted return?",
+    "Am I overexposed to any single sector?",
+    "What's my portfolio's correlation to the S&P 500?",
+  ],
+  [
+    "What would happen if interest rates rise 1%?",
+    "How much cash should I keep in reserve?",
+    "Which holdings should I consider trimming?",
+    "Explain my Sharpe ratio in plain English.",
+  ],
 ];
 
 // ── Markdown renderer ─────────────────────────────────────────────────────────
@@ -69,7 +83,7 @@ function MessageContent({ content }: { content: string }) {
   const parseInline = (text: string): React.ReactNode =>
     text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((part, pi) => {
       if (part.startsWith("**") && part.endsWith("**"))
-        return <strong key={pi} style={{ color: "#fff", fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
+        return <strong key={pi} style={{ color: "var(--text)", fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
       if (part.startsWith("`") && part.endsWith("`"))
         return <code key={pi} style={{ fontFamily: "monospace", fontSize: 11, color: "#c9a84c", background: "#0d1117", padding: "1px 5px", borderRadius: 4 }}>{part.slice(1, -1)}</code>;
       return part;
@@ -116,13 +130,13 @@ function MessageContent({ content }: { content: string }) {
       elements.push(
         <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", margin: "3px 0" }}>
           <span style={{ color: "var(--accent)", fontSize: 9, marginTop: 5, flexShrink: 0 }}>▸</span>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, margin: 0 }}>{parseInline(text)}</p>
+          <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, margin: 0 }}>{parseInline(text)}</p>
         </div>
       );
       i++; continue;
     }
     if (!line.trim()) { i++; continue; }
-    elements.push(<p key={i} style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.65, margin: "2px 0" }}>{parseInline(line)}</p>);
+    elements.push(<p key={i} style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, margin: "2px 0" }}>{parseInline(line)}</p>);
     i++;
   }
   return <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>{elements}</div>;
@@ -195,6 +209,7 @@ export default function AiChat({
   // UI
   const [copiedMsgIdx, setCopiedMsgIdx]     = useState<number | null>(null);
   const [portfolioCtxOn, setPortfolioCtxOn] = useState(true);
+  const [suggestionSet, setSuggestionSet]   = useState(0);
 
   const bottomRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
@@ -421,6 +436,7 @@ export default function AiChat({
 
       if (d.messages_used !== undefined) setMessagesUsed(d.messages_used);
       if (d.messages_limit !== undefined) setMessagesLimit(d.messages_limit);
+      console.log("[AiChat] usage:", { user_id: userIdRef.current, messages_used: d.messages_used, messages_limit: d.messages_limit });
 
       // Save to Supabase using refs (always current values)
       await saveConversation(full, msg);
@@ -703,10 +719,10 @@ export default function AiChat({
               </div>
 
               {/* Suggestions: 2x2 grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
-                {SUGGESTIONS.map((s, i) => (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 6 }}>
+                {SUGGESTION_SETS[suggestionSet].map((s, i) => (
                   <motion.button
-                    key={`${s}-${i}`}
+                    key={`${s}-${i}-${suggestionSet}`}
                     className="cv-chip"
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -717,6 +733,16 @@ export default function AiChat({
                     {s}
                   </motion.button>
                 ))}
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+                <button
+                  onClick={() => setSuggestionSet(s => (s + 1) % SUGGESTION_SETS.length)}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 4, padding: "2px 4px", borderRadius: 4, transition: "color .15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "var(--text2)")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}
+                >
+                  ↻ Refresh suggestions
+                </button>
               </div>
 
             </div>
