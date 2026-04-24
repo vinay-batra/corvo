@@ -242,7 +242,7 @@ def delete_user(request: Request):
     return {"ok": True}
 
 
-CASH_TICKERS = {"CASH", "FDRXX", "SPAXX", "BND", "SGOV"}
+CASH_TICKERS = {"FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX", "SGOV", "BIL", "SHV", "CASH"}
 
 def make_synthetic_prices(annual_return: float, n_days: int, start_date=None) -> pd.Series:
     """Generate synthetic daily price series from an annual return rate."""
@@ -340,6 +340,13 @@ def portfolio(
             synthetic.index = synthetic.index[:len(synthetic)]
             prices[t] = np.nan
             common = prices.index.intersection(synthetic.index)
+            prices.loc[common, t] = synthetic.loc[common].values
+        if t in CASH_TICKERS and (t not in prices.columns or prices[t].isna().all()):
+            # Treat as cash: ~4.5% annual return, near-zero volatility
+            synthetic = make_synthetic_prices(0.045, n_days, start_date)
+            common = prices.index.intersection(synthetic.index)
+            if t not in prices.columns:
+                prices[t] = np.nan
             prices.loc[common, t] = synthetic.loc[common].values
 
     # Keep only requested tickers that loaded
