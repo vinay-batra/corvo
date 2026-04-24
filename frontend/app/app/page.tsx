@@ -1293,61 +1293,17 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Cmd+K / Ctrl+K or "/" → command palette
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setPaletteOpen(o => !o);
-        return;
-      }
-      const tag = (document.activeElement as HTMLElement)?.tagName;
-      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
-      if (e.key === "/" && !isTyping && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        setPaletteOpen(true);
-        return;
-      }
-      // "?" → keyboard shortcuts modal
-      if (e.key === "?" && !isTyping) {
-        e.preventDefault();
-        setShowHelpModal(h => !h);
-        return;
-      }
-      // Tab keyboard shortcuts (D, R, S, C, N, W, A) when not typing
-      if (!isTyping && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-        if (e.key.toLowerCase() === "a") {
-          e.preventDefault();
-          setChatOpen(v => !v);
-          sound.whoosh();
-          return;
-        }
-        const navMap: Record<string, string> = {
-          d: "overview", r: "risk", s: "simulate",
-          n: "news", w: "watchlist",
-        };
-        if (navMap[e.key.toLowerCase()]) {
-          e.preventDefault();
-          setActiveTab(navMap[e.key.toLowerCase()]);
-          sound.whoosh();
-          return;
-        }
-      }
-      // ESC → close any open modal/drawer
-      if (e.key === "Escape") {
-        if (showHelpModal) { setShowHelpModal(false); return; }
-        if (paletteOpen) { setPaletteOpen(false); return; }
-        if (stockTicker) { setStockTicker(null); return; }
-        if (whatIfOpen) { setWhatIfOpen(false); return; }
-        if (showGoals) { setShowGoals(false); return; }
-        if (showProfile) { setShowProfile(false); return; }
-        if (showSettings) { setShowSettings(false); return; }
-        if (showAlerts) { setShowAlerts(false); return; }
-        if (showEmailPrefs) { setShowEmailPrefs(false); return; }
-        if (showReferral) { setShowReferral(false); return; }
-        return;
-      }
-      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey) return;
-      if (isTyping) return;
-      handleAnalyzeRef.current();
+      if (e.key !== "Escape") return;
+      if (showHelpModal) { setShowHelpModal(false); return; }
+      if (paletteOpen) { setPaletteOpen(false); return; }
+      if (stockTicker) { setStockTicker(null); return; }
+      if (whatIfOpen) { setWhatIfOpen(false); return; }
+      if (showGoals) { setShowGoals(false); return; }
+      if (showProfile) { setShowProfile(false); return; }
+      if (showSettings) { setShowSettings(false); return; }
+      if (showAlerts) { setShowAlerts(false); return; }
+      if (showEmailPrefs) { setShowEmailPrefs(false); return; }
+      if (showReferral) { setShowReferral(false); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
