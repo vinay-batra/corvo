@@ -19,10 +19,10 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
   const FOOTER_Y = 280;  // fixed footer top
 
   const bg:         [number,number,number] = isLight ? [255,255,255]  : [10,14,20];
-  const text:       [number,number,number] = isLight ? [26,26,26]     : [232,224,204];
-  const cardBg:     [number,number,number] = isLight ? [245,240,232]  : [20,28,40];   // warmer in light
-  const cardBorder: [number,number,number] = isLight ? [224,216,200]  : [40,50,65];
-  const dim:        [number,number,number] = isLight ? [136,130,112]  : [100,110,115];
+  const text:       [number,number,number] = isLight ? [20,20,20]     : [232,224,204];
+  const cardBg:     [number,number,number] = isLight ? [248,248,248]  : [20,28,40];
+  const cardBorder: [number,number,number] = isLight ? [220,220,220]  : [40,50,65];
+  const dim:        [number,number,number] = isLight ? [140,140,140]  : [100,110,115];
   const hdrBg:      [number,number,number] = isLight ? [245,240,232]  : [14,20,30];
   const barTrack:   [number,number,number] = isLight ? [224,216,200]  : [30,40,55];
   const amber:      [number,number,number] = [201,168,76];
@@ -75,7 +75,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
   doc.text("CORVO", ML, 12.5);
 
   // Subtitle — smaller, tighter, less crowding
-  doc.setFont("courier", "normal");
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(4.5);
   doc.setTextColor(...dim);
   doc.setCharSpace(3);
@@ -115,30 +115,15 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
 
   let y = 28;
 
-  // ── PERFORMANCE METRICS ───────────────────────────────────────────────────────
-  // Section label + health score on same line
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(...amber);
-  doc.setCharSpace(3);
-  doc.text("PERFORMANCE METRICS", ML, y);
-  doc.setCharSpace(0);
-
-  doc.setFont("courier", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(...scoreColor);
-  doc.setCharSpace(0.5);
-  doc.text(`HEALTH SCORE  ${score}`, W - MR, y, { align: "right" });
-  doc.setCharSpace(0);
-  y += 5;
-
-  const cardW = (CW - 3 * 3) / 4;
-  const cardH = 30;
+  // ── METRIC CARDS (5 in a row: return, vol, sharpe, drawdown, health) ──────────
+  const cardW = (CW - 4 * 3) / 5;
+  const cardH = 32;
   const metricData = [
     { label: "Annual Return", value: `${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, color: ret >= 0 ? amber : red },
     { label: "Volatility",    value: `${(vol * 100).toFixed(2)}%`,                       color: text },
     { label: "Sharpe Ratio",  value: sharpe.toFixed(2),                                  color: sharpe >= 1 ? green : sharpe >= 0 ? amber : red },
     { label: "Max Drawdown",  value: `${(dd * 100).toFixed(2)}%`,                        color: red },
+    { label: "Health Score",  value: String(score),                                       color: scoreColor },
   ];
 
   metricData.forEach((m, i) => {
@@ -149,21 +134,22 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     doc.setLineWidth(0.2);
     doc.roundedRect(mx, y, cardW, cardH, 1.5, 1.5, "S");
 
-    // Value — courier bold, large (keep mono for numbers)
+    // Value — courier bold, 14 (keep mono for numbers)
     doc.setFont("courier", "bold");
-    doc.setFontSize(18);
+    doc.setFontSize(14);
     doc.setTextColor(...m.color);
-    doc.text(m.value, mx + cardW / 2, y + 16, { align: "center" });
+    doc.text(m.value, mx + cardW / 2, y + 14, { align: "center" });
 
     // Label — helvetica, dim, spaced
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6);
     doc.setTextColor(...dim);
     doc.setCharSpace(1.5);
-    doc.text(m.label.toUpperCase(), mx + cardW / 2, y + 26, { align: "center" });
+    const labelLines = doc.splitTextToSize(m.label.toUpperCase(), cardW - 4);
+    doc.text(labelLines[0], mx + cardW / 2, y + 27, { align: "center" });
     doc.setCharSpace(0);
   });
-  y += cardH + 12;
+  y += cardH + 8;
 
   // ── PORTFOLIO ALLOCATION ──────────────────────────────────────────────────────
   sectionLabel("PORTFOLIO ALLOCATION", y);
@@ -180,7 +166,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     const w = normWeights[i] ?? 0;
     if (y + allocRowH > FOOTER_Y - 6) return;
 
-    doc.setFont("courier", "bold");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     doc.setTextColor(...amber);
     doc.text(a.ticker, ML, y + barH);
@@ -197,7 +183,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
 
     y += allocRowH;
   });
-  y += 10;
+  y += 6;
 
   // ── INDIVIDUAL PERFORMANCE ────────────────────────────────────────────────────
   if (Object.keys(indRet).length > 0 && y + 20 < FOOTER_Y - 6) {
@@ -217,7 +203,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
       const col = rv >= 0 ? green : red;
       const pct = Math.min(Math.abs(rv) / 0.5, 1);
 
-      doc.setFont("courier", "bold");
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       doc.setTextColor(...amber);
       doc.text(ticker, ML, y + 3);
@@ -234,7 +220,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
 
       y += retRowH;
     });
-    y += 10;
+    y += 6;
   }
 
   // ── INVESTOR PROFILE ──────────────────────────────────────────────────────────
@@ -270,7 +256,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
       });
       y += 11;
     }
-    y += 10;
+    y += 6;
   }
 
   // ── BENCHMARK COMPARISON ──────────────────────────────────────────────────────
@@ -319,7 +305,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     doc.text(`${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, ML, y);
     doc.setTextColor(...bCol);
     doc.text(`${benchRet >= 0 ? "+" : ""}${(benchRet * 100).toFixed(2)}%`, bX2, y);
-    y += 10;
+    y += 6;
   }
 
   // ── KEY INSIGHTS ──────────────────────────────────────────────────────────────
