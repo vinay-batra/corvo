@@ -243,6 +243,7 @@ def delete_user(request: Request):
 
 
 CASH_TICKERS = {"FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX", "SGOV", "BIL", "SHV", "CASH"}
+print(f"CASH_TICKERS loaded: {CASH_TICKERS}")
 
 def make_synthetic_prices(annual_return: float, n_days: int, start_date=None) -> pd.Series:
     """Generate synthetic daily price series from an annual return rate."""
@@ -364,6 +365,7 @@ def portfolio(
             or std < 0.001
             or (t in CASH_TICKERS)
         )
+        print(f"[debug] {t}: needs_synthetic={needs_synthetic}, in_cash={t in CASH_TICKERS}")
         if needs_synthetic:
             print(f"[synthetic] {t}")
             synthetic = _align_synthetic(make_synthetic_prices(0.045, n_days, start_date))
@@ -372,6 +374,7 @@ def portfolio(
             common = prices.index.intersection(synthetic.index)
             prices.loc[common, t] = synthetic.loc[common].values
             if t not in CASH_TICKERS:
+                print(f"[skipped] {t}")
                 skipped_tickers.append(t)
 
     # Every ticker is now present — none are excluded from analysis
