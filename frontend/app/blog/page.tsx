@@ -35,6 +35,7 @@ export default function BlogIndexPage() {
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block" }} />
           <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>Corvo Blog</span>
         </div>
+        <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 20 }}>Blog</p>
         <h1 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,5vw,58px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.08, marginBottom: 20, animation: "fadeinUp 0.8s ease 0.15s both" }}>
           Investing insights.<br />
           <span style={{ color: "#c9a84c" }}>Portfolio strategy.</span>
