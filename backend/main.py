@@ -347,11 +347,20 @@ def portfolio(
     if not available:
         raise HTTPException(status_code=500, detail="No valid ticker data returned")
 
+    # Identify tickers with all-NaN or empty price data
+    skipped_tickers = [t for t in available if prices[t].isna().all() or prices[t].dropna().empty]
+    available = [t for t in available if t not in skipped_tickers]
+
+    if not available:
+        return {"error": "No price data available for the provided tickers", "skipped_tickers": skipped_tickers}
+
     prices = prices[available].dropna()
     if prices.empty or len(prices) < 2:
+        if skipped_tickers:
+            return {"error": "Insufficient price data after removing invalid tickers", "skipped_tickers": skipped_tickers}
         raise HTTPException(status_code=500, detail="Insufficient price data")
 
-    # Align weights to available tickers
+    # Align weights to available tickers (renormalize after any skips)
     avail_weights = []
     for t in available:
         idx = tickers_list.index(t) if t in tickers_list else None
@@ -416,6 +425,7 @@ def portfolio(
         "benchmark_cumulative": bench_cum,
         "individual_returns": individual_returns,
         "period": period,
+        "skipped_tickers": skipped_tickers,
     }
 
 
