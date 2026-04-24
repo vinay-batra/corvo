@@ -463,6 +463,7 @@ def portfolio(
         "benchmark_cumulative": bench_cum,
         "individual_returns": individual_returns,
         "period": period,
+        "rf_rate": rf_rate,
         "skipped_tickers": [t for t in skipped_tickers if t not in CASH_TICKERS],
     }
 
@@ -701,7 +702,7 @@ def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
     resp = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=200,
-        system="You are a plain-English financial analyst. Write concise, jargon-free summaries for retail investors. Never use em dashes in your response. Never use asterisks (*) or markdown formatting. Write in plain prose only.",
+        system="You are a plain-English financial analyst. Write concise, jargon-free summaries for retail investors. Never claim a cash or money market fund like FDRXX, SPAXX, or VMFXX is a stock holding — they are cash equivalents. Never use em dashes in your response. Never use asterisks (*) or markdown formatting. Write in plain prose only.",
         messages=[{"role": "user", "content": prompt}],
     )
     return {"insight": clean_ai_response(resp.content[0].text)}
@@ -1096,17 +1097,23 @@ def generate_report(req: ReportRequest, request: Request):
             if age:
                 goals_text = f"\n\nInvestor Profile: Age {age}, Goal: {goal}, Risk tolerance: {risk}, Timeline: {timeline} years."
 
+        _cash_set_report = {"FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX", "SGOV", "BIL", "SHV", "CASH"}
+        def _report_label(t: str, w: float) -> str:
+            kind = "cash/money market" if t in _cash_set_report else "stock/ETF"
+            return f"{t} ({w:.1%}, {kind})"
+
+        holdings_report = ", ".join(_report_label(t, w) for t, w in zip(tickers, weights))
+
         stock_perf = ""
         if ind_returns:
-            stock_perf = "\n\nIndividual stock returns (annualized):\n" + "\n".join(
+            stock_perf = "\n\nIndividual holding returns (CAGR):\n" + "\n".join(
                 f"- {t}: {r*100:+.1f}%" for t, r in ind_returns.items()
             )
 
         prompt = f"""You are a senior portfolio analyst. Write a professional portfolio analysis report.
 
-Portfolio: {", ".join(f"{t} ({w:.1%})" for t, w in zip(tickers, weights))}
-Period: {period}
-Annualized Return: {ret:.2%}
+Portfolio ({period}): {holdings_report}
+Annualized Return (CAGR): {ret:.2%}
 Annualized Volatility: {vol:.2%}
 Sharpe Ratio: {sharpe:.2f}
 Max Drawdown: {dd:.2%}{stock_perf}{goals_text}
@@ -1120,9 +1127,13 @@ Write a full analysis with these sections:
 ## Areas for Improvement
 ## Conclusion
 
-Be specific with numbers. Use bullet points (- item) for lists. 500-700 words total.
-Never use em dashes in your response. Never use asterisks (*) or markdown bold/italic. Write in plain prose only.
-Use ## for section headers only. Never use # (single hash) headers."""
+Rules:
+- List all {len(tickers)} holdings with their exact weights and types in Portfolio Composition
+- Label cash and money market positions (e.g. FDRXX, SPAXX) as cash equivalents, never as stocks
+- Be specific with numbers and always mention the period when discussing returns
+- Use bullet points (- item) for lists. 500-700 words total.
+- Never use em dashes. Never use asterisks (*) or markdown bold/italic. Write in plain prose only.
+- Use ## for section headers only. Never use # (single hash) headers."""
 
         response = client.messages.create(
             model="claude-sonnet-4-5",
@@ -1551,6 +1562,7 @@ def chat(req: ChatRequest, request: Request):
         portfolio_value = ctx.get("portfolio_value") or (goals.get("invested") if goals else None)
         beta = ctx.get("beta")
         individual_returns = ctx.get("individual_returns")
+        rf_rate_ctx = ctx.get("rf_rate", 0.04)
 
         portfolio_value_text = f"\n- Portfolio Value: ${int(portfolio_value):,}" if portfolio_value is not None else ""
         beta_text = f"\n- Beta: {beta:.2f}" if beta is not None else ""
@@ -1558,26 +1570,47 @@ def chat(req: ChatRequest, request: Request):
         if individual_returns and isinstance(individual_returns, dict):
             returns_list = ", ".join(f"{t}: {r:.1%}" for t, r in individual_returns.items() if r is not None)
             if returns_list:
-                individual_returns_text = f"\n- Individual Returns: {returns_list}"
+                individual_returns_text = f"\n- Individual Returns (CAGR): {returns_list}"
+
+        _cash_set = {"FDRXX", "SPAXX", "VMFXX", "VUSXX", "SWVXX", "SPRXX", "TTTXX", "SGOV", "BIL", "SHV", "CASH"}
+        def _holding_label(t: str, w: float) -> str:
+            kind = "cash/money market" if t in _cash_set else "ETF" if len(t) >= 3 and t.isupper() and not t.endswith("X") else "stock/ETF"
+            return f"{t} ({w:.1%}, {kind})"
+
+        holdings_str = ', '.join(_holding_label(t, w) for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"
+
+        if benchmark_return is not None:
+            vs_bench = "outperformed" if ret > benchmark_return else "underperformed"
+            benchmark_text = f"\n- Benchmark Return ({period}): {benchmark_return:.2%} — portfolio {vs_bench} by {abs(ret - benchmark_return):.2%}"
+        else:
+            benchmark_text = ""
+
+        weights_equal = len(set(round(w, 3) for w in weights)) == 1 if weights else False
+        weights_note = " (equally weighted)" if weights_equal else ""
 
         system = f"""You are Corvo AI, a sharp and direct personal portfolio analyst. You have full context on this investor's portfolio and financial profile.
 
 CURRENT PORTFOLIO:
-- Holdings: {', '.join(f"{t} ({w:.1%})" for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"}
-- Annualized Return: {ret:.2%}
+- Holdings{weights_note}: {holdings_str}
+- Period: {period}
+- Annualized Return (CAGR): {ret:.2%}
 - Annualized Volatility: {vol:.2%}
-- Sharpe Ratio: {sharpe:.2f}
-- Max Drawdown: {dd:.2%}
-- Period: {period}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{market_text}{investor_profile}
+- Sharpe Ratio: {sharpe:.2f} (risk-free rate used: {rf_rate_ctx:.2%})
+- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{market_text}{investor_profile}
 
 RESPONSE RULES:
-• Be concise and direct, max 250 words
+• Max 220 words for simple questions; up to 300 words for complex multi-part questions
 • Use bullet points (•) for lists
 • Always reference specific numbers from the portfolio
+• Always state the period (e.g. "over the {period} period") when discussing returns
+• When portfolio_value is known, use dollar amounts not just percentages
+• Compare portfolio metrics to the benchmark when benchmark data is available
+• Verify weight percentages before stating them — if equally weighted, say so explicitly
+• Never confuse cash or money market positions with equity positions
 • When the investor has a profile, reference their goals/age/timeline in your answer
 • If they ask about risk, factor in their stated risk tolerance
 • Plain text only, no markdown headers or bold
-• Never use em dashes in your response. Never use asterisks (*) or markdown formatting. Write in plain prose only."""
+• Never use em dashes. Never use asterisks (*) or markdown formatting. Write in plain prose only."""
 
         messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
         messages.append({"role": "user", "content": req.message})
@@ -3513,6 +3546,7 @@ def _brief_generate(indices: dict[str, float], movers: list[dict]) -> str:
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=400,
+        system="You are a market analyst writing plain prose daily briefs. Never use em dashes. Never use asterisks or any markdown formatting. Write in plain prose only.",
         messages=[{"role": "user", "content": prompt}],
     )
     return clean_ai_response(response.content[0].text)
