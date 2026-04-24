@@ -353,19 +353,19 @@ def portfolio(
             common = prices.index.intersection(synthetic.index)
             prices.loc[common, t] = synthetic.loc[common].values
             continue
-        _clean = prices[t].dropna() if t in prices.columns else pd.Series([], dtype=float)
-        _std = _clean.std()
-        _reason = (
-            "missing" if t not in prices.columns
-            else "all_nan" if prices[t].isna().all()
-            else f"sparse({len(_clean)})" if len(_clean) < 5
-            else "cash_ticker" if t in CASH_TICKERS
-            else f"constant(std={_std:.6f})" if (pd.isna(_std) or _std < 0.001)
-            else None
+        col = prices[t] if t in prices.columns else pd.Series(dtype=float)
+        dropped = col.dropna()
+        std = dropped.std()
+        needs_synthetic = (
+            t not in prices.columns
+            or prices[t].isna().all()
+            or len(dropped) < 5
+            or pd.isna(std)
+            or std < 0.001
+            or (t in CASH_TICKERS)
         )
-        needs_synthetic = _reason is not None
         if needs_synthetic:
-            print(f"[synthetic] {t}: {_reason}")
+            print(f"[synthetic] {t}")
             synthetic = _align_synthetic(make_synthetic_prices(0.045, n_days, start_date))
             if t not in prices.columns:
                 prices[t] = np.nan
