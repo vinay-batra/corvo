@@ -1535,11 +1535,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           </div>
 
           {useMemo(() => (
-            <div style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 12, padding: 4, flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
               {/* Alerts bell */}
               <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
-                style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.color = "var(--text)"; }}
+                style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -1553,8 +1553,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               {/* Dark mode */}
               <div id="tour-dark-mode-toggle">
                 <button onClick={toggleDark} title={dark ? "Light mode" : "Dark mode"}
-                  style={{ width: 28, height: 28, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.color = "var(--text)"; }}
+                  style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
                   {dark ? <Sun size={14} /> : <Moon size={14} />}
                 </button>
@@ -1565,8 +1565,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 <button
                   onClick={() => setOverflowOpen(o => !o)}
                   title="Export"
-                  style={{ height: 28, padding: "0 10px", borderRadius: 8, border: "none", background: overflowOpen ? "var(--bg)" : "transparent", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-mono)", color: overflowOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, letterSpacing: 0.5, transition: "all 0.15s", whiteSpace: "nowrap" }}
-                  onMouseEnter={e => { if (!overflowOpen) { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.color = "var(--text)"; }}}
+                  style={{ height: 32, padding: "0 12px", borderRadius: 8, border: "0.5px solid var(--border)", background: overflowOpen ? "var(--bg3)" : "transparent", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-mono)", color: overflowOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, letterSpacing: 0.5, transition: "all 0.15s", whiteSpace: "nowrap" }}
+                  onMouseEnter={e => { if (!overflowOpen) { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}}
                   onMouseLeave={e => { if (!overflowOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
                   Export ↓
                 </button>
@@ -1587,9 +1587,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   </>
                 )}
               </div>
-
-              {/* Divider */}
-              <div style={{ width: "0.5px", height: 16, background: "var(--border)", flexShrink: 0 }} />
 
               {/* User menu */}
               <div id="tour-profile-btn" style={{ display: "flex", alignItems: "center" }}>

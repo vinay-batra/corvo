@@ -743,9 +743,10 @@ export default function AiChat({
                       maxWidth: "88%",
                       padding: "12px 16px",
                       borderRadius: m.role === "user" ? "16px 16px 3px 16px" : "3px 16px 16px 16px",
-                      background: m.role === "user" ? "rgba(201,168,76,0.15)" : "var(--bg3)",
+                      background: m.role === "user" ? "rgba(201,168,76,0.15)" : "var(--card-bg)",
                       border: m.role === "user" ? "1px solid rgba(201,168,76,0.3)" : "1px solid var(--border)",
-                      boxShadow: m.role === "user" ? "0 1px 8px rgba(184,134,11,.15)" : "0 1px 4px rgba(0,0,0,.1)",
+                      boxShadow: m.role === "user" ? "0 1px 8px rgba(184,134,11,.15)" : "0 1px 6px rgba(0,0,0,0.12)",
+                      color: m.role === "assistant" ? "var(--text)" : undefined,
                     }}>
                       {m.role === "user"
                         ? <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.5, margin: 0 }}>{m.content}</p>

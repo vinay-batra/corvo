@@ -80,7 +80,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
       <button
         id="usermenu-btn"
         onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
-        style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }}
+        style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", height: 32, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }}
         onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"}
         onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}
       >
