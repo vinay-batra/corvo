@@ -151,7 +151,27 @@ export default function PortfolioHistory() {
         })
       );
 
-      setLines(results.filter((l): l is PortfolioLine => l !== null));
+      const validLines = results.filter((l): l is PortfolioLine => l !== null);
+
+      // Clip all series to the intersection of shared dates so every line starts/ends together
+      if (validLines.length > 1) {
+        const maxStart = validLines.reduce((max, l) => (l.dates[0] > max ? l.dates[0] : max), "");
+        const minEnd = validLines.reduce((min, l) => {
+          const last = l.dates[l.dates.length - 1];
+          return min === "" || last < min ? last : min;
+        }, "");
+        for (const line of validLines) {
+          const startIdx = line.dates.findIndex(d => d >= maxStart);
+          let endIdx = line.dates.length - 1;
+          while (endIdx >= 0 && line.dates[endIdx] > minEnd) endIdx--;
+          if (startIdx !== -1 && endIdx >= startIdx) {
+            line.dates = line.dates.slice(startIdx, endIdx + 1);
+            line.returns = line.returns.slice(startIdx, endIdx + 1);
+          }
+        }
+      }
+
+      setLines(validLines);
     } catch {}
     setLoading(false);
   }
@@ -265,7 +285,7 @@ export default function PortfolioHistory() {
               const totalReturn = l.returns.length > 0 ? l.returns[l.returns.length - 1] * 100 : 0;
               const pos = totalReturn >= 0;
               return (
-                <motion.div key={l.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                <motion.div key={l.id} initial={false} animate={{ opacity: 1 }}
                   style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ width: 20, height: 2, background: l.color, borderRadius: 1 }} />
                   <span style={{ fontSize: 11, color: "var(--text2)" }}>{l.name}</span>
