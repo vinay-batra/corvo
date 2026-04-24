@@ -143,7 +143,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
           </div>
           {bar!==null&&(
             <div style={{marginTop:10,height:2,background:"var(--track)",borderRadius:1,overflow:"hidden"}}>
-              <motion.div initial={{width:0}} animate={{width:`${Math.min(bar,1)*100}%`}} transition={{duration:1,delay:i*0.07+0.3}}
+              <motion.div initial={false} animate={{width:`${Math.min(bar,1)*100}%`}} transition={{duration:1,delay:i*0.07+0.3}}
                 style={{height:"100%",background:color,borderRadius:1}}/>
             </div>
           )}

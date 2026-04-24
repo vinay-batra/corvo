@@ -565,7 +565,7 @@ export default function PositionsTab({
       {/* ── Performance chart ─────────────────────────────────────────────── */}
       {!portfoliosLoading && savedPortfolios.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+          initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           style={{ marginBottom: 20, border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 16px 8px", background: "var(--bg2)" }}
         >
           {/* Chart header */}
@@ -822,7 +822,7 @@ function PositionRowEl({
   return (
     <motion.tr
       className={`pos-row ${flashClass}`}
-      initial={{ opacity: 0, y: 6 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(i * 0.03, 0.3) }}
       onClick={() => onSelectTicker(row.ticker)}

@@ -14,7 +14,7 @@ function Ring({ score, size=96 }: { score:number; size?:number }) {
           <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--track)" strokeWidth={6}/>
           <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={ringColor} strokeWidth={6}
             strokeLinecap="round" strokeDasharray={circ}
-            initial={{strokeDashoffset:circ}} animate={{strokeDashoffset:offset}}
+            initial={false} animate={{strokeDashoffset:offset}}
             transition={{duration:1,ease:"easeOut",delay:0}}/>
         </svg>
         <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -37,7 +37,7 @@ function Bar({ label, subtitle, value, max, delay }: { label:string; subtitle:st
         <span style={{fontSize:9,color:"var(--text3)",opacity:0.65,lineHeight:1.2}}>{subtitle}</span>
       </div>
       <div style={{flex:1,height:2,background:"var(--track)",borderRadius:1,overflow:"hidden"}}>
-        <motion.div initial={{width:0}} animate={{width:`${pct*100}%`}} transition={{duration:1,delay,ease:"easeOut"}}
+        <motion.div initial={false} animate={{width:`${pct*100}%`}} transition={{duration:1,delay,ease:"easeOut"}}
           style={{height:"100%",background:"#b8860b",borderRadius:1}}/>
       </div>
       <motion.span initial={false} animate={{opacity:1}} transition={{delay:delay+0.4}}

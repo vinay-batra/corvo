@@ -205,7 +205,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
           minHeight={300}
         />
       ) : data ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+        <motion.div initial={false} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
 
           {/* Legend */}
           <div style={{ display: "flex", gap: 20, marginBottom: 12, flexWrap: "wrap" }}>
@@ -321,7 +321,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
 
           {/* ── AI insight summary box ── */}
           {positiveProb !== null && (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
               style={{ marginTop: 16, background: dark ? C.amber3 : "rgba(184,134,11,0.06)", border: "1px solid rgba(184,134,11,0.15)", borderRadius: 10, padding: "14px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
               <span style={{ color: mcAmber, fontSize: 14, flexShrink: 0, marginTop: 1 }}>◈</span>
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.75 }}>
@@ -342,7 +342,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
 
           {/* ── What Would Your Money Become? ── */}
           {data && portfolioValue != null && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+            <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
               style={{ marginTop: 20, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
               <div style={{ padding: "12px 16px 8px", borderBottom: "0.5px solid var(--border)" }}>
                 <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>What Would Your Money Become?</p>
@@ -398,7 +398,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
           )}
 
           {/* ── Risk Metrics Panel ── */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
             style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {[
               {
@@ -429,7 +429,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
           </motion.div>
 
           {/* ── What this means for you (Claude insight) ── */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+          <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             style={{ marginTop: 12, borderLeft: `3px solid ${mcAmber}`, background: dark ? "rgba(201,168,76,0.05)" : "rgba(184,134,11,0.06)", borderRadius: "0 10px 10px 0", padding: "14px 16px" }}>
             <p style={{ fontSize: 9, letterSpacing: 2, color: mcAmber, textTransform: "uppercase", marginBottom: 10 }}>What this means for you</p>
             {insightLoading ? (
