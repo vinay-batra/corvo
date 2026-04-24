@@ -48,16 +48,10 @@ export default function GreetingBar({
   });
 
   const [market, setMarket] = useState<MarketSummary | null>(null);
-  const [marketTimedOut, setMarketTimedOut] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(true);
   const [indexPrices, setIndexPrices] = useState<{ spy: number | null; qqq: number | null; dia: number | null }>({ spy: null, qqq: null, dia: null });
   const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
-
-  // 10-second timeout for market data
-  useEffect(() => {
-    const timer = setTimeout(() => setMarketTimedOut(true), 10000);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Fetch AI market summary + index data
   useEffect(() => {
@@ -70,8 +64,8 @@ export default function GreetingBar({
       : `${API_URL}/market-summary`;
     fetch(url)
       .then(r => r.json())
-      .then(d => { setMarket(d); })
-      .catch(() => {});
+      .then(d => { setMarket(d); setSummaryLoading(false); })
+      .catch(() => { setSummaryLoading(false); });
   }, [assets]);
 
   // Fetch index prices directly from watchlist-data
@@ -161,22 +155,16 @@ export default function GreetingBar({
         <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, marginBottom: 0, letterSpacing: "0.01em" }}>
           {dateStr}
         </p>
-        {market === null && !marketTimedOut ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-            <style>{`
-              @keyframes spin { to { transform: rotate(360deg); } }
-            `}</style>
-            <div style={{
-              width: 16, height: 16,
-              border: "1.5px solid rgba(201,168,76,0.3)",
-              borderTopColor: "var(--accent)",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-              flexShrink: 0,
-            }} />
-            <span style={{ fontSize: 12, color: "var(--text3)" }}>Fetching market brief...</span>
-          </div>
-        ) : market === null && marketTimedOut ? (
+        {summaryLoading ? (
+          <div style={{
+            marginTop: 8,
+            background: "var(--bg3)",
+            borderRadius: 4,
+            width: "80%",
+            height: 14,
+            animation: "pulse 1.5s ease-in-out infinite",
+          }} />
+        ) : !summaryText ? (
           <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>Market data unavailable</p>
         ) : summaryText ? (
           <div style={{ marginTop: 6 }}>
