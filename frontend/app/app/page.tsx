@@ -1635,7 +1635,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         </header>
 
         {/* Content */}
-        <main ref={contentRef} className="c-content page-fadein" style={S.content}>
+        <main ref={contentRef} className="c-content" style={S.content}>
           {/* Setup banner (shown when user skipped onboarding) */}
           <AnimatePresence>
             {showSetupBanner && (
