@@ -340,7 +340,7 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+      initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
       style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 800, width: "min(380px, calc(100vw - 32px)", background: "var(--card-bg)", border: "0.5px solid rgba(184,134,11,0.3)", borderRadius: 14, padding: "16px 18px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", display: "flex", gap: 14, alignItems: "flex-start" }}>
       <span style={{ flexShrink: 0, display: "flex", alignItems: "center", color: "var(--accent)", paddingTop: 2 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -642,7 +642,7 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
                 return (
                   <motion.div
                     key={ticker}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06, duration: 0.3 }}
                     onClick={() => onSelect(ticker)}
@@ -1627,7 +1627,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           <AnimatePresence>
             {showSetupBanner && (
               <motion.div
-                initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ color: "var(--accent)", fontSize: 13, flexShrink: 0 }}>◎</span>
@@ -1654,7 +1654,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           {/* Error banner */}
           <AnimatePresence>
             {errorMsg && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+              <motion.div initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 style={{ border: "0.5px solid rgba(224,92,92,0.4)", borderRadius: 10, padding: "12px 16px", background: "rgba(224,92,92,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <span style={{ fontSize: 13, color: "#e05c5c" }}>{errorMsg}</span>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
