@@ -64,6 +64,17 @@ const TABS = [
   { id: "learn",      label: "Learn",      Icon: BookOpen,         href: "/learn" },
 ] as const;
 
+const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
+  overview:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+  positions: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+  stocks:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+  risk:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+  simulate:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+  news:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>,
+  watchlist: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+  learn:     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+};
+
 const PERIODS = ["6mo", "1y", "2y", "5y"];
 const PERIOD_LABELS: Record<string, string> = { "6mo": "6M", "1y": "1Y", "2y": "2Y", "5y": "5Y" };
 
@@ -1518,29 +1529,25 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           .c-bgrid{grid-template-columns:1fr!important}
           .c-risk-grid{grid-template-columns:1fr!important}
           .c-risk-2col{grid-template-columns:1fr!important}
-          .c-content{padding:12px 10px!important;padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))!important}
-          .c-mob-analyze{display:flex!important;bottom:calc(72px + env(safe-area-inset-bottom,0px))!important}
+          .c-content{padding:12px 10px!important;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
-          .c-mob-add{display:flex!important;bottom:calc(124px + env(safe-area-inset-bottom,0px))!important}
+          .c-mob-add{display:flex!important;bottom:calc(72px + env(safe-area-inset-bottom,0px))!important}
           .c-mob-bottom-nav{display:flex!important}
           #tour-ai-chat-fab{display:none!important}
           .c-alloc-row{flex-direction:column!important}
           .c-alloc-row>*{flex:none!important;width:100%!important}
-          .c-mob-tabs button,.c-mob-tabs a{min-height:44px!important;padding:10px 12px!important}
+          .c-mob-tabs button,.c-mob-tabs a{min-height:44px!important;padding:8px 9px!important;font-size:11px!important}
           .c-mob-bar-right{display:flex!important;align-items:center!important;gap:6px!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
           .c-mob-tabs{display:none!important}
           .c-mob-drawer{display:none!important}
-          .c-mob-analyze{display:none!important}
           .c-mob-add{display:none!important}
           .c-mob-bottom-nav{display:none!important}
         }
         .c-mob-tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
         .c-mob-tabs::-webkit-scrollbar{display:none}
-        /* Analyze button pulse while loading */
-        .c-mob-analyze[data-loading=true]{animation:analyze-ring 1.2s ease-out infinite}
       `}</style>
 
       {/* Desktop sidebar */}
@@ -1578,13 +1585,13 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         </div>
 
         {/* Mobile tabs */}
-        <div className="c-mob-tabs" style={{ borderBottom: "0.5px solid var(--border)", padding: "0 8px", gap: 2, overflowX: "auto", flexShrink: 0, background: "var(--bg)" }}>
+        <div className="c-mob-tabs" style={{ borderBottom: "0.5px solid var(--border)", padding: "0 4px", gap: 0, overflowX: "auto", flexShrink: 0, background: "var(--bg)" }}>
           {TABS.map(tab => {
-            const TabIcon = tab.Icon;
             const isActive = activeTab === tab.id;
-            const mobStyle: React.CSSProperties = { padding: "10px 10px", fontSize: 11, borderRadius: 6, border: "none", background: isActive ? "var(--bg3)" : "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 500 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" };
-            if (tab.href) return <Link key={tab.id} href={tab.href} style={mobStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}><TabIcon size={11} /> {tab.label}</Link>;
-            return <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={mobStyle}><TabIcon size={11} /> {tab.label}</button>;
+            const mobStyle: React.CSSProperties = { padding: "8px 9px", fontSize: 11, borderRadius: 6, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" };
+            const icon = MOB_TAB_ICONS[tab.id];
+            if (tab.href) return <Link key={tab.id} href={tab.href} style={mobStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{icon}{tab.label}</Link>;
+            return <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={mobStyle}>{icon}{tab.label}</button>;
           })}
         </div>
 
@@ -1977,18 +1984,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
         style={{ position: "fixed", bottom: 80, left: 16, zIndex: 149, padding: "12px 18px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-body)", background: "var(--card-bg)", color: "var(--text2)", border: "0.5px solid var(--border2)", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)", display: "none", alignItems: "center", gap: 6 }}>
         <PanelLeftOpen size={13} /> Tickers
-      </motion.button>
-
-      {/* Mobile floating Analyze button */}
-      <motion.button
-        className="c-mob-analyze"
-        onClick={handleAnalyze}
-        disabled={loading || !assets.some(a => a.ticker && a.weight > 0 && a.ticker !== "")}
-        initial={false}
-        animate={analyzeComplete ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-        transition={{ duration: 0.35 }}
-        style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 150, padding: "13px 40px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "var(--bg3)" : assets.some(a => a.ticker && a.weight > 0) ? "var(--text)" : "var(--bg3)", color: loading || !assets.some(a => a.ticker && a.weight > 0) ? "var(--text3)" : "var(--bg)", border: "0.5px solid var(--border2)", borderRadius: 24, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.3)", transition: "background 0.2s, color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : "none", display: "none" }}>
-        {loading ? "Analyzing..." : "Analyze"}
       </motion.button>
 
       <AnimatePresence>
