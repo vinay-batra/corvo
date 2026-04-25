@@ -2,12 +2,46 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { fetchMarketBrief } from "../lib/api";
+import { fetchMarketBrief, fetchMarketDriver } from "../lib/api";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { posthog } from "../lib/posthog";
 
 const C = { amber: "var(--accent)", green: "#4caf7d", red: "#e05c5c" };
 const HOUR_MS = 60 * 60 * 1000;
+
+function computeMarketStatus() {
+  const etStr = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
+  const et = new Date(etStr);
+  const h = et.getHours();
+  const m = et.getMinutes();
+  const dow = et.getDay();
+  const mins = h * 60 + m;
+  const OPEN = 9 * 60 + 30;
+  const CLOSE = 16 * 60;
+  const fmt = (n: number) => {
+    const hh = Math.floor(n / 60);
+    const mm = n % 60;
+    return hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
+  };
+  if (dow === 0 || dow === 6) return { dot: "#666", label: "Closed · Opens Monday 9:30am ET" };
+  if (mins < OPEN) return { dot: C.amber, label: `Pre-Market · Opens in ${fmt(OPEN - mins)}` };
+  if (mins < CLOSE) return { dot: C.green, label: `Open · Closes in ${fmt(CLOSE - mins)}` };
+  return { dot: "#666", label: `After Hours · Closed ${fmt(mins - CLOSE)} ago` };
+}
+
+function MarketStatusPill() {
+  const [s, setS] = useState(() => computeMarketStatus());
+  useEffect(() => {
+    const id = setInterval(() => setS(computeMarketStatus()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 8px", borderRadius: 20, background: "var(--bg3)", border: "0.5px solid var(--border)", flexShrink: 0 }}>
+      <div style={{ width: 5, height: 5, borderRadius: "50%", background: s.dot, flexShrink: 0, boxShadow: s.dot === C.green ? "0 0 4px rgba(76,175,125,0.5)" : "none" }} />
+      <span style={{ fontSize: 10, color: "var(--text2)", whiteSpace: "nowrap" }}>{s.label}</span>
+    </div>
+  );
+}
 
 type Mover = { ticker: string; change: number; volume: number };
 type BriefData = {
@@ -58,6 +92,7 @@ export default function MarketBrief() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [driverText, setDriverText] = useState<string | null>(null);
   const viewTracked = useRef(false);
 
   const load = useCallback(async (force = false) => {
@@ -90,6 +125,14 @@ export default function MarketBrief() {
     return () => clearInterval(interval);
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetchMarketDriver()
+      .then(json => { if (!cancelled && json?.driver) setDriverText(json.driver); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const paragraphs = data?.brief
     ? data.brief.split(/\n\n+/).filter(p => p.trim().length > 0)
     : [];
@@ -102,9 +145,10 @@ export default function MarketBrief() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* Date tag */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {/* Date tag + market status */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>{formatBriefDate()}</span>
+        <MarketStatusPill />
       </div>
 
       {/* Index pills row */}
@@ -154,6 +198,17 @@ export default function MarketBrief() {
           paragraphs.map((para, i) => <ParagraphBlock key={i} text={para} index={i} />)
         )}
       </div>
+
+      {/* Market driver: why markets moved */}
+      {driverText && !loading && !isError && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ display: "flex", alignItems: "flex-start", gap: 7, padding: "8px 10px", borderRadius: 8, background: "rgba(184,134,11,0.05)", border: "0.5px solid rgba(184,134,11,0.15)" }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.amber, flexShrink: 0, marginTop: 4 }} />
+          <span style={{ fontSize: 11.5, color: "var(--text2)", lineHeight: 1.6 }}>{driverText}</span>
+        </motion.div>
+      )}
 
       {/* Footer row: generated time + refresh */}
       {!isError && (

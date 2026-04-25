@@ -56,6 +56,22 @@ export async function fetchMarketBrief(force = false) {
   return res.json();
 }
 
+export async function fetchMarketDriver() {
+  const res = await fetch(`${API_URL}/market-driver`);
+  return res.json();
+}
+
+export async function fetchEarningsCalendar(assets: any[]) {
+  const tickers = assets.map((a: any) => a.ticker).join(",");
+  const res = await fetch(`${API_URL}/earnings-calendar?tickers=${tickers}`);
+  return res.json();
+}
+
+export async function fetchEventsCalendar() {
+  const res = await fetch(`${API_URL}/events-calendar`);
+  return res.json();
+}
+
 export async function fetchSectors(assets: any[]) {
   const total = assets.reduce((sum, a) => sum + a.weight, 0);
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));

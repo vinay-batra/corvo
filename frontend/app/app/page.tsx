@@ -52,6 +52,8 @@ import MobileBottomNav from "../../components/MobileBottomNav";
 import DashboardTour from "../../components/DashboardTour";
 import FeedbackButton from "../../components/FeedbackButton";
 import { type SavedPortfolioLine } from "../../components/PerformanceChart";
+import EarningsCalendar from "../../components/EarningsCalendar";
+import EventsCalendar from "../../components/EventsCalendar";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -844,6 +846,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
   const [savedPortfolioLines, setSavedPortfolioLines] = useState<SavedPortfolioLine[]>([]);
@@ -1777,7 +1780,47 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               </motion.div>
             ) : activeTab === "news" && data ? (
               <motion.div key="news" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <Card><TooltipCardHeader title="Market News" sections={[{ label: "How it works", text: "Live news fetched for every ticker in your portfolio. Sentiment badges (Positive / Negative / Neutral) are determined by headline analysis." }]} /><NewsFeed assets={assets} /></Card>
+                <Card>
+                  {/* News sub-tabs */}
+                  <div style={{ display: "flex", gap: 4, marginBottom: 16, flexWrap: "wrap" }}>
+                    {(["news", "earnings", "events"] as const).map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setNewsSubTab(tab)}
+                        style={{
+                          padding: "5px 13px",
+                          borderRadius: 8,
+                          border: newsSubTab === tab ? "0.5px solid var(--accent)" : "0.5px solid var(--border)",
+                          background: newsSubTab === tab ? "rgba(184,134,11,0.08)" : "transparent",
+                          color: newsSubTab === tab ? "var(--accent)" : "var(--text3)",
+                          fontSize: 11,
+                          fontWeight: newsSubTab === tab ? 600 : 400,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {tab === "news" ? "News" : tab === "earnings" ? "Earnings" : "Events"}
+                      </button>
+                    ))}
+                  </div>
+                  {newsSubTab === "news" && (
+                    <>
+                      <TooltipCardHeader title="Market News" sections={[{ label: "How it works", text: "Live news fetched for every ticker in your portfolio. Sentiment badges (Positive / Negative / Neutral) are determined by headline analysis." }]} />
+                      <NewsFeed assets={assets} />
+                    </>
+                  )}
+                  {newsSubTab === "earnings" && (
+                    <>
+                      <TooltipCardHeader title="Earnings Calendar" sections={[{ label: "How it works", text: "Upcoming earnings dates for your holdings within the next 60 days. Red border means earnings in 7 days or less." }]} />
+                      <EarningsCalendar assets={assets} />
+                    </>
+                  )}
+                  {newsSubTab === "events" && (
+                    <>
+                      <TooltipCardHeader title="Economic Events" sections={[{ label: "How it works", text: "High-impact economic events for the next 30 days, including Fed decisions, CPI releases, and jobs reports." }]} />
+                      <EventsCalendar />
+                    </>
+                  )}
+                </Card>
               </motion.div>
             ) : activeTab === "watchlist" ? (
               <motion.div key="watchlist" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
