@@ -23,6 +23,7 @@ export interface SavedPortfolioLine {
 
 interface Props {
   data: any;
+  period?: string;
   savedLines?: SavedPortfolioLine[];
   onSavedLinesChange?: (lines: SavedPortfolioLine[]) => void;
   customDateRange?: { start: string; end: string } | null;
@@ -69,7 +70,7 @@ function filterByDateRange(
   return filtered;
 }
 
-const PerformanceChart = memo(function PerformanceChart({ data, savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange, benchmarkOverride }: Props) {
+const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange, benchmarkOverride }: Props) {
   const [dark, setDark] = useState(true);
   const [showCustomPicker, setShowCustomPicker] = useState(!!customDateRange);
   const [localStart, setLocalStart] = useState(customDateRange?.start || "");
@@ -276,11 +277,17 @@ const PerformanceChart = memo(function PerformanceChart({ data, savedLines = [],
           margin: { t: 0, b: 32, l: isMobile ? 44 : 48, r: 12 },
           xaxis: {
             gridcolor: gc, linecolor: lc, tickcolor: "transparent",
-            ...(isMobile ? { dtick: "M2", tickformat: "%b %y", nticks: 8 } : {}),
+            ...(isMobile && chartDates.length > 0 ? {
+              autorange: false,
+              range: [chartDates[0], chartDates[chartDates.length - 1]],
+              type: "date",
+              dtick: period === "6mo" ? "M1" : period === "2y" ? "M3" : period === "5y" ? "M6" : "M2",
+              tickformat: "%b %y",
+            } : {}),
           },
           yaxis: {
             gridcolor: gc, linecolor: lc, tickcolor: "transparent", tickformat: ".0%",
-            ...(isMobile ? { dtick: 0.05, nticks: 8 } : {}),
+            ...(isMobile ? { dtick: (period === "2y" || period === "5y") ? 0.10 : 0.05 } : {}),
           },
           showlegend: false,
           hovermode: "x unified",

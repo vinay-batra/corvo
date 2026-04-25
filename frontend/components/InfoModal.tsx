@@ -44,15 +44,15 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
     <>
       <span
         onClick={openModal}
-        style={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }}
+        style={{ display: "inline-flex", alignItems: "center", cursor: "pointer", flexShrink: 0 }}
       >
         {children ?? (
           <button
             style={{
-              width: 16, height: 16, borderRadius: "50%",
+              width: 16, height: 16, minWidth: 16, minHeight: 16, borderRadius: "50%",
               border: "0.5px solid var(--border2)",
               background: "transparent", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
               fontSize: 9, color: "var(--text3)", lineHeight: 1, flexShrink: 0,
               transition: "border-color 0.15s, color 0.15s",
             }}

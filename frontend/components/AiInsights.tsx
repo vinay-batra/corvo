@@ -16,13 +16,22 @@ function sanitize(text: string): string {
 
 export default function AiInsights({ data, assets, onAskAi }: { data:any; assets:any[]; onAskAi:()=>void }) {
   const [hovered, setHovered] = useState<number|null>(null);
-  const top = assets.reduce((a,b)=>a.weight>b.weight?a:b,assets[0]||{weight:0});
+  const maxWeight = assets.length > 0 ? Math.max(...assets.map(a => a.weight)) : 0;
+  const topAssets = assets.filter(a => Math.abs(a.weight - maxWeight) < 0.001);
+  const top = topAssets[0] || { weight: 0 };
   const insights: {icon:string;text:string}[] = [];
 
   // Insight 1: Concentration check
-  if (top && top.weight > 0.4)
+  if (topAssets.length > 1) {
+    if (topAssets.length === assets.length) {
+      insights.push({icon:"↓",text:sanitize(`All holdings are equally weighted at ${(maxWeight*100).toFixed(0)}% — portfolio is evenly balanced`)});
+    } else {
+      const tiedTickers = topAssets.map(a => a.ticker).join(", ");
+      insights.push({icon:"↓",text:sanitize(`${tiedTickers} are tied as your largest holdings at ${(maxWeight*100).toFixed(0)}% each — concentration looks reasonable`)});
+    }
+  } else if (top && top.weight > 0.4)
     insights.push({icon:"↑",text:sanitize(`${top.ticker} makes up ${(top.weight*100).toFixed(0)}% of your portfolio — consider reducing single-stock concentration`)});
-  else if (top)
+  else if (top && top.ticker)
     insights.push({icon:"↓",text:sanitize(`${top.ticker} is your largest holding at ${(top.weight*100).toFixed(0)}% — concentration looks reasonable`)});
 
   // Insight 2: Volatility vs benchmark

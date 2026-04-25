@@ -1859,6 +1859,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     </div>
                     <PerformanceChart
                       data={data}
+                      period={period}
                       savedLines={savedPortfolioLines}
                       onSavedLinesChange={setSavedPortfolioLines}
                       customDateRange={customDateRange}

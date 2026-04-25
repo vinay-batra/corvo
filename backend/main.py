@@ -1603,9 +1603,12 @@ def chat(req: ChatRequest, request: Request):
         if tickers and weights and len(weights) > 1:
             max_w = max(weights)
             tied = [t for t, w in zip(tickers, weights) if abs(w - max_w) < 0.001]
-            if len(tied) > 1:
+            if len(tied) == len(tickers):
+                tied_str = ", ".join(tied)
+                tied_largest_note = f"\n- CRITICAL: All holdings ({tied_str}) are equally weighted at {max_w:.1%} each. There is NO single largest holding. Never refer to any one holding as 'the largest'."
+            elif len(tied) > 1:
                 tied_str = " and ".join(tied)
-                tied_largest_note = f"\n- Note: {tied_str} are tied as the largest holdings at {max_w:.1%} each"
+                tied_largest_note = f"\n- CRITICAL: {tied_str} are tied as the largest holdings at {max_w:.1%} each. Do not single out any one of them as 'the largest holding'."
 
         system = f"""You are Corvo AI, a sharp and direct personal portfolio analyst. You have full context on this investor's portfolio and financial profile.
 
@@ -1625,7 +1628,7 @@ RESPONSE RULES:
 • When portfolio_value is known, use dollar amounts not just percentages
 • Compare portfolio metrics to the benchmark when benchmark data is available
 • Verify weight percentages before stating them — if equally weighted, say so explicitly
-• If multiple holdings share the same maximum weight, never call one of them "the largest holding" — instead say "[ticker] and [ticker] are your two largest holdings at X% each" or similar
+• If two or more holdings share the maximum weight, do not refer to any single holding as the largest. Instead say they are equal weight. If ALL holdings are equal weight, say the portfolio is equally weighted — never single out any ticker as largest.
 • Never confuse cash or money market positions with equity positions
 • When the investor has a profile, reference their goals/age/timeline in your answer
 • If they ask about risk, factor in their stated risk tolerance
