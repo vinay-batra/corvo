@@ -23,7 +23,7 @@ function computeMarketStatus() {
     const mm = n % 60;
     return hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
   };
-  if (dow === 0 || dow === 6) return { dot: "#666", label: "Closed · Opens Monday 9:30am ET" };
+  if (dow === 0 || dow === 6) return { dot: "#666", label: "Closed · Opens Mon 9:30 AM ET" };
   if (mins < OPEN) return { dot: C.amber, label: `Pre-Market · Opens in ${fmt(OPEN - mins)}` };
   if (mins < CLOSE) return { dot: C.green, label: `Open · Closes in ${fmt(CLOSE - mins)}` };
   return { dot: "#666", label: `After Hours · Closed ${fmt(mins - CLOSE)} ago` };
@@ -211,19 +211,19 @@ export default function MarketBrief() {
             {s.market_driver && (
               <>
                 <BriefDivider />
-                <SectionBlock label="Why Markets Moved" labelColor={C.amber} text={s.market_driver} delay={0.1} />
+                <SectionBlock label="Why It Moved" labelColor={C.amber} text={s.market_driver} delay={0.1} />
               </>
             )}
             {s.portfolio_impact && (
               <>
                 <BriefDivider />
-                <SectionBlock label="Your Portfolio" text={s.portfolio_impact} delay={0.15} />
+                <SectionBlock label="Your Portfolio" labelColor={C.amber} text={s.portfolio_impact} delay={0.15} />
               </>
             )}
             {s.outlook && (
               <>
                 <BriefDivider />
-                <SectionBlock label="What to Watch" text={s.outlook} delay={0.2} />
+                <SectionBlock label="What to Watch" labelColor={C.amber} text={s.outlook} delay={0.2} />
               </>
             )}
           </>
