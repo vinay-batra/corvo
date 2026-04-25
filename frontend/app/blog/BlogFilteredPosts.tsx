@@ -40,6 +40,42 @@ const POSTS = [
     categoryColor: "#8eb4c8",
     excerpt: "Running 8,500 simulations of your portfolio's future is the best way to understand your real retirement risk. Here is how it works in plain English.",
   },
+  {
+    slug: "how-corvo-calculates-sharpe-ratio",
+    title: "How Corvo Calculates Your Sharpe Ratio",
+    date: "April 17, 2026",
+    readTime: "5 min read",
+    category: "Product",
+    categoryColor: "#a78bfa",
+    excerpt: "We use a live risk-free rate pulled from the 3-month T-bill, not a hardcoded number. Here is exactly how the math works.",
+  },
+  {
+    slug: "why-your-portfolio-feels-wrong",
+    title: "Why Your Portfolio Feels Wrong Even When the Numbers Look Right",
+    date: "April 10, 2026",
+    readTime: "5 min read",
+    category: "Markets",
+    categoryColor: "#5cb88a",
+    excerpt: "Market volatility messes with your perception. Here is how to read your portfolio data without letting short-term noise drive long-term decisions.",
+  },
+  {
+    slug: "what-the-vix-tells-you",
+    title: "What the VIX Actually Tells You About Your Portfolio",
+    date: "April 3, 2026",
+    readTime: "4 min read",
+    category: "Markets",
+    categoryColor: "#5cb88a",
+    excerpt: "The VIX is not a fear gauge. It is a volatility forecast — and knowing the difference changes how you position your portfolio.",
+  },
+  {
+    slug: "building-corvo-what-we-learned",
+    title: "Building a Portfolio Analyzer: What We Learned",
+    date: "April 1, 2026",
+    readTime: "5 min read",
+    category: "Product",
+    categoryColor: "#a78bfa",
+    excerpt: "From a personal frustration project to a tool used by thousands. Here is what building Corvo taught us about retail investing tools.",
+  },
 ];
 
 const CATEGORIES = ["All", "Strategy", "Education", "Product", "Markets"];
