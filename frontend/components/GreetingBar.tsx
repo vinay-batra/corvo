@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { supabase } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const AMBER = "#b8860b";
@@ -70,7 +71,25 @@ interface Props {
 
 export default function GreetingBar({ displayName, assets }: Props) {
   const greeting = getGreeting();
-  const firstName = displayName?.trim().split(" ")[0] || "there";
+
+  const [resolvedName, setResolvedName] = useState(displayName || "");
+
+  useEffect(() => {
+    if (displayName?.trim()) { setResolvedName(displayName.trim()); return; }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      console.log("[GreetingBar] full user object:", user);
+      const name =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.user_metadata?.display_name ||
+        user.email?.split("@")[0] ||
+        "";
+      if (name) setResolvedName(name);
+    });
+  }, [displayName]);
+
+  const firstName = resolvedName.trim().split(" ")[0] || "there";
   const dateStr = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric",
   });
