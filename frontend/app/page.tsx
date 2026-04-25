@@ -484,7 +484,7 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: 0 }}>
       {/* Dark PDF preview */}
-      <div data-theme="dark" style={{ background: "#080b10", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+      <div data-theme="dark" style={{ background: "#080b10", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderRadius: 12, margin: "16px 16px 0" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
           {[30, 60, 90, 120].map(y => (
             <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
