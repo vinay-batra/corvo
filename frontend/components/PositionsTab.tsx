@@ -447,6 +447,11 @@ export default function PositionsTab({
         .pos-flash-down td{animation:flashRed   .8s ease-out!important}
         .pos-row:hover td{background:rgba(255,255,255,0.025)!important}
         input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.65);cursor:pointer}
+        @media(max-width:768px){
+          .pos-perf-wrap{overflow-x:hidden!important;width:100%!important;min-width:0!important}
+          .pos-perf-ctrl{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}
+          .pos-perf-ctrl::-webkit-scrollbar{display:none}
+        }
       `}</style>
 
       {/* ── Controls row ─────────────────────────────────────────────────── */}
@@ -566,10 +571,11 @@ export default function PositionsTab({
       {!portfoliosLoading && savedPortfolios.length > 0 && (
         <motion.div
           initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          style={{ marginBottom: 20, border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 16px 8px", background: "var(--bg2)" }}
+          className="pos-perf-wrap"
+          style={{ marginBottom: 20, border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 16px 8px", background: "var(--bg2)", overflow: "hidden", width: "100%" }}
         >
           {/* Chart header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+          <div className="pos-perf-ctrl" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
             <span style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>
               Portfolio Performance
             </span>
@@ -709,7 +715,7 @@ export default function PositionsTab({
                 },
               }}
               config={{ displayModeBar: false, responsive: true }}
-              style={{ width: "100%", height: 220 }}
+              style={{ width: "100%", height: 220, minWidth: 0 }}
               useResizeHandler
             />
           )}

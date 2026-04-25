@@ -522,13 +522,13 @@ const ORB_CONFIGS = [
 ];
 
 function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }) {
-  if (!data || data.length < 2) return <div style={{ width: 60, height: 24 }} />;
+  if (!data || data.length < 2) return <div className="mini-sparkline" style={{ width: 50, height: 22 }} />;
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
-  const W = 60, H = 24;
+  const W = 50, H = 22;
   const pts = data.map((v, i) => `${(i / (data.length - 1)) * W},${H - ((v - min) / range) * H}`).join(" ");
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="mini-sparkline" style={{ overflow: "hidden", flexShrink: 0, display: "block" }}>
       <polyline points={pts} fill="none" stroke={positive ? "#5cb88a" : "#e05c5c"} strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   );
@@ -594,10 +594,16 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
   const fmtPct   = (p: number | null) => p == null ? "" : `${p >= 0 ? "+" : ""}${p.toFixed(2)}%`;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 120px)", padding: "0 24px" }}>
+    <div className="stocks-outer" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 120px)", padding: "0 24px", overflowX: "hidden", width: "100%" }}>
     <div style={{ width: "100%", maxWidth: 760, position: "relative" }}>
       <style>{`
         @keyframes orb-float { 0%,100% { transform: translateY(0px) } 50% { transform: translateY(-18px) } }
+        @media(max-width:768px){
+          .stocks-outer{padding:0 12px!important}
+          .stocks-grid{grid-template-columns:repeat(3,1fr)!important;overflow-x:hidden!important}
+          .stocks-card{overflow:hidden!important;min-width:0!important}
+          .mini-sparkline{width:36px!important;height:18px!important;max-width:36px!important}
+        }
       `}</style>
 
       {/* Ambient orbs */}
@@ -644,7 +650,7 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
           {/* Animated stat cards grid */}
           <div>
             <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Live Market</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            <div className="stocks-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
               {CARD_TICKERS.map((ticker, i) => {
                 const s = liveData[ticker];
                 const pos = (s?.change_pct ?? 0) >= 0;
@@ -655,7 +661,8 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06, duration: 0.3 }}
                     onClick={() => onSelect(ticker)}
-                    style={{ padding: "10px 12px", borderRadius: 10, border: "0.5px solid var(--border)", background: "var(--bg2)", cursor: "pointer", transition: "border-color 0.15s, background 0.15s" }}
+                    className="stocks-card"
+                    style={{ padding: "10px 12px", borderRadius: 10, border: "0.5px solid var(--border)", background: "var(--bg2)", cursor: "pointer", transition: "border-color 0.15s, background 0.15s", overflow: "hidden", minWidth: 0 }}
                     whileHover={{ scale: 1.02 }}
                     onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(184,134,11,0.4)"; }}
                     onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg2)"; (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; }}
@@ -1977,14 +1984,16 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         onAiChat={() => { setChatOpen(v => !v); sound.whoosh(); }}
       />
 
-      {/* Mobile: Add Tickers button (bottom-left) */}
-      <motion.button
-        className="c-mob-add"
-        onClick={() => setSidebarOpen(true)}
-        initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
-        style={{ position: "fixed", bottom: 80, left: 16, zIndex: 149, padding: "12px 18px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-body)", background: "var(--card-bg)", color: "var(--text2)", border: "0.5px solid var(--border2)", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)", display: "none", alignItems: "center", gap: 6 }}>
-        <PanelLeftOpen size={13} /> Tickers
-      </motion.button>
+      {/* Mobile: Add Tickers button (bottom-left) — overview tab only */}
+      {activeTab === "overview" && (
+        <motion.button
+          className="c-mob-add"
+          onClick={() => setSidebarOpen(true)}
+          initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
+          style={{ position: "fixed", bottom: 80, left: 16, zIndex: 149, padding: "12px 18px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-body)", background: "var(--card-bg)", color: "var(--text2)", border: "0.5px solid var(--border2)", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)", display: "none", alignItems: "center", gap: 6 }}>
+          <PanelLeftOpen size={13} /> Tickers
+        </motion.button>
+      )}
 
       <AnimatePresence>
         {showOnboarding && (
