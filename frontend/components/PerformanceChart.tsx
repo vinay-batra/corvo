@@ -281,13 +281,18 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
               autorange: false,
               range: [chartDates[0], chartDates[chartDates.length - 1]],
               type: "date",
-              dtick: period === "6mo" ? "M1" : period === "2y" ? "M3" : period === "5y" ? "M6" : "M2",
-              tickformat: "%b %y",
+              dtick: period === "6mo" ? "M1" : period === "2y" ? "M3" : period === "5y" ? "M12" : "M2",
+              tickformat: period === "5y" ? "%Y" : "%b %Y",
             } : {}),
           },
           yaxis: {
             gridcolor: gc, linecolor: lc, tickcolor: "transparent", tickformat: ".0%",
-            ...(isMobile ? { dtick: (period === "2y" || period === "5y") ? 0.10 : 0.05 } : {}),
+            ...(isMobile ? {
+              autorange: true,
+              // dtick in decimal units (data is decimal: 0.15 = 15%)
+              // user-requested intervals: 6M→5%, 1Y→10%, 2Y→10%, 5Y→20%
+              dtick: period === "5y" ? 0.20 : period === "6mo" ? 0.05 : 0.10,
+            } : {}),
           },
           showlegend: false,
           hovermode: "x unified",
