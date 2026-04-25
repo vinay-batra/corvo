@@ -130,6 +130,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
           .mc-modal-section{padding:8px 10px!important}
           .mc-modal-section>p:last-child{font-size:12px!important}
           .mc-modal-title{font-size:15px!important;margin-bottom:14px!important}
+          .mc-info-btn{width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;flex-shrink:0!important;padding:0!important}
         }
       `}</style>
       {items.map(({label,value,fmt,neg,neutral,bar,pnlDollars},i) => {
@@ -151,7 +152,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
             <p className="mc-label" style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>
               {label}{i===0&&currency!=="USD"?<span style={{marginLeft:4,color:C.amber,letterSpacing:1}}> · {currency}</span>:null}
             </p>
-            <button onClick={()=>openMetricModal(i)} style={{width:16,height:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
+            <button onClick={()=>openMetricModal(i)} className="mc-info-btn" style={{width:16,height:16,minWidth:16,minHeight:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0}}
               onMouseEnter={e=>{e.currentTarget.style.background=C.amber;e.currentTarget.style.color="#0a0e14";}}
               onMouseLeave={e=>{e.currentTarget.style.background="var(--bg3)";e.currentTarget.style.color="var(--text3)";}}>?</button>
           </div>

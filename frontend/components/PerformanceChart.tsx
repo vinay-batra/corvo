@@ -74,6 +74,13 @@ const PerformanceChart = memo(function PerformanceChart({ data, savedLines = [],
   const [showCustomPicker, setShowCustomPicker] = useState(!!customDateRange);
   const [localStart, setLocalStart] = useState(customDateRange?.start || "");
   const [localEnd, setLocalEnd] = useState(customDateRange?.end || "");
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
@@ -189,7 +196,7 @@ const PerformanceChart = memo(function PerformanceChart({ data, savedLines = [],
   };
 
   return (
-    <motion.div initial={false} transition={{ duration: 0.5 }}>
+    <motion.div initial={false} transition={{ duration: 0.5 }} style={{ overflow: "hidden", width: "100%", minWidth: 0 }}>
       {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
         <p style={{ fontSize: 9, letterSpacing: 2.5, color: legendFg, textTransform: "uppercase" }}>
@@ -266,9 +273,15 @@ const PerformanceChart = memo(function PerformanceChart({ data, savedLines = [],
           paper_bgcolor: "transparent",
           plot_bgcolor: "transparent",
           font: { color: fc, family: "Inter", size: 10 },
-          margin: { t: 0, b: 32, l: 48, r: 16 },
-          xaxis: { gridcolor: gc, linecolor: lc, tickcolor: "transparent" },
-          yaxis: { gridcolor: gc, linecolor: lc, tickcolor: "transparent", tickformat: ".0%" },
+          margin: { t: 0, b: 32, l: isMobile ? 44 : 48, r: 12 },
+          xaxis: {
+            gridcolor: gc, linecolor: lc, tickcolor: "transparent",
+            ...(isMobile ? { dtick: "M2", tickformat: "%b %y", nticks: 8 } : {}),
+          },
+          yaxis: {
+            gridcolor: gc, linecolor: lc, tickcolor: "transparent", tickformat: ".0%",
+            ...(isMobile ? { dtick: 0.05, nticks: 8 } : {}),
+          },
           showlegend: false,
           hovermode: "x unified",
           hoverlabel: { bgcolor: "#0d1117", bordercolor: amber + "88", font: { color: "#e8e0cc", family: "Inter", size: 11 } },
@@ -276,7 +289,7 @@ const PerformanceChart = memo(function PerformanceChart({ data, savedLines = [],
           annotations,
         }}
         config={{ displayModeBar: false, responsive: true }}
-        style={{ width: "100%", height: 240 }}
+        style={{ width: "100%", minWidth: 0, height: isMobile ? 280 : 240 }}
         useResizeHandler
       />
 

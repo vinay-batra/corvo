@@ -1582,13 +1582,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
       <div style={{ ...S.main, flexDirection: "row" as const }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, minWidth: 0, overflow: "hidden" }}>
-        {/* Mobile top bar — sidebar toggle + scrollable tabs + action icons */}
+        {/* Mobile top bar — scrollable tabs + action icons (no sidebar toggle; use ANALYZE button) */}
         <div className="c-mob-bar" style={{ display: "none", height: 52, borderBottom: "0.5px solid var(--border)", alignItems: "center", background: "var(--bg2)", flexShrink: 0 }}>
-          {/* Sidebar toggle */}
-          <button aria-label="Open sidebar" onClick={() => setSidebarOpen(true)}
-            style={{ width: 40, height: 52, background: "none", border: "none", borderRight: "0.5px solid var(--border)", cursor: "pointer", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <PanelLeftOpen size={15} />
-          </button>
           {/* Scrollable tab bar */}
           <div style={{ flex: 1, overflow: "hidden", minWidth: 0 }}>
             <div className="c-mob-tabs" style={{ display: "flex", overflowX: "auto", height: 52 }}>
@@ -2018,14 +2013,14 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         onAiChat={() => { setChatOpen(v => !v); sound.whoosh(); }}
       />
 
-      {/* Mobile: Add Tickers button (bottom-left) — overview tab only */}
+      {/* Mobile: ANALYZE button (bottom-left) — overview tab only */}
       {activeTab === "overview" && (
         <motion.button
           className="c-mob-add"
           onClick={() => setSidebarOpen(true)}
           initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
-          style={{ position: "fixed", bottom: 80, left: 16, zIndex: 149, padding: "12px 18px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-body)", background: "var(--card-bg)", color: "var(--text2)", border: "0.5px solid var(--border2)", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)", display: "none", alignItems: "center", gap: 6 }}>
-          <PanelLeftOpen size={13} /> Tickers
+          style={{ position: "fixed", bottom: 20, left: 16, zIndex: 149, padding: "12px 20px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 1.5, textTransform: "uppercase" as const, background: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 20px rgba(184,134,11,0.35)", display: "none", alignItems: "center", gap: 6 }}>
+          Analyze
         </motion.button>
       )}
 
