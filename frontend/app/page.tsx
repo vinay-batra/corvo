@@ -2257,14 +2257,6 @@ export default function Landing() {
       {/* EMAIL CAPTURE BOTTOM (prominent, above footer) */}
       <EmailCaptureBottom />
 
-      {/* MOBILE STICKY CTA */}
-      <div style={{ display: "none" }} className="mob-cta">
-        <style>{`@media(max-width:768px){.mob-cta{display:block!important;position:fixed;bottom:0;left:0;right:0;padding:12px 16px calc(20px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,rgba(10,14,20,0.98) 0%,rgba(10,14,20,0.9) 100%);z-index:200;border-top:1px solid rgba(201,168,76,0.1);}}`}</style>
-        <a href="/auth" style={{ textAlign: "center", padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" } as React.CSSProperties}>
-          Analyze your portfolio free →
-        </a>
-      </div>
-
       {/* FOOTER */}
       <footer className="footer-root" style={{ position: "relative", zIndex: 1, borderTop: "1px solid var(--border)", padding: "26px 56px" }}>
         <div className="footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
