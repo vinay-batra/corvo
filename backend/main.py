@@ -2345,8 +2345,8 @@ def market_summary(tickers: str = Query(default="")):
         except Exception as e:
             print(f"market-summary holdings error for {sym}: {e}")
 
-    # AI generation — three distinct sections
-    market_text = holdings_text = context_text = ""
+    # AI generation — four distinct sections
+    market_text = holdings_text = context_text = outlook_text = ""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if api_key:
         try:
@@ -2374,17 +2374,18 @@ S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq (QQQ) {direction(
 Top news: {news_str}
 {holdings_line}
 
-Return a JSON object with exactly these three string keys:
-- "market": 2 sentences on what major indexes did today and why, referencing the news headlines.
-- "holdings": {"1-2 sentences on how the user's holdings performed, naming best and worst performer with their actual % change." if holdings_data else '"No holdings provided."'}
-- "context": 1 sentence of macro context (geopolitical, Fed, earnings) drawn from the news.
+Return a JSON object with exactly these four string keys:
+- "market": 2-3 sentences on what major indexes did today and why, referencing the news headlines.
+- "market_driver": 1 sentence — the single biggest reason markets moved today (macro event, Fed, earnings, geopolitical).
+- "holdings": {"1-2 sentences on how the user's holdings performed, naming best and worst performer with their actual % change." if holdings_data else '"No holdings provided for this user."'}
+- "outlook": 1 sentence on the single key thing investors should watch next (upcoming data, Fed decision, earnings, etc.).
 
 Rules: no asterisks, no em dashes, no markdown. Plain prose. Return only the JSON object."""
 
             resp = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=450,
-                system="You are a senior Bloomberg markets correspondent. Return ONLY a valid JSON object with keys: market, holdings, context. No markdown fences, no extra text.",
+                max_tokens=500,
+                system="You are a senior Bloomberg markets correspondent. Return ONLY a valid JSON object with keys: market, market_driver, holdings, outlook. No markdown fences, no extra text.",
                 messages=[{"role": "user", "content": prompt}],
             )
             raw = resp.content[0].text.strip()
@@ -2396,7 +2397,8 @@ Rules: no asterisks, no em dashes, no markdown. Plain prose. Return only the JSO
             parsed = json.loads(raw)
             market_text = clean_ai_response(parsed.get("market", ""))
             holdings_text = clean_ai_response(parsed.get("holdings", ""))
-            context_text = clean_ai_response(parsed.get("context", ""))
+            context_text = clean_ai_response(parsed.get("market_driver", parsed.get("context", "")))
+            outlook_text = clean_ai_response(parsed.get("outlook", ""))
         except Exception as e:
             print(f"market-summary AI error: {e}")
 
@@ -2404,6 +2406,7 @@ Rules: no asterisks, no em dashes, no markdown. Plain prose. Return only the JSO
         "market": market_text,
         "holdings": holdings_text,
         "context": context_text,
+        "outlook": outlook_text,
         "holdings_pct": holdings_data,
         "spy_pct": round(spy_pct, 2),
         "qqq_pct": round(qqq_pct, 2),
