@@ -119,22 +119,36 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
   void rate; void sparklineValues;
   return (
     <>
+      <style>{`
+        @media(max-width:768px){
+          .mc-card{padding:12px!important}
+          .mc-value{font-size:22px!important;letter-spacing:-0.8px!important;margin-bottom:6px!important}
+          .mc-pnl-sub{font-size:11px!important;margin-bottom:4px!important}
+          .mc-label{font-size:9px!important;letter-spacing:1px!important}
+          .mc-modal-overlay{align-items:flex-end!important;padding:0!important}
+          .mc-modal-card{max-width:100%!important;width:100%!important;border-radius:20px 20px 0 0!important;padding:20px 16px 28px!important;max-height:78vh!important}
+          .mc-modal-section{padding:8px 10px!important}
+          .mc-modal-section>p:last-child{font-size:12px!important}
+          .mc-modal-title{font-size:15px!important;margin-bottom:14px!important}
+        }
+      `}</style>
       {items.map(({label,value,fmt,neg,neutral,bar,pnlDollars},i) => {
         const color = neutral ? C.amber : neg ? C.red : "#4caf7d";
         return (
         <motion.div key={label} initial={false} transition={{delay:i*0.07}}
+          className="mc-card"
           style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"18px 16px 14px",borderTop:`2px solid ${color}`,position:"relative",overflow:"hidden"}}>
           <div style={{position:"absolute",top:0,right:0,width:80,height:80,background:`radial-gradient(circle at top right, ${color}18, transparent 70%)`,pointerEvents:"none",borderRadius:"0 12px 0 0"}} />
-          <p style={{fontFamily:"Space Mono,monospace",fontSize:34,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,marginBottom:pnlDollars!=null?4:10}}>
+          <p className="mc-value" style={{fontFamily:"Space Mono,monospace",fontSize:34,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,marginBottom:pnlDollars!=null?4:10}}>
             <Num value={value} fmt={fmt}/>
           </p>
           {pnlDollars!=null&&(
-            <p style={{fontFamily:"Space Mono,monospace",fontSize:13,fontWeight:600,color,marginBottom:8,lineHeight:1}}>
+            <p className="mc-pnl-sub" style={{fontFamily:"Space Mono,monospace",fontSize:13,fontWeight:600,color,marginBottom:8,lineHeight:1}}>
               {pnlDollars>=0?"+":"-"}${Math.abs(pnlDollars).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
             </p>
           )}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <p style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>
+            <p className="mc-label" style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>
               {label}{i===0&&currency!=="USD"?<span style={{marginLeft:4,color:C.amber,letterSpacing:1}}> · {currency}</span>:null}
             </p>
             <button onClick={()=>openMetricModal(i)} style={{width:16,height:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
@@ -153,15 +167,17 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
       <AnimatePresence>
         {modal!==null&&(
           <motion.div initial={false} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setModal(null)}
+            className="mc-modal-overlay"
             style={{position:"fixed",inset:0,background:"var(--overlay-bg, rgba(0,0,0,0.75))",backdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
             <motion.div initial={false} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0}}
               onClick={e=>e.stopPropagation()}
+              className="mc-modal-card"
               style={{background:"var(--card-bg)",border:"0.5px solid var(--border2)",borderRadius:16,padding:28,maxWidth:400,width:"100%",maxHeight:"90vh",overflowY:"auto",position:"relative"}}>
               <button onClick={()=>setModal(null)} style={{position:"absolute",top:14,right:14,background:"var(--bg3)",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",color:"var(--text3)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               <p style={{fontSize:10,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>About</p>
-              <h3 style={{fontSize:18,fontWeight:500,color:"var(--text)",marginBottom:18}}>{EXPLAINERS[modal].title}</h3>
+              <h3 className="mc-modal-title" style={{fontSize:18,fontWeight:500,color:"var(--text)",marginBottom:18}}>{EXPLAINERS[modal].title}</h3>
               {[{label:"Plain English",text:EXPLAINERS[modal].simple},{label:"Example",text:EXPLAINERS[modal].example},{label:"What's good?",text:EXPLAINERS[modal].good}].map(({label,text})=>(
-                <div key={label} style={{background:"var(--bg2)",border:"0.5px solid var(--border)",borderRadius:8,padding:"10px 12px",marginBottom:6}}>
+                <div key={label} className="mc-modal-section" style={{background:"var(--bg2)",border:"0.5px solid var(--border)",borderRadius:8,padding:"10px 12px",marginBottom:6}}>
                   <p style={{fontSize:10,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:4}}>{label}</p>
                   <p style={{fontSize:13,color:"var(--text2)",lineHeight:1.65}}>{text}</p>
                 </div>
