@@ -650,11 +650,11 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* FOUNDING MEMBER */}
-      <FoundingMemberSection />
-
       {/* FEATURE VOTING */}
       <FeatureVoteSection />
+
+      {/* FOUNDING MEMBER */}
+      <FoundingMemberSection />
 
       {/* FOOTER */}
       <PublicFooter />
