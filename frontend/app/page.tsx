@@ -6,6 +6,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import FeedbackButton from "../components/FeedbackButton";
+import { usePWAInstall } from "../hooks/usePWAInstall";
 
 /* ─── Reveal hook ─── */
 function useReveal(threshold = 0.15) {
@@ -1701,6 +1702,7 @@ export default function Landing() {
     document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
     localStorage.setItem("corvo_theme", next ? "dark" : "light");
   };
+  const { canInstall, install } = usePWAInstall();
   const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -1958,6 +1960,17 @@ export default function Landing() {
         </div>
         {/* Right side */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {/* PWA install */}
+          {canInstall && (
+            <button
+              onClick={install}
+              style={{ display: "flex", alignItems: "center", height: 32, padding: "0 14px", fontSize: 12, color: "var(--text2)", background: "transparent", border: "1px solid var(--border)", borderRadius: 20, cursor: "pointer", letterSpacing: 0.3, transition: "color 0.2s, border-color 0.2s, background 0.2s", whiteSpace: "nowrap" as const }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
+            >
+              Install App
+            </button>
+          )}
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}

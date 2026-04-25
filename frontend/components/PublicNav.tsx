@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import UserMenu from "./UserMenu";
 import { Sun, Moon } from "lucide-react";
+import { usePWAInstall } from "../hooks/usePWAInstall";
 
 function useTheme() {
   const [dark, setDark] = useState(false);
@@ -29,6 +30,7 @@ export default function PublicNav() {
   const [loggedIn, setLoggedIn] = useState(false);
   const pathname = usePathname();
   const { dark, toggle } = useTheme();
+  const { canInstall, install } = usePWAInstall();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
@@ -75,6 +77,17 @@ export default function PublicNav() {
         </div>
         {/* Right side */}
         <div className="pnav-actions" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {/* PWA install */}
+          {canInstall && (
+            <button
+              onClick={install}
+              style={{ display: "flex", alignItems: "center", height: 32, padding: "0 14px", fontSize: 12, color: "var(--text2)", background: "transparent", border: "1px solid var(--border)", borderRadius: 20, cursor: "pointer", letterSpacing: 0.3, transition: "color 0.2s, border-color 0.2s, background 0.2s", whiteSpace: "nowrap" as const }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
+            >
+              Install App
+            </button>
+          )}
           {/* Theme toggle */}
           <button
             onClick={toggle}
@@ -113,6 +126,15 @@ export default function PublicNav() {
           <Link href="/changelog" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>
           <Link href="/faq" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>FAQ</Link>
           <Link href="/about" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>About</Link>
+          {/* Mobile PWA install */}
+          {canInstall && (
+            <button
+              onClick={() => { setMobileOpen(false); install(); }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", padding: "13px 4px", fontSize: 14, color: "var(--text2)", background: "none", border: "none", borderBottom: "0.5px solid var(--border)", cursor: "pointer", textAlign: "center" as const }}
+            >
+              Install App
+            </button>
+          )}
           {/* Mobile theme toggle */}
           <button
             onClick={() => { toggle(); }}
