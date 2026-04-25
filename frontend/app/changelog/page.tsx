@@ -27,6 +27,13 @@ function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode
 
 const ENTRIES = [
   {
+    date: "Apr 25, 2026",
+    version: "v0.18",
+    title: "Full Mobile Overhaul",
+    desc: "Complete mobile experience rebuilt from the ground up. Dashboard now mirrors desktop with a scrollable tab bar, all pages accessible, and no bottom nav. Performance charts fill exactly to the selected period with axis detail scaled per timeframe. Metric card tooltips fixed. AI insights no longer misidentify largest holdings when weights are equal. What-If analysis now requires 100% weights before running. About page added with founder story. Public pages updated with pill-style eyebrow badges. Light mode is now the default for new and logged-out users. PWA install button added to nav. Mobile audit completed across all pages — AI chat sidebar, onboarding modal, FAQ, pricing, settings, referrals all fixed. Blog posts added for Markets and Product categories. Changelog and README updated.",
+    tags: ["Mobile", "UI", "Dashboard", "Charts"],
+  },
+  {
     date: "Apr 24, 2026",
     version: "v0.17",
     title: "About Page, Nav Polish & Public Page Redesign",
