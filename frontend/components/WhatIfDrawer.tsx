@@ -38,7 +38,15 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
   const [loading, setLoading]             = useState(false);
   const [analyzed, setAnalyzed]           = useState(false);
   const [dark, setDark]                   = useState(true);
+  const [isMobile, setIsMobile]           = useState(false);
   const analyzeRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
@@ -69,9 +77,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
     if (!valid.length) return;
     setLoading(true);
     try {
-      const total = valid.reduce((s, a) => s + a.weight, 0);
-      const norm = valid.map(a => ({ ...a, weight: a.weight / total }));
-      const d = await fetchPortfolio(norm, period, benchmark);
+      const d = await fetchPortfolio(valid, period, benchmark);
       setWhatIfData(d);
       setAnalyzed(true);
     } catch {}
@@ -117,37 +123,69 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
   const normalizedPct = (i: number) =>
     totalW > 0 ? (whatIfAssets[i].weight / totalW) * 100 : 0;
 
+  const isBalanced = whatIfAssets.length === 0 || Math.abs(totalW - 1) < 0.015;
+  const hasValidAssets = whatIfAssets.some(a => a.ticker && a.weight > 0);
+  const canRunAnalysis = hasValidAssets && isBalanced;
+
+  const equalize = () => {
+    if (!totalW) return;
+    setWhatIfAssets(prev => prev.map(a => ({ ...a, weight: a.weight / totalW })));
+  };
+
   return (
     <AnimatePresence>
       {open && (
         <>
           {/* Backdrop */}
           <motion.div
-            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 500 }}
           />
-          {/* Drawer */}
+
+          {/* Drawer — right-side panel on desktop, bottom sheet on mobile */}
           <motion.div
-            initial={false} animate={{ x: 0 }} exit={{ x: "100%" }}
+            initial={isMobile ? { y: "100%" } : { x: "100%" }}
+            animate={isMobile ? { y: 0 } : { x: 0 }}
+            exit={isMobile ? { y: "100%" } : { x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 280 }}
-            style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(900px, 95vw)", background: "var(--bg2)", borderLeft: dark ? "0.5px solid var(--border2)" : "1px solid #d4cfc8", zIndex: 501, display: "flex", flexDirection: "column", overflow: "hidden" }}
+            style={isMobile ? {
+              position: "fixed", left: 0, right: 0, bottom: 0,
+              height: "90vh",
+              background: "var(--bg2)",
+              borderTop: dark ? "0.5px solid var(--border2)" : "1px solid #d4cfc8",
+              borderRadius: "12px 12px 0 0",
+              zIndex: 501, display: "flex", flexDirection: "column", overflow: "hidden",
+            } : {
+              position: "fixed", top: 0, right: 0, bottom: 0,
+              width: "min(900px, 95vw)",
+              background: "var(--bg2)",
+              borderLeft: dark ? "0.5px solid var(--border2)" : "1px solid #d4cfc8",
+              zIndex: 501, display: "flex", flexDirection: "column", overflow: "hidden",
+            }}
           >
+            {/* Drag handle (mobile only) */}
+            {isMobile && (
+              <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.15)" }} />
+              </div>
+            )}
+
             {/* Header */}
-            <div style={{ padding: "14px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+            <div style={{ padding: isMobile ? "10px 16px" : "14px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
               <div>
                 <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 2 }}>What-If Analysis</p>
                 <p style={{ fontSize: 13, color: "var(--text2)" }}>Compare your current portfolio against a scenario</p>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 6 }}>
                 <button onClick={reset}
-                  style={{ padding: "7px 14px", fontSize: 11, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
+                  style={{ padding: "7px 12px", fontSize: 11, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
                   Reset
                 </button>
                 <button onClick={() => { onApply(whatIfAssets); onClose(); }}
                   disabled={!analyzed}
-                  style={{ padding: "7px 14px", fontSize: 11, borderRadius: 8, border: "none", background: analyzed ? "var(--accent)" : "var(--bg3)", color: analyzed ? "#0a0e14" : "var(--text3)", fontWeight: 600, cursor: analyzed ? "pointer" : "not-allowed", transition: "all 0.15s" }}>
-                  Apply What-If
+                  style={{ padding: "7px 12px", fontSize: 11, borderRadius: 8, border: "none", background: analyzed ? "var(--accent)" : "var(--bg3)", color: analyzed ? "#0a0e14" : "var(--text3)", fontWeight: 600, cursor: analyzed ? "pointer" : "not-allowed", transition: "all 0.15s" }}>
+                  Apply
                 </button>
                 <button onClick={onClose}
                   style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -156,10 +194,11 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
               </div>
             </div>
 
-            <div style={{ flex: 1, overflow: "auto", padding: "16px 20px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {/* Scrollable body */}
+            <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: isMobile ? "12px 14px" : "16px 20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
 
-                {/* LEFT: Current (read-only) */}
+                {/* LEFT / TOP: Current (read-only) */}
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLORS.current }} />
@@ -191,14 +230,16 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                   )}
                 </div>
 
-                {/* RIGHT: Editable what-if */}
+                {/* RIGHT / BOTTOM: Editable what-if */}
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLORS.whatif }} />
                     <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text)" }}>What-If Scenario</span>
-                    <span style={{ fontSize: 10, color: "var(--text3)" }}>100%</span>
+                    <span style={{ fontSize: 10, color: isBalanced ? "var(--text3)" : "#e05c5c", fontFamily: "var(--font-mono)" }}>
+                      {Math.round(totalW * 100)}%
+                    </span>
                   </div>
-                  <div style={{ border: "0.5px solid rgba(91,156,246,0.3)", borderRadius: 10, padding: "12px 14px", background: "rgba(91,156,246,0.03)", marginBottom: 12 }}>
+                  <div style={{ border: "0.5px solid rgba(91,156,246,0.3)", borderRadius: 10, padding: "12px 14px", background: "rgba(91,156,246,0.03)", marginBottom: 8 }}>
                     {whatIfAssets.map((a, i) => (
                       <div key={i} style={{ marginBottom: 10 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -233,8 +274,22 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                     </button>
                   </div>
 
-                  <button onClick={() => analyzeRef.current()} disabled={loading}
-                    style={{ width: "100%", padding: "10px", background: loading ? "var(--bg3)" : COLORS.whatif, border: "none", borderRadius: 8, color: loading ? "var(--text3)" : "#fff", fontWeight: 600, fontSize: 12, cursor: loading ? "not-allowed" : "pointer", marginBottom: 12, letterSpacing: 1, transition: "all 0.15s" }}>
+                  {/* Validation error */}
+                  {!isBalanced && hasValidAssets && (
+                    <p style={{ fontSize: 11, color: "#e05c5c", marginBottom: 8, lineHeight: 1.4 }}>
+                      Weights must total 100% before running What-If analysis.{" "}
+                      <span
+                        onClick={equalize}
+                        style={{ color: "var(--accent)", cursor: "pointer", textDecoration: "underline" }}>
+                        Equalize
+                      </span>
+                    </p>
+                  )}
+
+                  <button
+                    onClick={() => { if (canRunAnalysis) analyzeRef.current(); }}
+                    disabled={loading || !canRunAnalysis}
+                    style={{ width: "100%", padding: "10px", background: (loading || !canRunAnalysis) ? "var(--bg3)" : COLORS.whatif, border: "none", borderRadius: 8, color: (loading || !canRunAnalysis) ? "var(--text3)" : "#fff", fontWeight: 600, fontSize: 12, cursor: (loading || !canRunAnalysis) ? "not-allowed" : "pointer", marginBottom: 12, letterSpacing: 1, transition: "all 0.15s" }}>
                     {loading ? "Analyzing…" : "Run What-If Analysis"}
                   </button>
 
@@ -268,27 +323,6 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                   )}
                 </div>
               </div>
-
-              {/* Combined chart legend */}
-              {analyzed && whatIfData && currentData && (
-                <div style={{ marginTop: 20, padding: "14px 16px", border: "0.5px solid var(--border)", borderRadius: 10, background: "var(--card-bg)" }}>
-                  <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>Performance Comparison</p>
-                  <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ width: 20, height: 2, background: COLORS.current, borderRadius: 1 }} />
-                      <span style={{ fontSize: 10, color: "var(--text3)" }}>Current</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ width: 20, height: 2, background: COLORS.whatif, borderRadius: 1 }} />
-                      <span style={{ fontSize: 10, color: "var(--text3)" }}>What-If</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 20 }}>
-                    <MiniSparkline data={currentData.cumulative_returns || []} color={COLORS.current} />
-                    <MiniSparkline data={whatIfData.cumulative_returns || []} color={COLORS.whatif} />
-                  </div>
-                </div>
-              )}
             </div>
           </motion.div>
         </>
