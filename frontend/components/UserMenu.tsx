@@ -34,13 +34,13 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
   // Fetch profile from DB when no props provided (public nav context)
   useEffect(() => {
     if (!user || displayNameProp) return;
-    supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single()
+    void supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single()
       .then(({ data }) => {
         if (data) {
           const name = data.display_name || user.email?.split("@")[0] || "User";
           setProfile({ displayName: name, avatarUrl: data.avatar_url || null });
         }
-      }).then(() => {}).catch(() => {});
+      });
   }, [user, displayNameProp]);
 
   // Close on outside click

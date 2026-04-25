@@ -70,7 +70,6 @@ interface Props {
 
 export default function GreetingBar({ displayName, assets }: Props) {
   const greeting = getGreeting();
-  console.log("[GreetingBar] displayName prop received:", JSON.stringify(displayName));
   const firstName = displayName?.trim().split(" ")[0] || "there";
   const dateStr = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric",

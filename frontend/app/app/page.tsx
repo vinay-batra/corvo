@@ -16,6 +16,7 @@ import InfoModal from "../../components/InfoModal";
 import StockDetail from "../../components/StockDetail";
 import { OverviewSkeleton } from "../../components/SkeletonLoader";
 import { useSoundEffects, unlockAudio, SOUND_KEY } from "../../hooks/useSoundEffects";
+import { usePWAInstall } from "../../hooks/usePWAInstall";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import Metrics from "../../components/Metrics";
 import PerformanceChart from "../../components/PerformanceChart";
@@ -892,6 +893,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
+  const { canInstall, install: installPWA } = usePWAInstall();
   const S = useS();
 
   // Warn before tab close/refresh if unsaved assets exist
@@ -1628,6 +1630,15 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
             </button>
+            {/* PWA Install */}
+            {canInstall && (
+              <button onClick={installPWA} title="Install app"
+                style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)" }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2v12"/><path d="M8 10l4 4 4-4"/><rect x="3" y="17" width="18" height="4" rx="1"/>
+                </svg>
+              </button>
+            )}
             {/* User avatar (name hidden via CSS .c-mob-bar #usermenu-btn>span) */}
             <UserMenu
               onEmailPrefs={() => setShowEmailPrefs(true)}
@@ -1993,6 +2004,19 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and a $10,000 portfolio value."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your $10k portfolio, you'd earn ~$90/year from it."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days. You must own the stock before that date to receive the dividend."}]} /><DividendTracker assets={assets} /></Card>
                 </div>
                 <div style={{ marginBottom: 12 }}>
+                  {assets.every(a => !a.purchasePrice) && (
+                    <div style={{ marginBottom: 8, padding: "10px 14px", background: "rgba(184,134,11,0.06)", border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 13, color: "var(--accent)", flexShrink: 0 }}>ℹ</span>
+                      <span style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.5 }}>
+                        Add purchase prices to your holdings to see tax loss harvesting opportunities.{" "}
+                        <button
+                          onClick={() => setWhatIfOpen(true)}
+                          style={{ background: "none", border: "none", padding: 0, color: "var(--accent)", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>
+                          Open portfolio editor →
+                        </button>
+                      </span>
+                    </div>
+                  )}
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} portfolioValue={portfolioInputValue} /></Card>
                 </div>
                 <div className="c-risk-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

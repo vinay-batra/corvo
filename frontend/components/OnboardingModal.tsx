@@ -31,7 +31,7 @@ const FEATURES = [
 ];
 
 interface Props {
-  onComplete: (assets: { ticker: string; weight: number }[]) => void;
+  onComplete: (assets: { ticker: string; weight: number; purchasePrice?: number }[]) => void;
   onSkip: () => void;
 }
 
@@ -309,28 +309,6 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
                   </div>
                 </motion.div>
               )}
-
-              {/* XP Badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
-                style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "12px 16px", marginBottom: 28,
-                  background: C.green2, border: `1px solid ${C.green3}`, borderRadius: 10,
-                }}
-              >
-                <div style={{
-                  width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-                  background: "rgba(92,184,138,0.15)", border: `1.5px solid ${C.green3}`,
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-                }}>
-                  +
-                </div>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: C.green, marginBottom: 2 }}>+100 XP Earned</p>
-                  <p style={{ fontSize: 11, color: "rgba(92,184,138,0.55)" }}>Portfolio builder complete</p>
-                </div>
-              </motion.div>
 
               <motion.button
                 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}

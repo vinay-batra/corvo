@@ -443,7 +443,9 @@ function FeatureVoteSection() {
           }
           setVotes(counts);
         }
-      } catch {}
+      } catch {
+        // Fetch failed — votes will show as 0, loading state still clears below
+      }
       try {
         const storedVoted = localStorage.getItem("corvo_feature_voted");
         if (storedVoted) setVoted(JSON.parse(storedVoted));

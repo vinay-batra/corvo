@@ -87,10 +87,16 @@ function Divider() {
   return <div style={{ height: "0.5px", background: "var(--border)", margin: "6px 0" }} />;
 }
 
+interface EarningsEntry {
+  ticker: string;
+  date: string;
+}
+
 export default function RightPanel({ open, onClose, watchlistTickers, holdingTickers, onSelectTicker }: Props) {
   const [liveData, setLiveData] = useState<Record<string, LiveEntry>>({});
   const [flashSet, setFlashSet] = useState<Set<string>>(new Set());
   const [briefCollapsed, setBriefCollapsed] = useState(false);
+  const [earnings, setEarnings] = useState<EarningsEntry[]>([]);
   const prevPrices = useRef<Record<string, number>>({});
   const allTickers = [...new Set([...watchlistTickers, ...holdingTickers])];
 
@@ -126,6 +132,14 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
     const id = setInterval(fetchPrices, 10000);
     return () => clearInterval(id);
   }, [open, fetchPrices]);
+
+  useEffect(() => {
+    if (!open || holdingTickers.length === 0) return;
+    fetch(`${API_URL}/earnings-calendar?tickers=${holdingTickers.join(",")}`)
+      .then(r => r.json())
+      .then((d: EarningsEntry[]) => setEarnings(Array.isArray(d) ? d : []))
+      .catch(() => setEarnings([]));
+  }, [open, holdingTickers.join(",")]);
 
   // Sort by absolute change_pct for top movers
   const sortedByMove = Object.values(liveData)
@@ -251,24 +265,24 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
             </div>
           )}
 
-          {/* Upcoming events placeholder */}
-          <SectionHeader title="Upcoming Events">
-            <Calendar size={12} style={{ color: "var(--text3)" }} />
-          </SectionHeader>
-          <div style={{ padding: "4px 14px 16px" }}>
-            {holdingTickers.length === 0 ? (
-              <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
-                Add holdings to track upcoming earnings dates.
-              </p>
-            ) : (
-              holdingTickers.slice(0, 5).map(t => (
-                <div key={t} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 0", borderBottom: "0.5px solid var(--border)" }}>
-                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 700, color: "var(--text)" }}>{t}</span>
-                  <span style={{ fontSize: 10, color: "var(--text3)" }}>earnings TBD</span>
-                </div>
-              ))
-            )}
-          </div>
+          {/* Upcoming earnings */}
+          {(holdingTickers.length > 0 && earnings.length > 0) && (
+            <>
+              <SectionHeader title="Upcoming Earnings">
+                <Calendar size={12} style={{ color: "var(--text3)" }} />
+              </SectionHeader>
+              <div style={{ padding: "4px 14px 16px" }}>
+                {earnings.slice(0, 5).map(e => (
+                  <div key={e.ticker} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 0", borderBottom: "0.5px solid var(--border)" }}>
+                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 700, color: "var(--text)" }}>{e.ticker}</span>
+                    <span style={{ fontSize: 10, color: "var(--text3)" }}>
+                      {new Date(e.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Footer */}
           <div style={{ padding: "8px 14px", marginTop: "auto", borderTop: "0.5px solid var(--border)" }}>
