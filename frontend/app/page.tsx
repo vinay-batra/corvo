@@ -1858,14 +1858,17 @@ export default function Landing() {
           .trust-grid{grid-template-columns:repeat(2,1fr)!important}
           .nav-pad{padding:0 20px!important}
           .sec-pad{padding-left:20px!important;padding-right:20px!important}
-          .stats-grid{grid-template-columns:repeat(2,1fr)!important}
+          .stats-grid{grid-template-columns:1fr!important}
           .nav-links{display:none!important}
           .hamburger{display:flex!important}
           .nav-user-name{display:none!important}
           .hero-btns{flex-direction:column!important;align-items:center!important}
           .hero-btns>*{width:min(300px,80vw)!important;justify-content:center!important;text-align:center!important;display:flex!important;align-items:center!important}
           .hero-preview-sidebar{display:none!important}
-          .stats-grid>*:nth-child(2n){border-right:none!important}
+          .stats-grid>*{border-right:none!important}
+          .changelog-pill-label{display:none!important}.changelog-pill-mobile{display:inline!important}
+          .nav-auth-desktop{display:none!important}.nav-install-desktop{display:none!important}
+          #changelog-dropdown{position:fixed!important;top:58px!important;left:16px!important;right:16px!important;width:auto!important;max-width:none!important}
           .vs-panels{flex-direction:column!important}
           .vs-panels>*{flex:none!important;width:100%!important}
           .vs-panels>*:nth-child(1){border-radius:16px 16px 0 0!important;border-right:1px solid rgba(0,200,0,0.15)!important}
@@ -1881,7 +1884,7 @@ export default function Landing() {
           .stock-search-wrap>div{flex-direction:column!important;max-width:100%!important}
         }
         @media(max-width:600px){
-          .stats-grid{grid-template-columns:1fr 1fr!important}
+          .stats-grid{grid-template-columns:1fr!important}
           .footer-inner{flex-direction:column!important;gap:12px!important;text-align:center!important}
           .footer-root{padding:24px 20px!important}
           .hero-btns>*{width:100%!important;max-width:360px!important}
@@ -1917,7 +1920,8 @@ export default function Landing() {
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.1)"; }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite", flexShrink: 0 }} />
-              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text2)", fontFamily: "Space Mono,monospace", textTransform: "uppercase" as const }}>What&apos;s New</span>
+              <span className="changelog-pill-label" style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text2)", fontFamily: "Space Mono,monospace", textTransform: "uppercase" as const }}>What&apos;s New</span>
+              <span className="changelog-pill-mobile" style={{ display: "none", fontSize: 9, letterSpacing: 1, color: "var(--text2)", fontFamily: "Space Mono,monospace", textTransform: "uppercase" as const }}>NEW</span>
             </button>
             {changelogOpen && (
               <div id="changelog-dropdown" style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, width: 280, background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, padding: "10px", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", zIndex: 200 }}>
@@ -1960,10 +1964,11 @@ export default function Landing() {
         </div>
         {/* Right side */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {/* PWA install */}
+          {/* PWA install — desktop only, shown in drawer on mobile */}
           {canInstall && (
             <button
               onClick={install}
+              className="nav-install-desktop"
               style={{ display: "flex", alignItems: "center", height: 32, padding: "0 14px", fontSize: 12, color: "var(--text2)", background: "transparent", border: "1px solid var(--border)", borderRadius: 20, cursor: "pointer", letterSpacing: 0.3, transition: "color 0.2s, border-color 0.2s, background 0.2s", whiteSpace: "nowrap" as const }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
@@ -2019,10 +2024,10 @@ export default function Landing() {
               )}
             </div>
           ) : (
-            <>
+            <div className="nav-auth-desktop" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <Link href="/auth" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Sign In</Link>
               <Link href="/auth" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Get Started Free</Link>
-            </>
+            </div>
           )}
           {/* Hamburger */}
           <button className="hamburger" aria-label="Open menu" onClick={() => setMobileMenuOpen(v => !v)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 36, height: 36, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", flexShrink: 0, color: "var(--text)" }}>
@@ -2045,20 +2050,24 @@ export default function Landing() {
           <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>
           <Link href="/faq" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>FAQ</Link>
           <Link href="/about" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>About</Link>
-          {loggedIn ? (
-            <>
-              <Link href="/account" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>My Account</Link>
-              <Link href="/referrals" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Referrals</Link>
-              <Link href="/settings" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Settings</Link>
-              <Link href="/app" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "#c9a84c", fontWeight: 600, textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Go to App →</Link>
-              <button onClick={signOut} style={{ padding: "13px 4px", fontSize: 14, color: "rgba(224,92,92,0.8)", background: "none", border: "none", cursor: "pointer", textAlign: "left" as const, fontFamily: "Inter,sans-serif", marginTop: 4 }}>Sign Out</button>
-            </>
-          ) : (
-            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-              <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Sign In</Link>
-              <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 10 }}>Get Started Free</Link>
-            </div>
+          {canInstall && (
+            <button
+              onClick={() => { setMobileMenuOpen(false); install(); }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", padding: "13px 4px", fontSize: 14, color: "var(--text2)", background: "none", border: "none", borderBottom: "0.5px solid var(--border)", cursor: "pointer", textAlign: "center" as const }}
+            >
+              Install App
+            </button>
           )}
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            {loggedIn ? (
+              <Link href="/app" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 10 }}>Go to App</Link>
+            ) : (
+              <>
+                <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Sign In</Link>
+                <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 10 }}>Get Started Free</Link>
+              </>
+            )}
+          </div>
         </div>
       )}
 
