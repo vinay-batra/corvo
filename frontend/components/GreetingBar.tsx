@@ -145,9 +145,10 @@ export default function GreetingBar({
     }}>
       <style>{`
         @media(max-width:768px){
-          .gb-root{padding:10px 12px!important}
+          .gb-root{padding:10px 12px!important;flex-direction:column!important;gap:10px!important}
           .gb-divider{display:none!important}
-          .gb-right{display:none!important}
+          .gb-right{align-items:flex-start!important;width:100%!important}
+          .gb-marquee{width:100%!important}
         }
       `}</style>
 
@@ -264,7 +265,7 @@ export default function GreetingBar({
               ))}
             </div>
           ) : (
-            <div style={{ overflow: "hidden", height: 32, position: "relative", width: 320 }}>
+            <div className="gb-marquee" style={{ overflow: "hidden", height: 32, position: "relative", width: 320 }}>
               <style>{`
                 @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
               `}</style>
