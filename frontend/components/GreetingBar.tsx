@@ -135,7 +135,7 @@ export default function GreetingBar({
     .replace(/\*/g, "");
 
   return (
-    <div style={{
+    <div className="gb-root" style={{
       display: "flex",
       alignItems: "flex-start",
       gap: 0,
@@ -143,6 +143,13 @@ export default function GreetingBar({
       borderBottom: "0.5px solid var(--border)",
       marginBottom: 20,
     }}>
+      <style>{`
+        @media(max-width:768px){
+          .gb-root{padding:10px 12px!important}
+          .gb-divider{display:none!important}
+          .gb-right{display:none!important}
+        }
+      `}</style>
 
       {/* LEFT - greeting + AI market summary paragraph */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -201,10 +208,10 @@ export default function GreetingBar({
       </div>
 
       {/* DIVIDER */}
-      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
+      <div className="gb-divider" style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
       {/* RIGHT - index pills on top, holdings price pills below */}
-      <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
+      <div className="gb-right" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
 
         {/* Index pills row */}
         {indexPrices.spy === null ? (

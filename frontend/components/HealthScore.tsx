@@ -57,7 +57,8 @@ export default function HealthScore({ data }: { data: any }) {
   const dS=Math.min(Math.max((1+data.max_drawdown/0.5)*100,0),100);
   const score=Math.round(rS*0.3+shS*0.3+vS*0.25+dS*0.15);
   return (
-    <div ref={ref} style={{display:"flex",gap:14,alignItems:"center"}}>
+    <div ref={ref} className="hs-root" style={{display:"flex",gap:14,alignItems:"center"}}>
+      <style>{`@media(max-width:768px){.hs-root{flex-direction:column!important;align-items:center!important}.hs-root>div:last-child{width:100%!important}}`}</style>
       {inView&&<Ring score={score}/>}
       <div style={{flex:1,display:"flex",flexDirection:"column",gap:10}}>
         <Bar label="Returns"    subtitle={rS  < 70 ? "below market avg"      : "above market avg"}      value={rS}  max={100} delay={0.5}/>
