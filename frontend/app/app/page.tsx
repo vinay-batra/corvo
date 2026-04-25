@@ -1586,7 +1586,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         <div className="c-mob-bar" style={{ display: "none", height: 52, borderBottom: "0.5px solid var(--border)", alignItems: "center", background: "var(--bg2)", flexShrink: 0 }}>
           {/* Scrollable tab bar */}
           <div style={{ flex: 1, overflow: "hidden", minWidth: 0 }}>
-            <div className="c-mob-tabs" style={{ display: "flex", overflowX: "auto", height: 52 }}>
+            <div id="tour-mob-tabs" className="c-mob-tabs" style={{ display: "flex", overflowX: "auto", height: 52 }}>
               {TABS.map(tab => {
                 const isActive = activeTab === tab.id;
                 const ts: React.CSSProperties = { padding: "0 11px", height: 52, fontSize: 12, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "color 0.15s" };
@@ -2016,10 +2016,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       {/* Mobile: ANALYZE button (bottom-left) — overview tab only */}
       {activeTab === "overview" && (
         <motion.button
+          id="tour-mob-analyze"
           className="c-mob-add"
           onClick={() => setSidebarOpen(true)}
           initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
-          style={{ position: "fixed", bottom: 20, left: 16, zIndex: 149, padding: "12px 20px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 1.5, textTransform: "uppercase" as const, background: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 20px rgba(184,134,11,0.35)", display: "none", alignItems: "center", gap: 6 }}>
+          style={{ position: "fixed", bottom: 20, left: 16, zIndex: 149, padding: "12px 18px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-body)", background: "var(--card-bg)", color: "var(--text2)", border: "0.5px solid var(--border2)", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)", display: "none", alignItems: "center", gap: 6 }}>
           Analyze
         </motion.button>
       )}

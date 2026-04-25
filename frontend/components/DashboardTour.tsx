@@ -11,13 +11,19 @@ interface TourStop {
   description: string;
 }
 
-const STOPS: TourStop[] = [
-  { id: "tour-analyze-btn",        label: "Analyze",           description: "Run your portfolio analysis here: get Sharpe ratio, health score, and AI insights." },
-  { id: "tour-ai-chat-fab",        label: "AI Chat",           description: "Ask AI anything about your portfolio: risk, strategy, what-if scenarios." },
+const DESKTOP_STOPS: TourStop[] = [
+  { id: "tour-analyze-btn",        label: "Analyze",            description: "Run your portfolio analysis here: get Sharpe ratio, health score, and AI insights." },
+  { id: "tour-ai-chat-fab",        label: "AI Chat",            description: "Ask AI anything about your portfolio: risk, strategy, what-if scenarios." },
   { id: "tour-keyboard-shortcuts", label: "Keyboard Shortcuts", description: "Navigate the dashboard with keyboard shortcuts. Press ? anytime to see them." },
   { id: "tour-dark-mode-toggle",   label: "Light / Dark Mode",  description: "Switch between light and dark mode to match your preference." },
   { id: "tour-settings-btn",       label: "Settings",           description: "Set price alerts, email preferences, and manage your account." },
   { id: "tour-profile-btn",        label: "Profile",            description: "Manage your account, goals, and referrals." },
+];
+
+const MOBILE_STOPS: TourStop[] = [
+  { id: "tour-mob-tabs",    label: "Tab Bar",   description: "Scroll left and right to navigate all pages: Dashboard, Positions, Stocks, Income & Tax, Simulations, News, Watchlist, and Learn." },
+  { id: "tour-mob-analyze", label: "Analyze",   description: "Tap here to open the sidebar, add your tickers and weights, then run your portfolio analysis." },
+  { id: "tour-ai-chat-fab", label: "AI Chat",   description: "Ask AI anything about your portfolio: risk, strategy, what-if scenarios, and more." },
 ];
 
 interface RingPos { top: number; left: number; width: number; height: number; }
@@ -59,8 +65,20 @@ export default function DashboardTour({ onComplete }: Props) {
   const [step, setStep] = useState(0);
   const [ring, setRing] = useState<RingPos | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; placement: string } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const stop = STOPS[step];
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(prev => { if (prev !== mobile) setStep(0); return mobile; });
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const STOPS = isMobile ? MOBILE_STOPS : DESKTOP_STOPS;
+  const stop = STOPS[Math.min(step, STOPS.length - 1)];
   const total = STOPS.length;
 
   const updatePositions = useCallback(() => {
