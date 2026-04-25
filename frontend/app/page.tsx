@@ -1858,6 +1858,7 @@ export default function Landing() {
           .hero-btns>*{width:min(300px,80vw)!important;justify-content:center!important;text-align:center!important;display:flex!important;align-items:center!important}
           .hero-preview-sidebar{display:none!important}
           .stats-grid>*{border-right:none!important}
+          .changelog-pill-wrap{display:none!important}
           .changelog-pill-label{display:none!important}
           .changelog-pill-mobile{display:inline!important}
           .nav-user-name-mobile{display:inline!important}
