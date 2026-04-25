@@ -482,23 +482,20 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
 /* ─── Export & Share bento card ─── */
 function BentoExportCard({ delay = 0 }: { delay?: number }) {
   return (
-    <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: 0, display: "flex", flexDirection: "column" }}>
-      {/* Text content */}
-      <div style={{ padding: "28px 28px 20px" }}>
-        <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>PDF Reports</p>
-        <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Export & share</h3>
-        <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, marginBottom: 18 }}>Generate a full portfolio report in one click.</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
-              <span style={{ fontSize: 11, color: "var(--text2)" }}>{item}</span>
-            </div>
-          ))}
-        </div>
+    <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: "28px" }}>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>PDF Reports</p>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Export & share</h3>
+      <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, marginBottom: 18 }}>Generate a full portfolio report in one click.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 18 }}>
+        {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
+            <span style={{ fontSize: 11, color: "var(--text2)" }}>{item}</span>
+          </div>
+        ))}
       </div>
-      {/* Dark PDF preview — flush at bottom, rounded bottom corners match card */}
-      <div data-theme="dark" style={{ background: "#080b10", borderRadius: "0 0 20px 20px", padding: "14px 20px", position: "relative", overflow: "hidden", marginTop: "auto" }}>
+      {/* Dark PDF preview — floating dark card inside white card */}
+      <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "14px 20px", position: "relative", overflow: "hidden" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
           {[30, 60, 90, 120].map(y => (
             <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
