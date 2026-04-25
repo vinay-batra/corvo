@@ -1866,7 +1866,8 @@ export default function Landing() {
           .hero-btns>*{width:min(300px,80vw)!important;justify-content:center!important;text-align:center!important;display:flex!important;align-items:center!important}
           .hero-preview-sidebar{display:none!important}
           .stats-grid>*{border-right:none!important}
-          .changelog-pill-label{display:none!important}.changelog-pill-mobile{display:inline!important}
+          .changelog-pill-wrap{display:none!important}
+          .nav-user-name-mobile{display:inline!important}
           .nav-auth-desktop{display:none!important}.nav-install-desktop{display:none!important}
           #changelog-dropdown{position:fixed!important;top:58px!important;left:16px!important;right:16px!important;width:auto!important;max-width:none!important}
           .vs-panels{flex-direction:column!important}
@@ -1912,7 +1913,7 @@ export default function Landing() {
             <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
             <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
           </div>
-          <div style={{ position: "relative" }}>
+          <div className="changelog-pill-wrap" style={{ position: "relative" }}>
             <button
               id="changelog-btn"
               onClick={e => { e.stopPropagation(); setChangelogOpen(v => !v); }}
@@ -1995,6 +1996,7 @@ export default function Landing() {
                   <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c" }}>{userProfile?.initials ?? "?"}</div>
                 )}
                 <span className="nav-user-name" style={{ fontSize: 12, color: "var(--text2)", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{userProfile?.displayName}</span>
+                <span className="nav-user-name-mobile" style={{ display: "none", fontSize: 12, color: "var(--text2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{userProfile?.displayName?.split(" ")[0] || "Account"}</span>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.4, flexShrink: 0 }}><path d="M2 3.5L5 6.5L8 3.5" stroke="#e8e0cc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
               {userMenuOpen && (
