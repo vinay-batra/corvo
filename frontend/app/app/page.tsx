@@ -1378,7 +1378,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const SidebarInner = () => (
     <>
       {/* Logo → homepage */}
-      <div style={{ ...S.sidebarTop, borderLeft: "3px solid var(--accent)", paddingLeft: 13 }}>
+      <div className="c-sidebar-logo" style={{ ...S.sidebarTop, borderLeft: "3px solid var(--accent)", paddingLeft: 13 }}>
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
           <img src="/corvo-logo.svg" width={26} height={26} alt="Corvo" style={{ flexShrink: 0, opacity: 0.9 }} />
           <div style={S.logo}>CORVO</div>
@@ -1511,6 +1511,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         @media(max-width:768px){
           .c-sidebar{display:none!important}
           .c-topbar{display:none!important}
+          .c-sidebar-logo{display:none!important}
           .c-mob-bar{display:flex!important}
           .c-mob-tabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important}
           .c-metrics{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
@@ -1566,7 +1567,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           <button aria-label="Open sidebar" onClick={() => setSidebarOpen(true)} style={{ width: 32, height: 32, background: "none", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <PanelLeftOpen size={15} />
           </button>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
+          <Link href="/" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)", textDecoration: "none" }}>CORVO</Link>
           <DarkModeToggle dark={dark} toggle={toggleDark} />
         </div>
 
