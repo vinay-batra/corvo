@@ -482,9 +482,23 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
 /* ─── Export & Share bento card ─── */
 function BentoExportCard({ delay = 0 }: { delay?: number }) {
   return (
-    <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: 0 }}>
-      {/* Dark PDF preview */}
-      <div data-theme="dark" style={{ background: "#080b10", padding: "14px 20px 14px", position: "relative", overflow: "hidden", borderRadius: 12, margin: "16px 16px 0" }}>
+    <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: 0, display: "flex", flexDirection: "column" }}>
+      {/* Text content */}
+      <div style={{ padding: "28px 28px 20px" }}>
+        <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>PDF Reports</p>
+        <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Export & share</h3>
+        <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, marginBottom: 18 }}>Generate a full portfolio report in one click.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
+              <span style={{ fontSize: 11, color: "var(--text2)" }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Dark PDF preview — flush at bottom, rounded bottom corners match card */}
+      <div data-theme="dark" style={{ background: "#080b10", borderRadius: "0 0 20px 20px", padding: "14px 20px", position: "relative", overflow: "hidden", marginTop: "auto" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
           {[30, 60, 90, 120].map(y => (
             <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
@@ -529,20 +543,6 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
             <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
               <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.6)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
               <p style={{ fontSize: 9, fontWeight: 700, color: stat.color, fontFamily: "Space Mono,monospace" }}>{stat.value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* Text content */}
-      <div style={{ padding: "16px 28px 28px" }}>
-        <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 5 }}>PDF Reports</p>
-        <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 5, letterSpacing: -0.3 }}>Export & share</p>
-        <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, marginBottom: 10 }}>Generate a full portfolio report in one click.</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, animation: `fadein 0.5s ease ${0.3 + i * 0.12}s both` }}>
-              <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
-              <span style={{ fontSize: 11, color: "var(--text2)" }}>{item}</span>
             </div>
           ))}
         </div>
