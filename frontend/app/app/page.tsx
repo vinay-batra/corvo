@@ -1517,11 +1517,17 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           .c-metrics{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
           .c-bgrid{grid-template-columns:1fr!important}
           .c-risk-grid{grid-template-columns:1fr!important}
-          .c-content{padding:12px 10px!important;padding-bottom:80px!important}
-          .c-mob-analyze{display:flex!important}
+          .c-risk-2col{grid-template-columns:1fr!important}
+          .c-content{padding:12px 10px!important;padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))!important}
+          .c-mob-analyze{display:flex!important;bottom:calc(72px + env(safe-area-inset-bottom,0px))!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
-          .c-mob-add{display:flex!important}
+          .c-mob-add{display:flex!important;bottom:calc(124px + env(safe-area-inset-bottom,0px))!important}
           .c-mob-bottom-nav{display:flex!important}
+          #tour-ai-chat-fab{display:none!important}
+          .c-alloc-row{flex-direction:column!important}
+          .c-alloc-row>*{flex:none!important;width:100%!important}
+          .c-mob-tabs button,.c-mob-tabs a{min-height:44px!important;padding:10px 12px!important}
+          .c-mob-bar-right{display:flex!important;align-items:center!important;gap:6px!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
@@ -1859,7 +1865,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     </motion.div>
                   ))}
                 </motion.div>
-                <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
+                <div className="c-alloc-row" style={{ display: "flex", gap: 16, marginTop: 12 }}>
                   <motion.div key="allocation-card" initial={false} style={{ flex: 3 }}>
                     <Card style={{ marginBottom: 0, height: "100%" }}><CardHeader title="Allocation" /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
                   </motion.div>
@@ -1894,7 +1900,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 <div style={{ marginBottom: 12 }}>
                   <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} portfolioValue={portfolioInputValue} /></Card>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="c-risk-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <motion.div key="cge-card" initial={false}>
                     <Card style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
                       <CardHeader title="Capital Gains Estimator" />
