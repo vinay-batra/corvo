@@ -1353,12 +1353,7 @@ function EmailCaptureBottom() {
   return (
     <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "36px 56px" }}>
       <FadeUp>
-      <div style={{
-        maxWidth: 700, margin: "0 auto", textAlign: "center",
-        background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.12)",
-        borderRadius: 24, padding: "56px 48px",
-        boxShadow: "0 0 80px rgba(201,168,76,0.04)",
-      }}>
+      <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center", padding: "56px 48px" }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
           <img src="/corvo-logo.svg" width={36} height={36} alt="Corvo" style={{ opacity: 0.7 }} />
         </div>
