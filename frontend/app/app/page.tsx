@@ -726,7 +726,7 @@ const TopbarActions = memo(function TopbarActions({
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
         {/* Alerts bell */}
-        <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
+        <button id="tour-desk-bell" onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
           style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
           onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
           onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
@@ -750,7 +750,7 @@ const TopbarActions = memo(function TopbarActions({
         </div>
 
         {/* Export dropdown */}
-        <div style={{ position: "relative", flexShrink: 0 }}>
+        <div id="tour-desk-export" style={{ position: "relative", flexShrink: 0 }}>
           <button
             onClick={() => setOverflowOpen(o => !o)}
             title="Export"
@@ -1441,7 +1441,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           return (
             <>
               <motion.button
-                id="tour-analyze-btn"
+                id="tour-desk-analyze"
                 onClick={canAnalyze ? handleAnalyze : undefined}
                 disabled={!canAnalyze}
                 initial={false}
@@ -1551,13 +1551,13 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           .c-risk-2col{grid-template-columns:1fr!important}
           .c-content{padding:12px 10px!important;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
-          #tour-mob-chat{display:none!important}
+          #tour-desk-chat{display:none!important}
           .c-alloc-row{flex-direction:column!important}
           .c-alloc-row>*{flex:none!important;width:100%!important}
           .c-mob-bar #usermenu-btn>span{display:none!important}
           .c-mob-bar #usermenu-btn{padding:3px!important;gap:0!important}
           .c-mob-bar #usermenu-btn svg:last-child{display:none!important}
-          #tour-mob-chat{display:flex!important;bottom:24px!important;right:16px!important}
+          #tour-desk-chat{display:flex!important;bottom:24px!important;right:16px!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
@@ -1570,6 +1570,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
       {/* Desktop sidebar */}
       <div
+        id="tour-desk-sidebar"
         className="c-sidebar"
         style={{ width: 340, flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
         {SidebarInner()}
@@ -1672,7 +1673,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         {/* Desktop topbar */}
         <header className="c-topbar" style={S.topbar}>
           {/* Tabs with animated underline indicator */}
-          <div style={{ display: "flex", gap: 0, flex: 1, overflowX: "auto", position: "relative" }}>
+          <div id="tour-desk-tabs" style={{ display: "flex", gap: 0, flex: 1, overflowX: "auto", position: "relative" }}>
             {TABS.map(tab => {
               const isActive = activeTab === tab.id;
               const tabStyle: React.CSSProperties = {
@@ -1895,6 +1896,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 />
 <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
                 <motion.div
+                  id="tour-desk-metrics"
                   key="stats-row"
                   className="c-metrics"
                   style={{ ...S.metricsGrid, gridTemplateColumns: assets.some(a => (a.purchasePrice ?? 0) > 0) && (portfolioInputValue ?? 0) > 0 ? "repeat(5,1fr)" : "repeat(4,1fr)" }}
@@ -1911,7 +1913,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     portfolioValue={portfolioInputValue}
                   />
                 </motion.div>
-                <motion.div key="perf-card" initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
+                <motion.div id="tour-desk-chart" key="perf-card" initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
                   <Card>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                       <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
@@ -2075,7 +2077,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
       {/* Floating AI Chat button */}
       <motion.button
-        id="tour-mob-chat"
+        id="tour-desk-chat"
         onClick={() => setChatOpen(v => !v)}
         title="AI Chat (A)"
         initial={false}
