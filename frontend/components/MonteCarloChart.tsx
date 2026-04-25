@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { fetchMonteCarlo } from "../lib/api";
@@ -26,6 +26,9 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
   const [insight, setInsight] = useState<string | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const [dark, setDark] = useState(true);
+  // Track the last key we actually ran the simulation for — prevents re-runs
+  // caused by scroll-triggered parent re-renders with stable but re-created prop references.
+  const simKeyRef = useRef<string>("");
 
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
@@ -37,6 +40,12 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
 
   useEffect(() => {
     if (!assets.length) return;
+    const newKey =
+      assets.map(a => `${a.ticker}:${Number(a.weight).toFixed(4)}`).sort().join(",") +
+      "|" + period +
+      "|" + retryCount;
+    if (newKey === simKeyRef.current) return;
+    simKeyRef.current = newKey;
     setLoading(true);
     setFetchError(false);
     setInsight(null);
