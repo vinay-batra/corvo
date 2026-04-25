@@ -1596,7 +1596,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       <div style={{ ...S.main, flexDirection: "row" as const }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, minWidth: 0, overflow: "hidden" }}>
         {/* Mobile top bar — scrollable tabs + action icons (no sidebar toggle; use ANALYZE button) */}
-        <div className="c-mob-bar" style={{ display: "none", height: 52, borderBottom: "0.5px solid var(--border)", alignItems: "center", background: "var(--bg2)", flexShrink: 0 }}>
+        <div className="c-mob-bar" style={{ display: "none", height: 52, borderBottom: "0.5px solid var(--border)", alignItems: "center", background: "var(--bg2)", flexShrink: 0, position: "relative" }}>
+          {/* CORVO brand centered */}
+          <Link href="/" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", textDecoration: "none", pointerEvents: "auto", zIndex: 1 }}>
+            <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, letterSpacing: 4, color: "var(--accent)" }}>CORVO</span>
+          </Link>
           {/* Scrollable tab bar */}
           <div style={{ flex: 1, overflow: "hidden", minWidth: 0 }}>
             <div id="tour-mob-tabs" className="c-mob-tabs" style={{ display: "flex", overflowX: "auto", height: 52 }}>
