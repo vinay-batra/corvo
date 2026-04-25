@@ -1794,10 +1794,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 {/* Stale-portfolio banner */}
                 {portfolioStale && (
                   <motion.div
-                    initial={false} animate={{ opacity: 1, y: 0 }}
-                    style={{ border: "0.5px solid rgba(184,134,11,0.35)", borderRadius: 10, padding: "10px 16px", background: "rgba(184,134,11,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
+                    style={{ border: "0.5px solid rgba(184,134,11,0.35)", borderRadius: 10, padding: "10px 16px", background: "rgba(184,134,11,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, zIndex: 10, position: "relative" }}>
                     <span style={{ fontSize: 12, color: "var(--text2)" }}>
-                      Your portfolio has changed. Results below may not reflect your current holdings.
+                      Assets have changed — re-analyze to update results.
                     </span>
                     <button
                       onClick={handleAnalyze}
