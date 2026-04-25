@@ -1531,24 +1531,23 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           .c-topbar{display:none!important}
           .c-sidebar-logo{display:none!important}
           .c-mob-bar{display:flex!important}
-          .c-mob-tabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important}
+          .c-mob-bottom-nav{display:none!important}
           .c-metrics{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
           .c-bgrid{grid-template-columns:1fr!important}
           .c-risk-grid{grid-template-columns:1fr!important}
           .c-risk-2col{grid-template-columns:1fr!important}
-          .c-content{padding:12px 10px!important;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
-          .c-ai-tab{height:calc(100dvh - 136px)!important}
-          .c-mob-add{display:flex!important;bottom:calc(72px + env(safe-area-inset-bottom,0px))!important}
-          .c-mob-bottom-nav{display:flex!important}
+          .c-content{padding:12px 10px!important;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}
+          .c-ai-tab{height:calc(100dvh - 104px)!important}
+          .c-mob-add{display:flex!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important}
           #tour-ai-chat-fab{display:none!important}
           .c-alloc-row{flex-direction:column!important}
           .c-alloc-row>*{flex:none!important;width:100%!important}
-          .c-mob-tabs button,.c-mob-tabs a{min-height:44px!important;padding:8px 9px!important;font-size:11px!important}
-          .c-mob-bar-right{display:flex!important;align-items:center!important;gap:6px!important}
+          .c-mob-bar #usermenu-btn>span{display:none!important}
+          .c-mob-bar #usermenu-btn{padding:3px!important;gap:0!important}
+          .c-mob-bar #usermenu-btn svg:last-child{display:none!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
-          .c-mob-tabs{display:none!important}
           .c-mob-drawer{display:none!important}
           .c-mob-add{display:none!important}
           .c-mob-bottom-nav{display:none!important}
@@ -1582,24 +1581,58 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
       <div style={{ ...S.main, flexDirection: "row" as const }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, minWidth: 0, overflow: "hidden" }}>
-        {/* Mobile top bar */}
-        <div className="c-mob-bar" style={{ height: 48, borderBottom: "0.5px solid var(--border)", alignItems: "center", justifyContent: "space-between", padding: "0 14px", background: "var(--bg)", flexShrink: 0 }}>
-          <button aria-label="Open sidebar" onClick={() => setSidebarOpen(true)} style={{ width: 32, height: 32, background: "none", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Mobile top bar — sidebar toggle + scrollable tabs + action icons */}
+        <div className="c-mob-bar" style={{ display: "none", height: 52, borderBottom: "0.5px solid var(--border)", alignItems: "center", background: "var(--bg2)", flexShrink: 0 }}>
+          {/* Sidebar toggle */}
+          <button aria-label="Open sidebar" onClick={() => setSidebarOpen(true)}
+            style={{ width: 40, height: 52, background: "none", border: "none", borderRight: "0.5px solid var(--border)", cursor: "pointer", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <PanelLeftOpen size={15} />
           </button>
-          <Link href="/" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)", textDecoration: "none" }}>CORVO</Link>
-          <DarkModeToggle dark={dark} toggle={toggleDark} />
-        </div>
-
-        {/* Mobile tabs */}
-        <div className="c-mob-tabs" style={{ borderBottom: "0.5px solid var(--border)", padding: "0 4px", gap: 0, overflowX: "auto", flexShrink: 0, background: "var(--bg)" }}>
-          {TABS.map(tab => {
-            const isActive = activeTab === tab.id;
-            const mobStyle: React.CSSProperties = { padding: "8px 9px", fontSize: 11, borderRadius: 6, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" };
-            const icon = MOB_TAB_ICONS[tab.id];
-            if (tab.href) return <Link key={tab.id} href={tab.href} style={mobStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{icon}{tab.label}</Link>;
-            return <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={mobStyle}>{icon}{tab.label}</button>;
-          })}
+          {/* Scrollable tab bar */}
+          <div style={{ flex: 1, overflow: "hidden", minWidth: 0 }}>
+            <div className="c-mob-tabs" style={{ display: "flex", overflowX: "auto", height: 52 }}>
+              {TABS.map(tab => {
+                const isActive = activeTab === tab.id;
+                const ts: React.CSSProperties = { padding: "0 11px", height: 52, fontSize: 12, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "color 0.15s" };
+                if (tab.href) return <Link key={tab.id} href={tab.href} style={ts} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{tab.label}</Link>;
+                return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); }} style={ts}>{tab.label}</button>;
+              })}
+            </div>
+          </div>
+          {/* Right actions */}
+          <div style={{ display: "flex", alignItems: "center", gap: 1, padding: "0 4px", flexShrink: 0, borderLeft: "0.5px solid var(--border)", height: 52 }}>
+            {/* Alerts bell */}
+            <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
+              style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: "var(--text2)" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              {alertCount > 0 && <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg2)" }} />}
+            </button>
+            {/* Theme toggle */}
+            <button onClick={toggleDark} title={dark ? "Light mode" : "Dark mode"}
+              style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)" }}>
+              {dark ? <Sun size={13} /> : <Moon size={13} />}
+            </button>
+            {/* Export CSV */}
+            <button onClick={exportCSV} title="Export CSV" disabled={!data}
+              style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: data ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", opacity: data ? 1 : 0.35 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+            {/* User avatar (name hidden via CSS .c-mob-bar #usermenu-btn>span) */}
+            <UserMenu
+              onEmailPrefs={() => setShowEmailPrefs(true)}
+              onReferral={() => setShowReferral(true)}
+              onSettings={() => setShowSettings(true)}
+              onProfile={() => setShowProfile(true)}
+              onReplayOnboarding={() => { localStorage.removeItem("corvo_onboarding_skipped"); localStorage.removeItem("corvo_setup_banner_dismissed"); setShowSettings(false); setShowOnboarding(true); }}
+              onReplayTour={() => { localStorage.removeItem("corvo_tour_completed"); setShowSettings(false); setShowDashboardTour(true); }}
+              avatarUrl={navProfile.avatarUrl}
+              displayName={navProfile.displayName}
+            />
+          </div>
         </div>
 
         {/* Desktop topbar */}
