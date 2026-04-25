@@ -1550,7 +1550,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           .c-risk-grid{grid-template-columns:1fr!important}
           .c-risk-2col{grid-template-columns:1fr!important}
           .c-content{padding:12px 10px!important;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}
-          .c-ai-tab{height:calc(100dvh - 104px)!important}
+          .c-ai-tab{height:calc(100dvh - 136px)!important}
           .c-mob-add{display:flex!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important}
           #tour-ai-chat-fab{display:none!important}
           .c-alloc-row{flex-direction:column!important}
@@ -1595,65 +1595,73 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
       <div style={{ ...S.main, flexDirection: "row" as const }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, minWidth: 0, overflow: "hidden" }}>
-        {/* Mobile top bar — scrollable tabs + action icons (no sidebar toggle; use ANALYZE button) */}
-        <div className="c-mob-bar" style={{ display: "none", height: 52, borderBottom: "0.5px solid var(--border)", alignItems: "center", background: "var(--bg2)", flexShrink: 0, position: "relative" }}>
-          {/* CORVO brand centered */}
-          <Link href="/" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", textDecoration: "none", pointerEvents: "auto", zIndex: 1 }}>
-            <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, letterSpacing: 4, color: "var(--accent)" }}>CORVO</span>
-          </Link>
-          {/* Scrollable tab bar */}
-          <div style={{ flex: 1, overflow: "hidden", minWidth: 0 }}>
-            <div id="tour-mob-tabs" className="c-mob-tabs" style={{ display: "flex", overflowX: "auto", height: 52 }}>
-              {TABS.map(tab => {
-                const isActive = activeTab === tab.id;
-                const ts: React.CSSProperties = { padding: "0 11px", height: 52, fontSize: 12, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "color 0.15s" };
-                if (tab.href) return <Link key={tab.id} href={tab.href} style={ts} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{tab.label}</Link>;
-                return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); }} style={ts}>{tab.label}</button>;
-              })}
-            </div>
-          </div>
-          {/* Right actions */}
-          <div style={{ display: "flex", alignItems: "center", gap: 1, padding: "0 4px", flexShrink: 0, borderLeft: "0.5px solid var(--border)", height: 52 }}>
-            {/* Alerts bell */}
-            <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
-              style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: "var(--text2)" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-              {alertCount > 0 && <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg2)" }} />}
-            </button>
-            {/* Theme toggle */}
-            <button onClick={toggleDark} title={dark ? "Light mode" : "Dark mode"}
-              style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)" }}>
-              {dark ? <Sun size={13} /> : <Moon size={13} />}
-            </button>
-            {/* Export CSV */}
-            <button onClick={exportCSV} title="Export CSV" disabled={!data}
-              style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: data ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", opacity: data ? 1 : 0.35 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        {/* Mobile top bar — two rows: brand/actions + tabs */}
+        <div className="c-mob-bar" style={{ display: "none", flexDirection: "column", borderBottom: "0.5px solid var(--border)", background: "var(--bg2)", flexShrink: 0 }}>
+          {/* Row 1: sidebar toggle | CORVO | action icons */}
+          <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "0.5px solid var(--border)", padding: "0 4px" }}>
+            {/* Sidebar / Analyze toggle */}
+            <button onClick={() => setSidebarOpen(true)} title="Open portfolio builder" aria-label="Open sidebar"
+              style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
               </svg>
             </button>
-            {/* PWA Install */}
-            {canInstall && (
-              <button onClick={installPWA} title="Install app"
+            {/* CORVO brand */}
+            <Link href="/" style={{ textDecoration: "none" }}>
+              <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, letterSpacing: 4, color: "var(--accent)" }}>CORVO</span>
+            </Link>
+            {/* Right actions */}
+            <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
+              {/* Alerts bell */}
+              <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
+                style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: "var(--text2)" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                {alertCount > 0 && <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg2)" }} />}
+              </button>
+              {/* Theme toggle */}
+              <button onClick={toggleDark} title={dark ? "Light mode" : "Dark mode"}
                 style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)" }}>
+                {dark ? <Sun size={13} /> : <Moon size={13} />}
+              </button>
+              {/* Export CSV */}
+              <button onClick={exportCSV} title="Export CSV" disabled={!data}
+                style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: data ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", opacity: data ? 1 : 0.35 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2v12"/><path d="M8 10l4 4 4-4"/><rect x="3" y="17" width="18" height="4" rx="1"/>
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
               </button>
-            )}
-            {/* User avatar (name hidden via CSS .c-mob-bar #usermenu-btn>span) */}
-            <UserMenu
-              onEmailPrefs={() => setShowEmailPrefs(true)}
-              onReferral={() => setShowReferral(true)}
-              onSettings={() => setShowSettings(true)}
-              onProfile={() => setShowProfile(true)}
-              onReplayOnboarding={() => { localStorage.removeItem("corvo_onboarding_skipped"); localStorage.removeItem("corvo_setup_banner_dismissed"); setShowSettings(false); setShowOnboarding(true); }}
-              onReplayTour={() => { localStorage.removeItem("corvo_tour_completed"); setShowSettings(false); setShowDashboardTour(true); }}
-              avatarUrl={navProfile.avatarUrl}
-              displayName={navProfile.displayName}
-            />
+              {/* PWA Install */}
+              {canInstall && (
+                <button onClick={installPWA} title="Install app"
+                  style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v12"/><path d="M8 10l4 4 4-4"/><rect x="3" y="17" width="18" height="4" rx="1"/>
+                  </svg>
+                </button>
+              )}
+              {/* User avatar */}
+              <UserMenu
+                onEmailPrefs={() => setShowEmailPrefs(true)}
+                onReferral={() => setShowReferral(true)}
+                onSettings={() => setShowSettings(true)}
+                onProfile={() => setShowProfile(true)}
+                onReplayOnboarding={() => { localStorage.removeItem("corvo_onboarding_skipped"); localStorage.removeItem("corvo_setup_banner_dismissed"); setShowSettings(false); setShowOnboarding(true); }}
+                onReplayTour={() => { localStorage.removeItem("corvo_tour_completed"); setShowSettings(false); setShowDashboardTour(true); }}
+                avatarUrl={navProfile.avatarUrl}
+                displayName={navProfile.displayName}
+              />
+            </div>
+          </div>
+          {/* Row 2: scrollable tab bar */}
+          <div id="tour-mob-tabs" className="c-mob-tabs" style={{ display: "flex", overflowX: "auto", height: 40 }}>
+            {TABS.map(tab => {
+              const isActive = activeTab === tab.id;
+              const ts: React.CSSProperties = { padding: "0 11px", height: 40, fontSize: 12, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "color 0.15s" };
+              if (tab.href) return <Link key={tab.id} href={tab.href} style={ts} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{tab.label}</Link>;
+              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); }} style={ts}>{tab.label}</button>;
+            })}
           </div>
         </div>
 
