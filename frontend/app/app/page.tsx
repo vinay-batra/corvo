@@ -1545,6 +1545,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           .c-mob-bar #usermenu-btn>span{display:none!important}
           .c-mob-bar #usermenu-btn{padding:3px!important;gap:0!important}
           .c-mob-bar #usermenu-btn svg:last-child{display:none!important}
+          #tour-ai-chat-fab{display:flex!important;bottom:24px!important;right:16px!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
