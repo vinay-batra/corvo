@@ -10,8 +10,15 @@ function Num({ value, fmt }: { value: number; fmt: (v: number) => string }) {
   const [d, setD] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
+  // Once the count-up plays once, skip it on any subsequent value change.
+  const hasAnimated = useRef(false);
   useEffect(() => {
     if (!inView) return;
+    if (hasAnimated.current) {
+      setD(value);
+      return;
+    }
+    hasAnimated.current = true;
     const start = performance.now();
     const go = (now: number) => {
       const p = Math.min((now-start)/1200,1);
@@ -136,7 +143,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
       {items.map(({label,value,fmt,neg,neutral,bar,pnlDollars},i) => {
         const color = neutral ? C.amber : neg ? C.red : "#4caf7d";
         return (
-        <motion.div key={label} initial={false} transition={{delay:i*0.07}}
+        <motion.div key={i} initial={false} transition={{delay:i*0.07}}
           className="mc-card"
           style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"18px 16px 14px",borderTop:`2px solid ${color}`,position:"relative",overflow:"hidden"}}>
           <div style={{position:"absolute",top:0,right:0,width:80,height:80,background:`radial-gradient(circle at top right, ${color}18, transparent 70%)`,pointerEvents:"none",borderRadius:"0 12px 0 0"}} />

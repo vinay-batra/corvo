@@ -1002,7 +1002,15 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
       // Load nav profile (avatar + display name)
       const { data: navP } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
-      if (navP) setNavProfile({ displayName: navP.display_name || "", avatarUrl: navP.avatar_url || null });
+      const bestName =
+        navP?.display_name ||
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.user_metadata?.display_name ||
+        user.email?.split("@")[0] ||
+        "";
+      console.log("[auth] user_metadata:", user.user_metadata, "email:", user.email, "resolved name:", bestName);
+      setNavProfile({ displayName: bestName, avatarUrl: navP?.avatar_url || null });
 
       const { data: profile } = await supabase
         .from("profiles")
