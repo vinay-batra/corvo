@@ -622,60 +622,80 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
         @keyframes spin { to { transform: rotate(360deg) } }
         @keyframes sdPulse { 0%,100% { opacity: 0.4 } 50% { opacity: 0.9 } }
         @keyframes livePulse {
-          0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(201,168,76,0.5) }
-          60%      { opacity: 0.6; box-shadow: 0 0 0 5px rgba(201,168,76,0) }
+          0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(76,175,125,0.5) }
+          60%      { opacity: 0.6; box-shadow: 0 0 0 5px rgba(76,175,125,0) }
         }
       `}</style>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
-        {/* Left: nav + name */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={onBack}
-              style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
-              ← Back
-            </button>
-            <button onClick={toggleWatchlist}
-              style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: `0.5px solid ${inWatchlist ? accentColor : "var(--border)"}`, background: inWatchlist ? "rgba(184,134,11,0.1)" : "transparent", color: inWatchlist ? accentColor : "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s" }}>
-              {inWatchlist ? <EyeOff size={11} /> : <Eye size={11} />}
-              {inWatchlist ? "Watching" : "Watch"}
-            </button>
-          </div>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: 20, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, margin: 0 }}>{info.ticker}</h1>
-              <span style={{ padding: "2px 8px", borderRadius: 5, fontSize: 10, background: `${ratingColor}22`, color: ratingColor, border: `0.5px solid ${ratingColor}55`, fontWeight: 600 }}>{info.analyst_rating}</span>
-            </div>
-            <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 3, marginBottom: 0 }}>{info.name}</p>
-            {info.sector && <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 2, marginBottom: 0 }}>{info.sector}{info.industry ? ` · ${info.industry}` : ""}</p>}
-          </div>
+      <div style={{ marginBottom: 14 }}>
+        {/* Nav row */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+          <button onClick={onBack}
+            style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
+            ← Back
+          </button>
+          <button onClick={toggleWatchlist}
+            style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: `0.5px solid ${inWatchlist ? accentColor : "var(--border)"}`, background: inWatchlist ? "rgba(184,134,11,0.1)" : "transparent", color: inWatchlist ? accentColor : "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s" }}>
+            {inWatchlist ? <EyeOff size={11} /> : <Eye size={11} />}
+            {inWatchlist ? "Watching" : "Watch"}
+          </button>
         </div>
 
-        {/* Right: live price */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* LIVE badge */}
-            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 7px", borderRadius: 4, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.3)" }}>
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: AMBER, animation: "livePulse 2s ease-in-out infinite" }} />
-              <span style={{ fontSize: 8, letterSpacing: 1.5, color: accentColor, textTransform: "uppercase", fontWeight: 700 }}>LIVE</span>
+        {/* Identity + price: responsive two-column */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+          {/* Left: ticker + name + sector */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            {/* Row 1: Ticker + company name + analyst badge + Buy button */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, margin: 0, lineHeight: 1 }}>
+                {info.ticker}
+              </h1>
+              <span style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.2, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {info.name}
+              </span>
+              <span style={{ padding: "2px 7px", borderRadius: 5, fontSize: 9, background: `${ratingColor}22`, color: ratingColor, border: `0.5px solid ${ratingColor}55`, fontWeight: 600, letterSpacing: 0.5, flexShrink: 0 }}>
+                {info.analyst_rating}
+              </span>
             </div>
-            <div style={{ fontFamily: "Space Mono, monospace", fontSize: 28, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: priceColor, transition: "color 0.5s ease" }}>
-              ${currentPrice.toFixed(2)}
-            </div>
+            {/* Row 2: Sector · Industry */}
+            {info.sector && (
+              <p style={{ fontSize: 10, color: "var(--text3)", margin: 0 }}>
+                {info.sector}{info.industry ? ` · ${info.industry}` : ""}
+              </p>
+            )}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: positive ? GREEN : RED }}>
-            {positive ? "+" : ""}{info.change != null ? info.change.toFixed(2) : "-"} ({positive ? "+" : ""}{info.change_pct != null ? info.change_pct.toFixed(2) : "-"}%)
-          </div>
-          {info.bid != null && info.ask != null && (
-            <div style={{ display: "flex", gap: 10, fontSize: 10, color: "var(--text3)" }}>
-              <span>Bid <span style={{ color: "var(--text2)", fontFamily: "Space Mono, monospace" }}>${info.bid.toFixed(2)}</span></span>
-              <span>Ask <span style={{ color: "var(--text2)", fontFamily: "Space Mono, monospace" }}>${info.ask.toFixed(2)}</span></span>
-              {spread != null && spread > 0 && (
-                <span>Spread <span style={{ fontFamily: "Space Mono, monospace" }}>${spread.toFixed(3)}</span></span>
-              )}
+
+          {/* Right: price + live indicator + change + bid/ask */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, flexShrink: 0 }}>
+            {/* Price + live dot */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ fontFamily: "Space Mono, monospace", fontSize: 28, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: priceColor, transition: "color 0.5s ease" }}>
+                ${currentPrice.toFixed(2)}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN, animation: "livePulse 2s ease-in-out infinite", flexShrink: 0 }} />
+                <span style={{ fontSize: 10, color: "var(--text3)" }}>Live</span>
+              </div>
             </div>
-          )}
+            {/* Change amount + % */}
+            <div style={{ fontSize: 13, fontWeight: 600, color: positive ? GREEN : RED }}>
+              {positive ? "+" : ""}{info.change != null ? info.change.toFixed(2) : "-"}
+              <span style={{ fontSize: 12, marginLeft: 4 }}>
+                ({positive ? "+" : ""}{info.change_pct != null ? info.change_pct.toFixed(2) : "-"}%)
+              </span>
+            </div>
+            {/* Bid / Ask / Spread */}
+            {info.bid != null && info.ask != null && (
+              <div style={{ display: "flex", gap: 10, fontSize: 10, color: "var(--text3)" }}>
+                <span>Bid <span style={{ color: "var(--text2)", fontFamily: "Space Mono, monospace" }}>${info.bid.toFixed(2)}</span></span>
+                <span>Ask <span style={{ color: "var(--text2)", fontFamily: "Space Mono, monospace" }}>${info.ask.toFixed(2)}</span></span>
+                {spread != null && spread > 0 && (
+                  <span>Spread <span style={{ fontFamily: "Space Mono, monospace" }}>${spread.toFixed(3)}</span></span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

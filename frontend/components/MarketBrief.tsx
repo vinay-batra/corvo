@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { fetchMarketBrief, fetchMarketDriver } from "../lib/api";
+import { fetchMarketBrief } from "../lib/api";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { posthog } from "../lib/posthog";
 
@@ -44,8 +44,15 @@ function MarketStatusPill() {
 }
 
 type Mover = { ticker: string; change: number; volume: number };
+type BriefSections = {
+  market_summary?: string;
+  market_driver?: string;
+  portfolio_impact?: string;
+  outlook?: string;
+};
 type BriefData = {
   brief: string;
+  sections?: BriefSections;
   generated_at: string;
   indices: Record<string, number>;
   movers: Mover[];
@@ -70,16 +77,25 @@ function IndexPill({ ticker, change }: { ticker: string; change: number }) {
   );
 }
 
-function ParagraphBlock({ text, index }: { text: string; index: number }) {
+function SectionBlock({ label, labelColor, text, delay }: { label?: string; labelColor?: string; text: string; delay: number }) {
   return (
-    <motion.p
-      initial={{ opacity: 0, y: 6 }}
+    <motion.div
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 + 0.1 }}
-      style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.7, margin: 0 }}>
-      {text}
-    </motion.p>
+      transition={{ delay }}
+      style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {label && (
+        <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: labelColor || "var(--text3)", fontWeight: 600 }}>
+          {label}
+        </span>
+      )}
+      <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.7, margin: 0 }}>{text}</p>
+    </motion.div>
   );
+}
+
+function BriefDivider() {
+  return <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />;
 }
 
 function formatBriefDate(): string {
@@ -92,7 +108,6 @@ export default function MarketBrief() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [driverText, setDriverText] = useState<string | null>(null);
   const viewTracked = useRef(false);
 
   const load = useCallback(async (force = false) => {
@@ -125,15 +140,9 @@ export default function MarketBrief() {
     return () => clearInterval(interval);
   }, [load]);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchMarketDriver()
-      .then(json => { if (!cancelled && json?.driver) setDriverText(json.driver); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
-
-  const paragraphs = data?.brief
+  const s = data?.sections;
+  // Fall back to splitting the legacy brief text if no structured sections yet
+  const legacyParagraphs = !s && data?.brief
     ? data.brief.split(/\n\n+/).filter(p => p.trim().length > 0)
     : [];
 
@@ -168,10 +177,10 @@ export default function MarketBrief() {
         </AnimatePresence>
       </div>
 
-      {/* Brief text or error */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Brief sections or error */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {loading ? (
-          [60, 80, 55].map((w, i) => (
+          [70, 90, 60, 75, 55].map((w, i) => (
             <div key={i} style={{ width: `${w}%`, height: 13, borderRadius: 4, background: "var(--bg3)", animation: "pulse 1.5s ease-in-out infinite" }} />
           ))
         ) : isError ? (
@@ -194,21 +203,37 @@ export default function MarketBrief() {
               Retry
             </button>
           </div>
+        ) : s ? (
+          <>
+            {s.market_summary && (
+              <SectionBlock text={s.market_summary} delay={0.05} />
+            )}
+            {s.market_driver && (
+              <>
+                <BriefDivider />
+                <SectionBlock label="Why Markets Moved" labelColor={C.amber} text={s.market_driver} delay={0.1} />
+              </>
+            )}
+            {s.portfolio_impact && (
+              <>
+                <BriefDivider />
+                <SectionBlock label="Your Portfolio" text={s.portfolio_impact} delay={0.15} />
+              </>
+            )}
+            {s.outlook && (
+              <>
+                <BriefDivider />
+                <SectionBlock label="What to Watch" text={s.outlook} delay={0.2} />
+              </>
+            )}
+          </>
         ) : (
-          paragraphs.map((para, i) => <ParagraphBlock key={i} text={para} index={i} />)
+          // Legacy fallback for cached responses without sections
+          legacyParagraphs.map((para, i) => (
+            <SectionBlock key={i} text={para} delay={i * 0.1 + 0.05} />
+          ))
         )}
       </div>
-
-      {/* Market driver: why markets moved */}
-      {driverText && !loading && !isError && (
-        <motion.div
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ display: "flex", alignItems: "flex-start", gap: 7, padding: "8px 10px", borderRadius: 8, background: "rgba(184,134,11,0.05)", border: "0.5px solid rgba(184,134,11,0.15)" }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.amber, flexShrink: 0, marginTop: 4 }} />
-          <span style={{ fontSize: 11.5, color: "var(--text2)", lineHeight: 1.6 }}>{driverText}</span>
-        </motion.div>
-      )}
 
       {/* Footer row: generated time + refresh */}
       {!isError && (

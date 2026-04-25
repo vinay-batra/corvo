@@ -3541,38 +3541,53 @@ def _brief_fetch_movers() -> list[dict]:
         return [{"ticker": t, "change": _brief_one_day_change(t), "volume": 0} for t in _BRIEF_MOVERS[:5]]
 
 
-def _brief_generate(indices: dict[str, float], movers: list[dict]) -> str:
-    """Call Claude to write a concise market brief."""
+def _brief_generate(indices: dict[str, float], movers: list[dict]) -> dict:
+    """Call Claude to write a structured market brief. Returns a dict with sections."""
     import anthropic as _anthropic
+    import json as _json
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        return ""
+        return {}
     client = _anthropic.Anthropic(api_key=api_key)
     index_lines  = "\n".join([f"  {t}: {v:+.2f}%" for t, v in indices.items()])
     mover_lines  = "\n".join([f"  {m['ticker']}: {m['change']:+.2f}% (vol {m['volume']:,})" for m in movers])
+    from datetime import date as _date
+    today_str = _date.today().strftime("%A, %B %-d")
     prompt = (
-        "You are a market analyst. Write a concise daily market brief in exactly 3 paragraphs:\n\n"
+        "You are a market analyst. Return ONLY a valid JSON object (no markdown fences, no extra text) "
+        "with exactly these keys:\n\n"
+        "{\n"
+        '  "market_summary": "2-3 sentences on what the major indexes did today and why",\n'
+        '  "market_driver": "1 sentence on the single biggest reason markets moved",\n'
+        '  "portfolio_impact": "2-3 sentences on how today\'s moves would affect a diversified equity holder, referencing the most active stocks",\n'
+        '  "outlook": "1-2 sentences on the key thing to watch next"\n'
+        "}\n\n"
         f"INDEX PERFORMANCE (1-day):\n{index_lines}\n\n"
         f"TOP 5 MOST ACTIVE STOCKS:\n{mover_lines}\n\n"
-        "Paragraph 1: Overall market mood.\n"
-        "Paragraph 2: Notable movers.\n"
-        "Paragraph 3: One forward-looking insight.\n"
-        "Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff.\n\n"
-        "FORMATTING RULES (follow these exactly):\n"
-        "- Never use asterisks (*) or double asterisks (**) for bold or any formatting\n"
-        "- Never use em dashes anywhere in the response\n"
-        "- Never use markdown formatting of any kind\n"
-        "- Write in plain prose only\n"
-        "- No bullet points, no headers, no bold, no italics\n"
-        "- Just three clean paragraphs of plain text separated by double newlines"
+        "RULES:\n"
+        "- Plain prose only. No asterisks, no em dashes, no markdown, no bullet points.\n"
+        "- Be direct and analytical. No fluff.\n"
+        "- Return only the JSON object, nothing else."
     )
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=400,
-        system="You are a market analyst writing plain prose daily briefs. Never use em dashes. Never use asterisks or any markdown formatting. Write in plain prose only.",
+        max_tokens=500,
+        system="You are a market analyst. Return only valid JSON, no markdown, no commentary.",
         messages=[{"role": "user", "content": prompt}],
     )
-    return clean_ai_response(response.content[0].text)
+    raw = clean_ai_response(response.content[0].text).strip()
+    # Strip markdown fences if Claude wraps it anyway
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+    try:
+        sections = _json.loads(raw)
+    except Exception:
+        # Fallback: return a single market_summary from the raw text
+        sections = {"market_summary": raw, "market_driver": "", "portfolio_impact": "", "outlook": ""}
+    return {k: clean_ai_response(v) for k, v in sections.items() if isinstance(v, str)}
 
 
 def _brief_push_body(brief: str, indices: dict[str, float]) -> str:
@@ -3706,12 +3721,15 @@ async def market_brief_endpoint(force: bool = False):
 
     try:
         loop = asyncio.get_event_loop()
-        indices = await loop.run_in_executor(None, _brief_fetch_indices)
-        movers  = await loop.run_in_executor(None, _brief_fetch_movers)
-        brief   = await loop.run_in_executor(None, _brief_generate, indices, movers)
+        indices  = await loop.run_in_executor(None, _brief_fetch_indices)
+        movers   = await loop.run_in_executor(None, _brief_fetch_movers)
+        sections = await loop.run_in_executor(None, _brief_generate, indices, movers)
         generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        # Keep legacy `brief` field (first section text) for push notification compat
+        legacy_brief = sections.get("market_summary", "")
         result = {
-            "brief": brief,
+            "brief": legacy_brief,
+            "sections": sections,
             "generated_at": generated_at,
             "indices": {k: safe_float(v) for k, v in indices.items()},
             "movers": movers,
@@ -3720,7 +3738,7 @@ async def market_brief_endpoint(force: bool = False):
         _market_brief_cache["ts"] = now
         return result
     except Exception as e:
-        return {"error": str(e), "brief": "", "generated_at": "", "indices": {}, "movers": []}
+        return {"error": str(e), "brief": "", "sections": {}, "generated_at": "", "indices": {}, "movers": []}
 
 
 async def price_alert_loop():
