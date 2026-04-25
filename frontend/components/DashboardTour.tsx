@@ -22,9 +22,12 @@ const DESKTOP_STOPS: TourStop[] = [
 ];
 
 const MOBILE_STOPS: TourStop[] = [
-  { id: "tour-mob-tabs",    label: "Tab Bar",   title: "Navigate the dashboard", description: "Scroll the tab bar left and right to access all pages — Dashboard, Positions, Stocks, Income & Tax, Simulations, News, Watchlist, and Learn." },
-  { id: "tour-mob-analyze", label: "Analyze",   title: "Build your portfolio",   description: "Tap Analyze to open the sidebar. Search for any stock, ETF, or crypto, set your weights, then hit Analyze to get your full risk breakdown." },
-  { id: "tour-ai-chat-fab", label: "AI Chat",   title: "Ask AI anything",        description: "Tap the chat button to open AI Chat. Ask about your portfolio, get rebalancing suggestions, or dive deeper into any metric." },
+  { id: "tour-mob-home",      label: "Home",       title: "Go home anytime",          description: "The house icon takes you back to the Corvo homepage. Your portfolio and settings are always saved." },
+  { id: "tour-mob-hamburger", label: "Sidebar",    title: "Your portfolio lives here", description: "Tap the menu icon to open the sidebar. Add tickers, set weights, choose your period and benchmark, then hit Analyze to get your full breakdown." },
+  { id: "tour-mob-tabs",      label: "Tabs",       title: "Scroll to explore",        description: "Swipe the tab bar left to see all pages — Positions, Stocks, Income & Tax, Simulations, News, Watchlist, and Learn." },
+  { id: "tour-mob-bell",      label: "Alerts",     title: "Stay on top of moves",     description: "Set price alerts and portfolio notifications here. You'll get an email or push notification when your thresholds are hit." },
+  { id: "tour-mob-chat",      label: "AI Chat",    title: "Ask AI anything",          description: "Tap the chat button to open AI Chat. Ask about your Sharpe ratio, get rebalancing ideas, or go deeper on any metric in your portfolio." },
+  { id: "tour-mob-profile",   label: "Account",    title: "Your account",             description: "Tap your avatar to access Settings, your Account, Referrals, and Sign Out." },
 ];
 
 interface RingPos { top: number; left: number; width: number; height: number; }

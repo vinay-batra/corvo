@@ -1551,19 +1551,17 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           .c-risk-2col{grid-template-columns:1fr!important}
           .c-content{padding:12px 10px!important;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
-          .c-mob-add{display:flex!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important}
-          #tour-ai-chat-fab{display:none!important}
+          #tour-mob-chat{display:none!important}
           .c-alloc-row{flex-direction:column!important}
           .c-alloc-row>*{flex:none!important;width:100%!important}
           .c-mob-bar #usermenu-btn>span{display:none!important}
           .c-mob-bar #usermenu-btn{padding:3px!important;gap:0!important}
           .c-mob-bar #usermenu-btn svg:last-child{display:none!important}
-          #tour-ai-chat-fab{display:flex!important;bottom:24px!important;right:16px!important}
+          #tour-mob-chat{display:flex!important;bottom:24px!important;right:16px!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
           .c-mob-drawer{display:none!important}
-          .c-mob-add{display:none!important}
           .c-mob-bottom-nav{display:none!important}
         }
         .c-mob-tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
@@ -1601,13 +1599,13 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "0.5px solid var(--border)", padding: "0 4px" }}>
             {/* Left: sidebar toggle + home */}
             <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-              <button onClick={() => setSidebarOpen(true)} title="Open portfolio builder" aria-label="Open sidebar"
+              <button id="tour-mob-hamburger" onClick={() => setSidebarOpen(true)} title="Open portfolio builder" aria-label="Open sidebar"
                 style={{ width: 44, height: 44, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
               </button>
-              <Link href="/" title="Home" aria-label="Go to homepage"
+              <Link id="tour-mob-home" href="/" title="Home" aria-label="Go to homepage"
                 style={{ width: 44, height: 44, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", textDecoration: "none" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
@@ -1617,7 +1615,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             {/* Right actions */}
             <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
               {/* Alerts bell */}
-              <button onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
+              <button id="tour-mob-bell" onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
                 style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: "var(--text2)" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -1646,16 +1644,18 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 </button>
               )}
               {/* User avatar */}
-              <UserMenu
-                onEmailPrefs={() => setShowEmailPrefs(true)}
-                onReferral={() => setShowReferral(true)}
-                onSettings={() => setShowSettings(true)}
-                onProfile={() => setShowProfile(true)}
-                onReplayOnboarding={() => { localStorage.removeItem("corvo_onboarding_skipped"); localStorage.removeItem("corvo_setup_banner_dismissed"); setShowSettings(false); setShowOnboarding(true); }}
-                onReplayTour={() => { localStorage.removeItem("corvo_tour_completed"); setShowSettings(false); setShowDashboardTour(true); }}
-                avatarUrl={navProfile.avatarUrl}
-                displayName={navProfile.displayName}
-              />
+              <div id="tour-mob-profile" style={{ display: "flex", alignItems: "center" }}>
+                <UserMenu
+                  onEmailPrefs={() => setShowEmailPrefs(true)}
+                  onReferral={() => setShowReferral(true)}
+                  onSettings={() => setShowSettings(true)}
+                  onProfile={() => setShowProfile(true)}
+                  onReplayOnboarding={() => { localStorage.removeItem("corvo_onboarding_skipped"); localStorage.removeItem("corvo_setup_banner_dismissed"); setShowSettings(false); setShowOnboarding(true); }}
+                  onReplayTour={() => { localStorage.removeItem("corvo_tour_completed"); setShowSettings(false); setShowDashboardTour(true); }}
+                  avatarUrl={navProfile.avatarUrl}
+                  displayName={navProfile.displayName}
+                />
+              </div>
             </div>
           </div>
           {/* Row 2: scrollable tab bar */}
@@ -2075,7 +2075,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
       {/* Floating AI Chat button */}
       <motion.button
-        id="tour-ai-chat-fab"
+        id="tour-mob-chat"
         onClick={() => setChatOpen(v => !v)}
         title="AI Chat (A)"
         initial={false}
@@ -2105,17 +2105,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         onAiChat={() => { setChatOpen(v => !v); sound.whoosh(); }}
       />
 
-      {/* Mobile: ANALYZE button (bottom-left) — overview tab only */}
-      {activeTab === "overview" && (
-        <motion.button
-          id="tour-mob-analyze"
-          className="c-mob-add"
-          onClick={() => setSidebarOpen(true)}
-          initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
-          style={{ position: "fixed", bottom: 20, left: 16, zIndex: 149, padding: "12px 18px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-body)", background: "var(--card-bg)", color: "var(--text2)", border: "0.5px solid var(--border2)", borderRadius: 20, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.25)", display: "none", alignItems: "center", gap: 6 }}>
-          Analyze
-        </motion.button>
-      )}
 
       <AnimatePresence>
         {showOnboarding && (
