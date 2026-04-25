@@ -1597,19 +1597,23 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, minWidth: 0, overflow: "hidden" }}>
         {/* Mobile top bar — two rows: brand/actions + tabs */}
         <div className="c-mob-bar" style={{ display: "none", flexDirection: "column", borderBottom: "0.5px solid var(--border)", background: "var(--bg2)", flexShrink: 0 }}>
-          {/* Row 1: sidebar toggle | CORVO | action icons */}
+          {/* Row 1: left icons | action icons */}
           <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "0.5px solid var(--border)", padding: "0 4px" }}>
-            {/* Sidebar / Analyze toggle */}
-            <button onClick={() => setSidebarOpen(true)} title="Open portfolio builder" aria-label="Open sidebar"
-              style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-              </svg>
-            </button>
-            {/* CORVO brand */}
-            <Link href="/" style={{ textDecoration: "none" }}>
-              <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, letterSpacing: 4, color: "var(--accent)" }}>CORVO</span>
-            </Link>
+            {/* Left: sidebar toggle + home */}
+            <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+              <button onClick={() => setSidebarOpen(true)} title="Open portfolio builder" aria-label="Open sidebar"
+                style={{ width: 44, height: 44, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+              </button>
+              <Link href="/" title="Home" aria-label="Go to homepage"
+                style={{ width: 44, height: 44, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", textDecoration: "none" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </Link>
+            </div>
             {/* Right actions */}
             <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
               {/* Alerts bell */}
