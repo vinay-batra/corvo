@@ -367,10 +367,8 @@ function FoundingMemberSection() {
   return (
     <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", background: "rgba(201,168,76,0.04)", border: "0.5px solid rgba(201,168,76,0.3)", borderRadius: 20, padding: "44px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-          {/* Glow */}
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 60%)", pointerEvents: "none" }} />
-          <div style={{ position: "relative", zIndex: 1 }}>
+        <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", padding: "44px 40px", textAlign: "center" }}>
+          <div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 20, marginBottom: 20 }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
               <span style={{ fontSize: 10, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase" }}>Limited Spots</span>
