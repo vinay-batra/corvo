@@ -8,6 +8,7 @@ const TOUR_KEY = "corvo_tour_completed";
 interface TourStop {
   id: string;
   label: string;
+  title?: string;
   description: string;
 }
 
@@ -21,9 +22,9 @@ const DESKTOP_STOPS: TourStop[] = [
 ];
 
 const MOBILE_STOPS: TourStop[] = [
-  { id: "tour-mob-tabs",    label: "Tab Bar",   description: "Scroll left and right to navigate all pages: Dashboard, Positions, Stocks, Income & Tax, Simulations, News, Watchlist, and Learn." },
-  { id: "tour-mob-analyze", label: "Analyze",   description: "Tap here to open the sidebar, add your tickers and weights, then run your portfolio analysis." },
-  { id: "tour-ai-chat-fab", label: "AI Chat",   description: "Ask AI anything about your portfolio: risk, strategy, what-if scenarios, and more." },
+  { id: "tour-mob-tabs",    label: "Tab Bar",   title: "Navigate the dashboard", description: "Scroll the tab bar left and right to access all pages — Dashboard, Positions, Stocks, Income & Tax, Simulations, News, Watchlist, and Learn." },
+  { id: "tour-mob-analyze", label: "Analyze",   title: "Build your portfolio",   description: "Tap Analyze to open the sidebar. Search for any stock, ETF, or crypto, set your weights, then hit Analyze to get your full risk breakdown." },
+  { id: "tour-ai-chat-fab", label: "AI Chat",   title: "Ask AI anything",        description: "Tap the chat button to open AI Chat. Ask about your portfolio, get rebalancing suggestions, or dive deeper into any metric." },
 ];
 
 interface RingPos { top: number; left: number; width: number; height: number; }
@@ -133,10 +134,10 @@ export default function DashboardTour({ onComplete }: Props) {
           }
         `}</style>
 
-        {/* Dim overlay: clickable to skip */}
+        {/* Dim overlay: clickable to skip on desktop only */}
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", pointerEvents: "auto" }}
-          onClick={handleDone}
+          onClick={!isMobile ? handleDone : undefined}
         />
 
         {/* Amber ring around target */}
@@ -168,57 +169,117 @@ export default function DashboardTour({ onComplete }: Props) {
               pointerEvents: "auto",
               animation: "tourIn 0.22s ease-out",
             }}>
-            <div style={{
-              background: "#1a1a18",
-              border: "0.5px solid rgba(201,168,76,0.3)",
-              borderLeft: "3px solid #b8860b",
-              borderRadius: 11,
-              padding: "14px 16px",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
-            }}>
-              {/* Step counter */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase" }}>
-                  {step + 1} / {total}
-                </span>
-                <span style={{
-                  fontSize: 9, color: "var(--accent)", background: "rgba(184,134,11,0.12)",
-                  padding: "2px 8px", borderRadius: 10, fontWeight: 600,
-                }}>{stop.label}</span>
-              </div>
+            {isMobile ? (
+              /* ── Mobile tooltip ── */
+              <div style={{
+                background: "#1a1a18",
+                border: "0.5px solid rgba(201,168,76,0.3)",
+                borderLeft: "3px solid #b8860b",
+                borderRadius: 11,
+                padding: "14px 16px",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
+              }}>
+                {/* Header: step counter + Skip (top right, only skip option) */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ fontSize: 9, letterSpacing: 2, color: "#b8860b", textTransform: "uppercase" }}>
+                    {step + 1} / {total}
+                  </span>
+                  <button
+                    onClick={handleDone}
+                    style={{ fontSize: 11, color: "#b8860b", background: "none", border: "none", cursor: "pointer", padding: 0, letterSpacing: 0.2 }}>
+                    Skip
+                  </button>
+                </div>
 
-              <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, marginBottom: 14 }}>
-                {stop.description}
-              </p>
+                {/* Title */}
+                {stop.title && (
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#e8e3d4", marginBottom: 6 }}>
+                    {stop.title}
+                  </div>
+                )}
 
-              {/* Progress dots */}
-              <div style={{ display: "flex", gap: 5, marginBottom: 14 }}>
-                {STOPS.map((_, i) => (
-                  <div key={i} style={{
-                    width: i === step ? 16 : 6, height: 4, borderRadius: 2,
-                    background: i <= step ? "#b8860b" : "rgba(255,255,255,0.15)",
-                    transition: "all 0.2s",
-                  }} />
-                ))}
-              </div>
+                {/* Description */}
+                <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.65, marginBottom: 14 }}>
+                  {stop.description}
+                </p>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <button
-                  onClick={handleDone}
-                  style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0, letterSpacing: 0.2 }}>
-                  Skip Tour
-                </button>
-                <button
-                  onClick={handleNext}
-                  style={{
-                    padding: "7px 18px", fontSize: 12, fontWeight: 600,
-                    background: "#b8860b", border: "none", borderRadius: 7,
-                    color: "#fff", cursor: "pointer", letterSpacing: 0.3,
-                  }}>
-                  {step >= total - 1 ? "Done" : "Next →"}
-                </button>
+                {/* Progress dots */}
+                <div style={{ display: "flex", gap: 5, marginBottom: 14 }}>
+                  {STOPS.map((_, i) => (
+                    <div key={i} style={{
+                      width: i === step ? 16 : 6, height: 4, borderRadius: 2,
+                      background: i <= step ? "#b8860b" : "rgba(255,255,255,0.15)",
+                      transition: "all 0.2s",
+                    }} />
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    onClick={handleNext}
+                    style={{
+                      padding: "7px 18px", fontSize: 12, fontWeight: 600,
+                      background: "#b8860b", border: "none", borderRadius: 7,
+                      color: "#fff", cursor: "pointer", letterSpacing: 0.3,
+                    }}>
+                    {step >= total - 1 ? "Done" : "Next →"}
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* ── Desktop tooltip (unchanged) ── */
+              <div style={{
+                background: "#1a1a18",
+                border: "0.5px solid rgba(201,168,76,0.3)",
+                borderLeft: "3px solid #b8860b",
+                borderRadius: 11,
+                padding: "14px 16px",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
+              }}>
+                {/* Step counter */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase" }}>
+                    {step + 1} / {total}
+                  </span>
+                  <span style={{
+                    fontSize: 9, color: "var(--accent)", background: "rgba(184,134,11,0.12)",
+                    padding: "2px 8px", borderRadius: 10, fontWeight: 600,
+                  }}>{stop.label}</span>
+                </div>
+
+                <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, marginBottom: 14 }}>
+                  {stop.description}
+                </p>
+
+                {/* Progress dots */}
+                <div style={{ display: "flex", gap: 5, marginBottom: 14 }}>
+                  {STOPS.map((_, i) => (
+                    <div key={i} style={{
+                      width: i === step ? 16 : 6, height: 4, borderRadius: 2,
+                      background: i <= step ? "#b8860b" : "rgba(255,255,255,0.15)",
+                      transition: "all 0.2s",
+                    }} />
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <button
+                    onClick={handleDone}
+                    style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0, letterSpacing: 0.2 }}>
+                    Skip Tour
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    style={{
+                      padding: "7px 18px", fontSize: 12, fontWeight: 600,
+                      background: "#b8860b", border: "none", borderRadius: 7,
+                      color: "#fff", cursor: "pointer", letterSpacing: 0.3,
+                    }}>
+                    {step >= total - 1 ? "Done" : "Next →"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
