@@ -276,7 +276,7 @@ function FAQAIChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-          placeholder="Ask a question about Corvo or investing..."
+          placeholder="Ask about Corvo or investing..."
           style={{ flex: 1, padding: "11px 14px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--text)", fontSize: 13, outline: "none", transition: "border-color 0.2s" }}
           onFocus={(e) => (e.target.style.borderColor = "rgba(201,168,76,0.35)")}
           onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
