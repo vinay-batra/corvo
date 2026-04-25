@@ -13,12 +13,14 @@ interface TourStop {
 }
 
 const DESKTOP_STOPS: TourStop[] = [
-  { id: "tour-analyze-btn",        label: "Analyze",            description: "Run your portfolio analysis here: get Sharpe ratio, health score, and AI insights." },
-  { id: "tour-ai-chat-fab",        label: "AI Chat",            description: "Ask AI anything about your portfolio: risk, strategy, what-if scenarios." },
-  { id: "tour-keyboard-shortcuts", label: "Keyboard Shortcuts", description: "Navigate the dashboard with keyboard shortcuts. Press ? anytime to see them." },
-  { id: "tour-dark-mode-toggle",   label: "Light / Dark Mode",  description: "Switch between light and dark mode to match your preference." },
-  { id: "tour-settings-btn",       label: "Settings",           description: "Set price alerts, email preferences, and manage your account." },
-  { id: "tour-profile-btn",        label: "Profile",            description: "Manage your account, goals, and referrals." },
+  { id: "tour-desk-sidebar",  label: "Sidebar",       title: "Build your portfolio",        description: "Add any stock, ETF, crypto, or money market fund by searching here. Set each holding's weight, enter your portfolio value, then hit Analyze." },
+  { id: "tour-desk-analyze",  label: "Analyze",       title: "Run your analysis",           description: "Hit Analyze to generate your full risk breakdown — Sharpe ratio, CAGR, max drawdown, volatility, health score, AI insights, and benchmark comparison. Re-analyze anytime your holdings change." },
+  { id: "tour-desk-metrics",  label: "Key Metrics",   title: "Your key metrics",            description: "These four cards summarize your portfolio at a glance. Click the ? on any card for a plain-English explanation of what the metric means and how to interpret it." },
+  { id: "tour-desk-chart",    label: "Chart",         title: "Performance vs benchmark",    description: "See how your portfolio stacks up against the S&P 500, Nasdaq, or Dow over 6M, 1Y, 2Y, or 5Y. Use What-If to simulate changes before making them." },
+  { id: "tour-desk-tabs",     label: "Tabs",          title: "Eight pages of intelligence", description: "Dashboard is just the start. Explore Positions for live prices, Stocks to research any ticker, Income & Tax for dividends and harvesting, Simulations for Monte Carlo, News for market events and earnings, Watchlist for alerts, and Learn to level up." },
+  { id: "tour-desk-chat",     label: "AI Chat",       title: "Your AI analyst",             description: "Ask anything about your portfolio — why your Sharpe is low, what to rebalance, how a new position would affect your risk. The AI has full context of your holdings and live market data." },
+  { id: "tour-desk-export",   label: "Export",        title: "Export and share",            description: "Generate a PDF report with your full analysis, download a CSV of your positions, or generate an AI-written report. Great for sharing with an advisor or just keeping records." },
+  { id: "tour-desk-bell",     label: "Notifications", title: "Never miss a move",           description: "Set price alerts on any ticker and get notified by email or push when thresholds are hit. The weekly digest emails you a full portfolio summary every Sunday." },
 ];
 
 const MOBILE_STOPS: TourStop[] = [
@@ -26,7 +28,7 @@ const MOBILE_STOPS: TourStop[] = [
   { id: "tour-mob-hamburger", label: "Sidebar",    title: "Your portfolio lives here", description: "Tap the menu icon to open the sidebar. Add tickers, set weights, choose your period and benchmark, then hit Analyze to get your full breakdown." },
   { id: "tour-mob-tabs",      label: "Tabs",       title: "Scroll to explore",        description: "Swipe the tab bar left to see all pages — Positions, Stocks, Income & Tax, Simulations, News, Watchlist, and Learn." },
   { id: "tour-mob-bell",      label: "Alerts",     title: "Stay on top of moves",     description: "Set price alerts and portfolio notifications here. You'll get an email or push notification when your thresholds are hit." },
-  { id: "tour-mob-chat",      label: "AI Chat",    title: "Ask AI anything",          description: "Tap the chat button to open AI Chat. Ask about your Sharpe ratio, get rebalancing ideas, or go deeper on any metric in your portfolio." },
+  { id: "tour-desk-chat",     label: "AI Chat",    title: "Ask AI anything",          description: "Tap the chat button to open AI Chat. Ask about your Sharpe ratio, get rebalancing ideas, or go deeper on any metric in your portfolio." },
   { id: "tour-mob-profile",   label: "Account",    title: "Your account",             description: "Tap your avatar to access Settings, your Account, Referrals, and Sign Out." },
 ];
 
@@ -113,6 +115,10 @@ export default function DashboardTour({ onComplete }: Props) {
     } else {
       setStep(s => s + 1);
     }
+  };
+
+  const handlePrev = () => {
+    if (step > 0) setStep(s => s - 1);
   };
 
   const handleDone = () => {
@@ -230,7 +236,7 @@ export default function DashboardTour({ onComplete }: Props) {
                 </div>
               </div>
             ) : (
-              /* ── Desktop tooltip (unchanged) ── */
+              /* ── Desktop tooltip ── */
               <div style={{
                 background: "#1a1a18",
                 border: "0.5px solid rgba(201,168,76,0.3)",
@@ -239,18 +245,26 @@ export default function DashboardTour({ onComplete }: Props) {
                 padding: "14px 16px",
                 boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
               }}>
-                {/* Step counter */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase" }}>
-                    {step + 1} / {total}
-                  </span>
-                  <span style={{
-                    fontSize: 9, color: "var(--accent)", background: "rgba(184,134,11,0.12)",
-                    padding: "2px 8px", borderRadius: 10, fontWeight: 600,
-                  }}>{stop.label}</span>
+                {/* Header: step counter + title | Skip */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <div>
+                    <span style={{ fontSize: 9, letterSpacing: 2, color: "#b8860b", textTransform: "uppercase" as const, display: "block", marginBottom: 4 }}>
+                      {step + 1} / {total}
+                    </span>
+                    {stop.title && (
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#e8e3d4" }}>
+                        {stop.title}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleDone}
+                    style={{ fontSize: 11, color: "#b8860b", background: "none", border: "none", cursor: "pointer", padding: 0, letterSpacing: 0.2, flexShrink: 0, marginTop: 2 }}>
+                    Skip
+                  </button>
                 </div>
 
-                <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, marginBottom: 14 }}>
+                <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.65, marginBottom: 14 }}>
                   {stop.description}
                 </p>
 
@@ -267,9 +281,10 @@ export default function DashboardTour({ onComplete }: Props) {
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <button
-                    onClick={handleDone}
-                    style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0, letterSpacing: 0.2 }}>
-                    Skip Tour
+                    onClick={handlePrev}
+                    disabled={step === 0}
+                    style={{ fontSize: 11, color: step === 0 ? "rgba(255,255,255,0.2)" : "#b8860b", background: "none", border: "none", cursor: step === 0 ? "default" : "pointer", padding: 0, letterSpacing: 0.2 }}>
+                    ← Back
                   </button>
                   <button
                     onClick={handleNext}
