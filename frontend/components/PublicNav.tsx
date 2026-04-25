@@ -143,16 +143,12 @@ export default function PublicNav() {
             {dark ? <Sun size={14} /> : <Moon size={14} />}
             {dark ? "Light mode" : "Dark mode"}
           </button>
-          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-            {loggedIn ? (
-              <Link href="/app" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Go to App</Link>
-            ) : (
-              <>
-                <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Log in</Link>
-                <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Get Started</Link>
-              </>
-            )}
-          </div>
+          {!loggedIn && (
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Log in</Link>
+              <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Get Started</Link>
+            </div>
+          )}
         </div>
       )}
     </>
