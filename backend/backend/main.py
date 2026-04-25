@@ -4155,4 +4155,202 @@ async def test_weekly_digest(user_id: str = ""):
     """Manually trigger the weekly digest for a specific user (or all opted-in users)."""
     result = await send_weekly_digest(target_user_id=user_id or None)
     return result
-# force redeploy Fri Apr 24 10:36:18 EDT 2026
+
+
+# ── Market Driver ──────────────────────────────────────────────────────────────
+
+_market_driver_cache: dict = {"data": None, "ts": 0.0}
+
+
+@app.get("/market-driver")
+async def market_driver():
+    """Return one-sentence explanation of the primary US market driver today."""
+    global _market_driver_cache
+    now = time.time()
+    cached = _market_driver_cache.get("data")
+    if cached and (now - _market_driver_cache.get("ts", 0)) < 300:
+        return cached
+
+    index_changes: dict[str, float] = {}
+    for sym in ["^GSPC", "^IXIC", "^DJI"]:
+        index_changes[sym] = _brief_one_day_change(sym)
+
+    headlines: list[str] = []
+    try:
+        news_items = yf.Ticker("SPY").news or []
+        for item in news_items[:6]:
+            title = (
+                item.get("title")
+                or (item.get("content") or {}).get("title")
+                or ""
+            )
+            if title and len(headlines) < 3:
+                headlines.append(title.strip())
+    except Exception as e:
+        print(f"market-driver news error: {e}")
+
+    driver = ""
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if api_key:
+        try:
+            import anthropic as _anthropic
+            client = _anthropic.Anthropic(api_key=api_key)
+            index_str = (
+                f"S&P 500 (^GSPC): {index_changes.get('^GSPC', 0):+.2f}%, "
+                f"Nasdaq (^IXIC): {index_changes.get('^IXIC', 0):+.2f}%, "
+                f"Dow (^DJI): {index_changes.get('^DJI', 0):+.2f}%"
+            )
+            headlines_str = " | ".join(headlines) if headlines else "No headlines available"
+            prompt = f"Index data: {index_str}\nTop headlines: {headlines_str}"
+            response = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=80,
+                system=(
+                    "In one sentence, explain the single most important reason US markets moved today "
+                    "based on these headlines and index data. Be specific, name the actual event, "
+                    "report, or news. No em dashes. Under 20 words."
+                ),
+                messages=[{"role": "user", "content": prompt}],
+            )
+            driver = clean_ai_response(response.content[0].text.strip())
+        except Exception as e:
+            print(f"market-driver AI error: {e}")
+
+    result = {"driver": driver}
+    _market_driver_cache["data"] = result
+    _market_driver_cache["ts"] = now
+    return result
+
+
+# ── Earnings Calendar ──────────────────────────────────────────────────────────
+
+@app.get("/earnings-calendar")
+def earnings_calendar(tickers: str = Query(default="")):
+    """Return upcoming earnings dates for portfolio tickers within the next 60 days."""
+    from datetime import date, timedelta
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not tickers_list:
+        return []
+
+    today = date.today()
+    cutoff = today + timedelta(days=60)
+    results = []
+
+    for t in tickers_list:
+        try:
+            ticker_obj = yf.Ticker(t)
+            cal = ticker_obj.calendar
+            if cal is None:
+                continue
+
+            if isinstance(cal, dict):
+                raw_date = cal.get("Earnings Date")
+                eps_est = cal.get("EPS Estimate")
+                rev_est = cal.get("Revenue Estimate")
+            else:
+                try:
+                    raw_date = cal.loc["Earnings Date"].iloc[0] if "Earnings Date" in cal.index else None
+                    eps_est = cal.loc["EPS Estimate"].iloc[0] if "EPS Estimate" in cal.index else None
+                    rev_est = cal.loc["Revenue Estimate"].iloc[0] if "Revenue Estimate" in cal.index else None
+                except Exception:
+                    raw_date = eps_est = rev_est = None
+
+            if raw_date is None:
+                continue
+
+            if isinstance(raw_date, (list, tuple)):
+                raw_date = raw_date[0] if raw_date else None
+            if raw_date is None:
+                continue
+
+            if hasattr(raw_date, "date"):
+                earnings_date = raw_date.date()
+            else:
+                earnings_date = date.fromisoformat(str(raw_date)[:10])
+
+            if earnings_date < today or earnings_date > cutoff:
+                continue
+
+            try:
+                info = ticker_obj.info
+                company = info.get("longName") or info.get("shortName") or t
+            except Exception:
+                company = t
+
+            def _safe(v):
+                try:
+                    f = float(v)
+                    return None if math.isnan(f) else f
+                except Exception:
+                    return None
+
+            results.append({
+                "ticker": t,
+                "company": company,
+                "date": earnings_date.isoformat(),
+                "eps_estimate": _safe(eps_est),
+                "revenue_estimate": _safe(rev_est),
+            })
+        except Exception as e:
+            print(f"earnings-calendar error for {t}: {e}")
+
+    results.sort(key=lambda x: x["date"])
+    return results
+
+
+# ── Events Calendar ────────────────────────────────────────────────────────────
+
+_FALLBACK_EVENTS_2026 = [
+    {"date": "2026-05-01", "event": "Nonfarm Payrolls (Apr)", "country": "US", "actual": None, "estimate": "180K", "previous": "228K"},
+    {"date": "2026-05-05", "event": "FOMC Meeting Day 1 (May)", "country": "US", "actual": None, "estimate": None, "previous": None},
+    {"date": "2026-05-06", "event": "FOMC Rate Decision (May)", "country": "US", "actual": None, "estimate": "4.25%-4.50%", "previous": "4.25%-4.50%"},
+    {"date": "2026-05-13", "event": "CPI (Apr)", "country": "US", "actual": None, "estimate": "2.6%", "previous": "2.4%"},
+    {"date": "2026-05-14", "event": "PPI (Apr)", "country": "US", "actual": None, "estimate": "3.1%", "previous": "2.7%"},
+    {"date": "2026-05-15", "event": "Retail Sales (Apr)", "country": "US", "actual": None, "estimate": "0.4%", "previous": "1.4%"},
+    {"date": "2026-05-29", "event": "GDP Q1 Revised", "country": "US", "actual": None, "estimate": "2.3%", "previous": "2.4%"},
+    {"date": "2026-06-05", "event": "Nonfarm Payrolls (May)", "country": "US", "actual": None, "estimate": None, "previous": None},
+    {"date": "2026-06-10", "event": "CPI (May)", "country": "US", "actual": None, "estimate": None, "previous": None},
+    {"date": "2026-06-16", "event": "FOMC Meeting Day 1 (Jun)", "country": "US", "actual": None, "estimate": None, "previous": None},
+    {"date": "2026-06-17", "event": "FOMC Rate Decision (Jun)", "country": "US", "actual": None, "estimate": None, "previous": None},
+    {"date": "2026-07-02", "event": "Nonfarm Payrolls (Jun)", "country": "US", "actual": None, "estimate": None, "previous": None},
+    {"date": "2026-07-14", "event": "CPI (Jun)", "country": "US", "actual": None, "estimate": None, "previous": None},
+]
+
+
+@app.get("/events-calendar")
+def events_calendar():
+    """Return next 30 days of high-impact economic events from FMP or fallback."""
+    from datetime import date, timedelta
+    today = date.today()
+    to_date = today + timedelta(days=30)
+
+    try:
+        url = (
+            f"https://financialmodelingprep.com/api/v3/economic_calendar"
+            f"?from={today.isoformat()}&to={to_date.isoformat()}&apikey=demo"
+        )
+        resp = requests.get(url, timeout=8)
+        if resp.status_code == 200:
+            data = resp.json()
+            if isinstance(data, list) and len(data) > 0:
+                high_impact = [e for e in data if (e.get("impact") or "").lower() == "high"]
+                high_impact.sort(key=lambda x: x.get("date", ""))
+                result = [
+                    {
+                        "date": e.get("date", ""),
+                        "event": e.get("event", ""),
+                        "country": e.get("country", ""),
+                        "actual": e.get("actual"),
+                        "estimate": e.get("estimate"),
+                        "previous": e.get("previous"),
+                    }
+                    for e in high_impact
+                ]
+                if result:
+                    return result
+    except Exception as e:
+        print(f"events-calendar FMP error: {e}")
+
+    today_str = today.isoformat()
+    cutoff_str = to_date.isoformat()
+    return [e for e in _FALLBACK_EVENTS_2026 if today_str <= e["date"] <= cutoff_str]
