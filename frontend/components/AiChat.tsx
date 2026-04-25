@@ -242,6 +242,10 @@ export default function AiChat({
   const liveTotal = assets?.reduce((s: number, a: any) => s + (a.weight ?? 0), 0) || 1;
   const liveWeights = assets?.map((a: any) => (a.weight ?? 0) / liveTotal) || [];
 
+  // Reset suggestions when portfolio tickers change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setSuggestionSet(Math.floor(Math.random() * 4)); }, [liveTickers.join(",")]);
+
   const portfolioContext = portfolioCtxOn ? {
     // Live holdings: always current
     tickers: liveTickers,
@@ -948,7 +952,7 @@ export default function AiChat({
                 <span style={{ fontSize: 12, fontWeight: 600, color: limitColor, whiteSpace: "nowrap" }}>{remaining}/{messagesLimit}</span>
               </div>
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.7, marginBottom: 16 }}>
-                <strong style={{ color: "var(--text)" }}>Base limit:</strong> 15 messages/day<br />
+                <strong style={{ color: "var(--text)" }}>Base limit:</strong> {messagesLimit} messages/day<br />
                 <strong style={{ color: "var(--text)" }}>How to get more:</strong> Invite friends using your referral link. Each referral adds +5 messages per day (up to +25 bonus).<br />
                 <strong style={{ color: "var(--text)" }}>Resets:</strong> Midnight UTC daily.
               </p>

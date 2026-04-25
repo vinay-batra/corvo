@@ -48,7 +48,7 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
   else if (assets.length >= 4 && data.sector_concentration != null && data.sector_concentration > 0.7)
     insights.push({icon:"⬡",text:sanitize(`High sector concentration (${(data.sector_concentration*100).toFixed(0)}% in one sector) — consider diversifying across industries`)});
   else if (assets.length >= 4)
-    insights.push({icon:"⬡",text:sanitize(`Your holdings appear concentrated in tech (AAPL, MSFT, NVDA, GOOGL) — consider adding exposure to other sectors`)});
+    insights.push({icon:"⬡",text:sanitize(`Your ${assets.length} holdings span multiple positions — review sector overlap to ensure diversification`)});
   else
     insights.push({icon:"⬡",text:sanitize(`${assets.length} holdings provides good diversification`)});
 

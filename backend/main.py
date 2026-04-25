@@ -57,9 +57,10 @@ if os.getenv("SENTRY_DSN"):
 async def lifespan(app_: FastAPI):
     alert_task  = asyncio.create_task(price_alert_loop())
     brief_task  = asyncio.create_task(morning_brief_loop())
-    digest_task = asyncio.create_task(weekly_digest_loop())
+    # Weekly digest is handled exclusively by the Supabase edge function
+    # (supabase/functions/weekly-digest) to avoid duplicate sends.
     yield
-    for t in (alert_task, brief_task, digest_task):
+    for t in (alert_task, brief_task):
         t.cancel()
         try:
             await t

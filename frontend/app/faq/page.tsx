@@ -6,6 +6,8 @@ import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 import FeedbackButton from "../../components/FeedbackButton";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 /* ─── Data ─── */
 const SECTIONS = [
   {
@@ -198,7 +200,7 @@ function FAQAIChat() {
     setMessages(next);
     setLoading(true);
     try {
-      const res = await fetch("/api/ai-chat", {
+      const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ messages: next }),

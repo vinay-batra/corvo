@@ -10,6 +10,7 @@ import ReferralsDashboard from "@/components/ReferralsDashboard";
 import FeedbackButton from "../../components/FeedbackButton";
 import ProfileEditor from "../../components/ProfileEditor";
 import GoalsModal from "../../components/GoalsModal";
+import { useToast } from "../../components/Toast";
 
 const PERIODS    = ["6mo", "1y", "2y", "5y"] as const;
 const BENCHMARKS = [
@@ -20,7 +21,6 @@ const BENCHMARKS = [
   { ticker: "QQQ",   label: "QQQ ETF" },
   { ticker: "GLD",   label: "Gold" },
 ];
-const CURRENCIES = ["USD", "GBP", "EUR", "JPY", "CAD"] as const;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -52,6 +52,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
 }
 
 export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboarding, onReplayTour }: { onClose?: () => void; onProfileSaved?: (profile: { displayName: string; avatarUrl: string | null }) => void; onReplayOnboarding?: () => void; onReplayTour?: () => void }) {
+  const { toast } = useToast();
   const [user, setUser]               = useState<any>(null);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl]     = useState<string | null>(null);
@@ -69,7 +70,6 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
   // Preferences (localStorage)
   const [period, setPeriod]       = useState("1y");
   const [benchmark, setBenchmark] = useState("^GSPC");
-  const [currency, setCurrency]   = useState("USD");
   const [dark, setDark]           = useState(false);
 
   // Notifications (Supabase)
@@ -106,7 +106,6 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
       // Load localStorage prefs
       setPeriod(localStorage.getItem("corvo_period") || "1y");
       setBenchmark(localStorage.getItem("corvo_benchmark") || "^GSPC");
-      setCurrency(localStorage.getItem("corvo_currency") || "USD");
       const theme = localStorage.getItem("corvo_theme");
       const isDark = theme === "dark";
       setDark(isDark);
@@ -204,7 +203,12 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
 
   const saveNotifs = async (wd: boolean, pa: boolean, ns: boolean) => {
     if (!user) return;
-    await supabase.from("email_preferences").upsert({ user_id: user.id, weekly_digest: wd, price_alerts: pa, news_summary: ns, updated_at: new Date().toISOString() });
+    try {
+      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, weekly_digest: wd, price_alerts: pa, news_summary: ns, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    } catch {
+      toast("Failed to save notification preferences. Please try again.", "error");
+    }
   };
 
   const deleteAccount = async () => {
@@ -368,13 +372,13 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
         {/* NOTIFICATIONS */}
         <Section title="Notifications">
           <Row label="Weekly portfolio digest" desc="Portfolio performance summary every Monday">
-            <Toggle on={weeklyDigest} onChange={() => { const v = !weeklyDigest; setWeeklyDigest(v); saveNotifs(v, priceAlerts, newsSummary); }} />
+            <Toggle on={weeklyDigest} onChange={() => { const v = !weeklyDigest; setWeeklyDigest(v); void saveNotifs(v, priceAlerts, newsSummary); }} />
           </Row>
           <Row label="Price alerts" desc="Alerts when holdings hit your set thresholds">
-            <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); saveNotifs(weeklyDigest, v, newsSummary); }} />
+            <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(weeklyDigest, v, newsSummary); }} />
           </Row>
           <Row label="Market news summary" desc="Weekly roundup of market news for your holdings">
-            <Toggle on={newsSummary} onChange={() => { const v = !newsSummary; setNewsSummary(v); saveNotifs(weeklyDigest, priceAlerts, v); }} />
+            <Toggle on={newsSummary} onChange={() => { const v = !newsSummary; setNewsSummary(v); void saveNotifs(weeklyDigest, priceAlerts, v); }} />
           </Row>
         </Section>
 
