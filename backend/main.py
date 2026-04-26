@@ -3830,45 +3830,29 @@ def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
     print(f"[digest-yf] real_tickers={real_tickers} cash_tickers={cash_tickers}")
 
     close_df = pd.DataFrame()
-    if real_tickers:
-        dl_arg = real_tickers[0] if len(real_tickers) == 1 else real_tickers
-        for attempt in range(3):
+    FMP_KEY = os.environ.get("FMP_API_KEY", "")
+    if real_tickers and FMP_KEY:
+        frames = {}
+        for t in real_tickers:
             try:
-                print(f"[digest-yf] yfinance download attempt {attempt + 1}/3: {dl_arg}")
-                raw = yf.download(dl_arg, period="14d", auto_adjust=True, progress=False)
-                if raw is None or raw.empty:
-                    import yfinance as _yf2
-                    _yf2.set_tz_cache_location("/tmp/yf_tz_cache")
-                    raw = _yf2.download(dl_arg, period="14d", auto_adjust=True, progress=False, timeout=30)
-                print(f"[digest-yf] raw shape={raw.shape if raw is not None else None}, columns={list(raw.columns)[:8] if raw is not None and not raw.empty else []}")
-                if raw is None or raw.empty:
-                    print(f"[digest-yf] attempt {attempt + 1}: empty/None response")
-                    if attempt < 2:
-                        time.sleep(2)
-                        continue
-                    break
-                if isinstance(raw.columns, pd.MultiIndex):
-                    lvl0 = raw.columns.get_level_values(0)
-                    key = "Close" if "Close" in lvl0 else "Adj Close"
-                    close_df = raw[key]
-                    if isinstance(close_df, pd.Series):
-                        close_df = close_df.to_frame(name=real_tickers[0])
+                url = f"https://financialmodelingprep.com/api/v3/historical-price-full/{t}?timeseries=14&apikey={FMP_KEY}"
+                r = requests.get(url, timeout=10)
+                data = r.json()
+                hist = data.get("historical", [])
+                if hist:
+                    dates = [row["date"] for row in reversed(hist)]
+                    closes = [row["close"] for row in reversed(hist)]
+                    frames[t] = pd.Series(closes, index=pd.to_datetime(dates), name=t)
+                    print(f"[digest-fmp] {t}: {len(closes)} pts, last={closes[-1]}")
                 else:
-                    if "Close" in raw.columns:
-                        close_df = raw[["Close"]].rename(columns={"Close": real_tickers[0]})
-                    else:
-                        close_df = raw.iloc[:, :1].rename(columns={raw.columns[0]: real_tickers[0]})
-                close_df = close_df.dropna(how="all").tail(8)
-                print(f"[digest-yf] close_df shape={close_df.shape} columns={list(close_df.columns)}")
-                if not close_df.empty:
-                    print(f"[digest-yf] close_df tail:\n{close_df.tail(3).to_string()}")
-                break
+                    print(f"[digest-fmp] {t}: empty response")
             except Exception as e:
-                print(f"[digest-yf] attempt {attempt + 1} error: {e}")
-                if attempt < 2:
-                    time.sleep(2)
-                else:
-                    print("[digest-yf] all 3 download attempts failed")
+                print(f"[digest-fmp] {t}: error {e}")
+        if frames:
+            close_df = pd.DataFrame(frames).dropna(how="all").tail(8)
+            print(f"[digest-fmp] close_df shape={close_df.shape}")
+    elif real_tickers:
+        print("[digest-fmp] FMP_API_KEY not set, skipping real tickers")
 
     n = len(close_df) if not close_df.empty else 8
     print(f"[digest-yf] building port_series with n={n}")
