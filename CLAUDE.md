@@ -40,16 +40,18 @@ Never show a number without explaining what it means. Never explain what somethi
 18. Peer/portfolio comparison — anonymized performance vs other Corvo users
 19. Brokerage sync via Plaid — blocked until user is 18 or parent signs up
 20. Transaction log — per holding, log multiple buys/sells with date, price, quantity. Replaces single cost basis input. Powers accurate P&L, realized vs unrealized gains, and tax calculations.
-21. Pro tier — unlimited AI chat, real-time alerts, custom PDF, SMS, brokerage sync
-22. Custom branded PDF reports — Pro feature
-23. Natural language portfolio editor — "sell half my NVDA, put it in QQQ"
-24. Life event integration — "I'm buying a house in 2 years" adjusts risk recommendations
-25. Community portfolios — follow anonymous top performers, see their moves
-26. Corvo for advisors — B2B, manage multiple client portfolios
-27. Marketing
-28. YC application
-29. App Store — iOS
-30. Google Play — Android
+21. Custom accent color — full color picker in settings, replaces amber as the primary accent color throughout the app (buttons, highlights, chart lines, metric values). Persists per user in Supabase metadata.
+22. Custom UI themes — preset theme packs beyond light/dark (e.g. midnight blue, forest green, slate). User picks in settings, persists per user.
+23. Pro tier — unlimited AI chat, real-time alerts, custom PDF, SMS, brokerage sync
+24. Custom branded PDF reports — Pro feature
+25. Natural language portfolio editor — "sell half my NVDA, put it in QQQ"
+26. Life event integration — "I'm buying a house in 2 years" adjusts risk recommendations
+27. Community portfolios — follow anonymous top performers, see their moves
+28. Corvo for advisors — B2B, manage multiple client portfolios
+29. Marketing
+30. YC application
+31. App Store — iOS
+32. Google Play — Android
 
 ---
 
