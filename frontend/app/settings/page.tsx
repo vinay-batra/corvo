@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Cropper from "react-easy-crop";
@@ -8,9 +8,9 @@ import { supabase } from "../../lib/supabase";
 import { SOUND_KEY } from "../../hooks/useSoundEffects";
 import ReferralsDashboard from "@/components/ReferralsDashboard";
 import FeedbackButton from "../../components/FeedbackButton";
-import ProfileEditor from "../../components/ProfileEditor";
-import GoalsModal from "../../components/GoalsModal";
 import { useToast } from "../../components/Toast";
+
+// ── Constants ──────────────────────────────────────────────────────────────────
 
 const PERIODS    = ["6mo", "1y", "2y", "5y"] as const;
 const BENCHMARKS = [
@@ -22,37 +22,89 @@ const BENCHMARKS = [
   { ticker: "GLD",   label: "Gold" },
 ];
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 14, paddingBottom: 8, borderBottom: "0.5px solid var(--bg3)" }}>{title}</div>
-      {children}
-    </div>
-  );
-}
+type Category = "profile" | "preferences" | "notifications" | "investor" | "referrals" | "account";
+
+const NAV_ITEMS: { id: Category; label: string; terms: string[] }[] = [
+  { id: "profile",       label: "Profile",          terms: ["display name", "photo", "avatar", "email", "member since", "profile", "name", "picture"] },
+  { id: "preferences",   label: "Preferences",      terms: ["analysis period", "benchmark", "theme", "dark mode", "light mode", "sound", "sound effects", "preferences", "period"] },
+  { id: "notifications", label: "Notifications",    terms: ["weekly digest", "price alerts", "notifications", "email", "alerts", "digest"] },
+  { id: "investor",      label: "Investor Profile", terms: ["investor type", "age range", "goals", "income", "risk tolerance", "investment horizon", "investor profile", "risk", "horizon"] },
+  { id: "referrals",     label: "Referrals",        terms: ["referrals", "invite", "refer", "referral", "code"] },
+  { id: "account",       label: "Account",          terms: ["onboarding", "tour", "delete account", "account", "replay", "danger", "delete"] },
+];
+
+// ── Shared sub-components ──────────────────────────────────────────────────────
 
 function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "0.5px solid var(--bg3)" }}>
-      <div>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 0", borderBottom: "0.5px solid var(--border)" }}>
+      <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
         <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>{label}</div>
-        {desc && <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{desc}</div>}
+        {desc && <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2, lineHeight: 1.4 }}>{desc}</div>}
       </div>
-      <div style={{ flexShrink: 0, marginLeft: 16 }}>{children}</div>
+      <div style={{ flexShrink: 0 }}>{children}</div>
     </div>
   );
 }
 
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   return (
-    <div onClick={onChange} style={{ width: 38, height: 22, borderRadius: 11, background: on ? "#c9a84c" : "var(--border)", position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0 }}>
+    <div
+      onClick={onChange}
+      role="switch"
+      aria-checked={on}
+      style={{ width: 38, height: 22, borderRadius: 11, background: on ? "var(--accent)" : "var(--border2)", position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0 }}
+    >
       <div style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "var(--bg)", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
     </div>
   );
 }
 
-export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboarding, onReplayTour }: { onClose?: () => void; onProfileSaved?: (profile: { displayName: string; avatarUrl: string | null }) => void; onReplayOnboarding?: () => void; onReplayTour?: () => void }) {
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", margin: "0 0 20px", letterSpacing: "-0.3px" }}>
+      {children}
+    </h2>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 6, letterSpacing: 0.3 }}>{children}</div>;
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
+export default function SettingsPage({
+  onClose, onProfileSaved, onReplayOnboarding, onReplayTour,
+}: {
+  onClose?: () => void;
+  onProfileSaved?: (profile: { displayName: string; avatarUrl: string | null }) => void;
+  onReplayOnboarding?: () => void;
+  onReplayTour?: () => void;
+}) {
   const { toast } = useToast();
+
+  // ── Nav state ──────────────────────────────────────────────────────────────
+  const [activeCategory, setActiveCategory] = useState<Category>("profile");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredNav = useMemo(() => {
+    if (!searchQuery.trim()) return NAV_ITEMS;
+    const q = searchQuery.toLowerCase().trim();
+    return NAV_ITEMS.filter(item =>
+      item.label.toLowerCase().includes(q) ||
+      item.terms.some(t => t.includes(q))
+    );
+  }, [searchQuery]);
+
+  // When search result changes, auto-select first match
+  useEffect(() => {
+    if (filteredNav.length > 0 && !filteredNav.find(i => i.id === activeCategory)) {
+      setActiveCategory(filteredNav[0].id);
+    }
+  }, [filteredNav, activeCategory]);
+
+  // ── User / Profile ─────────────────────────────────────────────────────────
   const [user, setUser]               = useState<any>(null);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl]     = useState<string | null>(null);
@@ -61,59 +113,49 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
   const [avatarLoading, setAvatarLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Crop modal state
+  // ── Crop modal ─────────────────────────────────────────────────────────────
   const [cropSrc, setCropSrc]       = useState<string | null>(null);
   const [crop, setCrop]             = useState({ x: 0, y: 0 });
   const [zoom, setZoom]             = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
-  // Preferences (localStorage)
+  // ── Preferences ────────────────────────────────────────────────────────────
   const [period, setPeriod]       = useState("1y");
   const [benchmark, setBenchmark] = useState("^GSPC");
   const [dark, setDark]           = useState(false);
-
-  // Notifications (Supabase)
-  const [weeklyDigest, setWeeklyDigest]           = useState(true);
-  const [priceAlerts, setPriceAlerts]             = useState(true);
-  const [newsSummary, setNewsSummary]             = useState(false);
-
-  // Sound effects (localStorage)
   const [soundEnabled, setSoundEnabled] = useState(false);
 
-  // Investor profile questionnaire
-  const [investorType, setInvestorType]         = useState("");
-  const [primaryGoals, setPrimaryGoals]         = useState<string[]>([]);
-  const [ageRange, setAgeRange]                 = useState("");
-  const [incomeRange, setIncomeRange]           = useState("");
-  const [riskTolerance, setRiskTolerance]       = useState("");
+  // ── Notifications ──────────────────────────────────────────────────────────
+  const [weeklyDigest, setWeeklyDigest] = useState(true);
+  const [priceAlerts, setPriceAlerts]   = useState(true);
+
+  // ── Investor profile ───────────────────────────────────────────────────────
+  const [investorType, setInvestorType]           = useState("");
+  const [primaryGoals, setPrimaryGoals]           = useState<string[]>([]);
+  const [ageRange, setAgeRange]                   = useState("");
+  const [incomeRange, setIncomeRange]             = useState("");
+  const [riskTolerance, setRiskTolerance]         = useState("");
   const [investmentHorizon, setInvestmentHorizon] = useState("");
-  const [savingProfileQ, setSavingProfileQ]     = useState(false);
-  const [profileQSaved, setProfileQSaved]       = useState(false);
+  const [savingProfileQ, setSavingProfileQ]       = useState(false);
+  const [profileQSaved, setProfileQSaved]         = useState(false);
 
-  // Goals (legacy)
-  const [goals, setGoals]               = useState<any>(null);
-  const [showGoalsEditor, setShowGoalsEditor] = useState(false);
-  const [showGoalsModal, setShowGoalsModal] = useState(false);
-
-  // Delete account
+  // ── Delete account ─────────────────────────────────────────────────────────
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting]                   = useState(false);
 
+  // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { window.location.href = "/auth"; return; }
       setUser(user);
 
-      // Load profile
       const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
       if (profile) { setDisplayName(profile.display_name || ""); setAvatarUrl(profile.avatar_url || null); }
 
-      // Load email prefs
-      const { data: prefs } = await supabase.from("email_preferences").select("*").eq("user_id", user.id).single();
-      if (prefs) { setWeeklyDigest(prefs.weekly_digest); setPriceAlerts(prefs.price_alerts); setNewsSummary(prefs.news_summary); }
+      const { data: prefs } = await supabase.from("email_preferences").select("weekly_digest,price_alerts").eq("user_id", user.id).single();
+      if (prefs) { setWeeklyDigest(prefs.weekly_digest); setPriceAlerts(prefs.price_alerts); }
 
-      // Load localStorage prefs
       setPeriod(localStorage.getItem("corvo_period") || "1y");
       setBenchmark(localStorage.getItem("corvo_benchmark") || "^GSPC");
       const theme = localStorage.getItem("corvo_theme");
@@ -121,10 +163,7 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
       setDark(isDark);
       document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
       setSoundEnabled(localStorage.getItem(SOUND_KEY) === "true");
-      const raw = localStorage.getItem("corvo_goals");
-      if (raw && raw !== "skipped") { try { setGoals(JSON.parse(raw)); } catch { /* ignore */ } }
 
-      // Load investor profile from user metadata
       const m = user.user_metadata || {};
       setInvestorType(m.investor_type || "");
       setPrimaryGoals(Array.isArray(m.primary_goals) ? m.primary_goals : []);
@@ -135,6 +174,19 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
     })();
   }, []);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (cropSrc) { setCropSrc(null); return; }
+        if (showDeleteConfirm) { setShowDeleteConfirm(false); return; }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cropSrc, showDeleteConfirm]);
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
   const saveProfile = async () => {
     if (!user) return;
     setSavingProfile(true);
@@ -143,15 +195,13 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
     onProfileSaved?.({ displayName, avatarUrl });
   };
 
-  // Canvas crop utility
   const getCroppedImg = async (imageSrc: string, pixelCrop: { x: number; y: number; width: number; height: number }): Promise<Blob | null> => {
     const image = new Image();
     image.src = imageSrc;
     await new Promise<void>(resolve => { image.onload = () => resolve(); });
     const canvas = document.createElement("canvas");
     const size = Math.min(pixelCrop.width, pixelCrop.height);
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, size, size);
@@ -166,10 +216,8 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
     if (!cropSrc || !croppedAreaPixels || !user) return;
     setCropSrc(null);
     setAvatarLoading(true);
-    const blob = await getCroppedImg(cropSrc, croppedAreaPixels);
+    let blob = await getCroppedImg(cropSrc, croppedAreaPixels);
     if (!blob) { setAvatarLoading(false); return; }
-    // Compress if > 500KB by reducing quality
-    let finalBlob = blob;
     if (blob.size > 500 * 1024) {
       const img = new Image();
       img.src = cropSrc;
@@ -178,10 +226,11 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
       canvas.width = 400; canvas.height = 400;
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, croppedAreaPixels.x, croppedAreaPixels.y, croppedAreaPixels.width, croppedAreaPixels.height, 0, 0, 400, 400);
-      finalBlob = await new Promise(resolve => canvas.toBlob(b => resolve(b!), "image/jpeg", 0.75));
+      blob = await new Promise(resolve => canvas.toBlob(b => resolve(b!), "image/jpeg", 0.75));
     }
     const path = `${user.id}/avatar.jpg`;
-    const { error } = await supabase.storage.from("avatars").upload(path, finalBlob, { upsert: true, contentType: "image/jpeg" });
+    if (!blob) { setAvatarLoading(false); return; }
+    const { error } = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
     if (!error) {
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       const url = `${data.publicUrl}?t=${Date.now()}`;
@@ -192,44 +241,26 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
     setAvatarLoading(false);
   };
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (cropSrc) setCropSrc(null);
-        if (showDeleteConfirm) setShowDeleteConfirm(false);
-        if (showGoalsEditor) setShowGoalsEditor(false);
-        if (showGoalsModal) setShowGoalsModal(false);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [cropSrc, showDeleteConfirm, showGoalsEditor, showGoalsModal]);
-
-  const onFileSelect = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = e => { setCrop({ x: 0, y: 0 }); setZoom(1); setCropSrc(e.target?.result as string); };
-    reader.readAsDataURL(file);
+  const saveNotifs = async (wd: boolean, pa: boolean) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, weekly_digest: wd, price_alerts: pa, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    } catch {
+      toast("Failed to save notification preferences. Please try again.", "error");
+    }
   };
 
   const saveProfileQuestionnaire = async () => {
     if (!user) return;
     setSavingProfileQ(true);
     await supabase.auth.updateUser({
-      data: {
-        investor_type: investorType,
-        primary_goals: primaryGoals,
-        age_range: ageRange,
-        income_range: incomeRange,
-        risk_tolerance: riskTolerance,
-        investment_horizon: investmentHorizon,
-      },
+      data: { investor_type: investorType, primary_goals: primaryGoals, age_range: ageRange, income_range: incomeRange, risk_tolerance: riskTolerance, investment_horizon: investmentHorizon },
     });
     setSavingProfileQ(false);
     setProfileQSaved(true);
     setTimeout(() => setProfileQSaved(false), 1500);
   };
-
-  const savePref = (key: string, val: string) => localStorage.setItem(key, val);
 
   const toggleTheme = () => {
     const next = !dark;
@@ -238,35 +269,17 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
     localStorage.setItem("corvo_theme", next ? "dark" : "light");
   };
 
-  const saveNotifs = async (wd: boolean, pa: boolean, ns: boolean) => {
-    if (!user) return;
-    try {
-      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, weekly_digest: wd, price_alerts: pa, news_summary: ns, updated_at: new Date().toISOString() });
-      if (error) throw error;
-    } catch {
-      toast("Failed to save notification preferences. Please try again.", "error");
-    }
-  };
-
   const deleteAccount = async () => {
     setDeleting(true);
     try {
-      // Get the current session JWT to authenticate the delete request
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated");
-
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/user`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-
+      const res = await fetch(`${apiUrl}/user`, { method: "DELETE", headers: { Authorization: `Bearer ${session.access_token}` } });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || `Server error ${res.status}`);
       }
-
-      // Hard-delete confirmed, clear local state and redirect
       await supabase.auth.signOut();
       window.location.href = "/";
     } catch (err) {
@@ -275,34 +288,321 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
     }
   };
 
+  // ── Derived ────────────────────────────────────────────────────────────────
   const initials = (displayName || user?.email || "?")[0]?.toUpperCase();
   const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "";
-  const benchmarkLabel = BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark;
 
   const inputStyle: React.CSSProperties = {
-    padding: "8px 12px", fontSize: 13, borderRadius: 8,
+    padding: "8px 12px", fontSize: 13, borderRadius: "var(--radius)",
     border: "0.5px solid var(--border)", background: "var(--bg3)",
     color: "var(--text)", outline: "none", width: "100%",
   };
 
   const selectStyle: React.CSSProperties = {
-    ...inputStyle, width: "auto", cursor: "pointer",
+    ...inputStyle, width: "100%", cursor: "pointer",
   };
 
+  const btnOutline: React.CSSProperties = {
+    padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: "var(--radius)",
+    border: "0.5px solid var(--border2)", background: "transparent",
+    color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s",
+  };
+
+  const btnSave = (saved: boolean): React.CSSProperties => ({
+    padding: "8px 18px", fontSize: 12, fontWeight: 600, borderRadius: "var(--radius)",
+    border: "none", background: saved ? "rgba(var(--accent-rgb), 0.7)" : "var(--accent)",
+    color: "var(--bg)", cursor: "pointer", transition: "background 0.2s",
+  });
+
+  // ── Category panels ────────────────────────────────────────────────────────
+
+  const renderProfile = () => (
+    <div>
+      <SectionTitle>Profile</SectionTitle>
+
+      {/* Avatar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 20, padding: "16px 0", borderBottom: "0.5px solid var(--border)", marginBottom: 4 }}>
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Avatar" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border2)" }} />
+          ) : (
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(var(--accent-rgb), 0.12)", border: "2px solid rgba(var(--accent-rgb), 0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "var(--accent)" }}>
+              {initials}
+            </div>
+          )}
+          {avatarLoading && (
+            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 18, height: 18, border: "2px solid var(--border2)", borderTopColor: "var(--text)", borderRadius: "50%", animation: "s-spin 0.8s linear infinite" }} />
+            </div>
+          )}
+        </div>
+        <div>
+          <button onClick={() => fileRef.current?.click()} style={btnOutline}>Upload photo</button>
+          <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 5 }}>JPG, PNG, WEBP · max 2MB</p>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
+            onChange={e => {
+              if (e.target.files?.[0]) {
+                const reader = new FileReader();
+                reader.onload = ev => { setCrop({ x: 0, y: 0 }); setZoom(1); setCropSrc(ev.target?.result as string); };
+                reader.readAsDataURL(e.target.files[0]);
+              }
+              e.target.value = "";
+            }} />
+        </div>
+      </div>
+
+      {/* Display name */}
+      <div style={{ padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
+        <FieldLabel>Display name</FieldLabel>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input value={displayName} onChange={e => setDisplayName(e.target.value)}
+            placeholder="Enter display name" style={{ ...inputStyle, flex: 1 }} />
+          <button onClick={saveProfile} disabled={savingProfile} style={btnSave(profileSaved)}>
+            {profileSaved ? "Saved" : savingProfile ? "..." : "Save"}
+          </button>
+        </div>
+      </div>
+
+      <Row label="Email" desc="Managed by your auth provider">
+        <span style={{ fontSize: 13, color: "var(--text3)" }}>{user?.email || "N/A"}</span>
+      </Row>
+      <Row label="Member since">
+        <span style={{ fontSize: 13, color: "var(--text3)" }}>{memberSince}</span>
+      </Row>
+    </div>
+  );
+
+  const renderPreferences = () => (
+    <div>
+      <SectionTitle>Preferences</SectionTitle>
+      <Row label="Default analysis period">
+        <div style={{ display: "flex", gap: 4 }}>
+          {PERIODS.map(p => (
+            <button key={p} onClick={() => { setPeriod(p); localStorage.setItem("corvo_period", p); }}
+              style={{ padding: "4px 10px", fontSize: 11, fontFamily: "var(--font-mono)", borderRadius: 6, border: "0.5px solid var(--border)", background: period === p ? "var(--text)" : "transparent", color: period === p ? "var(--bg)" : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
+              {p}
+            </button>
+          ))}
+        </div>
+      </Row>
+      <Row label="Default benchmark">
+        <select value={benchmark} onChange={e => { setBenchmark(e.target.value); localStorage.setItem("corvo_benchmark", e.target.value); }}
+          style={{ ...selectStyle, width: "auto" }}>
+          {BENCHMARKS.map(b => <option key={b.ticker} value={b.ticker}>{b.label}</option>)}
+        </select>
+      </Row>
+      <Row label="Theme" desc="Dark mode affects the entire app interface">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "var(--text3)" }}>{dark ? "Dark" : "Light"}</span>
+          <Toggle on={dark} onChange={toggleTheme} />
+        </div>
+      </Row>
+      <Row label="Sound effects" desc="Subtle audio feedback on tab switches and interactions">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "var(--text3)" }}>{soundEnabled ? "On" : "Off"}</span>
+          <Toggle on={soundEnabled} onChange={() => {
+            const next = !soundEnabled;
+            setSoundEnabled(next);
+            localStorage.setItem(SOUND_KEY, String(next));
+          }} />
+        </div>
+      </Row>
+    </div>
+  );
+
+  const renderNotifications = () => (
+    <div>
+      <SectionTitle>Notifications</SectionTitle>
+      <Row label="Weekly portfolio digest" desc="Portfolio performance summary every Monday">
+        <Toggle on={weeklyDigest} onChange={() => { const v = !weeklyDigest; setWeeklyDigest(v); void saveNotifs(v, priceAlerts); }} />
+      </Row>
+      <Row label="Price alerts" desc="Email when holdings hit your set price thresholds">
+        <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(weeklyDigest, v); }} />
+      </Row>
+    </div>
+  );
+
+  const renderInvestorProfile = () => (
+    <div>
+      <SectionTitle>Investor Profile</SectionTitle>
+      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div>
+            <FieldLabel>Investor type</FieldLabel>
+            <select value={investorType} onChange={e => setInvestorType(e.target.value)} style={selectStyle}>
+              <option value="">Not set</option>
+              <option value="beginner">Beginner investor</option>
+              <option value="active">Active trader</option>
+              <option value="longterm">Long-term investor</option>
+              <option value="professional">Finance professional</option>
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Age range</FieldLabel>
+            <select value={ageRange} onChange={e => setAgeRange(e.target.value)} style={selectStyle}>
+              <option value="">Not set</option>
+              <option value="under18">Under 18</option>
+              <option value="18-24">18 to 24</option>
+              <option value="25-34">25 to 34</option>
+              <option value="35-44">35 to 44</option>
+              <option value="45-54">45 to 54</option>
+              <option value="55-64">55 to 64</option>
+              <option value="65+">65 or older</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <FieldLabel>Primary goals (select up to 3)</FieldLabel>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+            {[
+              { id: "track", label: "Track performance" },
+              { id: "risk",  label: "Reduce risk" },
+              { id: "learn", label: "Learn investing" },
+              { id: "taxes", label: "Optimize taxes" },
+              { id: "wealth", label: "Build wealth" },
+              { id: "retirement", label: "Save for retirement" },
+            ].map(g => {
+              const sel = primaryGoals.includes(g.id);
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => {
+                    if (sel) setPrimaryGoals(prev => prev.filter(x => x !== g.id));
+                    else if (primaryGoals.length < 3) setPrimaryGoals(prev => [...prev, g.id]);
+                  }}
+                  style={{ padding: "5px 13px", fontSize: 11, borderRadius: 20, border: `1px solid ${sel ? "var(--accent)" : "var(--border)"}`, background: sel ? "rgba(var(--accent-rgb), 0.1)" : "transparent", color: sel ? "var(--accent)" : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}
+                >
+                  {g.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div>
+            <FieldLabel>Annual income</FieldLabel>
+            <select value={incomeRange} onChange={e => setIncomeRange(e.target.value)} style={selectStyle}>
+              <option value="">Not set</option>
+              <option value="under30k">Under $30k</option>
+              <option value="30-60k">$30k to $60k</option>
+              <option value="60-100k">$60k to $100k</option>
+              <option value="100-200k">$100k to $200k</option>
+              <option value="200k+">$200k or more</option>
+              <option value="prefer_not">Prefer not to say</option>
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Risk tolerance</FieldLabel>
+            <select value={riskTolerance} onChange={e => setRiskTolerance(e.target.value)} style={selectStyle}>
+              <option value="">Not set</option>
+              <option value="conservative">Conservative</option>
+              <option value="moderate">Moderate</option>
+              <option value="aggressive">Aggressive</option>
+              <option value="very_aggressive">Very Aggressive</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <FieldLabel>Investment horizon</FieldLabel>
+          <select value={investmentHorizon} onChange={e => setInvestmentHorizon(e.target.value)} style={{ ...selectStyle, width: "auto", minWidth: 200 }}>
+            <option value="">Not set</option>
+            <option value="under1y">Less than 1 year</option>
+            <option value="1-3y">1 to 3 years</option>
+            <option value="3-5y">3 to 5 years</option>
+            <option value="5-10y">5 to 10 years</option>
+            <option value="10y+">10 or more years</option>
+          </select>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={saveProfileQuestionnaire} disabled={savingProfileQ} style={btnSave(profileQSaved)}>
+            {profileQSaved ? "Saved" : savingProfileQ ? "..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderReferrals = () => (
+    <div>
+      <SectionTitle>Referrals</SectionTitle>
+      <ReferralsDashboard />
+    </div>
+  );
+
+  const renderAccount = () => (
+    <div>
+      <SectionTitle>Account</SectionTitle>
+
+      <Row label="Replay onboarding" desc="Restart the full setup questionnaire from step 1">
+        <button
+          onClick={() => { window.location.href = "/onboarding?replay=true"; }}
+          style={btnOutline}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+          Restart
+        </button>
+      </Row>
+
+      {onReplayTour && (
+        <Row label="Replay dashboard tour" desc="Re-run the guided tooltip tour of dashboard features">
+          <button onClick={onReplayTour} style={btnOutline}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+            Start tour
+          </button>
+        </Row>
+      )}
+
+      <div style={{ marginTop: 28, padding: 18, border: "0.5px solid rgba(var(--red-rgb, 224,92,92), 0.25)", borderRadius: "var(--radius-lg)", background: "rgba(var(--red-rgb, 224,92,92), 0.04)" }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 4 }}>Delete account</div>
+        <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 14, lineHeight: 1.5 }}>
+          This permanently deletes your account and all saved portfolios. This action cannot be undone.
+        </div>
+        <button onClick={() => setShowDeleteConfirm(true)} style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, borderRadius: "var(--radius)", border: "1px solid rgba(var(--red-rgb, 224,92,92), 0.4)", background: "transparent", color: "var(--red)", cursor: "pointer" }}>
+          Delete account
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderCategory = () => {
+    switch (activeCategory) {
+      case "profile":       return renderProfile();
+      case "preferences":   return renderPreferences();
+      case "notifications": return renderNotifications();
+      case "investor":      return renderInvestorProfile();
+      case "referrals":     return renderReferrals();
+      case "account":       return renderAccount();
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", overflowY: "auto", background: "transparent", color: "var(--text)", fontFamily: "Inter,sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
       <style>{`
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-        @media(max-width:600px){
-          .settings-main{padding:20px 16px!important}
-          .settings-row{flex-wrap:wrap!important;gap:8px!important}
-          .settings-row>div:last-child{flex-shrink:0}
+        @keyframes s-spin { to { transform: rotate(360deg); } }
+        @keyframes s-fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .s-nav-btn:hover { background: var(--bg3) !important; color: var(--text) !important; }
+        .s-nav-btn.active { color: var(--accent) !important; background: rgba(var(--accent-rgb), 0.08) !important; }
+        @media (max-width: 768px) {
+          .s-sidebar { display: none !important; }
+          .s-mobile-nav { display: flex !important; }
+          .s-body { flex-direction: column !important; }
+          .s-content { padding: 20px 16px !important; max-width: 100% !important; }
+          .s-grid-2 { grid-template-columns: 1fr !important; }
+        }
+        @media (min-width: 769px) {
+          .s-mobile-nav { display: none !important; }
         }
       `}</style>
 
-      {/* Header */}
-      <header style={{ height: 52, borderBottom: "0.5px solid var(--bg3)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
+      {/* ── Sticky header ── */}
+      <header style={{ height: 52, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
         {onClose ? (
           <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", fontSize: 12, cursor: "pointer", transition: "color 0.15s", padding: 0 }}
             onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
@@ -316,263 +616,94 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
             ← Back
           </Link>
         )}
-        <div style={{ width: "0.5px", height: 16, background: "var(--bg3)" }} />
+        <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
         <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Settings</span>
       </header>
 
-      <main className="settings-main" style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px", animation: "fadein 0.5s ease" }}>
+      {/* ── Mobile top tab bar ── */}
+      <div className="s-mobile-nav" style={{ overflowX: "auto", borderBottom: "0.5px solid var(--border)", padding: "0 12px", gap: 2, WebkitOverflowScrolling: "touch" as any, scrollbarWidth: "none" as any }}>
+        <style>{`.s-mobile-nav::-webkit-scrollbar { display: none; }`}</style>
+        {filteredNav.map(item => (
+          <button
+            key={item.id}
+            onClick={() => setActiveCategory(item.id)}
+            style={{
+              display: "inline-block", whiteSpace: "nowrap",
+              padding: "10px 14px", fontSize: 12, fontWeight: activeCategory === item.id ? 600 : 400,
+              borderRadius: 0, border: "none",
+              borderBottom: activeCategory === item.id ? "2px solid var(--accent)" : "2px solid transparent",
+              background: "transparent",
+              color: activeCategory === item.id ? "var(--accent)" : "var(--text3)",
+              cursor: "pointer", transition: "color 0.15s",
+            }}>
+            {item.label}
+          </button>
+        ))}
+      </div>
 
-        {/* PROFILE */}
-        <Section title="Profile">
-          {/* Avatar */}
-          <div style={{ display: "flex", alignItems: "center", gap: 20, padding: "16px 0", borderBottom: "0.5px solid var(--border)" }}>
+      {/* ── Two-column body ── */}
+      <div className="s-body" style={{ display: "flex", maxWidth: 920, margin: "0 auto", minHeight: "calc(100vh - 52px)" }}>
+
+        {/* ── Left sidebar ── */}
+        <aside className="s-sidebar" style={{ width: 220, flexShrink: 0, borderRight: "0.5px solid var(--border)", padding: "24px 0", position: "sticky", top: 52, height: "calc(100vh - 52px)", overflowY: "auto" }}>
+
+          {/* Search */}
+          <div style={{ padding: "0 16px 16px" }}>
             <div style={{ position: "relative" }}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border2)" }} />
-              ) : (
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(184,134,11,0.15)", border: "2px solid rgba(184,134,11,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "var(--accent)" }}>
-                  {initials}
-                </div>
-              )}
-              {avatarLoading && (
-                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ width: 18, height: 18, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                </div>
-              )}
-            </div>
-            <div>
-              <button onClick={() => fileRef.current?.click()}
-                style={{ padding: "7px 14px", fontSize: 12, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>
-                Upload photo
-              </button>
-              <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 5 }}>JPG, PNG, WEBP · max 2MB</p>
-              <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
-                onChange={e => { if (e.target.files?.[0]) onFileSelect(e.target.files[0]); e.target.value = ""; }} />
-            </div>
-          </div>
-          {/* Display name */}
-          <div style={{ padding: "12px 0", borderBottom: "0.5px solid var(--border)" }}>
-            <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 500, marginBottom: 8 }}>Display name</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input value={displayName} onChange={e => setDisplayName(e.target.value)}
-                placeholder="Enter display name" style={{ ...inputStyle, flex: 1 }} />
-              <button onClick={saveProfile} disabled={savingProfile}
-                style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: profileSaved ? "#5cb88a" : "var(--accent)", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s", whiteSpace: "nowrap" as const }}>
-                {profileSaved ? "✓ Saved" : savingProfile ? "…" : "Save"}
-              </button>
-            </div>
-          </div>
-          <Row label="Email" desc="Managed by your auth provider">
-            <span style={{ fontSize: 13, color: "var(--text3)" }}>{user?.email || "N/A"}</span>
-          </Row>
-          <Row label="Member since">
-            <span style={{ fontSize: 13, color: "var(--text3)" }}>{memberSince}</span>
-          </Row>
-        </Section>
-
-        {/* PREFERENCES */}
-        <Section title="Preferences">
-          <Row label="Default analysis period">
-            <div style={{ display: "flex", gap: 4 }}>
-              {PERIODS.map(p => (
-                <button key={p} onClick={() => { setPeriod(p); savePref("corvo_period", p); }}
-                  style={{ padding: "4px 10px", fontSize: 11, fontFamily: "var(--font-mono)", borderRadius: 6, border: "0.5px solid var(--border)", background: period === p ? "var(--text)" : "transparent", color: period === p ? "var(--bg)" : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
-                  {p}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", pointerEvents: "none" }}>
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search settings..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ width: "100%", padding: "7px 10px 7px 30px", fontSize: 12, borderRadius: "var(--radius)", border: "0.5px solid var(--border)", background: "var(--bg3)", color: "var(--text)", outline: "none", boxSizing: "border-box" }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 0, display: "flex", lineHeight: 1 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
-              ))}
+              )}
             </div>
-          </Row>
-          <Row label="Default benchmark">
-            <select value={benchmark} onChange={e => { setBenchmark(e.target.value); savePref("corvo_benchmark", e.target.value); }} style={selectStyle}>
-              {BENCHMARKS.map(b => <option key={b.ticker} value={b.ticker}>{b.label}</option>)}
-            </select>
-          </Row>
-          <Row label="Theme" desc="Dark mode affects the app interface">
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 12, color: "var(--text3)" }}>{dark ? "Dark" : "Light"}</span>
-              <Toggle on={dark} onChange={toggleTheme} />
-            </div>
-          </Row>
-          <Row label="Sound Effects" desc="Subtle whoosh on tab switches and audio feedback on interactions (on by default)">
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 12, color: "var(--text3)" }}>{soundEnabled ? "On" : "Off"}</span>
-              <Toggle on={soundEnabled} onChange={() => {
-                const next = !soundEnabled;
-                setSoundEnabled(next);
-                localStorage.setItem(SOUND_KEY, String(next));
-              }} />
-            </div>
-          </Row>
-        </Section>
-
-        {/* NOTIFICATIONS */}
-        <Section title="Notifications">
-          <Row label="Weekly portfolio digest" desc="Portfolio performance summary every Monday">
-            <Toggle on={weeklyDigest} onChange={() => { const v = !weeklyDigest; setWeeklyDigest(v); void saveNotifs(v, priceAlerts, newsSummary); }} />
-          </Row>
-          <Row label="Price alerts" desc="Alerts when holdings hit your set thresholds">
-            <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(weeklyDigest, v, newsSummary); }} />
-          </Row>
-          <Row label="Market news summary" desc="Weekly roundup of market news for your holdings">
-            <Toggle on={newsSummary} onChange={() => { const v = !newsSummary; setNewsSummary(v); void saveNotifs(weeklyDigest, priceAlerts, v); }} />
-          </Row>
-        </Section>
-
-        {/* REFERRALS */}
-        <Section title="Referrals">
-          <ReferralsDashboard />
-        </Section>
-
-        {/* ONBOARDING */}
-        {onReplayTour && (
-          <Section title="Onboarding">
-            <Row label="Replay Onboarding" desc="Restart the full setup questionnaire from step 1">
-              <button
-                onClick={() => { window.location.href = "/onboarding?replay=true"; }}
-                style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
-                Restart
-              </button>
-            </Row>
-            <Row label="Replay Dashboard Tour" desc="Re-run the guided tooltip tour of dashboard features">
-              <button onClick={onReplayTour}
-                style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
-                Start Tour
-              </button>
-            </Row>
-          </Section>
-        )}
-
-        {/* INVESTOR PROFILE */}
-        <Section title="Investor Profile">
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "12px 0 4px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Investor type</div>
-                <select value={investorType} onChange={e => setInvestorType(e.target.value)} style={{ ...selectStyle, width: "100%" }}>
-                  <option value="">Not set</option>
-                  <option value="beginner">Beginner investor</option>
-                  <option value="active">Active trader</option>
-                  <option value="longterm">Long-term investor</option>
-                  <option value="professional">Finance professional</option>
-                </select>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Age range</div>
-                <select value={ageRange} onChange={e => setAgeRange(e.target.value)} style={{ ...selectStyle, width: "100%" }}>
-                  <option value="">Not set</option>
-                  <option value="under18">Under 18</option>
-                  <option value="18-24">18 to 24</option>
-                  <option value="25-34">25 to 34</option>
-                  <option value="35-44">35 to 44</option>
-                  <option value="45-54">45 to 54</option>
-                  <option value="55-64">55 to 64</option>
-                  <option value="65+">65 or older</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Primary goals (select up to 3)</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-                {[
-                  { id: "track", label: "Track performance" },
-                  { id: "risk", label: "Reduce risk" },
-                  { id: "learn", label: "Learn investing" },
-                  { id: "taxes", label: "Optimize taxes" },
-                  { id: "wealth", label: "Build wealth" },
-                  { id: "retirement", label: "Save for retirement" },
-                ].map(g => {
-                  const sel = primaryGoals.includes(g.id);
-                  return (
-                    <button
-                      key={g.id}
-                      onClick={() => {
-                        if (sel) setPrimaryGoals(prev => prev.filter(x => x !== g.id));
-                        else if (primaryGoals.length < 3) setPrimaryGoals(prev => [...prev, g.id]);
-                      }}
-                      style={{
-                        padding: "5px 13px", fontSize: 11, borderRadius: 20,
-                        border: `1px solid ${sel ? "var(--accent)" : "var(--border)"}`,
-                        background: sel ? "rgba(201,168,76,0.1)" : "transparent",
-                        color: sel ? "var(--accent)" : "var(--text3)",
-                        cursor: "pointer", transition: "all 0.15s",
-                      }}
-                    >
-                      {g.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Annual income</div>
-                <select value={incomeRange} onChange={e => setIncomeRange(e.target.value)} style={{ ...selectStyle, width: "100%" }}>
-                  <option value="">Not set</option>
-                  <option value="under30k">Under $30k</option>
-                  <option value="30-60k">$30k to $60k</option>
-                  <option value="60-100k">$60k to $100k</option>
-                  <option value="100-200k">$100k to $200k</option>
-                  <option value="200k+">$200k or more</option>
-                  <option value="prefer_not">Prefer not to say</option>
-                </select>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Risk tolerance</div>
-                <select value={riskTolerance} onChange={e => setRiskTolerance(e.target.value)} style={{ ...selectStyle, width: "100%" }}>
-                  <option value="">Not set</option>
-                  <option value="conservative">Conservative</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="aggressive">Aggressive</option>
-                  <option value="very_aggressive">Very Aggressive</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Investment horizon</div>
-              <select value={investmentHorizon} onChange={e => setInvestmentHorizon(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
-                <option value="">Not set</option>
-                <option value="under1y">Less than 1 year</option>
-                <option value="1-3y">1 to 3 years</option>
-                <option value="3-5y">3 to 5 years</option>
-                <option value="5-10y">5 to 10 years</option>
-                <option value="10y+">10 or more years</option>
-              </select>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 4 }}>
-              <button
-                onClick={saveProfileQuestionnaire}
-                disabled={savingProfileQ}
-                style={{ padding: "8px 18px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: profileQSaved ? "#5cb88a" : "var(--accent)", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s" }}
-              >
-                {profileQSaved ? "Saved" : savingProfileQ ? "..." : "Save"}
-              </button>
-            </div>
+            {searchQuery && filteredNav.length === 0 && (
+              <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 10, textAlign: "center" }}>No results</p>
+            )}
           </div>
-        </Section>
 
-        {/* DANGER ZONE */}
-        <Section title="Danger Zone">
-          <div style={{ padding: "16px", border: "0.5px solid rgba(224,92,92,0.25)", borderRadius: 10, background: "rgba(224,92,92,0.04)" }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 4 }}>Delete account</div>
-            <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>This will permanently delete your account and all saved portfolios. This action cannot be undone.</div>
-            <button onClick={() => setShowDeleteConfirm(true)}
-              style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "1px solid rgba(224,92,92,0.4)", background: "transparent", color: "#e05c5c", cursor: "pointer" }}>
-              Delete account
-            </button>
-          </div>
-        </Section>
-      </main>
+          {/* Nav items */}
+          <nav>
+            {filteredNav.map(item => (
+              <button
+                key={item.id}
+                className={`s-nav-btn${activeCategory === item.id ? " active" : ""}`}
+                onClick={() => { setActiveCategory(item.id); setSearchQuery(""); }}
+                style={{
+                  width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 10,
+                  padding: "9px 16px", fontSize: 13, fontWeight: activeCategory === item.id ? 500 : 400,
+                  background: "transparent",
+                  borderLeft: activeCategory === item.id ? "2px solid var(--accent)" : "2px solid transparent",
+                  border: "none",
+                  borderLeftWidth: 2, borderLeftStyle: "solid",
+                  borderLeftColor: activeCategory === item.id ? "var(--accent)" : "transparent",
+                  color: activeCategory === item.id ? "var(--accent)" : "var(--text3)",
+                  cursor: "pointer", transition: "all 0.13s",
+                  marginBottom: 1,
+                }}>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-      {/* Avatar crop modal */}
+        {/* ── Right content ── */}
+        <main className="s-content" style={{ flex: 1, padding: "28px 36px", maxWidth: 600, animation: "s-fadein 0.25s ease" }} key={activeCategory}>
+          {renderCategory()}
+        </main>
+      </div>
+
+      {/* ── Avatar crop modal ── */}
       <AnimatePresence>
         {cropSrc && (
           <motion.div
@@ -584,44 +715,23 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
               initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 420 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 16 }}>Crop photo</div>
-              {/* Crop area */}
-              <div style={{ position: "relative", width: "100%", height: 300, borderRadius: 10, overflow: "hidden", background: "#000" }}>
-                <Cropper
-                  image={cropSrc}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={1}
-                  cropShape="round"
-                  showGrid={false}
-                  onCropChange={setCrop}
-                  onZoomChange={setZoom}
-                  onCropComplete={onCropComplete}
-                />
+              <div style={{ position: "relative", width: "100%", height: 300, borderRadius: 10, overflow: "hidden", background: "var(--bg)" }}>
+                <Cropper image={cropSrc} crop={crop} zoom={zoom} aspect={1} cropShape="round" showGrid={false} onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
               </div>
-              {/* Zoom slider */}
               <div style={{ marginTop: 18, marginBottom: 20 }}>
                 <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 8 }}>Zoom</div>
-                <input type="range" min={0.5} max={3} step={0.05} value={zoom}
-                  onChange={e => setZoom(Number(e.target.value))}
-                  style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }} />
+                <input type="range" min={0.5} max={3} step={0.05} value={zoom} onChange={e => setZoom(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }} />
               </div>
-              {/* Buttons */}
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => setCropSrc(null)}
-                  style={{ flex: 1, padding: 10, fontSize: 13, borderRadius: 9, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>
-                  Cancel
-                </button>
-                <button onClick={handleCropSave}
-                  style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 600, borderRadius: 9, border: "none", background: "var(--accent)", color: "#0a0e14", cursor: "pointer" }}>
-                  Save photo
-                </button>
+                <button onClick={() => setCropSrc(null)} style={{ flex: 1, padding: 10, fontSize: 13, borderRadius: 9, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>Cancel</button>
+                <button onClick={handleCropSave} style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 600, borderRadius: 9, border: "none", background: "var(--accent)", color: "var(--bg)", cursor: "pointer" }}>Save photo</button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Delete confirm modal */}
+      {/* ── Delete confirm modal ── */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
@@ -632,43 +742,19 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
             <motion.div
               // initial={false} is required — do not remove
               initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
-              style={{ background: "var(--card-bg)", border: "0.5px solid rgba(224,92,92,0.3)", borderRadius: 14, padding: "28px", width: "100%", maxWidth: 400 }}>
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400 }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", marginBottom: 10 }}>Delete account?</div>
               <div style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.6, marginBottom: 24 }}>
-                All your portfolios, goals, and preferences will be permanently deleted. You cannot undo this.
+                All your portfolios, goals, and preferences will be permanently deleted. This cannot be undone.
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => setShowDeleteConfirm(false)}
-                  style={{ flex: 1, padding: "10px", fontSize: 13, borderRadius: 9, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>
-                  Cancel
-                </button>
-                <button onClick={deleteAccount} disabled={deleting}
-                  style={{ flex: 1, padding: "10px", fontSize: 13, fontWeight: 600, borderRadius: 9, border: "none", background: "#e05c5c", color: "#fff", cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}>
-                  {deleting ? "Deleting…" : "Yes, delete"}
+                <button onClick={() => setShowDeleteConfirm(false)} style={{ flex: 1, padding: 10, fontSize: 13, borderRadius: 9, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text2)", cursor: "pointer" }}>Cancel</button>
+                <button onClick={deleteAccount} disabled={deleting} style={{ flex: 1, padding: 10, fontSize: 13, fontWeight: 600, borderRadius: 9, border: "none", background: "var(--red)", color: "var(--bg)", cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}>
+                  {deleting ? "Deleting..." : "Yes, delete"}
                 </button>
               </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
-      {/* Goals editor modal (ProfileEditor, for legacy use) */}
-      <AnimatePresence>
-        {showGoalsEditor && (
-          <ProfileEditor
-            goals={goals}
-            onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoalsEditor(false); }}
-            onClose={() => setShowGoalsEditor(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Goals modal */}
-      <AnimatePresence>
-        {showGoalsModal && (
-          <GoalsModal
-            onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoalsModal(false); }}
-            onSkip={() => setShowGoalsModal(false)}
-          />
         )}
       </AnimatePresence>
 
