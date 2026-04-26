@@ -2707,14 +2707,19 @@ def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, 
   </div>
 </body></html>"""
     try:
-        requests.post(
+        resp = requests.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
             json={"from": from_email, "to": [to_email], "subject": subject, "html": html},
             timeout=10,
         )
+        data = resp.json()
+        if resp.ok:
+            print(f"[alerts] email sent to {to_email} for {ticker} (resend_id={data.get('id')})")
+        else:
+            print(f"[alerts] email send failed for {to_email}: {resp.status_code} {data}")
     except Exception as e:
-        print(f"[push] alert email error: {e}")
+        print(f"[alerts] alert email error: {e}")
 
 
 async def check_price_alerts():
