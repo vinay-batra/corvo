@@ -73,6 +73,12 @@ export default function GreetingBar({ displayName, assets }: Props) {
   const greeting = getGreeting();
 
   const [resolvedName, setResolvedName] = useState(displayName || "");
+  const [briefingCollapsed, setBriefingCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("corvo_briefing_collapsed") === "true") setBriefingCollapsed(true);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (displayName?.trim()) { setResolvedName(displayName.trim()); return; }
@@ -161,6 +167,14 @@ export default function GreetingBar({ displayName, assets }: Props) {
     return () => clearInterval(id);
   }, [assets]);
 
+  const toggleBriefing = () => {
+    setBriefingCollapsed(c => {
+      const next = !c;
+      try { localStorage.setItem("corvo_briefing_collapsed", String(next)); } catch {}
+      return next;
+    });
+  };
+
   const pos = (v: number) => v >= 0;
   const fmtSign = (v: number) => (v >= 0 ? "+" : "");
 
@@ -206,15 +220,32 @@ export default function GreetingBar({ displayName, assets }: Props) {
           </div>
         </div>
 
+        {/* Briefing header with collapse toggle */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+          <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>Morning Brief</span>
+          <button
+            onClick={toggleBriefing}
+            title={briefingCollapsed ? "Show briefing" : "Hide briefing"}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text3)", display: "flex", alignItems: "center", gap: 3, fontSize: 10, letterSpacing: 0.5 }}
+          >
+            <svg
+              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ transition: "transform 0.2s", transform: briefingCollapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        </div>
+
         {/* Briefing sections */}
-        {summaryLoading ? (
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+        {!briefingCollapsed && (summaryLoading ? (
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
             {[80, 65, 90].map((w, i) => (
               <div key={i} style={{ width: `${w}%`, height: 13, borderRadius: 4, background: "var(--bg3)", animation: "pulse 1.5s ease-in-out infinite" }} />
             ))}
           </div>
         ) : market ? (
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
             {/* Market summary — no label */}
             {market.market && (
               <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>
@@ -254,7 +285,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
           </div>
         ) : (
           <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>Market data unavailable</p>
-        )}
+        ))}
       </div>
 
       {/* DIVIDER */}
