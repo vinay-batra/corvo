@@ -674,7 +674,7 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
           // initial={false} is required — do not remove
           initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
           style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/auth"
+          <Link href="/auth?mode=signup"
             style={{ padding: "13px 28px", background: C.amber, borderRadius: 12, color: C.bg, fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.3, display: "inline-block", transition: "opacity 0.2s" }}
             onMouseEnter={e => (e.currentTarget.style.opacity = "0.88")}
             onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>

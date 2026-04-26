@@ -105,7 +105,7 @@ export default function BlogPost({ title, date, readTime, category, description,
           <div style={{ marginTop: 32, padding: "20px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 12 }}>
             <p style={{ fontSize: 11, color: "var(--text)", fontWeight: 600, marginBottom: 8, lineHeight: 1.4 }}>Analyze your own portfolio</p>
             <p style={{ fontSize: 10, color: "var(--text3)", marginBottom: 14, lineHeight: 1.55 }}>Free institutional-grade portfolio analytics.</p>
-            <Link href="/auth" style={{ display: "block", textAlign: "center" as const, padding: "9px 16px", background: "#c9a84c", borderRadius: 8, fontSize: 11, fontWeight: 700, color: "#0a0e14", textDecoration: "none" }}>Get started free</Link>
+            <Link href="/auth?mode=signup" style={{ display: "block", textAlign: "center" as const, padding: "9px 16px", background: "#c9a84c", borderRadius: 8, fontSize: 11, fontWeight: 700, color: "#0a0e14", textDecoration: "none" }}>Get started free</Link>
           </div>
         </aside>
       </div>

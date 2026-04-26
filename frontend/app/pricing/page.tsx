@@ -322,7 +322,7 @@ function PricingCard({
         <WaitlistCapture />
       ) : (
         <Link
-          href="/auth"
+          href="/auth?mode=signup"
           style={{
             display: "block",
             textAlign: "center",

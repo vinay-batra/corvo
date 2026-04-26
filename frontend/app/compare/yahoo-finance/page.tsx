@@ -63,7 +63,7 @@ export default function YahooFinanceComparePage() {
             Yahoo Finance is a great starting point. But when you want real portfolio analytics: AI insights, risk metrics, Monte Carlo simulation, Corvo goes far deeper, completely free.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/auth" style={{ padding: "15px 40px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
+            <Link href="/auth?mode=signup" style={{ padding: "15px 40px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
               Try Corvo Free →
             </Link>
             <a href="#comparison" style={{ padding: "15px 40px", borderRadius: 12, border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c", fontSize: 14, fontWeight: 500, textDecoration: "none", background: "transparent" }}>
@@ -265,7 +265,7 @@ export default function YahooFinanceComparePage() {
             <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", marginBottom: 44, lineHeight: 1.8, fontWeight: 300 }}>
               Get the analytics Yahoo Finance doesn't offer: AI insights, Monte Carlo simulation, real risk metrics. All free.
             </p>
-            <Link href="/auth" style={{ display: "inline-block", padding: "16px 48px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 15, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
+            <Link href="/auth?mode=signup" style={{ display: "inline-block", padding: "16px 48px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 15, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
               Get Started Free →
             </Link>
             <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", marginTop: 20 }}>No credit card required · Takes 60 seconds to connect your portfolio</p>

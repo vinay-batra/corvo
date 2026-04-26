@@ -29,7 +29,8 @@ function AuthForm() {
     if (ref) localStorage.setItem("corvo_referrer", ref);
   }, [searchParams]);
   const [sessionChecked, setSessionChecked] = useState(false);
-  const [mode, setMode] = useState<"login"|"signup"|"reset"|"magic">("login");
+  const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
+  const [mode, setMode] = useState<"login"|"signup"|"reset"|"magic">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
@@ -280,6 +281,16 @@ function AuthForm() {
               Send magic link instead
             </button>
           )
+        )}
+
+        {mode === "signup" && (
+          <p style={{ marginTop: 14, textAlign: "center", fontSize: 12, color: C.cream3 }}>
+            Already have an account?{" "}
+            <button onClick={() => { setMode("login"); setError(null); setSuccess(null); }}
+              style={{ background: "none", border: "none", padding: 0, color: C.amber, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>
+              Log in
+            </button>
+          </p>
         )}
 
         {(mode === "reset" || mode === "magic") && (
