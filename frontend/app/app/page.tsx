@@ -37,6 +37,7 @@ import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import OnboardingModal from "../../components/OnboardingModal";
+import TourInviteModal from "../../components/TourInviteModal";
 import { fetchPortfolio } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 import AlertsPanel from "../../components/AlertsPanel";
@@ -856,6 +857,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
+  const [showTourInvite, setShowTourInvite] = useState(false);
   const [savedPortfolioLines, setSavedPortfolioLines] = useState<SavedPortfolioLine[]>([]);
   const [customDateRange, setCustomDateRange] = useState<{ start: string; end: string } | null>(null);
   const [userId, setUserId]         = useState<string | null>(null);
@@ -1416,11 +1418,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     <>
       {/* Logo → homepage */}
       <div className="c-sidebar-logo" style={{ ...S.sidebarTop, borderLeft: "3px solid var(--accent)", paddingLeft: 13 }}>
-        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
           <img src="/corvo-logo.svg" width={26} height={26} alt="Corvo" style={{ flexShrink: 0, opacity: 0.9 }} />
           <div style={S.logo}>CORVO</div>
         </Link>
-        <div style={S.logoSub}>Portfolio Intelligence</div>
       </div>
 
       {/* Builder */}
