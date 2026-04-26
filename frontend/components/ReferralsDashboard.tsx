@@ -10,17 +10,9 @@ export default function ReferralsDashboard() {
 
   useEffect(() => {
     (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await fetch(`${apiUrl}/referrals?user_id=${user.id}`);
-        const data = await res.json();
-        setRefLink(
-          data.referral_link ||
-          `https://corvo.capital/app?ref=${user.id.replace(/-/g, "").slice(0, 8)}`
-        );
-      } catch {}
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setRefLink(`https://corvo.capital/signup?ref=${user.id}`);
     })();
   }, []);
 
