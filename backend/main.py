@@ -2348,17 +2348,81 @@ def market_summary(tickers: str = Query(default="")):
     dia_pct = index_data.get("DIA", {}).get("pct", 0.0)
     vix_val = index_data.get("^VIX", {}).get("price", 0.0)
 
-    # Fetch per-holding price changes
+    # Fetch per-holding 1-day price changes via batch yfinance download (more reliable than fast_info)
     holdings_data: dict[str, float] = {}
-    for sym in user_tickers:
+    if user_tickers:
+        real_tickers = [t for t in user_tickers if not is_cash_ticker(t)]
+        for t in user_tickers:
+            if is_cash_ticker(t):
+                holdings_data[t] = 0.0
+        if real_tickers:
+            try:
+                dl_arg = real_tickers[0] if len(real_tickers) == 1 else real_tickers
+                dl = yf.download(dl_arg, period="2d", auto_adjust=True, progress=False)
+                if dl is not None and not dl.empty:
+                    if isinstance(dl.columns, pd.MultiIndex):
+                        close = dl["Close"]
+                        if isinstance(close, pd.Series):
+                            close = close.to_frame(name=real_tickers[0])
+                    else:
+                        close = dl[["Close"]].rename(columns={"Close": real_tickers[0]}) if "Close" in dl.columns else dl.iloc[:, :1].rename(columns={dl.columns[0]: real_tickers[0]})
+                    close = close.dropna(how="all")
+                    if len(close) >= 2:
+                        prev_row = close.iloc[-2]
+                        curr_row = close.iloc[-1]
+                        for t in real_tickers:
+                            if t in close.columns:
+                                p0 = safe_float(prev_row.get(t, 0))
+                                p1 = safe_float(curr_row.get(t, 0))
+                                holdings_data[t] = round(((p1 - p0) / p0 * 100) if p0 > 0 else 0.0, 2)
+                            else:
+                                holdings_data[t] = 0.0
+                    else:
+                        # Only one row — fall back to fast_info
+                        for t in real_tickers:
+                            try:
+                                fi = yf.Ticker(t).fast_info
+                                p1 = safe_float(getattr(fi, "last_price", 0) or 0)
+                                p0 = safe_float(getattr(fi, "previous_close", 0) or 0)
+                                holdings_data[t] = round(((p1 - p0) / p0 * 100) if p0 > 0 else 0.0, 2)
+                            except Exception:
+                                holdings_data[t] = 0.0
+            except Exception as e:
+                print(f"market-summary holdings batch error: {e}")
+                for sym in real_tickers:
+                    if sym not in holdings_data:
+                        try:
+                            fi = yf.Ticker(sym).fast_info
+                            p1 = safe_float(getattr(fi, "last_price", 0) or 0)
+                            p0 = safe_float(getattr(fi, "previous_close", 0) or 0)
+                            holdings_data[sym] = round(((p1 - p0) / p0 * 100) if p0 > 0 else 0.0, 2)
+                        except Exception as e2:
+                            print(f"market-summary holdings fallback error for {sym}: {e2}")
+
+    # Fetch upcoming earnings dates for WHAT TO WATCH section
+    earnings_data: dict[str, str] = {}
+    for sym in (user_tickers or [])[:6]:
+        if is_cash_ticker(sym):
+            continue
         try:
-            info = yf.Ticker(sym).fast_info
-            price = safe_float(getattr(info, "last_price", 0) or 0)
-            prev_close = safe_float(getattr(info, "previous_close", 0) or 0)
-            pct = ((price - prev_close) / prev_close * 100) if price > 0 and prev_close > 0 else 0.0
-            holdings_data[sym] = round(pct, 2)
+            cal = yf.Ticker(sym).calendar
+            if cal is not None and not (isinstance(cal, pd.DataFrame) and cal.empty):
+                if isinstance(cal, pd.DataFrame) and "Earnings Date" in cal.index:
+                    dates = cal.loc["Earnings Date"]
+                    if hasattr(dates, "__iter__") and not isinstance(dates, str):
+                        date_list = [str(d).split(" ")[0] for d in dates if pd.notna(d)]
+                        if date_list:
+                            earnings_data[sym] = date_list[0]
+                    elif pd.notna(dates):
+                        earnings_data[sym] = str(dates).split(" ")[0]
+                elif isinstance(cal, dict) and "Earnings Date" in cal:
+                    raw_date = cal["Earnings Date"]
+                    if isinstance(raw_date, list) and raw_date:
+                        earnings_data[sym] = str(raw_date[0]).split(" ")[0]
+                    elif raw_date:
+                        earnings_data[sym] = str(raw_date).split(" ")[0]
         except Exception as e:
-            print(f"market-summary holdings error for {sym}: {e}")
+            print(f"market-summary earnings error for {sym}: {e}")
 
     # AI generation — four distinct sections
     market_text = holdings_text = context_text = outlook_text = ""
@@ -2375,26 +2439,44 @@ def market_summary(tickers: str = Query(default="")):
             if holdings_data:
                 best_sym = max(holdings_data, key=lambda k: holdings_data[k])
                 worst_sym = min(holdings_data, key=lambda k: holdings_data[k])
-                holdings_line = (
-                    "User holdings today: "
-                    + ", ".join(f"{s} {sign(v)}{v:.2f}%" for s, v in holdings_data.items())
-                    + f". Best: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%)."
-                    + f" Worst: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%)."
+                perf_lines = "\n".join(
+                    f"  {s}: {sign(v)}{v:.2f}%"
+                    for s, v in sorted(holdings_data.items(), key=lambda x: -x[1])
+                )
+                holdings_block = (
+                    f"TODAY'S ACTUAL PERFORMANCE DATA (fetched from yfinance close prices -- these are exact, verified numbers):\n"
+                    f"{perf_lines}\n\n"
+                    f"Leader: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%)\n"
+                    f"Laggard: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%)\n\n"
+                    f"CRITICAL: Use ONLY these exact numbers. Do not estimate or infer. "
+                    f"If a ticker shows a positive percentage it went UP -- never describe it as a drag, headwind, or negative. "
+                    f"If a ticker shows a negative percentage it went DOWN."
                 )
                 holdings_key_desc = (
-                    f"Two sentences. State how the user's specific holdings performed today and WHY each moved, "
-                    f"connecting the market driver directly to each position. Name which holdings were affected and how. "
-                    f"Best performer: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%), "
-                    f"worst performer: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%)."
+                    f"Write the YOUR PORTFOLIO paragraph using ONLY the exact numbers above. "
+                    f"2-3 sentences. State which holdings rose and which fell using the exact percentages. "
+                    f"Connect each move to the market driver. "
+                    f"Best: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%), "
+                    f"worst: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%). "
+                    f"NEVER describe a positive-returning holding as a drag or headwind."
                 )
             else:
-                holdings_line = "No user holdings provided."
+                holdings_block = "No user holdings provided."
                 holdings_key_desc = '"No holdings provided for this user."'
+
+            if earnings_data:
+                earnings_lines = "\n".join(f"  {sym}: earnings expected {date}" for sym, date in earnings_data.items())
+                watch_data_block = f"UPCOMING EARNINGS FOR THIS PORTFOLIO (verified from yfinance):\n{earnings_lines}"
+            else:
+                watch_data_block = "No upcoming earnings data found for this portfolio."
 
             prompt = f"""Market data:
 S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, VIX {vix_val:.1f}.
 Top news headlines: {news_str}
-{holdings_line}
+
+{holdings_block}
+
+{watch_data_block}
 
 Return a JSON object with exactly these four string keys. Each value must be 2-3 sentences of plain prose.
 
@@ -2404,7 +2486,7 @@ Return a JSON object with exactly these four string keys. Each value must be 2-3
 
 "holdings": {holdings_key_desc}
 
-"outlook": Name one specific upcoming event that matters for the user's exact holdings. Name the company or economic report, the expected date if you know it, and what to watch for. Close with one sentence telling the user what this means and what to consider doing. 2-3 sentences.
+"outlook": Use the upcoming earnings data above. Name one specific upcoming event that matters for the user's exact holdings, using the verified earnings date if one exists. What to watch for in that report. Close with one sentence on what it means and what to consider. 2-3 sentences.
 
 Hard rules: no em dashes, no asterisks, no markdown, no vague market jargon. Write like a smart friend who knows finance. Plain English only. Return only the JSON object, no wrapper."""
 
