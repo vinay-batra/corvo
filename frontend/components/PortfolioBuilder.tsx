@@ -555,29 +555,32 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                       </div>
                     ) : (
                       /* Non-cash: avg cost + purchase date */
-                      <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-                        <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:100,flex:"1 1 100px",maxWidth:160}}>
-                          <label style={LABEL_STYLE}>Avg Cost $</label>
-                          <div style={{display:"flex",alignItems:"center",gap:5}}>
-                            <span style={{fontSize:13,color:"var(--text2)",lineHeight:1,flexShrink:0}}>$</span>
+                      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                        <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                          <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:100,flex:"1 1 100px",maxWidth:160}}>
+                            <label style={LABEL_STYLE}>Avg Cost $</label>
+                            <div style={{display:"flex",alignItems:"center",gap:5}}>
+                              <span style={{fontSize:13,color:"var(--text2)",lineHeight:1,flexShrink:0}}>$</span>
+                              <input
+                                type="number" min="0" step="0.01"
+                                placeholder="0.00"
+                                value={a.purchasePrice ?? ""}
+                                onChange={e=>updatePurchasePrice(i,e.target.value)}
+                                style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace"}}
+                              />
+                            </div>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:130,flex:"1 1 130px",maxWidth:180}}>
+                            <label style={LABEL_STYLE}>Purchase Date</label>
                             <input
-                              type="number" min="0" step="0.01"
-                              placeholder="0.00"
-                              value={a.purchasePrice ?? ""}
-                              onChange={e=>updatePurchasePrice(i,e.target.value)}
-                              style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace"}}
+                              type="date"
+                              value={a.purchaseDate ?? ""}
+                              onChange={e=>updatePurchaseDate(i,e.target.value)}
+                              style={{...INPUT_STYLE, fontFamily:"inherit", colorScheme:dark?"dark":"light"}}
                             />
                           </div>
                         </div>
-                        <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:130,flex:"1 1 130px",maxWidth:180}}>
-                          <label style={LABEL_STYLE}>Purchase Date</label>
-                          <input
-                            type="date"
-                            value={a.purchaseDate ?? ""}
-                            onChange={e=>updatePurchaseDate(i,e.target.value)}
-                            style={{...INPUT_STYLE, fontFamily:"inherit", colorScheme:dark?"dark":"light"}}
-                          />
-                        </div>
+                        <p style={{fontSize:11,color:"var(--text-muted)",margin:0,lineHeight:1.4}}>Used for P&L and tax loss harvesting estimates. For multiple transactions, use the transaction log (coming soon).</p>
                       </div>
                     )}
                   </motion.div>
