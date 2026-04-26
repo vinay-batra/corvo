@@ -131,7 +131,7 @@ export default function EmailPreferences({ onClose, autoDisableDigest }: Props) 
           {!noUser && (
             <button onClick={save} disabled={saving || loading}
               style={{ flex: 2, padding: "10px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: saved ? "#5cb88a" : "var(--accent)", color: "#ffffff", cursor: saving ? "not-allowed" : "pointer", transition: "background 0.2s", letterSpacing: 0.5 }}>
-              {saved ? "✓ Saved" : saving ? "Saving…" : "Save Preferences"}
+              {saved ? "Saved" : saving ? "Saving..." : "Save Preferences"}
             </button>
           )}
         </div>

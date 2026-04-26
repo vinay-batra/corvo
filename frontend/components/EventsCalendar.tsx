@@ -13,13 +13,13 @@ type EconEvent = {
   previous: string | null;
 };
 
-const COUNTRY_FLAGS: Record<string, string> = {
-  US: "🇺🇸",
-  EU: "🇪🇺",
-  EZ: "🇪🇺",
-  UK: "🇬🇧",
-  GB: "🇬🇧",
-  JP: "🇯🇵",
+const COUNTRY_LABELS: Record<string, string> = {
+  US: "US",
+  EU: "EU",
+  EZ: "EU",
+  UK: "UK",
+  GB: "UK",
+  JP: "JP",
 };
 
 function formatDate(dateStr: string): string {
@@ -61,7 +61,7 @@ export default function EventsCalendar() {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {events.map((e, i) => {
-        const flag = COUNTRY_FLAGS[(e.country || "").toUpperCase()] || "";
+        const flag = COUNTRY_LABELS[(e.country || "").toUpperCase()] || (e.country || "").toUpperCase();
         const isLast = i === events.length - 1;
         return (
           <div
@@ -77,7 +77,7 @@ export default function EventsCalendar() {
           >
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text)" }}>{formatDate(e.date)}</div>
-              {flag && <span style={{ fontSize: 13, lineHeight: 1 }}>{flag}</span>}
+              {flag && <span style={{ fontSize: 9, letterSpacing: 0.5, color: "var(--text3)", fontWeight: 600 }}>{flag}</span>}
             </div>
 
             <div>

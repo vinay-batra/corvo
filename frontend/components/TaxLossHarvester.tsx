@@ -141,7 +141,7 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets, portfolioValue
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 16 }}>✓</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5cb88a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           <p style={{ fontSize: 12, color: "#5cb88a", margin: 0 }}>
             All holdings with purchase prices are currently at a gain. No losses to harvest.
           </p>

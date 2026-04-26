@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(railway logs *)",
+      "Bash(railway status *)",
+      "Bash(railway variables *)",
+      "Bash(railway service *)",
+      "Bash(railway link *)",
+      "Bash(railway project *)",
+      "Bash(curl -s \"https://web-production-7a78d.up.railway.app/*)",
+      "Bash(curl -s \"https://bkdjillyzyyysmkpvnos.supabase.co/*)"
+    ]
+  }
+}

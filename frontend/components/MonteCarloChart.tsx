@@ -80,7 +80,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
       .then(r => r.json())
       .then(r => {
         if (r.detail === "Rate limit exceeded. Try again in an hour.") {
-          setInsight("Insight unavailable — rate limit reached. Try again shortly.");
+          setInsight("Insight unavailable - rate limit reached. Try again shortly.");
         } else {
           setInsight(r.insight ?? null);
         }

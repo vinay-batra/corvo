@@ -31,8 +31,8 @@ function Num({ value, fmt }: { value: number; fmt: (v: number) => string }) {
 }
 
 const EXPLAINERS = [
-  { title: "CAGR (Annualized Return)", simple: "Compound Annual Growth Rate — the smoothed yearly return over the selected period. Unlike a simple average, CAGR accounts for compounding.", example: "$10,000 grows to $12,100 over 2 years → CAGR = 10%/yr (not 10.5% arithmetic avg).", good: "Beating the S&P 500 (~10%/yr CAGR) is excellent. Longer periods give more reliable CAGR readings." },
-  { title: "Volatility", simple: "How wildly your portfolio swings day to day.", example: "30% vol = could swing ±30% in a year.", good: "Under 15% is low. 15–25% moderate. 30%+ is high." },
+  { title: "CAGR (Annualized Return)", simple: "Compound Annual Growth Rate: the smoothed yearly return over the selected period. Unlike a simple average, CAGR accounts for compounding.", example: "$10,000 grows to $12,100 over 2 years = CAGR of 10%/yr (not 10.5% arithmetic avg).", good: "Beating the S&P 500 (~10%/yr CAGR) is excellent. Longer periods give more reliable CAGR readings." },
+  { title: "Volatility", simple: "How wildly your portfolio swings day to day.", example: "30% vol = could swing +-30% in a year.", good: "Under 15% is low. 15-25% moderate. 30%+ is high." },
   { title: "Sharpe Ratio", simple: "Return per unit of risk. Higher = more efficient.", example: "Sharpe 2.0 = great returns for the risk taken.", good: "Above 1.0 good. Above 2.0 excellent. Below 0 bad." },
   { title: "Max Drawdown", simple: "Biggest drop from peak to trough that happened.", example: "$50k drops to $35k = -30% max drawdown.", good: "Closer to 0% is better. Under 10% very stable." },
   { title: "Unrealized P&L", simple: "Total paper gain or loss on holdings where you've entered a purchase price.", example: "Bought AAPL at $150, now $180 with 25% weight on $10k = +$500.", good: "Green = currently profitable. Red = currently underwater. Based on purchase prices you entered." },

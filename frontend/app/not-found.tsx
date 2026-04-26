@@ -9,8 +9,8 @@ export default function NotFound() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#0a0e14",
-      color: "#e8e0cc",
+      background: "var(--bg)",
+      color: "var(--text)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -36,7 +36,7 @@ export default function NotFound() {
           fontSize: "clamp(64px,12vw,96px)",
           fontWeight: 700,
           letterSpacing: -4,
-          color: "#c9a84c",
+          color: "var(--accent)",
           lineHeight: 1,
           marginBottom: 16,
         }}>
@@ -46,7 +46,7 @@ export default function NotFound() {
         <h1 style={{
           fontSize: "clamp(18px,3vw,24px)",
           fontWeight: 600,
-          color: "#e8e0cc",
+          color: "var(--text)",
           marginBottom: 12,
           letterSpacing: "-0.3px",
         }}>
@@ -55,7 +55,7 @@ export default function NotFound() {
 
         <p style={{
           fontSize: 14,
-          color: "rgba(232,224,204,0.4)",
+          color: "var(--text3)",
           lineHeight: 1.7,
           marginBottom: 36,
           maxWidth: 340,
@@ -67,9 +67,9 @@ export default function NotFound() {
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href="/" style={{
             padding: "12px 28px",
-            background: "#c9a84c",
+            background: "var(--accent)",
             borderRadius: 10,
-            color: "#0a0e14",
+            color: "var(--bg)",
             fontSize: 13,
             fontWeight: 700,
             textDecoration: "none",
@@ -80,10 +80,10 @@ export default function NotFound() {
           </Link>
           <Link href="/app" style={{
             padding: "12px 28px",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "var(--bg3)",
+            border: "1px solid var(--border2)",
             borderRadius: 10,
-            color: "rgba(232,224,204,0.7)",
+            color: "var(--text2)",
             fontSize: 13,
             fontWeight: 500,
             textDecoration: "none",

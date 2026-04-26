@@ -91,7 +91,6 @@ export default function GreetingBar({ displayName, assets }: Props) {
     if (displayName?.trim()) { setResolvedName(displayName.trim()); return; }
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      console.log("[GreetingBar] full user object:", user);
       const name =
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||

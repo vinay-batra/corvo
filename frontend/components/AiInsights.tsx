@@ -24,31 +24,31 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
   // Insight 1: Concentration check
   if (topAssets.length > 1) {
     if (topAssets.length === assets.length) {
-      insights.push({icon:"↓",text:sanitize(`All holdings are equally weighted at ${(maxWeight*100).toFixed(0)}% — portfolio is evenly balanced`)});
+      insights.push({icon:"↓",text:sanitize(`All holdings are equally weighted at ${(maxWeight*100).toFixed(0)}% - portfolio is evenly balanced`)});
     } else {
       const tiedTickers = topAssets.map(a => a.ticker).join(", ");
-      insights.push({icon:"↓",text:sanitize(`${tiedTickers} are tied as your largest holdings at ${(maxWeight*100).toFixed(0)}% each — concentration looks reasonable`)});
+      insights.push({icon:"↓",text:sanitize(`${tiedTickers} are tied as your largest holdings at ${(maxWeight*100).toFixed(0)}% each - concentration looks reasonable`)});
     }
   } else if (top && top.weight > 0.4)
-    insights.push({icon:"↑",text:sanitize(`${top.ticker} makes up ${(top.weight*100).toFixed(0)}% of your portfolio — consider reducing single-stock concentration`)});
+    insights.push({icon:"↑",text:sanitize(`${top.ticker} makes up ${(top.weight*100).toFixed(0)}% of your portfolio - consider reducing single-stock concentration`)});
   else if (top && top.ticker)
-    insights.push({icon:"↓",text:sanitize(`${top.ticker} is your largest holding at ${(top.weight*100).toFixed(0)}% — concentration looks reasonable`)});
+    insights.push({icon:"↓",text:sanitize(`${top.ticker} is your largest holding at ${(top.weight*100).toFixed(0)}% - concentration looks reasonable`)});
 
   // Insight 2: Volatility vs benchmark
   if (data.portfolio_volatility != null) {
     const vol = data.portfolio_volatility;
     const baseline = 0.15;
     const dir = vol > baseline ? "higher" : "lower";
-    insights.push({icon:"~",text:sanitize(`Your portfolio volatility is ${(vol*100).toFixed(1)}% — ${dir} than a typical balanced portfolio (15%)`)});
+    insights.push({icon:"~",text:sanitize(`Your portfolio volatility is ${(vol*100).toFixed(1)}% - ${dir} than a typical balanced portfolio (15%)`)});
   }
 
   // Insight 3: Diversification / sector concentration
   if (assets.length <= 2)
     insights.push({icon:"⬡",text:sanitize(`Only ${assets.length} holdings. Consider adding ETFs for broader exposure`)});
   else if (assets.length >= 4 && data.sector_concentration != null && data.sector_concentration > 0.7)
-    insights.push({icon:"⬡",text:sanitize(`High sector concentration (${(data.sector_concentration*100).toFixed(0)}% in one sector) — consider diversifying across industries`)});
+    insights.push({icon:"⬡",text:sanitize(`High sector concentration (${(data.sector_concentration*100).toFixed(0)}% in one sector) - consider diversifying across industries`)});
   else if (assets.length >= 4)
-    insights.push({icon:"⬡",text:sanitize(`Your ${assets.length} holdings span multiple positions — review sector overlap to ensure diversification`)});
+    insights.push({icon:"⬡",text:sanitize(`Your ${assets.length} holdings span multiple positions - review sector overlap to ensure diversification`)});
   else
     insights.push({icon:"⬡",text:sanitize(`${assets.length} holdings provides good diversification`)});
 

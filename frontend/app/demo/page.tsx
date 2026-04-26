@@ -546,7 +546,7 @@ function Step5Panel({ active }: { active: boolean }) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 5, color: l.locked ? C.cream3 : l.active ? C.amber : C.cream2 }}>{l.locked ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> : l.icon}</div>
             <div style={{ fontSize: 11, color: C.cream, fontWeight: 500, lineHeight: 1.35 }}>{l.title}</div>
             <div style={{ fontSize: 9, color: l.done ? C.green : l.active ? C.amber : C.cream3, marginTop: 4, fontWeight: 600 }}>
-              {l.done ? "✓ Completed" : l.active ? "▶ In Progress" : `${l.xp} XP`}
+              {l.done ? "Completed" : l.active ? "In Progress" : `${l.xp} XP`}
             </div>
           </motion.div>
         ))}
@@ -568,7 +568,7 @@ function Step5Panel({ active }: { active: boolean }) {
               <button key={opt} onClick={() => answer(i)}
                 style={{ padding: "7px 10px", background: bg, border: `1px solid ${border}`, borderRadius: 8, color, fontSize: 11, textAlign: "left", cursor: answered === null ? "pointer" : "default", transition: "all 0.2s", fontFamily: "inherit" }}>
                 <span style={{ marginRight: 6, opacity: 0.6 }}>{String.fromCharCode(65 + i)}.</span>{opt}
-                {revealed && isCorrect && <span style={{ float: "right" }}>✓</span>}
+                {revealed && isCorrect && <svg style={{ float: "right", marginTop: 2 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
               </button>
             );
           })}
@@ -660,7 +660,7 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
               <motion.div key={i} initial={false} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.07 }}
                 style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 18, height: 18, borderRadius: "50%", background: C.greenBg, border: `1px solid rgba(76,175,125,0.35)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ fontSize: 9, color: C.green, fontWeight: 700 }}>✓</span>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
                 <span style={{ display: "flex", color: C.cream2 }}>{s.icon}</span>
                 <span style={{ fontSize: 12, color: C.cream2 }}>{s.title}</span>

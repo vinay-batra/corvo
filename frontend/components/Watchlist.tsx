@@ -12,14 +12,14 @@ const STORAGE_KEY = "corvo_watchlist";
 const LISTS_KEY = "corvo_watchlist_lists";
 
 const SECTOR_OVERRIDES: Record<string, string> = {
-  "SPY": "ETF — Broad Market", "VOO": "ETF — Broad Market", "VTI": "ETF — Broad Market",
-  "QQQ": "ETF — Technology", "IWM": "ETF — Small Cap", "ARKK": "ETF — Innovation",
-  "GLD": "ETF — Gold", "IAU": "ETF — Gold", "SLV": "ETF — Silver",
-  "BND": "ETF — Bonds", "TLT": "ETF — Bonds", "AGG": "ETF — Bonds",
-  "SCHD": "ETF — Dividend", "VYM": "ETF — Dividend",
+  "SPY": "ETF - Broad Market", "VOO": "ETF - Broad Market", "VTI": "ETF - Broad Market",
+  "QQQ": "ETF - Technology", "IWM": "ETF - Small Cap", "ARKK": "ETF - Innovation",
+  "GLD": "ETF - Gold", "IAU": "ETF - Gold", "SLV": "ETF - Silver",
+  "BND": "ETF - Bonds", "TLT": "ETF - Bonds", "AGG": "ETF - Bonds",
+  "SCHD": "ETF - Dividend", "VYM": "ETF - Dividend",
   "BTC-USD": "Crypto", "ETH-USD": "Crypto", "SOL-USD": "Crypto",
-  "TSL": "ETF — Leveraged", "TQQQ": "ETF — Leveraged", "SQQQ": "ETF — Leveraged",
-  "UVXY": "ETF — Volatility", "VXX": "ETF — Volatility",
+  "TSL": "ETF - Leveraged", "TQQQ": "ETF - Leveraged", "SQQQ": "ETF - Leveraged",
+  "UVXY": "ETF - Volatility", "VXX": "ETF - Volatility",
 };
 
 function PencilIcon({ size = 11, color = "currentColor" }: { size?: number; color?: string }) {
@@ -617,14 +617,14 @@ export default function Watchlist() {
                         </td>
                         {/* Company */}
                         <td style={{ padding: "0 12px" }}>
-                          <span style={{ fontSize: 12, color: "var(--text2)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{s?.name || "—"}</span>
+                          <span style={{ fontSize: 12, color: "var(--text2)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{s?.name || "-"}</span>
                         </td>
                         {/* Price */}
                         <td style={{ padding: "0 12px" }}>
                           {s?.price != null && s.price > 0 ? (
                             <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--text)" }}>${s.price.toFixed(2)}</span>
                           ) : (
-                            <span style={{ fontSize: 11, color: "var(--text3)" }}>{loadingAll ? "…" : "—"}</span>
+                            <span style={{ fontSize: 11, color: "var(--text3)" }}>{loadingAll ? "..." : "-"}</span>
                           )}
                         </td>
                         {/* Change 1D */}
@@ -633,7 +633,7 @@ export default function Watchlist() {
                             <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 7px", borderRadius: 5, fontSize: 11, fontWeight: 600, background: pos ? "rgba(76,175,125,0.1)" : "rgba(224,92,92,0.1)", color: pos ? "#4caf7d" : "#e05c5c" }}>
                               {pos ? "+" : ""}{s.change_pct.toFixed(2)}%
                             </span>
-                          ) : <span style={{ color: "var(--text3)", fontSize: 11 }}>—</span>}
+                          ) : <span style={{ color: "var(--text3)", fontSize: 11 }}>-</span>}
                         </td>
                         {/* Sparkline */}
                         <td style={{ padding: "0 12px" }}>
@@ -645,7 +645,7 @@ export default function Watchlist() {
                             const sectorLabel = SECTOR_OVERRIDES[item.ticker] ?? s?.sector ?? null;
                             return sectorLabel
                               ? <span style={{ fontSize: 11, color: "var(--text3)", background: "var(--bg3)", padding: "3px 9px", borderRadius: 8, whiteSpace: "nowrap" }}>{sectorLabel}</span>
-                              : <span style={{ fontSize: 11, color: "var(--text3)" }}>—</span>;
+                              : <span style={{ fontSize: 11, color: "var(--text3)" }}>-</span>;
                           })()}
                         </td>
                         {/* Actions */}

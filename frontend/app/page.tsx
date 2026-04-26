@@ -384,7 +384,7 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
           <div style={{ height: "100%", width: "0%", background: "linear-gradient(90deg, #c9a84c, #f59e0b)", borderRadius: 3, animation: visible ? "xpLoop 5s ease-in-out infinite" : "none" }} />
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {["Risk Basics ✓", "Diversification ✓", "Options →"].map((b, i) => (
+          {["Risk Basics", "Diversification", "Options"].map((b, i) => (
             <div key={i} style={{
               fontSize: 9, padding: "4px 9px", borderRadius: 6,
               background: i < 2 ? "rgba(201,168,76,0.1)" : "var(--bg3)",
@@ -492,7 +492,7 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 18 }}>
         {["Risk analysis", "Monte Carlo projections", "AI insights summary"].map((item, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 9, color: "#c9a84c", lineHeight: 1 }}>✓</span>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             <span style={{ fontSize: 11, color: "var(--text2)" }}>{item}</span>
           </div>
         ))}
@@ -1167,8 +1167,8 @@ function DemoPreview() {
   }, []);
   const lines = [
     "Analyzing AAPL · MSFT · NVDA · VOO...",
-    "Computing Sharpe ratio: 0.66 ✓",
-    "Running 8,500 Monte Carlo paths ✓",
+    "Computing Sharpe ratio: 0.66  done",
+    "Running 8,500 Monte Carlo paths  done",
     "AI insight ready: high tech concentration detected",
   ];
   return (
@@ -1297,7 +1297,7 @@ function EmailPopupModal() {
 
         {status === "done" ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", background: "rgba(76,175,125,0.08)", border: "1px solid rgba(76,175,125,0.2)", borderRadius: 10 }}>
-            <span style={{ fontSize: 16, color: "#5cb88a" }}>✓</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5cb88a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             <span style={{ fontSize: 14, color: "#5cb88a", fontWeight: 500 }}>{"You're on the list!"}</span>
           </div>
         ) : (
@@ -1369,7 +1369,7 @@ function EmailCaptureBottom() {
         </p>
         {status === "done" ? (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.25)", borderRadius: 12, padding: "18px 32px" }}>
-            <span style={{ fontSize: 18, color: "#5cb88a" }}>✓</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5cb88a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             <span style={{ fontSize: 15, color: "#5cb88a", fontWeight: 500 }}>{"You're on the list!"}</span>
           </div>
         ) : (
@@ -2085,7 +2085,8 @@ export default function Landing() {
         <motion.h1
           style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4.5vw,56px)", fontWeight: 700, lineHeight: 1.06, letterSpacing: -2, marginBottom: 28, maxWidth: 840 }}
           variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
-          initial="hidden" animate="visible">
+          // initial={false} is required — do not remove
+          initial={false} animate="visible">
           <span style={{ display: "block", color: "var(--text)" }}>
             {["Your", "portfolio", "deserves"].map((w, i) => (
               <motion.span
