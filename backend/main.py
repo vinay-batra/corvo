@@ -67,7 +67,7 @@ async def lifespan(app_: FastAPI):
         except asyncio.CancelledError:
             pass
 
-app = FastAPI(title="Corvo API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Corvo API v2", version="1.0.0", lifespan=lifespan)
 
 _ALLOWED_ORIGINS = [
     "https://corvo.capital",
