@@ -1033,6 +1033,14 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       const alreadyDone = profile?.onboarding_completed === true || user.user_metadata?.onboarding_complete === true;
       if (alreadyDone) return;
 
+      // Safety: if the user already has saved portfolios they have used the
+      // app before — never redirect them to onboarding regardless of flags.
+      const { count: portfolioCount } = await supabase
+        .from("portfolios")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (portfolioCount && portfolioCount > 0) return;
+
       // Redirect to /onboarding unless viewing a shared portfolio or demo
       const params2 = new URLSearchParams(window.location.search);
       if (!params2.get("portfolio") && params2.get("demo") !== "true") {

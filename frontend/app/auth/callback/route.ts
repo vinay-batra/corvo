@@ -26,22 +26,33 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Only gate-check onboarding when the destination is /app.
+      // Never intercept navigations to /settings or other pages.
+      if (next === "/app" || next === "/") {
+        const { data: { user } } = await supabase.auth.getUser();
 
-      if (user) {
-        // Check user_metadata first (set by new onboarding flow)
-        const metaComplete = user.user_metadata?.onboarding_complete === true;
+        if (user) {
+          const metaComplete = user.user_metadata?.onboarding_complete === true;
 
-        if (!metaComplete) {
-          // Also check profiles table — covers users who completed the old flow
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("onboarding_completed")
-            .eq("id", user.id)
-            .single();
+          if (!metaComplete) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("onboarding_completed")
+              .eq("id", user.id)
+              .single();
 
-          if (!profile?.onboarding_completed) {
-            return NextResponse.redirect(`${origin}/onboarding`);
+            if (!profile?.onboarding_completed) {
+              // Safety: if the user already has saved portfolios they have
+              // used the app before — do not redirect them to onboarding.
+              const { count } = await supabase
+                .from("portfolios")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", user.id);
+
+              if (!count || count === 0) {
+                return NextResponse.redirect(`${origin}/onboarding`);
+              }
+            }
           }
         }
       }
