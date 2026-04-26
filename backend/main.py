@@ -1799,7 +1799,7 @@ def get_email_html(display_name=None, email_type="welcome", user_id=None):
         greeting = f"Your weekly digest, {display_name}" if display_name else "Your weekly digest"
         cta_text = "View Your Portfolio &rarr;"
     else:
-        greeting = f"Welcome, {display_name} &#x1F44B;" if display_name else "Welcome to Corvo &#x1F44B;"
+        greeting = f"Welcome to Corvo, {display_name}" if display_name else "Welcome to Corvo"
         cta_text = "Go to Dashboard &rarr;"
 
     unsubscribe_url = (
@@ -1960,7 +1960,7 @@ def send_welcome_email(req: WelcomeEmailRequest):
             json={
                 "from": "Corvo <hello@corvo.capital>",
                 "to": [req.email],
-                "subject": "Welcome to Corvo \U0001f3af",
+                "subject": "Welcome to Corvo",
                 "html": html,
             },
             timeout=10,
@@ -2605,6 +2605,30 @@ def unsubscribe(user_id: str = ""):
 </html>""", status_code=200)
 
 
+class UnsubscribeRequest(BaseModel):
+    user_id: str
+
+
+@app.post("/unsubscribe")
+def unsubscribe_post(req: UnsubscribeRequest):
+    """Set weekly_digest and price_alerts to false for the user. Called from the frontend unsubscribe page."""
+    if not req.user_id or not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {"ok": False, "error": "missing user_id or supabase config"}
+    try:
+        resp = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{req.user_id}",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json={"weekly_digest": False, "price_alerts": False},
+            timeout=8,
+        )
+        success = resp.status_code in (200, 204)
+        print(f"[unsubscribe-post] user_id={req.user_id} status={resp.status_code}")
+        return {"ok": success}
+    except Exception as e:
+        print(f"[unsubscribe-post] error: {e}")
+        return {"ok": False, "error": str(e)}
+
+
 # ── Push Notification Endpoints ───────────────────────────────────────────────
 
 class PushSubscribeRequest(BaseModel):
@@ -2720,6 +2744,21 @@ def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, 
             print(f"[alerts] email send failed for {to_email}: {resp.status_code} {data}")
     except Exception as e:
         print(f"[alerts] alert email error: {e}")
+
+
+@app.delete("/price-alerts/{alert_id}")
+def delete_price_alert(alert_id: str, user_id: str):
+    """Delete a price alert, verifying ownership by user_id."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    resp = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/price_alerts?id=eq.{alert_id}&user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        timeout=8,
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=resp.status_code, detail="Delete failed")
+    return {"ok": True}
 
 
 async def check_price_alerts():
@@ -3763,6 +3802,71 @@ async def price_alert_loop():
 
 # ── Weekly Portfolio Digest ────────────────────────────────────────────────────
 
+def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
+    """
+    Fallback: compute 7-day portfolio stats directly from yfinance when stored
+    snapshots are insufficient. Cash-like tickers use synthetic 4.5% annual return.
+    """
+    if not tickers:
+        return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+    try:
+        w_list = [float(w) for w in (weights_raw or [])]
+    except Exception:
+        w_list = []
+    if len(w_list) != len(tickers):
+        w_list = [1.0 / len(tickers)] * len(tickers)
+    total = sum(w_list)
+    if total > 0:
+        w_list = [w / total for w in w_list]
+
+    real_tickers = [t for t in tickers if not is_cash_ticker(t)]
+    try:
+        if real_tickers:
+            raw = yf.download(
+                real_tickers if len(real_tickers) > 1 else real_tickers[0],
+                period="10d", auto_adjust=True, progress=False,
+            )
+            if raw is None or raw.empty:
+                return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+            if isinstance(raw.columns, pd.MultiIndex):
+                close_df = raw["Close"] if "Close" in raw.columns.get_level_values(0) else raw["Adj Close"]
+            else:
+                close_df = raw[["Close"]].rename(columns={"Close": real_tickers[0]})
+            close_df = close_df.dropna(how="all").tail(8)
+        else:
+            close_df = pd.DataFrame()
+
+        n = len(close_df) if not close_df.empty else 8
+        port_series = pd.Series([0.0] * n)
+
+        for t, w in zip(tickers, w_list):
+            if is_cash_ticker(t):
+                # synthetic daily return for 4.5% annual
+                daily_r = (1.045 ** (1 / 252)) - 1
+                col = pd.Series([(1 + daily_r) ** i for i in range(n)])
+                port_series = port_series.add(col * w, fill_value=0)
+            else:
+                if close_df.empty or t not in close_df.columns:
+                    continue
+                col = close_df[t].dropna()
+                if len(col) < 2:
+                    continue
+                normalized = (col / col.iloc[0]).values
+                port_series = port_series.add(
+                    pd.Series(normalized, index=range(len(normalized))) * w, fill_value=0
+                )
+
+        port_series = port_series[port_series > 0].reset_index(drop=True)
+        if len(port_series) < 2:
+            return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+
+        synth_snapshots = [{"portfolio_value": v * 10000} for v in port_series.tolist()]
+        return _compute_portfolio_week_stats(synth_snapshots)
+    except Exception as e:
+        print(f"[digest] yfinance fallback error: {e}")
+        return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+
+
 def _compute_portfolio_week_stats(snapshots: list[dict]) -> dict:
     """
     Given up to 7 days of snapshot rows (dicts with portfolio_value),
@@ -4116,6 +4220,7 @@ async def send_weekly_digest(target_user_id: str | None = None) -> dict:
                 pf_id = pf.get("id")
                 pf_name = pf.get("name") or "Portfolio"
                 tickers = pf.get("tickers") or []
+                weights_raw = pf.get("weights") or []
 
                 # 2c. Fetch last 7 days of snapshots
                 snap_resp = requests.get(
@@ -4125,8 +4230,16 @@ async def send_weekly_digest(target_user_id: str | None = None) -> dict:
                     headers=_sb_headers(), timeout=8,
                 )
                 snapshots = snap_resp.json() if snap_resp.status_code == 200 else []
+                if not isinstance(snapshots, list):
+                    snapshots = []
+                    print(f"[digest] unexpected snapshot response for {pf_id}: {snap_resp.text[:200]}")
 
-                stats = _compute_portfolio_week_stats(snapshots)
+                if len(snapshots) < 2:
+                    # Not enough stored snapshots — fall back to live yfinance data
+                    print(f"[digest] {pf_name}: only {len(snapshots)} snapshots, using yfinance fallback")
+                    stats = _compute_week_stats_from_yfinance(tickers, weights_raw)
+                else:
+                    stats = _compute_portfolio_week_stats(snapshots)
                 portfolio_blocks.append({
                     "name": pf_name,
                     "tickers": tickers,
@@ -4395,3 +4508,48 @@ def events_calendar():
     today_str = today.isoformat()
     cutoff_str = to_date.isoformat()
     return [e for e in _FALLBACK_EVENTS_2026 if today_str <= e["date"] <= cutoff_str]
+
+
+# ── Admin: one-time test-alert cleanup ──────────────────────────────────────
+
+@app.delete("/admin/cleanup-test-alerts")
+def admin_cleanup_test_alerts(admin_key: str = ""):
+    """
+    Delete the two test price alerts created during dev testing:
+      - AAPL rises more than 0.001%
+      - Any alert drops more than 10% (threshold = 10)
+    Requires admin_key matching SUPABASE_SERVICE_ROLE_KEY to prevent misuse.
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    if admin_key != SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    deleted = []
+    errors = []
+
+    # Delete AAPL alert with very low threshold (0.001% rise)
+    r1 = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/price_alerts"
+        f"?ticker=eq.AAPL&condition=eq.rises&threshold=lte.0.01",
+        headers={**_sb_headers(), "Prefer": "return=representation"},
+        timeout=8,
+    )
+    if r1.status_code in (200, 204):
+        deleted.append(f"AAPL rises <= 0.01%: {r1.text[:100]}")
+    else:
+        errors.append(f"AAPL rises: {r1.status_code} {r1.text[:100]}")
+
+    # Delete any alert with condition=drops and threshold between 9.9 and 10.1
+    r2 = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/price_alerts"
+        f"?condition=eq.drops&threshold=gte.9.9&threshold=lte.10.1",
+        headers={**_sb_headers(), "Prefer": "return=representation"},
+        timeout=8,
+    )
+    if r2.status_code in (200, 204):
+        deleted.append(f"drops ~10%: {r2.text[:100]}")
+    else:
+        errors.append(f"drops ~10%: {r2.status_code} {r2.text[:100]}")
+
+    return {"deleted": deleted, "errors": errors}
