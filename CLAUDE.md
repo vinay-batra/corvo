@@ -39,16 +39,17 @@ Never show a number without explaining what it means. Never explain what somethi
 17. Paper trading simulation
 18. Peer/portfolio comparison — anonymized performance vs other Corvo users
 19. Brokerage sync via Plaid — blocked until user is 18 or parent signs up
-20. Pro tier — unlimited AI chat, real-time alerts, custom PDF, SMS, brokerage sync
-21. Custom branded PDF reports — Pro feature
-22. Natural language portfolio editor — "sell half my NVDA, put it in QQQ"
-23. Life event integration — "I'm buying a house in 2 years" adjusts risk recommendations
-24. Community portfolios — follow anonymous top performers, see their moves
-25. Corvo for advisors — B2B, manage multiple client portfolios
-26. Marketing
-27. YC application
-28. App Store — iOS
-29. Google Play — Android
+20. Transaction log — per holding, log multiple buys/sells with date, price, quantity. Replaces single cost basis input. Powers accurate P&L, realized vs unrealized gains, and tax calculations.
+21. Pro tier — unlimited AI chat, real-time alerts, custom PDF, SMS, brokerage sync
+22. Custom branded PDF reports — Pro feature
+23. Natural language portfolio editor — "sell half my NVDA, put it in QQQ"
+24. Life event integration — "I'm buying a house in 2 years" adjusts risk recommendations
+25. Community portfolios — follow anonymous top performers, see their moves
+26. Corvo for advisors — B2B, manage multiple client portfolios
+27. Marketing
+28. YC application
+29. App Store — iOS
+30. Google Play — Android
 
 ---
 
