@@ -80,7 +80,17 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
   // Sound effects (localStorage)
   const [soundEnabled, setSoundEnabled] = useState(false);
 
-  // Goals
+  // Investor profile questionnaire
+  const [investorType, setInvestorType]         = useState("");
+  const [primaryGoals, setPrimaryGoals]         = useState<string[]>([]);
+  const [ageRange, setAgeRange]                 = useState("");
+  const [incomeRange, setIncomeRange]           = useState("");
+  const [riskTolerance, setRiskTolerance]       = useState("");
+  const [investmentHorizon, setInvestmentHorizon] = useState("");
+  const [savingProfileQ, setSavingProfileQ]     = useState(false);
+  const [profileQSaved, setProfileQSaved]       = useState(false);
+
+  // Goals (legacy)
   const [goals, setGoals]               = useState<any>(null);
   const [showGoalsEditor, setShowGoalsEditor] = useState(false);
   const [showGoalsModal, setShowGoalsModal] = useState(false);
@@ -113,6 +123,15 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
       setSoundEnabled(localStorage.getItem(SOUND_KEY) === "true");
       const raw = localStorage.getItem("corvo_goals");
       if (raw && raw !== "skipped") { try { setGoals(JSON.parse(raw)); } catch { /* ignore */ } }
+
+      // Load investor profile from user metadata
+      const m = user.user_metadata || {};
+      setInvestorType(m.investor_type || "");
+      setPrimaryGoals(Array.isArray(m.primary_goals) ? m.primary_goals : []);
+      setAgeRange(m.age_range || "");
+      setIncomeRange(m.income_range || "");
+      setRiskTolerance(m.risk_tolerance || "");
+      setInvestmentHorizon(m.investment_horizon || "");
     })();
   }, []);
 
@@ -190,6 +209,24 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
     const reader = new FileReader();
     reader.onload = e => { setCrop({ x: 0, y: 0 }); setZoom(1); setCropSrc(e.target?.result as string); };
     reader.readAsDataURL(file);
+  };
+
+  const saveProfileQuestionnaire = async () => {
+    if (!user) return;
+    setSavingProfileQ(true);
+    await supabase.auth.updateUser({
+      data: {
+        investor_type: investorType,
+        primary_goals: primaryGoals,
+        age_range: ageRange,
+        income_range: incomeRange,
+        risk_tolerance: riskTolerance,
+        investment_horizon: investmentHorizon,
+      },
+    });
+    setSavingProfileQ(false);
+    setProfileQSaved(true);
+    setTimeout(() => setProfileQSaved(false), 1500);
   };
 
   const savePref = (key: string, val: string) => localStorage.setItem(key, val);
@@ -388,41 +425,138 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
         </Section>
 
         {/* ONBOARDING */}
-        {(onReplayOnboarding || onReplayTour) && (
+        {onReplayTour && (
           <Section title="Onboarding">
-            {onReplayOnboarding && (
-              <Row label="Replay Onboarding" desc="Restart the setup wizard from step 1">
-                <button onClick={onReplayOnboarding}
-                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
-                  Restart
-                </button>
-              </Row>
-            )}
-            {onReplayTour && (
-              <Row label="Replay Dashboard Tour" desc="Re-run the guided tooltip tour of dashboard features">
-                <button onClick={onReplayTour}
-                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
-                  Start Tour
-                </button>
-              </Row>
-            )}
+            <Row label="Replay Onboarding" desc="Restart the full setup questionnaire from step 1">
+              <button
+                onClick={() => { window.location.href = "/onboarding?replay=true"; }}
+                style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+                Restart
+              </button>
+            </Row>
+            <Row label="Replay Dashboard Tour" desc="Re-run the guided tooltip tour of dashboard features">
+              <button onClick={onReplayTour}
+                style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
+                Start Tour
+              </button>
+            </Row>
           </Section>
         )}
 
-        {/* PROFILE & GOALS */}
-        <Section title="Profile &amp; Goals">
-          <Row label="Investor Profile" desc="Customize your age, salary, risk tolerance, and investment goals">
-            <button onClick={() => setShowGoalsModal(true)}
-              style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s" }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = "#c9a84c")}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
-              Edit
-            </button>
-          </Row>
+        {/* INVESTOR PROFILE */}
+        <Section title="Investor Profile">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "12px 0 4px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Investor type</div>
+                <select value={investorType} onChange={e => setInvestorType(e.target.value)} style={{ ...selectStyle, width: "100%" }}>
+                  <option value="">Not set</option>
+                  <option value="beginner">Beginner investor</option>
+                  <option value="active">Active trader</option>
+                  <option value="longterm">Long-term investor</option>
+                  <option value="professional">Finance professional</option>
+                </select>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Age range</div>
+                <select value={ageRange} onChange={e => setAgeRange(e.target.value)} style={{ ...selectStyle, width: "100%" }}>
+                  <option value="">Not set</option>
+                  <option value="under18">Under 18</option>
+                  <option value="18-24">18 to 24</option>
+                  <option value="25-34">25 to 34</option>
+                  <option value="35-44">35 to 44</option>
+                  <option value="45-54">45 to 54</option>
+                  <option value="55-64">55 to 64</option>
+                  <option value="65+">65 or older</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Primary goals (select up to 3)</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                {[
+                  { id: "track", label: "Track performance" },
+                  { id: "risk", label: "Reduce risk" },
+                  { id: "learn", label: "Learn investing" },
+                  { id: "taxes", label: "Optimize taxes" },
+                  { id: "wealth", label: "Build wealth" },
+                  { id: "retirement", label: "Save for retirement" },
+                ].map(g => {
+                  const sel = primaryGoals.includes(g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => {
+                        if (sel) setPrimaryGoals(prev => prev.filter(x => x !== g.id));
+                        else if (primaryGoals.length < 3) setPrimaryGoals(prev => [...prev, g.id]);
+                      }}
+                      style={{
+                        padding: "5px 13px", fontSize: 11, borderRadius: 20,
+                        border: `1px solid ${sel ? "var(--accent)" : "var(--border)"}`,
+                        background: sel ? "rgba(201,168,76,0.1)" : "transparent",
+                        color: sel ? "var(--accent)" : "var(--text3)",
+                        cursor: "pointer", transition: "all 0.15s",
+                      }}
+                    >
+                      {g.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Annual income</div>
+                <select value={incomeRange} onChange={e => setIncomeRange(e.target.value)} style={{ ...selectStyle, width: "100%" }}>
+                  <option value="">Not set</option>
+                  <option value="under30k">Under $30k</option>
+                  <option value="30-60k">$30k to $60k</option>
+                  <option value="60-100k">$60k to $100k</option>
+                  <option value="100-200k">$100k to $200k</option>
+                  <option value="200k+">$200k or more</option>
+                  <option value="prefer_not">Prefer not to say</option>
+                </select>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Risk tolerance</div>
+                <select value={riskTolerance} onChange={e => setRiskTolerance(e.target.value)} style={{ ...selectStyle, width: "100%" }}>
+                  <option value="">Not set</option>
+                  <option value="conservative">Conservative</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="aggressive">Aggressive</option>
+                  <option value="very_aggressive">Very Aggressive</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.3 }}>Investment horizon</div>
+              <select value={investmentHorizon} onChange={e => setInvestmentHorizon(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
+                <option value="">Not set</option>
+                <option value="under1y">Less than 1 year</option>
+                <option value="1-3y">1 to 3 years</option>
+                <option value="3-5y">3 to 5 years</option>
+                <option value="5-10y">5 to 10 years</option>
+                <option value="10y+">10 or more years</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 4 }}>
+              <button
+                onClick={saveProfileQuestionnaire}
+                disabled={savingProfileQ}
+                style={{ padding: "8px 18px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: profileQSaved ? "#5cb88a" : "var(--accent)", color: "#0a0e14", cursor: "pointer", transition: "background 0.2s" }}
+              >
+                {profileQSaved ? "Saved" : savingProfileQ ? "..." : "Save"}
+              </button>
+            </div>
+          </div>
         </Section>
 
         {/* DANGER ZONE */}
