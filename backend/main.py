@@ -4345,6 +4345,35 @@ async def test_weekly_digest(user_id: str = ""):
     """Manually trigger the weekly digest for a specific user (or all opted-in users)."""
     result = await send_weekly_digest(target_user_id=user_id or None)
     return result
+
+
+@app.get("/email/debug-yfinance")
+async def debug_yfinance(tickers: str = "AAPL,MSFT,NVDA"):
+    """Debug endpoint: run _compute_week_stats_from_yfinance and return raw details."""
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    weights = [1.0 / len(ticker_list)] * len(ticker_list)
+
+    raw_info: dict = {}
+    try:
+        dl_arg = ticker_list[0] if len(ticker_list) == 1 else ticker_list
+        raw = yf.download(dl_arg, period="14d", auto_adjust=True, progress=False)
+        raw_info = {
+            "shape": str(raw.shape),
+            "cols": [str(c) for c in list(raw.columns)[:8]],
+            "empty": raw.empty,
+            "is_multiindex": isinstance(raw.columns, pd.MultiIndex),
+        }
+    except Exception as e:
+        raw_info = {"error": str(e)}
+
+    stats = _compute_week_stats_from_yfinance(ticker_list, weights)
+    return {
+        "tickers": ticker_list,
+        "yf_version": yf.__version__,
+        "raw": raw_info,
+        "stats": stats,
+        "code_version": "v_digest_yf_primary_2",
+    }
 # force redeploy Fri Apr 24 10:36:18 EDT 2026
 
 
