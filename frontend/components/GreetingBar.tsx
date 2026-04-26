@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
@@ -78,7 +78,7 @@ interface Props {
   portfolioValue?: number;
 }
 
-export default function GreetingBar({ displayName, assets }: Props) {
+export default function GreetingBar({ displayName, assets, portfolioValue }: Props) {
   const greeting = getGreeting();
 
   const [resolvedName, setResolvedName] = useState(displayName || "");
@@ -177,6 +177,26 @@ export default function GreetingBar({ displayName, assets }: Props) {
     const id = setInterval(fetchPrices, 60000);
     return () => clearInterval(id);
   }, [assets]);
+
+  // Weighted portfolio daily change: sum(weight * changePct) / totalWeight
+  const portfolioToday = useMemo(() => {
+    if (!holdingPrices.length) return null;
+    const validAssets = assets.filter(a => a.weight > 0);
+    const totalWeight = validAssets.reduce((s, a) => s + a.weight, 0);
+    if (totalWeight <= 0) return null;
+    let weightedPct = 0, coveredWeight = 0;
+    for (const asset of validAssets) {
+      const hp = holdingPrices.find(h => h.ticker === asset.ticker);
+      if (hp) {
+        weightedPct += asset.weight * hp.changePct;
+        coveredWeight += asset.weight;
+      }
+    }
+    if (coveredWeight / totalWeight < 0.5) return null;
+    const pct = weightedPct / totalWeight;
+    const dollar = (portfolioValue ?? 0) > 0 ? ((portfolioValue as number) * pct / 100) : null;
+    return { pct, dollar };
+  }, [holdingPrices, assets, portfolioValue]);
 
   const pos = (v: number) => v >= 0;
   const fmtSign = (v: number) => (v >= 0 ? "+" : "");
@@ -344,6 +364,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
             <StatPill label="S&P 500" value={indexPrices.spy != null ? `${fmtSign(indexPrices.spy)}${indexPrices.spy.toFixed(2)}%` : "-"} color={indexPrices.spy != null ? (pos(indexPrices.spy) ? GREEN : RED) : "var(--text3)"} />
             <StatPill label="Nasdaq"  value={indexPrices.qqq != null ? `${fmtSign(indexPrices.qqq)}${indexPrices.qqq.toFixed(2)}%` : "-"} color={indexPrices.qqq != null ? (pos(indexPrices.qqq) ? GREEN : RED) : "var(--text3)"} />
             <StatPill label="Dow"     value={indexPrices.dia != null ? `${fmtSign(indexPrices.dia)}${indexPrices.dia.toFixed(2)}%` : "-"} color={indexPrices.dia != null ? (pos(indexPrices.dia) ? GREEN : RED) : "var(--text3)"} />
+            {portfolioToday && <PortfolioPill pct={portfolioToday.pct} dollar={portfolioToday.dollar} />}
           </div>
         )}
 
@@ -401,6 +422,27 @@ function HoldingChip({ ticker, price, changeDollar, changePct }: { ticker: strin
       {changePct != null && (
         <span style={{ ...mono, fontSize: 11, fontWeight: 600, color, opacity: 0.85 }}>({sign}{changePct.toFixed(2)}%)</span>
       )}
+    </div>
+  );
+}
+
+function PortfolioPill({ pct, dollar }: { pct: number; dollar: number | null }) {
+  const up = pct >= 0;
+  const color = up ? GREEN : RED;
+  const sign = up ? "+" : "";
+  const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace" };
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "7px 14px", borderRadius: 10, minWidth: 72,
+      border: `0.5px solid ${up ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`,
+      background: up ? "rgba(76,175,125,0.06)" : "rgba(224,92,92,0.06)",
+    }}>
+      <span style={{ fontSize: 10, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4 }}>Portfolio</span>
+      {dollar != null && (
+        <span style={{ ...mono, fontSize: 13, fontWeight: 700, color, letterSpacing: "-0.2px" }}>{sign}${Math.abs(dollar).toFixed(2)}</span>
+      )}
+      <span style={{ ...mono, fontSize: dollar != null ? 11 : 13, fontWeight: dollar != null ? 600 : 700, color, opacity: dollar != null ? 0.85 : 1, letterSpacing: "-0.2px" }}>({sign}{Math.abs(pct).toFixed(2)}%)</span>
     </div>
   );
 }

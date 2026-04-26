@@ -3682,7 +3682,16 @@ _BRIEF_MOVERS  = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOGL"]
 
 
 def _brief_one_day_change(ticker: str) -> float:
-    """Return 1-day percentage change for a ticker."""
+    """Return 1-day % change using live price from .info (matches watchlist-data logic)."""
+    try:
+        info = yf.Ticker(ticker).info or {}
+        price = float(info.get("currentPrice") or info.get("regularMarketPrice") or 0)
+        prev  = float(info.get("previousClose") or info.get("regularMarketPreviousClose") or price)
+        if price > 0 and prev > 0:
+            return round((price - prev) / prev * 100, 2)
+    except Exception:
+        pass
+    # Fallback: 2-day history close-to-close
     try:
         hist = yf.Ticker(ticker).history(period="2d")
         if len(hist) >= 2:
@@ -3700,9 +3709,23 @@ def _brief_fetch_indices() -> dict[str, float]:
 def _brief_fetch_movers() -> list[dict]:
     try:
         data = yf.download(_BRIEF_MOVERS, period="2d", auto_adjust=True, progress=False)
-        volumes = data["Volume"].iloc[-1].dropna()
+        # Extract close prices and volumes (handle both flat and MultiIndex column structures)
+        if isinstance(data.columns, pd.MultiIndex):
+            closes  = data["Close"]
+            volumes = data["Volume"].iloc[-1].dropna()
+        else:
+            closes  = data[["Close"]].rename(columns={"Close": _BRIEF_MOVERS[0]}) if "Close" in data.columns else data.iloc[:, :1]
+            volumes = data["Volume"].iloc[-1].dropna() if "Volume" in data.columns else pd.Series(dtype=float)
         top5 = volumes.nlargest(5).index.tolist()
-        return [{"ticker": t, "change": _brief_one_day_change(t), "volume": int(volumes[t])} for t in top5]
+        # Compute change_pct from batch closes (same logic as market-summary)
+        changes: dict[str, float] = {}
+        if len(closes) >= 2:
+            prev_row, curr_row = closes.iloc[-2], closes.iloc[-1]
+            for t in top5:
+                if t in closes.columns:
+                    p0, p1 = safe_float(prev_row[t]), safe_float(curr_row[t])
+                    changes[t] = round((p1 - p0) / p0 * 100, 2) if p0 > 0 else 0.0
+        return [{"ticker": t, "change": changes.get(t, _brief_one_day_change(t)), "volume": int(volumes.get(t, 0))} for t in top5]
     except Exception:
         return [{"ticker": t, "change": _brief_one_day_change(t), "volume": 0} for t in _BRIEF_MOVERS[:5]]
 
@@ -3728,9 +3751,11 @@ def _brief_generate(indices: dict[str, float], movers: list[dict]) -> dict:
         '  "portfolio_impact": "2-3 sentences on how today\'s moves would affect a diversified equity holder, referencing the most active stocks",\n'
         '  "outlook": "1-2 sentences on the key thing to watch next"\n'
         "}\n\n"
-        f"INDEX PERFORMANCE (1-day):\n{index_lines}\n\n"
-        f"TOP 5 MOST ACTIVE STOCKS:\n{mover_lines}\n\n"
+        f"INDEX PERFORMANCE (1-day, live data):\n{index_lines}\n\n"
+        f"TOP 5 MOST ACTIVE STOCKS (1-day, live data):\n{mover_lines}\n\n"
         "RULES:\n"
+        "- Use ONLY the exact percentages listed above. Never infer, estimate, or reference any price or percentage move not explicitly listed.\n"
+        "- If a percentage is 0.00%, say the index was flat.\n"
         "- Plain prose only. No asterisks, no em dashes, no markdown, no bullet points.\n"
         "- Be direct and analytical. No fluff.\n"
         "- Return only the JSON object, nothing else."
