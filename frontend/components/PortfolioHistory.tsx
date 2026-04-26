@@ -292,7 +292,6 @@ export default function PortfolioHistory() {
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: "100%" }}
           />
-          <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "right", margin: "2px 0 4px", opacity: 0.7 }}>Double-click chart to reset zoom</p>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
             {chartLines.map(l => {
