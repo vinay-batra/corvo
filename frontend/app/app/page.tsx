@@ -36,8 +36,6 @@ import ExportPDF from "../../components/ExportPDF";
 import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
-import OnboardingModal from "../../components/OnboardingModal";
-import OnboardingQuestionnaire from "../../components/OnboardingQuestionnaire";
 import TourInviteModal from "../../components/TourInviteModal";
 import { fetchPortfolio } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
@@ -717,7 +715,6 @@ interface TopbarActionsProps {
   setShowReferral: (v: boolean) => void;
   setShowSettings: (v: boolean) => void;
   setShowProfile: (v: boolean) => void;
-  setShowOnboarding: (v: boolean) => void;
   setShowDashboardTour: (v: boolean) => void;
 }
 
@@ -725,7 +722,7 @@ const TopbarActions = memo(function TopbarActions({
   dark, toggleDark, alertCount, avatarUrl, displayName,
   data, assets, exportCSV,
   setShowAlerts, setShowEmailPrefs, setShowReferral, setShowSettings,
-  setShowProfile, setShowOnboarding, setShowDashboardTour,
+  setShowProfile, setShowDashboardTour,
 }: TopbarActionsProps) {
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [aiToast, setAiToast] = useState(false);
@@ -792,12 +789,7 @@ const TopbarActions = memo(function TopbarActions({
             onReferral={() => setShowReferral(true)}
             onSettings={() => setShowSettings(true)}
             onProfile={() => setShowProfile(true)}
-            onReplayOnboarding={() => {
-              localStorage.removeItem("corvo_onboarding_skipped");
-              localStorage.removeItem("corvo_setup_banner_dismissed");
-              setShowSettings(false);
-              setShowOnboarding(true);
-            }}
+            onReplayOnboarding={() => { window.location.href = "/onboarding?replay=true"; }}
             onReplayTour={() => {
               localStorage.removeItem("corvo_tour_completed");
               setShowSettings(false);
@@ -833,8 +825,6 @@ export default function AppPage() {
   const [goals, setGoals]                 = useState<any>(null);
   const [showGoals, setShowGoals]         = useState(false);
   const [showTour, setShowTour]           = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [showSetupBanner, setShowSetupBanner] = useState(false);
   const [showProfile, setShowProfile]     = useState(false);
   const [showSettings, setShowSettings]   = useState(false);
@@ -929,6 +919,24 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       if (raw) setAlertCount(JSON.parse(raw).length);
     } catch {}
 
+    // Load portfolio assets carried over from /onboarding
+    try {
+      const obAssets = localStorage.getItem("corvo_onboarding_assets");
+      if (obAssets) {
+        const parsed = JSON.parse(obAssets);
+        if (Array.isArray(parsed) && parsed.length > 0) setAssets(parsed);
+        localStorage.removeItem("corvo_onboarding_assets");
+      }
+    } catch {}
+
+    // Show TourInviteModal when arriving fresh from /onboarding
+    if (localStorage.getItem("corvo_just_onboarded") === "true") {
+      localStorage.removeItem("corvo_just_onboarded");
+      if (localStorage.getItem("corvo_tour_offered") !== "true") {
+        setShowTourInvite(true);
+      }
+    }
+
     // Restore portfolio state saved before navigating to Learn
     try {
       const savedAssets = localStorage.getItem("corvo_saved_assets");
@@ -997,17 +1005,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         .finally(() => setLoading(false));
     }
 
-    // Check onboarding status: Supabase is the source of truth; localStorage is a fallback
+    // Load nav profile and redirect to /onboarding if not yet complete
     (async () => {
-      // Show setup banner if user previously skipped onboarding
-      if (localStorage.getItem("corvo_onboarding_skipped") === "true" &&
-          localStorage.getItem("corvo_setup_banner_dismissed") !== "true") {
-        setShowSetupBanner(true);
-      }
-
-      // Belt-and-suspenders: skip entirely if tour was already completed this browser session
-      if (localStorage.getItem("corvo_tour_completed") === "true") return;
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
@@ -1030,33 +1029,14 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         .eq("id", user.id)
         .single();
 
-      const needsTour = !profile || !profile.onboarding_completed;
-      if (!needsTour) return;
+      // Consider onboarding done if either source confirms it
+      const alreadyDone = profile?.onboarding_completed === true || user.user_metadata?.onboarding_complete === true;
+      if (alreadyDone) return;
 
-      tourNeededRef.current = true;
-
-      // New user: create profile row and send welcome email for OAuth signups
-      if (!profile) {
-        await supabase.from("profiles").upsert({
-          id: user.id,
-          onboarding_completed: false,
-          updated_at: new Date().toISOString(),
-        });
-        if (user.app_metadata?.provider && user.app_metadata.provider !== "email") {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-          const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || null;
-          fetch(`${apiUrl}/send-welcome-email`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: user.email, display_name: displayName, user_id: user.id }),
-          }).catch(() => {});
-        }
-      }
-
-      // Show onboarding questionnaire first, then the main onboarding modal
+      // Redirect to /onboarding unless viewing a shared portfolio or demo
       const params2 = new URLSearchParams(window.location.search);
       if (!params2.get("portfolio") && params2.get("demo") !== "true") {
-        setShowQuestionnaire(true);
+        window.location.replace("/onboarding");
       }
     })();
   }, []);
@@ -1666,7 +1646,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   onReferral={() => setShowReferral(true)}
                   onSettings={() => setShowSettings(true)}
                   onProfile={() => setShowProfile(true)}
-                  onReplayOnboarding={() => { localStorage.removeItem("corvo_onboarding_skipped"); localStorage.removeItem("corvo_setup_banner_dismissed"); setShowSettings(false); setShowOnboarding(true); }}
+                  onReplayOnboarding={() => { window.location.href = "/onboarding?replay=true"; }}
                   onReplayTour={() => { localStorage.removeItem("corvo_tour_completed"); setShowSettings(false); setShowDashboardTour(true); }}
                   avatarUrl={navProfile.avatarUrl}
                   displayName={navProfile.displayName}
@@ -1734,7 +1714,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             setShowReferral={setShowReferral}
             setShowSettings={setShowSettings}
             setShowProfile={setShowProfile}
-            setShowOnboarding={setShowOnboarding}
             setShowDashboardTour={setShowDashboardTour}
           />
         </header>
@@ -1755,7 +1734,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <button onClick={() => { setShowSetupBanner(false); setShowOnboarding(true); }}
+                  <button onClick={() => { setShowSetupBanner(false); window.location.href = "/onboarding"; }}
                     style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "var(--bg)", cursor: "pointer", transition: "opacity 0.15s" }}
                     onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
                     onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
@@ -2132,56 +2111,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       />
 
 
-      {showQuestionnaire && (
-        <OnboardingQuestionnaire
-          onComplete={() => {
-            setShowQuestionnaire(false);
-            setShowOnboarding(true);
-          }}
-        />
-      )}
-
       <AnimatePresence>
-        {showOnboarding && (
-          <OnboardingModal
-            onComplete={async (builtAssets) => {
-              setShowOnboarding(false);
-              localStorage.removeItem("corvo_onboarding_skipped");
-              setShowSetupBanner(false);
-              posthog.capture("onboarding_completed", { tickers_added: builtAssets.length });
-              if (builtAssets.length > 0) {
-                // builtAssets come from PortfolioBuilder which stores fractions (0–1).
-                // Do NOT multiply by 100, that corrupts the weights.
-                setAssets(builtAssets);
-              }
-              tourNeededRef.current = false;
-              // Show tour invitation modal (once only), or skip if already offered
-              if (localStorage.getItem("corvo_tour_offered") !== "true") {
-                setShowTourInvite(true);
-              }
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) {
-                const { data: xpRow } = await supabase.from("profiles").select("xp").eq("id", user.id).single();
-                await supabase.from("profiles").upsert({
-                  id: user.id,
-                  onboarding_completed: true,
-                  xp: (xpRow?.xp || 0) + 100,
-                  updated_at: new Date().toISOString(),
-                });
-              }
-            }}
-            onSkip={() => {
-              setShowOnboarding(false);
-              localStorage.setItem("corvo_onboarding_skipped", "true");
-              if (localStorage.getItem("corvo_setup_banner_dismissed") !== "true") {
-                setShowSetupBanner(true);
-              }
-            }}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} />}
+        {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); }} />}
       </AnimatePresence>
       {showTourInvite && (
         <TourInviteModal
@@ -2228,10 +2159,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               onClose={() => setShowSettings(false)}
               onProfileSaved={(p) => setNavProfile({ displayName: p.displayName, avatarUrl: p.avatarUrl })}
               onReplayOnboarding={() => {
-                localStorage.removeItem("corvo_onboarding_skipped");
-                localStorage.removeItem("corvo_setup_banner_dismissed");
                 setShowSettings(false);
-                setShowOnboarding(true);
+                window.location.href = "/onboarding?replay=true";
               }}
               onReplayTour={() => {
                 localStorage.removeItem("corvo_tour_completed");
