@@ -52,7 +52,9 @@ export default function BenchmarkComparison({ data }: { data: any }) {
   const benchWidth = Math.abs(benchReturn) / maxVal;
 
   return (
-    <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
       {/* Outperformance headline */}
       <div style={{ marginBottom: 14, padding: "8px 12px", background: isBeating ? "rgba(76,175,125,0.06)" : "rgba(224,92,92,0.06)", border: `0.5px solid ${isBeating ? "rgba(76,175,125,0.25)" : "rgba(224,92,92,0.25)"}`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 11, color: "var(--text2)" }}>
@@ -69,7 +71,9 @@ export default function BenchmarkComparison({ data }: { data: any }) {
             <span style={{ fontSize: 14, fontFamily: "Space Mono,monospace", color: portfolioReturn >= 0 ? C.green : C.red, fontWeight: 700 }}>{portfolioReturn >= 0 ? "+" : ""}{(portfolioReturn * 100).toFixed(2)}%</span>
           </div>
           <div style={{ height: 6, background: "var(--track)", borderRadius: 3, overflow: "hidden" }}>
-            <motion.div initial={false} animate={{ width: `${portWidth * 100}%` }} transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ width: `${portWidth * 100}%` }} transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
               style={{ height: "100%", background: portfolioReturn >= 0 ? C.green : C.red, borderRadius: 3, boxShadow: `0 0 6px ${portfolioReturn >= 0 ? C.green : C.red}80` }} />
           </div>
         </div>
@@ -79,7 +83,9 @@ export default function BenchmarkComparison({ data }: { data: any }) {
             <span style={{ fontSize: 14, fontFamily: "Space Mono,monospace", color: "#5b9bd5" }}>{benchReturn >= 0 ? "+" : ""}{(benchReturn * 100).toFixed(2)}%</span>
           </div>
           <div style={{ height: 6, background: "var(--track)", borderRadius: 3, overflow: "hidden" }}>
-            <motion.div initial={false} animate={{ width: `${benchWidth * 100}%` }} transition={{ duration: 1, delay: 0.6, ease: "easeOut" }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ width: `${benchWidth * 100}%` }} transition={{ duration: 1, delay: 0.6, ease: "easeOut" }}
               style={{ height: "100%", background: "#5b9bd5", borderRadius: 3 }} />
           </div>
         </div>

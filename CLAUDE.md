@@ -1,0 +1,72 @@
+---
+
+# Corvo — Project Context
+
+## Stack
+- Frontend: Next.js, deployed on Vercel — ~/Downloads/portfolio_v2/frontend
+- Backend: FastAPI, deployed on Railway — ~/Downloads/portfolio_v2/backend/main.py (4000+ lines)
+- Database: Supabase
+- Railway URL: web-production-7a78d.up.railway.app
+- Live site: corvo.capital
+- GitHub: vinay-batra/corvo
+
+## Critical Rules — Never Break These
+- initial={false} on ALL motion.* components, every single one, no exceptions — add comment "// initial={false} required — do not remove"
+- No emojis anywhere in the app
+- No em dashes anywhere — not in code, not in AI responses, not in copy
+- No asterisks in AI responses
+- Space Mono font for all numbers and monospace text
+- All colors use CSS variables only — never hardcode dark colors
+- SVG icons only — no emoji icons
+- Always add "Commit and push." to the end of every Claude Code prompt
+- Vinay uses Claude Code inside VS Code, not standalone terminal
+
+## Mobile Rules
+- All mobile fixes must use max-width: 768px
+- Never touch desktop styles when fixing mobile
+- Desktop is the source of truth — mobile adapts to it
+
+## File Structure
+- Frontend: frontend/app/ for pages, frontend/components/ for components
+- Backend: backend/main.py (single file, 4000+ lines)
+- The homepage (corvo.capital) has its own inline nav in frontend/app/page.tsx — separate from PublicNav.tsx
+- Railway root is /backend, actual code is in backend/main.py
+
+## CSS Variables
+- --bg, --bg2, --bg3, --card-bg, --border, --border2
+- --text, --text2, --text3, --text-muted
+- --accent (#c9a84c dashboard, #b8860b dark, #8b6914 light)
+- Themes set via [data-theme="dark"] and [data-theme="light"] in globals.css
+- Light mode is the default for new/logged-out users
+
+## Current Version
+v0.18 — last updated April 25, 2026
+
+## Todo List (in order)
+1. Emails working end-to-end — weekly digest, price alerts, welcome — test all three
+2. Brokerage sync via Plaid — Fidelity, Robinhood, Schwab, Coinbase, real positions
+3. Options chain viewer
+4. Paper trading simulation
+5. Earnings call AI summaries — transcript to what it means for your holdings
+6. Insider trading tracker — SEC Form 4 filings for holdings
+7. Analyst price targets — consensus target vs current price
+8. Market close summary — daily notification after 4pm ET
+9. Push notifications for morning briefing — 9am daily to phone
+10. SMS alerts — in addition to email and push
+11. Portfolio comparison — anonymized performance vs other Corvo users
+12. Pro tier — unlimited AI chat, real-time alerts, custom PDF, SMS, brokerage sync
+13. Custom branded PDF reports — Pro feature
+14. App Store — iOS
+15. Google Play — Android
+16. Marketing
+17. YC application
+
+## Key Things Never to Break
+- The double backend/backend path issue on Railway — always edit backend/main.py, confirm Railway serves the right file
+- Sharpe ratio uses live ^IRX T-bill rate — never hardcode rf_rate
+- CAGR label is dynamic based on selected period
+- AI insights must never single out one holding as largest when multiple share equal weight
+- What-If analysis requires weights to total 100% before running
+- Light mode default for new/incognito users — localStorage key is corvo_theme
+- Morning briefing uses actual yfinance 1D price data for holdings — never estimate
+- Money market tickers (ending in XX, or in CASH_TICKERS list) get synthetic 4.5% price series

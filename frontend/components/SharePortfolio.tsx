@@ -60,10 +60,14 @@ export default function SharePortfolio({ data, assets, period, benchmark }: Shar
 
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
               onClick={e => e.stopPropagation()}
               style={{ background: C.navy2, border: `1px solid ${C.border2}`, borderRadius: 16, padding: 28, width: "100%", maxWidth: "min(480px, 95vw)", position: "relative" }}>
 

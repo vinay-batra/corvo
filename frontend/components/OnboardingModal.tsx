@@ -53,7 +53,8 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      // initial={false} is required — do not remove
+      initial={false}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       style={{
@@ -74,7 +75,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
 
       <motion.div
         className="ob-modal"
-        initial={{ opacity: 0, scale: 0.93, y: 24 }}
+        initial={false}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
@@ -93,7 +94,9 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
         {/* Progress bar */}
         <div style={{ height: 2, background: "var(--bg3)", borderRadius: 1, marginBottom: 26, overflow: "hidden" }}>
           <motion.div
-            animate={{ width: `${((step + 1) / 3) * 100}%` }}
+            // initial={false} is required — do not remove
+            initial={false}
+                        animate={{ width: `${((step + 1) / 3) * 100}%` }}
             transition={{ duration: 0.45, ease: "easeOut" }}
             style={{ height: "100%", background: C.amber, borderRadius: 1 }}
           />
@@ -104,7 +107,9 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
           <div style={{ display: "flex", gap: 5 }}>
             {[0, 1, 2].map(i => (
               <motion.div
-                key={i}
+                // initial={false} is required — do not remove
+                initial={false}
+                                key={i}
                 animate={{ width: i === step ? 20 : 6 }}
                 style={{
                   height: 5, borderRadius: 3,
@@ -131,7 +136,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
           {step === 0 && (
             <motion.div
               key="step-0"
-              initial={{ opacity: 0, x: 18 }}
+              initial={false}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -18 }}
               transition={{ duration: 0.22 }}
@@ -149,7 +154,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
                 {FEATURES.map((f, i) => (
                   <motion.div
                     key={f.title}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.08 + i * 0.07 }}
                     style={{
@@ -196,7 +201,7 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
           {step === 1 && (
             <motion.div
               key="step-1"
-              initial={{ opacity: 0, x: 18 }}
+              initial={false}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -18 }}
               transition={{ duration: 0.22 }}
@@ -247,14 +252,15 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
           {step === 2 && (
             <motion.div
               key="step-2"
-              initial={{ opacity: 0, x: 18 }}
+              initial={false}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -18 }}
               transition={{ duration: 0.22 }}
             >
               {/* Success ring */}
               <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
+                // initial={false} is required — do not remove
+                initial={false}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", damping: 13, stiffness: 200, delay: 0.05 }}
                 style={{
@@ -278,7 +284,8 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
               {/* Portfolio summary */}
               {validAssets.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                  // initial={false} is required — do not remove
+                  initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                   style={{
                     padding: "14px 16px", marginBottom: 14,
                     background: "var(--bg3)",
@@ -311,7 +318,8 @@ export default function OnboardingModal({ onComplete, onSkip }: Props) {
               )}
 
               <motion.button
-                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}
+                // initial={false} is required — do not remove
+                initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}
                 onClick={() => onComplete(validAssets)}
                 style={{
                   width: "100%", padding: "13px",

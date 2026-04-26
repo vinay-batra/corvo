@@ -72,7 +72,8 @@ const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
 function FadeUp({ children, delay = 0, y = 30, style = {}, className }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties; className?: string }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y }}
+      // initial={false} is required — do not remove
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
@@ -88,7 +89,8 @@ function FadeUp({ children, delay = 0, y = 30, style = {}, className }: { childr
 function SlideIn({ children, direction = "left", delay = 0, style = {} }: { children: React.ReactNode; direction?: "left" | "right"; delay?: number; style?: React.CSSProperties }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: direction === "left" ? -40 : 40 }}
+      // initial={false} is required — do not remove
+      initial={false}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
@@ -171,7 +173,8 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
   const { gridArea, ...restStyle } = style as any;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 28 }}
+      // initial={false} is required — do not remove
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
@@ -910,7 +913,8 @@ function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon:
   const initial = dir === "left" ? { opacity: 0, x: -32, y: 0 } : dir === "right" ? { opacity: 0, x: 32, y: 0 } : { opacity: 0, x: 0, y: 28 };
   return (
     <motion.div
-      initial={initial}
+      // initial={false} is required — do not remove
+      initial={false}
       whileInView={{ opacity: 1, x: 0, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
@@ -928,7 +932,8 @@ function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon:
 function TestimonialCard({ text, name, role, delay }: { text: string; name: string; role: string; delay: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24, scale: 0.94 }}
+      // initial={false} is required — do not remove
+      initial={false}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
@@ -1141,7 +1146,8 @@ function HeroMetricCard({ label, value, color, animDelay, style }: { label: stri
 function AnimatedTableRow({ children, delay }: { children: React.ReactNode; delay: number }) {
   return (
     <motion.tr
-      initial={{ opacity: 0, x: -20 }}
+      // initial={false} is required — do not remove
+      initial={false}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.5, ease: ANIM_EASE, delay }}
@@ -1434,7 +1440,7 @@ function FeaturedInBar() {
         {platforms.map((p, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, y: 10 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: ANIM_EASE, delay: 0.1 + i * 0.08 }}
@@ -1594,7 +1600,8 @@ function GrowthCalculatorSection() {
 function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title: string; desc: string; delay: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      // initial={false} is required — do not remove
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
@@ -2081,25 +2088,35 @@ export default function Landing() {
           initial="hidden" animate="visible">
           <span style={{ display: "block", color: "var(--text)" }}>
             {["Your", "portfolio", "deserves"].map((w, i) => (
-              <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200 } } }}
+              <motion.span
+                // initial={false} is required — do not remove
+                initial={false}
+                key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200 } } }}
                 style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
             ))}
           </span>
           <span style={{ display: "block", color: "#c9a84c", position: "relative" }}>
             {["better", "than", "a", "pie", "chart."].map((w, i) => (
-              <motion.span key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
+              <motion.span
+                // initial={false} is required — do not remove
+                initial={false}
+                key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
                 style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
             ))}
             <span style={{ position: "absolute", bottom: 2, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(201,168,76,0.35), transparent)" }} />
           </span>
         </motion.h1>
 
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
+        <motion.p
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
           style={{ fontSize: 17, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 520, marginBottom: 48 }}>
           AI-powered analytics: Sharpe ratio, Monte Carlo, sector exposure, and more. Free.
         </motion.p>
 
-        <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.9, type: "spring", damping: 20, stiffness: 200 }}
           className="hero-btns"
           style={{ display: "flex", gap: 12, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>

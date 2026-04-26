@@ -150,7 +150,8 @@ function TickerSearch({ value, onChange }: { value: string; onChange: (ticker: s
       <AnimatePresence>
         {open && results.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
             style={{ position: "absolute", left: 0, right: 0, top: "calc(100% + 4px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 9, overflow: "hidden", zIndex: 400, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
             {results.map((r, i) => (
               <div key={r.ticker} onMouseDown={() => select(r.ticker)}
@@ -289,12 +290,14 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
         style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300 }}
       />
       <motion.div
-        initial={{ x: 340 }} animate={{ x: 0 }} exit={{ x: 340 }}
+        // initial={false} is required — do not remove
+        initial={false} animate={{ x: 0 }} exit={{ x: 340 }}
         transition={{ type: "spring", damping: 28, stiffness: 300 }}
         style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 320, background: "var(--bg2)", borderLeft: "0.5px solid var(--border)", zIndex: 301, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
@@ -432,7 +435,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
           ) : (
             <AnimatePresence initial={false}>
               {alerts.filter(a => a.type === tab).map(a => (
-                <motion.div key={a.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
+                <motion.div key={a.id} initial={false} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", border: "0.5px solid var(--border)", borderRadius: 10, marginBottom: 7, background: "var(--card-bg)", transition: "border-color 0.15s" }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = "var(--border2)"}
                     onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}>

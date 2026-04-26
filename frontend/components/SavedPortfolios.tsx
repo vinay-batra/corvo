@@ -174,7 +174,9 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
       </div>
       <AnimatePresence>
         {showSave && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden", marginBottom: 8 }}>
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden", marginBottom: 8 }}>
             <div style={{ display: "flex", gap: 5 }}>
               <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && save()}
                 onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} placeholder="Portfolio name..."
@@ -193,7 +195,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {portfolios.map(p => (
-            <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            <motion.div key={p.id} initial={false} animate={{ opacity: 1 }}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 9px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: `1px solid ${C.border}`, cursor: "pointer", transition: "all 0.15s" }}
               onClick={() => onLoad(p.assets)}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.25)"; e.currentTarget.style.background = "rgba(201,168,76,0.04)"; }}
@@ -214,11 +216,13 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
       <AnimatePresence>
         {deleteConfirm && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
             onClick={() => setDeleteConfirm(null)}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               onClick={e => e.stopPropagation()}
               style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 14, padding: "24px 28px", maxWidth: 340, width: "90%", boxShadow: "var(--shadow)" }}>
               <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>Delete portfolio?</p>

@@ -570,6 +570,7 @@ export default function PositionsTab({
       {/* ── Performance chart ─────────────────────────────────────────────── */}
       {!portfoliosLoading && savedPortfolios.length > 0 && (
         <motion.div
+          // initial={false} is required — do not remove
           initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="pos-perf-wrap"
           style={{ marginBottom: 20, border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 16px 8px", background: "var(--bg2)", overflow: "hidden", width: "100%" }}

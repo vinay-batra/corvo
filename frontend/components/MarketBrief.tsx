@@ -80,6 +80,7 @@ function IndexPill({ ticker, change }: { ticker: string; change: number }) {
 function SectionBlock({ label, labelColor, text, delay }: { label?: string; labelColor?: string; text: string; delay: number }) {
   return (
     <motion.div
+      // initial={false} is required — do not remove
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
@@ -169,7 +170,7 @@ export default function MarketBrief() {
             ))
           ) : data?.indices ? (
             Object.entries(data.indices).map(([ticker, change], i) => (
-              <motion.div key={ticker} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
+              <motion.div key={ticker} initial={false} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
                 <IndexPill ticker={ticker} change={change} />
               </motion.div>
             ))

@@ -56,11 +56,15 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
   ];
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
 
-      <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
+      <motion.div
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
         onClick={e => e.stopPropagation()}
         style={{ width: "min(480px, 95vw)", maxHeight: "85vh", overflowY: "auto", background: C.navy3, border: `1px solid ${C.border}`, borderRadius: 16, padding: "28px 28px 24px" }}>
 

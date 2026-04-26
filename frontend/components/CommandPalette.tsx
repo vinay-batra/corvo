@@ -96,11 +96,13 @@ export default function CommandPalette({ open, onClose, tabs, onTab, onStockSear
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose}
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", zIndex: 9000, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "15vh" }}>
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -12 }}
+            // initial={false} is required — do not remove
+            initial={false}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -8 }}
             transition={{ type: "spring", damping: 28, stiffness: 320 }}

@@ -512,7 +512,10 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose, onAi
     <div style={{ position: "relative" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ display: "flex", gap: 0 }}>
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+        <motion.button
+          // initial={false} is required — do not remove
+          initial={false}
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
           onClick={() => handleExport()} disabled={!data || loading}
           style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 12px", background: C.amber2, border: "1px solid rgba(201,168,76,0.25)", borderRight: "none", borderRadius: "8px 0 0 8px", color: C.amber, fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", cursor: !data || loading ? "not-allowed" : "pointer", opacity: !data ? 0.4 : 1, transition: "all 0.2s" }}>
           {loading
@@ -525,7 +528,9 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose, onAi
 
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", zIndex: 100, width: 220, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
             {[
               { value: "jspdf", label: "↓ Single-page PDF", desc: "Metrics · allocation · returns · health" },

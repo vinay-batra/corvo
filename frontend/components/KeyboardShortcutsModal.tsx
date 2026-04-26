@@ -40,7 +40,8 @@ export default function KeyboardShortcutsModal({ open, onClose }: Props) {
       {open && (
         <>
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 600, backdropFilter: "blur(4px)" }}
           />
@@ -50,7 +51,8 @@ export default function KeyboardShortcutsModal({ open, onClose }: Props) {
             padding: "16px", pointerEvents: "none",
           }}>
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            // initial={false} is required — do not remove
+            initial={false}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 10 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}

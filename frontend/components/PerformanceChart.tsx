@@ -197,7 +197,9 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
   };
 
   return (
-    <motion.div initial={false} transition={{ duration: 0.5 }} style={{ overflow: "hidden", width: "100%", minWidth: 0 }}>
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false} transition={{ duration: 0.5 }} style={{ overflow: "hidden", width: "100%", minWidth: 0 }}>
       {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
         <p style={{ fontSize: 9, letterSpacing: 2.5, color: legendFg, textTransform: "uppercase" }}>
@@ -246,7 +248,9 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
 
       {/* Custom date picker */}
       {showCustomPicker && onCustomDateChange && (
-        <motion.div initial={false}
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false}
           style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap", padding: "10px 12px", background: "rgba(184,134,11,0.04)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 8 }}>
           <span style={{ fontSize: 10, color: legendFg, flexShrink: 0 }}>From</span>
           <input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)}

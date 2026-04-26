@@ -433,7 +433,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             : (names[a.ticker] || staticEntry?.name || "");
           const isExpanded = expandedSecondary.has(i);
           return (
-            <motion.div key={`${a.ticker}-${i}`} initial={{opacity:0,x:-6}} animate={{opacity:1,x:0}} exit={{opacity:0,height:0}} transition={{duration:0.15}} style={{marginBottom:12,position:"relative"}}>
+            <motion.div key={`${a.ticker}-${i}`} initial={false} animate={{opacity:1,x:0}} exit={{opacity:0,height:0}} transition={{duration:0.15}} style={{marginBottom:12,position:"relative"}}>
 
               {/* Main row: dot · ticker · weight · expand · remove */}
               <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -470,7 +470,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   {searching[i]&&<div style={{position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:9,height:9,border:"1.5px solid rgba(201,168,76,0.2)",borderTopColor:C.amber,borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
                   <AnimatePresence>
                     {active===i&&(res.length>0||!!searching[i])&&(
-                      <motion.div initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}}
+                      <motion.div
+                        // initial={false} is required — do not remove
+                        initial={false} animate={{opacity:1,y:0}} exit={{opacity:0}}
                         style={{position:"absolute",top:"calc(100% + 3px)",left:0,right:0,background:"var(--card-bg)",border:`1px solid var(--border)`,borderRadius:10,zIndex:100,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
                         {res.map((r,idx)=>(
                           <div key={idx} onMouseDown={e=>{e.preventDefault();clearTimeout(blurT.current[i]);select(i,r);}}
@@ -532,7 +534,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               <AnimatePresence>
                 {isExpanded&&(
                   <motion.div
-                    initial={{opacity:0,height:0}} animate={{opacity:1,height:"auto"}} exit={{opacity:0,height:0}}
+                    // initial={false} is required — do not remove
+                    initial={false} animate={{opacity:1,height:"auto"}} exit={{opacity:0,height:0}}
                     transition={{duration:0.15}}
                     style={{overflow:"hidden",paddingLeft:10,marginTop:8}}>
                     {isCash ? (
@@ -625,10 +628,14 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       {/* ── Presets Modal ─────────────────────────────────────────── */}
       <AnimatePresence>
         {showPresetsModal&&(
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{opacity:1}} exit={{opacity:0}}
             style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
             onClick={()=>{setShowPresetsModal(false);setPresetConfirm(null);}}>
-            <motion.div initial={{scale:0.94,y:10}} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
               style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:380,boxShadow:"var(--shadow-md)",overflow:"hidden"}}
               onClick={e=>e.stopPropagation()}>
               <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -681,11 +688,15 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       {/* ── CSV Import Modal ──────────────────────────────────────── */}
       <AnimatePresence>
         {showCsvModal&&(
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{opacity:1}} exit={{opacity:0}}
             className="c-modal-backdrop-mobile"
             style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
             onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}>
-            <motion.div initial={{scale:0.94,y:10}} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
               className="c-modal-sheet"
               style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:460,boxShadow:"var(--shadow-md)",overflow:"hidden"}}
               onClick={e=>e.stopPropagation()}>

@@ -80,7 +80,8 @@ function getAIDifficulty(xp: number): "beginner" | "intermediate" | "advanced" {
 function XPToast({ amount, onDone }: { amount: number; onDone: () => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.7, y: 20 }}
+      // initial={false} is required — do not remove
+      initial={false}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 1.15, y: -20 }}
       transition={{ type: "spring", damping: 14, stiffness: 260 }}
@@ -175,18 +176,21 @@ function LevelUpModal({ levelName, color, onDone }: { levelName: string; color: 
 
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      // initial={false} is required — do not remove
+      initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000 }}
       onClick={onDone}
     >
       <motion.div
-        initial={{ scale: 0.45, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }}
+        // initial={false} is required — do not remove
+        initial={false} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         style={{ background: "var(--bg2)", border: `1.5px solid ${color}55`, borderRadius: 22, padding: "40px 52px", textAlign: "center", maxWidth: 340 }}
         onClick={e => e.stopPropagation()}
       >
         <motion.div
-          initial={{ rotate: -200, scale: 0 }} animate={{ rotate: 0, scale: 1 }}
+          // initial={false} is required — do not remove
+          initial={false} animate={{ rotate: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 15, delay: 0.1 }}
           style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}
         >
@@ -262,7 +266,10 @@ function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: numb
                 </span>
               </div>
               <div style={{ height: 7, background: "var(--track)", borderRadius: 4, overflow: "hidden", position: "relative" }}>
-                <motion.div animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: "easeOut" }}
+                <motion.div
+                  // initial={false} is required — do not remove
+                  initial={false}
+                  animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: "easeOut" }}
                   style={{ height: "100%", background: lvl.color, borderRadius: 4, position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)", animation: "xpShimmer 2.2s ease-in-out infinite", willChange: "transform" }} />
                 </motion.div>
@@ -389,7 +396,9 @@ function SharpGame({ onXP }: { onXP: (n: number) => void }) {
           </button>
         </div>
       ) : (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: isClose ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${isClose ? "rgba(76,175,125,0.35)" : "rgba(224,92,92,0.35)"}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
             <p style={{ fontSize: 14, fontWeight: 500, color: isClose ? GREEN : RED, marginBottom: 5 }}>{isClose ? "Correct" : "Not quite"}</p>
             <p style={{ fontSize: 12, color: "var(--text3)" }}>
@@ -464,7 +473,9 @@ function BuilderChallenge({ onXP }: { onXP: (n: number) => void }) {
           Submit
         </button>
       ) : (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: score >= 2 ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${score >= 2 ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
             <p style={{ fontSize: 14, fontWeight: 500, color: score >= 2 ? GREEN : RED, marginBottom: 5 }}>{score >= 2 ? "Well done!" : "Not quite"}, {score}/3 correct</p>
             <p style={{ fontSize: 12, color: "var(--text3)" }}>Best picks: <span style={{ color: AMBER, fontFamily: "Space Mono, monospace" }}>{current.correct.join(", ")}</span></p>
@@ -811,7 +822,10 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
 
   if (loading) return (
     <div style={{ textAlign: "center", padding: "60px 0" }}>
-      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block", marginBottom: 16 }}>
+      <motion.div
+        // initial={false} is required — do not remove
+        initial={false}
+        animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block", marginBottom: 16 }}>
         <RefreshCw size={32} color={AMBER} />
       </motion.div>
       <p style={{ fontSize: 14, color: "var(--text3)" }}>Generating {difficulty} questions about {lesson.title}...</p>
@@ -832,7 +846,9 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
   if (done || !questions) {
     if (!questions) return null;
     return (
-      <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
+      <motion.div
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
           <BrainCircuit size={48} color={AMBER} />
         </div>
@@ -859,7 +875,7 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
 
   const q = questions[qi];
   return (
-    <motion.div key={qi} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
+    <motion.div key={qi} initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Question {qi + 1} of {questions.length}</span>
         <span style={{ fontSize: 10, padding: "3px 8px", background: `${AMBER}18`, color: AMBER, borderRadius: 6, textTransform: "capitalize" }}>{difficulty}</span>
@@ -883,7 +899,9 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
         })}
       </div>
       {answered && (
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: selected === q.correct ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${selected === q.correct ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
             <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p>
           </div>
@@ -997,7 +1015,10 @@ function ChallengeMode({
         </>
       ) : (
         <>
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block", marginBottom: 16 }}>
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false}
+            animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block", marginBottom: 16 }}>
             <RefreshCw size={32} color={AMBER} />
           </motion.div>
           <p style={{ fontSize: 14, color: "var(--text3)" }}>Generating 10-question challenge from your mastered topics...</p>
@@ -1007,7 +1028,9 @@ function ChallengeMode({
   );
 
   if (phase === "done") return (
-    <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
         <Trophy size={48} color={AMBER} />
       </div>
@@ -1037,7 +1060,7 @@ function ChallengeMode({
   const timerColor = timeLeft > 20 ? GREEN : timeLeft > 10 ? AMBER : RED;
 
   return (
-    <motion.div key={qi} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}>
+    <motion.div key={qi} initial={false} animate={{ opacity: 1, x: 0 }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Question {qi + 1} of {questions.length}</span>
@@ -1049,7 +1072,10 @@ function ChallengeMode({
       </div>
       {/* Timer bar */}
       <div style={{ height: 4, background: "var(--track)", borderRadius: 2, overflow: "hidden", marginBottom: 18 }}>
-        <motion.div animate={{ width: `${timerPct}%` }} transition={{ duration: 0.3 }}
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false}
+          animate={{ width: `${timerPct}%` }} transition={{ duration: 0.3 }}
           style={{ height: "100%", background: timerColor, borderRadius: 2 }} />
       </div>
       <p style={{ fontSize: 16, fontWeight: 500, color: "var(--text)", lineHeight: 1.5, marginBottom: 18 }}>{q.question}</p>
@@ -1071,7 +1097,9 @@ function ChallengeMode({
         })}
       </div>
       {answered && (
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: selected === q.correct ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${selected === q.correct ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
             <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p>
             {selected === q.correct && <p style={{ fontSize: 12, color: GREEN, marginTop: 4, fontFamily: "Space Mono, monospace" }}>+{questionScores[qi] ?? 0} pts (speed bonus included)</p>}
@@ -1160,7 +1188,9 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
         <p style={{ fontSize: 12, color: "var(--text3)" }}>Loading...</p>
       ) : entries.length === 0 ? (
         <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <motion.div initial={false} animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }} style={{ display: "inline-flex", marginBottom: 10, opacity: 0.4 }}>
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }} style={{ display: "inline-flex", marginBottom: 10, opacity: 0.4 }}>
             <Trophy size={32} color="var(--text3)" />
           </motion.div>
           <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>No scores yet</p>
@@ -1171,7 +1201,9 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
           {entries.map(e => {
             const isMe = user && e.id === user.id;
             return (
-              <motion.div initial={false} whileHover={{ x: 3 }} key={e.rank} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: isMe ? `${AMBER}12` : "var(--bg2)", border: `0.5px solid ${isMe ? `${AMBER}44` : "var(--border)"}`, borderRadius: 10 }}>
+              <motion.div
+                // initial={false} is required — do not remove
+                initial={false} whileHover={{ x: 3 }} key={e.rank} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: isMe ? `${AMBER}12` : "var(--bg2)", border: `0.5px solid ${isMe ? `${AMBER}44` : "var(--border)"}`, borderRadius: 10 }}>
                 <span style={{ width: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {rankLabel(e.rank)}
                 </span>
@@ -1234,7 +1266,9 @@ function CrashSimulator({ onXP }: { onXP: (n: number) => void }) {
         })}
       </div>
       {sel !== null && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
           <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p>
         </motion.div>
       )}
@@ -1275,7 +1309,9 @@ function OptionsGame({ onXP }: { onXP: (n: number) => void }) {
           return <button key={i} onClick={() => submit(i)} style={{ padding: "12px", borderRadius: 10, border: `0.5px solid ${show ? (correct ? "rgba(76,175,125,0.6)" : picked ? "rgba(224,92,92,0.6)" : "var(--border)") : "var(--border)"}`, background: show ? (correct ? "rgba(76,175,125,0.1)" : picked ? "rgba(224,92,92,0.1)" : "transparent") : "transparent", color: "var(--text)", fontSize: 13, fontFamily: "Space Mono, monospace", fontWeight: 700, cursor: sel === null ? "pointer" : "default", transition: "all 0.15s" }}>{opt}</button>;
         })}
       </div>
-      {sel !== null && <><motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#a78bfa", color: "#fff", cursor: "pointer" }}>{qi < OPTIONS_QS.length - 1 ? "Next →" : "See Results"}</button></>}
+      {sel !== null && <><motion.div
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#a78bfa", color: "#fff", cursor: "pointer" }}>{qi < OPTIONS_QS.length - 1 ? "Next →" : "See Results"}</button></>}
     </div>
   );
 }
@@ -1311,7 +1347,9 @@ function InflationGame({ onXP }: { onXP: (n: number) => void }) {
           return <button key={i} onClick={() => submit(i)} style={{ padding: "12px", borderRadius: 10, border: `0.5px solid ${show ? (correct ? "rgba(76,175,125,0.6)" : picked ? "rgba(224,92,92,0.6)" : "var(--border)") : "var(--border)"}`, background: show ? (correct ? "rgba(76,175,125,0.1)" : picked ? "rgba(224,92,92,0.1)" : "transparent") : "transparent", color: "var(--text)", fontSize: 13, fontWeight: 600, cursor: sel === null ? "pointer" : "default", transition: "all 0.15s" }}>{opt}</button>;
         })}
       </div>
-      {sel !== null && <><motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#4a9eff", color: "#fff", cursor: "pointer" }}>{qi < INFLATION_QS.length - 1 ? "Next →" : "See Results"}</button></>}
+      {sel !== null && <><motion.div
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#4a9eff", color: "#fff", cursor: "pointer" }}>{qi < INFLATION_QS.length - 1 ? "Next →" : "See Results"}</button></>}
     </div>
   );
 }
@@ -1355,7 +1393,9 @@ function FedGame({ onXP }: { onXP: (n: number) => void }) {
           return <button key={i} onClick={() => submit(i)} style={{ padding: "10px", borderRadius: 10, border: `0.5px solid ${show ? (correct ? "rgba(76,175,125,0.6)" : picked ? "rgba(224,92,92,0.6)" : "var(--border)") : "var(--border)"}`, background: show ? (correct ? "rgba(76,175,125,0.1)" : picked ? "rgba(224,92,92,0.1)" : "transparent") : "transparent", color: "var(--text)", fontSize: 12, fontWeight: 600, cursor: sel === null ? "pointer" : "default", transition: "all 0.15s" }}>{opt}</button>;
         })}
       </div>
-      {sel !== null && <><motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 11, fontWeight: 600, color: "#4caf7d", marginBottom: 4 }}>Actual: {q.actualAction}</p><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.why}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#4caf7d", color: "#fff", cursor: "pointer" }}>{qi < FED_SCENARIOS.length - 1 ? "Next →" : "See Results"}</button></>}
+      {sel !== null && <><motion.div
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 11, fontWeight: 600, color: "#4caf7d", marginBottom: 4 }}>Actual: {q.actualAction}</p><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.why}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#4caf7d", color: "#fff", cursor: "pointer" }}>{qi < FED_SCENARIOS.length - 1 ? "Next →" : "See Results"}</button></>}
     </div>
   );
 }
@@ -1399,7 +1439,9 @@ function ValuationShowdown({ onXP }: { onXP: (n: number) => void }) {
           );
         })}
       </div>
-      {sel !== null && <><motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.reason}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: AMBER, color: "#0a0e14", cursor: "pointer" }}>{round < VALUATION_ROUNDS.length - 1 ? "Next Round →" : "See Results"}</button></>}
+      {sel !== null && <><motion.div
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.reason}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: AMBER, color: "#0a0e14", cursor: "pointer" }}>{round < VALUATION_ROUNDS.length - 1 ? "Next Round →" : "See Results"}</button></>}
     </div>
   );
 }
@@ -1759,7 +1801,7 @@ export default function LearnPage() {
 
           {/* ── Home ── */}
           {activeSection === "home" && (
-            <motion.div key="home" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+            <motion.div key="home" initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
 
               {/* Daily Challenge */}
               <div style={{ marginBottom: 24 }}>
@@ -1769,6 +1811,7 @@ export default function LearnPage() {
                   padding: "24px 28px", position: "relative", overflow: "hidden",
                 }}>
                   <motion.div
+                    // initial={false} is required — do not remove
                     initial={false}
                     animate={{ x: ["-100%", "200%"] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -1862,6 +1905,7 @@ export default function LearnPage() {
               {/* Challenge Mode */}
               <div style={{ marginBottom: 40 }}>
                 <motion.button
+                  // initial={false} is required — do not remove
                   initial={false}
                   whileHover={challengeUnlocked ? { scale: 1.01 } : {}}
                   whileTap={challengeUnlocked ? { scale: 0.99 } : {}}
@@ -1890,7 +1934,9 @@ export default function LearnPage() {
                     </div>
                     {challengeUnlocked
                       ? <ChevronRight size={16} color={AMBER} />
-                      : <motion.div initial={false} animate={{ opacity: [0.4, 0.7, 0.4] }} transition={{ duration: 2, repeat: Infinity }}><Lock size={14} color="var(--text3)" /></motion.div>}
+                      : <motion.div
+                          // initial={false} is required — do not remove
+                          initial={false} animate={{ opacity: [0.4, 0.7, 0.4] }} transition={{ duration: 2, repeat: Infinity }}><Lock size={14} color="var(--text3)" /></motion.div>}
                   </div>
                 </motion.button>
               </div>
@@ -1912,6 +1958,7 @@ export default function LearnPage() {
                   const isLastOdd = idx === ARCADE_GAMES.length - 1 && ARCADE_GAMES.length % 2 !== 0;
                   return (
                     <motion.button
+                      // initial={false} is required — do not remove
                       initial={false}
                       variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
                       whileHover={{ y: -3, boxShadow: `0 8px 32px ${g.color}22` }}
@@ -2010,8 +2057,10 @@ export default function LearnPage() {
 
           {/* ── Game ── */}
           {activeSection === "game" && (
-            <motion.div key="game" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <motion.button initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
+            <motion.div key="game" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <motion.button
+                // initial={false} is required — do not remove
+                initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
               {(() => {
                 const meta = ARCADE_GAMES.find(g => g.id === activeGame);
                 if (!meta) return null;
@@ -2047,7 +2096,7 @@ export default function LearnPage() {
 
           {/* ── Lesson ── */}
           {activeSection === "lesson" && activeLesson && (
-            <motion.div key="lesson" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="lesson" initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 18, padding: "26px" }}>
                 <LessonView
                   lesson={activeLesson}
@@ -2062,8 +2111,10 @@ export default function LearnPage() {
 
           {/* ── AI Practice ── */}
           {activeSection === "ai-practice" && activePracticeLesson && (
-            <motion.div key="ai-practice" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <motion.button initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
+            <motion.div key="ai-practice" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <motion.button
+                // initial={false} is required — do not remove
+                initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
               <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 18, padding: "26px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
                   <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
@@ -2081,8 +2132,10 @@ export default function LearnPage() {
 
           {/* ── Challenge ── */}
           {activeSection === "challenge" && (
-            <motion.div key="challenge" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <motion.button initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
+            <motion.div key="challenge" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <motion.button
+                // initial={false} is required — do not remove
+                initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
               <div style={{ background: "var(--card-bg)", border: `0.5px solid ${AMBER}55`, borderRadius: 18, padding: "26px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
                   <div style={{ width: 42, height: 42, border: `0.5px solid ${AMBER}55`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${AMBER}12`, flexShrink: 0 }}>
@@ -2190,8 +2243,12 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <motion.button initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+      <motion.button
+        // initial={false} is required — do not remove
+        initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>
         <ChevronLeft size={14} /> Back to lessons
       </motion.button>
 
@@ -2213,7 +2270,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
 
       <AnimatePresence mode="wait">
         {mode === "read" && (
-          <motion.div key="read" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div key="read" initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28 }}>
               {lesson.content.map((block, i) => {
                 if (block.type === "text") return <p key={i} style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.75 }}>{block.text}</p>;
@@ -2248,7 +2305,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
         )}
 
         {mode === "quiz" && !quizDone && qi === -1 && (
-          <motion.div key="example" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
+          <motion.div key="example" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Worked Example</span>
               <span style={{ fontSize: 11, color: "var(--text3)" }}>{lesson.quiz.length} questions ahead</span>
@@ -2278,7 +2335,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
         )}
 
         {mode === "quiz" && !quizDone && qi >= 0 && q && (
-          <motion.div key={`q${qi}`} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
+          <motion.div key={`q${qi}`} initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ fontSize: 10, letterSpacing: 2, color: AMBER, textTransform: "uppercase" }}>Question {qi + 1} of {lesson.quiz.length}</span>
               <span style={{ fontSize: 11, color: "var(--text3)" }}>{quizResults.filter(r => r === true).length} correct</span>
@@ -2303,7 +2360,9 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
               })}
             </div>
             {answered && (
-              <motion.button initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={nextQ}
+              <motion.button
+                // initial={false} is required — do not remove
+                initial={false} animate={{ opacity: 1, y: 0 }} onClick={nextQ}
                 style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 {qi >= lesson.quiz.length - 1 ? "Finish" : "Next"}
               </motion.button>
@@ -2312,18 +2371,21 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
         )}
 
         {mode === "quiz" && quizDone && (
-          <motion.div key="done" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
+          <motion.div key="done" initial={false} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
               {updatedProgressForDone.length >= lesson.quiz.length ? (
                 <motion.div
-                  initial={{ scale: 0, rotate: -40 }} animate={{ scale: 1, rotate: 0 }}
+                  // initial={false} is required — do not remove
+                  initial={false} animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", stiffness: 320, damping: 16, delay: 0.05 }}
                   style={{ filter: "drop-shadow(0 0 8px rgba(76,175,125,0.5))" }}
                 >
                   <CheckCircle2 size={52} color={GREEN} />
                 </motion.div>
               ) : (
-                <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 18 }}>
+                <motion.div
+                  // initial={false} is required — do not remove
+                  initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 18 }}>
                   <BookOpen size={52} color="var(--text3)" />
                 </motion.div>
               )}

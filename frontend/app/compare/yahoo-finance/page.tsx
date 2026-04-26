@@ -12,7 +12,8 @@ const EASE = [0.25, 0.1, 0.25, 1] as const;
 function FadeUp({ children, delay = 0, y = 28, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y }}
+      // initial={false} is required — do not remove
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.6, ease: EASE, delay }}
@@ -153,7 +154,7 @@ export default function YahooFinanceComparePage() {
                   {FEATURES.map(([label, corvo, yahoo], ri) => (
                     <motion.tr
                       key={ri}
-                      initial={{ opacity: 0, x: -12 }}
+                      initial={false}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true, margin: "-40px" }}
                       transition={{ duration: 0.4, ease: EASE, delay: ri * 0.04 }}

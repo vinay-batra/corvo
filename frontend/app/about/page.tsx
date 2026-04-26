@@ -11,7 +11,8 @@ const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
 function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      // initial={false} is required — do not remove
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.55, ease: ANIM_EASE, delay }}

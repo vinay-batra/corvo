@@ -76,16 +76,23 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
   });
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      <motion.div initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
+      <motion.div
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
         style={{ width: "min(480px, 95vw)", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 18, padding: "36px 36px 32px", position: "relative" }}>
 
         {/* Progress bar */}
         <div style={{ height: 2, background: "var(--bg3)", borderRadius: 1, marginBottom: 32, overflow: "hidden" }}>
-          <motion.div animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }} transition={{ duration: 0.4 }}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false}
+            animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }} transition={{ duration: 0.4 }}
             style={{ height: "100%", background: C.amber, borderRadius: 1 }} />
         </div>
 
@@ -103,7 +110,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
         <img src="/corvo-logo.svg" width={36} height={36} alt="Corvo" style={{ marginBottom: 20 }} />
 
         <AnimatePresence mode="wait">
-          <motion.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
+          <motion.div key={step} initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
             <h2 style={{ fontSize: 22, fontWeight: 500, color: C.cream, marginBottom: 6 }}>{STEPS[step].title}</h2>
             <p style={{ fontSize: 13, color: C.cream3, marginBottom: 28, lineHeight: 1.6 }}>{STEPS[step].desc}</p>
 

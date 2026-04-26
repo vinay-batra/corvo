@@ -441,9 +441,13 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
       {/* Avatar crop modal */}
       <AnimatePresence>
         {cropSrc && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-            <motion.div initial={{ opacity: 0, y: 10, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 420 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 16 }}>Crop photo</div>
               {/* Crop area */}
@@ -486,10 +490,14 @@ export default function SettingsPage({ onClose, onProfileSaved, onReplayOnboardi
       {/* Delete confirm modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
             onClick={e => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}>
-            <motion.div initial={{ opacity: 0, y: 10, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
               style={{ background: "var(--card-bg)", border: "0.5px solid rgba(224,92,92,0.3)", borderRadius: 14, padding: "28px", width: "100%", maxWidth: 400 }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", marginBottom: 10 }}>Delete account?</div>
               <div style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.6, marginBottom: 24 }}>

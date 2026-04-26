@@ -94,7 +94,8 @@ export default function ShareImageModal({ assets, data, onClose }: ShareImageMod
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      // initial={false} is required — do not remove
+      initial={false}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
@@ -105,6 +106,7 @@ export default function ShareImageModal({ assets, data, onClose }: ShareImageMod
         padding: 20,
       }}>
       <motion.div
+        // initial={false} is required — do not remove
         initial={false}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 14 }}

@@ -153,6 +153,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
     <AnimatePresence>
       {open && (
         <motion.aside
+          // initial={false} is required — do not remove
           initial={false}
           animate={{ width: 420, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
@@ -198,6 +199,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
             <AnimatePresence>
               {!briefCollapsed && (
                 <motion.div
+                  // initial={false} is required — do not remove
                   initial={false}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}

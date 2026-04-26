@@ -65,12 +65,14 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
           >
             <motion.div
-              initial={{ scale: 0.94, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 12 }}
+              // initial={false} is required — do not remove
+              initial={false} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 12 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               onClick={e => e.stopPropagation()}
               style={{ width: "100%", maxWidth: 480, maxHeight: "90vh", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", zIndex: 10000 }}

@@ -231,7 +231,9 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {/* Controls bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "12px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -617,7 +619,9 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const spread = info.bid != null && info.ask != null ? info.ask - info.bid : null;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
         @keyframes sdPulse { 0%,100% { opacity: 0.4 } 50% { opacity: 0.9 } }
@@ -775,7 +779,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
           <AnimatePresence mode="wait">
             <motion.div
               key={`${chartType}-${period}`}
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
