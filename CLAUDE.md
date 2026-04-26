@@ -22,9 +22,9 @@ Never show a number without explaining what it means. Never explain what somethi
 
 1. Digest email fix (weekly stats N/A — blocked by Railway, switch to Finnhub when Railway is stable)
 2. "What should I do today?" button — AI scans portfolio + market, gives 2-3 specific actions
-3. Corvo Score — single 0-100 daily portfolio score with specific explanation
+3. Health Score upgrade — daily update, more advisor-like explanations, specific actions to improve it
 4. Options chain viewer — tab on stock detail page, yfinance data
-5. Rebalance assistant — detects drift, tells you exactly what to buy/sell
+5. Rebalance assistant — one-click button, shows exact trade table (buy X of BND, sell Y of NVDA)
 6. Price target tracker — per holding, alerts when hit with action recommendation
 7. Analyst price targets — consensus target vs current price for each holding
 8. Tax loss harvesting alerts — proactive, specific to your situation
@@ -43,13 +43,12 @@ Never show a number without explaining what it means. Never explain what somethi
 21. Custom branded PDF reports — Pro feature
 22. Natural language portfolio editor — "sell half my NVDA, put it in QQQ"
 23. Life event integration — "I'm buying a house in 2 years" adjusts risk recommendations
-24. Push notification advisor — full advice with context, not just price alerts
-25. Community portfolios — follow anonymous top performers, see their moves
-26. Corvo for advisors — B2B, manage multiple client portfolios
-27. Marketing
-28. YC application
-29. App Store — iOS
-30. Google Play — Android
+24. Community portfolios — follow anonymous top performers, see their moves
+25. Corvo for advisors — B2B, manage multiple client portfolios
+26. Marketing
+27. YC application
+28. App Store — iOS
+29. Google Play — Android
 
 ---
 
