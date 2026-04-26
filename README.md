@@ -104,6 +104,14 @@ portfolio_v2/
 
 ---
 
+## Supabase Client and Middleware
+
+**Always import the Supabase client from `frontend/lib/supabase.ts`.** Never instantiate a client inline. Inline clients omit `cookieOptions` and will drop sessions on browser close.
+
+**`frontend/middleware.ts` must exist** and call `supabase.auth.getUser()` on every request. Without it, SSR pages receive expired JWTs and users are silently logged out. If you delete or rename this file, auth will break in production even if it appears to work locally.
+
+---
+
 ## Local Development
 
 ### Frontend
