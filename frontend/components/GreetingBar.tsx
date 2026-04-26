@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
@@ -14,6 +14,14 @@ function getGreeting(): string {
   if (h < 12) return "Good morning";
   if (h < 17) return "Good afternoon";
   return "Good evening";
+}
+
+function getBriefingTitle(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return "Morning Brief";
+  if (h >= 12 && h < 17) return "Afternoon Brief";
+  if (h >= 17 && h < 21) return "Evening Brief";
+  return "Night Brief";
 }
 
 function computeMarketStatus() {
@@ -55,13 +63,6 @@ interface MarketSummary {
   vix: number;
 }
 
-interface HoldingPrice {
-  ticker: string;
-  price: number;
-  change_pct: number;
-  change_dollar: number;
-}
-
 interface Props {
   displayName: string;
   portfolioData: any;
@@ -74,12 +75,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
   const greeting = getGreeting();
 
   const [resolvedName, setResolvedName] = useState(displayName || "");
-  const [briefingCollapsed, setBriefingCollapsed] = useState(false); // default open
-  useEffect(() => {
-    try {
-      if (localStorage.getItem("corvo_briefing_collapsed") === "true") setBriefingCollapsed(true);
-    } catch {}
-  }, []);
+  const [briefingCollapsed, setBriefingCollapsed] = useState(false);
 
   useEffect(() => {
     if (displayName?.trim()) { setResolvedName(displayName.trim()); return; }
@@ -110,8 +106,6 @@ export default function GreetingBar({ displayName, assets }: Props) {
   const [market, setMarket] = useState<MarketSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [indexPrices, setIndexPrices] = useState<{ spy: number | null; qqq: number | null; dia: number | null }>({ spy: null, qqq: null, dia: null });
-  const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
-
   // Fetch AI market summary + index data
   useEffect(() => {
     const tickerParam = assets.map(a => a.ticker).filter(Boolean).join(",");
@@ -142,39 +136,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch live holdings prices
-  const assetsRef = useRef(assets);
-  useEffect(() => { assetsRef.current = assets; }, [assets]);
-
-  useEffect(() => {
-    const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
-    if (!validTickers.length) return;
-    const fetchPrices = async () => {
-      try {
-        const r = await fetch(`${API_URL}/watchlist-data?tickers=${validTickers.join(",")}`);
-        const d = await r.json();
-        setHoldingPrices(
-          (d.results || []).map((s: any) => {
-            const price = s.price ?? 0;
-            const change_pct = s.change_pct ?? 0;
-            const change_dollar = s.change_dollar != null ? s.change_dollar : price * (change_pct / 100);
-            return { ticker: s.ticker, price, change_pct, change_dollar };
-          })
-        );
-      } catch {}
-    };
-    fetchPrices();
-    const id = setInterval(fetchPrices, 30000);
-    return () => clearInterval(id);
-  }, [assets]);
-
-  const toggleBriefing = () => {
-    setBriefingCollapsed(c => {
-      const next = !c;
-      try { localStorage.setItem("corvo_briefing_collapsed", String(next)); } catch {}
-      return next;
-    });
-  };
+  const toggleBriefing = () => setBriefingCollapsed(c => !c);
 
   const pos = (v: number) => v >= 0;
   const fmtSign = (v: number) => (v >= 0 ? "+" : "");
@@ -194,7 +156,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
           .gb-root{padding:10px 12px!important;flex-direction:column!important;gap:10px!important}
           .gb-divider{display:none!important}
           .gb-right{align-items:flex-start!important;width:100%!important}
-          .gb-marquee{width:100%!important}
+
         }
       `}</style>
 
@@ -223,7 +185,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
 
         {/* Briefing header with collapse toggle */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
-          <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>Morning Brief</span>
+          <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>{getBriefingTitle()}</span>
           <button
             onClick={toggleBriefing}
             title={briefingCollapsed ? "Show briefing" : "Hide briefing"}
@@ -254,18 +216,19 @@ export default function GreetingBar({ displayName, assets }: Props) {
             </div>
           ) : market ? (
             <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
-              {/* Market summary — no label */}
+              {/* MARKETS TODAY */}
               {market.market && (
-                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>
-                  {market.market}
-                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>Markets Today</span>
+                  <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{market.market}</p>
+                </div>
               )}
-              {/* WHY IT MOVED */}
+              {/* WHAT DROVE IT */}
               {market.context && (
                 <>
                   <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                    <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>Why It Moved</span>
+                    <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>What Drove It</span>
                     <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{market.context}</p>
                   </div>
                 </>
@@ -318,25 +281,6 @@ export default function GreetingBar({ displayName, assets }: Props) {
           </div>
         )}
 
-        {/* Holdings price pills */}
-        {holdingPrices.length > 0 && (
-          holdingPrices.length <= 3 ? (
-            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8 }}>
-              {holdingPrices.map(h => (
-                <HoldingPill key={h.ticker} ticker={h.ticker} price={h.price} changePct={h.change_pct} changeDollar={h.change_dollar} />
-              ))}
-            </div>
-          ) : (
-            <div className="gb-marquee" style={{ overflow: "hidden", height: 32, position: "relative", width: 320 }}>
-              <style>{`@keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }`}</style>
-              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 12, padding: "0 8px", animation: "marquee 30s linear infinite", width: "max-content", height: "100%" }}>
-                {[...holdingPrices, ...holdingPrices].map((h, idx) => (
-                  <HoldingPill key={`${h.ticker}-${idx}`} ticker={h.ticker} price={h.price} changePct={h.change_pct} changeDollar={h.change_dollar} />
-                ))}
-              </div>
-            </div>
-          )
-        )}
       </div>
     </div>
   );
@@ -351,16 +295,3 @@ function StatPill({ label, value, color }: { label: string; value: string; color
   );
 }
 
-function HoldingPill({ ticker, price, changePct, changeDollar }: { ticker: string; price: number; changePct: number; changeDollar: number }) {
-  const isPos = changePct >= 0;
-  const color = isPos ? GREEN : RED;
-  const sign = isPos ? "+" : "";
-  return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 8, background: isPos ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${isPos ? "rgba(76,175,125,0.2)" : "rgba(224,92,92,0.2)"}`, whiteSpace: "nowrap", fontFamily: "'Space Mono', monospace" }}>
-      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text2)", letterSpacing: "0.02em" }}>{ticker}</span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text3)" }}>${price.toFixed(2)}</span>
-      <span style={{ fontSize: 11, fontWeight: 600, color }}>{sign}${Math.abs(changeDollar).toFixed(2)}</span>
-      <span style={{ fontSize: 11, fontWeight: 600, color, opacity: 0.85 }}>{sign}{changePct.toFixed(2)}%</span>
-    </div>
-  );
-}
