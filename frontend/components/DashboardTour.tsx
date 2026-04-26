@@ -11,6 +11,7 @@ interface TourStop {
   title?: string;
   description: string;
   Illus?: () => React.ReactElement;
+  placement?: "bottom" | "top";
 }
 
 // ── Animated SVG illustrations — all colors via CSS variables ─────────────────
@@ -225,6 +226,7 @@ const DESKTOP_STOPS: TourStop[] = [
     title: "Your key metrics",
     description: "Four cards summarize your portfolio. Tap the question mark on any card for a plain-English explanation.",
     Illus: IllusPie,
+    placement: "bottom",
   },
   {
     id: "tour-desk-chart",
@@ -232,6 +234,7 @@ const DESKTOP_STOPS: TourStop[] = [
     title: "Performance vs benchmark",
     description: "Compare returns against S&P 500, Nasdaq, or Dow over 6M to 5Y. Use What-If to simulate changes.",
     Illus: IllusDualLine,
+    placement: "bottom",
   },
   {
     id: "tour-desk-tabs",
@@ -239,6 +242,7 @@ const DESKTOP_STOPS: TourStop[] = [
     title: "Eight pages of intelligence",
     description: "Positions, Stocks, Income and Tax, Simulations, News, Watchlist, and Learn. All in one place.",
     Illus: IllusTabs,
+    placement: "bottom",
   },
   {
     id: "tour-desk-chat",
@@ -246,6 +250,7 @@ const DESKTOP_STOPS: TourStop[] = [
     title: "Your AI analyst",
     description: "Ask anything about your portfolio. Why Sharpe is low, what to rebalance, how a new position affects risk.",
     Illus: IllusChat,
+    placement: "top",
   },
   {
     id: "tour-desk-export",
@@ -283,18 +288,26 @@ function getRingPos(id: string): RingPos | null {
   return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
 }
 
-function getTooltipPos(ring: RingPos): { top: number; left: number; placement: string } {
+function getTooltipPos(ring: RingPos, forcePlacement?: "bottom" | "top"): { top: number; left: number; placement: string } {
   const PAD = 14;
   const TH = 260;
   const TW = 300;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  const clampLeft = (l: number) => Math.min(Math.max(l, 10), vw - TW - 10);
+
+  if (forcePlacement === "bottom") {
+    return { top: ring.top + ring.height + PAD, left: clampLeft(ring.left), placement: "bottom" };
+  }
+  if (forcePlacement === "top") {
+    return { top: Math.max(ring.top - PAD - TH, 10), left: clampLeft(ring.left), placement: "top" };
+  }
 
   if (ring.top + ring.height + PAD + TH < vh) {
-    return { top: ring.top + ring.height + PAD, left: Math.min(Math.max(ring.left, 10), vw - TW - 10), placement: "bottom" };
+    return { top: ring.top + ring.height + PAD, left: clampLeft(ring.left), placement: "bottom" };
   }
   if (ring.top - PAD - TH > 0) {
-    return { top: ring.top - PAD - TH, left: Math.min(Math.max(ring.left, 10), vw - TW - 10), placement: "top" };
+    return { top: ring.top - PAD - TH, left: clampLeft(ring.left), placement: "top" };
   }
   if (ring.left + ring.width + PAD + TW < vw) {
     return { top: Math.max(ring.top + ring.height / 2 - TH / 2, 10), left: ring.left + ring.width + PAD, placement: "right" };
@@ -311,6 +324,8 @@ export default function DashboardTour({ onComplete }: Props) {
   const [ring, setRing] = useState<RingPos | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; placement: string } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  // settling: true while waiting for DOM to fully settle before showing the card
+  const [settling, setSettling] = useState(true);
 
   useEffect(() => {
     const check = () => {
@@ -329,12 +344,17 @@ export default function DashboardTour({ onComplete }: Props) {
   const updatePositions = useCallback(() => {
     const r = getRingPos(stop.id);
     setRing(r);
-    if (r) setTooltipPos(getTooltipPos(r));
+    if (r) setTooltipPos(getTooltipPos(r, stop.placement));
     else setTooltipPos(null);
-  }, [stop.id]);
+  }, [stop.id, stop.placement]);
 
+  // beforeShowPromise equivalent: hide card while DOM settles (130ms = 80ms base + 50ms extra)
   useEffect(() => {
-    const t = setTimeout(updatePositions, 80);
+    setSettling(true);
+    const t = setTimeout(() => {
+      updatePositions();
+      setSettling(false);
+    }, 130);
     return () => clearTimeout(t);
   }, [updatePositions]);
 
@@ -395,8 +415,8 @@ export default function DashboardTour({ onComplete }: Props) {
           onClick={!isMobile ? handleDone : undefined}
         />
 
-        {/* Amber ring */}
-        {ring && (
+        {/* Amber ring — hidden while DOM is settling */}
+        {ring && !settling && (
           <div style={{
             position: "fixed",
             top: ring.top - 4, left: ring.left - 4,
@@ -409,8 +429,8 @@ export default function DashboardTour({ onComplete }: Props) {
           }} />
         )}
 
-        {/* Tooltip card */}
-        {(tooltipPos || noTarget) && (
+        {/* Tooltip card — hidden while DOM is settling, transition:none prevents position snap */}
+        {!settling && (tooltipPos || noTarget) && (
           <div
             style={{
               position: "fixed",
@@ -421,6 +441,7 @@ export default function DashboardTour({ onComplete }: Props) {
               zIndex: 852,
               pointerEvents: "auto",
               animation: "tourIn 0.22s ease-out",
+              transition: "none",
             }}>
             {isMobile ? (
               <div style={cardStyle}>
