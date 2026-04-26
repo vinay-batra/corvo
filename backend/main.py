@@ -3830,29 +3830,31 @@ def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
     print(f"[digest-yf] real_tickers={real_tickers} cash_tickers={cash_tickers}")
 
     close_df = pd.DataFrame()
-    FMP_KEY = os.environ.get("FMP_API_KEY", "")
-    if real_tickers and FMP_KEY:
+    FINNHUB_KEY = os.environ.get("FINNHUB_API_KEY", "")
+    if real_tickers and FINNHUB_KEY:
+        import datetime as _dt
+        end_ts = int(_dt.datetime.utcnow().timestamp())
+        start_ts = end_ts - (14 * 24 * 3600)
         frames = {}
         for t in real_tickers:
             try:
-                url = f"https://financialmodelingprep.com/api/v3/historical-price-full/{t}?timeseries=14&apikey={FMP_KEY}"
+                url = f"https://finnhub.io/api/v1/stock/candle?symbol={t}&resolution=D&from={start_ts}&to={end_ts}&token={FINNHUB_KEY}"
                 r = requests.get(url, timeout=10)
                 data = r.json()
-                hist = data.get("historical", [])
-                if hist:
-                    dates = [row["date"] for row in reversed(hist)]
-                    closes = [row["close"] for row in reversed(hist)]
-                    frames[t] = pd.Series(closes, index=pd.to_datetime(dates), name=t)
-                    print(f"[digest-fmp] {t}: {len(closes)} pts, last={closes[-1]}")
+                if data.get("s") == "ok" and data.get("c"):
+                    closes = data["c"]
+                    timestamps = [_dt.datetime.utcfromtimestamp(ts) for ts in data["t"]]
+                    frames[t] = pd.Series(closes, index=pd.to_datetime(timestamps), name=t)
+                    print(f"[digest-fh] {t}: {len(closes)} pts, last={closes[-1]}")
                 else:
-                    print(f"[digest-fmp] {t}: empty response")
+                    print(f"[digest-fh] {t}: bad response status={data.get('s')}")
             except Exception as e:
-                print(f"[digest-fmp] {t}: error {e}")
+                print(f"[digest-fh] {t}: error {e}")
         if frames:
             close_df = pd.DataFrame(frames).dropna(how="all").tail(8)
-            print(f"[digest-fmp] close_df shape={close_df.shape}")
+            print(f"[digest-fh] close_df shape={close_df.shape}")
     elif real_tickers:
-        print("[digest-fmp] FMP_API_KEY not set, skipping real tickers")
+        print("[digest-fh] FINNHUB_API_KEY not set, skipping real tickers")
 
     n = len(close_df) if not close_df.empty else 8
     print(f"[digest-yf] building port_series with n={n}")
