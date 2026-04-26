@@ -2,7 +2,9 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import UserMenu from "../../components/UserMenu";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 
 const TOTAL = 8;
@@ -127,6 +129,7 @@ function OnboardingContent() {
   const [animating, setAnimating] = useState(false);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [completing, setCompleting] = useState(false);
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   const [answers, setAnswers] = useState({
     investor_type: "",
@@ -210,6 +213,7 @@ function OnboardingContent() {
 
   const navigate = (dir: "forward" | "back") => {
     if (animating) return;
+    if (!hasNavigated) setHasNavigated(true);
     setDirection(dir);
     setAnimating(true);
     setStep(s => s + (dir === "forward" ? 1 : -1));
@@ -395,10 +399,13 @@ function OnboardingContent() {
 
       {/* Header */}
       <header style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0 }}>
-        <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
+        <Link href="/app" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
+        </Link>
         <span style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.5, fontFamily: "var(--font-mono)" }}>
           {step + 1} / {TOTAL}
         </span>
+        <UserMenu />
       </header>
 
       {/* Main content */}
@@ -445,7 +452,7 @@ function OnboardingContent() {
           {/* Step content */}
           <div
             key={step}
-            className={animating ? (direction === "forward" ? "ob-step-fwd" : "ob-step-back") : "ob-step"}
+            className={animating ? (direction === "forward" ? "ob-step-fwd" : "ob-step-back") : (hasNavigated ? "" : "ob-step")}
             style={{ marginBottom: 24 }}
           >
             {renderStepContent()}
