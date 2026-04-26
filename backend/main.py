@@ -225,7 +225,21 @@ def delete_user(request: Request):
     if not user_id:
         raise HTTPException(status_code=401, detail="Could not determine user ID.")
 
-    # ── 3. Hard-delete via Supabase admin API ──────────────────────────────────
+    # ── 3. Delete related records before removing the auth user ───────────────
+    db_headers = {
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Content-Type": "application/json",
+    }
+    for table in ("ai_chat_history", "portfolios", "email_preferences", "price_alerts"):
+        requests.delete(
+            f"{SUPABASE_URL}/rest/v1/{table}",
+            headers=db_headers,
+            params={"user_id": f"eq.{user_id}"},
+            timeout=10,
+        )
+
+    # ── 4. Hard-delete via Supabase admin API ──────────────────────────────────
     delete_resp = requests.delete(
         f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
         headers={
