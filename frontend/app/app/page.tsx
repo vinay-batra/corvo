@@ -599,7 +599,7 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
     return () => clearTimeout(t);
   }, [q]);
 
-  const fmtPrice = (p: number | null) => p == null ? "—" : p >= 1000 ? `$${p.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : `$${p.toFixed(2)}`;
+  const fmtPrice = (p: number | null) => p == null ? "-" : p >= 1000 ? `$${p.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : `$${p.toFixed(2)}`;
   const fmtPct   = (p: number | null) => p == null ? "" : `${p >= 0 ? "+" : ""}${p.toFixed(2)}%`;
 
   return (
@@ -1020,7 +1020,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         user.user_metadata?.display_name ||
         user.email?.split("@")[0] ||
         "";
-      console.log("[auth] user_metadata:", user.user_metadata, "email:", user.email, "resolved name:", bestName);
       setNavProfile({ displayName: bestName, avatarUrl: navP?.avatar_url || null });
 
       // Only run the onboarding check once per browser session (not on every navigation to /app).
@@ -1769,7 +1768,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ color: "var(--accent)", fontSize: 13, flexShrink: 0 }}>⚠</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)", flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                   <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.4 }}>
                     No price data found for: <strong style={{ color: "var(--accent)" }}>{skippedTickers.join(", ")}</strong>. Analysis ran with remaining holdings.
                   </span>
@@ -1888,7 +1887,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
                     style={{ border: "0.5px solid rgba(184,134,11,0.35)", borderRadius: 10, padding: "10px 16px", background: "rgba(184,134,11,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, zIndex: 10, position: "relative" }}>
                     <span style={{ fontSize: 12, color: "var(--text2)" }}>
-                      Assets have changed — re-analyze to update results.
+                      Assets have changed. Re-analyze to update results.
                     </span>
                     <button
                       onClick={handleAnalyze}

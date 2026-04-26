@@ -219,7 +219,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
                   <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: c.openInterest > 0 ? "var(--text2)" : "var(--text3)", fontSize: 10 }}>{c.openInterest > 0 ? c.openInterest.toLocaleString() : "-"}</td>
                   <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: c.impliedVolatility != null && c.impliedVolatility > 50 ? AMBER : "var(--text2)", fontSize: 10 }}>{c.impliedVolatility != null ? `${c.impliedVolatility.toFixed(1)}%` : "-"}</td>
                   <td style={{ padding: "5px 8px", textAlign: "center" }}>
-                    {c.inTheMoney ? <span style={{ fontSize: 9, color: isCall ? GREEN : RED, fontWeight: 700 }}>✓</span> : <span style={{ fontSize: 9, color: "var(--text3)", opacity: 0.4 }}>–</span>}
+                    {c.inTheMoney ? <span style={{ fontSize: 9, color: isCall ? GREEN : RED, fontWeight: 700 }}>ITM</span> : <span style={{ fontSize: 9, color: "var(--text3)", opacity: 0.4 }}>-</span>}
                   </td>
                 </tr>
               );
@@ -263,7 +263,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
 
       {/* Legend */}
       <div style={{ display: "flex", gap: 16, paddingLeft: 2 }}>
-        {[["ATM", AMBER, "At the money"], ["ITM ✓", GREEN, "In the money (calls)"], ["ITM ✓", RED, "In the money (puts)"]].map(([label, color, title], i) => (
+        {[["ATM", AMBER, "At the money"], ["ITM", GREEN, "In the money (calls)"], ["ITM", RED, "In the money (puts)"]].map(([label, color, title], i) => (
           <div key={i} title={title as string} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "default" }}>
             <div style={{ width: 8, height: 8, borderRadius: 2, background: color as string, opacity: 0.8 }} />
             <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>{label as string}</span>

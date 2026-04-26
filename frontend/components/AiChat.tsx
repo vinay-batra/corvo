@@ -867,7 +867,7 @@ export default function AiChat({
                     try { await navigator.clipboard.writeText(referralLink); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2500); } catch {}
                   }}
                   style={{ width: "100%", padding: "8px", fontSize: 11, fontWeight: 600, borderRadius: 7, border: "none", background: referralCopied ? "#5cb88a" : "var(--accent)", color: "#ffffff", cursor: "pointer", transition: "background .2s" }}>
-                  {referralCopied ? "✓ Copied!" : "Copy Referral Link"}
+                  {referralCopied ? "Copied!" : "Copy Referral Link"}
                 </button>
               )}
             </motion.div>
@@ -971,7 +971,7 @@ export default function AiChat({
                     try { await navigator.clipboard.writeText(referralLink); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); } catch {}
                   }}
                   style={{ width: "100%", padding: "9px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: referralCopied ? "#5cb88a" : "var(--accent)", color: "#ffffff", cursor: "pointer", transition: "background .2s" }}>
-                  {referralCopied ? "✓ Referral link copied!" : "Copy My Referral Link"}
+                  {referralCopied ? "Referral link copied!" : "Copy My Referral Link"}
                 </button>
               )}
             </motion.div>

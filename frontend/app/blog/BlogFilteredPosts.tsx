@@ -65,7 +65,7 @@ const POSTS = [
     readTime: "4 min read",
     category: "Markets",
     categoryColor: "#5cb88a",
-    excerpt: "The VIX is not a fear gauge. It is a volatility forecast — and knowing the difference changes how you position your portfolio.",
+    excerpt: "The VIX is not a fear gauge. It is a volatility forecast. Knowing the difference changes how you position your portfolio.",
   },
   {
     slug: "building-corvo-what-we-learned",

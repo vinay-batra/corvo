@@ -47,7 +47,6 @@ export default function InstallBanner() {
         dismiss();
       }
     }
-    // iOS: user reads the instructions and taps Share → Add to Home Screen manually
   };
 
   const dismiss = () => {
@@ -67,22 +66,22 @@ export default function InstallBanner() {
         left: 0,
         right: 0,
         zIndex: 9999,
-        background: "#1a1a1a",
-        borderTop: "1px solid #2a2a2a",
+        background: "var(--card-bg)",
+        borderTop: "1px solid var(--border)",
         padding: "12px 16px",
         display: "flex",
         alignItems: "center",
         gap: 12,
-        boxShadow: "0 -4px 24px rgba(0,0,0,0.4)",
+        boxShadow: "0 -4px 24px rgba(0,0,0,0.3)",
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/icon-192.png" alt="Corvo" width={40} height={40} style={{ borderRadius: 10, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: "#fff", fontWeight: 600, fontSize: 14 }}>Install Corvo</div>
-        <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>
+        <div style={{ color: "var(--text)", fontWeight: 600, fontSize: 14 }}>Install Corvo</div>
+        <div style={{ color: "var(--text3)", fontSize: 12, marginTop: 2 }}>
           {isIOS
-            ? 'Tap Share → "Add to Home Screen"'
+            ? 'Tap Share, then "Add to Home Screen"'
             : "Add to your home screen for quick access"}
         </div>
       </div>
@@ -90,8 +89,8 @@ export default function InstallBanner() {
         <button
           onClick={handleInstall}
           style={{
-            background: "#fff",
-            color: "#000",
+            background: "var(--accent)",
+            color: "var(--bg)",
             border: "none",
             borderRadius: 8,
             padding: "8px 14px",
@@ -110,7 +109,7 @@ export default function InstallBanner() {
         style={{
           background: "none",
           border: "none",
-          color: "#666",
+          color: "var(--text3)",
           cursor: "pointer",
           padding: "4px 8px",
           fontSize: 18,
@@ -118,7 +117,10 @@ export default function InstallBanner() {
           flexShrink: 0,
         }}
       >
-        ×
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <line x1="1" y1="1" x2="13" y2="13" />
+          <line x1="13" y1="1" x2="1" y2="13" />
+        </svg>
       </button>
     </div>
   );

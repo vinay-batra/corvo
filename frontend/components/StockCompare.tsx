@@ -382,7 +382,7 @@ export default function StockCompare() {
     perf: {
       title: "Normalized Performance",
       simple: "Shows each stock's % return from the same starting point (base 0%), so you can compare growth rates regardless of price.",
-      example: "If AAPL starts at $150 and NVDA at $400, both reset to 0% so you can see who grew faster — not who was more expensive.",
+      example: "If AAPL starts at $150 and NVDA at $400, both reset to 0% so you can see who grew faster, not who was more expensive.",
       good: "Steeper slope = stronger momentum. A stock up 80% beats one up 20% regardless of share price.",
     },
     stats: {
@@ -395,7 +395,7 @@ export default function StockCompare() {
       title: "Correlation",
       simple: "Measures how similarly two stocks move together, from -1 (opposite) to +1 (identical).",
       example: "A correlation of 0.9 between AAPL and MSFT means they almost always move in the same direction on any given day.",
-      good: "High correlation between your holdings means less diversification benefit — a downturn hits everything at once.",
+      good: "High correlation between your holdings means less diversification benefit. A downturn hits everything at once.",
     },
   } as const;
 

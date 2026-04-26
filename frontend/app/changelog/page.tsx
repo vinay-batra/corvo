@@ -31,7 +31,7 @@ const ENTRIES = [
     date: "Apr 25, 2026",
     version: "v0.18",
     title: "Full Mobile Overhaul",
-    desc: "Complete mobile experience rebuilt from the ground up. Dashboard now mirrors desktop with a scrollable tab bar, all pages accessible, and no bottom nav. Performance charts fill exactly to the selected period with axis detail scaled per timeframe. Metric card tooltips fixed. AI insights no longer misidentify largest holdings when weights are equal. What-If analysis now requires 100% weights before running. About page added with founder story. Public pages updated with pill-style eyebrow badges. Light mode is now the default for new and logged-out users. PWA install button added to nav. Mobile audit completed across all pages — AI chat sidebar, onboarding modal, FAQ, pricing, settings, referrals all fixed. Blog posts added for Markets and Product categories. Changelog and README updated.",
+    desc: "Complete mobile experience rebuilt from the ground up. Dashboard now mirrors desktop with a scrollable tab bar, all pages accessible, and no bottom nav. Performance charts fill exactly to the selected period with axis detail scaled per timeframe. Metric card tooltips fixed. AI insights no longer misidentify largest holdings when weights are equal. What-If analysis now requires 100% weights before running. About page added with founder story. Public pages updated with pill-style eyebrow badges. Light mode is now the default for new and logged-out users. PWA install button added to nav. Mobile audit completed across all pages: AI chat sidebar, onboarding modal, FAQ, pricing, settings, referrals all fixed. Blog posts added for Markets and Product categories. Changelog and README updated.",
     tags: ["Mobile", "UI", "Dashboard", "Charts"],
   },
   {
@@ -45,7 +45,7 @@ const ENTRIES = [
     date: "Apr 24, 2026",
     version: "v0.16",
     title: "Light Mode, AI Chat Overhaul, CAGR Metrics & Dashboard Polish",
-    desc: "Full light mode support across all pages — every component now uses CSS variables with instant theme switching and no flash on load. Dashboard now shows CAGR instead of simple return, Sharpe ratio uses live T-bill rate (^IRX), and a stale results banner appears when holdings change after analysis. Money market funds (FDRXX, SPAXX, VMFXX, and others) now tracked with accurate yield-based price series. AI chat redesigned with conversation history sidebar, refreshable suggestions, and a richer system prompt with live portfolio context. Asset removal fixed for multi-asset portfolios. PDF export redesigned with metric cards, benchmark comparison, and investor profile section. Capital Gains Estimator and Dividend Calendar show Coming Soon cards.",
+    desc: "Full light mode support across all pages: every component now uses CSS variables with instant theme switching and no flash on load. Dashboard now shows CAGR instead of simple return, Sharpe ratio uses live T-bill rate (^IRX), and a stale results banner appears when holdings change after analysis. Money market funds (FDRXX, SPAXX, VMFXX, and others) now tracked with accurate yield-based price series. AI chat redesigned with conversation history sidebar, refreshable suggestions, and a richer system prompt with live portfolio context. Asset removal fixed for multi-asset portfolios. PDF export redesigned with metric cards, benchmark comparison, and investor profile section. Capital Gains Estimator and Dividend Calendar show Coming Soon cards.",
     tags: ["Light Mode", "AI Chat", "Dashboard", "Fixes"],
   },
   {

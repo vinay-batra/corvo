@@ -171,10 +171,10 @@ export default function BloombergComparePage() {
                     >
                       <td style={{ padding: "13px 20px", fontSize: 13, color: "rgba(232,224,204,0.6)", fontWeight: 300 }}>{label}</td>
                       <td style={{ padding: "13px 16px", textAlign: "center", borderLeft: "1px solid rgba(201,168,76,0.18)", borderRight: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.03)", fontSize: 15 }}>
-                        {corvo ? <span style={{ color: "#c9a84c", fontWeight: 700 }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
+                        {corvo ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
                       </td>
                       <td style={{ padding: "13px 16px", textAlign: "center", fontSize: 14 }}>
-                        {bloomberg ? <span style={{ color: "#5cb88a" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
+                        {bloomberg ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5cb88a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
                       </td>
                     </motion.tr>
                   ))}
@@ -223,7 +223,7 @@ export default function BloombergComparePage() {
                 <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10 }}>
                   {["AI portfolio chat", "Monte Carlo simulation", "Sharpe ratio & risk metrics", "Real-time alerts", "Tax loss harvesting"].map((f, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "#c9a84c", fontSize: 12 }}>✓</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                       <span style={{ fontSize: 12, color: "rgba(232,224,204,0.55)" }}>{f}</span>
                     </div>
                   ))}

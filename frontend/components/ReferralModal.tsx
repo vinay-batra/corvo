@@ -71,7 +71,7 @@ export default function ReferralModal({ onClose }: Props) {
 
         <button onClick={copy} disabled={!referralLink}
           style={{ width: "100%", padding: "11px", fontSize: 13, fontWeight: 600, borderRadius: 9, border: "none", background: copied ? "#5cb88a" : "var(--accent)", color: "#ffffff", cursor: referralLink ? "pointer" : "not-allowed", transition: "background 0.2s", letterSpacing: 0.5 }}>
-          {copied ? "✓ Copied!" : "Copy link"}
+          {copied ? "Copied!" : "Copy link"}
         </button>
       </motion.div>
     </motion.div>

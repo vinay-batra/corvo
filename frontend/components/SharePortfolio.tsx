@@ -129,7 +129,7 @@ export default function SharePortfolio({ data, assets, period, benchmark }: Shar
                 </div>
                 <button onClick={handleShare}
                   style={{ padding: "9px 16px", background: copied ? "rgba(92,184,138,0.15)" : C.amber2, border: `1px solid ${copied ? "rgba(92,184,138,0.4)" : "rgba(184,134,11,0.3)"}`, borderRadius: 8, color: copied ? "#5cb88a" : C.amber, fontSize: 11, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.2s" }}>
-                  {copied ? "✓ Copied!" : "Copy Link"}
+                  {copied ? "Copied!" : "Copy Link"}
                 </button>
               </div>
 

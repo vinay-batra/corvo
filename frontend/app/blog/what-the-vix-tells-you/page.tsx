@@ -5,11 +5,11 @@ import FeedbackButton from "../../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "What the VIX Actually Tells You About Your Portfolio | Corvo Blog",
-  description: "The VIX is not a fear gauge. It is a volatility forecast — and knowing the difference changes how you position your portfolio.",
+  description: "The VIX is not a fear gauge. It is a volatility forecast. Knowing the difference changes how you position your portfolio.",
   keywords: ["VIX", "volatility index", "market volatility", "portfolio positioning", "implied volatility"],
   openGraph: {
     title: "What the VIX Actually Tells You About Your Portfolio",
-    description: "The VIX is not a fear gauge. It is a volatility forecast — and knowing the difference changes how you position your portfolio.",
+    description: "The VIX is not a fear gauge. It is a volatility forecast. Knowing the difference changes how you position your portfolio.",
     url: "https://corvo.capital/blog/what-the-vix-tells-you",
     siteName: "Corvo",
     type: "article",
@@ -56,7 +56,7 @@ export default function WhatTheVixTellsYouPage() {
       date="April 3, 2026"
       readTime="4 min read"
       category="Markets"
-      description="The VIX is not a fear gauge. It is a volatility forecast — and knowing the difference changes how you position your portfolio."
+      description="The VIX is not a fear gauge. It is a volatility forecast. Knowing the difference changes how you position your portfolio."
       toc={TOC}
       related={RELATED}
     >

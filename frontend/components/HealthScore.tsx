@@ -58,7 +58,7 @@ export default function HealthScore({ data }: { data: any }) {
   const ref = useRef(null);
   const inView = useInView(ref,{once:true});
   const sharpe = data.sharpe_ratio ?? (data.portfolio_volatility>0?(data.annualized_return-0.04)/data.portfolio_volatility:0);
-  const annRet = data.annualized_return ?? data.portfolio_return;
+  const annRet = data.annualized_return ?? data.portfolio_return ?? 0;
   const rS=Math.min(Math.max(((annRet+0.3)/0.6)*100,0),100);
   const shS=Math.min(Math.max((sharpe/3)*100,0),100);
   const vS=Math.min(Math.max((1-data.portfolio_volatility/0.6)*100,0),100);

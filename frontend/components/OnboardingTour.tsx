@@ -14,19 +14,19 @@ const STEPS: Record<StepNum, { targetId: string; text: string; nextLabel: string
   1: {
     targetId: "tour-ticker-area",
     text: "Start by adding a ticker: type AAPL or MSFT and set its weight",
-    nextLabel: "Got it →",
+    nextLabel: "Got it",
     isLast: false,
   },
   2: {
     targetId: "tour-analyze-btn",
     text: "Hit Analyze to get your health score, Sharpe ratio, and AI insights",
-    nextLabel: "Got it →",
+    nextLabel: "Got it",
     isLast: false,
   },
   3: {
     targetId: "tour-save-btn",
     text: "Save this portfolio to track its performance over time",
-    nextLabel: "Done ✓",
+    nextLabel: "Done",
     isLast: true,
   },
 };
