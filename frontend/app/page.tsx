@@ -2029,7 +2029,7 @@ export default function Landing() {
           ) : (
             <div className="nav-auth-desktop" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <Link href="/auth" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Sign In</Link>
-              <Link href="/auth" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Get Started Free</Link>
+              <Link href="/auth?mode=signup" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Get Started Free</Link>
             </div>
           )}
           {/* Hamburger */}
@@ -2067,7 +2067,7 @@ export default function Landing() {
             ) : (
               <>
                 <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Sign In</Link>
-                <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 10 }}>Get Started Free</Link>
+                <Link href="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 10 }}>Get Started Free</Link>
               </>
             )}
           </div>
@@ -2123,7 +2123,7 @@ export default function Landing() {
           {loggedIn ? (
             <Link href="/app" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Go to Dashboard →</Link>
           ) : (
-            <Link href="/auth" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Start for free →</Link>
+            <Link href="/auth?mode=signup" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Start for free →</Link>
           )}
         </motion.div>
 
