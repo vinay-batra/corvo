@@ -2399,28 +2399,39 @@ def market_summary(tickers: str = Query(default="")):
                         except Exception as e2:
                             print(f"market-summary holdings fallback error for {sym}: {e2}")
 
-    # Fetch upcoming earnings dates for WHAT TO WATCH section
-    earnings_data: dict[str, str] = {}
+    # Fetch upcoming earnings dates within 14 days for WHAT TO WATCH section
+    # earnings_data maps ticker -> days until earnings (int)
+    earnings_data: dict[str, int] = {}
+    today_date = datetime.now(timezone.utc).date()
     for sym in (user_tickers or [])[:6]:
         if is_cash_ticker(sym):
             continue
         try:
             cal = yf.Ticker(sym).calendar
+            date_str = None
             if cal is not None and not (isinstance(cal, pd.DataFrame) and cal.empty):
                 if isinstance(cal, pd.DataFrame) and "Earnings Date" in cal.index:
                     dates = cal.loc["Earnings Date"]
                     if hasattr(dates, "__iter__") and not isinstance(dates, str):
                         date_list = [str(d).split(" ")[0] for d in dates if pd.notna(d)]
                         if date_list:
-                            earnings_data[sym] = date_list[0]
+                            date_str = date_list[0]
                     elif pd.notna(dates):
-                        earnings_data[sym] = str(dates).split(" ")[0]
+                        date_str = str(dates).split(" ")[0]
                 elif isinstance(cal, dict) and "Earnings Date" in cal:
                     raw_date = cal["Earnings Date"]
                     if isinstance(raw_date, list) and raw_date:
-                        earnings_data[sym] = str(raw_date[0]).split(" ")[0]
+                        date_str = str(raw_date[0]).split(" ")[0]
                     elif raw_date:
-                        earnings_data[sym] = str(raw_date).split(" ")[0]
+                        date_str = str(raw_date).split(" ")[0]
+            if date_str:
+                try:
+                    ed = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    days_away = (ed - today_date).days
+                    if 0 <= days_away <= 14:
+                        earnings_data[sym] = days_away
+                except ValueError:
+                    pass
         except Exception as e:
             print(f"market-summary earnings error for {sym}: {e}")
 
@@ -2444,31 +2455,31 @@ def market_summary(tickers: str = Query(default="")):
                     for s, v in sorted(holdings_data.items(), key=lambda x: -x[1])
                 )
                 holdings_block = (
-                    f"TODAY'S ACTUAL PERFORMANCE DATA (fetched from yfinance close prices -- these are exact, verified numbers):\n"
+                    f"Today's actual verified price changes:\n"
                     f"{perf_lines}\n\n"
-                    f"Leader: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%)\n"
-                    f"Laggard: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%)\n\n"
-                    f"CRITICAL: Use ONLY these exact numbers. Do not estimate or infer. "
-                    f"If a ticker shows a positive percentage it went UP -- never describe it as a drag, headwind, or negative. "
-                    f"If a ticker shows a negative percentage it went DOWN."
+                    f"Use ONLY these numbers. Never say a stock fell if its number is positive. "
+                    f"The portfolio leader is the highest number. The laggard is the lowest."
                 )
                 holdings_key_desc = (
-                    f"Write the YOUR PORTFOLIO paragraph using ONLY the exact numbers above. "
-                    f"2-3 sentences. State which holdings rose and which fell using the exact percentages. "
+                    f"Write 2-3 sentences about the user's portfolio today using ONLY the exact numbers above. "
+                    f"State which holdings rose and which fell with the exact percentages. "
                     f"Connect each move to the market driver. "
-                    f"Best: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%), "
-                    f"worst: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%). "
-                    f"NEVER describe a positive-returning holding as a drag or headwind."
+                    f"Leader: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%), "
+                    f"laggard: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%). "
+                    f"Never describe a positive-returning holding as a drag, headwind, or negative."
                 )
             else:
                 holdings_block = "No user holdings provided."
                 holdings_key_desc = '"No holdings provided for this user."'
 
             if earnings_data:
-                earnings_lines = "\n".join(f"  {sym}: earnings expected {date}" for sym, date in earnings_data.items())
-                watch_data_block = f"UPCOMING EARNINGS FOR THIS PORTFOLIO (verified from yfinance):\n{earnings_lines}"
+                earnings_lines = "\n".join(
+                    f"  {sym} reports in {days} day{'s' if days != 1 else ''}"
+                    for sym, days in sorted(earnings_data.items(), key=lambda x: x[1])
+                )
+                watch_data_block = f"Upcoming earnings (within 14 days, verified from yfinance):\n{earnings_lines}"
             else:
-                watch_data_block = "No upcoming earnings data found for this portfolio."
+                watch_data_block = "No earnings reports due within the next 14 days for this portfolio."
 
             prompt = f"""Market data:
 S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, VIX {vix_val:.1f}.
@@ -2486,7 +2497,7 @@ Return a JSON object with exactly these four string keys. Each value must be 2-3
 
 "holdings": {holdings_key_desc}
 
-"outlook": Use the upcoming earnings data above. Name one specific upcoming event that matters for the user's exact holdings, using the verified earnings date if one exists. What to watch for in that report. Close with one sentence on what it means and what to consider. 2-3 sentences.
+"outlook": Use the upcoming earnings data above. If any holding reports within 14 days, name it specifically (e.g. "TTWO reports in 3 days"), say what to watch for in that report, and close with what it means for the portfolio. If no earnings are due, pick the most relevant near-term market event from the news and explain what to watch. 2-3 sentences.
 
 Hard rules: no em dashes, no asterisks, no markdown, no vague market jargon. Write like a smart friend who knows finance. Plain English only. Return only the JSON object, no wrapper."""
 
