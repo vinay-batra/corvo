@@ -28,6 +28,13 @@ function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode
 
 const ENTRIES = [
   {
+    date: "Apr 26, 2026",
+    version: "v0.19",
+    title: "Auth Fix, Portfolio Pill & Morning Brief Accuracy",
+    desc: "Critical auth fix: missing Next.js middleware was causing expired JWTs on every server-side request, silently failing sessions after sign-in. Supabase client is now a true singleton throughout the app. Dashboard ticker scroll adds a live Portfolio pill next to the S&P 500, Nasdaq, and Dow pills, showing your weighted daily dollar and percent change in real time. Morning brief now pulls live prices via the same yfinance logic as the ticker chips, never inferring or approximating. Briefing collapse now shows a one-sentence preview instead of hiding content entirely. Referral links are generated client-side with the full user ID. Onboarding no longer flashes on step transitions, and the header now shows the Corvo logo and user menu.",
+    tags: ["Auth", "Dashboard", "AI Brief", "Fixes"],
+  },
+  {
     date: "Apr 25, 2026",
     version: "v0.18",
     title: "Full Mobile Overhaul",
