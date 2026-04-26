@@ -5,65 +5,64 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 
-const AMBER = "#c9a84c";
 const TOTAL = 8;
 
 const INVESTOR_TYPES = [
-  { id: "beginner", label: "Beginner investor", desc: "New to investing" },
-  { id: "active", label: "Active trader", desc: "Frequent buying and selling" },
-  { id: "longterm", label: "Long-term investor", desc: "Buy and hold for years" },
-  { id: "professional", label: "Finance professional", desc: "Work in finance" },
+  { id: "beginner",      label: "Beginner investor",     desc: "New to investing" },
+  { id: "active",        label: "Active trader",          desc: "Frequent buying and selling" },
+  { id: "longterm",      label: "Long-term investor",     desc: "Buy and hold for years" },
+  { id: "professional",  label: "Finance professional",   desc: "Work in finance" },
 ];
 
 const GOALS = [
-  { id: "track", label: "Track my performance" },
-  { id: "risk", label: "Reduce portfolio risk" },
-  { id: "learn", label: "Learn investing" },
-  { id: "taxes", label: "Optimize for taxes" },
-  { id: "wealth", label: "Build long-term wealth" },
-  { id: "retirement", label: "Save for retirement" },
+  { id: "track",       label: "Track my performance" },
+  { id: "risk",        label: "Reduce portfolio risk" },
+  { id: "learn",       label: "Learn investing" },
+  { id: "taxes",       label: "Optimize for taxes" },
+  { id: "wealth",      label: "Build long-term wealth" },
+  { id: "retirement",  label: "Save for retirement" },
 ];
 
 const AGE_RANGES = [
   { id: "under18", label: "Under 18" },
-  { id: "18-24", label: "18 to 24" },
-  { id: "25-34", label: "25 to 34" },
-  { id: "35-44", label: "35 to 44" },
-  { id: "45-54", label: "45 to 54" },
-  { id: "55-64", label: "55 to 64" },
-  { id: "65+", label: "65 or older" },
+  { id: "18-24",   label: "18 to 24" },
+  { id: "25-34",   label: "25 to 34" },
+  { id: "35-44",   label: "35 to 44" },
+  { id: "45-54",   label: "45 to 54" },
+  { id: "55-64",   label: "55 to 64" },
+  { id: "65+",     label: "65 or older" },
 ];
 
 const INCOME_RANGES = [
-  { id: "under30k", label: "Under $30k" },
-  { id: "30-60k", label: "$30k to $60k" },
-  { id: "60-100k", label: "$60k to $100k" },
-  { id: "100-200k", label: "$100k to $200k" },
-  { id: "200k+", label: "$200k or more" },
+  { id: "under30k",   label: "Under $30k" },
+  { id: "30-60k",     label: "$30k to $60k" },
+  { id: "60-100k",    label: "$60k to $100k" },
+  { id: "100-200k",   label: "$100k to $200k" },
+  { id: "200k+",      label: "$200k or more" },
   { id: "prefer_not", label: "Prefer not to say" },
 ];
 
 const RISK_LEVELS = [
-  { id: "conservative", label: "Conservative", desc: "Preserve capital, minimize losses" },
-  { id: "moderate", label: "Moderate", desc: "Balance growth and stability" },
-  { id: "aggressive", label: "Aggressive", desc: "Maximize growth, accept volatility" },
+  { id: "conservative",   label: "Conservative",   desc: "Preserve capital, minimize losses" },
+  { id: "moderate",       label: "Moderate",        desc: "Balance growth and stability" },
+  { id: "aggressive",     label: "Aggressive",      desc: "Maximize growth, accept volatility" },
   { id: "very_aggressive", label: "Very Aggressive", desc: "High risk, high reward" },
 ];
 
 const HORIZONS = [
   { id: "under1y", label: "Less than 1 year" },
-  { id: "1-3y", label: "1 to 3 years" },
-  { id: "3-5y", label: "3 to 5 years" },
-  { id: "5-10y", label: "5 to 10 years" },
-  { id: "10y+", label: "10 or more years" },
+  { id: "1-3y",    label: "1 to 3 years" },
+  { id: "3-5y",    label: "3 to 5 years" },
+  { id: "5-10y",   label: "5 to 10 years" },
+  { id: "10y+",    label: "10 or more years" },
 ];
 
 const REFERRAL_SOURCES = [
-  { id: "twitter", label: "Twitter / X" },
-  { id: "friend", label: "Friend or family" },
-  { id: "google", label: "Google search" },
-  { id: "reddit", label: "Reddit" },
-  { id: "other", label: "Other" },
+  { id: "twitter",  label: "Twitter / X" },
+  { id: "friend",   label: "Friend or family" },
+  { id: "google",   label: "Google search" },
+  { id: "reddit",   label: "Reddit" },
+  { id: "other",    label: "Other" },
 ];
 
 const STEP_TITLES = [
@@ -89,20 +88,28 @@ function SelectCard({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: selected ? "rgba(201,168,76,0.1)" : hovered ? "#161616" : "#111",
-        border: `1px solid ${selected ? AMBER : hovered ? "#2a2a2a" : "#1e1e1e"}`,
-        borderRadius: 12,
+        background: selected
+          ? "rgba(var(--accent-rgb), 0.1)"
+          : hovered ? "var(--bg3)" : "var(--bg2)",
+        border: `1px solid ${selected ? "var(--accent)" : hovered ? "var(--border2)" : "var(--border)"}`,
+        borderRadius: "var(--radius-lg)",
         padding: desc ? "14px 16px" : "12px 16px",
         cursor: "pointer",
         textAlign: "left",
         transition: "all 150ms",
       }}
     >
-      <div style={{ fontSize: 13, fontWeight: 500, color: selected ? AMBER : hovered ? "#ddd" : "#bbb" }}>
+      <div style={{
+        fontSize: 13, fontWeight: 500,
+        color: selected ? "var(--accent)" : hovered ? "var(--text)" : "var(--text2)",
+      }}>
         {label}
       </div>
       {desc && (
-        <div style={{ fontSize: 11, marginTop: 4, color: selected ? "rgba(201,168,76,0.65)" : "#555" }}>
+        <div style={{
+          fontSize: 11, marginTop: 4,
+          color: selected ? "var(--accent-text)" : "var(--text3)",
+        }}>
           {desc}
         </div>
       )}
@@ -208,11 +215,8 @@ function OnboardingContent() {
   const handleNext = () => {
     if (animating) return;
     if (!canProceed() && step !== 4) return;
-    if (step < TOTAL - 1) {
-      navigate("forward");
-    } else {
-      handleComplete();
-    }
+    if (step < TOTAL - 1) navigate("forward");
+    else handleComplete();
   };
 
   const handleBack = () => {
@@ -265,7 +269,6 @@ function OnboardingContent() {
     if (validAssets.length > 0) {
       localStorage.setItem("corvo_onboarding_assets", JSON.stringify(validAssets));
     }
-
     if (!isReplay) {
       localStorage.setItem("corvo_just_onboarded", "true");
     }
@@ -276,9 +279,8 @@ function OnboardingContent() {
   const renderSingleSelect = (
     field: keyof typeof answers,
     options: { id: string; label: string; desc?: string }[],
-    columns: number = 2,
   ) => (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: 10 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
       {options.map(opt => (
         <SelectCard
           key={opt.id}
@@ -292,19 +294,26 @@ function OnboardingContent() {
   );
 
   const renderMultiSelect = () => (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-      {GOALS.map(g => {
-        const selected = answers.primary_goals.includes(g.id);
-        const maxed = answers.primary_goals.length >= 3 && !selected;
-        return (
-          <SelectCard
-            key={g.id}
-            label={g.label}
-            selected={selected}
-            onClick={() => { if (!maxed) toggleGoal(g.id); }}
-          />
-        );
-      })}
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+        {GOALS.map(g => {
+          const selected = answers.primary_goals.includes(g.id);
+          const maxed = answers.primary_goals.length >= 3 && !selected;
+          return (
+            <SelectCard
+              key={g.id}
+              label={g.label}
+              selected={selected}
+              onClick={() => { if (!maxed) toggleGoal(g.id); }}
+            />
+          );
+        })}
+      </div>
+      {answers.primary_goals.length > 0 && (
+        <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 10, textAlign: "center" }}>
+          {3 - answers.primary_goals.length} more selection{3 - answers.primary_goals.length !== 1 ? "s" : ""} allowed
+        </p>
+      )}
     </div>
   );
 
@@ -313,7 +322,7 @@ function OnboardingContent() {
       <div style={{ maxHeight: 340, overflowY: "auto", marginBottom: 16 }}>
         <PortfolioBuilder assets={assets} onAssetsChange={setAssets} loading={false} />
       </div>
-      <p style={{ fontSize: 11, color: "#555", textAlign: "center" }}>
+      <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "center" }}>
         You can add or edit holdings anytime from the dashboard.
       </p>
     </div>
@@ -321,23 +330,14 @@ function OnboardingContent() {
 
   const renderStepContent = () => {
     switch (step) {
-      case 0: return renderSingleSelect("investor_type", INVESTOR_TYPES, 2);
-      case 1: return (
-        <div>
-          {renderMultiSelect()}
-          {answers.primary_goals.length > 0 && (
-            <p style={{ fontSize: 11, color: "#555", marginTop: 10, textAlign: "center" }}>
-              {3 - answers.primary_goals.length} more selection{3 - answers.primary_goals.length !== 1 ? "s" : ""} allowed
-            </p>
-          )}
-        </div>
-      );
-      case 2: return renderSingleSelect("age_range", AGE_RANGES, 2);
-      case 3: return renderSingleSelect("income_range", INCOME_RANGES, 2);
+      case 0: return renderSingleSelect("investor_type", INVESTOR_TYPES);
+      case 1: return renderMultiSelect();
+      case 2: return renderSingleSelect("age_range", AGE_RANGES);
+      case 3: return renderSingleSelect("income_range", INCOME_RANGES);
       case 4: return renderPortfolioBuilder();
-      case 5: return renderSingleSelect("risk_tolerance", RISK_LEVELS, 2);
-      case 6: return renderSingleSelect("investment_horizon", HORIZONS, 2);
-      case 7: return renderSingleSelect("referral_source", REFERRAL_SOURCES, 2);
+      case 5: return renderSingleSelect("risk_tolerance", RISK_LEVELS);
+      case 6: return renderSingleSelect("investment_horizon", HORIZONS);
+      case 7: return renderSingleSelect("referral_source", REFERRAL_SOURCES);
       default: return null;
     }
   };
@@ -348,15 +348,20 @@ function OnboardingContent() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 20, height: 20, border: "2px solid rgba(201,168,76,0.2)", borderTopColor: AMBER, borderRadius: "50%", animation: "ob-spin 0.8s linear infinite" }} />
+      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <style>{`@keyframes ob-spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{
+          width: 20, height: 20, borderRadius: "50%",
+          border: "2px solid rgba(var(--accent-rgb), 0.2)",
+          borderTopColor: "var(--accent)",
+          animation: "ob-spin 0.8s linear infinite",
+        }} />
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", flexDirection: "column", fontFamily: "Inter, sans-serif", color: "#fff" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", fontFamily: "var(--font-body)", color: "var(--text)" }}>
       <style>{`
         @keyframes ob-spin { to { transform: rotate(360deg); } }
         @keyframes ob-card-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
@@ -374,9 +379,10 @@ function OnboardingContent() {
       `}</style>
 
       {/* Progress bar — full width at top */}
-      <div style={{ height: 3, background: "#1a1a1a", flexShrink: 0 }}>
+      <div style={{ height: 3, background: "var(--bg3)", flexShrink: 0 }}>
         <div style={{
-          height: "100%", background: AMBER,
+          height: "100%",
+          background: "var(--accent)",
           width: `${progress}%`,
           transition: "width 0.4s cubic-bezier(0.16,1,0.3,1)",
           borderRadius: "0 2px 2px 0",
@@ -386,8 +392,8 @@ function OnboardingContent() {
       {/* Header */}
       <header style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0 }}>
         <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
-        <span style={{ fontSize: 11, color: "#444", letterSpacing: 0.5 }}>
-          {step + 1} of {TOTAL}
+        <span style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.5, fontFamily: "var(--font-mono)" }}>
+          {step + 1} / {TOTAL}
         </span>
       </header>
 
@@ -404,28 +410,35 @@ function OnboardingContent() {
         }}
       >
         <div
-          className={`ob-card ${completing ? "ob-completing" : ""}`}
+          className={`ob-card${completing ? " ob-completing" : ""}`}
           style={{
             width: "100%",
             maxWidth: 540,
-            background: "#111",
-            border: "1px solid #1e1e1e",
-            borderRadius: 16,
+            background: "var(--card-bg)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-lg)",
             padding: "30px 30px 28px",
-            animation: "ob-card-in 0.4s cubic-bezier(0.16,1,0.3,1) both",
+            boxShadow: "var(--shadow-md)",
           }}
         >
           {/* Step label */}
-          <div style={{ fontSize: 10, letterSpacing: "0.15em", color: AMBER, textTransform: "uppercase", marginBottom: 10, fontFamily: "'Space Mono', monospace" }}>
+          <div style={{
+            fontSize: 10, letterSpacing: "0.15em", color: "var(--accent)",
+            textTransform: "uppercase", marginBottom: 10,
+            fontFamily: "var(--font-mono)",
+          }}>
             Step {step + 1} of {TOTAL}
           </div>
 
           {/* Title */}
-          <h2 style={{ fontSize: 22, fontWeight: 600, color: "#fff", margin: "0 0 24px", lineHeight: 1.3, letterSpacing: "-0.3px" }}>
+          <h2 style={{
+            fontSize: 22, fontWeight: 600, color: "var(--text)",
+            margin: "0 0 24px", lineHeight: 1.3, letterSpacing: "-0.3px",
+          }}>
             {STEP_TITLES[step]}
           </h2>
 
-          {/* Step content with transition */}
+          {/* Step content */}
           <div
             key={step}
             className={animating ? (direction === "forward" ? "ob-step-fwd" : "ob-step-back") : "ob-step"}
@@ -434,18 +447,20 @@ function OnboardingContent() {
             {renderStepContent()}
           </div>
 
-          {/* Footer: back / next */}
+          {/* Footer: back / skip / next */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <button
               onClick={handleBack}
               style={{
-                fontSize: 12, color: step > 0 ? "#555" : "transparent",
-                background: "none", border: "none", cursor: step > 0 ? "pointer" : "default",
+                fontSize: 12,
+                color: step > 0 ? "var(--text3)" : "transparent",
+                background: "none", border: "none",
+                cursor: step > 0 ? "pointer" : "default",
                 padding: 0, transition: "color 150ms",
                 pointerEvents: step > 0 ? "auto" : "none",
               }}
-              onMouseEnter={e => { if (step > 0) e.currentTarget.style.color = "#999"; }}
-              onMouseLeave={e => { e.currentTarget.style.color = step > 0 ? "#555" : "transparent"; }}
+              onMouseEnter={e => { if (step > 0) e.currentTarget.style.color = "var(--text2)"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = step > 0 ? "var(--text3)" : "transparent"; }}
             >
               Back
             </button>
@@ -454,7 +469,7 @@ function OnboardingContent() {
               {step === 4 && (
                 <button
                   onClick={handleNext}
-                  style={{ fontSize: 12, color: "#555", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  style={{ fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                 >
                   Skip this step
                 </button>
@@ -464,12 +479,11 @@ function OnboardingContent() {
                 disabled={!canGoNext || completing}
                 style={{
                   padding: "11px 26px",
-                  background: canGoNext ? AMBER : "rgba(201,168,76,0.12)",
+                  background: canGoNext ? "var(--accent)" : "rgba(var(--accent-rgb), 0.12)",
                   border: "none",
-                  borderRadius: 10,
-                  color: canGoNext ? "#0a0a0a" : "#5a4800",
-                  fontSize: 13,
-                  fontWeight: 600,
+                  borderRadius: "var(--radius)",
+                  color: canGoNext ? "var(--bg)" : "var(--text3)",
+                  fontSize: 13, fontWeight: 600,
                   cursor: canGoNext ? "pointer" : "not-allowed",
                   transition: "all 0.18s",
                   opacity: completing ? 0.6 : 1,
@@ -489,9 +503,14 @@ function OnboardingContent() {
 export default function OnboardingPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 20, height: 20, border: "2px solid rgba(201,168,76,0.2)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "ob-spin 0.8s linear infinite" }} />
+      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <style>{`@keyframes ob-spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{
+          width: 20, height: 20, borderRadius: "50%",
+          border: "2px solid rgba(var(--accent-rgb), 0.2)",
+          borderTopColor: "var(--accent)",
+          animation: "ob-spin 0.8s linear infinite",
+        }} />
       </div>
     }>
       <OnboardingContent />
