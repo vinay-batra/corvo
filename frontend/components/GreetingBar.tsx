@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
@@ -63,6 +63,12 @@ interface MarketSummary {
   vix: number;
 }
 
+interface HoldingPrice {
+  ticker: string;
+  price: number;
+  changePct: number;
+}
+
 interface Props {
   displayName: string;
   portfolioData: any;
@@ -75,7 +81,10 @@ export default function GreetingBar({ displayName, assets }: Props) {
   const greeting = getGreeting();
 
   const [resolvedName, setResolvedName] = useState(displayName || "");
-  const [briefingCollapsed, setBriefingCollapsed] = useState(false);
+  const [briefingCollapsed, setBriefingCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem("corvo_briefing_collapsed") === "true"; } catch { return false; }
+  });
 
   useEffect(() => {
     if (displayName?.trim()) { setResolvedName(displayName.trim()); return; }
@@ -136,7 +145,37 @@ export default function GreetingBar({ displayName, assets }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  const toggleBriefing = () => setBriefingCollapsed(c => !c);
+  const toggleBriefing = () => {
+    setBriefingCollapsed(c => {
+      const next = !c;
+      try { localStorage.setItem("corvo_briefing_collapsed", String(next)); } catch {}
+      return next;
+    });
+  };
+
+  const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
+  const assetsRef = useRef(assets);
+  useEffect(() => { assetsRef.current = assets; }, [assets]);
+  useEffect(() => {
+    const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
+    if (!validTickers.length) { setHoldingPrices([]); return; }
+    const fetchPrices = async () => {
+      try {
+        const r = await fetch(`${API_URL}/watchlist-data?tickers=${validTickers.join(",")}`);
+        const d = await r.json();
+        setHoldingPrices(
+          (d.results || []).map((s: any) => ({
+            ticker: s.ticker,
+            price: s.price ?? 0,
+            changePct: s.change_pct ?? 0,
+          }))
+        );
+      } catch {}
+    };
+    fetchPrices();
+    const id = setInterval(fetchPrices, 60000);
+    return () => clearInterval(id);
+  }, [assets]);
 
   const pos = (v: number) => v >= 0;
   const fmtSign = (v: number) => (v >= 0 ? "+" : "");
@@ -152,11 +191,12 @@ export default function GreetingBar({ displayName, assets }: Props) {
     }}>
       <style>{`
         @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:0.9} }
+        @keyframes gb-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
         @media(max-width:768px){
           .gb-root{padding:10px 12px!important;flex-direction:column!important;gap:10px!important}
           .gb-divider{display:none!important}
           .gb-right{align-items:flex-start!important;width:100%!important}
-
+          .gb-marquee-wrap{width:100%!important}
         }
       `}</style>
 
@@ -281,7 +321,52 @@ export default function GreetingBar({ displayName, assets }: Props) {
           </div>
         )}
 
+        {/* Portfolio ticker scroll — shows current holdings with live % change */}
+        {(() => {
+          const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
+          if (!validTickers.length) return null;
+          // Use live price data when available, fall back to ticker-only pills
+          const pills: { ticker: string; changePct: number | null }[] =
+            holdingPrices.length > 0
+              ? holdingPrices.map(h => ({ ticker: h.ticker, changePct: h.changePct }))
+              : validTickers.map(t => ({ ticker: t, changePct: null }));
+          const isFew = pills.length <= 4;
+          return (
+            <div className="gb-marquee-wrap" style={{ overflow: "hidden", width: 280, position: "relative" }}>
+              {isFew ? (
+                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                  {pills.map(p => <HoldingChip key={p.ticker} ticker={p.ticker} changePct={p.changePct} />)}
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 6, animation: "gb-marquee 28s linear infinite", width: "max-content" }}>
+                  {[...pills, ...pills].map((p, idx) => (
+                    <HoldingChip key={`${p.ticker}-${idx}`} ticker={p.ticker} changePct={p.changePct} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
       </div>
+    </div>
+  );
+}
+
+function HoldingChip({ ticker, changePct }: { ticker: string; changePct: number | null }) {
+  const up = changePct == null ? null : changePct >= 0;
+  const color = up == null ? "var(--text3)" : up ? GREEN : RED;
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "4px 9px", borderRadius: 7, flexShrink: 0,
+      border: `0.5px solid ${up == null ? "var(--border)" : up ? "rgba(76,175,125,0.25)" : "rgba(224,92,92,0.25)"}`,
+      background: up == null ? "var(--bg2)" : up ? "rgba(76,175,125,0.06)" : "rgba(224,92,92,0.06)",
+    }}>
+      <span style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", fontWeight: 700, color: "var(--text)", letterSpacing: 0.5 }}>{ticker}</span>
+      {changePct != null && (
+        <span style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", fontWeight: 600, color }}>{changePct >= 0 ? "+" : ""}{changePct.toFixed(2)}%</span>
+      )}
     </div>
   );
 }

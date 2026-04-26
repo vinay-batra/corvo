@@ -92,11 +92,11 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
         </motion.div>
       )}
 
-      <button onClick={onAskAi}
+      <button type="button" onClick={e => { e.preventDefault(); onAskAi(); }}
         style={{marginTop:6,padding:"8px 12px",background:C.amber,border:"none",borderRadius:8,color:"#0a0e14",fontSize:11,fontWeight:600,cursor:"pointer",letterSpacing:0.3,transition:"opacity 0.2s"}}
         onMouseEnter={e=>e.currentTarget.style.opacity="0.85"}
         onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-        Ask AI for deeper analysis →
+        Ask AI for deeper analysis
       </button>
     </div>
   );

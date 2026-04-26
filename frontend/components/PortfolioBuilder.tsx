@@ -609,10 +609,10 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       </div>
 
       {/* ── Portfolio Value input ──────────────────────────────────── */}
-      <div style={{marginTop:4,marginBottom:16,padding:"12px 14px",background:"var(--bg3)",border:"0.5px solid var(--border2)",borderRadius:10}}>
+      <div style={{marginTop:4,marginBottom:16,padding:"10px 14px",borderTop:"0.5px solid var(--border)"}}>
         <label style={LABEL_STYLE}>Portfolio Value</label>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontSize:15,color:"var(--text2)",lineHeight:1}}>$</span>
+          <span style={{fontFamily:"Space Mono,monospace",fontSize:13,color:"var(--text2)",lineHeight:1,flexShrink:0}}>$</span>
           <input
             type="number"
             min="0"
@@ -620,7 +620,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             value={portfolioValue}
             onChange={e=>handlePortfolioValueChange(e.target.value)}
             placeholder="10000"
-            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:600, maxWidth:180}}
+            className="accent-input"
+            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:700}}
           />
         </div>
         <div style={{fontSize:10,color:"var(--text3)",marginTop:5,lineHeight:1.5}}>

@@ -342,6 +342,10 @@ export default function DashboardTour({ onComplete }: Props) {
   const total = STOPS.length;
 
   const updatePositions = useCallback(() => {
+    if (typeof window === "undefined") return;
+    // Scroll target into view before calculating position (null-safe)
+    const el = document.getElementById(stop.id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
     const r = getRingPos(stop.id);
     setRing(r);
     if (r) setTooltipPos(getTooltipPos(r, stop.placement));
