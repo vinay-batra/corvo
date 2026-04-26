@@ -74,7 +74,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
   const greeting = getGreeting();
 
   const [resolvedName, setResolvedName] = useState(displayName || "");
-  const [briefingCollapsed, setBriefingCollapsed] = useState(false);
+  const [briefingCollapsed, setBriefingCollapsed] = useState(false); // default open
   useEffect(() => {
     try {
       if (localStorage.getItem("corvo_briefing_collapsed") === "true") setBriefingCollapsed(true);
@@ -231,7 +231,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
           >
             <svg
               width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-              style={{ transition: "transform 0.2s", transform: briefingCollapsed ? "rotate(-90deg)" : "rotate(0deg)" }}
+              style={{ transition: "transform 0.2s", transform: briefingCollapsed ? "rotate(180deg)" : "rotate(0deg)" }}
             >
               <polyline points="6 9 12 15 18 9" />
             </svg>
