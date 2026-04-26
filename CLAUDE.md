@@ -1,5 +1,23 @@
 ---
 
+## PRODUCT PHILOSOPHY
+
+**Corvo is an advisor, not a tool.**
+
+The difference: tools show data. Advisors tell you what it means and what to do.
+
+- WRONG: "Your Sharpe ratio is 2.88"
+- RIGHT: "Your Sharpe ratio is 2.88 — that's exceptional. You're getting strong returns without taking on much risk. Your main risk right now is NVDA concentration. If AI sentiment shifts, you could see a 15%+ drawdown. Consider trimming to 15% and rotating into something uncorrelated like BND."
+
+Every AI output in Corvo — insights, morning briefing, digest, chat, alerts, tour cards — must follow this pattern:
+1. Here is what is happening
+2. Here is why it matters for YOUR portfolio specifically
+3. Here is what you should consider doing
+
+Never show a number without explaining what it means. Never explain what something means without suggesting an action. Be specific, be direct, be personal.
+
+---
+
 # Corvo — Project Context
 
 ## Stack
