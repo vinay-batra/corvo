@@ -3836,6 +3836,10 @@ def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
             try:
                 print(f"[digest-yf] yfinance download attempt {attempt + 1}/3: {dl_arg}")
                 raw = yf.download(dl_arg, period="14d", auto_adjust=True, progress=False)
+                if raw is None or raw.empty:
+                    import yfinance as _yf2
+                    _yf2.set_tz_cache_location("/tmp/yf_tz_cache")
+                    raw = _yf2.download(dl_arg, period="14d", auto_adjust=True, progress=False, timeout=30)
                 print(f"[digest-yf] raw shape={raw.shape if raw is not None else None}, columns={list(raw.columns)[:8] if raw is not None and not raw.empty else []}")
                 if raw is None or raw.empty:
                     print(f"[digest-yf] attempt {attempt + 1}: empty/None response")
@@ -3982,10 +3986,9 @@ def _generate_digest_summary(display_name: str, portfolio_blocks: list[dict]) ->
         prompt = (
             f"You are a personal financial analyst writing a weekly portfolio digest for {name_str}.\n\n"
             f"Portfolio performance this week:\n" + "\n".join(pf_lines) + "\n\n"
-            "Write exactly 2 paragraphs:\n"
-            "Paragraph 1: Summarise overall performance for the week: highlight the key return, "
-            "what drove it, and compare good vs bad days.\n"
-            "Paragraph 2: One forward-looking observation: a risk, opportunity, or rebalancing thought.\n"
+            "Write exactly 2 paragraphs of plain prose with no labels, no numbering, and no headers. Just two paragraphs separated by a blank line.\n"
+            "First paragraph: Summarise overall performance for the week: highlight the key return, what drove it, and compare good vs bad days.\n"
+            "Second paragraph: One forward-looking observation: a risk, opportunity, or rebalancing thought.\n"
             "Be direct, specific, and concise. Max 60 words per paragraph. No bullet points. No preamble. "
             "Never use em dashes. Never use asterisks (*) or markdown formatting. Write in plain prose only."
         )
