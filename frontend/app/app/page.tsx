@@ -2144,8 +2144,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 setAssets(builtAssets);
               }
               tourNeededRef.current = false;
-              // Show guided tour after onboarding
-              setShowDashboardTour(true);
+              // Show tour invitation modal (once only), or skip if already offered
+              if (localStorage.getItem("corvo_tour_offered") !== "true") {
+                setShowTourInvite(true);
+              }
               const { data: { user } } = await supabase.auth.getUser();
               if (user) {
                 const { data: xpRow } = await supabase.from("profiles").select("xp").eq("id", user.id).single();
@@ -2170,6 +2172,19 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       <AnimatePresence>
         {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); if (tourNeededRef.current) setShowTour(true); }} />}
       </AnimatePresence>
+      {showTourInvite && (
+        <TourInviteModal
+          onAccept={() => {
+            localStorage.setItem("corvo_tour_offered", "true");
+            setShowTourInvite(false);
+            setShowDashboardTour(true);
+          }}
+          onDecline={() => {
+            localStorage.setItem("corvo_tour_offered", "true");
+            setShowTourInvite(false);
+          }}
+        />
+      )}
       {showDashboardTour && (
         <DashboardTour onComplete={() => {
           setShowDashboardTour(false);

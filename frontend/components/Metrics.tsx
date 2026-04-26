@@ -127,9 +127,10 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
   return (
     <>
       <style>{`
+        .mc-value{font-size:34px;font-weight:700}
         @media(max-width:768px){
           .mc-card{padding:12px!important}
-          .mc-value{font-size:22px!important;letter-spacing:-0.8px!important;margin-bottom:6px!important}
+          .mc-value{font-size:22px!important;font-weight:700!important;letter-spacing:-0.8px!important;margin-bottom:6px!important}
           .mc-pnl-sub{font-size:11px!important;margin-bottom:4px!important}
           .mc-label{font-size:9px!important;letter-spacing:1px!important}
           .mc-modal-overlay{align-items:flex-end!important;padding:0!important}
