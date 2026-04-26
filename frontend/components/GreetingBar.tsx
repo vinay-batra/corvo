@@ -67,6 +67,7 @@ interface HoldingPrice {
   ticker: string;
   price: number;
   changePct: number;
+  changeDollar: number;
 }
 
 interface Props {
@@ -164,11 +165,12 @@ export default function GreetingBar({ displayName, assets }: Props) {
         const r = await fetch(`${API_URL}/watchlist-data?tickers=${validTickers.join(",")}`);
         const d = await r.json();
         setHoldingPrices(
-          (d.results || []).map((s: any) => ({
-            ticker: s.ticker,
-            price: s.price ?? 0,
-            changePct: s.change_pct ?? 0,
-          }))
+          (d.results || []).map((s: any) => {
+            const price = s.price ?? 0;
+            const changePct = s.change_pct ?? 0;
+            const changeDollar = s.change_dollar != null ? s.change_dollar : price * (changePct / 100);
+            return { ticker: s.ticker, price, changePct, changeDollar };
+          })
         );
       } catch {}
     };
@@ -326,21 +328,21 @@ export default function GreetingBar({ displayName, assets }: Props) {
           const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
           if (!validTickers.length) return null;
           // Use live price data when available, fall back to ticker-only pills
-          const pills: { ticker: string; changePct: number | null }[] =
+          const pills: { ticker: string; price: number | null; changeDollar: number | null; changePct: number | null }[] =
             holdingPrices.length > 0
-              ? holdingPrices.map(h => ({ ticker: h.ticker, changePct: h.changePct }))
-              : validTickers.map(t => ({ ticker: t, changePct: null }));
+              ? holdingPrices.map(h => ({ ticker: h.ticker, price: h.price, changeDollar: h.changeDollar, changePct: h.changePct }))
+              : validTickers.map(t => ({ ticker: t, price: null, changeDollar: null, changePct: null }));
           const isFew = pills.length <= 4;
           return (
-            <div className="gb-marquee-wrap" style={{ overflow: "hidden", width: 280, position: "relative" }}>
+            <div className="gb-marquee-wrap" style={{ overflow: "hidden", width: 320, position: "relative" }}>
               {isFew ? (
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                  {pills.map(p => <HoldingChip key={p.ticker} ticker={p.ticker} changePct={p.changePct} />)}
+                  {pills.map(p => <HoldingChip key={p.ticker} ticker={p.ticker} price={p.price} changeDollar={p.changeDollar} changePct={p.changePct} />)}
                 </div>
               ) : (
                 <div style={{ display: "flex", gap: 6, animation: "gb-marquee 28s linear infinite", width: "max-content" }}>
                   {[...pills, ...pills].map((p, idx) => (
-                    <HoldingChip key={`${p.ticker}-${idx}`} ticker={p.ticker} changePct={p.changePct} />
+                    <HoldingChip key={`${p.ticker}-${idx}`} ticker={p.ticker} price={p.price} changeDollar={p.changeDollar} changePct={p.changePct} />
                   ))}
                 </div>
               )}
@@ -353,19 +355,27 @@ export default function GreetingBar({ displayName, assets }: Props) {
   );
 }
 
-function HoldingChip({ ticker, changePct }: { ticker: string; changePct: number | null }) {
+function HoldingChip({ ticker, price, changeDollar, changePct }: { ticker: string; price: number | null; changeDollar: number | null; changePct: number | null }) {
   const up = changePct == null ? null : changePct >= 0;
   const color = up == null ? "var(--text3)" : up ? GREEN : RED;
+  const sign = up ? "+" : "";
+  const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace" };
   return (
     <div style={{
-      display: "flex", flexDirection: "column", alignItems: "center",
-      padding: "4px 9px", borderRadius: 7, flexShrink: 0,
-      border: `0.5px solid ${up == null ? "var(--border)" : up ? "rgba(76,175,125,0.25)" : "rgba(224,92,92,0.25)"}`,
+      display: "inline-flex", alignItems: "center", gap: 5,
+      padding: "5px 10px", borderRadius: 8, flexShrink: 0,
+      border: `0.5px solid ${up == null ? "var(--border)" : up ? "rgba(76,175,125,0.2)" : "rgba(224,92,92,0.2)"}`,
       background: up == null ? "var(--bg2)" : up ? "rgba(76,175,125,0.06)" : "rgba(224,92,92,0.06)",
     }}>
-      <span style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", fontWeight: 700, color: "var(--text)", letterSpacing: 0.5 }}>{ticker}</span>
+      <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "var(--text2)", letterSpacing: "0.02em" }}>{ticker}</span>
+      {price != null && (
+        <span style={{ ...mono, fontSize: 11, fontWeight: 600, color: "var(--text3)" }}>${price.toFixed(2)}</span>
+      )}
+      {changeDollar != null && (
+        <span style={{ ...mono, fontSize: 11, fontWeight: 600, color }}>{sign}${Math.abs(changeDollar).toFixed(2)}</span>
+      )}
       {changePct != null && (
-        <span style={{ fontSize: 10, fontFamily: "'Space Mono', monospace", fontWeight: 600, color }}>{changePct >= 0 ? "+" : ""}{changePct.toFixed(2)}%</span>
+        <span style={{ ...mono, fontSize: 11, fontWeight: 600, color, opacity: 0.85 }}>({sign}{changePct.toFixed(2)}%)</span>
       )}
     </div>
   );

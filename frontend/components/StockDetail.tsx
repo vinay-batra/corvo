@@ -790,7 +790,6 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
                 config={{ displayModeBar: false, responsive: true, scrollZoom: true }}
                 style={{ width: "100%", height: 248 }}
               />
-              <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "right", margin: "2px 0 0", opacity: 0.6 }}>Double-click chart to reset zoom</p>
             </motion.div>
           </AnimatePresence>
         ) : (

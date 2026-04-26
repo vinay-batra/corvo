@@ -111,7 +111,6 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
           config={{ displayModeBar: false, responsive: true }}
           style={{ width: "100%", height: 260 }}
         />
-        <p style={{ fontSize: 11, color: dark ? "rgba(226,232,240,0.3)" : "#7a7a78", textAlign: "right", margin: "2px 0 0" }}>Double-click chart to reset zoom</p>
         </>
       ) : null}
     </motion.div>
