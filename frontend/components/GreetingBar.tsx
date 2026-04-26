@@ -241,7 +241,32 @@ export default function GreetingBar({ displayName, assets }: Props) {
           </button>
         </div>
 
-        {/* Briefing sections — smooth height transition */}
+        {/* Collapsed preview — first sentence of MARKETS TODAY, shown only when collapsed */}
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false}
+          animate={{ height: briefingCollapsed ? "auto" : 0, opacity: briefingCollapsed ? 1 : 0 }}
+          transition={{ duration: 0.32, ease: "easeOut" }}
+          style={{ overflow: "hidden" }}
+        >
+          {!summaryLoading && market?.market && (
+            <p style={{
+              fontSize: 12,
+              color: "var(--text3)",
+              margin: "6px 0 0",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              maxWidth: "100%",
+              fontWeight: 300,
+              lineHeight: 1.5,
+            }}>
+              {market.market.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() ?? market.market.split(" ").slice(0, 15).join(" ")}
+            </p>
+          )}
+        </motion.div>
+
+        {/* Full briefing — all sections, shown only when expanded */}
         <motion.div
           // initial={false} is required — do not remove
           initial={false}
