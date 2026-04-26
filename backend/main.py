@@ -3807,54 +3807,46 @@ def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
     Primary: compute 7-day portfolio stats directly from yfinance.
     Cash-like tickers use synthetic 4.5% annual return.
     """
-    print(f"[digest-yf] START tickers={tickers} weights_raw={weights_raw}")
+    print(f"[digest-fh] START tickers={tickers} weights_raw={weights_raw}")
     if not tickers:
-        print("[digest-yf] no tickers — returning None")
         return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
 
     try:
         w_list = [float(w) for w in (weights_raw or [])]
-    except Exception as e:
-        print(f"[digest-yf] weight parse error: {e}, using equal weights")
+    except Exception:
         w_list = []
     if len(w_list) != len(tickers):
-        print(f"[digest-yf] weight/ticker mismatch ({len(w_list)} vs {len(tickers)}), using equal weights")
         w_list = [1.0 / len(tickers)] * len(tickers)
     total = sum(w_list)
     if total > 0:
         w_list = [w / total for w in w_list]
-    print(f"[digest-yf] normalized weights: {[round(w, 4) for w in w_list]}")
 
     real_tickers = [t for t in tickers if not is_cash_ticker(t)]
     cash_tickers = [t for t in tickers if is_cash_ticker(t)]
-    print(f"[digest-yf] real_tickers={real_tickers} cash_tickers={cash_tickers}")
 
-    close_df = pd.DataFrame()
     FINNHUB_KEY = os.environ.get("FINNHUB_API_KEY", "")
+    frames = {}
     if real_tickers and FINNHUB_KEY:
         import datetime as _dt
         end_ts = int(_dt.datetime.utcnow().timestamp())
         start_ts = end_ts - (14 * 24 * 3600)
-        frames = {}
         for t in real_tickers:
             try:
                 url = f"https://finnhub.io/api/v1/stock/candle?symbol={t}&resolution=D&from={start_ts}&to={end_ts}&token={FINNHUB_KEY}"
                 r = requests.get(url, timeout=10)
                 data = r.json()
+                print(f"[digest-fh] {t} raw response: status={data.get('s')} len={len(data.get('c', []))}")
                 if data.get("s") == "ok" and data.get("c"):
                     closes = data["c"]
                     timestamps = [_dt.datetime.utcfromtimestamp(ts) for ts in data["t"]]
                     frames[t] = pd.Series(closes, index=pd.to_datetime(timestamps), name=t)
-                    print(f"[digest-fh] {t}: {len(closes)} pts, last={closes[-1]}")
                 else:
-                    print(f"[digest-fh] {t}: bad response status={data.get('s')}")
+                    print(f"[digest-fh] {t}: bad response={data}")
             except Exception as e:
                 print(f"[digest-fh] {t}: error {e}")
-        if frames:
-            close_df = pd.DataFrame(frames).dropna(how="all").tail(8)
-            print(f"[digest-fh] close_df shape={close_df.shape}")
-    elif real_tickers:
-        print("[digest-fh] FINNHUB_API_KEY not set, skipping real tickers")
+
+    close_df = pd.DataFrame(frames).dropna(how="all").tail(8) if frames else pd.DataFrame()
+    print(f"[digest-fh] close_df shape={close_df.shape} columns={list(close_df.columns)}")
 
     n = len(close_df) if not close_df.empty else 8
     print(f"[digest-yf] building port_series with n={n}")
