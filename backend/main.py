@@ -4374,6 +4374,21 @@ async def debug_yfinance(tickers: str = "AAPL,MSFT,NVDA"):
         "stats": stats,
         "code_version": "v_digest_yf_primary_2",
     }
+
+
+@app.get("/debug-yf-raw")
+async def debug_yf_raw():
+    import yfinance as yf
+    try:
+        raw = yf.download("AAPL", period="14d", auto_adjust=True, progress=False)
+        return {
+            "shape": list(raw.shape) if raw is not None else None,
+            "empty": raw.empty if raw is not None else True,
+            "columns": [str(c) for c in raw.columns.tolist()[:10]] if raw is not None and not raw.empty else [],
+            "tail": raw.tail(3).to_string() if raw is not None and not raw.empty else "empty",
+        }
+    except Exception as e:
+        return {"error": str(e)}
 # force redeploy Fri Apr 24 10:36:18 EDT 2026
 
 
