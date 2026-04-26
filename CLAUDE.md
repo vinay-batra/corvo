@@ -18,6 +18,41 @@ Never show a number without explaining what it means. Never explain what somethi
 
 ---
 
+## MASTER ROADMAP
+
+1. Digest email fix (weekly stats N/A — blocked by Railway, switch to Finnhub when Railway is stable)
+2. "What should I do today?" button — AI scans portfolio + market, gives 2-3 specific actions
+3. Corvo Score — single 0-100 daily portfolio score with specific explanation
+4. Options chain viewer — tab on stock detail page, yfinance data
+5. Rebalance assistant — detects drift, tells you exactly what to buy/sell
+6. Price target tracker — per holding, alerts when hit with action recommendation
+7. Analyst price targets — consensus target vs current price for each holding
+8. Tax loss harvesting alerts — proactive, specific to your situation
+9. Earnings call AI summaries — transcript to what it means for your holdings
+10. Earnings impact preview — before reports, tell user their exposure and likely move
+11. Insider trading tracker — SEC Form 4 filings for your holdings
+12. Market close summary — daily "here's how you did" push after 4pm ET
+13. Push notifications for morning briefing — 9am daily
+14. Weekly portfolio checkup — specific verdict, not just stats
+15. "What if I retire in X years" — Monte Carlo in plain English
+16. SMS alerts
+17. Paper trading simulation
+18. Peer/portfolio comparison — anonymized performance vs other Corvo users
+19. Brokerage sync via Plaid — blocked until user is 18 or parent signs up
+20. Pro tier — unlimited AI chat, real-time alerts, custom PDF, SMS, brokerage sync
+21. Custom branded PDF reports — Pro feature
+22. Natural language portfolio editor — "sell half my NVDA, put it in QQQ"
+23. Life event integration — "I'm buying a house in 2 years" adjusts risk recommendations
+24. Push notification advisor — full advice with context, not just price alerts
+25. Community portfolios — follow anonymous top performers, see their moves
+26. Corvo for advisors — B2B, manage multiple client portfolios
+27. Marketing
+28. YC application
+29. App Store — iOS
+30. Google Play — Android
+
+---
+
 # Corvo — Project Context
 
 ## Stack
