@@ -2393,25 +2393,25 @@ def market_summary(tickers: str = Query(default="")):
 
             prompt = f"""Market data:
 S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, VIX {vix_val:.1f}.
-Top news: {news_str}
+Top news headlines: {news_str}
 {holdings_line}
 
-Return a JSON object with exactly these four string keys:
+Return a JSON object with exactly these four string keys. Each value must be 2-3 sentences of plain prose.
 
-- "market": One sentence. State what the S&P 500, Nasdaq, and Dow did today with exact percentages. Factual only, no opinion.
+"market": State exactly what the S&P 500, Nasdaq, and Dow did today with precise percentage moves. Include whether it was a broad move or sector-led. 2-3 sentences.
 
-- "market_driver": Two to three sentences. Name the specific events that drove market moves today. Include ALL significant factors: macro data releases, Fed statements, earnings results, geopolitical events, political developments. Do not omit political news if it moved markets. Name the event and its market impact specifically.
+"market_driver": Explain specifically what caused the move. Name the actual event: if earnings, name the company and whether it beat or missed. If a Fed statement, say what was said. If a CPI or jobs report, give the number and whether it surprised. If a geopolitical or political event, name it plainly. Do not say things like "sentiment remained constructive" or "risk appetite improved" or "tailwinds persisted". Say what actually happened. 2-3 sentences.
 
-- "holdings": {holdings_key_desc}
+"holdings": {holdings_key_desc}
 
-- "outlook": One to two sentences. Name the single most important upcoming event for the user's specific holdings, such as an earnings date, Fed meeting, economic data release, or macro risk. End with one specific actionable sentence: tell the user what it means for their portfolio and what to consider doing.
+"outlook": Name one specific upcoming event that matters for the user's exact holdings. Name the company or economic report, the expected date if you know it, and what to watch for. Close with one sentence telling the user what this means and what to consider doing. 2-3 sentences.
 
-Rules: no em dashes, no asterisks, no markdown. Plain prose only. Return only the JSON object."""
+Hard rules: no em dashes, no asterisks, no markdown, no vague market jargon. Write like a smart friend who knows finance. Plain English only. Return only the JSON object, no wrapper."""
 
             resp = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=600,
-                system="You are a senior markets analyst writing a daily brief. Return ONLY a valid JSON object with keys: market, market_driver, holdings, outlook. No markdown fences, no extra text.",
+                max_tokens=700,
+                system="You are a sharp financial analyst writing a daily market brief. Your job is to say exactly what happened and why, using plain English. Never use vague phrases like 'sentiment remained constructive', 'risk appetite improved', 'tailwinds persist', or 'investor appetite'. Name real events, real numbers, real companies. Return ONLY a valid JSON object with keys: market, market_driver, holdings, outlook. No markdown fences, no extra text.",
                 messages=[{"role": "user", "content": prompt}],
             )
             raw = resp.content[0].text.strip()
@@ -4007,9 +4007,10 @@ def _generate_digest_summary(display_name: str, portfolio_blocks: list[dict]) ->
                 f'worst day {worst}, Sharpe {sharpe}. Holdings: {tickers}.'
             )
 
-        name_str = display_name or "there"
+        name_str = display_name or ""
+        name_phrase = f"for {name_str}" if name_str else "for this user"
         prompt = (
-            f"You are a personal financial analyst writing a weekly portfolio digest for {name_str}.\n\n"
+            f"You are a personal financial analyst writing a weekly portfolio digest {name_phrase}.\n\n"
             f"Portfolio performance this week:\n" + "\n".join(pf_lines) + "\n\n"
             "Write exactly 2 paragraphs of plain prose with no labels, no numbering, and no headers. Just two paragraphs separated by a blank line.\n"
             "First paragraph: Summarise overall performance for the week: highlight the key return, what drove it, and compare good vs bad days.\n"
@@ -4037,7 +4038,7 @@ def _build_digest_html(display_name: str, user_id: str, portfolio_blocks: list[d
     muted = "#888880"
     border = "#1e1e1e"
 
-    name_str = display_name or "Investor"
+    name_str = display_name or ""
     unsub_url = f"https://corvo.capital/unsubscribe?user_id={user_id}" if user_id else "https://corvo.capital/unsubscribe"
 
     # Build per-portfolio stat blocks

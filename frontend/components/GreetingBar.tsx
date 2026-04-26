@@ -92,7 +92,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
     });
   }, [displayName]);
 
-  const firstName = resolvedName.trim().split(" ")[0] || "there";
+  const firstName = resolvedName.trim().split(" ")[0] || null;
   const dateStr = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric",
   });
@@ -163,7 +163,7 @@ export default function GreetingBar({ displayName, assets }: Props) {
       {/* LEFT — greeting, date, market status, briefing sections */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.5px", lineHeight: 1.2, margin: 0 }}>
-          {greeting}, {firstName}
+          {greeting}{firstName ? `, ${firstName}` : ""}
         </h1>
 
         {/* Date line */}
