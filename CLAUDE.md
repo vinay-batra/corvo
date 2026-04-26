@@ -75,6 +75,8 @@ Never show a number without explaining what it means. Never explain what somethi
 - SVG icons only — no emoji icons
 - Always add "Commit and push." to the end of every Claude Code prompt
 - Vinay uses Claude Code inside VS Code, not standalone terminal
+- Supabase client must always be imported from lib/supabase.ts singleton, never instantiated inline — inline clients omit cookieOptions and cause sessions to expire on browser close
+- middleware.ts must exist at the frontend repo root and call supabase.auth.getUser() on every request — without it, SSR pages receive expired JWTs and users get silently logged out
 
 ## Mobile Rules
 - All mobile fixes must use max-width: 768px
@@ -95,7 +97,7 @@ Never show a number without explaining what it means. Never explain what somethi
 - Light mode is the default for new/logged-out users
 
 ## Current Version
-v0.18 — last updated April 25, 2026
+v0.19 — last updated April 26, 2026
 
 ## Todo List (in order)
 1. Emails working end-to-end — weekly digest, price alerts, welcome — test all three
