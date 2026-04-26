@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { createBrowserClient } from "@supabase/ssr";
+import { supabase as sb } from "../lib/supabase";
 import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import FeedbackButton from "../components/FeedbackButton";
@@ -1717,10 +1717,6 @@ export default function Landing() {
   }, []);
 
   useEffect(() => {
-    const sb = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
     sb.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setLoggedIn(true);
@@ -1733,7 +1729,6 @@ export default function Landing() {
   }, []);
 
   const signOut = async () => {
-    const sb = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     await sb.auth.signOut();
     setLoggedIn(false); setUserProfile(null); setUserMenuOpen(false); setMobileMenuOpen(false);
     window.location.href = "/";
