@@ -37,6 +37,7 @@ import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import OnboardingModal from "../../components/OnboardingModal";
+import OnboardingQuestionnaire from "../../components/OnboardingQuestionnaire";
 import TourInviteModal from "../../components/TourInviteModal";
 import { fetchPortfolio } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
@@ -833,6 +834,7 @@ export default function AppPage() {
   const [showGoals, setShowGoals]         = useState(false);
   const [showTour, setShowTour]           = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [showSetupBanner, setShowSetupBanner] = useState(false);
   const [showProfile, setShowProfile]     = useState(false);
   const [showSettings, setShowSettings]   = useState(false);
@@ -1051,10 +1053,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         }
       }
 
-      // Show onboarding modal for new users, unless demo mode or shared portfolio
+      // Show onboarding questionnaire first, then the main onboarding modal
       const params2 = new URLSearchParams(window.location.search);
       if (!params2.get("portfolio") && params2.get("demo") !== "true") {
-        setShowOnboarding(true);
+        setShowQuestionnaire(true);
       }
     })();
   }, []);
@@ -2129,6 +2131,15 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         onAiChat={() => { setChatOpen(v => !v); sound.whoosh(); }}
       />
 
+
+      {showQuestionnaire && (
+        <OnboardingQuestionnaire
+          onComplete={() => {
+            setShowQuestionnaire(false);
+            setShowOnboarding(true);
+          }}
+        />
+      )}
 
       <AnimatePresence>
         {showOnboarding && (
