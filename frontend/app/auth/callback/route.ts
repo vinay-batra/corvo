@@ -23,10 +23,32 @@ export async function GET(request: Request) {
         },
       }
     );
+
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // Check user_metadata first (set by new onboarding flow)
+        const metaComplete = user.user_metadata?.onboarding_complete === true;
+
+        if (!metaComplete) {
+          // Also check profiles table — covers users who completed the old flow
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("onboarding_completed")
+            .eq("id", user.id)
+            .single();
+
+          if (!profile?.onboarding_completed) {
+            return NextResponse.redirect(`${origin}/onboarding`);
+          }
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
+
     return NextResponse.redirect(`${origin}/auth?error=auth_failed`);
   }
 

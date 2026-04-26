@@ -124,20 +124,30 @@ function IllusChat() {
   return (
     <svg width="100%" height="38" viewBox="0 0 260 38" fill="none" style={{ display: "block", marginBottom: 10 }}>
       <style>{`
-        @keyframes ti-fade { to { opacity: 1; } }
-        @keyframes ti-dot-pulse { 0%,100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
+        @keyframes ti-bubble-in { to { opacity: 1; } }
+        @keyframes ti-typing {
+          0%, 100% { opacity: 0.3; transform: translateY(0px); }
+          50%       { opacity: 1;   transform: translateY(-3px); }
+        }
       `}</style>
-      <rect x="84" y="4" width="92" height="26" rx="8" strokeWidth="1"
-        style={{ fill: "var(--card-bg)", stroke: "var(--accent)", opacity: 0, animation: "ti-fade 0.3s ease 0.1s both" }} />
-      <path d="M104 30 L110 36 L116 30" strokeWidth="1"
-        style={{ fill: "var(--card-bg)", stroke: "var(--accent)", opacity: 0, animation: "ti-fade 0.3s ease 0.2s both" }} />
+      {/* Chat bubble */}
+      <rect x="84" y="6" width="92" height="24" rx="8" strokeWidth="1"
+        style={{ fill: "var(--card-bg)", stroke: "var(--accent)", opacity: 0, animation: "ti-bubble-in 0.25s ease 0.1s both" }} />
+      {/* Bubble tail */}
+      <path d="M100 30 L106 36 L112 30" strokeWidth="1"
+        style={{ fill: "var(--card-bg)", stroke: "var(--accent)", opacity: 0, animation: "ti-bubble-in 0.25s ease 0.2s both" }} />
+      {/* Three typing dots — staggered delays: 0ms, 150ms, 300ms */}
       {[
-        { cx: 112, delay: 0.4 },
-        { cx: 126, delay: 0.55 },
-        { cx: 140, delay: 0.7 },
+        { cx: 114, delay: "0ms" },
+        { cx: 130, delay: "150ms" },
+        { cx: 146, delay: "300ms" },
       ].map((d, i) => (
-        <circle key={i} cx={d.cx} cy="17" r="3"
-          style={{ fill: "var(--accent)", opacity: 0, animation: `ti-dot-pulse 1s ease ${d.delay}s infinite` }} />
+        <circle key={i} cx={d.cx} cy="18" r="3"
+          style={{
+            fill: "var(--accent)",
+            opacity: 0.3,
+            animation: `ti-typing 0.9s ease-in-out ${d.delay} infinite`,
+          }} />
       ))}
     </svg>
   );
