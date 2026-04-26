@@ -165,7 +165,9 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
           </div>
           {bar!==null&&(
             <div style={{marginTop:10,height:2,background:"var(--track)",borderRadius:1,overflow:"hidden"}}>
-              <motion.div initial={false} animate={{width:`${Math.min(bar,1)*100}%`}} transition={{duration:1,delay:i*0.07+0.3}}
+              <motion.div
+                // initial={false} is required — do not remove
+                initial={false} animate={{width:`${Math.min(bar,1)*100}%`}} transition={{duration:1,delay:i*0.07+0.3}}
                 style={{height:"100%",background:color,borderRadius:1}}/>
             </div>
           )}
@@ -174,10 +176,14 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
       })}
       <AnimatePresence>
         {modal!==null&&(
-          <motion.div initial={false} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setModal(null)}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setModal(null)}
             className="mc-modal-overlay"
             style={{position:"fixed",inset:0,background:"var(--overlay-bg, rgba(0,0,0,0.75))",backdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-            <motion.div initial={false} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0}}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0}}
               onClick={e=>e.stopPropagation()}
               className="mc-modal-card"
               style={{background:"var(--card-bg)",border:"0.5px solid var(--border2)",borderRadius:16,padding:28,maxWidth:400,width:"100%",maxHeight:"90vh",overflowY:"auto",position:"relative"}}>

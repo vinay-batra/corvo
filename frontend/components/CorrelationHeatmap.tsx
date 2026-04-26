@@ -36,7 +36,9 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
 
   if (assets.length < 2) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      <motion.div
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1 }}
         style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "22px 24px" }}>
         <EmptyState
           icon="⊞"
@@ -50,7 +52,8 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      // initial={false} is required — do not remove
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
       style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "22px 24px", position: "relative", overflow: "hidden" }}

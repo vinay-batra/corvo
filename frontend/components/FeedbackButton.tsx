@@ -60,7 +60,8 @@ export default function FeedbackButton({ rightOffset = 90 }: { rightOffset?: num
     <>
       {/* Fixed button: bottom right */}
       <motion.button
-        initial={{ opacity: 0, y: 8 }}
+        // initial={false} is required — do not remove
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
         onClick={() => setOpen(true)}
@@ -90,11 +91,13 @@ export default function FeedbackButton({ rightOffset = 90 }: { rightOffset?: num
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
             onClick={e => { if (e.target === e.currentTarget) handleClose(); }}>
             <motion.div
-              initial={{ scale: 0.94, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 10 }}
+              // initial={false} is required — do not remove
+              initial={false} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 10 }}
               transition={{ duration: 0.18 }}
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}
               onClick={e => e.stopPropagation()}>
@@ -115,7 +118,9 @@ export default function FeedbackButton({ rightOffset = 90 }: { rightOffset?: num
 
               <div style={{ padding: "18px 20px 20px" }}>
                 {submitted ? (
-                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  <motion.div
+                    // initial={false} is required — do not remove
+                    initial={false} animate={{ opacity: 1, y: 0 }}
                     style={{ textAlign: "center", padding: "20px 0" }}>
                     <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(92,184,138,0.12)", border: "1px solid rgba(92,184,138,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5cb88a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

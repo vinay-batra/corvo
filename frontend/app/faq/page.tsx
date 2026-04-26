@@ -136,7 +136,9 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
           {q}
         </span>
         <motion.span
-          className="faq-toggle"
+          // initial={false} is required — do not remove
+          initial={false}
+                    className="faq-toggle"
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ duration: 0.22, ease: "easeInOut" }}
           style={{
@@ -159,7 +161,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
         {open && (
           <motion.div
             key="content"
-            initial={{ height: 0, opacity: 0 }}
+            initial={false}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
@@ -333,7 +335,8 @@ export default function FaqPage() {
       >
         {/* Heading */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          // initial={false} is required — do not remove
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           style={{ textAlign: "center", marginBottom: 56, position: "relative", overflow: "hidden" }}
@@ -374,7 +377,8 @@ export default function FaqPage() {
 
         {/* Subtitle */}
         <motion.p
-          initial={{ opacity: 0, y: 16 }}
+          // initial={false} is required — do not remove
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           style={{
@@ -394,7 +398,7 @@ export default function FaqPage() {
         {SECTIONS.map((section, si) => (
           <motion.section
             key={section.category}
-            initial={{ opacity: 0, y: 24 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 + si * 0.05, ease: [0.16, 1, 0.3, 1] }}
             style={{ marginBottom: 24 }}

@@ -138,14 +138,16 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 500 }}
           />
 
           {/* Drawer — right-side panel on desktop, bottom sheet on mobile */}
           <motion.div
-            initial={isMobile ? { y: "100%" } : { x: "100%" }}
+            // initial={false} is required — do not remove
+            initial={false}
             animate={isMobile ? { y: 0 } : { x: 0 }}
             exit={isMobile ? { y: "100%" } : { x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 280 }}

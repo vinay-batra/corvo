@@ -132,7 +132,9 @@ function AuthForm() {
         ← Corvo
       </a>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+      <motion.div
+        // initial={false} is required — do not remove
+        initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         style={{ width: 420, background: C.navy3, border: `1px solid ${C.border}`, borderRadius: 16, padding: "36px 32px", position: "relative", zIndex: 1 }}>
 
         {/* Logo */}
@@ -230,13 +232,17 @@ function AuthForm() {
 
         <AnimatePresence>
           {error && (
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{ padding: "10px 12px", background: "rgba(224,92,92,0.1)", border: "1px solid rgba(224,92,92,0.25)", borderRadius: 8, fontSize: 12, color: "#e05c5c", marginBottom: 12 }}>
               {error}
             </motion.div>
           )}
           {success && (
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{ padding: "10px 12px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 8, fontSize: 12, color: C.amber, marginBottom: 12 }}>
               {success}
             </motion.div>
@@ -260,7 +266,9 @@ function AuthForm() {
 
         {mode === "login" && (
           magicSent ? (
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, y: 0 }}
               style={{ marginTop: 10, padding: "10px 12px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 8, fontSize: 12, color: C.amber, textAlign: "center" }}>
               Check your email. Magic link sent.
             </motion.div>

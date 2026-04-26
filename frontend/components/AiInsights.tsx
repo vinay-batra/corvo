@@ -76,7 +76,9 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
       ))}
 
       {rebalanceSuggestions.length > 0 && (
-        <motion.div initial={false} animate={{opacity:1}} transition={{delay:0.3}}
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{opacity:1}} transition={{delay:0.3}}
           style={{marginTop:6,padding:"10px 12px",background:"rgba(184,134,11,0.04)",border:"1px solid rgba(184,134,11,0.12)",borderRadius:8}}>
           <p style={{fontSize:8,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>Rebalancing</p>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>

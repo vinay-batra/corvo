@@ -153,7 +153,9 @@ function Step1Panel({ active }: { active: boolean }) {
       </div>
       <AnimatePresence>
         {(showResult || userResult) && (
-          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ position: "absolute", top: "110%", left: 0, right: 0, background: C.bg3, border: `1px solid ${C.border2}`, borderRadius: 10, overflow: "hidden", zIndex: 10 }}>
             {[showResult || userResult].filter(Boolean).map(r => r && (
               <div key={r.ticker} onClick={animDone ? addUser : undefined}
@@ -180,7 +182,7 @@ function Step1Panel({ active }: { active: boolean }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, overflowY: "auto" }}>
         <AnimatePresence>
           {portfolio.map((s) => (
-            <motion.div key={s.ticker} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
+            <motion.div key={s.ticker} initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
               style={{ padding: "10px 14px", background: C.bg4, border: `1px solid ${C.border}`, borderRadius: 10, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 36, height: 36, background: C.amberBg, border: `1px solid ${C.amberBd}`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: C.amber, fontFamily: "'Space Mono', monospace", flexShrink: 0 }}>{s.ticker.slice(0, 2)}</div>
               <div style={{ flex: 1 }}>
@@ -191,7 +193,9 @@ function Step1Panel({ active }: { active: boolean }) {
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                   <span style={{ color: C.amber, fontSize: 12, fontWeight: 600 }}>{s.pct}%</span>
                   <div style={{ width: 60, height: 4, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${s.pct}%` }} transition={{ duration: 0.5, ease: "easeOut" }}
+                    <motion.div
+                      // initial={false} is required — do not remove
+                      initial={false} animate={{ width: `${s.pct}%` }} transition={{ duration: 0.5, ease: "easeOut" }}
                       style={{ height: "100%", background: C.amber, borderRadius: 2 }} />
                   </div>
                 </div>
@@ -334,7 +338,7 @@ function Step3Panel({ active }: { active: boolean }) {
           {paths.map((p, i) => (
             <motion.path key={i} d={p.d} fill="none" stroke={p.color} strokeWidth="1"
               opacity={p.opacity}
-              initial={{ pathLength: 0 }}
+              initial={false}
               animate={{ pathLength: drawn ? 1 : 0 }}
               transition={{ duration: 1.8, delay: i * 0.012, ease: "easeOut" }}
             />
@@ -348,13 +352,15 @@ function Step3Panel({ active }: { active: boolean }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, flex: 1 }}>
         {outcomes.map(o => (
-          <motion.div key={o.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: drawn ? 1 : 0, y: drawn ? 0 : 10 }}
+          <motion.div key={o.label} initial={false} animate={{ opacity: drawn ? 1 : 0, y: drawn ? 0 : 10 }}
             transition={{ duration: 0.4, delay: 2.0 }}
             style={{ padding: "12px 10px", background: o.bg, border: `1px solid ${o.color}30`, borderRadius: 12, textAlign: "center" }}>
             <div style={{ fontSize: 11, color: o.color, fontWeight: 700, marginBottom: 6 }}>{o.label}</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: o.color, fontFamily: "'Space Mono', monospace" }}>{o.value}</div>
             <div style={{ marginTop: 8, height: 3, background: C.border, borderRadius: 2 }}>
-              <motion.div initial={{ width: 0 }} animate={{ width: drawn ? `${o.pct}%` : 0 }}
+              <motion.div
+                // initial={false} is required — do not remove
+                initial={false} animate={{ width: drawn ? `${o.pct}%` : 0 }}
                 transition={{ duration: 0.8, delay: 2.2 }}
                 style={{ height: "100%", background: o.color, borderRadius: 2 }} />
             </div>
@@ -402,7 +408,9 @@ function Step4Panel({ active }: { active: boolean }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%" }}>
       <AnimatePresence>
         {showAlert && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ padding: "10px 14px", background: "rgba(201,168,76,0.12)", border: `1px solid ${C.amberBd}`, borderRadius: 10, display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
             <span style={{ display: "flex", color: C.amber }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
             <span style={{ color: C.cream }}>Alert: <strong style={{ color: C.amber }}>AAPL</strong> approaching target <strong style={{ color: C.amber }}>$215.00</strong></span>
@@ -415,7 +423,7 @@ function Step4Panel({ active }: { active: boolean }) {
         </div>
         <AnimatePresence>
           {items.map((item, idx) => (
-            <motion.div key={item.ticker} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.1 }}
+            <motion.div key={item.ticker} initial={false} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.1 }}
               style={{ padding: "11px 14px", borderBottom: idx < items.length - 1 ? `1px solid ${C.border}` : "none", display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 12, alignItems: "center" }}>
               <div>
                 <div style={{ color: C.cream, fontSize: 13, fontWeight: 600 }}>{item.ticker}</div>
@@ -432,7 +440,9 @@ function Step4Panel({ active }: { active: boolean }) {
                   <div style={{ position: "relative" }}>
                     <span style={{ display: "flex", color: C.amber }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
                     {ping && item.ticker === "AAPL" && (
-                      <motion.div initial={{ scale: 0.5, opacity: 1 }} animate={{ scale: 2.5, opacity: 0 }} transition={{ duration: 1, repeat: Infinity }}
+                      <motion.div
+                        // initial={false} is required — do not remove
+                        initial={false} animate={{ scale: 2.5, opacity: 0 }} transition={{ duration: 1, repeat: Infinity }}
                         style={{ position: "absolute", inset: -2, borderRadius: "50%", border: `2px solid ${C.amber}` }} />
                     )}
                   </div>
@@ -456,7 +466,10 @@ function Step4Panel({ active }: { active: boolean }) {
         <div style={{ flex: 1, padding: "10px 14px", background: C.greenBg, border: `1px solid rgba(76,175,125,0.25)`, borderRadius: 10 }}>
           <div style={{ fontSize: 9, color: C.cream3, letterSpacing: 0.8, marginBottom: 4 }}>LIVE PRICES</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
-            <motion.div animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false}
+              animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
               style={{ width: 8, height: 8, borderRadius: "50%", background: C.green }} />
             <span style={{ fontSize: 12, fontWeight: 600, color: C.green }}>ON</span>
           </div>
@@ -513,10 +526,12 @@ function Step5Panel({ active }: { active: boolean }) {
         </div>
         <div style={{ height: 6, background: C.border, borderRadius: 3, overflow: "hidden" }}>
           <motion.div style={{ height: "100%", background: `linear-gradient(90deg, ${C.amber}, #f0c060)`, borderRadius: 3 }}
-            initial={{ width: 0 }} animate={{ width: `${xpPct}%` }} transition={{ duration: 0.9, ease: "easeOut" }} />
+            initial={false} animate={{ width: `${xpPct}%` }} transition={{ duration: 0.9, ease: "easeOut" }} />
         </div>
         {showXp && (
-          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ marginTop: 6, fontSize: 11, color: C.amber, fontWeight: 600 }}>
             +100 XP earned!
           </motion.div>
@@ -526,7 +541,7 @@ function Step5Panel({ active }: { active: boolean }) {
       {/* Lesson list */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {LESSONS.map((l, i) => (
-          <motion.div key={l.title} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+          <motion.div key={l.title} initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
             style={{ padding: "10px 12px", background: l.active ? C.amberBg : C.bg4, border: `1px solid ${l.active ? C.amberBd : C.border}`, borderRadius: 10, opacity: l.locked ? 0.45 : 1 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 5, color: l.locked ? C.cream3 : l.active ? C.amber : C.cream2 }}>{l.locked ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> : l.icon}</div>
             <div style={{ fontSize: 11, color: C.cream, fontWeight: 500, lineHeight: 1.35 }}>{l.title}</div>
@@ -616,25 +631,33 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", gap: 20, position: "relative", zIndex: 1, padding: "0 24px" }}>
       <ParticleCanvas />
       <div style={{ position: "relative", zIndex: 1, maxWidth: 520 }}>
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}>
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}>
           <div style={{ marginBottom: 8, display: "flex", justifyContent: "center", color: C.amber }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
         </motion.div>
-        <motion.h2 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+        <motion.h2
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           style={{ fontSize: "clamp(20px, 3.5vw, 32px)", fontWeight: 700, color: C.cream, margin: "0 0 8px", lineHeight: 1.2, fontFamily: "'Space Mono', monospace" }}>
           Tour complete!
         </motion.h2>
-        <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+        <motion.p
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           style={{ fontSize: 14, color: C.cream2, margin: "0 0 20px" }}>
           You&apos;re ready to analyze your real portfolio
         </motion.p>
 
         {/* Completion checklist */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 18px", marginBottom: 20, textAlign: "left" }}>
           <p style={{ fontSize: 9, letterSpacing: 1.5, color: C.amber, textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>Here&apos;s what you explored</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             {completedSteps.map((s, i) => (
-              <motion.div key={i} initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.07 }}
+              <motion.div key={i} initial={false} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.07 }}
                 style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 18, height: 18, borderRadius: "50%", background: C.greenBg, border: `1px solid rgba(76,175,125,0.35)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <span style={{ fontSize: 9, color: C.green, fontWeight: 700 }}>✓</span>
@@ -647,7 +670,9 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
         </motion.div>
 
         {/* CTAs */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
           style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href="/auth"
             style={{ padding: "13px 28px", background: C.amber, borderRadius: 12, color: C.bg, fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.3, display: "inline-block", transition: "opacity 0.2s" }}
@@ -663,7 +688,9 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
           </button>
         </motion.div>
 
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}
+        <motion.p
+          // initial={false} is required — do not remove
+          initial={false} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}
           style={{ marginTop: 16, fontSize: 11, color: C.cream3 }}>
           No credit card required · Free forever · Cancel anytime
         </motion.p>
@@ -798,7 +825,7 @@ export default function DemoPage() {
       <div style={{ flex: 1, display: "flex", alignItems: "stretch", paddingTop: 118, paddingBottom: 80, minHeight: "100vh" }}>
         <AnimatePresence mode="wait" custom={dir}>
           <motion.div key={step} custom={dir} variants={variants}
-            initial="enter" animate="center" exit="exit"
+            initial={false} animate="center" exit="exit"
             transition={{ duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="demo-step-layout"
             style={{ flex: 1, display: "flex", padding: "0 24px", maxWidth: 1100, margin: "0 auto", width: "100%", gap: 32, alignItems: "center" }}>

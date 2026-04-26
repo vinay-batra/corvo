@@ -430,7 +430,9 @@ export default function StockCompare() {
               {searching && <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
               <AnimatePresence>
                 {dropdownOpen && searchResults.length > 0 && (
-                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  <motion.div
+                    // initial={false} is required — do not remove
+                    initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                     style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, zIndex: 100, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
                     {searchResults.map((r, idx) => (
                       <div key={idx}
@@ -461,7 +463,8 @@ export default function StockCompare() {
 
         {tickers.length >= 2 && !comparing && (
           <motion.button
-            initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1, y: 0 }}
             onClick={() => setComparing(true)}
             style={{ marginTop: 10, width: "100%", padding: "10px 0", border: "1px solid " + AMBER, color: AMBER, background: "rgba(184,134,11,0.08)", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.03em" }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = AMBER; (e.currentTarget as HTMLButtonElement).style.color = "#0d1117"; }}
@@ -666,10 +669,14 @@ export default function StockCompare() {
       )}
       <AnimatePresence>
         {modal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setModal(null)}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
               onClick={e => e.stopPropagation()}
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, padding: 28, maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
               <button onClick={() => setModal(null)} style={{ position: "absolute", top: 14, right: 14, background: "var(--bg3)", border: "none", borderRadius: "50%", width: 24, height: 24, cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>

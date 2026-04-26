@@ -503,7 +503,8 @@ export default function AiChat({
 
       {/* Semi-transparent backdrop */}
       <motion.div
-        initial={{ opacity: 0 }}
+        // initial={false} is required — do not remove
+        initial={false}
         animate={{ opacity: 0.35 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
@@ -513,7 +514,8 @@ export default function AiChat({
 
       {/* Slide-in panel */}
       <motion.div
-        initial={{ x: PANEL_SLIDE_OFFSET }}
+        // initial={false} is required — do not remove
+        initial={false}
         animate={{ x: 0 }}
         exit={{ x: PANEL_SLIDE_OFFSET }}
         transition={{ type: "spring", damping: 32, stiffness: 320 }}
@@ -537,7 +539,8 @@ export default function AiChat({
                 style={{ position: "fixed", inset: 0, zIndex: 301, background: "transparent" }}
               />
               <motion.div
-                initial={{ x: isMobile ? "100%" : 240 }}
+                // initial={false} is required — do not remove
+                initial={false}
                 animate={{ x: 0 }}
                 exit={{ x: isMobile ? "100%" : 240 }}
                 transition={{ type: "spring", damping: 28, stiffness: 260 }}
@@ -752,7 +755,7 @@ export default function AiChat({
                   <motion.button
                     key={`${s}-${i}-${suggestionSet}`}
                     className="cv-chip"
-                    initial={{ opacity: 0, y: 5 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
                     onClick={() => send(s)}
@@ -781,7 +784,7 @@ export default function AiChat({
                 {messages.map((m, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, x: m.role === "user" ? 8 : -8, y: 3 }}
+                    initial={false}
                     animate={{ opacity: 1, x: 0, y: 0 }}
                     transition={{ duration: 0.16, ease: "easeOut" }}
                     style={{ display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start" }}
@@ -826,7 +829,9 @@ export default function AiChat({
               </AnimatePresence>
 
               {loading && (
-                <motion.div initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }}
+                <motion.div
+                  // initial={false} is required — do not remove
+                  initial={false} animate={{ opacity: 1, y: 0 }}
                   style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                     <CorvoAvatar size={20} />
@@ -845,7 +850,9 @@ export default function AiChat({
         {/* ── Input area ── */}
         <div style={{ flexShrink: 0, borderTop: "0.5px solid var(--border)", padding: "10px 12px", background: "var(--bg)" }}>
           {limitReached ? (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, y: 0 }}
               style={{ background: "rgba(184,134,11,.07)", border: "0.5px solid rgba(184,134,11,.22)", borderRadius: 10, padding: "12px 14px" }}>
 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                 <Zap size={13} style={{ color: "var(--accent)" }} />
@@ -915,12 +922,14 @@ export default function AiChat({
         {showLimitModal && (
           <>
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowLimitModal(false)}
               style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 500, backdropFilter: "blur(4px)" }}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              // initial={false} is required — do not remove
+              initial={false}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}

@@ -456,7 +456,8 @@ export default function Watchlist() {
             <AnimatePresence>
               {switcherOpen && editingListId !== activeListId && (
                 <motion.div
-                  initial={{ opacity: 0, y: -4, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  // initial={false} is required — do not remove
+                  initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }}
                   transition={{ duration: 0.12 }}
                   style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
                   {lists.map(list => {
@@ -538,7 +539,8 @@ export default function Watchlist() {
             <AnimatePresence>
               {searchOpen && searchResults.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                  // initial={false} is required — do not remove
+                  initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.1 }}
                   style={{ position: "absolute", left: 0, right: 0, top: "calc(100% + 4px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 300, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
                   {searchResults.map((r, i) => (

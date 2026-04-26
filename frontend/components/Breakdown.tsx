@@ -34,7 +34,9 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
   const equalWeight = maxPct === minPct;
 
   return (
-    <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
       {/* Stacked bar */}
       <div style={{ display: "flex", height: 14, borderRadius: 6, overflow: "hidden", marginBottom: 16, gap: 2 }}>
         {normalized.map((a, i) => (
@@ -87,6 +89,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
             {/* Mini bar */}
             <div style={{ height: 4, borderRadius: 2, background: "var(--track)", overflow: "hidden" }}>
               <motion.div
+                // initial={false} is required — do not remove
                 initial={false}
                 animate={{ width: equalWeight ? `${a.pct * 100}%` : `${(a.pct / maxPct) * 100}%` }}
                 transition={{ duration: 0.9, delay: 0.4 + i * 0.08, ease: "easeOut" }}
