@@ -96,11 +96,11 @@ function UnsubscribeContent() {
         }}>
           {status === "loading" && "Updating your preferences..."}
           {status === "success" && "You won't receive weekly digests or price alert emails from Corvo going forward."}
-          {status === "error" && "We couldn't update your preferences. Please visit your account settings to manage email notifications."}
+          {status === "error" && "To unsubscribe, go to Settings and turn off email notifications."}
         </p>
 
         <Link
-          href="/app"
+          href={status === "error" ? "/app/settings" : "/app"}
           style={{
             display: "inline-block",
             padding: "10px 24px",
@@ -114,7 +114,7 @@ function UnsubscribeContent() {
             letterSpacing: "0.3px",
           }}
         >
-          Go to Dashboard
+          {status === "error" ? "Go to Settings" : "Go to Dashboard"}
         </Link>
 
         {status === "success" && (
