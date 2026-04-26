@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -237,55 +238,63 @@ export default function GreetingBar({ displayName, assets }: Props) {
           </button>
         </div>
 
-        {/* Briefing sections */}
-        {!briefingCollapsed && (summaryLoading ? (
-          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-            {[80, 65, 90].map((w, i) => (
-              <div key={i} style={{ width: `${w}%`, height: 13, borderRadius: 4, background: "var(--bg3)", animation: "pulse 1.5s ease-in-out infinite" }} />
-            ))}
-          </div>
-        ) : market ? (
-          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
-            {/* Market summary — no label */}
-            {market.market && (
-              <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>
-                {market.market}
-              </p>
-            )}
-            {/* WHY IT MOVED */}
-            {market.context && (
-              <>
-                <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>Why It Moved</span>
-                  <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{market.context}</p>
-                </div>
-              </>
-            )}
-            {/* YOUR PORTFOLIO */}
-            {market.holdings && market.holdings !== "No holdings provided for this user." && (
-              <>
-                <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>Your Portfolio</span>
-                  <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{market.holdings}</p>
-                </div>
-              </>
-            )}
-            {/* WHAT TO WATCH */}
-            {market.outlook && (
-              <>
-                <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>What to Watch</span>
-                  <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{market.outlook}</p>
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>Market data unavailable</p>
-        ))}
+        {/* Briefing sections — smooth height transition */}
+        <motion.div
+          // initial={false} is required — do not remove
+          initial={false}
+          animate={{ height: briefingCollapsed ? 0 : "auto", opacity: briefingCollapsed ? 0 : 1 }}
+          transition={{ duration: 0.32, ease: "easeOut" }}
+          style={{ overflow: "hidden" }}
+        >
+          {summaryLoading ? (
+            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+              {[80, 65, 90].map((w, i) => (
+                <div key={i} style={{ width: `${w}%`, height: 13, borderRadius: 4, background: "var(--bg3)", animation: "pulse 1.5s ease-in-out infinite" }} />
+              ))}
+            </div>
+          ) : market ? (
+            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* Market summary — no label */}
+              {market.market && (
+                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>
+                  {market.market}
+                </p>
+              )}
+              {/* WHY IT MOVED */}
+              {market.context && (
+                <>
+                  <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>Why It Moved</span>
+                    <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{market.context}</p>
+                  </div>
+                </>
+              )}
+              {/* YOUR PORTFOLIO */}
+              {market.holdings && market.holdings !== "No holdings provided for this user." && (
+                <>
+                  <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>Your Portfolio</span>
+                    <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{market.holdings}</p>
+                  </div>
+                </>
+              )}
+              {/* WHAT TO WATCH */}
+              {market.outlook && (
+                <>
+                  <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>What to Watch</span>
+                    <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{market.outlook}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>Market data unavailable</p>
+          )}
+        </motion.div>
       </div>
 
       {/* DIVIDER */}
