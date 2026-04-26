@@ -147,35 +147,8 @@ function OnboardingContent() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/auth"); return; }
 
-      if (!isReplay) {
-        if (user.user_metadata?.onboarding_complete === true) {
-          router.replace("/app"); return;
-        }
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("onboarding_completed")
-          .eq("id", user.id)
-          .single();
-        if (profile?.onboarding_completed === true) {
-          router.replace("/app"); return;
-        }
-        if (!profile) {
-          await supabase.from("profiles").upsert({
-            id: user.id,
-            onboarding_completed: false,
-            updated_at: new Date().toISOString(),
-          });
-          if (user.app_metadata?.provider && user.app_metadata.provider !== "email") {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-            const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || null;
-            fetch(`${apiUrl}/send-welcome-email`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: user.email, display_name: displayName, user_id: user.id }),
-            }).catch(() => {});
-          }
-        }
-      } else {
+      // Replay mode: skip ALL redirect checks unconditionally, just pre-fill answers.
+      if (isReplay) {
         const m = user.user_metadata || {};
         setAnswers({
           investor_type: m.investor_type || "",
@@ -186,6 +159,37 @@ function OnboardingContent() {
           investment_horizon: m.investment_horizon || "",
           referral_source: m.referral_source || "",
         });
+        setAuthLoading(false);
+        return;
+      }
+
+      // Fresh onboarding: redirect away if already completed.
+      if (user.user_metadata?.onboarding_complete === true) {
+        router.replace("/app"); return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", user.id)
+        .single();
+      if (profile?.onboarding_completed === true) {
+        router.replace("/app"); return;
+      }
+      if (!profile) {
+        await supabase.from("profiles").upsert({
+          id: user.id,
+          onboarding_completed: false,
+          updated_at: new Date().toISOString(),
+        });
+        if (user.app_metadata?.provider && user.app_metadata.provider !== "email") {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || null;
+          fetch(`${apiUrl}/send-welcome-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: user.email, display_name: displayName, user_id: user.id }),
+          }).catch(() => {});
+        }
       }
 
       setAuthLoading(false);

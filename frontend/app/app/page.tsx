@@ -1005,13 +1005,13 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         .finally(() => setLoading(false));
     }
 
-    // Load nav profile and redirect to /onboarding if not yet complete
+    // Load nav profile and (on first visit per session) redirect to /onboarding if not yet complete
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
-      // Load nav profile (avatar + display name)
+      // Always load nav profile (avatar + display name)
       const { data: navP } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
       const bestName =
         navP?.display_name ||
@@ -1022,6 +1022,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         "";
       console.log("[auth] user_metadata:", user.user_metadata, "email:", user.email, "resolved name:", bestName);
       setNavProfile({ displayName: bestName, avatarUrl: navP?.avatar_url || null });
+
+      // Only run the onboarding check once per browser session (not on every navigation to /app).
+      if (sessionStorage.getItem("corvo_session_checked") === "true") return;
+      sessionStorage.setItem("corvo_session_checked", "true");
 
       const { data: profile } = await supabase
         .from("profiles")
