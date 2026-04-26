@@ -3807,46 +3807,68 @@ def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
     Primary: compute 7-day portfolio stats directly from yfinance.
     Cash-like tickers use synthetic 4.5% annual return.
     """
-    print(f"[digest-fh] START tickers={tickers} weights_raw={weights_raw}")
+    print(f"[digest-yf] START tickers={tickers} weights_raw={weights_raw}")
     if not tickers:
+        print("[digest-yf] no tickers — returning None")
         return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
 
     try:
         w_list = [float(w) for w in (weights_raw or [])]
-    except Exception:
+    except Exception as e:
+        print(f"[digest-yf] weight parse error: {e}, using equal weights")
         w_list = []
     if len(w_list) != len(tickers):
+        print(f"[digest-yf] weight/ticker mismatch ({len(w_list)} vs {len(tickers)}), using equal weights")
         w_list = [1.0 / len(tickers)] * len(tickers)
     total = sum(w_list)
     if total > 0:
         w_list = [w / total for w in w_list]
+    print(f"[digest-yf] normalized weights: {[round(w, 4) for w in w_list]}")
 
     real_tickers = [t for t in tickers if not is_cash_ticker(t)]
     cash_tickers = [t for t in tickers if is_cash_ticker(t)]
+    print(f"[digest-yf] real_tickers={real_tickers} cash_tickers={cash_tickers}")
 
-    FINNHUB_KEY = os.environ.get("FINNHUB_API_KEY", "")
-    frames = {}
-    if real_tickers and FINNHUB_KEY:
-        import datetime as _dt
-        end_ts = int(_dt.datetime.utcnow().timestamp())
-        start_ts = end_ts - (14 * 24 * 3600)
-        for t in real_tickers:
+    close_df = pd.DataFrame()
+    if real_tickers:
+        dl_arg = real_tickers[0] if len(real_tickers) == 1 else real_tickers
+        for attempt in range(3):
             try:
-                url = f"https://finnhub.io/api/v1/stock/candle?symbol={t}&resolution=D&from={start_ts}&to={end_ts}&token={FINNHUB_KEY}"
-                r = requests.get(url, timeout=10)
-                data = r.json()
-                print(f"[digest-fh] {t} raw response: status={data.get('s')} len={len(data.get('c', []))}")
-                if data.get("s") == "ok" and data.get("c"):
-                    closes = data["c"]
-                    timestamps = [_dt.datetime.utcfromtimestamp(ts) for ts in data["t"]]
-                    frames[t] = pd.Series(closes, index=pd.to_datetime(timestamps), name=t)
+                print(f"[digest-yf] yfinance download attempt {attempt + 1}/3: {dl_arg}")
+                raw = yf.download(dl_arg, period="14d", auto_adjust=True, progress=False)
+                if raw is None or raw.empty:
+                    import yfinance as _yf2
+                    _yf2.set_tz_cache_location("/tmp/yf_tz_cache")
+                    raw = _yf2.download(dl_arg, period="14d", auto_adjust=True, progress=False, timeout=30)
+                print(f"[digest-yf] raw shape={raw.shape if raw is not None else None}, columns={list(raw.columns)[:8] if raw is not None and not raw.empty else []}")
+                if raw is None or raw.empty:
+                    print(f"[digest-yf] attempt {attempt + 1}: empty/None response")
+                    if attempt < 2:
+                        time.sleep(2)
+                        continue
+                    break
+                if isinstance(raw.columns, pd.MultiIndex):
+                    lvl0 = raw.columns.get_level_values(0)
+                    key = "Close" if "Close" in lvl0 else "Adj Close"
+                    close_df = raw[key]
+                    if isinstance(close_df, pd.Series):
+                        close_df = close_df.to_frame(name=real_tickers[0])
                 else:
-                    print(f"[digest-fh] {t}: bad response={data}")
+                    if "Close" in raw.columns:
+                        close_df = raw[["Close"]].rename(columns={"Close": real_tickers[0]})
+                    else:
+                        close_df = raw.iloc[:, :1].rename(columns={raw.columns[0]: real_tickers[0]})
+                close_df = close_df.dropna(how="all").tail(8)
+                print(f"[digest-yf] close_df shape={close_df.shape} columns={list(close_df.columns)}")
+                if not close_df.empty:
+                    print(f"[digest-yf] close_df tail:\n{close_df.tail(3).to_string()}")
+                break
             except Exception as e:
-                print(f"[digest-fh] {t}: error {e}")
-
-    close_df = pd.DataFrame(frames).dropna(how="all").tail(8) if frames else pd.DataFrame()
-    print(f"[digest-fh] close_df shape={close_df.shape} columns={list(close_df.columns)}")
+                print(f"[digest-yf] attempt {attempt + 1} error: {e}")
+                if attempt < 2:
+                    time.sleep(2)
+                else:
+                    print("[digest-yf] all 3 download attempts failed")
 
     n = len(close_df) if not close_df.empty else 8
     print(f"[digest-yf] building port_series with n={n}")
