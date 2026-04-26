@@ -3804,67 +3804,119 @@ async def price_alert_loop():
 
 def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
     """
-    Fallback: compute 7-day portfolio stats directly from yfinance when stored
-    snapshots are insufficient. Cash-like tickers use synthetic 4.5% annual return.
+    Primary: compute 7-day portfolio stats directly from yfinance.
+    Cash-like tickers use synthetic 4.5% annual return.
     """
+    print(f"[digest-yf] START tickers={tickers} weights_raw={weights_raw}")
     if not tickers:
+        print("[digest-yf] no tickers — returning None")
         return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+
     try:
         w_list = [float(w) for w in (weights_raw or [])]
-    except Exception:
+    except Exception as e:
+        print(f"[digest-yf] weight parse error: {e}, using equal weights")
         w_list = []
     if len(w_list) != len(tickers):
+        print(f"[digest-yf] weight/ticker mismatch ({len(w_list)} vs {len(tickers)}), using equal weights")
         w_list = [1.0 / len(tickers)] * len(tickers)
     total = sum(w_list)
     if total > 0:
         w_list = [w / total for w in w_list]
+    print(f"[digest-yf] normalized weights: {[round(w, 4) for w in w_list]}")
 
     real_tickers = [t for t in tickers if not is_cash_ticker(t)]
-    try:
-        if real_tickers:
-            raw = yf.download(
-                real_tickers if len(real_tickers) > 1 else real_tickers[0],
-                period="10d", auto_adjust=True, progress=False,
-            )
-            if raw is None or raw.empty:
-                return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
-            if isinstance(raw.columns, pd.MultiIndex):
-                close_df = raw["Close"] if "Close" in raw.columns.get_level_values(0) else raw["Adj Close"]
-            else:
-                close_df = raw[["Close"]].rename(columns={"Close": real_tickers[0]})
-            close_df = close_df.dropna(how="all").tail(8)
+    cash_tickers = [t for t in tickers if is_cash_ticker(t)]
+    print(f"[digest-yf] real_tickers={real_tickers} cash_tickers={cash_tickers}")
+
+    close_df = pd.DataFrame()
+    if real_tickers:
+        dl_arg = real_tickers[0] if len(real_tickers) == 1 else real_tickers
+        for attempt in range(3):
+            try:
+                print(f"[digest-yf] yfinance download attempt {attempt + 1}/3: {dl_arg}")
+                raw = yf.download(dl_arg, period="14d", auto_adjust=True, progress=False)
+                print(f"[digest-yf] raw shape={raw.shape if raw is not None else None}, columns={list(raw.columns)[:8] if raw is not None and not raw.empty else []}")
+                if raw is None or raw.empty:
+                    print(f"[digest-yf] attempt {attempt + 1}: empty/None response")
+                    if attempt < 2:
+                        time.sleep(2)
+                        continue
+                    break
+                if isinstance(raw.columns, pd.MultiIndex):
+                    lvl0 = raw.columns.get_level_values(0)
+                    key = "Close" if "Close" in lvl0 else "Adj Close"
+                    close_df = raw[key]
+                    if isinstance(close_df, pd.Series):
+                        close_df = close_df.to_frame(name=real_tickers[0])
+                else:
+                    if "Close" in raw.columns:
+                        close_df = raw[["Close"]].rename(columns={"Close": real_tickers[0]})
+                    else:
+                        close_df = raw.iloc[:, :1].rename(columns={raw.columns[0]: real_tickers[0]})
+                close_df = close_df.dropna(how="all").tail(8)
+                print(f"[digest-yf] close_df shape={close_df.shape} columns={list(close_df.columns)}")
+                if not close_df.empty:
+                    print(f"[digest-yf] close_df tail:\n{close_df.tail(3).to_string()}")
+                break
+            except Exception as e:
+                print(f"[digest-yf] attempt {attempt + 1} error: {e}")
+                if attempt < 2:
+                    time.sleep(2)
+                else:
+                    print("[digest-yf] all 3 download attempts failed")
+
+    n = len(close_df) if not close_df.empty else 8
+    print(f"[digest-yf] building port_series with n={n}")
+    port_series = np.zeros(n)
+    weight_applied = 0.0
+
+    for t, w in zip(tickers, w_list):
+        if is_cash_ticker(t):
+            daily_r = (1.045 ** (1 / 252)) - 1
+            synthetic = np.array([(1 + daily_r) ** i for i in range(n)])
+            port_series = port_series + synthetic * w
+            weight_applied += w
+            print(f"[digest-yf] {t}: cash synthetic w={w:.4f}")
         else:
-            close_df = pd.DataFrame()
-
-        n = len(close_df) if not close_df.empty else 8
-        port_series = pd.Series([0.0] * n)
-
-        for t, w in zip(tickers, w_list):
-            if is_cash_ticker(t):
-                # synthetic daily return for 4.5% annual
-                daily_r = (1.045 ** (1 / 252)) - 1
-                col = pd.Series([(1 + daily_r) ** i for i in range(n)])
-                port_series = port_series.add(col * w, fill_value=0)
+            if close_df.empty or t not in close_df.columns:
+                print(f"[digest-yf] {t}: not in close_df (available={list(close_df.columns) if not close_df.empty else []})")
+                continue
+            col = close_df[t].dropna()
+            if len(col) < 2:
+                print(f"[digest-yf] {t}: only {len(col)} data points after dropna, skipping")
+                continue
+            values = col.values.astype(float)
+            normalized = values / values[0]
+            n_ticker = len(normalized)
+            if n_ticker < n:
+                # Pad front with 1.0 (flat before data starts)
+                pad = np.ones(n - n_ticker)
+                aligned = np.concatenate([pad, normalized])
             else:
-                if close_df.empty or t not in close_df.columns:
-                    continue
-                col = close_df[t].dropna()
-                if len(col) < 2:
-                    continue
-                normalized = (col / col.iloc[0]).values
-                port_series = port_series.add(
-                    pd.Series(normalized, index=range(len(normalized))) * w, fill_value=0
-                )
+                aligned = normalized[-n:]
+            port_series = port_series + aligned * w
+            weight_applied += w
+            print(f"[digest-yf] {t}: {n_ticker} pts, w={w:.4f}, price=[{values[0]:.2f}..{values[-1]:.2f}], ret={((values[-1]/values[0])-1)*100:.2f}%")
 
-        port_series = port_series[port_series > 0].reset_index(drop=True)
-        if len(port_series) < 2:
-            return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+    print(f"[digest-yf] weight_applied={weight_applied:.4f} port_series={port_series.tolist()}")
 
-        synth_snapshots = [{"portfolio_value": v * 10000} for v in port_series.tolist()]
-        return _compute_portfolio_week_stats(synth_snapshots)
-    except Exception as e:
-        print(f"[digest] yfinance fallback error: {e}")
+    if weight_applied < 0.01:
+        print("[digest-yf] no weight applied — all real tickers failed and no cash tickers")
         return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+
+    if weight_applied < 0.99:
+        port_series = port_series / weight_applied
+        print(f"[digest-yf] rescaled for partial weight ({weight_applied:.4f})")
+
+    if len(port_series) < 2:
+        print("[digest-yf] port_series too short")
+        return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+
+    synth_snapshots = [{"portfolio_value": v * 10000} for v in port_series.tolist()]
+    result = _compute_portfolio_week_stats(synth_snapshots)
+    print(f"[digest-yf] RESULT: {result}")
+    return result
 
 
 def _compute_portfolio_week_stats(snapshots: list[dict]) -> dict:
@@ -4222,24 +4274,9 @@ async def send_weekly_digest(target_user_id: str | None = None) -> dict:
                 tickers = pf.get("tickers") or []
                 weights_raw = pf.get("weights") or []
 
-                # 2c. Fetch last 7 days of snapshots
-                snap_resp = requests.get(
-                    f"{SUPABASE_URL}/rest/v1/portfolio_snapshots"
-                    f"?portfolio_id=eq.{pf_id}&date=gte.{week_ago}"
-                    f"&select=date,portfolio_value&order=date.asc",
-                    headers=_sb_headers(), timeout=8,
-                )
-                snapshots = snap_resp.json() if snap_resp.status_code == 200 else []
-                if not isinstance(snapshots, list):
-                    snapshots = []
-                    print(f"[digest] unexpected snapshot response for {pf_id}: {snap_resp.text[:200]}")
-
-                if len(snapshots) < 2:
-                    # Not enough stored snapshots — fall back to live yfinance data
-                    print(f"[digest] {pf_name}: only {len(snapshots)} snapshots, using yfinance fallback")
-                    stats = _compute_week_stats_from_yfinance(tickers, weights_raw)
-                else:
-                    stats = _compute_portfolio_week_stats(snapshots)
+                # 2c. Always compute stats from yfinance as primary source
+                print(f"[digest] {pf_name}: computing stats from yfinance (tickers={tickers})")
+                stats = _compute_week_stats_from_yfinance(tickers, weights_raw)
                 portfolio_blocks.append({
                     "name": pf_name,
                     "tickers": tickers,
