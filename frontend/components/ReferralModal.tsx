@@ -17,8 +17,7 @@ export default function ReferralModal({ onClose }: Props) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const ref = user.id.replace(/-/g, "").slice(0, 8);
-          setReferralLink(`https://corvo.capital/app?ref=${ref}`);
+          setReferralLink(`https://corvo.capital/signup?ref=${user.id}`);
         }
       } catch {}
     })();

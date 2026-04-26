@@ -45,7 +45,7 @@ export default function ReferralsPage() {
     })();
   }, []);
 
-  const refLink = referralData?.referral_link ?? (user ? `https://corvo.capital/app?ref=${user.id.replace(/-/g, "").slice(0, 8)}` : "");
+  const refLink = referralData?.referral_link ?? (user ? `https://corvo.capital/signup?ref=${user.id}` : "");
 
   const copyLink = () => {
     navigator.clipboard.writeText(refLink).then(() => {
