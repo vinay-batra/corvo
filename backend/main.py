@@ -2668,7 +2668,7 @@ def _send_push(subscription: dict, title: str, body: str, icon: str = "", url: s
             subscription_info=subscription,
             data=json.dumps(payload),
             vapid_private_key=VAPID_PRIVATE_KEY,
-            vapid_claims={"sub": VAPID_CLAIMS_EMAIL},
+            vapid_claims={"sub": VAPID_CLAIMS_EMAIL if VAPID_CLAIMS_EMAIL.startswith("mailto:") else f"mailto:{VAPID_CLAIMS_EMAIL}"},
         )
         return "ok"
     except Exception as e:
