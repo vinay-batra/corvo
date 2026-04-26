@@ -2378,11 +2378,18 @@ def market_summary(tickers: str = Query(default="")):
                 holdings_line = (
                     "User holdings today: "
                     + ", ".join(f"{s} {sign(v)}{v:.2f}%" for s, v in holdings_data.items())
-                    + f". Best performer: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%)."
-                    + f" Worst performer: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%)."
+                    + f". Best: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%)."
+                    + f" Worst: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%)."
+                )
+                holdings_key_desc = (
+                    f"Two sentences. State how the user's specific holdings performed today and WHY each moved, "
+                    f"connecting the market driver directly to each position. Name which holdings were affected and how. "
+                    f"Best performer: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%), "
+                    f"worst performer: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%)."
                 )
             else:
                 holdings_line = "No user holdings provided."
+                holdings_key_desc = '"No holdings provided for this user."'
 
             prompt = f"""Market data:
 S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, VIX {vix_val:.1f}.
@@ -2390,17 +2397,21 @@ Top news: {news_str}
 {holdings_line}
 
 Return a JSON object with exactly these four string keys:
-- "market": 2-3 sentences on what major indexes did today and why, referencing the news headlines.
-- "market_driver": 1 sentence — the single biggest reason markets moved today (macro event, Fed, earnings, geopolitical).
-- "holdings": {"1-2 sentences on how the user's holdings performed, naming best and worst performer with their actual % change." if holdings_data else '"No holdings provided for this user."'}
-- "outlook": 1 sentence on the single key thing investors should watch next (upcoming data, Fed decision, earnings, etc.).
 
-Rules: no asterisks, no em dashes, no markdown. Plain prose. Return only the JSON object."""
+- "market": One sentence. State what the S&P 500, Nasdaq, and Dow did today with exact percentages. Factual only, no opinion.
+
+- "market_driver": Two to three sentences. Name the specific events that drove market moves today. Include ALL significant factors: macro data releases, Fed statements, earnings results, geopolitical events, political developments. Do not omit political news if it moved markets. Name the event and its market impact specifically.
+
+- "holdings": {holdings_key_desc}
+
+- "outlook": One to two sentences. Name the single most important upcoming event for the user's specific holdings, such as an earnings date, Fed meeting, economic data release, or macro risk. End with one specific actionable sentence: tell the user what it means for their portfolio and what to consider doing.
+
+Rules: no em dashes, no asterisks, no markdown. Plain prose only. Return only the JSON object."""
 
             resp = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=500,
-                system="You are a senior Bloomberg markets correspondent. Return ONLY a valid JSON object with keys: market, market_driver, holdings, outlook. No markdown fences, no extra text.",
+                max_tokens=600,
+                system="You are a senior markets analyst writing a daily brief. Return ONLY a valid JSON object with keys: market, market_driver, holdings, outlook. No markdown fences, no extra text.",
                 messages=[{"role": "user", "content": prompt}],
             )
             raw = resp.content[0].text.strip()
