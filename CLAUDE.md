@@ -121,7 +121,7 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 
 ## Critical Rules — Never Break These
 
-- `initial={false}` on ALL `motion.*` components, every single one, no exceptions — add comment `// initial={false} required — do not remove`
+- `initial={false}` on ALL `motion.*` components, every single one, no exceptions — add comment `// initial={false} required — do not remove`; audit every new component
 - No emojis anywhere in the app
 - No em dashes anywhere — not in code, not in AI responses, not in copy
 - No asterisks in AI responses
@@ -132,6 +132,9 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 - Vinay uses Claude Code inside VS Code, not standalone terminal
 - Supabase client must always be imported from `lib/supabase.ts` singleton, never instantiated inline — inline clients omit `cookieOptions` and cause sessions to expire on browser close
 - `middleware.ts` must exist at the frontend repo root and call `supabase.auth.getUser()` on every request — without it, SSR pages receive expired JWTs and users get silently logged out
+- Monte Carlo simulations always run exactly 8,500 paths — never 5,000 or any other number
+- `overscroll-behavior: none` must be set globally in `globals.css` on `html`, `body`, and all major layout containers — never remove this
+- AI chat endpoint (`POST /chat`) uses `claude-sonnet-4-6` with `web_search` tool enabled and streaming responses
 
 ## Mobile Rules
 
@@ -167,7 +170,7 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.19
+- Version: v0.20
 
 ## Deployment
 
