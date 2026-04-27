@@ -34,13 +34,13 @@ export async function fetchCorrelation(assets: any[], period: string) {
   return res.json();
 }
 
-export async function fetchMonteCarlo(assets: any[], period: string) {
+export async function fetchMonteCarlo(assets: any[], period: string, years: number = 5) {
   const total = assets.reduce((sum, a) => sum + a.weight, 0);
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
   const res = await fetch(
-    `${API_URL}/montecarlo?tickers=${tickers}&weights=${weights}&period=${period}&simulations=8500&horizon=252`
+    `${API_URL}/montecarlo?tickers=${tickers}&weights=${weights}&period=${period}&simulations=8500&years=${years}`
   );
   return res.json();
 }
