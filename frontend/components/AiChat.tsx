@@ -169,11 +169,13 @@ export default function AiChat({
   data,
   assets,
   goals: goalsProp,
+  initialMessage,
   onClose,
 }: {
   data?: any;
   assets?: any[];
   goals?: any;
+  initialMessage?: string;
   onClose?: () => void;
 }) {
   // Use refs for values used inside async functions to avoid stale closures
@@ -215,6 +217,7 @@ export default function AiChat({
   const bottomRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
   const renameRef  = useRef<HTMLInputElement>(null);
+  const initialMessageSentRef = useRef(false);
 
   // Mobile detection — useLayoutEffect runs before paint, eliminating the SSR flash
   useLayoutEffect(() => {
@@ -299,6 +302,16 @@ export default function AiChat({
   useEffect(() => {
     if (editingConvId) renameRef.current?.focus();
   }, [editingConvId]);
+
+  // Auto-send an initial message when the chat is opened from a panel (e.g. "Continue in AI chat")
+  useEffect(() => {
+    if (initialMessage && !initialMessageSentRef.current) {
+      initialMessageSentRef.current = true;
+      const timer = setTimeout(() => send(initialMessage), 150);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Conversation management ──
 

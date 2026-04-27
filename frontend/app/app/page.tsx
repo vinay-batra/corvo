@@ -850,6 +850,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>(undefined);
   const [wsidOpen, setWsidOpen] = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
@@ -2144,12 +2145,25 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                                   );
                                 })}
                               </ol>
-                              <button
-                                onClick={() => { setWsidResult(null); handleWhatShouldIDo(); }}
-                                style={{ marginTop: 12, fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                              >
-                                Refresh
-                              </button>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
+                                <button
+                                  onClick={() => { setWsidResult(null); handleWhatShouldIDo(); }}
+                                  style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                                >
+                                  Refresh
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const msg = `Here are my recommended actions for today from my portfolio analysis:\n\n${wsidResult}\n\nI'd like to explore these further. Where should I start?`;
+                                    setChatInitialMessage(msg);
+                                    setChatOpen(true);
+                                  }}
+                                  style={{ fontSize: 11, padding: "4px 10px", borderRadius: 5, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                                >
+                                  <MessageSquare size={11} />
+                                  Continue in AI chat
+                                </button>
+                              </div>
                             </div>
                           ) : null}
                         </div>
@@ -2249,9 +2263,25 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                                   return <li key={i} style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.55 }}>{text}</li>;
                                 })}
                               </ol>
-                              <button onClick={() => { setRebalanceResult(null); handleRebalance(); }} style={{ marginTop: 12, fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                                Refresh
-                              </button>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
+                                <button onClick={() => { setRebalanceResult(null); handleRebalance(); }} style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                                  Refresh
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const rows = rebalanceResult!.holdings.map((h: any) =>
+                                      `${h.ticker}: target ${h.target_pct.toFixed(1)}%, current ${h.current_pct.toFixed(1)}%, drift ${h.drift_pct >= 0 ? "+" : ""}${h.drift_pct.toFixed(1)}% → ${h.action !== "hold" ? `${h.action === "sell" ? "Sell" : "Buy"} $${h.dollar_amount.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "Hold"}`
+                                    ).join("\n");
+                                    const msg = `Here is my portfolio rebalance analysis:\n\nDrift from Target:\n${rows}\n\nRebalance Plan:\n${rebalanceResult!.plan}\n\nCan you help me understand how to execute this?`;
+                                    setChatInitialMessage(msg);
+                                    setChatOpen(true);
+                                  }}
+                                  style={{ fontSize: 11, padding: "4px 10px", borderRadius: 5, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                                >
+                                  <MessageSquare size={11} />
+                                  Continue in AI chat
+                                </button>
+                              </div>
                             </div>
                           ) : null}
                         </div>
@@ -2450,7 +2480,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           data={data}
           assets={assets}
           goals={goals}
-          onClose={() => setChatOpen(false)}
+          initialMessage={chatInitialMessage}
+          onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
         />
       )}
 
@@ -2459,7 +2490,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         // initial={false} is required — do not remove
         initial={false}
         id="tour-desk-chat"
-        onClick={() => setChatOpen(v => !v)}
+        onClick={() => { setChatInitialMessage(undefined); setChatOpen(v => !v); }}
         title="AI Chat (A)"
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5, type: "spring", damping: 20 }}
@@ -2484,7 +2515,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         activeTab={activeTab}
         onTabChange={id => { setActiveTab(id); sound.whoosh(); }}
         onProfile={() => setShowProfile(true)}
-        onAiChat={() => { setChatOpen(v => !v); sound.whoosh(); }}
+        onAiChat={() => { setChatInitialMessage(undefined); setChatOpen(v => !v); sound.whoosh(); }}
       />
 
 
