@@ -4206,10 +4206,12 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
         try:
             data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
             if not data:
+                print(f"[morning-brief-email] skip {uid}: _fetch_user_email_data returned None (no portfolio, no email, or Supabase error)")
                 skipped += 1
                 continue
             email, display_name, tickers, weights = data
             finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+            print(f"[morning-brief-email] user={uid} email={email} tickers={tickers} finnhub_key_present={bool(finnhub_key)}")
             portfolio_change = None
             top_mover = ""
             market_note = ""
@@ -4238,6 +4240,7 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
                     market_note = f"The S&P 500 is {'up' if sp >= 0 else 'down'} {abs(sp):.2f}% today."
 
             if portfolio_change is None:
+                print(f"[morning-brief-email] skip {uid}: portfolio_change is None — FINNHUB_API_KEY missing or all quotes returned no data")
                 skipped += 1
                 continue
 
@@ -4290,7 +4293,19 @@ async def morning_briefing_email_loop():
 @app.get("/email/test-morning-briefing")
 async def test_morning_briefing_email(user_id: str = ""):
     """Manually trigger the morning briefing email for one user (or all opted-in)."""
-    return await send_morning_briefing_emails(target_user_id=user_id or None)
+    uid = user_id or None
+    if uid and SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        try:
+            pref_resp = requests.get(
+                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{uid}&select=*",
+                headers=_sb_headers(), timeout=8,
+            )
+            print(f"[test-morning-briefing] email_preferences status={pref_resp.status_code} body={pref_resp.text}")
+            finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+            print(f"[test-morning-briefing] FINNHUB_API_KEY present={bool(finnhub_key)}")
+        except Exception as e:
+            print(f"[test-morning-briefing] debug fetch error: {e}")
+    return await send_morning_briefing_emails(target_user_id=uid)
 
 
 # ── Week in Review Email ────────────────────────────────────────────────────────
