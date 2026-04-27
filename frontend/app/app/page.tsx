@@ -846,6 +846,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [wsidOpen, setWsidOpen] = useState(false);
+  const [wsidLoading, setWsidLoading] = useState(false);
+  const [wsidResult, setWsidResult] = useState<string | null>(null);
+  const [wsidError, setWsidError] = useState<string | null>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
@@ -1122,6 +1126,44 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
   const handleAnalyzeRef = useRef(handleAnalyze);
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
+
+  const handleWhatShouldIDo = async () => {
+    if (wsidOpen && wsidResult) { setWsidOpen(false); return; }
+    setWsidOpen(true);
+    if (wsidResult) return;
+    setWsidLoading(true);
+    setWsidError(null);
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const valid = assets.filter(a => a.ticker && a.weight > 0);
+      const total = valid.reduce((s, a) => s + a.weight, 0) || 1;
+      const body = {
+        tickers: valid.map(a => a.ticker),
+        weights: valid.map(a => a.weight / total),
+        portfolio_return: data?.portfolio_return ?? 0,
+        portfolio_volatility: data?.portfolio_volatility ?? 0,
+        sharpe_ratio: data?.sharpe_ratio ?? 0,
+        max_drawdown: data?.max_drawdown ?? 0,
+        period,
+        portfolio_value: portfolioInputValue || null,
+        health_score: data?.health_score ?? null,
+        user_goals: goals || {},
+        user_id: userId || "",
+      };
+      const res = await fetch(`${API}/what-should-i-do`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const json = await res.json();
+      setWsidResult(json.recommendations);
+    } catch (e: any) {
+      setWsidError("Could not load recommendations. Try again.");
+    } finally {
+      setWsidLoading(false);
+    }
+  };
 
   // Sync localBenchmark when data arrives from a new analysis
   useEffect(() => {
@@ -1906,6 +1948,79 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   portfolioValue={portfolioInputValue}
                 />
 <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
+
+                {/* What Should I Do Today */}
+                <div style={{ marginBottom: 16 }}>
+                  <button
+                    onClick={handleWhatShouldIDo}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 7,
+                      padding: "7px 14px", fontSize: 12, fontWeight: 600,
+                      borderRadius: 7, cursor: "pointer",
+                      background: wsidOpen ? "var(--bg3)" : "rgba(201,168,76,0.1)",
+                      border: "0.5px solid rgba(201,168,76,0.35)",
+                      color: "var(--accent)", transition: "all 0.15s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.18)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = wsidOpen ? "var(--bg3)" : "rgba(201,168,76,0.1)"; }}
+                  >
+                    <Sparkles size={13} />
+                    What should I do today?
+                  </button>
+                  <AnimatePresence>
+                    {wsidOpen && (
+                      <motion.div
+                        // initial={false} is required — do not remove
+                        initial={false}
+                        animate={{ opacity: 1, height: "auto", marginTop: 10 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        style={{ overflow: "hidden" }}
+                      >
+                        <div style={{
+                          background: "var(--card-bg)", border: "0.5px solid var(--border2)",
+                          borderRadius: 10, padding: "16px 18px",
+                        }}>
+                          {wsidLoading ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text3)", fontSize: 12 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
+                                <path d="M21 12a9 9 0 11-6.219-8.56" />
+                              </svg>
+                              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                              Analyzing your portfolio and today's market...
+                            </div>
+                          ) : wsidError ? (
+                            <div style={{ fontSize: 12, color: "var(--red)" }}>{wsidError}</div>
+                          ) : wsidResult ? (
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>
+                                Today's Actions
+                              </div>
+                              <ol style={{ margin: 0, padding: "0 0 0 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+                                {wsidResult.split(/\n/).filter(l => l.trim()).map((line, i) => {
+                                  const text = line.replace(/^\d+\.\s*/, "").trim();
+                                  if (!text) return null;
+                                  return (
+                                    <li key={i} style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.55 }}>
+                                      {text}
+                                    </li>
+                                  );
+                                })}
+                              </ol>
+                              <button
+                                onClick={() => { setWsidResult(null); handleWhatShouldIDo(); }}
+                                style={{ marginTop: 12, fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                              >
+                                Refresh
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <motion.div
                   id="tour-desk-metrics"
                   key="stats-row"
@@ -1969,11 +2084,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   {[
                     {
                       title: "Health Score",
-                      content: <HealthScore data={data} />,
+                      content: <HealthScore data={data} userId={userId} apiUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"} />,
                       sections: [
-                        { label: "Plain English", text: "A composite score from 0–100 that grades your portfolio on returns, risk-adjusted performance, stability, and resilience." },
+                        { label: "Plain English", text: "A composite score from 0-100 that grades your portfolio on returns, risk-adjusted performance, stability, and resilience." },
                         { label: "Example", text: "Score 78 = Good. Strong returns and Sharpe ratio, but some volatility keeping it from Excellent." },
-                        { label: "What's Good", text: "75–100 is Excellent. 50–74 Good. 25–49 Fair. Below 25 needs attention. Aim for 60+ for a solid long-term portfolio." },
+                        { label: "What's Good", text: "75-100 is Excellent. 50-74 Good. 25-49 Fair. Below 25 needs attention. Aim for 60+ for a solid long-term portfolio." },
                       ],
                     },
                     {

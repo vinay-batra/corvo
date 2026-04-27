@@ -27,6 +27,7 @@ VAPID_CLAIMS_EMAIL   = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:alerts@corvo
 print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', '')[:6] + '...)' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
 print(f"[startup] RESEND_FROM_EMAIL: {os.environ.get('RESEND_FROM_EMAIL', 'NOT SET')}")
 print(f"[startup] SUPABASE_URL: {'SET' if SUPABASE_URL else 'NOT SET'}")
+print(f"[startup] FINNHUB_API_KEY: {'SET' if os.environ.get('FINNHUB_API_KEY') else 'NOT SET'}")
 
 # ── In-memory rate limiting ────────────────────────────────────────────────────
 RATE_LIMITS: dict[str, list[float]] = {}
@@ -55,12 +56,13 @@ if os.getenv("SENTRY_DSN"):
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
-    alert_task  = asyncio.create_task(price_alert_loop())
-    brief_task  = asyncio.create_task(morning_brief_loop())
-    # Weekly digest is handled exclusively by the Supabase edge function
-    # (supabase/functions/weekly-digest) to avoid duplicate sends.
+    alert_task   = asyncio.create_task(price_alert_loop())
+    brief_task   = asyncio.create_task(morning_brief_loop())
+    morning_task = asyncio.create_task(morning_briefing_email_loop())
+    review_task  = asyncio.create_task(week_in_review_loop())
+    monthly_task = asyncio.create_task(monthly_summary_loop())
     yield
-    for t in (alert_task, brief_task):
+    for t in (alert_task, brief_task, morning_task, review_task, monthly_task):
         t.cancel()
         try:
             await t
@@ -1801,190 +1803,137 @@ def parse_portfolio_image(body: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def get_email_html(display_name=None, email_type="welcome", user_id=None):
-    """Return a table-based HTML email string compatible with Gmail, Outlook, and Apple Mail."""
+# ── Shared email HTML builder ──────────────────────────────────────────────────
+
+def _email_html(
+    heading: str,
+    body_lines: list[str],
+    cta_text: str,
+    cta_url: str,
+    user_id: str = "",
+    label: str = "",
+) -> str:
+    """Build a minimal dark HTML email compatible with Gmail, Outlook, and Apple Mail."""
     amber = "#c9a84c"
-    bg = "#0a0a0a"
-    card_bg = "#111111"
-    text = "#e8e0cc"
-    text_muted = "#888880"
-
-    if email_type == "weekly_digest":
-        greeting = f"Your weekly digest, {display_name}" if display_name else "Your weekly digest"
-        cta_text = "View Your Portfolio &rarr;"
-    else:
-        greeting = f"Welcome to Corvo, {display_name}" if display_name else "Welcome to Corvo"
-        cta_text = "Go to Dashboard &rarr;"
-
-    unsubscribe_url = (
+    bg    = "#0a0a0a"
+    card  = "#111111"
+    text  = "#e8e0cc"
+    muted = "#888880"
+    bdr   = "#1e1e1e"
+    mono  = "'Courier New', Courier, monospace"
+    sans  = "Arial, Helvetica, sans-serif"
+    unsub = (
         f"https://corvo.capital/unsubscribe?user_id={user_id}"
-        if user_id
-        else "https://corvo.capital/unsubscribe"
+        if user_id else "https://corvo.capital/unsubscribe"
     )
-
-    features = [
-        ("&#x1F4CA;", "Portfolio Analysis", "Sharpe ratio, Monte Carlo simulations, drawdown charts, and a health score for your holdings."),
-        ("&#x1F916;", "AI Insights", "Ask questions about your portfolio and get real-time answers with live market context."),
-        ("&#x1F393;", "Financial Education", "Lessons, quizzes, and mini-games that teach real investing concepts, complete with XP and leaderboards."),
-    ]
-
-    feature_rows = ""
-    for icon, title, body in features:
-        feature_rows += f"""
-        <tr>
-          <td style="padding:8px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                   style="background:{card_bg};border-radius:8px;border:1px solid #222;">
-              <tr>
-                <td style="padding:16px 20px;vertical-align:top;width:36px;font-size:22px;">{icon}</td>
-                <td style="padding:16px 20px 16px 0;vertical-align:top;">
-                  <p style="margin:0 0 4px 0;font-family:Arial,sans-serif;font-size:13px;
-                             font-weight:700;color:{amber};letter-spacing:0.5px;">{title}</p>
-                  <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;
-                             color:{text_muted};line-height:1.6;">{body}</p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>"""
-
-    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    body_rows = "".join(
+        f'<tr><td style="padding:0 0 12px 0;font-family:{sans};font-size:14px;'
+        f'color:{muted};line-height:1.75;">{line}</td></tr>'
+        for line in body_lines
+    )
+    label_row = (
+        f'<tr><td style="padding:0 0 8px;font-family:{sans};font-size:10px;'
+        f'letter-spacing:2.5px;color:{muted};text-transform:uppercase;">{label}</td></tr>'
+        if label else ""
+    )
+    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Corvo</title>
 </head>
 <body style="margin:0;padding:0;background-color:{bg};">
-  <!-- Outer wrapper -->
-  <table width="100%" cellpadding="0" cellspacing="0" border="0"
-         style="background-color:{bg};min-height:100vh;">
-    <tr>
-      <td align="center" style="padding:48px 16px;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{bg};">
+    <tr><td align="center" style="padding:48px 16px;">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
 
-        <!-- Email card -->
-        <table width="600" cellpadding="0" cellspacing="0" border="0"
-               style="max-width:600px;width:100%;">
+        <tr><td align="center" style="padding-bottom:32px;">
+          <p style="margin:0 0 4px;font-family:{mono};font-size:22px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
+          <p style="margin:0;font-family:{sans};font-size:9px;letter-spacing:3px;color:#555;text-transform:uppercase;">Portfolio Intelligence</p>
+        </td></tr>
 
-          <!-- Header -->
-          <tr>
-            <td align="center" style="padding-bottom:32px;">
-              <p style="margin:0 0 4px 0;font-family:'Courier New',Courier,monospace;
-                         font-size:28px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:9px;
-                         letter-spacing:3px;color:#555;text-transform:uppercase;">Portfolio Intelligence</p>
-            </td>
-          </tr>
-
-          <!-- Greeting -->
-          <tr>
-            <td style="padding-bottom:6px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:22px;
-                         font-weight:700;color:{text};">{greeting}</p>
-            </td>
-          </tr>
-
-          <!-- Subheading -->
-          <tr>
-            <td style="padding-bottom:24px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:14px;
-                         color:{text_muted};line-height:1.6;">
-                Your account is ready. Here&#39;s what you can do with Corvo:
-              </p>
-            </td>
-          </tr>
-
-          <!-- Feature cards -->
-          <tr>
-            <td>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                {feature_rows}
-              </table>
-            </td>
-          </tr>
-
-          <!-- CTA button -->
-          <tr>
-            <td align="center" style="padding:32px 0;">
+        <tr><td style="background:{card};border-radius:10px;border:1px solid {bdr};padding:28px 28px 24px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            {label_row}
+            <tr><td style="padding-bottom:16px;font-family:{sans};font-size:20px;font-weight:700;color:{text};line-height:1.3;">{heading}</td></tr>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              {body_rows}
+            </table>
+            <tr><td style="padding-top:22px;">
               <table cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" style="border-radius:8px;background-color:{amber};">
-                    <a href="https://corvo.capital/app"
-                       style="display:inline-block;padding:14px 36px;font-family:Arial,sans-serif;
-                              font-size:14px;font-weight:700;color:#000000;text-decoration:none;
-                              border-radius:8px;letter-spacing:0.5px;">{cta_text}</a>
-                  </td>
-                </tr>
+                <tr><td align="center" style="border-radius:8px;background-color:{amber};">
+                  <a href="{cta_url}" style="display:inline-block;padding:12px 28px;font-family:{sans};font-size:13px;font-weight:700;color:#000;text-decoration:none;border-radius:8px;letter-spacing:0.4px;">{cta_text}</a>
+                </td></tr>
               </table>
-            </td>
-          </tr>
+            </td></tr>
+          </table>
+        </td></tr>
 
-          <!-- Spam notice -->
-          <tr>
-            <td align="center" style="padding-bottom:20px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
-                         color:#444;text-align:center;line-height:1.8;">
-                If you don&#39;t see our emails, check your spam folder and mark us as safe.
-              </p>
-            </td>
-          </tr>
+        <tr><td align="center" style="padding-top:22px;">
+          <p style="margin:0;font-family:{sans};font-size:11px;color:#444;line-height:1.8;text-align:center;">
+            corvo.capital &nbsp;&middot;&nbsp; Not financial advice &nbsp;&middot;&nbsp;
+            <a href="{unsub}" style="color:#555;text-decoration:none;">Unsubscribe</a>
+          </p>
+        </td></tr>
 
-          <!-- Divider -->
-          <tr>
-            <td style="border-top:1px solid #1e1e1e;padding-top:24px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
-                         color:#444;text-align:center;line-height:1.8;">
-                &copy; 2026 Corvo &nbsp;&middot;&nbsp;
-                <a href="https://corvo.capital" style="color:#555;text-decoration:none;">corvo.capital</a>
-                &nbsp;&middot;&nbsp;
-                <a href="{unsubscribe_url}" style="color:#555;text-decoration:none;">Unsubscribe</a>
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
+      </table>
+    </td></tr>
   </table>
 </body>
 </html>"""
 
+
+def _resend(to: str, subject: str, html: str, from_addr: str = "Corvo <hello@corvo.capital>") -> bool:
+    """Send an email via Resend. Returns True on success."""
+    key = os.environ.get("RESEND_API_KEY", "")
+    if not key:
+        print(f"[resend] RESEND_API_KEY not set, skipping email to {to}")
+        return False
+    try:
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"from": from_addr, "to": [to], "subject": subject, "html": html},
+            timeout=12,
+        )
+        if resp.status_code in (200, 201):
+            print(f"[resend] sent '{subject}' to {to} (id={resp.json().get('id')})")
+            return True
+        print(f"[resend] error {resp.status_code}: {resp.text[:200]}")
+        return False
+    except Exception as e:
+        print(f"[resend] exception sending to {to}: {e}")
+        return False
+
+
+# ── Welcome Email ──────────────────────────────────────────────────────────────
 
 class WelcomeEmailRequest(BaseModel):
     email: str
     display_name: str | None = None
     user_id: str | None = None
 
+
 @app.post("/send-welcome-email")
 def send_welcome_email(req: WelcomeEmailRequest):
     """Send a welcome email to a new Corvo user via Resend."""
     print(f"[send-welcome-email] called for {req.email}")
-    resend_key = os.environ.get("RESEND_API_KEY", "")
-    if not resend_key:
-        print("[send-welcome-email] RESEND_API_KEY not set, skipping")
-        return {"ok": True, "skipped": True}
-
-    html = get_email_html(display_name=req.display_name, email_type="welcome", user_id=req.user_id)
-
-    try:
-        response = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={
-                "from": "Corvo <hello@corvo.capital>",
-                "to": [req.email],
-                "subject": "Welcome to Corvo",
-                "html": html,
-            },
-            timeout=10,
-        )
-        response.raise_for_status()
-        print(f"[send-welcome-email] sent OK to {req.email} (status {response.status_code})")
-        return {"ok": True}
-    except Exception as e:
-        print(f"[send-welcome-email] FAILED for {req.email}: {e}")
-        return {"ok": False, "error": str(e)}
+    name = req.display_name or req.email.split("@")[0]
+    html = _email_html(
+        heading=f"Welcome to Corvo, {name}",
+        body_lines=[
+            "Your portfolio, with a point of view.",
+            "Three steps to get started:",
+            "1. Add your tickers.",
+            "2. Set your weights.",
+            "3. Hit Analyze.",
+        ],
+        cta_text="Go to Dashboard",
+        cta_url="https://corvo.capital/app",
+        user_id=req.user_id or "",
+    )
+    ok = _resend(req.email, "Welcome to Corvo", html)
+    return {"ok": ok}
 
 
 # ── Notify-me (email capture) ─────────────────────────────────────────────────
@@ -2621,49 +2570,10 @@ def watchlist_data(tickers: str, request: Request):
     return {"results": results}
 
 
-@app.get("/test-email")
-def test_email(email: str = ""):
-    """Debug endpoint: send a test email via Resend and return the result."""
-    import traceback
-
-    target = email or os.environ.get("TEST_EMAIL_TO", "")
-    if not target:
-        return {"ok": False, "error": "Provide ?email=you@example.com or set TEST_EMAIL_TO env var"}
-
-    resend_key = os.environ.get("RESEND_API_KEY", "")
-    if not resend_key:
-        return {"ok": False, "error": "RESEND_API_KEY not configured"}
-
-    print(f"[test-email] sending to {target} via Resend")
-
-    try:
-        response = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={
-                "from": "Corvo <hello@corvo.capital>",
-                "to": [target],
-                "subject": "Corvo: Test Email",
-                "html": "<p>This is a Corvo test email. Resend is working correctly.</p>",
-            },
-            timeout=10,
-        )
-        data = response.json()
-        if response.status_code in (200, 201):
-            print(f"[test-email] sent OK to {target} id={data.get('id')}")
-            return {"ok": True, "sent_to": target, "resend_id": data.get("id")}
-        else:
-            print(f"[test-email] Resend error {response.status_code}: {data}")
-            return {"ok": False, "error": data}
-    except Exception:
-        tb = traceback.format_exc()
-        print(f"[test-email] FAILED:\n{tb}")
-        return {"ok": False, "error": tb}
-
 
 @app.get("/unsubscribe", response_class=HTMLResponse)
 def unsubscribe(user_id: str = ""):
-    """Set weekly_digest and price_alerts to false in email_preferences for the given user."""
+    """Unsubscribe user from all Corvo emails by disabling all email_preferences toggles."""
     success = False
     if user_id and SUPABASE_URL and SUPABASE_SERVICE_KEY:
         try:
@@ -2675,7 +2585,7 @@ def unsubscribe(user_id: str = ""):
                     "Content-Type": "application/json",
                     "Prefer": "return=minimal",
                 },
-                json={"weekly_digest": False, "price_alerts": False},
+                json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False},
                 timeout=8,
             )
             success = resp.status_code in (200, 204)
@@ -2684,7 +2594,7 @@ def unsubscribe(user_id: str = ""):
             print(f"[unsubscribe] error: {e}")
 
     if success:
-        body_text = "You&#39;ve been unsubscribed from Corvo emails. You won&#39;t receive weekly digests or price alert emails going forward."
+        body_text = "You&#39;ve been unsubscribed from Corvo emails. You won&#39;t receive morning briefings or digest emails going forward."
         detail_text = "You can re-enable these at any time in your <a href=\"https://corvo.capital/app\" style=\"color:#c9a84c;\">account settings</a>."
     else:
         body_text = "Something went wrong processing your request."
@@ -2729,14 +2639,14 @@ class UnsubscribeRequest(BaseModel):
 
 @app.post("/unsubscribe")
 def unsubscribe_post(req: UnsubscribeRequest):
-    """Set weekly_digest and price_alerts to false for the user. Called from the frontend unsubscribe page."""
+    """Disable all email preferences for the user. Called from the frontend unsubscribe page."""
     if not req.user_id or not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         return {"ok": False, "error": "missing user_id or supabase config"}
     try:
         resp = requests.patch(
             f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{req.user_id}",
             headers={**_sb_headers(), "Prefer": "return=minimal"},
-            json={"weekly_digest": False, "price_alerts": False},
+            json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False},
             timeout=8,
         )
         success = resp.status_code in (200, 204)
@@ -2822,46 +2732,25 @@ def _send_push(subscription: dict, title: str, body: str, icon: str = "", url: s
 
 
 def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, threshold: float):
-    """Send price alert email via Resend."""
-    resend_key = os.environ.get("RESEND_API_KEY", "")
-    from_email = os.environ.get("RESEND_FROM_EMAIL", "alerts@corvo.capital")
-    if not resend_key or not to_email:
+    """Send a price alert email via Resend."""
+    if not to_email:
         return
-    subject = f"Price Alert: {ticker} has {'dropped' if condition == 'drops' else 'risen'} {threshold}%"
-    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
-<body style="background:#0a0e14;color:#e8e0cc;font-family:Courier New,monospace;padding:40px;margin:0">
-  <div style="max-width:480px;margin:0 auto">
-    <div style="font-size:22px;font-weight:900;letter-spacing:8px;color:#c9a84c;margin-bottom:4px">CORVO</div>
-    <div style="font-size:8px;letter-spacing:3px;color:rgba(232,224,204,0.35);margin-bottom:32px">PRICE ALERT</div>
-    <div style="background:#111827;border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:24px">
-      <div style="font-size:11px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;margin-bottom:8px">Alert Triggered</div>
-      <div style="font-size:28px;font-weight:700;color:#e8e0cc;margin-bottom:4px">{ticker}</div>
-      <div style="font-size:16px;color:rgba(232,224,204,0.7);margin-bottom:20px">
-        Current price: <strong style="color:#c9a84c">${price:.2f}</strong>
-      </div>
-      <div style="font-size:13px;color:rgba(232,224,204,0.6);line-height:1.7">
-        Your alert triggered because {ticker} {'dropped' if condition == 'drops' else 'rose'} by more than {threshold}%.
-      </div>
-    </div>
-    <div style="margin-top:28px;font-size:10px;color:rgba(232,224,204,0.25);text-align:center">
-      corvo.capital · Not financial advice
-    </div>
-  </div>
-</body></html>"""
-    try:
-        resp = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={"from": from_email, "to": [to_email], "subject": subject, "html": html},
-            timeout=10,
-        )
-        data = resp.json()
-        if resp.ok:
-            print(f"[alerts] email sent to {to_email} for {ticker} (resend_id={data.get('id')})")
-        else:
-            print(f"[alerts] email send failed for {to_email}: {resp.status_code} {data}")
-    except Exception as e:
-        print(f"[alerts] alert email error: {e}")
+    direction = "dropped" if condition == "drops" else "risen"
+    direction_past = "dropped" if condition == "drops" else "rose"
+    subject = f"Price Alert: {ticker} has {direction} {threshold}%"
+    html = _email_html(
+        heading=f"{ticker} alert triggered",
+        label="Price Alert",
+        body_lines=[
+            f"<strong style=\"color:#e8e0cc;font-family:'Courier New',Courier,monospace;font-size:20px;\">${price:.2f}</strong>",
+            f"{ticker} {direction_past} by more than {threshold}% from the previous close.",
+            "Log in to review your position and decide your next move.",
+        ],
+        cta_text="Review now",
+        cta_url="https://corvo.capital/app",
+    )
+    from_addr = os.environ.get("RESEND_FROM_EMAIL", "Corvo Alerts <alerts@corvo.capital>")
+    _resend(to_email, subject, html, from_addr=from_addr)
 
 
 @app.delete("/price-alerts/{alert_id}")
@@ -2974,7 +2863,8 @@ async def check_price_alerts():
     except Exception as e:
         print(f"[alerts] check_price_alerts error: {e}")
 
-        # ── Portfolio alerts ──────────────────────────────────────────────
+    # ── Portfolio alerts (runs independently of stock alert outcome) ───────────
+    try:
         port_resp = requests.get(
             f"{SUPABASE_URL}/rest/v1/price_alerts?triggered=eq.false&type=eq.portfolio&select=id,user_id,portfolio_id,condition,threshold",
             headers=_sb_headers(), timeout=10,
@@ -3058,6 +2948,8 @@ async def check_price_alerts():
                     print(f"[alerts] portfolio triggered: {pf_name} {condition} {threshold}% for user {user_id}")
                 except Exception as e:
                     print(f"[alerts] portfolio alert error: {e}")
+    except Exception as e:
+        print(f"[alerts] portfolio check error: {e}")
 
 
 class SnapshotRequest(BaseModel):
@@ -3187,6 +3079,205 @@ def portfolio_snapshot(req: SnapshotRequest):
         "portfolio_value": round(portfolio_value, 2),
         "cumulative_return_pct": round(cumulative_return * 100, 4),
     }
+
+
+# ── Health Score cache (keyed by user_id + UTC date + sorted tickers hash) ────
+_health_score_cache: dict[str, tuple[dict, str]] = {}
+
+
+def _hs_cache_key(user_id: str, tickers: list[str]) -> str:
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    tkr_hash = "|".join(sorted(t.upper() for t in tickers))
+    uid = user_id or "anon"
+    return f"{uid}:{today}:{tkr_hash}"
+
+
+def _hs_load_from_supabase(user_id: str, date_str: str, tkr_hash: str) -> dict | None:
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return None
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/health_score_cache"
+            f"?user_id=eq.{user_id}&date=eq.{date_str}&tickers_hash=eq.{tkr_hash}&select=score,headline,actions",
+            headers=_sb_headers(), timeout=5,
+        )
+        if resp.status_code == 200:
+            rows = resp.json()
+            if rows:
+                row = rows[0]
+                return {"score": row["score"], "headline": row["headline"], "actions": row["actions"], "cached": True}
+    except Exception as e:
+        print(f"[health-score] supabase load error: {e}")
+    return None
+
+
+def _hs_save_to_supabase(user_id: str, date_str: str, tkr_hash: str, result: dict):
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return
+    try:
+        requests.post(
+            f"{SUPABASE_URL}/rest/v1/health_score_cache",
+            headers={**_sb_headers(), "Prefer": "resolution=merge-duplicates"},
+            json={
+                "user_id": user_id,
+                "date": date_str,
+                "tickers_hash": tkr_hash,
+                "score": result["score"],
+                "headline": result["headline"],
+                "actions": result["actions"],
+            },
+            timeout=5,
+        )
+    except Exception as e:
+        print(f"[health-score] supabase save error: {e}")
+
+
+class HealthScoreRequest(BaseModel):
+    user_id: str = ""
+    tickers: list[str] = []
+    weights: list[float] = []
+    annualized_return: float = 0.0
+    portfolio_volatility: float = 0.0
+    sharpe_ratio: float = 0.0
+    max_drawdown: float = 0.0
+    rf_rate: float = 0.04
+    individual_returns: dict = {}
+    portfolio_value: float | None = None
+
+
+@app.post("/portfolio/health-score")
+def portfolio_health_score(req: HealthScoreRequest):
+    tickers = [t.upper() for t in req.tickers if t]
+    weights = req.weights or [1.0 / max(len(tickers), 1)] * len(tickers)
+    if len(weights) != len(tickers):
+        weights = [1.0 / max(len(tickers), 1)] * len(tickers)
+
+    # Compute numeric sub-scores (same formula as client-side HealthScore.tsx)
+    ann_ret = req.annualized_return
+    vol = req.portfolio_volatility
+    sharpe = req.sharpe_ratio
+    dd = req.max_drawdown
+    rS = min(max(((ann_ret + 0.3) / 0.6) * 100, 0), 100)
+    shS = min(max((sharpe / 3) * 100, 0), 100)
+    vS = min(max((1 - vol / 0.6) * 100, 0), 100)
+    dS = min(max((1 + dd / 0.5) * 100, 0), 100)
+    score = round(rS * 0.3 + shS * 0.3 + vS * 0.25 + dS * 0.15)
+
+    # Check in-memory cache first
+    cache_key = _hs_cache_key(req.user_id, tickers)
+    if cache_key in _health_score_cache:
+        cached, _ = _health_score_cache[cache_key]
+        return cached
+
+    # Check Supabase cache
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    tkr_hash = "|".join(sorted(t.upper() for t in tickers))
+    sb_cached = _hs_load_from_supabase(req.user_id, today, tkr_hash)
+    if sb_cached:
+        _health_score_cache[cache_key] = (sb_cached, today)
+        return sb_cached
+
+    # Build context for Claude
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return {"score": score, "headline": "", "actions": [], "cached": False}
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    # Identify key risk factors
+    max_weight_ticker = max(zip(tickers, weights), key=lambda x: x[1]) if tickers else ("", 0)
+    top_concentration = max_weight_ticker[1] if max_weight_ticker else 0
+    ind_rets = req.individual_returns or {}
+
+    holdings_lines = []
+    for t, w in zip(tickers, weights):
+        ret_val = ind_rets.get(t)
+        ret_str = f"{ret_val:.1%} CAGR" if ret_val is not None else "n/a"
+        holdings_lines.append(f"  {t}: {w:.1%} weight, {ret_str}")
+    holdings_str = "\n".join(holdings_lines)
+
+    score_label = "Excellent" if score >= 75 else "Good" if score >= 50 else "Fair" if score >= 25 else "Weak"
+
+    system_prompt = (
+        "You are a plain-English financial advisor for a retail investor. "
+        "Write in clear, direct language. No em dashes, no asterisks, no markdown, no emoji. "
+        "Reference specific tickers and real numbers from the portfolio provided. "
+        "Never give generic advice. Every sentence must reference the user's actual holdings or metrics."
+    )
+
+    user_prompt = f"""Portfolio Health Score: {score}/100 ({score_label})
+
+Holdings:
+{holdings_str}
+
+Metrics:
+  Annualized return: {ann_ret:.1%}
+  Annualized volatility: {vol:.1%}
+  Sharpe ratio: {sharpe:.2f}
+  Max drawdown: {dd:.1%}
+  Risk-free rate: {req.rf_rate:.1%}
+
+Sub-scores (0-100):
+  Returns score: {rS:.0f}
+  Risk-adjusted score: {shS:.0f}
+  Stability score: {vS:.0f}
+  Resilience score: {dS:.0f}
+
+Generate a JSON response with exactly this structure:
+{{
+  "headline": "<one sentence, max 18 words, naming what is driving the score up or down, referencing specific tickers or metrics>",
+  "actions": [
+    {{
+      "action": "<specific action the investor can take today, referencing actual tickers and numbers, max 25 words>",
+      "reason": "<why this matters for their score or risk, max 20 words>"
+    }},
+    {{
+      "action": "<second specific action>",
+      "reason": "<why this matters>"
+    }}
+  ]
+}}
+
+Rules:
+- Headline must name the score driver specifically (e.g. which ticker is concentrated, how high volatility is).
+- Actions must reference actual tickers and percentages from the holdings above.
+- If the score is already Excellent (75+), highlight what is working and one way to protect gains.
+- Include a third action only if there is a genuinely distinct third issue to address.
+- Output only valid JSON, no other text."""
+
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=512,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        raw = msg.content[0].text.strip()
+        import json as _json
+        # Strip any markdown code fences
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        raw = raw.strip()
+        parsed = _json.loads(raw)
+        headline = clean_ai_response(parsed.get("headline", ""))
+        actions_raw = parsed.get("actions", [])
+        actions = [
+            {"action": clean_ai_response(a.get("action", "")), "reason": clean_ai_response(a.get("reason", ""))}
+            for a in actions_raw if a.get("action")
+        ]
+    except Exception as e:
+        print(f"[health-score] Claude error: {e}")
+        headline = ""
+        actions = []
+
+    result = {"score": score, "headline": headline, "actions": actions, "cached": False}
+    _health_score_cache[cache_key] = (result, today)
+    _hs_save_to_supabase(req.user_id, today, tkr_hash, result)
+
+    return result
 
 
 @app.get("/portfolio/history")
@@ -4781,3 +4872,139 @@ def admin_cleanup_test_alerts(admin_key: str = ""):
         errors.append(f"drops ~10%: {r2.status_code} {r2.text[:100]}")
 
     return {"deleted": deleted, "errors": errors}
+
+
+# ── What Should I Do Today ────────────────────────────────────────────────────
+
+class WhatShouldIDoRequest(BaseModel):
+    tickers: list[str] = []
+    weights: list[float] = []
+    portfolio_return: float = 0.0
+    portfolio_volatility: float = 0.0
+    sharpe_ratio: float = 0.0
+    max_drawdown: float = 0.0
+    period: str = "1y"
+    portfolio_value: float | None = None
+    health_score: float | None = None
+    user_goals: dict = {}
+    user_id: str = ""
+
+def _fetch_finnhub_quote(ticker: str, finnhub_key: str) -> dict | None:
+    """Fetch a single quote from Finnhub. Returns dict with price/change_pct or None on failure."""
+    try:
+        r = requests.get(
+            "https://finnhub.io/api/v1/quote",
+            params={"symbol": ticker, "token": finnhub_key},
+            timeout=5,
+        )
+        if r.status_code == 200:
+            d = r.json()
+            price = float(d.get("c") or 0)
+            change_pct = float(d.get("dp") or 0)
+            if price > 0:
+                return {"price": round(price, 2), "change_pct": round(change_pct, 2)}
+    except Exception as e:
+        print(f"Finnhub quote error for {ticker}: {e}")
+    return None
+
+def _fetch_yf_quote(ticker: str) -> dict:
+    """yfinance fallback quote."""
+    try:
+        info = yf.Ticker(ticker).fast_info
+        price = safe_float(getattr(info, "last_price", 0) or 0)
+        prev = safe_float(getattr(info, "previous_close", 0) or 0)
+        pct = ((price - prev) / prev * 100) if prev > 0 else 0.0
+        return {"price": round(price, 2), "change_pct": round(pct, 2)}
+    except Exception as e:
+        print(f"yfinance quote fallback error for {ticker}: {e}")
+        return {"price": 0.0, "change_pct": 0.0}
+
+@app.post("/what-should-i-do")
+def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "what-should-i-do", 10, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded.")
+
+    finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+
+    # Live prices for each holding
+    live_prices: dict[str, dict] = {}
+    for ticker in req.tickers:
+        if is_cash_ticker(ticker):
+            live_prices[ticker] = {"price": 1.0, "change_pct": 0.0}
+            continue
+        quote = (_fetch_finnhub_quote(ticker, finnhub_key) if finnhub_key else None) or _fetch_yf_quote(ticker)
+        live_prices[ticker] = quote
+
+    # Market context (SPY + QQQ)
+    market_lines: list[str] = []
+    for sym in ["SPY", "QQQ"]:
+        q = (_fetch_finnhub_quote(sym, finnhub_key) if finnhub_key else None) or _fetch_yf_quote(sym)
+        if q["price"] > 0:
+            market_lines.append(f"{sym}: {q['change_pct']:+.2f}% today (${q['price']:.2f})")
+
+    # Build holdings description with live prices
+    total_w = sum(req.weights) or 1.0
+    holdings_lines: list[str] = []
+    for t, w in zip(req.tickers, req.weights):
+        norm_w = w / total_w
+        q = live_prices.get(t, {"price": 0.0, "change_pct": 0.0})
+        price_str = f"${q['price']:.2f}" if q["price"] > 0 else "N/A"
+        pct_str = f"{q['change_pct']:+.2f}%" if q["price"] > 0 else ""
+        tag = "money market" if is_cash_ticker(t) else ""
+        suffix = f" [{tag}]" if tag else ""
+        holdings_lines.append(f"{t}{suffix} ({norm_w:.1%}, price: {price_str}, today: {pct_str})")
+
+    # Investor profile
+    goals = req.user_goals or {}
+    profile_parts: list[str] = []
+    if goals.get("age"): profile_parts.append(f"age {goals['age']}")
+    if goals.get("riskTolerance"): profile_parts.append(f"risk: {goals['riskTolerance']}")
+    if goals.get("goal"): profile_parts.append(f"goal: {goals['goal']}")
+    if goals.get("invested"): profile_parts.append(f"invested: ${int(goals['invested']):,}")
+    profile_str = ", ".join(profile_parts) if profile_parts else "not provided"
+
+    value_str = f"${int(req.portfolio_value):,}" if req.portfolio_value else "not set"
+    health_str = f"{int(req.health_score)}/100" if req.health_score is not None else "N/A"
+    today = datetime.now().strftime("%B %d, %Y")
+
+    system = f"""You are Corvo AI, a direct and actionable portfolio advisor. Today is {today}.
+
+The user wants to know what they should do with their portfolio right now.
+
+RULES (strictly follow these):
+- Output exactly 2 or 3 numbered recommendations, starting with "1."
+- Each recommendation is 1 sentence, 2 sentences at most
+- Every recommendation must name a specific ticker, a specific action (buy more, trim, hold, research, avoid adding), and exactly why based on today's prices or portfolio metrics
+- No generic advice, no observations, no intros, no conclusions, no summaries
+- No em dashes, no asterisks, no bullet points, no markdown
+- Start immediately with "1." with no preamble
+
+PORTFOLIO TODAY:
+Holdings: {', '.join(holdings_lines)}
+Return ({req.period}): {req.portfolio_return:.2%}
+Volatility: {req.portfolio_volatility:.2%}
+Sharpe Ratio: {req.sharpe_ratio:.2f}
+Max Drawdown: {req.max_drawdown:.2%}
+Health Score: {health_str}
+Portfolio Value: {value_str}
+Investor: {profile_str}
+
+LIVE MARKET:
+{chr(10).join(market_lines) if market_lines else 'Market data unavailable'}"""
+
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+    client = anthropic.Anthropic(api_key=api_key)
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=400,
+        system=system,
+        messages=[{"role": "user", "content": "What should I do with my portfolio today?"}],
+    )
+    raw = response.content[0].text.strip()
+    result = clean_ai_response(raw)
+    return {"recommendations": result}
