@@ -451,7 +451,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
         </div>
 
         {/* Alert list */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 18px" }}>
+        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "none", padding: "12px 18px" }}>
           {alerts.filter(a => a.type === tab).length === 0 ? (
             <div style={{ textAlign: "center", paddingTop: 32 }}>
               <div style={{ marginBottom: 10, display: "flex", justifyContent: "center", opacity: 0.3 }}>

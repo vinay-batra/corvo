@@ -769,7 +769,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                         <span style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>Ticker</span>
                         <span style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>Weight</span>
                       </div>
-                      <div style={{maxHeight:200,overflowY:"auto"}}>
+                      <div style={{maxHeight:200,overflowY:"auto",overscrollBehavior:"none"}}>
                         {csvPreview.tickers.map((t,i)=>(
                           <div key={t} style={{display:"grid",gridTemplateColumns:"1fr auto",padding:"7px 12px",borderBottom:i<csvPreview.tickers.length-1?"0.5px solid var(--border)":"none",alignItems:"center"}}>
                             <div style={{display:"flex",alignItems:"center",gap:7}}>

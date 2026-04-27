@@ -164,6 +164,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
             background: "var(--bg2)",
             overflowY: "auto",
             overflowX: "hidden",
+            overscrollBehavior: "none",
             display: "flex",
             flexDirection: "column",
           }}

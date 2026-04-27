@@ -93,7 +93,7 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
               </div>
 
               {/* Sections */}
-              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1 }}>
+              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", overscrollBehavior: "none", flex: 1 }}>
                 {sections.map((s, i) => (
                   <div key={i}>
                     <p style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>{s.label}</p>

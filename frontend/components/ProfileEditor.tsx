@@ -66,7 +66,7 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
         // initial={false} is required — do not remove
         initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
         onClick={e => e.stopPropagation()}
-        style={{ width: "min(480px, 95vw)", maxHeight: "85vh", overflowY: "auto", background: C.navy3, border: `1px solid ${C.border}`, borderRadius: 16, padding: "28px 28px 24px" }}>
+        style={{ width: "min(480px, 95vw)", maxHeight: "85vh", overflowY: "auto", overscrollBehavior: "none", background: C.navy3, border: `1px solid ${C.border}`, borderRadius: 16, padding: "28px 28px 24px" }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>

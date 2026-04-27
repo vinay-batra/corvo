@@ -187,7 +187,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
               initial={false} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0}}
               onClick={e=>e.stopPropagation()}
               className="mc-modal-card"
-              style={{background:"var(--card-bg)",border:"0.5px solid var(--border2)",borderRadius:16,padding:28,maxWidth:400,width:"100%",maxHeight:"90vh",overflowY:"auto",position:"relative"}}>
+              style={{background:"var(--card-bg)",border:"0.5px solid var(--border2)",borderRadius:16,padding:28,maxWidth:400,width:"100%",maxHeight:"90vh",overflowY:"auto",overscrollBehavior:"none",position:"relative"}}>
               <button onClick={()=>setModal(null)} style={{position:"absolute",top:14,right:14,background:"var(--bg3)",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",color:"var(--text3)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               <p style={{fontSize:10,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>About</p>
               <h3 className="mc-modal-title" style={{fontSize:18,fontWeight:500,color:"var(--text)",marginBottom:18}}>{EXPLAINERS[modal].title}</h3>

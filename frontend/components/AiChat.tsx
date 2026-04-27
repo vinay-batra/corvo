@@ -582,7 +582,7 @@ export default function AiChat({
                 </div>
 
                 {/* Conversation list */}
-                <div style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
+                <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "none", padding: "4px 0" }}>
                   {conversations.length === 0 ? (
                     <div style={{ padding: "20px 14px", textAlign: "center" }}>
                       <MessageSquare size={20} style={{ color: "var(--text3)", margin: "0 auto 8px" }} />
@@ -727,7 +727,7 @@ export default function AiChat({
         )}
 
         {/* ── Messages ── */}
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "none", minHeight: 0 }}>
           {messages.length === 0 ? (
             /* Empty state */
             <div style={{ padding: "28px 14px 20px" }}>
