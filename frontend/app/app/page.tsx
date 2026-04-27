@@ -1033,34 +1033,59 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       // ── Auto-load most recent saved portfolio for returning users ──────────────
       // Runs on every mount so that navigating back to the dashboard always
       // restores the portfolio — no sessionStorage gate that would break re-entry.
+      console.log("[auto-load] hadLocalRestoreRef:", hadLocalRestoreRef.current);
       if (!hadLocalRestoreRef.current) {
         const urlParams = new URLSearchParams(window.location.search);
         const hasUrlOverride = !!urlParams.get("portfolio") || urlParams.get("demo") === "true";
+        console.log("[auto-load] hasUrlOverride:", hasUrlOverride);
         if (!hasUrlOverride) {
           try {
-            const { data: latestPfs } = await supabase
+            console.log("[auto-load] querying Supabase portfolios for user:", user.id);
+            // Note: do NOT select 'period' — that column does not exist in the table.
+            // Order by updated_at; fall back to created_at if updated_at is absent.
+            let portfolioRow: any = null;
+            const { data: byUpdated, error: updErr } = await supabase
               .from("portfolios")
-              .select("id, name, tickers, weights, period")
+              .select("id, name, tickers, weights, updated_at")
               .eq("user_id", user.id)
               .order("updated_at", { ascending: false })
               .limit(1);
-            const latest = latestPfs?.[0];
+            console.log("[auto-load] updated_at query result:", { byUpdated, updErr });
+            if (!updErr && byUpdated?.[0]) {
+              portfolioRow = byUpdated[0];
+            } else {
+              console.warn("[auto-load] updated_at sort failed, trying created_at:", updErr?.message);
+              const { data: byCreated, error: creErr } = await supabase
+                .from("portfolios")
+                .select("id, name, tickers, weights")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(1);
+              console.log("[auto-load] created_at query result:", { byCreated, creErr });
+              if (!creErr && byCreated?.[0]) portfolioRow = byCreated[0];
+            }
+            const latest = portfolioRow;
+            console.log("[auto-load] latest portfolio row:", latest);
             setHasSavedPortfolios(!!latest);
             if (latest) {
               const tickers: string[] = latest.tickers ?? [];
               const weights: number[] = latest.weights ?? [];
+              console.log("[auto-load] tickers:", tickers, "weights:", weights);
               const autoAssets = tickers
                 .map((t: string, i: number) => ({ ticker: t, weight: weights[i] ?? 0 }))
                 .filter((a: any) => a.ticker && a.weight > 0);
+              console.log("[auto-load] autoAssets:", autoAssets);
               if (autoAssets.length > 0) {
-                const prd: string = latest.period || "1y";
+                const prd = "1y";
                 setPeriod(prd);
                 setAssets(autoAssets);
                 setSavedPortfolioId(latest.id);
                 setSavedPortfolioName(latest.name || "");
                 setLoading(true);
+                console.log("[auto-load] calling fetchPortfolio...");
                 try {
                   const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "");
+                  console.log("[auto-load] fetchPortfolio result:", result ? { keys: Object.keys(result), error: result.error } : result);
                   if (result && !result.error) {
                     setData(result);
                     setActiveTab("overview");
@@ -1069,12 +1094,23 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                       .map((a: any) => `${a.ticker}:${a.weight.toFixed(4)}`)
                       .sort().join(",") + `|${prd}|^GSPC`;
                     if (result.skipped_tickers?.length) setSkippedTickers(result.skipped_tickers);
+                    console.log("[auto-load] data set successfully");
+                  } else {
+                    console.warn("[auto-load] fetchPortfolio returned error or empty:", result);
                   }
-                } catch {}
+                } catch (fetchErr) {
+                  console.error("[auto-load] fetchPortfolio threw:", fetchErr);
+                }
                 setLoading(false);
+              } else {
+                console.warn("[auto-load] autoAssets empty after filter — tickers/weights mismatch?");
               }
+            } else {
+              console.log("[auto-load] no saved portfolio found for this user");
             }
-          } catch {}
+          } catch (outerErr) {
+            console.error("[auto-load] outer error:", outerErr);
+          }
         }
       }
       setInitializing(false);
