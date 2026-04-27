@@ -204,7 +204,7 @@ function Empty() {
   const steps = [
     { n: "1", label: "Add a ticker", desc: "Search any stock, ETF, or crypto in the sidebar", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
     { n: "2", label: "Set your weight", desc: "Enter how much of your portfolio each holding represents", icon: "M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-1m6 0l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-1m0-1v-1m0 1l-6 1" },
-    { n: "3", label: "Hit Analyze", desc: "Get Sharpe ratio, Monte Carlo, drawdown, AI insights and more", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
+    { n: "3", label: "Hit New Analysis", desc: "Get Sharpe ratio, Monte Carlo, drawdown, AI insights and more", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
   ];
   return (
     <motion.div
@@ -893,6 +893,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [perfRange, setPerfRange] = useState<PerfRange>("ALL");
   const [perfLoading, setPerfLoading] = useState(false);
   const autoSnapshotAttemptedRef = useRef<string | null>(null);
+  const hadLocalRestoreRef = useRef(false);
+  const [initializing, setInitializing] = useState(true);
   const contentRef = useRef<HTMLElement | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const { dark, toggle: toggleDark }  = useTheme();
@@ -928,7 +930,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       const obAssets = localStorage.getItem("corvo_onboarding_assets");
       if (obAssets) {
         const parsed = JSON.parse(obAssets);
-        if (Array.isArray(parsed) && parsed.length > 0) setAssets(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) { setAssets(parsed); hadLocalRestoreRef.current = true; }
         localStorage.removeItem("corvo_onboarding_assets");
       }
     } catch {}
@@ -949,6 +951,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         const parsed = JSON.parse(savedAssets);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setAssets(parsed);
+          hadLocalRestoreRef.current = true;
           localStorage.removeItem("corvo_saved_assets");
         }
       }
@@ -1012,7 +1015,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     // Load nav profile and (on first visit per session) redirect to /onboarding if not yet complete
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setInitializing(false); return; }
       setUserId(user.id);
 
       // Always load nav profile (avatar + display name)
@@ -1025,6 +1028,54 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         user.email?.split("@")[0] ||
         "";
       setNavProfile({ displayName: bestName, avatarUrl: navP?.avatar_url || null });
+
+      // ── Auto-load most recent saved portfolio for returning users ──────────────
+      if (!hadLocalRestoreRef.current && !sessionStorage.getItem("corvo_auto_loaded")) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasUrlOverride = !!urlParams.get("portfolio") || urlParams.get("demo") === "true";
+        if (!hasUrlOverride) {
+          sessionStorage.setItem("corvo_auto_loaded", "true");
+          try {
+            const { data: latestPfs } = await supabase
+              .from("portfolios")
+              .select("id, name, tickers, weights, period")
+              .eq("user_id", user.id)
+              .order("updated_at", { ascending: false })
+              .limit(1);
+            const latest = latestPfs?.[0];
+            if (latest) {
+              const tickers: string[] = latest.tickers ?? [];
+              const weights: number[] = latest.weights ?? [];
+              const autoAssets = tickers
+                .map((t: string, i: number) => ({ ticker: t, weight: weights[i] ?? 0 }))
+                .filter((a: any) => a.ticker && a.weight > 0);
+              if (autoAssets.length > 0) {
+                const prd: string = latest.period || "1y";
+                setPeriod(prd);
+                setAssets(autoAssets);
+                setSavedPortfolioId(latest.id);
+                setSavedPortfolioName(latest.name || "");
+                setLoading(true);
+                try {
+                  const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "");
+                  if (result && !result.error) {
+                    setData(result);
+                    setActiveTab("overview");
+                    setPortfolioStale(false);
+                    lastAnalyzedAssetsRef.current = autoAssets
+                      .map((a: any) => `${a.ticker}:${a.weight.toFixed(4)}`)
+                      .sort().join(",") + `|${prd}|^GSPC`;
+                    if (result.skipped_tickers?.length) setSkippedTickers(result.skipped_tickers);
+                  }
+                } catch {}
+                setLoading(false);
+              }
+            }
+          } catch {}
+        }
+      }
+      setInitializing(false);
+      // ── END auto-load ─────────────────────────────────────────────────────────
 
       // Only run the onboarding check once per browser session (not on every navigation to /app).
       if (sessionStorage.getItem("corvo_session_checked") === "true") return;
@@ -1469,7 +1520,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
         {portfolioStale && (
           <div style={{ marginBottom: 8, padding: "7px 11px", borderRadius: 7, border: "0.5px solid rgba(184,134,11,0.35)", background: "rgba(184,134,11,0.07)", fontSize: 11, color: "var(--text2)", lineHeight: 1.5 }}>
-            Settings changed. Click Analyze to update results.
+            Settings changed. Click New Analysis to update results.
           </div>
         )}
         {(() => {
@@ -1493,7 +1544,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 whileTap={canAnalyze ? { scale: 0.97 } : {}}
                 transition={{ duration: 0.35 }}
                 style={{ width: "100%", padding: "11px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase" as const, background: loading ? "transparent" : canAnalyze ? "var(--bg)" : "var(--bg3)", color: loading || !canAnalyze ? "var(--text3)" : "var(--accent)", border: canAnalyze ? "1px solid rgba(201,168,76,0.55)" : "0.5px solid var(--border2)", borderRadius: 9, cursor: canAnalyze ? "pointer" : "not-allowed", transition: "background 0.2s, color 0.2s, border-color 0.2s", animation: loading ? "analyze-ring 1.2s ease-out infinite" : canAnalyze ? "analyzePulse 2.5s ease-in-out infinite" : "none" }}>
-                {loading ? "Analyzing..." : "Analyze"}
+                {loading ? "Analyzing..." : "New Analysis"}
               </motion.button>
               {hasHoldings && !isBalanced && (
                 <p style={{ fontSize: 11, color: "#e05c5c", textAlign: "center", marginTop: 5, lineHeight: 1.4 }}>
@@ -1915,11 +1966,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               <motion.div key="watchlist" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Watchlist />
               </motion.div>
-            ) : !data && !loading ? (
+            ) : !data && !loading && !initializing ? (
               <motion.div key="empty" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Empty />
               </motion.div>
-            ) : loading ? (
+            ) : (loading || initializing) && !data ? (
               <motion.div key="loading" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
