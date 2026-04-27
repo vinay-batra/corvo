@@ -2201,6 +2201,9 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                             <div style={{ fontSize: 12, color: "var(--red)" }}>{rebalanceError}</div>
                           ) : rebalanceResult ? (
                             <div>
+                              <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6, marginBottom: 16, marginTop: 0 }}>
+                                Rebalancing means selling a portion of holdings that have grown beyond your target weight and using those proceeds to buy holdings that have fallen below it. This keeps your portfolio aligned with your original risk and allocation goals. The table below shows where each position stands today relative to your targets.
+                              </p>
                               <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Drift from Target</div>
                               <div style={{ overflowX: "auto", marginBottom: 16 }}>
                                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
