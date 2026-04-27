@@ -5,9 +5,6 @@ import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const AMBER = "#b8860b";
-const GREEN = "#4caf7d";
-const RED   = "#e05c5c";
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -44,10 +41,10 @@ function computeMarketStatus() {
     minute: "2-digit",
     hour12: true,
   }) + " ET";
-  if (dow === 0 || dow === 6) return { dot: "#666", label: "Closed · Opens Mon 9:30 AM ET", time };
-  if (mins < OPEN) return { dot: AMBER, label: `Pre-Market · Opens in ${fmt(OPEN - mins)}`, time };
-  if (mins < CLOSE) return { dot: GREEN, label: `Open · Closes in ${fmt(CLOSE - mins)}`, time };
-  return { dot: "#666", label: `After Hours`, time };
+  if (dow === 0 || dow === 6) return { dot: "var(--text3)",  label: "Closed · Opens Mon 9:30 AM ET", time, glow: false };
+  if (mins < OPEN)            return { dot: "var(--accent)", label: `Pre-Market · Opens in ${fmt(OPEN - mins)}`, time, glow: false };
+  if (mins < CLOSE)           return { dot: "var(--chip-pos)", label: `Open · Closes in ${fmt(CLOSE - mins)}`, time, glow: true };
+  return                             { dot: "var(--text3)",  label: "After Hours", time, glow: false };
 }
 
 type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
@@ -115,7 +112,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
   const [market, setMarket] = useState<MarketSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [indexPrices, setIndexPrices] = useState<{ spy: number | null; qqq: number | null; dia: number | null }>({ spy: null, qqq: null, dia: null });
-  // Fetch AI market summary + index data
+
   useEffect(() => {
     const tickerParam = assets.map(a => a.ticker).filter(Boolean).join(",");
     const url = tickerParam
@@ -127,7 +124,6 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
       .catch(() => { setSummaryLoading(false); });
   }, [assets]);
 
-  // Fetch index prices
   useEffect(() => {
     const fetchIndexes = async () => {
       try {
@@ -178,7 +174,6 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
     return () => clearInterval(id);
   }, [assets]);
 
-  // Weighted portfolio daily change: sum(weight * changePct) / totalWeight
   const portfolioToday = useMemo(() => {
     if (!holdingPrices.length) return null;
     const validAssets = assets.filter(a => a.weight > 0);
@@ -198,9 +193,6 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
     return { pct, dollar };
   }, [holdingPrices, assets, portfolioValue]);
 
-  const pos = (v: number) => v >= 0;
-  const fmtSign = (v: number) => (v >= 0 ? "+" : "");
-
   return (
     <div className="gb-root" style={{
       display: "flex",
@@ -211,6 +203,16 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
       marginBottom: 20,
     }}>
       <style>{`
+        /* Scoped color tokens — positive/negative tints for market chips */
+        .gb-root {
+          --chip-pos:        #4caf7d;
+          --chip-neg:        var(--red);
+          --chip-pos-bg:     rgba(76, 175, 125, 0.07);
+          --chip-neg-bg:     rgba(224,  92,  92, 0.07);
+          --chip-pos-border: rgba(76, 175, 125, 0.22);
+          --chip-neg-border: rgba(224,  92,  92, 0.22);
+          --chip-pos-glow:   rgba(76, 175, 125, 0.50);
+        }
         @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:0.9} }
         @keyframes gb-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
         @media(max-width:768px){
@@ -221,30 +223,27 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
         }
       `}</style>
 
-      {/* LEFT — greeting, date, market status, briefing sections */}
+      {/* LEFT — greeting, date, market status, briefing */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.5px", lineHeight: 1.2, margin: 0 }}>
           {greeting}{firstName ? `, ${firstName}` : ""}
         </h1>
 
-        {/* Date line */}
         <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, marginBottom: 0, letterSpacing: "0.01em" }}>
           {dateStr}
         </p>
 
-        {/* ET time + market status pill */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, color: "var(--text3)" }}>{mkt.time}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 20, background: "var(--bg3)", border: "0.5px solid var(--border)", flexShrink: 0 }}>
             <div style={{
               width: 5, height: 5, borderRadius: "50%", background: mkt.dot, flexShrink: 0,
-              boxShadow: mkt.dot === GREEN ? "0 0 4px rgba(76,175,125,0.5)" : "none",
+              boxShadow: mkt.glow ? "0 0 4px var(--chip-pos-glow)" : "none",
             }} />
             <span style={{ fontSize: 10, color: "var(--text2)", whiteSpace: "nowrap" }}>{mkt.label}</span>
           </div>
         </div>
 
-        {/* Briefing header with collapse toggle */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
           <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>{getBriefingTitle()}</span>
           <button
@@ -261,7 +260,6 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
           </button>
         </div>
 
-        {/* Collapsed preview — first sentence of MARKETS TODAY, shown only when collapsed */}
         <motion.div
           // initial={false} is required — do not remove
           initial={false}
@@ -270,23 +268,12 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
           style={{ overflow: "hidden" }}
         >
           {!summaryLoading && market?.market && (
-            <p style={{
-              fontSize: 12,
-              color: "var(--text3)",
-              margin: "6px 0 0",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              maxWidth: "100%",
-              fontWeight: 300,
-              lineHeight: 1.5,
-            }}>
+            <p style={{ fontSize: 12, color: "var(--text3)", margin: "6px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", fontWeight: 300, lineHeight: 1.5 }}>
               {market.market.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() ?? market.market.split(" ").slice(0, 15).join(" ")}
             </p>
           )}
         </motion.div>
 
-        {/* Full briefing — all sections, shown only when expanded */}
         <motion.div
           // initial={false} is required — do not remove
           initial={false}
@@ -302,14 +289,12 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
             </div>
           ) : market ? (
             <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
-              {/* MARKETS TODAY */}
               {market.market && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>Markets Today</span>
                   <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, fontWeight: 300 }}>{market.market}</p>
                 </div>
               )}
-              {/* WHAT DROVE IT */}
               {market.context && (
                 <>
                   <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
@@ -319,7 +304,6 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
                   </div>
                 </>
               )}
-              {/* YOUR PORTFOLIO */}
               {market.holdings && market.holdings !== "No holdings provided for this user." && (
                 <>
                   <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
@@ -329,7 +313,6 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
                   </div>
                 </>
               )}
-              {/* WHAT TO WATCH */}
               {market.outlook && (
                 <>
                   <div style={{ height: "0.5px", background: "var(--border)", opacity: 0.6 }} />
@@ -349,45 +332,52 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
       {/* DIVIDER */}
       <div className="gb-divider" style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
-      {/* RIGHT — index pills + holdings */}
-      <div className="gb-right" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
+      {/* RIGHT — market chips + holdings scroll */}
+      <div className="gb-right" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
 
-        {/* Index pills */}
+        {/* Index + portfolio chips — unified row */}
         {indexPrices.spy === null ? (
-          <div style={{ display: "flex", gap: 8 }}>
-            {[1, 2, 3].map(i => (
-              <div key={i} style={{ width: 80, height: 52, borderRadius: 10, background: "var(--bg2)", border: "0.5px solid var(--border2)", animation: "pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
+          <div style={{ display: "flex", gap: 6 }}>
+            {[88, 76, 60, 96].map((w, i) => (
+              <div key={i} style={{
+                width: w, height: 32, borderRadius: 8,
+                background: "var(--bg2)", border: "0.5px solid var(--border)",
+                animation: "pulse 1.5s ease-in-out infinite",
+                animationDelay: `${i * 0.1}s`,
+              }} />
             ))}
           </div>
         ) : (
-          <div style={{ display: "flex", gap: 8 }}>
-            <StatPill label="S&P 500" value={indexPrices.spy != null ? `${fmtSign(indexPrices.spy)}${indexPrices.spy.toFixed(2)}%` : "-"} color={indexPrices.spy != null ? (pos(indexPrices.spy) ? GREEN : RED) : "var(--text3)"} />
-            <StatPill label="Nasdaq"  value={indexPrices.qqq != null ? `${fmtSign(indexPrices.qqq)}${indexPrices.qqq.toFixed(2)}%` : "-"} color={indexPrices.qqq != null ? (pos(indexPrices.qqq) ? GREEN : RED) : "var(--text3)"} />
-            <StatPill label="Dow"     value={indexPrices.dia != null ? `${fmtSign(indexPrices.dia)}${indexPrices.dia.toFixed(2)}%` : "-"} color={indexPrices.dia != null ? (pos(indexPrices.dia) ? GREEN : RED) : "var(--text3)"} />
-            {portfolioToday && <PortfolioPill pct={portfolioToday.pct} dollar={portfolioToday.dollar} />}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <MarketChip label="S&P 500"   pct={indexPrices.spy} />
+            <MarketChip label="Nasdaq"    pct={indexPrices.qqq} />
+            <MarketChip label="Dow"       pct={indexPrices.dia} />
+            {portfolioToday && (
+              <MarketChip label="Portfolio" pct={portfolioToday.pct} dollar={portfolioToday.dollar} />
+            )}
           </div>
         )}
 
-        {/* Portfolio ticker scroll — shows current holdings with live % change */}
+        {/* Holdings ticker scroll */}
         {(() => {
           const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
           if (!validTickers.length) return null;
-          // Use live price data when available, fall back to ticker-only pills
-          const pills: { ticker: string; price: number | null; changeDollar: number | null; changePct: number | null }[] =
-            holdingPrices.length > 0
-              ? holdingPrices.map(h => ({ ticker: h.ticker, price: h.price, changeDollar: h.changeDollar, changePct: h.changePct }))
-              : validTickers.map(t => ({ ticker: t, price: null, changeDollar: null, changePct: null }));
-          const isFew = pills.length <= 4;
+          const chips = holdingPrices.length > 0
+            ? holdingPrices.map(h => ({ ticker: h.ticker, price: h.price, pct: h.changePct }))
+            : validTickers.map(t => ({ ticker: t, price: null, pct: null }));
+          const isFew = chips.length <= 4;
           return (
-            <div className="gb-marquee-wrap" style={{ overflow: "hidden", width: 320, position: "relative" }}>
+            <div className="gb-marquee-wrap" style={{ overflow: "hidden", maxWidth: 380 }}>
               {isFew ? (
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                  {pills.map(p => <HoldingChip key={p.ticker} ticker={p.ticker} price={p.price} changeDollar={p.changeDollar} changePct={p.changePct} />)}
+                  {chips.map(p => (
+                    <MarketChip key={p.ticker} label={p.ticker} pct={p.pct} price={p.price} />
+                  ))}
                 </div>
               ) : (
                 <div style={{ display: "flex", gap: 6, animation: "gb-marquee 28s linear infinite", width: "max-content" }}>
-                  {[...pills, ...pills].map((p, idx) => (
-                    <HoldingChip key={`${p.ticker}-${idx}`} ticker={p.ticker} price={p.price} changeDollar={p.changeDollar} changePct={p.changePct} />
+                  {[...chips, ...chips].map((p, idx) => (
+                    <MarketChip key={`${p.ticker}-${idx}`} label={p.ticker} pct={p.pct} price={p.price} />
                   ))}
                 </div>
               )}
@@ -400,59 +390,67 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
   );
 }
 
-function HoldingChip({ ticker, price, changeDollar, changePct }: { ticker: string; price: number | null; changeDollar: number | null; changePct: number | null }) {
-  const up = changePct == null ? null : changePct >= 0;
-  const color = up == null ? "var(--text3)" : up ? GREEN : RED;
-  const sign = up == null ? "" : up ? "+" : "-";
-  const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace" };
+function MarketChip({
+  label,
+  pct,
+  dollar,
+  price,
+}: {
+  label: string;
+  pct: number | null;
+  dollar?: number | null;
+  price?: number | null;
+}) {
+  const up    = pct == null ? null : pct >= 0;
+  const sign  = up == null ? "" : up ? "+" : "-";
+  const vCol  = up == null ? "var(--text3)"          : up ? "var(--chip-pos)"        : "var(--chip-neg)";
+  const bg    = up == null ? "var(--bg2)"             : up ? "var(--chip-pos-bg)"     : "var(--chip-neg-bg)";
+  const bdr   = up == null ? "var(--border)"           : up ? "var(--chip-pos-border)" : "var(--chip-neg-border)";
+  const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace", fontVariantNumeric: "tabular-nums" as const };
+
+  const fmtAbs = (v: number) => {
+    const a = Math.abs(v);
+    return a >= 1000
+      ? a.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : a.toFixed(2);
+  };
+
   return (
     <div style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "5px 10px", borderRadius: 8, flexShrink: 0,
-      border: `0.5px solid ${up == null ? "var(--border)" : up ? "rgba(76,175,125,0.2)" : "rgba(224,92,92,0.2)"}`,
-      background: up == null ? "var(--bg2)" : up ? "rgba(76,175,125,0.06)" : "rgba(224,92,92,0.06)",
+      display: "inline-flex", alignItems: "center", gap: 7,
+      height: 32, padding: "0 10px", borderRadius: 8, flexShrink: 0,
+      border: `0.5px solid ${bdr}`,
+      background: bg,
     }}>
-      <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "var(--text2)", letterSpacing: "0.02em" }}>{ticker}</span>
-      {price != null && (
-        <span style={{ ...mono, fontSize: 11, fontWeight: 600, color: "var(--text3)" }}>${price.toFixed(2)}</span>
-      )}
-      {changeDollar != null && (
-        <span style={{ ...mono, fontSize: 11, fontWeight: 600, color }}>{sign}${Math.abs(changeDollar).toFixed(2)}</span>
-      )}
-      {changePct != null && (
-        <span style={{ ...mono, fontSize: 11, fontWeight: 600, color, opacity: 0.85 }}>({sign}{Math.abs(changePct).toFixed(2)}%)</span>
-      )}
+      {/* Label — always left, uppercase, muted */}
+      <span style={{
+        fontSize: 10, fontWeight: 600, letterSpacing: "0.05em",
+        textTransform: "uppercase", color: "var(--text3)", flexShrink: 0,
+        fontFamily: "var(--font-body)",
+      }}>
+        {label}
+      </span>
+
+      {/* Values — always right, Space Mono */}
+      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        {price != null && (
+          <span style={{ ...mono, fontSize: 11, fontWeight: 600, color: "var(--text2)" }}>
+            ${fmtAbs(price)}
+          </span>
+        )}
+        {dollar != null && (
+          <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: vCol }}>
+            {sign}${fmtAbs(dollar)}
+          </span>
+        )}
+        {pct != null ? (
+          <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: vCol }}>
+            {sign}{Math.abs(pct).toFixed(2)}%
+          </span>
+        ) : (
+          <span style={{ ...mono, fontSize: 11, color: "var(--text3)" }}>—</span>
+        )}
+      </div>
     </div>
   );
 }
-
-function PortfolioPill({ pct, dollar }: { pct: number; dollar: number | null }) {
-  const up = pct >= 0;
-  const color = up ? GREEN : RED;
-  const sign = up ? "+" : "-";
-  const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace" };
-  return (
-    <div style={{
-      display: "flex", flexDirection: "column", alignItems: "center",
-      padding: "7px 14px", borderRadius: 10, minWidth: 72,
-      border: `0.5px solid ${up ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`,
-      background: up ? "rgba(76,175,125,0.06)" : "rgba(224,92,92,0.06)",
-    }}>
-      <span style={{ fontSize: 10, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4 }}>Portfolio</span>
-      {dollar != null && (
-        <span style={{ ...mono, fontSize: 13, fontWeight: 700, color, letterSpacing: "-0.2px" }}>{sign}${Math.abs(dollar).toFixed(2)}</span>
-      )}
-      <span style={{ ...mono, fontSize: dollar != null ? 11 : 13, fontWeight: dollar != null ? 600 : 700, color, opacity: dollar != null ? 0.85 : 1, letterSpacing: "-0.2px" }}>({sign}{Math.abs(pct).toFixed(2)}%)</span>
-    </div>
-  );
-}
-
-function StatPill({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "7px 14px", borderRadius: 10, border: "0.5px solid var(--border2)", background: "var(--bg2)", minWidth: 72 }}>
-      <span style={{ fontSize: 10, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4 }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "'Space Mono', monospace", letterSpacing: "-0.2px" }}>{value}</span>
-    </div>
-  );
-}
-
