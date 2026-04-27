@@ -49,6 +49,7 @@ import SettingsPage from "../settings/page";
 import GreetingBar from "../../components/GreetingBar";
 import KeyboardShortcutsModal from "../../components/KeyboardShortcutsModal";
 import PositionsTab from "../../components/PositionsTab";
+import RetirementSimulator from "../../components/RetirementSimulator";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import DashboardTour from "../../components/DashboardTour";
 import FeedbackButton from "../../components/FeedbackButton";
@@ -2276,6 +2277,14 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 <Card><TooltipCardHeader title="Monte Carlo Simulation" sections={[
                   { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
                 ]} /><MonteCarloChart assets={assets} period={period} portfolioValue={portfolioInputValue} /></Card>
+                <Card style={{ marginTop: 16 }}>
+                  <TooltipCardHeader title="What if I Retire in X Years?" sections={[
+                    { label: "What it shows", text: "Runs 5,000 Monte Carlo scenarios projecting your portfolio to retirement. Best, median, and worst case are the 90th, 50th, and 10th percentiles of final values in dollars." },
+                    { label: "How it works", text: "Uses your current holdings and weights, historical volatility, and long-term asset-class expected returns to model a range of outcomes. Returns compound annually over the full horizon." },
+                    { label: "Limitations", text: "This is a projection, not a guarantee. It does not account for contributions, withdrawals, inflation, or taxes." },
+                  ]} />
+                  <RetirementSimulator assets={assets} portfolioValue={portfolioInputValue} />
+                </Card>
               </motion.div>
             ) : null}
           </AnimatePresence>
