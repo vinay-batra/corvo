@@ -27,7 +27,7 @@ type Category = "profile" | "preferences" | "notifications" | "investor" | "refe
 const NAV_ITEMS: { id: Category; label: string; terms: string[] }[] = [
   { id: "profile",       label: "Profile",          terms: ["display name", "photo", "avatar", "email", "member since", "profile", "name", "picture"] },
   { id: "preferences",   label: "Preferences",      terms: ["analysis period", "benchmark", "theme", "dark mode", "light mode", "sound", "sound effects", "preferences", "period"] },
-  { id: "notifications", label: "Notifications",    terms: ["weekly digest", "price alerts", "notifications", "email", "alerts", "digest"] },
+  { id: "notifications", label: "Notifications",    terms: ["morning briefing", "week in review", "monthly summary", "price alerts", "notifications", "email", "alerts"] },
   { id: "investor",      label: "Investor Profile", terms: ["investor type", "age range", "goals", "income", "risk tolerance", "investment horizon", "investor profile", "risk", "horizon"] },
   { id: "referrals",     label: "Referrals",        terms: ["referrals", "invite", "refer", "referral", "code"] },
   { id: "account",       label: "Account",          terms: ["onboarding", "tour", "delete account", "account", "replay", "danger", "delete"] },
@@ -126,8 +126,9 @@ export default function SettingsPage({
   const [soundEnabled, setSoundEnabled] = useState(false);
 
   // ── Notifications ──────────────────────────────────────────────────────────
-  const [weeklyDigest, setWeeklyDigest] = useState(true);
-  const [priceAlerts, setPriceAlerts]   = useState(true);
+  const [morningBriefing, setMorningBriefing] = useState(false);
+  const [weekInReview, setWeekInReview]       = useState(false);
+  const [monthlySummary, setMonthlySummary]   = useState(false);
 
   // ── Investor profile ───────────────────────────────────────────────────────
   const [investorType, setInvestorType]           = useState("");
@@ -153,8 +154,8 @@ export default function SettingsPage({
       const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
       if (profile) { setDisplayName(profile.display_name || ""); setAvatarUrl(profile.avatar_url || null); }
 
-      const { data: prefs } = await supabase.from("email_preferences").select("weekly_digest,price_alerts").eq("user_id", user.id).single();
-      if (prefs) { setWeeklyDigest(prefs.weekly_digest); setPriceAlerts(prefs.price_alerts); }
+      const { data: prefs } = await supabase.from("email_preferences").select("morning_briefing,week_in_review,monthly_summary").eq("user_id", user.id).single();
+      if (prefs) { setMorningBriefing(prefs.morning_briefing ?? false); setWeekInReview(prefs.week_in_review ?? false); setMonthlySummary(prefs.monthly_summary ?? false); }
 
       setPeriod(localStorage.getItem("corvo_period") || "1y");
       setBenchmark(localStorage.getItem("corvo_benchmark") || "^GSPC");
@@ -241,10 +242,10 @@ export default function SettingsPage({
     setAvatarLoading(false);
   };
 
-  const saveNotifs = async (wd: boolean, pa: boolean) => {
+  const saveNotifs = async (mb: boolean, wr: boolean, ms: boolean) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, weekly_digest: wd, price_alerts: pa, updated_at: new Date().toISOString() });
+      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, morning_briefing: mb, week_in_review: wr, monthly_summary: ms, updated_at: new Date().toISOString() });
       if (error) throw error;
     } catch {
       toast("Failed to save notification preferences. Please try again.", "error");
@@ -413,11 +414,17 @@ export default function SettingsPage({
   const renderNotifications = () => (
     <div>
       <SectionTitle>Notifications</SectionTitle>
-      <Row label="Weekly portfolio digest" desc="Portfolio performance summary every Monday">
-        <Toggle on={weeklyDigest} onChange={() => { const v = !weeklyDigest; setWeeklyDigest(v); void saveNotifs(v, priceAlerts); }} />
+      <Row label="Morning Briefing" desc="Daily portfolio and market teaser at 6am ET">
+        <Toggle on={morningBriefing} onChange={() => { const v = !morningBriefing; setMorningBriefing(v); void saveNotifs(v, weekInReview, monthlySummary); }} />
       </Row>
-      <Row label="Price alerts" desc="Email when holdings hit your set price thresholds">
-        <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(weeklyDigest, v); }} />
+      <Row label="Week in Review" desc="Weekly recap of your portfolio every Monday at 6am ET">
+        <Toggle on={weekInReview} onChange={() => { const v = !weekInReview; setWeekInReview(v); void saveNotifs(morningBriefing, v, monthlySummary); }} />
+      </Row>
+      <Row label="Monthly Summary" desc="Month-end portfolio return summary on the 1st">
+        <Toggle on={monthlySummary} onChange={() => { const v = !monthlySummary; setMonthlySummary(v); void saveNotifs(morningBriefing, weekInReview, v); }} />
+      </Row>
+      <Row label="Price alerts" desc="Immediate email when a holding hits your set threshold">
+        <span style={{ fontSize: 11, color: "var(--text3)" }}>Always on</span>
       </Row>
     </div>
   );

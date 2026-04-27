@@ -5,19 +5,18 @@ import { supabase } from "../lib/supabase";
 
 interface Props {
   onClose: () => void;
-  autoDisableDigest?: boolean;
 }
 
 const OPTIONS = [
-  { key: "weekly_digest" as const,  label: "Weekly portfolio digest",  desc: "Portfolio performance summary every Monday morning" },
-  { key: "price_alerts"  as const,  label: "Price alerts",             desc: "Notifications when holdings hit your set thresholds"  },
-  { key: "news_summary"  as const,  label: "Market news summary",      desc: "Weekly roundup of market news for your holdings"      },
+  { key: "morning_briefing" as const, label: "Morning Briefing",  desc: "Daily portfolio and market teaser at 6am ET" },
+  { key: "week_in_review"  as const, label: "Week in Review",    desc: "Weekly recap of your portfolio every Monday at 6am ET" },
+  { key: "monthly_summary" as const, label: "Monthly Summary",   desc: "Month-end portfolio return summary on the 1st" },
 ] as const;
 
-type Prefs = { weekly_digest: boolean; price_alerts: boolean; news_summary: boolean };
+type Prefs = { morning_briefing: boolean; week_in_review: boolean; monthly_summary: boolean };
 
-export default function EmailPreferences({ onClose, autoDisableDigest }: Props) {
-  const [prefs, setPrefs]   = useState<Prefs>({ weekly_digest: true, price_alerts: true, news_summary: false });
+export default function EmailPreferences({ onClose }: Props) {
+  const [prefs, setPrefs]     = useState<Prefs>({ morning_briefing: false, week_in_review: false, monthly_summary: false });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [saved,  setSaved]    = useState(false);
@@ -30,21 +29,14 @@ export default function EmailPreferences({ onClose, autoDisableDigest }: Props) 
         if (!user) { setNoUser(true); setLoading(false); return; }
         const { data } = await supabase
           .from("email_preferences")
-          .select("weekly_digest,price_alerts,news_summary")
+          .select("morning_briefing,week_in_review,monthly_summary")
           .eq("user_id", user.id)
           .single();
-        if (data) setPrefs({ weekly_digest: data.weekly_digest, price_alerts: data.price_alerts, news_summary: data.news_summary });
+        if (data) setPrefs({ morning_briefing: data.morning_briefing ?? false, week_in_review: data.week_in_review ?? false, monthly_summary: data.monthly_summary ?? false });
       } catch {}
       setLoading(false);
     })();
   }, []);
-
-  // When opened via unsubscribe link, auto-toggle digest off after load
-  useEffect(() => {
-    if (!loading && autoDisableDigest) {
-      setPrefs(p => ({ ...p, weekly_digest: false }));
-    }
-  }, [loading, autoDisableDigest]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -72,17 +64,16 @@ export default function EmailPreferences({ onClose, autoDisableDigest }: Props) 
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} required — do not remove
       initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} required — do not remove
         initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.97 }}
         style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 14, padding: "28px 28px 24px", width: "100%", maxWidth: 420, boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}
       >
-        {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 22 }}>
           <div>
             <div style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 4 }}>Account</div>
@@ -113,7 +104,6 @@ export default function EmailPreferences({ onClose, autoDisableDigest }: Props) 
                     <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 3 }}>{opt.label}</div>
                     <div style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.5 }}>{opt.desc}</div>
                   </div>
-                  {/* Toggle pill */}
                   <div style={{ width: 38, height: 22, borderRadius: 11, background: on ? "var(--accent)" : "var(--border2)", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
                     <div style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: on ? "#0a0e14" : "var(--bg)", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
                   </div>

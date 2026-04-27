@@ -4034,7 +4034,449 @@ async def price_alert_loop():
         await asyncio.sleep(60)
 
 
-# ── Weekly Portfolio Digest ────────────────────────────────────────────────────
+# ── Scheduled Email System ────────────────────────────────────────────────────
+
+
+def _finnhub_quote(ticker: str) -> "dict | None":
+    """Fetch a live Finnhub quote. Returns {c, d, dp, pc} or None on failure."""
+    key = os.environ.get("FINNHUB_API_KEY", "")
+    if not key:
+        return None
+    try:
+        resp = requests.get(
+            f"https://finnhub.io/api/v1/quote?symbol={ticker}&token={key}",
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("c", 0) > 0:
+                return data
+    except Exception as e:
+        print(f"[finnhub] quote error for {ticker}: {e}")
+    return None
+
+
+def _fetch_user_email_data(user_id: str):
+    """Return (email, display_name, tickers, weights) for the user's first portfolio, or None."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return None
+    try:
+        ur = requests.get(f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}", headers=_sb_headers(), timeout=8)
+        if ur.status_code != 200:
+            return None
+        ud = ur.json()
+        email = ud.get("email", "")
+        if not email:
+            return None
+        meta = ud.get("user_metadata") or {}
+        display_name = meta.get("full_name") or meta.get("name") or email.split("@")[0]
+        pr = requests.get(
+            f"{SUPABASE_URL}/rest/v1/portfolios?user_id=eq.{user_id}&select=tickers,weights&limit=1",
+            headers=_sb_headers(), timeout=8,
+        )
+        if pr.status_code != 200 or not pr.json():
+            return None
+        pf = pr.json()[0]
+        tickers = pf.get("tickers") or []
+        weights_raw = pf.get("weights") or []
+        if not tickers:
+            return None
+        weights = [float(w) for w in weights_raw[:len(tickers)]]
+        total = sum(weights)
+        if total <= 0:
+            weights = [1.0 / len(tickers)] * len(tickers)
+        else:
+            weights = [w / total for w in weights]
+        return email, display_name, tickers, weights
+    except Exception as e:
+        print(f"[email-data] error for user {user_id}: {e}")
+        return None
+
+
+def _opted_in_user_ids(column: str) -> list:
+    """Return user_ids with the given email_preferences column set to true."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return []
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?{column}=eq.true&select=user_id",
+            headers=_sb_headers(), timeout=10,
+        )
+        if resp.status_code == 200:
+            return [r["user_id"] for r in resp.json()]
+    except Exception as e:
+        print(f"[email-prefs] error fetching {column}: {e}")
+    return []
+
+
+def _portfolio_return_yf(tickers: list, weights: list, period: str):
+    """Compute weighted portfolio % return over the given yfinance period."""
+    try:
+        if not tickers:
+            return None
+        dl = tickers[0] if len(tickers) == 1 else tickers
+        df = yf.download(dl, period=period, auto_adjust=True, progress=False)
+        if df.empty or len(df) < 2:
+            return None
+        close = df["Close"] if isinstance(df.columns, pd.MultiIndex) else df[["Close"]].rename(columns={"Close": tickers[0]})
+        ret = 0.0
+        for i, ticker in enumerate(tickers):
+            if i >= len(weights) or ticker not in close.columns:
+                continue
+            col = close[ticker].dropna()
+            if len(col) < 2:
+                continue
+            r = (float(col.iloc[-1]) - float(col.iloc[0])) / float(col.iloc[0]) * 100
+            ret += weights[i] * r
+        return round(ret, 2)
+    except Exception as e:
+        print(f"[yf-return] error ({period}): {e}")
+        return None
+
+
+def _haiku_teaser(prompt: str, max_tokens: int = 100) -> str:
+    """Call Claude Haiku for a short email teaser. Returns '' on error."""
+    try:
+        import anthropic as _anth
+        key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not key:
+            return ""
+        client = _anth.Anthropic(api_key=key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return clean_ai_response(resp.content[0].text.strip())
+    except Exception as e:
+        print(f"[haiku] error: {e}")
+        return ""
+
+
+# ── Email Timing Helpers ───────────────────────────────────────────────────────
+
+def _seconds_until_6am_et() -> float:
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    target = now.replace(hour=6, minute=0, second=0, microsecond=0)
+    if now >= target:
+        target += timedelta(days=1)
+    return max((target - now).total_seconds(), 60.0)
+
+
+def _seconds_until_monday_6am_et() -> float:
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    days_ahead = (7 - now.weekday()) % 7
+    target = (now + timedelta(days=days_ahead)).replace(hour=6, minute=0, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=7)
+    return max((target - now).total_seconds(), 60.0)
+
+
+def _seconds_until_first_of_month_6am_et() -> float:
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    if now.day == 1 and now.hour < 6:
+        target = now.replace(hour=6, minute=0, second=0, microsecond=0)
+    else:
+        year = now.year if now.month < 12 else now.year + 1
+        month = now.month + 1 if now.month < 12 else 1
+        target = datetime(year, month, 1, 6, 0, 0, tzinfo=ZoneInfo("America/New_York"))
+    return max((target - now).total_seconds(), 60.0)
+
+
+# ── Morning Briefing Email ─────────────────────────────────────────────────────
+
+async def send_morning_briefing_emails(target_user_id=None) -> dict:
+    """Send morning briefing emails to opted-in users at 6am ET."""
+    user_ids = [target_user_id] if target_user_id else _opted_in_user_ids("morning_briefing")
+    if not user_ids:
+        return {"sent": 0, "skipped": "no opted-in users"}
+    from datetime import date as _date
+    today_str = _date.today().strftime("%B %-d, %Y")
+    subject = f"Your morning briefing -- {today_str}"
+    sent = failed = skipped = 0
+    loop = asyncio.get_event_loop()
+
+    for uid in user_ids:
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
+            if not data:
+                skipped += 1
+                continue
+            email, display_name, tickers, weights = data
+            finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+            portfolio_change = None
+            top_mover = ""
+            market_note = ""
+
+            if finnhub_key:
+                def _fetch_morning_data():
+                    changes = {}
+                    for i, ticker in enumerate(tickers[:12]):
+                        q = _finnhub_quote(ticker)
+                        if q and q.get("dp") is not None:
+                            changes[ticker] = q["dp"]
+                        time.sleep(0.06)
+                    return changes
+                changes = await loop.run_in_executor(None, _fetch_morning_data)
+                if changes:
+                    wsum = sum(weights[tickers.index(t)] * changes[t] for t in changes if t in tickers)
+                    wt = sum(weights[tickers.index(t)] for t in changes if t in tickers)
+                    if wt > 0:
+                        portfolio_change = round(wsum / wt, 2)
+                    mv = max(changes.items(), key=lambda x: abs(x[1]))
+                    mv_dir = "up" if mv[1] >= 0 else "down"
+                    top_mover = f"{mv[0]} is {mv_dir} {abs(mv[1]):.2f}% so far today."
+                spy_q = await loop.run_in_executor(None, _finnhub_quote, "SPY")
+                if spy_q and spy_q.get("dp") is not None:
+                    sp = spy_q["dp"]
+                    market_note = f"The S&P 500 is {'up' if sp >= 0 else 'down'} {abs(sp):.2f}% today."
+
+            if portfolio_change is None:
+                skipped += 1
+                continue
+
+            sign = "+" if portfolio_change >= 0 else ""
+            pct_str = f"{sign}{portfolio_change:.2f}%"
+            prompt = (
+                f"Write 2 sharp sentences for a morning portfolio email to {display_name}. "
+                f"Their portfolio is {pct_str} today. {market_note} {top_mover} "
+                "Be direct. Use only the numbers given. No em dashes, no asterisks, no markdown."
+            )
+            teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 90)
+            if not teaser:
+                teaser = f"Your portfolio is {pct_str} today. {market_note}"
+            html = _email_html(
+                heading=f"Good morning, {display_name}",
+                label="Morning Briefing",
+                body_lines=[
+                    f"Your portfolio: <strong style=\"font-family:'Courier New',Courier,monospace;color:#e8e0cc;\">{pct_str}</strong> today.",
+                    teaser,
+                ],
+                cta_text="See your full briefing",
+                cta_url="https://corvo.capital/app",
+                user_id=uid,
+            )
+            ok = await loop.run_in_executor(None, _resend, email, subject, html)
+            sent += 1 if ok else 0
+            failed += 0 if ok else 1
+        except Exception as e:
+            print(f"[morning-brief-email] error for {uid}: {e}")
+            failed += 1
+
+    print(f"[morning-brief-email] done: sent={sent} failed={failed} skipped={skipped}")
+    return {"sent": sent, "failed": failed, "skipped": skipped}
+
+
+async def morning_briefing_email_loop():
+    """Background task: send morning briefing emails at 6am ET daily."""
+    print("[morning-brief-email] scheduler started")
+    while True:
+        wait = _seconds_until_6am_et()
+        print(f"[morning-brief-email] sleeping {wait/3600:.2f}h until 6am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_morning_briefing_emails()
+        except Exception as e:
+            print(f"[morning-brief-email] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/email/test-morning-briefing")
+async def test_morning_briefing_email(user_id: str = ""):
+    """Manually trigger the morning briefing email for one user (or all opted-in)."""
+    return await send_morning_briefing_emails(target_user_id=user_id or None)
+
+
+# ── Week in Review Email ────────────────────────────────────────────────────────
+
+async def send_week_in_review_emails(target_user_id=None) -> dict:
+    """Send week-in-review emails to opted-in users every Monday at 6am ET."""
+    user_ids = [target_user_id] if target_user_id else _opted_in_user_ids("week_in_review")
+    if not user_ids:
+        return {"sent": 0, "skipped": "no opted-in users"}
+    from datetime import date as _date, timedelta as _td
+    today = _date.today()
+    week_start = today - _td(days=today.weekday() + 7)
+    week_end = week_start + _td(days=4)
+    date_range = f"{week_start.strftime('%b %-d')} - {week_end.strftime('%b %-d, %Y')}"
+    subject = f"Your week in review -- {date_range}"
+    sent = failed = skipped = 0
+    loop = asyncio.get_event_loop()
+
+    for uid in user_ids:
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
+            if not data:
+                skipped += 1
+                continue
+            email, display_name, tickers, weights = data
+            weekly_return = await loop.run_in_executor(None, _portfolio_return_yf, tickers, weights, "5d")
+            if weekly_return is None:
+                skipped += 1
+                continue
+
+            def _upcoming_earnings_str() -> str:
+                upcoming = []
+                cutoff = today + _td(days=7)
+                for t in tickers[:8]:
+                    try:
+                        cal = yf.Ticker(t).calendar
+                        if not cal:
+                            continue
+                        raw = (cal.get("Earnings Date") if isinstance(cal, dict)
+                               else (cal.loc["Earnings Date"].iloc[0] if "Earnings Date" in cal.index else None))
+                        if raw is None:
+                            continue
+                        if isinstance(raw, (list, tuple)):
+                            raw = raw[0]
+                        ed = raw.date() if hasattr(raw, "date") else _date.fromisoformat(str(raw)[:10])
+                        if today <= ed <= cutoff:
+                            upcoming.append(t)
+                    except Exception:
+                        pass
+                return ", ".join(upcoming) if upcoming else ""
+
+            earnings_str = await loop.run_in_executor(None, _upcoming_earnings_str)
+            earnings_note = f"Earnings this week: {earnings_str}." if earnings_str else ""
+            sign = "+" if weekly_return >= 0 else ""
+            pct_str = f"{sign}{weekly_return:.2f}%"
+            prompt = (
+                f"Write 2 concise sentences for a weekly portfolio review email to {display_name}. "
+                f"Their portfolio returned {pct_str} last week. {earnings_note} "
+                "Be direct and forward-looking. No em dashes, no asterisks, no markdown."
+            )
+            teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 90)
+            if not teaser:
+                teaser = f"Your portfolio returned {pct_str} last week. {earnings_note}"
+            html = _email_html(
+                heading=f"Your week in review, {display_name}",
+                label="Week in Review",
+                body_lines=[
+                    f"Last week: <strong style=\"font-family:'Courier New',Courier,monospace;color:#e8e0cc;\">{pct_str}</strong>",
+                    teaser,
+                ],
+                cta_text="See your full week",
+                cta_url="https://corvo.capital/app",
+                user_id=uid,
+            )
+            ok = await loop.run_in_executor(None, _resend, email, subject, html)
+            sent += 1 if ok else 0
+            failed += 0 if ok else 1
+        except Exception as e:
+            print(f"[week-in-review-email] error for {uid}: {e}")
+            failed += 1
+
+    print(f"[week-in-review-email] done: sent={sent} failed={failed} skipped={skipped}")
+    return {"sent": sent, "failed": failed, "skipped": skipped}
+
+
+async def week_in_review_loop():
+    """Background task: send week-in-review emails every Monday at 6am ET."""
+    print("[week-in-review-email] scheduler started")
+    while True:
+        wait = _seconds_until_monday_6am_et()
+        print(f"[week-in-review-email] sleeping {wait/3600:.1f}h until Monday 6am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_week_in_review_emails()
+        except Exception as e:
+            print(f"[week-in-review-email] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/email/test-week-in-review")
+async def test_week_in_review_email(user_id: str = ""):
+    """Manually trigger the week-in-review email for one user (or all opted-in)."""
+    return await send_week_in_review_emails(target_user_id=user_id or None)
+
+
+# ── Monthly Summary Email ───────────────────────────────────────────────────────
+
+async def send_monthly_summary_emails(target_user_id=None) -> dict:
+    """Send monthly summary emails to opted-in users on the 1st of each month at 6am ET."""
+    user_ids = [target_user_id] if target_user_id else _opted_in_user_ids("monthly_summary")
+    if not user_ids:
+        return {"sent": 0, "skipped": "no opted-in users"}
+    from datetime import date as _date
+    today = _date.today()
+    last_month_num = today.month - 1 if today.month > 1 else 12
+    last_month_year = today.year if today.month > 1 else today.year - 1
+    month_name = _date(last_month_year, last_month_num, 1).strftime("%B %Y")
+    subject = f"Your month in review -- {month_name}"
+    sent = failed = skipped = 0
+    loop = asyncio.get_event_loop()
+
+    for uid in user_ids:
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
+            if not data:
+                skipped += 1
+                continue
+            email, display_name, tickers, weights = data
+            monthly_return = await loop.run_in_executor(None, _portfolio_return_yf, tickers, weights, "1mo")
+            if monthly_return is None:
+                skipped += 1
+                continue
+            sign = "+" if monthly_return >= 0 else ""
+            pct_str = f"{sign}{monthly_return:.2f}%"
+            prompt = (
+                f"Write 1-2 sentences for a monthly portfolio summary email to {display_name}. "
+                f"Their portfolio returned {pct_str} in {month_name}. "
+                "Be insightful and direct. No em dashes, no asterisks, no markdown."
+            )
+            teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 80)
+            if not teaser:
+                teaser = f"Your portfolio returned {pct_str} in {month_name}."
+            html = _email_html(
+                heading=f"{month_name} in review, {display_name}",
+                label="Monthly Summary",
+                body_lines=[
+                    f"Portfolio return: <strong style=\"font-family:'Courier New',Courier,monospace;color:#e8e0cc;\">{pct_str}</strong>",
+                    teaser,
+                ],
+                cta_text="See your full month",
+                cta_url="https://corvo.capital/app",
+                user_id=uid,
+            )
+            ok = await loop.run_in_executor(None, _resend, email, subject, html)
+            sent += 1 if ok else 0
+            failed += 0 if ok else 1
+        except Exception as e:
+            print(f"[monthly-summary-email] error for {uid}: {e}")
+            failed += 1
+
+    print(f"[monthly-summary-email] done: sent={sent} failed={failed} skipped={skipped}")
+    return {"sent": sent, "failed": failed, "skipped": skipped}
+
+
+async def monthly_summary_loop():
+    """Background task: send monthly summary emails on the 1st of each month at 6am ET."""
+    print("[monthly-summary-email] scheduler started")
+    while True:
+        wait = _seconds_until_first_of_month_6am_et()
+        print(f"[monthly-summary-email] sleeping {wait/3600:.1f}h until 1st of month 6am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_monthly_summary_emails()
+        except Exception as e:
+            print(f"[monthly-summary-email] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/email/test-monthly-summary")
+async def test_monthly_summary_email(user_id: str = ""):
+    """Manually trigger the monthly summary email for one user (or all opted-in)."""
+    return await send_monthly_summary_emails(target_user_id=user_id or None)
+
+
+# ── (legacy yfinance stats, retained for portfolio snapshot endpoint) ──────────
+
 
 def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
     """
@@ -4190,444 +4632,6 @@ def _compute_portfolio_week_stats(snapshots: list[dict]) -> dict:
         "worst_day": round(worst_day, 2),
         "sharpe": round(sharpe, 2) if sharpe is not None else None,
     }
-
-
-def _generate_digest_summary(display_name: str, portfolio_blocks: list[dict]) -> str:
-    """
-    Ask Claude to write a concise 2-paragraph personalised digest summary.
-    portfolio_blocks: [{name, return_7d, best_day, worst_day, sharpe, tickers}]
-    """
-    try:
-        import anthropic as _anth
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            return ""
-        client = _anth.Anthropic(api_key=api_key)
-
-        pf_lines = []
-        for pf in portfolio_blocks:
-            ret = f"{pf['return_7d']:+.2f}%" if pf["return_7d"] is not None else "N/A"
-            best = f"{pf['best_day']:+.2f}%" if pf["best_day"] is not None else "N/A"
-            worst = f"{pf['worst_day']:+.2f}%" if pf["worst_day"] is not None else "N/A"
-            sharpe = str(pf["sharpe"]) if pf["sharpe"] is not None else "N/A"
-            tickers = ", ".join(pf.get("tickers", [])[:6])
-            pf_lines.append(
-                f'  Portfolio "{pf["name"]}": 7-day return {ret}, best day {best}, '
-                f'worst day {worst}, Sharpe {sharpe}. Holdings: {tickers}.'
-            )
-
-        name_str = display_name or ""
-        name_phrase = f"for {name_str}" if name_str else "for this user"
-        prompt = (
-            f"You are a personal financial analyst writing a weekly portfolio digest {name_phrase}.\n\n"
-            f"Portfolio performance this week:\n" + "\n".join(pf_lines) + "\n\n"
-            "Write exactly 2 paragraphs of plain prose with no labels, no numbering, and no headers. Just two paragraphs separated by a blank line.\n"
-            "First paragraph: Summarise overall performance for the week: highlight the key return, what drove it, and compare good vs bad days.\n"
-            "Second paragraph: One forward-looking observation: a risk, opportunity, or rebalancing thought.\n"
-            "Be direct, specific, and concise. Max 60 words per paragraph. No bullet points. No preamble. "
-            "Never use em dashes. Never use asterisks (*) or markdown formatting. Write in plain prose only."
-        )
-        resp = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=300,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return clean_ai_response(resp.content[0].text)
-    except Exception as e:
-        print(f"[digest] Claude error: {e}")
-        return ""
-
-
-def _build_digest_html(display_name: str, user_id: str, portfolio_blocks: list[dict], ai_summary: str) -> str:
-    """Build the full dark HTML email for the weekly digest."""
-    amber = "#c9a84c"
-    bg = "#0a0a0a"
-    card_bg = "#111111"
-    text = "#e8e0cc"
-    muted = "#888880"
-    border = "#1e1e1e"
-
-    name_str = display_name or ""
-    unsub_url = f"https://corvo.capital/unsubscribe?user_id={user_id}" if user_id else "https://corvo.capital/unsubscribe"
-
-    # Build per-portfolio stat blocks
-    pf_html = ""
-    for pf in portfolio_blocks:
-        ret = pf.get("return_7d")
-        best = pf.get("best_day")
-        worst = pf.get("worst_day")
-        sharpe = pf.get("sharpe")
-        tickers = pf.get("tickers", [])
-
-        ret_color = "#5cb88a" if (ret is not None and ret >= 0) else "#e05c5c"
-        ret_str = f"{ret:+.2f}%" if ret is not None else "N/A"
-        best_str = f"{best:+.2f}%" if best is not None else "N/A"
-        worst_str = f"{worst:+.2f}%" if worst is not None else "N/A"
-        sharpe_str = str(sharpe) if sharpe is not None else "N/A"
-        ticker_str = "  ·  ".join(tickers[:6]) + ("  +" + str(len(tickers) - 6) + " more" if len(tickers) > 6 else "")
-
-        stats_cells = ""
-        for label, val, color in [
-            ("7-Day Return", ret_str, ret_color),
-            ("Best Day", best_str, "#5cb88a"),
-            ("Worst Day", worst_str, "#e05c5c"),
-            ("Sharpe", sharpe_str, amber),
-        ]:
-            stats_cells += f"""
-              <td align="center" style="padding:12px 8px;width:25%;">
-                <p style="margin:0 0 4px 0;font-family:Arial,sans-serif;font-size:9px;
-                           letter-spacing:2px;color:{muted};text-transform:uppercase;">{label}</p>
-                <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:17px;
-                           font-weight:700;color:{color};">{val}</p>
-              </td>"""
-
-        pf_html += f"""
-        <tr>
-          <td style="padding:8px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                   style="background:{card_bg};border-radius:10px;border:1px solid {border};">
-              <tr>
-                <td style="padding:18px 20px 6px 20px;">
-                  <p style="margin:0 0 2px 0;font-family:Arial,sans-serif;font-size:13px;
-                             font-weight:700;color:{text};">{pf['name']}</p>
-                  <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;color:{muted};">{ticker_str}</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:0 12px 12px 12px;">
-                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                    <tr>{stats_cells}</tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>"""
-
-    # AI summary section
-    summary_html = ""
-    if ai_summary:
-        paras = [p.strip() for p in ai_summary.split("\n\n") if p.strip()]
-        for para in paras:
-            summary_html += f"""
-        <tr>
-          <td style="padding:4px 0 8px 0;">
-            <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;
-                       color:{muted};line-height:1.7;">{para}</p>
-          </td>
-        </tr>"""
-
-    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Your Weekly Portfolio Digest | Corvo</title>
-</head>
-<body style="margin:0;padding:0;background-color:{bg};">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0"
-         style="background-color:{bg};min-height:100vh;">
-    <tr>
-      <td align="center" style="padding:48px 16px;">
-        <table width="600" cellpadding="0" cellspacing="0" border="0"
-               style="max-width:600px;width:100%;">
-
-          <!-- Logo -->
-          <tr>
-            <td align="center" style="padding-bottom:32px;">
-              <p style="margin:0 0 4px 0;font-family:'Courier New',Courier,monospace;
-                         font-size:28px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:9px;
-                         letter-spacing:3px;color:#555;text-transform:uppercase;">Portfolio Intelligence</p>
-            </td>
-          </tr>
-
-          <!-- Heading -->
-          <tr>
-            <td style="padding-bottom:4px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
-                         letter-spacing:3px;color:{muted};text-transform:uppercase;">Weekly Digest</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-bottom:24px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:22px;
-                         font-weight:700;color:{text};">Your week in review, {name_str}</p>
-            </td>
-          </tr>
-
-          <!-- Portfolio stat cards -->
-          <tr>
-            <td>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                {pf_html}
-              </table>
-            </td>
-          </tr>
-
-          <!-- AI summary -->
-          {"" if not ai_summary else f'''
-          <tr><td style="padding:24px 0 8px 0;">
-            <p style="margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:9px;
-                       letter-spacing:2.5px;color:{muted};text-transform:uppercase;">AI Analysis</p>
-          </td></tr>
-          ''' + summary_html}
-
-          <!-- CTA -->
-          <tr>
-            <td align="center" style="padding:28px 0 8px 0;">
-              <table cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" style="border-radius:8px;background-color:{amber};">
-                    <a href="https://corvo.capital/app"
-                       style="display:inline-block;padding:14px 36px;font-family:Arial,sans-serif;
-                              font-size:14px;font-weight:700;color:#000000;text-decoration:none;
-                              border-radius:8px;letter-spacing:0.5px;">View Full Analysis &rarr;</a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Divider + footer -->
-          <tr>
-            <td style="border-top:1px solid {border};padding-top:24px;margin-top:16px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
-                         color:#444;text-align:center;line-height:1.8;">
-                &copy; 2026 Corvo &nbsp;&middot;&nbsp;
-                <a href="https://corvo.capital" style="color:#555;text-decoration:none;">corvo.capital</a>
-                &nbsp;&middot;&nbsp;
-                <a href="{unsub_url}" style="color:#555;text-decoration:none;">Unsubscribe</a>
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
-
-
-def _send_digest_email(to_email: str, display_name: str, user_id: str,
-                       portfolio_blocks: list[dict], ai_summary: str) -> bool:
-    """Build and send the weekly digest email via Resend. Returns True on success."""
-    resend_key = os.environ.get("RESEND_API_KEY", "")
-    if not resend_key:
-        print("[digest] RESEND_API_KEY not set, skipping email")
-        return False
-    html = _build_digest_html(display_name, user_id, portfolio_blocks, ai_summary)
-    try:
-        resp = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={
-                "from": "Corvo <hello@corvo.capital>",
-                "to": [to_email],
-                "subject": "📊 Your Weekly Portfolio Digest",
-                "html": html,
-            },
-            timeout=15,
-        )
-        if resp.status_code in (200, 201):
-            return True
-        print(f"[digest] Resend error {resp.status_code}: {resp.text[:200]}")
-        return False
-    except Exception as e:
-        print(f"[digest] email send error: {e}")
-        return False
-
-
-async def send_weekly_digest(target_user_id: str | None = None) -> dict:
-    """
-    Send the weekly digest to all users with weekly_digest = true
-    (or to target_user_id only when called from the test endpoint).
-    """
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return {"skipped": "supabase not configured"}
-
-    loop = asyncio.get_event_loop()
-
-    # 1. Fetch opted-in users from email_preferences
-    try:
-        prefs_url = f"{SUPABASE_URL}/rest/v1/email_preferences?weekly_digest=eq.true&select=user_id"
-        if target_user_id:
-            prefs_url = f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{target_user_id}&select=user_id"
-        prefs_resp = requests.get(prefs_url, headers=_sb_headers(), timeout=10)
-        if prefs_resp.status_code != 200:
-            return {"error": f"prefs fetch {prefs_resp.status_code}"}
-        user_ids = [r["user_id"] for r in prefs_resp.json()]
-    except Exception as e:
-        return {"error": str(e)}
-
-    if not user_ids:
-        print("[digest] no opted-in users")
-        return {"sent": 0, "skipped": "no opted-in users"}
-
-    # Date range: last 7 days
-    from datetime import timedelta
-    today = datetime.now(timezone.utc).date()
-    week_ago = (today - timedelta(days=7)).isoformat()
-
-    sent = failed = skipped = 0
-
-    for user_id in user_ids:
-        try:
-            # 2a. Get user email from Supabase Auth
-            user_resp = requests.get(
-                f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
-                headers=_sb_headers(), timeout=8,
-            )
-            if user_resp.status_code != 200:
-                skipped += 1
-                continue
-            user_data = user_resp.json()
-            email = user_data.get("email", "")
-            if not email:
-                skipped += 1
-                continue
-            display_name = (
-                (user_data.get("user_metadata") or {}).get("full_name")
-                or (user_data.get("user_metadata") or {}).get("name")
-                or email.split("@")[0]
-            )
-
-            # 2b. Fetch all portfolios for this user
-            pf_resp = requests.get(
-                f"{SUPABASE_URL}/rest/v1/portfolios?user_id=eq.{user_id}&select=id,name,tickers,weights",
-                headers=_sb_headers(), timeout=8,
-            )
-            if pf_resp.status_code != 200 or not pf_resp.json():
-                skipped += 1
-                continue
-            portfolios = pf_resp.json()
-
-            portfolio_blocks: list[dict] = []
-
-            for pf in portfolios:
-                pf_id = pf.get("id")
-                pf_name = pf.get("name") or "Portfolio"
-                tickers = pf.get("tickers") or []
-                weights_raw = pf.get("weights") or []
-
-                # 2c. Always compute stats from yfinance as primary source
-                print(f"[digest] {pf_name}: computing stats from yfinance (tickers={tickers})")
-                stats = _compute_week_stats_from_yfinance(tickers, weights_raw)
-                portfolio_blocks.append({
-                    "name": pf_name,
-                    "tickers": tickers,
-                    **stats,
-                })
-
-            if not portfolio_blocks:
-                skipped += 1
-                continue
-
-            # 2d. Generate AI summary (blocking, run in executor)
-            ai_summary = await loop.run_in_executor(
-                None, _generate_digest_summary, display_name, portfolio_blocks
-            )
-
-            # 2e. Send email
-            ok = await loop.run_in_executor(
-                None, _send_digest_email, email, display_name, user_id, portfolio_blocks, ai_summary
-            )
-            if ok:
-                sent += 1
-                print(f"[digest] sent to {email}")
-            else:
-                failed += 1
-
-        except Exception as e:
-            print(f"[digest] error for user {user_id}: {e}")
-            failed += 1
-
-    print(f"[digest] done, sent={sent} failed={failed} skipped={skipped}")
-    return {"sent": sent, "failed": failed, "skipped": skipped}
-
-
-def _seconds_until_sunday_8am_et() -> float:
-    """Return seconds until the next Sunday 8:00 AM US/Eastern, minimum 60 s."""
-    from zoneinfo import ZoneInfo
-    from datetime import timedelta
-    now_et = datetime.now(ZoneInfo("America/New_York"))
-    # weekday(): Monday=0 … Sunday=6
-    days_ahead = (6 - now_et.weekday()) % 7
-    target = (now_et + timedelta(days=days_ahead)).replace(
-        hour=8, minute=0, second=0, microsecond=0
-    )
-    if target <= now_et:
-        # We're already past 8am on a Sunday, use next Sunday
-        target += timedelta(days=7)
-    return max((target - now_et).total_seconds(), 60.0)
-
-
-async def weekly_digest_loop():
-    """Background task: send portfolio digest email every Sunday at 8am ET."""
-    print("[digest] scheduler started")
-    while True:
-        wait = _seconds_until_sunday_8am_et()
-        print(f"[digest] sleeping {wait/3600:.1f}h until Sunday 8am ET")
-        await asyncio.sleep(wait)
-        try:
-            await send_weekly_digest()
-        except Exception as e:
-            print(f"[digest] loop error: {e}")
-        await asyncio.sleep(60)
-
-
-@app.get("/email/test-digest")
-async def test_weekly_digest(user_id: str = ""):
-    """Manually trigger the weekly digest for a specific user (or all opted-in users)."""
-    result = await send_weekly_digest(target_user_id=user_id or None)
-    return result
-
-
-@app.get("/email/debug-yfinance")
-async def debug_yfinance(tickers: str = "AAPL,MSFT,NVDA"):
-    """Debug endpoint: run _compute_week_stats_from_yfinance and return raw details."""
-    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
-    weights = [1.0 / len(ticker_list)] * len(ticker_list)
-
-    raw_info: dict = {}
-    try:
-        dl_arg = ticker_list[0] if len(ticker_list) == 1 else ticker_list
-        raw = yf.download(dl_arg, period="14d", auto_adjust=True, progress=False)
-        raw_info = {
-            "shape": str(raw.shape),
-            "cols": [str(c) for c in list(raw.columns)[:8]],
-            "empty": raw.empty,
-            "is_multiindex": isinstance(raw.columns, pd.MultiIndex),
-        }
-    except Exception as e:
-        raw_info = {"error": str(e)}
-
-    stats = _compute_week_stats_from_yfinance(ticker_list, weights)
-    return {
-        "tickers": ticker_list,
-        "yf_version": yf.__version__,
-        "raw": raw_info,
-        "stats": stats,
-        "code_version": "v_digest_yf_primary_2",
-    }
-
-
-@app.get("/debug-yf-raw")
-async def debug_yf_raw():
-    import yfinance as yf
-    try:
-        raw = yf.download("AAPL", period="14d", auto_adjust=True, progress=False)
-        return {
-            "shape": list(raw.shape) if raw is not None else None,
-            "empty": raw.empty if raw is not None else True,
-            "columns": [str(c) for c in raw.columns.tolist()[:10]] if raw is not None and not raw.empty else [],
-            "tail": raw.tail(3).to_string() if raw is not None and not raw.empty else "empty",
-        }
-    except Exception as e:
-        return {"error": str(e)}
-# force redeploy Fri Apr 24 10:36:18 EDT 2026
 
 
 # ── Market Driver ──────────────────────────────────────────────────────────────

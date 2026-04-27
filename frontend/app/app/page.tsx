@@ -2304,7 +2304,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       <AnimatePresence>
         {showEmailPrefs && (
           <EmailPreferences
-            autoDisableDigest={unsubscribeMode}
             onClose={() => { setShowEmailPrefs(false); setUnsubscribeMode(false); }}
           />
         )}
