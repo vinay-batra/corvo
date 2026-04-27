@@ -83,6 +83,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
     if (typeof window === "undefined") return false;
     try { return localStorage.getItem("corvo_briefing_collapsed") === "true"; } catch { return false; }
   });
+  const briefingRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (displayName?.trim()) { setResolvedName(displayName.trim()); return; }
@@ -148,6 +149,17 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
       return next;
     });
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("section") === "briefing") {
+      setBriefingCollapsed(false);
+      setTimeout(() => {
+        briefingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 350);
+    }
+  }, []);
 
   const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
   const assetsRef = useRef(assets);
@@ -244,7 +256,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+        <div ref={briefingRef} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
           <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>{getBriefingTitle()}</span>
           <button
             onClick={toggleBriefing}

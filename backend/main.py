@@ -22,6 +22,7 @@ SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 VAPID_PRIVATE_KEY    = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY     = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_CLAIMS_EMAIL   = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:alerts@corvo.capital")
+RAILWAY_BASE_URL     = os.environ.get("RAILWAY_BASE_URL", "https://web-production-7a78d.up.railway.app")
 
 # Startup env check: visible in Railway logs
 print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', '')[:6] + '...)' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
@@ -1812,6 +1813,7 @@ def _email_html(
     cta_url: str,
     user_id: str = "",
     label: str = "",
+    unsub_type: str = "",
 ) -> str:
     """Build a minimal dark HTML email compatible with Gmail, Outlook, and Apple Mail."""
     amber = "#c9a84c"
@@ -1822,10 +1824,12 @@ def _email_html(
     bdr   = "#1e1e1e"
     mono  = "'Courier New', Courier, monospace"
     sans  = "Arial, Helvetica, sans-serif"
-    unsub = (
-        f"https://corvo.capital/unsubscribe?user_id={user_id}"
-        if user_id else "https://corvo.capital/unsubscribe"
-    )
+    if unsub_type and user_id:
+        unsub = f"{RAILWAY_BASE_URL}/email/unsubscribe?user_id={user_id}&type={unsub_type}"
+    elif user_id:
+        unsub = f"https://corvo.capital/unsubscribe?user_id={user_id}"
+    else:
+        unsub = "https://corvo.capital/unsubscribe"
     body_rows = "".join(
         f'<tr><td style="padding:0 0 12px 0;font-family:{sans};font-size:14px;'
         f'color:{muted};line-height:1.75;">{line}</td></tr>'
@@ -1862,7 +1866,7 @@ def _email_html(
             <tr><td style="padding-top:22px;">
               <table cellpadding="0" cellspacing="0" border="0">
                 <tr><td align="center" style="border-radius:8px;background-color:{amber};">
-                  <a href="{cta_url}" style="display:inline-block;padding:12px 28px;font-family:{sans};font-size:13px;font-weight:700;color:#000;text-decoration:none;border-radius:8px;letter-spacing:0.4px;">{cta_text}</a>
+                  <a href="{cta_url}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 28px;font-family:{sans};font-size:13px;font-weight:700;color:#000;text-decoration:none;border-radius:8px;letter-spacing:0.4px;">{cta_text}</a>
                 </td></tr>
               </table>
             </td></tr>
@@ -2626,6 +2630,83 @@ def unsubscribe(user_id: str = ""):
     <div class="sub">Portfolio Intelligence</div>
     <div class="icon">{"&#x2705;" if success else "&#x26A0;"}</div>
     <h1>{"Unsubscribed" if success else "Oops"}</h1>
+    <p>{body_text}</p>
+    <p>{detail_text}</p>
+  </div>
+</body>
+</html>""", status_code=200)
+
+
+@app.get("/email/unsubscribe", response_class=HTMLResponse)
+def email_unsubscribe_type(user_id: str = "", type: str = ""):
+    """Unsubscribe a user from a single email type. Called directly from email links."""
+    VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary"}
+    LABEL_MAP = {
+        "morning_briefing": "Morning Briefing",
+        "week_in_review": "Week in Review",
+        "monthly_summary": "Monthly Summary",
+    }
+    col = type if type in VALID_COLUMNS else None
+    success = False
+    if col and user_id and SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        try:
+            resp = requests.patch(
+                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}",
+                headers={**_sb_headers(), "Prefer": "return=minimal"},
+                json={col: False},
+                timeout=8,
+            )
+            success = resp.status_code in (200, 204)
+            print(f"[email-unsubscribe] user_id={user_id} type={col} status={resp.status_code}")
+        except Exception as e:
+            print(f"[email-unsubscribe] error: {e}")
+
+    label = LABEL_MAP.get(type, "Corvo emails")
+    amber = "#c9a84c"
+    sans  = "Arial, Helvetica, sans-serif"
+    mono  = "'Courier New', Courier, monospace"
+    if success:
+        icon_html = "&#x2705;"
+        title = "Unsubscribed"
+        body_text = f"You&#39;ve been unsubscribed from {label} emails."
+        detail_text = f'You can re-enable this at any time in your <a href="https://corvo.capital/app" style="color:{amber};">account settings</a>.'
+    elif not col:
+        icon_html = "&#x26A0;"
+        title = "Invalid Link"
+        body_text = "This unsubscribe link is not valid."
+        detail_text = f'Visit your <a href="https://corvo.capital/app" style="color:{amber};">account settings</a> to manage email preferences.'
+    else:
+        icon_html = "&#x26A0;"
+        title = "Something Went Wrong"
+        body_text = "We could not process your request."
+        detail_text = f'Visit your <a href="https://corvo.capital/app" style="color:{amber};">account settings</a> to manage email preferences.'
+
+    return HTMLResponse(content=f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} | Corvo</title>
+  <style>
+    body {{ margin: 0; padding: 0; background: #0a0a0a; color: #e8e0cc;
+            font-family: {sans}; display: flex; align-items: center;
+            justify-content: center; min-height: 100vh; }}
+    .card {{ max-width: 480px; width: 100%; padding: 48px 32px; text-align: center; }}
+    .brand {{ font-size: 24px; font-weight: 900; letter-spacing: 6px; color: {amber};
+              font-family: {mono}; margin-bottom: 4px; }}
+    .sub {{ font-size: 9px; letter-spacing: 3px; color: #555; text-transform: uppercase;
+            margin-bottom: 40px; }}
+    .icon {{ font-size: 40px; margin-bottom: 20px; }}
+    h1 {{ font-size: 20px; font-weight: 700; color: #e8e0cc; margin: 0 0 12px; }}
+    p {{ font-size: 14px; color: #888880; line-height: 1.7; margin: 0 0 12px; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">CORVO</div>
+    <div class="sub">Portfolio Intelligence</div>
+    <div class="icon">{icon_html}</div>
+    <h1>{title}</h1>
     <p>{body_text}</p>
     <p>{detail_text}</p>
   </div>
@@ -4276,8 +4357,9 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
                     teaser,
                 ],
                 cta_text="See your full briefing",
-                cta_url="https://corvo.capital/app",
+                cta_url="https://corvo.capital/app?section=briefing",
                 user_id=uid,
+                unsub_type="morning_briefing",
             )
             ok = await loop.run_in_executor(None, _resend, email, subject, html)
             sent += 1 if ok else 0
@@ -4405,6 +4487,7 @@ async def send_week_in_review_emails(target_user_id=None) -> dict:
                 cta_text="See your full week",
                 cta_url="https://corvo.capital/app",
                 user_id=uid,
+                unsub_type="week_in_review",
             )
             ok = await loop.run_in_executor(None, _resend, email, subject, html)
             sent += 1 if ok else 0
@@ -4484,6 +4567,7 @@ async def send_monthly_summary_emails(target_user_id=None) -> dict:
                 cta_text="See your full month",
                 cta_url="https://corvo.capital/app",
                 user_id=uid,
+                unsub_type="monthly_summary",
             )
             ok = await loop.run_in_executor(None, _resend, email, subject, html)
             sent += 1 if ok else 0
