@@ -197,7 +197,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
             </div>
 
             {/* Scrollable body */}
-            <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: isMobile ? "12px 14px" : "16px 20px" }}>
+            <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "none", padding: isMobile ? "12px 14px" : "16px 20px" }}>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
 
                 {/* LEFT / TOP: Current (read-only) */}

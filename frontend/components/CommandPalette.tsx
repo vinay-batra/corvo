@@ -122,7 +122,7 @@ export default function CommandPalette({ open, onClose, tabs, onTab, onStockSear
               <kbd style={{ padding: "2px 6px", fontSize: 10, background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 4, color: "var(--text3)", flexShrink: 0 }}>ESC</kbd>
             </div>
             {/* Results */}
-            <div style={{ maxHeight: 360, overflowY: "auto" }}>
+            <div style={{ maxHeight: 360, overflowY: "auto", overscrollBehavior: "none" }}>
               {filtered.length === 0 ? (
                 <div style={{ padding: "24px 16px", textAlign: "center", fontSize: 13, color: "var(--text3)" }}>No results</div>
               ) : (

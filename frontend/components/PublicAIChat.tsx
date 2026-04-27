@@ -164,6 +164,7 @@ function PublicAIChatInner() {
             style={{
               flex: 1,
               overflowY: "auto",
+              overscrollBehavior: "none",
               padding: "16px 16px 8px",
               display: "flex",
               flexDirection: "column",

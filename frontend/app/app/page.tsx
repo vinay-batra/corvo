@@ -1551,7 +1551,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       </div>
 
       {/* Builder */}
-      <div id="tour-ticker-area" style={{ flex: 1, overflow: "auto", padding: "12px 14px" }}>
+      <div id="tour-ticker-area" style={{ flex: 1, overflow: "auto", overscrollBehavior: "none", padding: "12px 14px" }}>
         <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} />
       </div>
 
@@ -2371,7 +2371,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             // initial={false} is required — do not remove
             initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 280 }}
-            style={{ position: "fixed", inset: 0, zIndex: 490, background: "var(--bg)", overflowY: "auto" }}>
+            style={{ position: "fixed", inset: 0, zIndex: 490, background: "var(--bg)", overflowY: "auto", overscrollBehavior: "none" }}>
             <SettingsPage
               onClose={() => setShowSettings(false)}
               onProfileSaved={(p) => setNavProfile({ displayName: p.displayName, avatarUrl: p.avatarUrl })}

@@ -397,6 +397,7 @@ export default function DashboardTour({ onComplete }: Props) {
     boxShadow: "var(--shadow-md)",
     maxHeight: "85vh",
     overflowY: "auto",
+    overscrollBehavior: "none",
   };
 
   return (
