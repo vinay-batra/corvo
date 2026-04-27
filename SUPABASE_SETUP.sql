@@ -25,6 +25,28 @@ create policy "Users can delete own portfolios"
   on portfolios for delete
   using (auth.uid() = user_id);
 
+-- ─── Health Score Cache ─────────────────────────────────────────────────────
+-- Stores one AI-generated health score per user per day per portfolio.
+-- The backend upserts into this table and reads it before calling Claude.
+
+create table if not exists health_score_cache (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null,
+  date text not null,
+  tickers_hash text not null,
+  score integer not null,
+  headline text not null default '',
+  actions jsonb not null default '[]',
+  created_at timestamp with time zone default now(),
+  unique (user_id, date, tickers_hash)
+);
+
+alter table health_score_cache enable row level security;
+
+-- Backend service role reads/writes via service key (bypasses RLS)
+-- No user-facing RLS policies needed since access is only via the API
+
+
 -- ─── Feature Votes ─────────────────────────────────────────────────────────
 
 create table if not exists feature_votes (
