@@ -4059,14 +4059,21 @@ def _finnhub_quote(ticker: str) -> "dict | None":
 def _fetch_user_email_data(user_id: str):
     """Return (email, display_name, tickers, weights) for the user's first portfolio, or None."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        print(f"[email-data] skip {user_id}: missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
         return None
     try:
-        ur = requests.get(f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}", headers=_sb_headers(), timeout=8)
+        ur = requests.get(
+            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+            headers=_sb_headers(), timeout=8,
+        )
+        print(f"[email-data] auth.users query for {user_id}: status={ur.status_code}")
         if ur.status_code != 200:
+            print(f"[email-data] skip {user_id}: Supabase auth.users returned status {ur.status_code} body={ur.text[:200]}")
             return None
         ud = ur.json()
         email = ud.get("email", "")
         if not email:
+            print(f"[email-data] skip {user_id}: no email found in auth.users (field missing or empty)")
             return None
         meta = ud.get("user_metadata") or {}
         display_name = meta.get("full_name") or meta.get("name") or email.split("@")[0]
@@ -4074,12 +4081,18 @@ def _fetch_user_email_data(user_id: str):
             f"{SUPABASE_URL}/rest/v1/portfolios?user_id=eq.{user_id}&select=tickers,weights&limit=1",
             headers=_sb_headers(), timeout=8,
         )
-        if pr.status_code != 200 or not pr.json():
+        print(f"[email-data] portfolios query for {user_id}: status={pr.status_code} rows={len(pr.json()) if pr.status_code == 200 else 'n/a'}")
+        if pr.status_code != 200:
+            print(f"[email-data] skip {user_id}: portfolios query failed status={pr.status_code} body={pr.text[:200]}")
+            return None
+        if not pr.json():
+            print(f"[email-data] skip {user_id}: no portfolio found in database")
             return None
         pf = pr.json()[0]
         tickers = pf.get("tickers") or []
         weights_raw = pf.get("weights") or []
         if not tickers:
+            print(f"[email-data] skip {user_id}: portfolio exists but tickers list is empty")
             return None
         weights = [float(w) for w in weights_raw[:len(tickers)]]
         total = sum(weights)
@@ -4087,9 +4100,10 @@ def _fetch_user_email_data(user_id: str):
             weights = [1.0 / len(tickers)] * len(tickers)
         else:
             weights = [w / total for w in weights]
+        print(f"[email-data] success {user_id}: email={email} tickers={tickers}")
         return email, display_name, tickers, weights
     except Exception as e:
-        print(f"[email-data] error for user {user_id}: {e}")
+        print(f"[email-data] skip {user_id}: Supabase error: {e}")
         return None
 
 
@@ -4206,7 +4220,7 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
         try:
             data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
             if not data:
-                print(f"[morning-brief-email] skip {uid}: _fetch_user_email_data returned None (no portfolio, no email, or Supabase error)")
+                print(f"[morning-brief-email] skip {uid}: _fetch_user_email_data returned None (see [email-data] log above for specific reason)")
                 skipped += 1
                 continue
             email, display_name, tickers, weights = data
@@ -4296,6 +4310,18 @@ async def test_morning_briefing_email(user_id: str = ""):
     uid = user_id or None
     if uid and SUPABASE_URL and SUPABASE_SERVICE_KEY:
         try:
+            # Log auth.users email lookup
+            auth_resp = requests.get(
+                f"{SUPABASE_URL}/auth/v1/admin/users/{uid}",
+                headers=_sb_headers(), timeout=8,
+            )
+            print(f"[test-morning-briefing] auth.users status={auth_resp.status_code}")
+            if auth_resp.status_code == 200:
+                auth_data = auth_resp.json()
+                print(f"[test-morning-briefing] auth.users email={auth_data.get('email', '(empty)')} confirmed_at={auth_data.get('email_confirmed_at', '(none)')}")
+            else:
+                print(f"[test-morning-briefing] auth.users error body={auth_resp.text[:300]}")
+            # Log email_preferences row
             pref_resp = requests.get(
                 f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{uid}&select=*",
                 headers=_sb_headers(), timeout=8,
