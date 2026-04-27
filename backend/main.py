@@ -738,6 +738,132 @@ def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
     return {"insight": clean_ai_response(resp.content[0].text)}
 
 
+class RetirementSimRequest(BaseModel):
+    tickers: list[str]
+    weights: list[float]
+    current_value: float
+    years_to_retirement: int
+    simulations: int = 5000
+    period: str = "5y"
+
+
+@app.post("/portfolio/retirement-simulation")
+def retirement_simulation(req: RetirementSimRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "retirement-simulation", 10, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+
+    if not req.tickers or len(req.tickers) != len(req.weights):
+        raise HTTPException(status_code=400, detail="Tickers and weights must be non-empty and equal length.")
+    if req.years_to_retirement < 1 or req.years_to_retirement > 60:
+        raise HTTPException(status_code=400, detail="years_to_retirement must be between 1 and 60.")
+    if req.current_value <= 0:
+        raise HTTPException(status_code=400, detail="current_value must be positive.")
+
+    total_w = sum(req.weights) or 1.0
+    weights = [w / total_w for w in req.weights]
+    tickers = [t.strip().upper() for t in req.tickers]
+
+    prices = get_prices(tickers, req.period)
+    if prices is None or prices.empty:
+        raise HTTPException(status_code=500, detail="Failed to fetch price data.")
+
+    available = [t for t in tickers if t in prices.columns]
+    if not available:
+        raise HTTPException(status_code=500, detail="No price data available for provided tickers.")
+
+    prices = prices[available].dropna()
+    avail_w = [weights[tickers.index(t)] for t in available]
+    total_avail = sum(avail_w) or 1.0
+    avail_w = [w / total_avail for w in avail_w]
+
+    returns = prices.pct_change().dropna()
+    port_returns = returns.values @ np.array(avail_w)
+
+    mu_hist = float(np.mean(port_returns))
+    sigma_daily = float(np.std(port_returns))
+
+    ASSET_CLASS_MU = {
+        "BND": 0.04, "AGG": 0.04, "TLT": 0.04, "IEF": 0.035, "SHY": 0.03,
+        "SGOV": 0.045, "BIL": 0.04, "VBTLX": 0.04, "LQD": 0.045, "HYG": 0.055,
+        "GLD": 0.05, "IAU": 0.05, "SLV": 0.04, "DJP": 0.04,
+        "SPY": 0.10, "VOO": 0.10, "VTI": 0.10, "IWM": 0.09, "QQQ": 0.11,
+    }
+    weighted_mu = sum(avail_w[i] * ASSET_CLASS_MU.get(available[i], mu_hist * 252) for i in range(len(available)))
+    mu_daily = weighted_mu / 252
+    sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
+    mu_daily = min(mu_daily, 0.25 / 252)
+
+    mu = mu_daily * 252
+    sigma = sigma_daily * np.sqrt(252)
+    dt = 1.0 / 252
+    horizon = req.years_to_retirement * 252
+
+    rng = np.random.default_rng()
+    Z = rng.standard_normal((req.simulations, horizon))
+    daily_factors = np.exp((mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * Z)
+    final_multipliers = np.prod(daily_factors, axis=1)
+
+    worst  = safe_float(float(np.percentile(final_multipliers, 10))  * req.current_value)
+    median = safe_float(float(np.percentile(final_multipliers, 50)) * req.current_value)
+    best   = safe_float(float(np.percentile(final_multipliers, 90)) * req.current_value)
+
+    worst_pct  = safe_float(float(np.percentile(final_multipliers, 10))  - 1.0)
+    median_pct = safe_float(float(np.percentile(final_multipliers, 50)) - 1.0)
+    best_pct   = safe_float(float(np.percentile(final_multipliers, 90)) - 1.0)
+
+    positive_prob = safe_float(float(np.mean(final_multipliers > 1.0)))
+
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+    client = anthropic.Anthropic(api_key=api_key)
+
+    ticker_str = ", ".join(available[:6]) + ("..." if len(available) > 6 else "")
+    prompt = (
+        f"A portfolio currently worth ${req.current_value:,.0f} ({ticker_str}) was simulated "
+        f"{req.simulations} times over {req.years_to_retirement} years to retirement. "
+        f"Results: worst case (10th percentile) = ${worst:,.0f} ({worst_pct:+.0%}), "
+        f"median = ${median:,.0f} ({median_pct:+.0%}), "
+        f"best case (90th percentile) = ${best:,.0f} ({best_pct:+.0%}). "
+        f"{round(positive_prob * 100, 1)}% of scenarios ended with a gain. "
+        f"Write exactly 2-3 sentences in plain English summarizing what these numbers mean for the investor. "
+        f"Then on a new line write 'Action:' followed by one specific, concrete action they could take to improve their retirement outlook. "
+        f"No markdown, no bullet points, no asterisks, no em dashes, no disclaimers."
+    )
+
+    resp = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=250,
+        system="You are a plain-English retirement planning analyst. Write concise, jargon-free summaries for retail investors. Never use em dashes, asterisks, or markdown. Write in plain prose only.",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = clean_ai_response(resp.content[0].text)
+
+    summary = raw
+    action = ""
+    if "Action:" in raw:
+        parts = raw.split("Action:", 1)
+        summary = parts[0].strip()
+        action = parts[1].strip()
+
+    return {
+        "worst":       worst,
+        "median":      median,
+        "best":        best,
+        "worst_pct":   worst_pct,
+        "median_pct":  median_pct,
+        "best_pct":    best_pct,
+        "positive_prob": positive_prob,
+        "years":       req.years_to_retirement,
+        "current_value": req.current_value,
+        "simulations": req.simulations,
+        "summary":     summary,
+        "action":      action,
+    }
+
+
 _sectors_cache: dict[str, tuple[dict, float]] = {}
 
 @app.get("/portfolio/sectors")
