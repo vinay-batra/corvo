@@ -158,7 +158,20 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ALLOWED_ORIGINS=http://localhost:3000
+FINNHUB_API_KEY=your_finnhub_api_key
+RESEND_API_KEY=your_resend_api_key
+VAPID_PUBLIC_KEY=your_vapid_public_key
+VAPID_PRIVATE_KEY=your_vapid_private_key
 ```
+
+`FINNHUB_API_KEY`, `RESEND_API_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are required in Railway env vars for the email system (Morning Briefing, Week in Review, Monthly Summary) and price alerts to function.
+
+### Supabase tables required
+
+In addition to the tables created by standard migrations, the following tables must exist:
+
+- `transactions` — buy/sell trade log used by the Transaction Log tab and cost basis tracking
+- `health_score_cache` — daily cache for portfolio Health Score to avoid recomputing on every load
 
 ---
 
