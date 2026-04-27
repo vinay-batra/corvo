@@ -9,7 +9,7 @@ import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
   MessageSquare, Eye, PanelLeftOpen,
   Sun, Moon, CandlestickChart, Sparkles, BookOpen,
-  Calendar, CheckCircle2,
+  Calendar, CheckCircle2, ClipboardList,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
 import InfoModal from "../../components/InfoModal";
@@ -49,6 +49,7 @@ import SettingsPage from "../settings/page";
 import GreetingBar from "../../components/GreetingBar";
 import KeyboardShortcutsModal from "../../components/KeyboardShortcutsModal";
 import PositionsTab from "../../components/PositionsTab";
+import TransactionsTab from "../../components/TransactionsTab";
 import RetirementSimulator from "../../components/RetirementSimulator";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import DashboardTour from "../../components/DashboardTour";
@@ -64,8 +65,9 @@ const TABS = [
   { id: "risk",       label: "Income & Tax", Icon: ShieldAlert,      href: null },
   { id: "simulate",   label: "Simulations",Icon: FlaskConical,     href: null },
   { id: "news",       label: "News",       Icon: Newspaper,        href: null },
-  { id: "watchlist",  label: "Watchlist",  Icon: Eye,              href: null },
-  { id: "learn",      label: "Learn",      Icon: BookOpen,         href: "/learn" },
+  { id: "watchlist",     label: "Watchlist",    Icon: Eye,           href: null },
+  { id: "transactions",  label: "Transactions", Icon: ClipboardList, href: null },
+  { id: "learn",         label: "Learn",        Icon: BookOpen,      href: "/learn" },
 ] as const;
 
 const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
@@ -75,8 +77,9 @@ const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
   risk:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
   simulate:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
   news:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>,
-  watchlist: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-  learn:     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+  watchlist:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+  transactions: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>,
+  learn:        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
 };
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
@@ -851,6 +854,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
+  const [rebalanceOpen, setRebalanceOpen] = useState(false);
+  const [rebalanceLoading, setRebalanceLoading] = useState(false);
+  const [rebalanceResult, setRebalanceResult] = useState<{ holdings: any[]; plan: string } | null>(null);
+  const [rebalanceError, setRebalanceError] = useState<string | null>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
@@ -1254,6 +1261,44 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       setWsidError("Could not load recommendations. Try again.");
     } finally {
       setWsidLoading(false);
+    }
+  };
+
+  const handleRebalance = async () => {
+    if (rebalanceOpen && rebalanceResult) { setRebalanceOpen(false); return; }
+    setRebalanceOpen(true);
+    if (rebalanceResult) return;
+    setRebalanceLoading(true);
+    setRebalanceError(null);
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const valid = assets.filter(a => a.ticker && a.weight > 0);
+      const total = valid.reduce((s, a) => s + a.weight, 0) || 1;
+      const body = {
+        tickers: valid.map(a => a.ticker),
+        weights: valid.map(a => a.weight / total),
+        individual_returns: data?.individual_returns ?? {},
+        period,
+        portfolio_value: portfolioInputValue || 10000,
+        portfolio_return: data?.portfolio_return ?? 0,
+        portfolio_volatility: data?.portfolio_volatility ?? 0,
+        sharpe_ratio: data?.sharpe_ratio ?? 0,
+        max_drawdown: data?.max_drawdown ?? 0,
+        user_goals: goals || {},
+        user_id: userId || "",
+      };
+      const res = await fetch(`${API}/portfolio/rebalance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const json = await res.json();
+      setRebalanceResult(json);
+    } catch (e: any) {
+      setRebalanceError("Could not generate rebalance plan. Try again.");
+    } finally {
+      setRebalanceLoading(false);
     }
   };
 
@@ -2285,6 +2330,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   ]} />
                   <RetirementSimulator assets={assets} portfolioValue={portfolioInputValue} />
                 </Card>
+              </motion.div>
+            ) : activeTab === "transactions" ? (
+              <motion.div key="transactions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                <TransactionsTab />
               </motion.div>
             ) : null}
           </AnimatePresence>
