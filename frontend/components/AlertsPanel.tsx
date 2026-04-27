@@ -186,6 +186,9 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
   const [notifBlocked, setNotifBlocked] = useState(false);
   const [savedPortfolios, setSavedPortfolios] = useState<{ id: string; name: string }[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCondition, setEditCondition] = useState<"drops" | "rises">("drops");
+  const [editThreshold, setEditThreshold] = useState("10");
 
   useEffect(() => {
     supabase.auth.getUser()
@@ -277,6 +280,31 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
     const updated = alerts.filter(a => a.id !== id);
     setAlerts(updated);
     saveLocal(updated);
+  };
+
+  const startEdit = (a: Alert) => {
+    setEditingId(a.id);
+    setEditCondition(a.condition);
+    setEditThreshold(String(a.threshold));
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = async (id: string) => {
+    const t = parseFloat(editThreshold);
+    if (isNaN(t) || t <= 0) return;
+    if (userId) {
+      await supabase.from("price_alerts")
+        .update({ condition: editCondition, threshold: t })
+        .eq("id", id)
+        .eq("user_id", userId);
+      await fetchAlerts(userId);
+    } else {
+      const updated = alerts.map(a => a.id === id ? { ...a, condition: editCondition, threshold: t } : a);
+      setAlerts(updated);
+      saveLocal(updated);
+    }
+    setEditingId(null);
   };
 
   const formatAlert = (a: Alert) => {
@@ -436,31 +464,77 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
             <AnimatePresence initial={false}>
               {alerts.filter(a => a.type === tab).map(a => (
                 <motion.div key={a.id} initial={false} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", border: "0.5px solid var(--border)", borderRadius: 10, marginBottom: 7, background: "var(--card-bg)", transition: "border-color 0.15s" }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = "var(--border2)"}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: a.condition === "drops" ? "rgba(224,92,92,0.1)" : "rgba(76,175,125,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={a.condition === "drops" ? "#e05c5c" : "#4caf7d"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        {a.condition === "drops" ? <><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></> : <><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></>}
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                  {editingId === a.id ? (
+                    <div style={{ padding: "12px 14px", border: "0.5px solid var(--accent)", borderRadius: 10, marginBottom: 7, background: "var(--card-bg)" }}>
+                      {/* ticker/portfolio label */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                         {a.type === "price" && a.ticker && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{a.ticker}</span>}
                         {a.type === "portfolio" && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{savedPortfolios.find(p => p.id === a.portfolioId)?.name || "Portfolio"}</span>}
                         <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: a.type === "price" ? "rgba(184,134,11,0.12)" : "rgba(76,175,125,0.12)", color: a.type === "price" ? "var(--accent)" : "#4caf7d", letterSpacing: 0.5, textTransform: "uppercase" as const }}>{a.type}</span>
                       </div>
-                      <p style={{ fontSize: 11, color: "var(--text2)" }}>
-                        {a.condition === "drops" ? "Drops" : "Rises"} more than <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: a.condition === "drops" ? "#e05c5c" : "#4caf7d" }}>{a.threshold}%</span>
-                      </p>
+                      {/* inline edit fields */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+                        <div>
+                          <label style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Condition</label>
+                          <select value={editCondition} onChange={e => setEditCondition(e.target.value as "drops" | "rises")}
+                            style={{ width: "100%", padding: "7px 8px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text)", fontSize: 11, outline: "none", cursor: "pointer" }}>
+                            <option value="drops">Drops by</option>
+                            <option value="rises">Rises by</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Threshold %</label>
+                          <input type="number" value={editThreshold} onChange={e => setEditThreshold(e.target.value)} min="0.1" max="100" step="0.5"
+                            style={{ width: "100%", padding: "7px 8px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text)", fontSize: 11, outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" }} />
+                        </div>
+                      </div>
+                      {/* save / cancel */}
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => saveEdit(a.id)}
+                          style={{ flex: 1, padding: "6px", fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", background: "var(--accent)", color: "#0a0e14", border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "var(--font-mono)" }}>
+                          Save
+                        </button>
+                        <button onClick={cancelEdit}
+                          style={{ flex: 1, padding: "6px", fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", background: "transparent", color: "var(--text2)", border: "0.5px solid var(--border)", borderRadius: 6, cursor: "pointer" }}>
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                    <button onClick={() => removeAlert(a.id)}
-                      style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(224,92,92,0.4)"; e.currentTarget.style.color = "#e05c5c"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", border: "0.5px solid var(--border)", borderRadius: 10, marginBottom: 7, background: "var(--card-bg)", transition: "border-color 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = "var(--border2)"}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: a.condition === "drops" ? "rgba(224,92,92,0.1)" : "rgba(76,175,125,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={a.condition === "drops" ? "#e05c5c" : "#4caf7d"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          {a.condition === "drops" ? <><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></> : <><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></>}
+                        </svg>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                          {a.type === "price" && a.ticker && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{a.ticker}</span>}
+                          {a.type === "portfolio" && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{savedPortfolios.find(p => p.id === a.portfolioId)?.name || "Portfolio"}</span>}
+                          <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: a.type === "price" ? "rgba(184,134,11,0.12)" : "rgba(76,175,125,0.12)", color: a.type === "price" ? "var(--accent)" : "#4caf7d", letterSpacing: 0.5, textTransform: "uppercase" as const }}>{a.type}</span>
+                        </div>
+                        <p style={{ fontSize: 11, color: "var(--text2)" }}>
+                          {a.condition === "drops" ? "Drops" : "Rises"} more than <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: a.condition === "drops" ? "#e05c5c" : "#4caf7d" }}>{a.threshold}%</span>
+                        </p>
+                      </div>
+                      {/* edit button */}
+                      <button onClick={() => startEdit(a)}
+                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.color = "var(--accent)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      {/* delete button */}
+                      <button onClick={() => removeAlert(a.id)}
+                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(224,92,92,0.4)"; e.currentTarget.style.color = "#e05c5c"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>
