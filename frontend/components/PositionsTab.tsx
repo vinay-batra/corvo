@@ -126,49 +126,103 @@ function Skeleton({ w = "100%", h = 14 }: { w?: string | number; h?: number }) {
   );
 }
 
-function InfoTooltip({ text, side = "top" }: { text: string; side?: "top" | "bottom" }) {
-  const [visible, setVisible] = useState(false);
+function InfoTooltip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   return (
-    <span
-      style={{ position: "relative", display: "inline-flex", alignItems: "center", flexShrink: 0 }}
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}
-    >
-      <svg
-        width="12" height="12" viewBox="0 0 12 12" fill="none"
-        style={{ cursor: "help", color: "var(--text3)", display: "block" }}
-        aria-label="More info"
+    <>
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(true); }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        aria-label="More information"
+        style={{
+          width: 17,
+          height: 17,
+          borderRadius: "50%",
+          border: `1px solid ${hovered ? "var(--accent)" : "var(--border)"}`,
+          background: "transparent",
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 0,
+          flexShrink: 0,
+          color: hovered ? "var(--accent)" : "var(--text3)",
+          transition: "border-color 0.15s, color 0.15s",
+        }}
       >
-        <circle cx="6" cy="6" r="5.5" stroke="currentColor" strokeWidth="1" />
-        <line x1="6" y1="5.2" x2="6" y2="8.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-        <circle cx="6" cy="3.4" r="0.65" fill="currentColor" />
-      </svg>
-      {visible && (
-        <div style={{
-          position: "absolute",
-          ...(side === "top"
-            ? { bottom: "calc(100% + 7px)" }
-            : { top: "calc(100% + 7px)" }),
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 200,
-          background: "var(--card-bg)",
-          border: "0.5px solid var(--border2)",
-          borderRadius: 8,
-          padding: "9px 13px",
-          fontSize: 11,
-          color: "var(--text2)",
-          lineHeight: 1.65,
-          maxWidth: 260,
-          whiteSpace: "normal",
-          boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
-          pointerEvents: "none",
-          textAlign: "left",
-        }}>
-          {text}
+        <svg width="9" height="11" viewBox="0 0 9 11" aria-hidden="true" style={{ display: "block" }}>
+          <text x="4.5" y="9.5" textAnchor="middle" fontSize="10" fontWeight="700" fill="currentColor" fontFamily="system-ui, -apple-system, sans-serif">?</text>
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            // color-mix gives a theme-aware semi-transparent overlay: dark in dark mode, light in light mode
+            background: "color-mix(in srgb, var(--bg) 70%, transparent)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: "relative",
+              background: "var(--card-bg)",
+              border: "0.5px solid var(--border)",
+              borderRadius: 12,
+              padding: "22px 24px 22px 24px",
+              maxWidth: 320,
+              width: "88%",
+              boxShadow: "var(--shadow-md)",
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                border: "0.5px solid var(--border)",
+                background: "transparent",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--text3)",
+                padding: 0,
+                transition: "border-color 0.15s, color 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}
+            >
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+                <line x1="1" y1="1" x2="7" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="7" y1="1" x2="1" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+            {/* Body */}
+            <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, margin: 0, paddingRight: 16 }}>
+              {text}
+            </p>
+          </div>
         </div>
       )}
-    </span>
+    </>
   );
 }
 
@@ -626,7 +680,6 @@ export default function PositionsTab({
             <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>
               Portfolio Performance
               <InfoTooltip
-                side="bottom"
                 text="Each line tracks the cumulative return of a saved portfolio, indexed to 0% at the start of the selected period. The dashed line is the chosen benchmark. Use the period buttons or Custom to zoom in or compare over longer horizons."
               />
             </span>
@@ -780,7 +833,6 @@ export default function PositionsTab({
           <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderBottom: "0.5px solid var(--border)", background: "var(--bg2)" }}>
             <span style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>Holdings</span>
             <InfoTooltip
-              side="bottom"
               text="Ticker: stock or ETF symbol. Company: full name. Weight: allocation % within the portfolio, shown with a bar. Value: estimated dollar amount based on your portfolio size. 1D: today's price change. 7D: change over the last 7 trading days derived from closing prices. Sector: GICS sector classification."
             />
           </div>
