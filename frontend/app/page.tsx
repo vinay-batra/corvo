@@ -1814,7 +1814,7 @@ export default function Landing() {
   };
 
   return (
-    <div ref={containerRef} className="page-fadein" style={{ height: "100vh", overflowY: "auto", overflowX: "hidden", background: "transparent", color: "var(--text)", fontFamily: "Inter,sans-serif" }}>
+    <div ref={containerRef} className="page-fadein" style={{ height: "100vh", overflowY: "auto", overflowX: "hidden", overscrollBehavior: "none", background: "transparent", color: "var(--text)", fontFamily: "Inter,sans-serif" }}>
       <EmailPopupModal />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <style>{`
