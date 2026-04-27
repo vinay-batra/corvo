@@ -7,16 +7,19 @@ interface Props {
   onClose: () => void;
 }
 
-const OPTIONS = [
+const TOGGLE_OPTIONS = [
   { key: "morning_briefing" as const, label: "Morning Briefing",  desc: "Daily portfolio and market teaser at 6am ET" },
   { key: "week_in_review"  as const, label: "Week in Review",    desc: "Weekly recap of your portfolio every Monday at 6am ET" },
   { key: "monthly_summary" as const, label: "Monthly Summary",   desc: "Month-end portfolio return summary on the 1st" },
+  { key: "price_alerts"    as const, label: "Price Alerts",      desc: "Email when a price alert you set is triggered" },
 ] as const;
 
-type Prefs = { morning_briefing: boolean; week_in_review: boolean; monthly_summary: boolean };
+type BoolKey = "morning_briefing" | "week_in_review" | "monthly_summary" | "price_alerts";
+type EmailTheme = "light" | "dark";
+type Prefs = Record<BoolKey, boolean> & { email_theme: EmailTheme };
 
 export default function EmailPreferences({ onClose }: Props) {
-  const [prefs, setPrefs]     = useState<Prefs>({ morning_briefing: false, week_in_review: false, monthly_summary: false });
+  const [prefs, setPrefs]     = useState<Prefs>({ morning_briefing: false, week_in_review: false, monthly_summary: false, price_alerts: true, email_theme: "light" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [saved,  setSaved]    = useState(false);
@@ -29,10 +32,18 @@ export default function EmailPreferences({ onClose }: Props) {
         if (!user) { setNoUser(true); setLoading(false); return; }
         const { data } = await supabase
           .from("email_preferences")
-          .select("morning_briefing,week_in_review,monthly_summary")
+          .select("morning_briefing,week_in_review,monthly_summary,price_alerts,email_theme")
           .eq("user_id", user.id)
           .single();
-        if (data) setPrefs({ morning_briefing: data.morning_briefing ?? false, week_in_review: data.week_in_review ?? false, monthly_summary: data.monthly_summary ?? false });
+        if (data) {
+          setPrefs({
+            morning_briefing: data.morning_briefing ?? false,
+            week_in_review:   data.week_in_review   ?? false,
+            monthly_summary:  data.monthly_summary  ?? false,
+            price_alerts:     data.price_alerts     ?? true,
+            email_theme:      (data.email_theme === "dark" ? "dark" : "light"),
+          });
+        }
       } catch {}
       setLoading(false);
     })();
@@ -44,7 +55,8 @@ export default function EmailPreferences({ onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const toggle = (key: keyof Prefs) => setPrefs(p => ({ ...p, [key]: !p[key] }));
+  const toggleBool = (key: BoolKey) => setPrefs(p => ({ ...p, [key]: !p[key] }));
+  const toggleTheme = () => setPrefs(p => ({ ...p, email_theme: p.email_theme === "light" ? "dark" : "light" }));
 
   const save = async () => {
     setSaving(true);
@@ -53,8 +65,12 @@ export default function EmailPreferences({ onClose }: Props) {
       if (!user) return;
       await supabase.from("email_preferences").upsert({
         user_id: user.id,
-        ...prefs,
-        updated_at: new Date().toISOString(),
+        morning_briefing: prefs.morning_briefing,
+        week_in_review:   prefs.week_in_review,
+        monthly_summary:  prefs.monthly_summary,
+        price_alerts:     prefs.price_alerts,
+        email_theme:      prefs.email_theme,
+        updated_at:       new Date().toISOString(),
       });
       setSaved(true);
       setTimeout(() => { setSaved(false); onClose(); }, 1100);
@@ -95,10 +111,10 @@ export default function EmailPreferences({ onClose }: Props) {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
-            {OPTIONS.map(opt => {
+            {TOGGLE_OPTIONS.map(opt => {
               const on = prefs[opt.key];
               return (
-                <div key={opt.key} onClick={() => toggle(opt.key)}
+                <div key={opt.key} onClick={() => toggleBool(opt.key)}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 10, border: `0.5px solid ${on ? "rgba(201,168,76,0.3)" : "var(--border)"}`, background: on ? "rgba(201,168,76,0.05)" : "var(--bg2)", cursor: "pointer", transition: "all 0.15s" }}>
                   <div style={{ flex: 1, paddingRight: 16 }}>
                     <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 3 }}>{opt.label}</div>
@@ -110,6 +126,23 @@ export default function EmailPreferences({ onClose }: Props) {
                 </div>
               );
             })}
+
+            {/* Email theme toggle */}
+            <div onClick={toggleTheme}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 10, border: "0.5px solid var(--border)", background: "var(--bg2)", cursor: "pointer", transition: "all 0.15s" }}>
+              <div style={{ flex: 1, paddingRight: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", marginBottom: 3 }}>Email Theme</div>
+                <div style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.5 }}>Light / Dark</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "var(--font-mono, monospace)" }}>
+                  {prefs.email_theme === "dark" ? "Dark" : "Light"}
+                </span>
+                <div style={{ width: 38, height: 22, borderRadius: 11, background: prefs.email_theme === "dark" ? "var(--accent)" : "var(--border2)", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+                  <div style={{ position: "absolute", top: 3, left: prefs.email_theme === "dark" ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: prefs.email_theme === "dark" ? "#0a0e14" : "var(--bg)", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
