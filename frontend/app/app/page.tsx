@@ -2158,6 +2158,105 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   </AnimatePresence>
                 </div>
 
+                {/* Rebalance Assistant */}
+                <div style={{ marginBottom: 16 }}>
+                  <button
+                    onClick={handleRebalance}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 7,
+                      padding: "7px 14px", fontSize: 12, fontWeight: 600,
+                      borderRadius: 7, cursor: "pointer",
+                      background: rebalanceOpen ? "var(--bg3)" : "rgba(201,168,76,0.1)",
+                      border: "0.5px solid rgba(201,168,76,0.35)",
+                      color: "var(--accent)", transition: "all 0.15s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.18)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = rebalanceOpen ? "var(--bg3)" : "rgba(201,168,76,0.1)"; }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="16 3 21 3 21 8" /><line x1="4" y1="20" x2="21" y2="3" />
+                      <polyline points="21 16 21 21 16 21" /><line x1="15" y1="15" x2="21" y2="21" />
+                    </svg>
+                    Rebalance
+                  </button>
+                  <AnimatePresence>
+                    {rebalanceOpen && (
+                      <motion.div
+                        // initial={false} is required — do not remove
+                        initial={false}
+                        animate={{ opacity: 1, height: "auto", marginTop: 10 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        style={{ overflow: "hidden" }}
+                      >
+                        <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, padding: "16px 18px" }}>
+                          {rebalanceLoading ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text3)", fontSize: 12 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite", flexShrink: 0 }}>
+                                <path d="M21 12a9 9 0 11-6.219-8.56" />
+                              </svg>
+                              Calculating drift and generating rebalance plan...
+                            </div>
+                          ) : rebalanceError ? (
+                            <div style={{ fontSize: 12, color: "var(--red)" }}>{rebalanceError}</div>
+                          ) : rebalanceResult ? (
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Drift from Target</div>
+                              <div style={{ overflowX: "auto", marginBottom: 16 }}>
+                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                  <thead>
+                                    <tr>
+                                      {["Ticker", "Target", "Current", "Drift", "Action"].map(col => (
+                                        <th key={col} style={{ padding: "5px 10px", textAlign: "left", fontSize: 9, letterSpacing: 1.2, color: "var(--text3)", textTransform: "uppercase", borderBottom: "0.5px solid var(--border)", fontWeight: 600, whiteSpace: "nowrap" }}>{col}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {rebalanceResult.holdings.map((h: any) => {
+                                      const isSell = h.action === "sell";
+                                      const isBuy = h.action === "buy";
+                                      return (
+                                        <tr key={h.ticker} style={{ borderBottom: "0.5px solid var(--border)" }}>
+                                          <td style={{ padding: "7px 10px", fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{h.ticker}</td>
+                                          <td style={{ padding: "7px 10px", fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text2)" }}>{h.target_pct.toFixed(1)}%</td>
+                                          <td style={{ padding: "7px 10px", fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text2)" }}>{h.current_pct.toFixed(1)}%</td>
+                                          <td style={{ padding: "7px 10px", fontFamily: "Space Mono, monospace", fontSize: 12, color: isSell ? "#e05c5c" : isBuy ? "#4caf7d" : "var(--text3)" }}>
+                                            {h.drift_pct >= 0 ? "+" : ""}{h.drift_pct.toFixed(1)}%
+                                          </td>
+                                          <td style={{ padding: "7px 10px", whiteSpace: "nowrap" }}>
+                                            {h.action !== "hold" ? (
+                                              <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 5, fontSize: 11, fontWeight: 600, fontFamily: "Space Mono, monospace", background: isSell ? "rgba(224,92,92,0.1)" : "rgba(76,175,125,0.1)", color: isSell ? "#e05c5c" : "#4caf7d" }}>
+                                                {isSell ? "Sell" : "Buy"} ${h.dollar_amount.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                                              </span>
+                                            ) : (
+                                              <span style={{ fontSize: 11, color: "var(--text3)" }}>Hold</span>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Rebalance Plan</div>
+                              <ol style={{ margin: 0, padding: "0 0 0 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+                                {rebalanceResult.plan.split(/\n/).filter((l: string) => l.trim()).map((line: string, i: number) => {
+                                  const text = line.replace(/^\d+\.\s*/, "").trim();
+                                  if (!text) return null;
+                                  return <li key={i} style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.55 }}>{text}</li>;
+                                })}
+                              </ol>
+                              <button onClick={() => { setRebalanceResult(null); handleRebalance(); }} style={{ marginTop: 12, fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                                Refresh
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <motion.div
                   id="tour-desk-metrics"
                   key="stats-row"

@@ -5272,6 +5272,20 @@ def admin_cleanup_test_alerts(admin_key: str = ""):
 
 # ── What Should I Do Today ────────────────────────────────────────────────────
 
+class RebalanceRequest(BaseModel):
+    tickers: list[str] = []
+    weights: list[float] = []           # target weights (normalized to 1)
+    individual_returns: dict = {}       # ticker -> CAGR from portfolio analysis
+    period: str = "1y"
+    portfolio_value: float = 10000.0
+    portfolio_return: float = 0.0
+    portfolio_volatility: float = 0.0
+    sharpe_ratio: float = 0.0
+    max_drawdown: float = 0.0
+    user_goals: dict = {}
+    user_id: str = ""
+
+
 class WhatShouldIDoRequest(BaseModel):
     tickers: list[str] = []
     weights: list[float] = []
@@ -5547,3 +5561,153 @@ MARKET CONTEXT (background only, not a reason to act):
     raw = response.content[0].text.strip()
     result = clean_ai_response(raw)
     return {"recommendations": result}
+
+
+# ── Rebalance Assistant ────────────────────────────────────────────────────────
+
+_PERIOD_YEARS: dict[str, float] = {
+    "6mo": 0.5, "6m": 0.5,
+    "1y": 1.0,
+    "2y": 2.0,
+    "5y": 5.0,
+}
+
+
+@app.post("/portfolio/rebalance")
+def portfolio_rebalance(req: RebalanceRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "portfolio-rebalance", 10, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded.")
+
+    if not req.tickers or not req.weights or len(req.tickers) != len(req.weights):
+        raise HTTPException(status_code=422, detail="tickers and weights must be non-empty and equal length.")
+
+    # Pull user profile from Supabase, fall back to request payload
+    sb_goals = _fetch_user_goals_from_supabase(req.user_id) if req.user_id else {}
+    legacy_goals = req.user_goals or {}
+    investment_horizon_str = sb_goals.get("investment_horizon", "") or legacy_goals.get("timeline", "")
+    risk_tolerance = (
+        sb_goals.get("risk_tolerance", "")
+        or legacy_goals.get("riskTolerance", "")
+        or "moderate"
+    )
+    primary_goals = sb_goals.get("primary_goals") or []
+    investor_type = sb_goals.get("investor_type", "")
+    age_range = sb_goals.get("age_range", "") or (str(legacy_goals.get("age", "")) if legacy_goals.get("age") else "")
+    legacy_goal_type = legacy_goals.get("goal", "")
+    horizon_years = _parse_horizon_years(investment_horizon_str, legacy_goals)
+    horizon_category = _horizon_category(horizon_years)
+
+    # Normalize target weights
+    total_w = sum(req.weights) or 1.0
+    target_weights = [w / total_w for w in req.weights]
+
+    # Approximate total return per ticker over the selected period from CAGR
+    years = _PERIOD_YEARS.get(req.period, 1.0)
+    ind_ret = req.individual_returns or {}
+    current_values = []
+    for t, tw in zip(req.tickers, target_weights):
+        cagr = float(ind_ret.get(t, 0.0) or 0.0)
+        total_ret = (1.0 + cagr) ** years - 1.0
+        current_values.append(tw * (1.0 + total_ret))
+
+    total_current = sum(current_values) or 1.0
+    current_weights = [v / total_current for v in current_values]
+
+    pv = req.portfolio_value or 10000.0
+
+    # Build per-holding drift table
+    holdings: list[dict] = []
+    for t, tw, cw in zip(req.tickers, target_weights, current_weights):
+        drift = cw - tw
+        dollar_drift = drift * pv
+        if drift > 0.003:
+            action = "sell"
+        elif drift < -0.003:
+            action = "buy"
+        else:
+            action = "hold"
+        holdings.append({
+            "ticker": t,
+            "target_pct": round(tw * 100, 1),
+            "current_pct": round(cw * 100, 1),
+            "drift_pct": round(drift * 100, 1),
+            "dollar_amount": round(abs(dollar_drift), 0),
+            "action": action,
+        })
+
+    # Sort: largest absolute drift first
+    holdings.sort(key=lambda h: abs(h["drift_pct"]), reverse=True)
+
+    # Build prompt context
+    holdings_lines: list[str] = []
+    for h in holdings:
+        sign = "+" if h["drift_pct"] >= 0 else ""
+        action_str = f"SELL ${h['dollar_amount']:,.0f}" if h["action"] == "sell" else (f"BUY ${h['dollar_amount']:,.0f}" if h["action"] == "buy" else "HOLD")
+        holdings_lines.append(
+            f"{h['ticker']}: target {h['target_pct']:.1f}%, current {h['current_pct']:.1f}%, drift {sign}{h['drift_pct']:.1f}% => {action_str}"
+        )
+
+    goal_parts: list[str] = []
+    if horizon_category != "unknown":
+        goal_parts.append(f"Investment horizon: {horizon_category}")
+    if risk_tolerance:
+        risk_label = {
+            "conservative": "conservative (capital preservation priority)",
+            "moderate": "moderate (balanced growth and risk)",
+            "aggressive": "aggressive (maximum growth, high risk tolerance)",
+        }.get(risk_tolerance.lower(), risk_tolerance)
+        goal_parts.append(f"Risk tolerance: {risk_label}")
+    if primary_goals:
+        goal_parts.append(f"Primary goals: {', '.join(primary_goals)}")
+    elif legacy_goal_type:
+        goal_label = {"retirement": "retirement", "wealth": "wealth building", "income": "passive income", "short": "short-term gains"}.get(legacy_goal_type, legacy_goal_type)
+        goal_parts.append(f"Primary goal: {goal_label}")
+    if investor_type:
+        goal_parts.append(f"Investor type: {investor_type}")
+    if age_range:
+        goal_parts.append(f"Age range: {age_range}")
+    goal_block = "\n".join(goal_parts) if goal_parts else "Not provided"
+
+    value_str = f"${int(pv):,}"
+    today_str = datetime.now().strftime("%B %d, %Y")
+
+    system = f"""You are Corvo AI, a direct portfolio rebalancing advisor. Today is {today_str}.
+
+You are given a portfolio with target allocations and the current allocation after market drift. Your job is to write a specific, actionable rebalance plan.
+
+RULES (strictly enforce):
+- State the exact dollar amount to buy or sell for each holding that needs rebalancing. Use the figures from the drift table.
+- Explain in one sentence per holding why this trade fits the investor's goals and risk profile.
+- Only address holdings with meaningful drift (drift above 1% in either direction). Skip holdings marked HOLD.
+- Do not recommend selling everything or any drastic restructuring unless drift is extreme (above 15%).
+- No generic advice. No intros. No conclusions. No markdown. No em dashes. No asterisks.
+- Start immediately with the first numbered recommendation. No preamble.
+- Format: numbered list. One holding per item. State action (buy/sell), ticker, dollar amount, one-sentence rationale.
+- If all holdings are within threshold, state that the portfolio is balanced and no trades are needed.
+
+INVESTOR PROFILE:
+{goal_block}
+
+PORTFOLIO VALUE: {value_str}
+
+DRIFT TABLE (period: {req.period}):
+{chr(10).join(holdings_lines)}
+
+Overall portfolio: annualized return {req.portfolio_return:.2%}, volatility {req.portfolio_volatility:.2%}, Sharpe {req.sharpe_ratio:.2f}, max drawdown {req.max_drawdown:.2%}"""
+
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+    client = anthropic.Anthropic(api_key=api_key)
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=500,
+        system=system,
+        messages=[{"role": "user", "content": "Write the rebalance plan."}],
+    )
+    raw = response.content[0].text.strip()
+    plan = clean_ai_response(raw)
+    return {"holdings": holdings, "plan": plan}
