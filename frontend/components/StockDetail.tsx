@@ -89,6 +89,7 @@ interface OptionContract {
   openInterest: number;
   impliedVolatility: number | null;
   inTheMoney: boolean;
+  delta: number | null;
 }
 interface OptionsData {
   ticker: string;
@@ -180,24 +181,58 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
   const allStrikes = Array.from(new Set([...data.calls.map(c => c.strike), ...data.puts.map(p => p.strike)])).sort((a, b) => a - b);
   const atmStrike = allStrikes.reduce((best, s) => Math.abs(s - livePrice) < Math.abs(best - livePrice) ? s : best, allStrikes[0] ?? livePrice);
 
-  const tableHeader = ["Strike", "Last", "Bid", "Ask", "Vol", "OI", "IV %", "ITM"];
-  const colW = ["72px", "52px", "52px", "52px", "56px", "62px", "52px", "36px"];
+  const COL_TOOLTIPS: Record<string, string> = {
+    Strike:  "The price at which you have the right to buy (call) or sell (put) the stock.",
+    Last:    "The most recent price this contract traded at.",
+    Bid:     "The highest price a buyer is currently willing to pay for this contract.",
+    Ask:     "The lowest price a seller is currently willing to accept for this contract.",
+    Vol:     "Number of contracts traded today. Higher volume means more market interest.",
+    OI:      "Open Interest: total number of outstanding contracts that have not been settled. Higher OI means more liquidity.",
+    "IV %":  "Implied Volatility: the market's expectation of how much the stock will move, expressed as an annualized percentage. Higher IV means more expensive options.",
+    Delta:   "How much the option price moves for each $1 move in the stock. Calls range from 0 to 1; puts from 0 to -1. Also approximates the probability the option expires in the money.",
+    ITM:     "In the Money: the option currently has intrinsic value. For calls, the stock price is above the strike. For puts, the stock price is below the strike.",
+  };
+
+  const tableHeader = ["Strike", "Last", "Bid", "Ask", "Vol", "OI", "IV %", "Delta", "ITM"];
+  const colW        = ["72px", "52px", "52px", "52px", "56px", "62px", "52px", "52px", "36px"];
 
   const renderTable = (contracts: OptionContract[], side: "calls" | "puts") => {
     const isCall = side === "calls";
-    const itmBg  = isCall ? "rgba(76,175,125,0.06)"  : "rgba(224,92,92,0.06)";
-    const itmBdr = isCall ? "rgba(76,175,125,0.18)"  : "rgba(224,92,92,0.18)";
-    const atmBg  = isCall ? "rgba(201,168,76,0.1)"   : "rgba(201,168,76,0.1)";
+    const itmBg  = isCall ? "var(--itm-call-bg)"  : "var(--itm-put-bg)";
+    const itmBdr = isCall ? "var(--itm-call-bdr)" : "var(--itm-put-bdr)";
+    const atmBg  = "var(--itm-atm-bg)";
     const hdrCol = isCall ? GREEN : RED;
     if (!contracts.length) return <p style={{ fontSize: 11, color: "var(--text3)", padding: "16px 0" }}>No data</p>;
     return (
-      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 460, fontSize: 11 }}>
+      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }}>
+        <style>{`
+          .opt-th-wrap { position: relative; display: inline-flex; align-items: center; gap: 3px; cursor: default; }
+          .opt-th-wrap .opt-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+            width: 200px; padding: 7px 10px; background: var(--card-bg); border: 0.5px solid var(--border2);
+            border-radius: 8px; font-size: 10px; color: var(--text2); line-height: 1.5; z-index: 200;
+            pointer-events: none; box-shadow: 0 6px 20px rgba(0,0,0,0.35); text-transform: none;
+            letter-spacing: 0; font-weight: 400; text-align: left; white-space: normal; }
+          .opt-th-wrap:hover .opt-tip { display: block; }
+          .opt-th-ques { width: 11px; height: 11px; border-radius: 50%; background: var(--bg3); border: 0.5px solid var(--border2);
+            color: var(--text3); font-size: 7px; display: inline-flex; align-items: center; justify-content: center;
+            line-height: 1; flex-shrink: 0; }
+          :root { --itm-call-bg: rgba(76,175,125,0.07); --itm-call-bdr: rgba(76,175,125,0.2);
+                  --itm-put-bg: rgba(224,92,92,0.07);   --itm-put-bdr: rgba(224,92,92,0.2);
+                  --itm-atm-bg: rgba(201,168,76,0.09); }
+          [data-theme="light"] { --itm-call-bg: rgba(76,175,125,0.08); --itm-call-bdr: rgba(76,175,125,0.22);
+                                  --itm-put-bg: rgba(224,92,92,0.07);  --itm-put-bdr: rgba(224,92,92,0.2);
+                                  --itm-atm-bg: rgba(184,134,11,0.08); }
+        `}</style>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520, fontSize: 11 }}>
           <thead>
             <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
               {tableHeader.map((h, i) => (
                 <th key={h} style={{ padding: "6px 8px", textAlign: i === 0 ? "left" : "right", fontSize: 8, letterSpacing: 1.5, color: i === 0 ? hdrCol : "var(--text3)", textTransform: "uppercase", fontWeight: 600, width: colW[i], whiteSpace: "nowrap" }}>
-                  {h}
+                  <span className="opt-th-wrap">
+                    {h}
+                    <span className="opt-th-ques">?</span>
+                    <span className="opt-tip">{COL_TOOLTIPS[h]}</span>
+                  </span>
                 </th>
               ))}
             </tr>
@@ -205,8 +240,13 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
           <tbody>
             {contracts.map((c, i) => {
               const isAtm = c.strike === atmStrike;
-              const rowBg = isAtm ? atmBg : c.inTheMoney ? itmBg : "transparent";
+              const rowBg  = isAtm ? atmBg  : c.inTheMoney ? itmBg  : "transparent";
               const rowBdr = isAtm ? `0.5px solid ${AMBER}55` : c.inTheMoney ? `0.5px solid ${itmBdr}` : "none";
+              const deltaVal = c.delta != null ? c.delta.toFixed(3) : "-";
+              const deltaColor = c.delta == null ? "var(--text3)"
+                : Math.abs(c.delta) > 0.7 ? (isCall ? GREEN : RED)
+                : Math.abs(c.delta) > 0.4 ? AMBER
+                : "var(--text2)";
               return (
                 <tr key={i} style={{ background: rowBg, outline: rowBdr !== "none" ? rowBdr : undefined, outlineOffset: "-0.5px" }}>
                   <td style={{ padding: "5px 8px", fontFamily: "Space Mono, monospace", fontWeight: isAtm ? 700 : 600, color: isAtm ? AMBER : "var(--text)", fontSize: 11 }}>
@@ -218,6 +258,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
                   <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: c.volume > 0 ? "var(--text2)" : "var(--text3)", fontSize: 10 }}>{c.volume > 0 ? c.volume.toLocaleString() : "-"}</td>
                   <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: c.openInterest > 0 ? "var(--text2)" : "var(--text3)", fontSize: 10 }}>{c.openInterest > 0 ? c.openInterest.toLocaleString() : "-"}</td>
                   <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: c.impliedVolatility != null && c.impliedVolatility > 50 ? AMBER : "var(--text2)", fontSize: 10 }}>{c.impliedVolatility != null ? `${c.impliedVolatility.toFixed(1)}%` : "-"}</td>
+                  <td style={{ padding: "5px 8px", textAlign: "right", fontFamily: "Space Mono, monospace", color: deltaColor, fontSize: 10, fontWeight: Math.abs(c.delta ?? 0) > 0.7 ? 600 : 400 }}>{deltaVal}</td>
                   <td style={{ padding: "5px 8px", textAlign: "center" }}>
                     {c.inTheMoney ? <span style={{ fontSize: 9, color: isCall ? GREEN : RED, fontWeight: 700 }}>ITM</span> : <span style={{ fontSize: 9, color: "var(--text3)", opacity: 0.4 }}>-</span>}
                   </td>

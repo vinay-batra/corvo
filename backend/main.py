@@ -2395,9 +2395,92 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
 
 _options_cache: dict[str, tuple[dict, float]] = {}
 
+def _norm_cdf(x: float) -> float:
+    """Standard normal CDF via math.erf (no scipy needed)."""
+    return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+
+def _bs_delta(S: float, K: float, expiry_str: str, r: float, sigma: float, is_call: bool) -> "float | None":
+    """Black-Scholes delta. Returns None if inputs are invalid."""
+    try:
+        T = max((datetime.strptime(expiry_str, "%Y-%m-%d") - datetime.now()).days / 365.0, 1 / 365.0)
+        if sigma <= 0 or S <= 0 or K <= 0:
+            return None
+        d1 = (math.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * math.sqrt(T))
+        raw = _norm_cdf(d1) if is_call else _norm_cdf(d1) - 1.0
+        return round(raw, 4)
+    except Exception:
+        return None
+
+def _finnhub_options(ticker: str, key: str, date: "str | None", current_price: float) -> "dict | None":
+    """Try Finnhub options chain. Returns a result dict on success, None on any failure.
+    Finnhub options require a premium subscription; this gracefully returns None for free-tier keys."""
+    try:
+        resp = requests.get(
+            f"https://finnhub.io/api/v1/stock/option-chain?symbol={ticker}&token={key}",
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        if not data or not data.get("data"):
+            return None
+
+        expiry_dates = sorted({d["expirationDate"] for d in data["data"] if d.get("expirationDate")})
+        if not expiry_dates:
+            return None
+
+        selected = date if (date and date in expiry_dates) else expiry_dates[0]
+        block = next((d for d in data["data"] if d.get("expirationDate") == selected), None)
+        if not block:
+            return None
+
+        price = current_price or safe_float(data.get("lastTradePrice") or 0)
+
+        def _proc_fh(opts: list, is_call: bool) -> list[dict]:
+            rows = []
+            for o in opts:
+                iv_dec = safe_float(o.get("IV") or o.get("impliedVolatility") or 0)
+                iv_pct = round(iv_dec * 100, 2) if iv_dec else None
+                strike = safe_float(o.get("strike") or 0)
+                # Use delta from Finnhub if available (premium), otherwise Black-Scholes
+                fh_delta = o.get("delta")
+                delta = round(float(fh_delta), 4) if fh_delta is not None else (
+                    _bs_delta(price, strike, selected, 0.05, iv_dec, is_call)
+                    if price and strike and iv_dec else None
+                )
+                intrinsic = safe_float(o.get("intrinsicValue") or 0)
+                rows.append({
+                    "strike":            strike,
+                    "lastPrice":         safe_float(o.get("lastPrice")),
+                    "bid":               safe_float(o.get("bid")),
+                    "ask":               safe_float(o.get("ask")),
+                    "volume":            int(o.get("volume") or 0),
+                    "openInterest":      int(o.get("openInterest") or 0),
+                    "impliedVolatility": iv_pct,
+                    "inTheMoney":        intrinsic > 0 if price else False,
+                    "delta":             delta,
+                })
+            return sorted(rows, key=lambda r: r["strike"])
+
+        calls_raw = block.get("options", {}).get("CALL", [])
+        puts_raw  = block.get("options", {}).get("PUT", [])
+        return {
+            "ticker":           ticker,
+            "current_price":    round(price, 4),
+            "expiration_dates": expiry_dates,
+            "selected_date":    selected,
+            "calls":            _proc_fh(calls_raw, True),
+            "puts":             _proc_fh(puts_raw, False),
+        }
+    except Exception as e:
+        print(f"[options] Finnhub failed for {ticker}: {e}")
+        return None
+
+
 @app.get("/options/{ticker}")
 def get_options_chain(ticker: str, date: str = None, request: Request = None):
-    """Fetch options chain for a ticker. Cached 15 min per (ticker, date)."""
+    """Fetch options chain for a ticker. Tries Finnhub first, falls back to yfinance.
+    Adds Black-Scholes delta for all contracts. Cached 15 min per (ticker, date)."""
     if request:
         ip = request.client.host if request.client else "unknown"
         if check_rate_limit(ip, "options", 30, 3600):
@@ -2407,16 +2490,24 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
     cache_key = f"{ticker}|{date or ''}"
     if cache_key in _options_cache:
         cached, ts = _options_cache[cache_key]
-        if time.time() - ts < 900:   # 15-minute TTL
+        if time.time() - ts < 900:
             return cached
 
+    # ── Try Finnhub first ────────────────────────────────────────────────────
+    fh_key = os.environ.get("FINNHUB_API_KEY", "")
+    if fh_key:
+        fh_result = _finnhub_options(ticker, fh_key, date, 0.0)
+        if fh_result:
+            _options_cache[cache_key] = (fh_result, time.time())
+            return fh_result
+
+    # ── Fall back to yfinance ────────────────────────────────────────────────
     try:
         t = yf.Ticker(ticker)
         expiry_dates: list[str] = list(t.options)
         if not expiry_dates:
             raise HTTPException(status_code=404, detail="No options available for this ticker")
 
-        # Resolve which expiry to load
         selected = date if (date and date in expiry_dates) else expiry_dates[0]
 
         info = t.info or {}
@@ -2424,19 +2515,25 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
 
         chain = t.option_chain(selected)
 
-        def _process(df) -> list[dict]:
+        def _process(df, is_call: bool) -> list[dict]:
             rows = []
             for _, row in df.iterrows():
                 iv = safe_float(row.get("impliedVolatility"))
+                strike = safe_float(row.get("strike")) or 0.0
+                delta = (
+                    _bs_delta(current_price, strike, selected, 0.05, iv, is_call)
+                    if current_price and strike and iv else None
+                )
                 rows.append({
-                    "strike":           safe_float(row.get("strike")) or 0.0,
-                    "lastPrice":        safe_float(row.get("lastPrice")),
-                    "bid":              safe_float(row.get("bid")),
-                    "ask":              safe_float(row.get("ask")),
-                    "volume":           int(row.get("volume") or 0),
-                    "openInterest":     int(row.get("openInterest") or 0),
-                    "impliedVolatility": round(iv * 100, 2) if iv is not None else None,
-                    "inTheMoney":       bool(row.get("inTheMoney", False)),
+                    "strike":            strike,
+                    "lastPrice":         safe_float(row.get("lastPrice")),
+                    "bid":               safe_float(row.get("bid")),
+                    "ask":               safe_float(row.get("ask")),
+                    "volume":            int(row.get("volume") or 0),
+                    "openInterest":      int(row.get("openInterest") or 0),
+                    "impliedVolatility": round(iv * 100, 2) if iv else None,
+                    "inTheMoney":        bool(row.get("inTheMoney", False)),
+                    "delta":             delta,
                 })
             return sorted(rows, key=lambda r: r["strike"])
 
@@ -2445,8 +2542,8 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
             "current_price":    round(current_price, 4),
             "expiration_dates": expiry_dates,
             "selected_date":    selected,
-            "calls":            _process(chain.calls),
-            "puts":             _process(chain.puts),
+            "calls":            _process(chain.calls, True),
+            "puts":             _process(chain.puts, False),
         }
         _options_cache[cache_key] = (result, time.time())
         return result
