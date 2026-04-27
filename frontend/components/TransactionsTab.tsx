@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
+import InfoModal from "./InfoModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -423,12 +424,16 @@ export default function TransactionsTab() {
 
         {txns.length > 0 && (
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 11, color: "var(--text3)" }}>
-              Cost basis:{" "}
+            <div style={{ fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 4 }}>
+              Cost basis
+              <InfoModal title="Cost Basis" sections={[{ label: "Plain English", text: "The total amount you paid to acquire your current shares, including all buy transactions. Used to calculate realized gains when you sell." }, { label: "Example", text: "Bought 10 shares at $100 and 5 shares at $120 = cost basis of $1,600." }, { label: "What's Good?", text: "Your cost basis determines your taxable gain or loss when you sell. Keeping accurate records is important for tax purposes." }]} />
+              {": "}
               <span style={{ ...MONO, color: "var(--text)", fontWeight: 600 }}>${fmt(totalCostBasis)}</span>
             </div>
-            <div style={{ fontSize: 11, color: "var(--text3)" }}>
-              Realized P&L:{" "}
+            <div style={{ fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 4 }}>
+              Realized P&amp;L
+              <InfoModal title="Realized Profit and Loss" sections={[{ label: "Plain English", text: "Actual profit or loss locked in when you sell shares. Calculated as sale price minus average cost basis, multiplied by shares sold." }, { label: "Example", text: "Avg cost basis $100, sell 10 shares at $130 = realized gain of $300." }, { label: "What's Good?", text: "Positive means you profited on closed positions. Realized losses can sometimes offset realized gains for tax purposes." }]} />
+              {": "}
               <span style={{ ...MONO, fontWeight: 600, color: totalRealizedGain >= 0 ? "#5cb88a" : "#e05c5c" }}>
                 {totalRealizedGain >= 0 ? "+" : "-"}{fmtMoney(totalRealizedGain)}
               </span>
@@ -539,15 +544,24 @@ export default function TransactionsTab() {
             <table style={{ width: "100%", borderCollapse: "collapse" as const }}>
               <thead>
                 <tr>
-                  {["Ticker", "Shares Held", "Avg Cost Basis", "Total Cost", "Realized P&L"].map((h, i) => (
-                    <th key={h} style={{
+                  {([
+                    { label: "Ticker", tip: null },
+                    { label: "Shares Held", tip: null },
+                    { label: "Avg Cost Basis", tip: { title: "Average Cost Basis Per Share", sections: [{ label: "Plain English", text: "Average price paid per share, calculated by dividing total cost by shares held. Used to determine realized gain or loss when selling." }, { label: "Example", text: "Bought 5 shares at $100 and 5 at $120, so average cost basis = $110 per share." }, { label: "What's Good?", text: "This is the per-share threshold you need to beat when selling to book a gain." }] } },
+                    { label: "Total Cost", tip: { title: "Total Cost", sections: [{ label: "Plain English", text: "Total amount invested in this position -- your average cost per share multiplied by shares still held." }, { label: "Example", text: "10 shares held with avg cost basis of $110 = total cost of $1,100." }, { label: "What's Good?", text: "Compare to current market value to estimate your unrealized gain or loss." }] } },
+                    { label: "Realized P&L", tip: { title: "Realized Profit and Loss", sections: [{ label: "Plain English", text: "Actual profit or loss locked in from closed positions (shares you have sold). Calculated using the average cost method." }, { label: "Example", text: "Avg cost basis $100, sell 10 shares at $130 = realized gain of $300." }, { label: "What's Good?", text: "Positive means you profited on closed positions. Realized losses can sometimes offset realized gains for tax purposes." }] } },
+                  ] as { label: string; tip: { title: string; sections: { label: string; text: string }[] } | null }[]).map(({ label, tip }, i) => (
+                    <th key={label} style={{
                       padding: "8px 12px", fontSize: 10, fontWeight: 600,
                       letterSpacing: 1, textTransform: "uppercase" as const,
                       color: "var(--text3)", textAlign: i === 0 ? "left" : "right",
                       borderBottom: "0.5px solid var(--border)",
                       background: "var(--bg2)", whiteSpace: "nowrap",
                     }}>
-                      {h}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: i === 0 ? "flex-start" : "flex-end" }}>
+                        {label}
+                        {tip && <InfoModal title={tip.title} sections={tip.sections} />}
+                      </span>
                     </th>
                   ))}
                 </tr>

@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { fetchMonteCarlo } from "../lib/api";
 import ErrorState from "./ErrorState";
+import InfoModal from "./InfoModal";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
@@ -422,22 +423,28 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
                 value: `-${varPct}%`,
                 subtext: "Max expected loss over 1 year with 95% confidence",
                 color: C.red,
+                tooltip: { title: "Value at Risk (VaR 95%)", sections: [{ label: "Plain English", text: "The maximum expected loss over 1 year with 95% confidence based on simulated scenarios. In 95 out of 100 years, your loss should not exceed this amount." }, { label: "Example", text: "VaR of 18% on a $100K portfolio means there is a 95% chance you will not lose more than $18K in a given year." }, { label: "What's Good?", text: "Lower is better. Under 15% is relatively safe for most investors. Above 30% suggests high risk concentration." }] },
               },
               {
                 label: "Expected Shortfall",
                 value: `-${esPct}%`,
                 subtext: "Average loss across the worst 5% of scenarios",
                 color: "#e07a5f",
+                tooltip: { title: "Expected Shortfall (CVaR)", sections: [{ label: "Plain English", text: "The average loss across the worst 5% of simulated scenarios. Goes beyond VaR to show how bad things can get when they go wrong." }, { label: "Example", text: "If VaR is 18%, Expected Shortfall might be 25% -- the average of all the worst outcomes beyond that threshold." }, { label: "What's Good?", text: "Compare to VaR. If Expected Shortfall is much larger than VaR, the loss distribution has a fat tail, meaning extreme losses could be severe." }] },
               },
               {
                 label: "Probability of Ruin",
                 value: ruinPct === "0.0" ? "< 0.1%" : `${ruinPct}%`,
                 subtext: "Chance of losing more than 50% of portfolio",
                 color: Number(ruinPct) > 5 ? C.red : Number(ruinPct) > 1 ? mcAmber : "var(--text3)",
+                tooltip: { title: "Probability of Ruin", sections: [{ label: "Plain English", text: "The percentage of simulated scenarios where the portfolio loses more than 50% of its value. A measure of catastrophic downside risk." }, { label: "Example", text: "Probability of ruin of 2% means in about 1 out of 50 simulated years, the portfolio halves in value." }, { label: "What's Good?", text: "Under 1% is very safe. 1-5% warrants caution, especially near retirement. Above 5% suggests the portfolio may be too concentrated or volatile." }] },
               },
             ].map((card, i) => (
               <div key={i} style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "14px 16px" }}>
-                <p style={{ fontSize: 8, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8 }}>{card.label}</p>
+                <p style={{ fontSize: 8, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                  {card.label}
+                  <InfoModal title={card.tooltip.title} sections={card.tooltip.sections} />
+                </p>
                 <p style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: card.color, letterSpacing: -0.5, marginBottom: 6 }}>{card.value}</p>
                 <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.5 }}>{card.subtext}</p>
               </div>

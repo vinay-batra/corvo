@@ -2,6 +2,7 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
+import InfoModal from "./InfoModal";
 
 function Ring({ score, size = 96 }: { score: number; size?: number }) {
   const r = (size - 12) / 2, circ = 2 * Math.PI * r, offset = circ - (score / 100) * circ;
@@ -120,8 +121,9 @@ export default function HealthScore({
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         {inView && <Ring score={score} />}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, paddingTop: 4 }}>
-          <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>
+          <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
             Portfolio Health
+            <InfoModal title="Portfolio Health Score" sections={[{ label: "Plain English", text: "A composite score from 0 to 100 that rates the overall quality of your portfolio based on annualized return, Sharpe ratio, volatility, and maximum drawdown." }, { label: "Example", text: "Score of 80 means the portfolio performs well across all four dimensions. Score of 40 may mean high volatility or poor risk-adjusted returns." }, { label: "What's Good?", text: "75+ is excellent. 50-74 is good. 25-49 is fair. Under 25 suggests the portfolio may benefit from rebalancing or diversification." }]} />
           </p>
           <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", lineHeight: 1.1 }}>
             <span style={{ color: score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "#e05c5c" }}>{score}</span>
