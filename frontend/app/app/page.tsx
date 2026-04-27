@@ -1060,6 +1060,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
     setLoading(true); setData(null); setErrorMsg(null); setSkippedTickers([]); setAnalyzeComplete(false);
+    setWsidResult(null); setWsidOpen(false);
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
       const pendingRef = referralCodeRef.current;
