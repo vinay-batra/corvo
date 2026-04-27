@@ -4923,6 +4923,92 @@ def _fetch_yf_quote(ticker: str) -> dict:
         print(f"yfinance quote fallback error for {ticker}: {e}")
         return {"price": 0.0, "change_pct": 0.0}
 
+def _fetch_user_goals_from_supabase(user_id: str) -> dict:
+    """Fetch goal/profile data from Supabase auth user_metadata for the given user_id.
+
+    Returns a merged dict combining the onboarding metadata (investment_horizon,
+    risk_tolerance, primary_goals, investor_type, age_range, income_range) with
+    any legacy corvo_goals fields.  Returns {} on any failure.
+    """
+    if not user_id or not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {}
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+            headers=_sb_headers(),
+            timeout=6,
+        )
+        if resp.status_code != 200:
+            return {}
+        meta = resp.json().get("user_metadata") or {}
+        return {
+            "investment_horizon": meta.get("investment_horizon", ""),
+            "risk_tolerance": meta.get("risk_tolerance", ""),
+            "primary_goals": meta.get("primary_goals", []),
+            "investor_type": meta.get("investor_type", ""),
+            "age_range": meta.get("age_range", ""),
+            "income_range": meta.get("income_range", ""),
+        }
+    except Exception as e:
+        print(f"[what-should-i-do] supabase goals fetch error: {e}")
+        return {}
+
+
+def _parse_horizon_years(horizon_str: str, legacy_goals: dict) -> int | None:
+    """Convert investment_horizon string or legacy timeline to an integer year count.
+
+    Returns None if the horizon cannot be determined.
+    """
+    if horizon_str:
+        h = horizon_str.lower().strip()
+        if "10" in h:
+            return 15  # "10+ years" -> treat as 15
+        if "5-10" in h or "5 to 10" in h:
+            return 7
+        if "3-5" in h or "3 to 5" in h:
+            return 4
+        if "1-2" in h or "1 to 2" in h:
+            return 2
+        if "under 1" in h or "less than 1" in h:
+            return 1
+        # Fallback: try parsing first number found
+        import re
+        nums = re.findall(r"\d+", h)
+        if nums:
+            return int(nums[0])
+    # Legacy: retirementAge - age
+    try:
+        age = int(legacy_goals.get("age", 0) or 0)
+        ret = int(legacy_goals.get("retirementAge", 0) or 0)
+        if age > 0 and ret > age:
+            return ret - age
+    except Exception:
+        pass
+    # Legacy timeline field
+    try:
+        tl = legacy_goals.get("timeline")
+        if tl:
+            return int(tl)
+    except Exception:
+        pass
+    return None
+
+
+def _horizon_category(years: int | None) -> str:
+    """Map year count to a plain-English horizon category."""
+    if years is None:
+        return "unknown"
+    if years >= 10:
+        return "long-term (10+ years)"
+    if years >= 5:
+        return "medium-to-long-term (5-10 years)"
+    if years >= 3:
+        return "medium-term (3-5 years)"
+    if years >= 1:
+        return "short-term (1-3 years)"
+    return "very short-term (under 1 year)"
+
+
 @app.post("/what-should-i-do")
 def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
     ip = request.client.host if request.client else "unknown"
@@ -4930,6 +5016,25 @@ def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
         raise HTTPException(status_code=429, detail="Rate limit exceeded.")
 
     finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+
+    # Pull authoritative goal data from Supabase, fall back to request payload
+    sb_goals = _fetch_user_goals_from_supabase(req.user_id) if req.user_id else {}
+    legacy_goals = req.user_goals or {}
+
+    investment_horizon_str = sb_goals.get("investment_horizon", "") or legacy_goals.get("timeline", "")
+    risk_tolerance = (
+        sb_goals.get("risk_tolerance", "")
+        or legacy_goals.get("riskTolerance", "")
+        or "moderate"
+    )
+    primary_goals = sb_goals.get("primary_goals") or []
+    investor_type = sb_goals.get("investor_type", "")
+    age_range = sb_goals.get("age_range", "") or (str(legacy_goals.get("age", "")) if legacy_goals.get("age") else "")
+    legacy_goal_type = legacy_goals.get("goal", "")  # retirement/wealth/income/short
+
+    horizon_years = _parse_horizon_years(investment_horizon_str, legacy_goals)
+    horizon_category = _horizon_category(horizon_years)
+    is_long_term = horizon_years is not None and horizon_years >= 5
 
     # Live prices for each holding
     live_prices: dict[str, dict] = {}
@@ -4940,61 +5045,99 @@ def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
         quote = (_fetch_finnhub_quote(ticker, finnhub_key) if finnhub_key else None) or _fetch_yf_quote(ticker)
         live_prices[ticker] = quote
 
-    # Market context (SPY + QQQ)
+    # Market context (SPY + QQQ) — shown as background, not as a reason to act
     market_lines: list[str] = []
     for sym in ["SPY", "QQQ"]:
         q = (_fetch_finnhub_quote(sym, finnhub_key) if finnhub_key else None) or _fetch_yf_quote(sym)
         if q["price"] > 0:
             market_lines.append(f"{sym}: {q['change_pct']:+.2f}% today (${q['price']:.2f})")
 
-    # Build holdings description with live prices
+    # Build holdings description
     total_w = sum(req.weights) or 1.0
     holdings_lines: list[str] = []
     for t, w in zip(req.tickers, req.weights):
         norm_w = w / total_w
         q = live_prices.get(t, {"price": 0.0, "change_pct": 0.0})
         price_str = f"${q['price']:.2f}" if q["price"] > 0 else "N/A"
-        pct_str = f"{q['change_pct']:+.2f}%" if q["price"] > 0 else ""
-        tag = "money market" if is_cash_ticker(t) else ""
-        suffix = f" [{tag}]" if tag else ""
-        holdings_lines.append(f"{t}{suffix} ({norm_w:.1%}, price: {price_str}, today: {pct_str})")
+        change_str = f"{q['change_pct']:+.2f}% today" if q["price"] > 0 else ""
+        tag = " [money market]" if is_cash_ticker(t) else ""
+        holdings_lines.append(f"{t}{tag}: {norm_w:.1%} weight, {price_str}{(', ' + change_str) if change_str else ''}")
 
-    # Investor profile
-    goals = req.user_goals or {}
-    profile_parts: list[str] = []
-    if goals.get("age"): profile_parts.append(f"age {goals['age']}")
-    if goals.get("riskTolerance"): profile_parts.append(f"risk: {goals['riskTolerance']}")
-    if goals.get("goal"): profile_parts.append(f"goal: {goals['goal']}")
-    if goals.get("invested"): profile_parts.append(f"invested: ${int(goals['invested']):,}")
-    profile_str = ", ".join(profile_parts) if profile_parts else "not provided"
+    # Goal description for the prompt
+    goal_parts: list[str] = []
+    if horizon_category != "unknown":
+        goal_parts.append(f"Investment horizon: {horizon_category}")
+    if risk_tolerance:
+        risk_label = {
+            "conservative": "conservative (capital preservation priority)",
+            "moderate": "moderate (balanced growth and risk)",
+            "aggressive": "aggressive (maximum growth, high risk tolerance)",
+        }.get(risk_tolerance.lower(), risk_tolerance)
+        goal_parts.append(f"Risk tolerance: {risk_label}")
+    if primary_goals:
+        goal_parts.append(f"Primary goals: {', '.join(primary_goals)}")
+    elif legacy_goal_type:
+        goal_label = {"retirement": "retirement", "wealth": "wealth building", "income": "passive income", "short": "short-term gains"}.get(legacy_goal_type, legacy_goal_type)
+        goal_parts.append(f"Primary goal: {goal_label}")
+    if investor_type:
+        goal_parts.append(f"Investor type: {investor_type}")
+    if age_range:
+        goal_parts.append(f"Age range: {age_range}")
+    goal_block = "\n".join(goal_parts) if goal_parts else "Not provided"
 
     value_str = f"${int(req.portfolio_value):,}" if req.portfolio_value else "not set"
     health_str = f"{int(req.health_score)}/100" if req.health_score is not None else "N/A"
-    today = datetime.now().strftime("%B %d, %Y")
+    today_str = datetime.now().strftime("%B %d, %Y")
 
-    system = f"""You are Corvo AI, a direct and actionable portfolio advisor. Today is {today}.
+    # Horizon-specific guidance for Claude
+    if is_long_term:
+        horizon_rules = """HORIZON CONSTRAINT (strictly enforce — this user is a long-term investor):
+- Do NOT recommend buying or selling any holding based on its single-day price change.
+- Daily price movement is shown as background context only. Never cite it as a reason to act.
+- Valid recommendation topics for a long-term investor:
+  * Concentration risk: any single position above 35-40% of the portfolio
+  * Missing asset class exposure (e.g. no bonds, no international, no defensive sector)
+  * Rebalancing drift: a position that has grown or shrunk far from its target weight over time
+  * A holding whose business model, competitive position, or revenue trajectory structurally no longer fits a long-term thesis
+  * Low Sharpe ratio or high drawdown relative to what the portfolio is trying to achieve
+- Every recommendation must be defensible over the user's stated time horizon."""
+    elif horizon_years is not None and horizon_years >= 3:
+        horizon_rules = """HORIZON CONSTRAINT (medium-term investor, 3-5 years):
+- Do NOT recommend buying or selling based solely on single-day price movement.
+- Daily prices may provide supporting context, but the primary reason must be structural.
+- Valid topics: concentration risk, sector overweight, Sharpe ratio, drawdown risk relative to timeline, approaching liquidity needs.
+- Every recommendation must be defensible over the user's stated time horizon."""
+    else:
+        horizon_rules = """HORIZON CONSTRAINT (short-term investor or horizon unknown):
+- Daily prices may be considered as one input, but still must not be the sole reason to act.
+- Recommendations should prioritize risk management and capital preservation relative to the short timeline.
+- Every recommendation must be defensible over the user's stated time horizon."""
 
-The user wants to know what they should do with their portfolio right now.
+    system = f"""You are Corvo AI, a direct and goal-aware portfolio advisor. Today is {today_str}.
 
-RULES (strictly follow these):
+{horizon_rules}
+
+OUTPUT FORMAT (strictly follow):
 - Output exactly 2 or 3 numbered recommendations, starting with "1."
-- Each recommendation is 1 sentence, 2 sentences at most
-- Every recommendation must name a specific ticker, a specific action (buy more, trim, hold, research, avoid adding), and exactly why based on today's prices or portfolio metrics
-- No generic advice, no observations, no intros, no conclusions, no summaries
-- No em dashes, no asterisks, no bullet points, no markdown
-- Start immediately with "1." with no preamble
+- Each recommendation: 1 sentence stating the specific action, followed by 1 sentence stating why it fits this investor's goals and horizon.
+- Name the specific ticker(s) and real numbers (weights, percentages, ratios) in every recommendation.
+- No generic advice. No intros. No conclusions. No summaries.
+- No em dashes, no asterisks, no bullet points, no markdown.
+- Start immediately with "1." with no preamble.
 
-PORTFOLIO TODAY:
-Holdings: {', '.join(holdings_lines)}
-Return ({req.period}): {req.portfolio_return:.2%}
-Volatility: {req.portfolio_volatility:.2%}
-Sharpe Ratio: {req.sharpe_ratio:.2f}
-Max Drawdown: {req.max_drawdown:.2%}
-Health Score: {health_str}
-Portfolio Value: {value_str}
-Investor: {profile_str}
+INVESTOR PROFILE:
+{goal_block}
 
-LIVE MARKET:
+PORTFOLIO METRICS (period: {req.period}):
+{chr(10).join(holdings_lines)}
+Annualized return: {req.portfolio_return:.2%}
+Annualized volatility: {req.portfolio_volatility:.2%}
+Sharpe ratio: {req.sharpe_ratio:.2f}
+Max drawdown: {req.max_drawdown:.2%}
+Health score: {health_str}
+Portfolio value: {value_str}
+
+MARKET CONTEXT (background only, not a reason to act):
 {chr(10).join(market_lines) if market_lines else 'Market data unavailable'}"""
 
     import anthropic
@@ -5005,9 +5148,9 @@ LIVE MARKET:
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=400,
+        max_tokens=450,
         system=system,
-        messages=[{"role": "user", "content": "What should I do with my portfolio today?"}],
+        messages=[{"role": "user", "content": "What should I do with my portfolio?"}],
     )
     raw = response.content[0].text.strip()
     result = clean_ai_response(raw)
