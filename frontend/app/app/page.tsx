@@ -1746,7 +1746,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           .c-mob-drawer{display:none!important}
           .c-mob-bottom-nav{display:none!important}
         }
-        .c-mob-tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+        .c-mob-tabs{scrollbar-width:none;overscroll-behavior-x:contain;overscroll-behavior-y:none}
         .c-mob-tabs::-webkit-scrollbar{display:none}
       `}</style>
 

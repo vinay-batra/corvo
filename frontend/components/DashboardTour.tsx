@@ -363,11 +363,11 @@ export default function DashboardTour({ onComplete }: Props) {
   }, [updatePositions]);
 
   useEffect(() => {
-    window.addEventListener("resize", updatePositions);
-    window.addEventListener("scroll", updatePositions, true);
+    window.addEventListener("resize", updatePositions, { passive: true });
+    window.addEventListener("scroll", updatePositions, { capture: true, passive: true });
     return () => {
       window.removeEventListener("resize", updatePositions);
-      window.removeEventListener("scroll", updatePositions, true);
+      window.removeEventListener("scroll", updatePositions, { capture: true } as any);
     };
   }, [updatePositions]);
 
