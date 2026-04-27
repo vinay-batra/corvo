@@ -549,7 +549,7 @@ export default function PositionsTab({
         input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.65);cursor:pointer}
         @media(max-width:768px){
           .pos-perf-wrap{overflow-x:hidden!important;width:100%!important;min-width:0!important}
-          .pos-perf-ctrl{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}
+          .pos-perf-ctrl{overflow-x:auto;scrollbar-width:none;padding-bottom:4px;overscroll-behavior-x:contain}
           .pos-perf-ctrl::-webkit-scrollbar{display:none}
         }
       `}</style>
