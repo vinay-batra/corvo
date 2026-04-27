@@ -859,6 +859,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [rebalanceLoading, setRebalanceLoading] = useState(false);
   const [rebalanceResult, setRebalanceResult] = useState<{ holdings: any[]; plan: string } | null>(null);
   const [rebalanceError, setRebalanceError] = useState<string | null>(null);
+  const [retirementResult, setRetirementResult] = useState<any>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
@@ -2453,14 +2454,20 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <Card><TooltipCardHeader title="Monte Carlo Simulation" sections={[
                   { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
+                  { label: "Horizon control", text: "Select 1 to 30 years. Shorter horizons are more precise; longer horizons show the compounding range but with wider uncertainty." },
                 ]} /><MonteCarloChart assets={assets} period={period} portfolioValue={portfolioInputValue} /></Card>
                 <Card style={{ marginTop: 16 }}>
                   <TooltipCardHeader title="What if I Retire in X Years?" sections={[
-                    { label: "What it shows", text: "Runs 5,000 Monte Carlo scenarios projecting your portfolio to retirement. Best, median, and worst case are the 90th, 50th, and 10th percentiles of final values in dollars." },
-                    { label: "How it works", text: "Uses your current holdings and weights, historical volatility, and long-term asset-class expected returns to model a range of outcomes. Returns compound annually over the full horizon." },
-                    { label: "Limitations", text: "This is a projection, not a guarantee. It does not account for contributions, withdrawals, inflation, or taxes." },
+                    { label: "What it shows", text: "Runs 8,500 Monte Carlo scenarios projecting your portfolio to retirement. The confidence interval and histogram show the full distribution of outcomes in today's dollars." },
+                    { label: "How it works", text: "Uses your current holdings, historical volatility, and long-term expected returns. Advanced settings let you model contributions, inflation, fees, and tax drag." },
+                    { label: "Interpreting results", text: "Results are inflation-adjusted by default. The median is the most likely single outcome. The confidence interval captures the realistic range across most scenarios." },
                   ]} />
-                  <RetirementSimulator assets={assets} portfolioValue={portfolioInputValue} />
+                  <RetirementSimulator
+                    assets={assets}
+                    portfolioValue={portfolioInputValue}
+                    savedResult={retirementResult}
+                    onResultChange={setRetirementResult}
+                  />
                 </Card>
               </motion.div>
             ) : activeTab === "transactions" ? (

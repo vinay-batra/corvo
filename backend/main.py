@@ -562,10 +562,11 @@ def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
 
 
 @app.get("/montecarlo")
-def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 8500):
+def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 8500, years: int = 5):
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers")
+    years = max(1, min(30, years))
 
     if weights:
         try:
@@ -588,73 +589,54 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     total_w = sum(avail_w) or 1
     avail_w = [w / total_w for w in avail_w]
 
-    # Step 1: Compute weighted portfolio daily arithmetic returns from actual history
     returns = prices.pct_change().dropna()
-    port_returns = returns.values @ np.array(avail_w)  # sum(weight_i * daily_return_i) per day
+    port_returns = returns.values @ np.array(avail_w)
 
-    # Step 2: mu and sigma from the arithmetic daily return series
     mu_daily = float(np.mean(port_returns))
     sigma_daily = float(np.std(port_returns))
 
     # Override mu with long-term asset-class expected returns so recent bull/bear runs
     # don't distort forward projections. Fall back to historical mu for unknown tickers.
     ASSET_CLASS_MU = {
-        # Bonds/fixed income
         "BND": 0.04, "AGG": 0.04, "TLT": 0.04, "IEF": 0.035, "SHY": 0.03,
         "SGOV": 0.045, "BIL": 0.04, "VBTLX": 0.04, "LQD": 0.045, "HYG": 0.055,
-        # Gold/commodities
         "GLD": 0.05, "IAU": 0.05, "SLV": 0.04, "DJP": 0.04,
-        # Broad equity
         "SPY": 0.10, "VOO": 0.10, "VTI": 0.10, "IWM": 0.09, "QQQ": 0.11,
     }
 
     weighted_mu = 0.0
     for t, w in zip(available, avail_w):
-        asset_mu = ASSET_CLASS_MU.get(t, mu_daily * 252)  # use historical for unknowns
+        asset_mu = ASSET_CLASS_MU.get(t, mu_daily * 252)
         weighted_mu += w * asset_mu
 
     mu_daily = weighted_mu / 252
+    sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
+    mu_daily = min(mu_daily, 0.25 / 252)
 
-    # Enforce minimum daily volatility so simulation never shows 100% positive paths.
-    # Conservative portfolios can have very low historical vol — floor at 8% annualised.
-    MIN_SIGMA_ANNUAL = 0.08
-    sigma_daily = max(sigma_daily, MIN_SIGMA_ANNUAL / np.sqrt(252))
-
-    # Cap annualised mu at 25% to prevent bull-run portfolios from showing no downside paths.
-    MAX_MU_ANNUAL = 0.25
-    mu_daily = min(mu_daily, MAX_MU_ANNUAL / 252)
-
-    # Step 3: Annualise for the GBM formula with dt = 1/252
-    # exp((mu - 0.5*sigma^2)*dt + sigma*sqrt(dt)*Z) with annualised params and dt=1/252
-    # is mathematically equivalent to exp(mu_daily - 0.5*sigma_daily^2 + sigma_daily*Z) per day
     mu = mu_daily * 252
     sigma = sigma_daily * np.sqrt(252)
-    dt = 1.0 / 252
-    horizon = 252
 
-    # Step 4: Run 8500 independent GBM paths — each starts at 1.0
+    # Use monthly steps (12/year) for memory efficiency across all horizon lengths
+    steps_per_year = 12
+    horizon = years * steps_per_year
+    dt = 1.0 / steps_per_year
+
     rng = np.random.default_rng()
     Z = rng.standard_normal((simulations, horizon))
     daily_factors = np.exp((mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * Z)
-    path_values = np.cumprod(daily_factors, axis=1)  # shape (simulations, 252); 1.0 = breakeven
+    path_values = np.cumprod(daily_factors, axis=1)
 
-    # Step 5: Collect all 8500 final values after 252 steps
-    final_vals = path_values[:, -1]  # actual multipliers (1.0 = breakeven)
+    final_vals = path_values[:, -1]
 
-    # Step 6: Percentiles of final values as percentage gains from 1.0
     p5  = safe_float(float(np.percentile(final_vals, 5))  - 1.0)
     p25 = safe_float(float(np.percentile(final_vals, 25)) - 1.0)
     p50 = safe_float(float(np.percentile(final_vals, 50)) - 1.0)
     p75 = safe_float(float(np.percentile(final_vals, 75)) - 1.0)
     p95 = safe_float(float(np.percentile(final_vals, 95)) - 1.0)
 
-    # Step 7: Probability positive — fraction of paths ending above 1.0 (never hardcoded)
     positive_prob = safe_float(float(np.mean(final_vals > 1.0)))
-
-    # Step 8: Max loss — 1 minus the lowest final path value
     max_loss = safe_float(float(1.0 - np.min(final_vals)))
 
-    # Step 9: Percentile bands at each of 252 days for the fan chart (fractional gain/loss)
     paths_pct = path_values - 1.0
     pct_bands = {
         "p5":  safe_list(np.percentile(paths_pct, 5,  axis=0).tolist()),
@@ -664,17 +646,17 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         "p95": safe_list(np.percentile(paths_pct, 95, axis=0).tolist()),
     }
 
-    # Risk metrics
-    ruin_threshold = 0.5  # lose more than 50% → final value < 0.5
+    ruin_threshold = 0.5
     ruin_probability = safe_float(float(np.mean(final_vals < ruin_threshold)))
     worst_5pct_mask = final_vals <= np.percentile(final_vals, 5)
     expected_shortfall = safe_float(
         float(np.mean(final_vals[worst_5pct_mask]) - 1.0) if worst_5pct_mask.any() else p5
     )
 
-    # Step 10: Return simulations count in response
     return {
         "horizon": horizon,
+        "years": years,
+        "steps_per_year": steps_per_year,
         "simulations": simulations,
         "final_p5": p5,
         "final_p25": p25,
@@ -697,6 +679,7 @@ class MonteCarloInsightRequest(BaseModel):
     ruin_probability: float
     expected_shortfall: float
     simulations: int = 8500
+    years: int = 1
 
 
 @app.post("/montecarlo/insight")
@@ -718,15 +701,16 @@ def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
     p50_pct = round(req.p50 * 100, 1)
     p95_pct = round(req.p95 * 100, 1)
 
+    horizon_label = f"{req.years} year" if req.years == 1 else f"{req.years} years"
     prompt = (
-        f"A portfolio was simulated {req.simulations} times over 1 year. Results: "
+        f"A portfolio was simulated {req.simulations} times over {horizon_label}. Results: "
         f"{req.positive_prob}% of simulations ended with positive returns. "
         f"Median outcome: {p50_pct:+.1f}%. "
         f"Worst 5% of scenarios: below {p5_pct:.1f}% (average of worst 5%: {es_pct:.1f}%). "
         f"Best 5% of scenarios: above {p95_pct:+.1f}%. "
         f"Probability of losing more than 50%: {ruin_pct:.1f}%. "
-        f"Write 2-3 plain English sentences for the investor. Start with 'Based on {req.simulations} simulations'. "
-        f"Be direct and specific. No markdown, no bullet points, no disclaimers."
+        f"Write 2-3 plain English sentences for the investor. Start with 'Based on {req.simulations:,} simulations'. "
+        f"Reference the {horizon_label} horizon in your response. Be direct and specific. No markdown, no bullet points, no disclaimers."
     )
 
     resp = client.messages.create(
@@ -743,8 +727,13 @@ class RetirementSimRequest(BaseModel):
     weights: list[float]
     current_value: float
     years_to_retirement: int
-    simulations: int = 5000
+    simulations: int = 8500
     period: str = "5y"
+    contribution: float = 0.0
+    inflation_rate: float = 2.5
+    fee_rate: float = 0.05
+    tax_drag: float = 0.0
+    confidence_level: int = 90
 
 
 @app.post("/portfolio/retirement-simulation")
@@ -759,6 +748,10 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
         raise HTTPException(status_code=400, detail="years_to_retirement must be between 1 and 60.")
     if req.current_value <= 0:
         raise HTTPException(status_code=400, detail="current_value must be positive.")
+
+    confidence_level = req.confidence_level if req.confidence_level in (90, 95, 99) else 90
+    lower_pct = (100.0 - confidence_level) / 2.0
+    upper_pct = 100.0 - lower_pct
 
     total_w = sum(req.weights) or 1.0
     weights = [w / total_w for w in req.weights]
@@ -789,30 +782,51 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
         "GLD": 0.05, "IAU": 0.05, "SLV": 0.04, "DJP": 0.04,
         "SPY": 0.10, "VOO": 0.10, "VTI": 0.10, "IWM": 0.09, "QQQ": 0.11,
     }
-    weighted_mu = sum(avail_w[i] * ASSET_CLASS_MU.get(available[i], mu_hist * 252) for i in range(len(available)))
-    mu_daily = weighted_mu / 252
+    weighted_mu_annual = sum(avail_w[i] * ASSET_CLASS_MU.get(available[i], mu_hist * 252) for i in range(len(available)))
     sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
-    mu_daily = min(mu_daily, 0.25 / 252)
+    mu_annual = min(weighted_mu_annual, 0.25)
+    sigma_annual = sigma_daily * np.sqrt(252)
 
-    mu = mu_daily * 252
-    sigma = sigma_daily * np.sqrt(252)
-    dt = 1.0 / 252
-    horizon = req.years_to_retirement * 252
+    # Adjust for fees and tax drag (reduce annual return)
+    effective_mu = mu_annual - (req.fee_rate / 100.0) - (req.tax_drag / 100.0)
 
+    # Run 8500 annual-step GBM paths with contributions
+    horizon_years = req.years_to_retirement
     rng = np.random.default_rng()
-    Z = rng.standard_normal((req.simulations, horizon))
-    daily_factors = np.exp((mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * Z)
-    final_multipliers = np.prod(daily_factors, axis=1)
+    Z = rng.standard_normal((req.simulations, horizon_years))
+    annual_factors = np.exp((effective_mu - 0.5 * sigma_annual ** 2) + sigma_annual * Z)
 
-    worst  = safe_float(float(np.percentile(final_multipliers, 10))  * req.current_value)
-    median = safe_float(float(np.percentile(final_multipliers, 50)) * req.current_value)
-    best   = safe_float(float(np.percentile(final_multipliers, 90)) * req.current_value)
+    values = np.full(req.simulations, req.current_value, dtype=float)
+    for y in range(horizon_years):
+        values = values * annual_factors[:, y] + req.contribution
 
-    worst_pct  = safe_float(float(np.percentile(final_multipliers, 10))  - 1.0)
-    median_pct = safe_float(float(np.percentile(final_multipliers, 50)) - 1.0)
-    best_pct   = safe_float(float(np.percentile(final_multipliers, 90)) - 1.0)
+    # Convert nominal to real (inflation-adjusted) dollars
+    inflation_multiplier = (1.0 + req.inflation_rate / 100.0) ** horizon_years
+    real_values = values / inflation_multiplier
 
-    positive_prob = safe_float(float(np.mean(final_multipliers > 1.0)))
+    worst_val  = safe_float(float(np.percentile(real_values, lower_pct)))
+    median_val = safe_float(float(np.percentile(real_values, 50.0)))
+    best_val   = safe_float(float(np.percentile(real_values, upper_pct)))
+
+    worst_pct  = safe_float(worst_val  / req.current_value - 1.0)
+    median_pct = safe_float(median_val / req.current_value - 1.0)
+    best_pct   = safe_float(best_val   / req.current_value - 1.0)
+
+    positive_prob = safe_float(float(np.mean(real_values > req.current_value)))
+
+    ci_low  = worst_val
+    ci_high = best_val
+
+    # Histogram of final real values (40 bins, trimmed to 1st-99th percentile)
+    hist_min = max(0.0, float(np.percentile(real_values, 1)))
+    hist_max = float(np.percentile(real_values, 99))
+    if hist_max <= hist_min:
+        hist_max = hist_min + 1.0
+    hist_counts, hist_edges = np.histogram(real_values, bins=40, range=(hist_min, hist_max))
+    histogram = {
+        "counts": hist_counts.tolist(),
+        "edges": [safe_float(e) for e in hist_edges.tolist()],
+    }
 
     import anthropic
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -821,15 +835,16 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
     client = anthropic.Anthropic(api_key=api_key)
 
     ticker_str = ", ".join(available[:6]) + ("..." if len(available) > 6 else "")
+    contrib_note = f" with ${req.contribution:,.0f}/year in contributions" if req.contribution > 0 else ""
+    inflation_note = f", inflation-adjusted at {req.inflation_rate}%/year" if req.inflation_rate > 0 else ""
     prompt = (
         f"A portfolio currently worth ${req.current_value:,.0f} ({ticker_str}) was simulated "
-        f"{req.simulations} times over {req.years_to_retirement} years to retirement. "
-        f"Results: worst case (10th percentile) = ${worst:,.0f} ({worst_pct:+.0%}), "
-        f"median = ${median:,.0f} ({median_pct:+.0%}), "
-        f"best case (90th percentile) = ${best:,.0f} ({best_pct:+.0%}). "
-        f"{round(positive_prob * 100, 1)}% of scenarios ended with a gain. "
+        f"{req.simulations:,} times over {horizon_years} years{contrib_note}{inflation_note}. "
+        f"Results: {confidence_level}% confidence interval = ${ci_low:,.0f} to ${ci_high:,.0f}, "
+        f"median = ${median_val:,.0f} ({median_pct:+.0%}). "
+        f"{round(positive_prob * 100, 1)}% of scenarios ended above the starting value. "
         f"Write exactly 2-3 sentences in plain English summarizing what these numbers mean for the investor. "
-        f"Then on a new line write 'Action:' followed by one specific, concrete action they could take to improve their retirement outlook. "
+        f"Then on a new line write 'Action:' followed by one specific, concrete action. "
         f"No markdown, no bullet points, no asterisks, no em dashes, no disclaimers."
     )
 
@@ -849,18 +864,26 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
         action = parts[1].strip()
 
     return {
-        "worst":       worst,
-        "median":      median,
-        "best":        best,
-        "worst_pct":   worst_pct,
-        "median_pct":  median_pct,
-        "best_pct":    best_pct,
-        "positive_prob": positive_prob,
-        "years":       req.years_to_retirement,
-        "current_value": req.current_value,
-        "simulations": req.simulations,
-        "summary":     summary,
-        "action":      action,
+        "worst":           worst_val,
+        "median":          median_val,
+        "best":            best_val,
+        "worst_pct":       worst_pct,
+        "median_pct":      median_pct,
+        "best_pct":        best_pct,
+        "ci_low":          ci_low,
+        "ci_high":         ci_high,
+        "confidence_level": confidence_level,
+        "positive_prob":   positive_prob,
+        "years":           req.years_to_retirement,
+        "current_value":   req.current_value,
+        "simulations":     req.simulations,
+        "histogram":       histogram,
+        "summary":         summary,
+        "action":          action,
+        "contribution":    req.contribution,
+        "inflation_rate":  req.inflation_rate,
+        "fee_rate":        req.fee_rate,
+        "inflation_adjusted": req.inflation_rate > 0,
     }
 
 
