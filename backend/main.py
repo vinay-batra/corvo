@@ -1814,14 +1814,26 @@ def _email_html(
     user_id: str = "",
     label: str = "",
     unsub_type: str = "",
+    email_theme: str = "light",
 ) -> str:
-    """Build a minimal dark HTML email compatible with Gmail, Outlook, and Apple Mail."""
+    """Build a minimal HTML email compatible with Gmail, Outlook, and Apple Mail."""
     amber = "#c9a84c"
-    bg    = "#0a0a0a"
-    card  = "#111111"
-    text  = "#e8e0cc"
-    muted = "#888880"
-    bdr   = "#1e1e1e"
+    if email_theme == "light":
+        bg           = "#f4f3ef"
+        card         = "#ffffff"
+        text         = "#1a1918"
+        muted        = "#5a5752"
+        bdr          = "#dbd8ce"
+        footer_color = "#888"
+        footer_link  = "#777"
+    else:
+        bg           = "#0a0a0a"
+        card         = "#111111"
+        text         = "#e8e0cc"
+        muted        = "#888880"
+        bdr          = "#1e1e1e"
+        footer_color = "#444"
+        footer_link  = "#555"
     mono  = "'Courier New', Courier, monospace"
     sans  = "Arial, Helvetica, sans-serif"
     if unsub_type and user_id:
@@ -1853,7 +1865,7 @@ def _email_html(
 
         <tr><td align="center" style="padding-bottom:32px;">
           <p style="margin:0 0 4px;font-family:{mono};font-size:22px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
-          <p style="margin:0;font-family:{sans};font-size:9px;letter-spacing:3px;color:#555;text-transform:uppercase;">Portfolio Intelligence</p>
+          <p style="margin:0;font-family:{sans};font-size:9px;letter-spacing:3px;color:#888;text-transform:uppercase;">Portfolio Intelligence</p>
         </td></tr>
 
         <tr><td style="background:{card};border-radius:10px;border:1px solid {bdr};padding:28px 28px 24px;">
@@ -1874,9 +1886,9 @@ def _email_html(
         </td></tr>
 
         <tr><td align="center" style="padding-top:22px;">
-          <p style="margin:0;font-family:{sans};font-size:11px;color:#444;line-height:1.8;text-align:center;">
+          <p style="margin:0;font-family:{sans};font-size:11px;color:{footer_color};line-height:1.8;text-align:center;">
             corvo.capital &nbsp;&middot;&nbsp; Not financial advice &nbsp;&middot;&nbsp;
-            <a href="{unsub}" style="color:#555;text-decoration:none;">Unsubscribe</a>
+            <a href="{unsub}" style="color:{footer_link};text-decoration:none;">Unsubscribe</a>
           </p>
         </td></tr>
 
@@ -1910,6 +1922,98 @@ def _resend(to: str, subject: str, html: str, from_addr: str = "Corvo <hello@cor
         return False
 
 
+def _welcome_email_html(name: str, user_id: str = "", email_theme: str = "light") -> str:
+    """Build the welcome email HTML with the clean headline + action-steps layout."""
+    amber = "#c9a84c"
+    if email_theme == "light":
+        bg           = "#f4f3ef"
+        card         = "#ffffff"
+        text         = "#1a1918"
+        muted        = "#5a5752"
+        bdr          = "#dbd8ce"
+        footer_color = "#888"
+        footer_link  = "#777"
+    else:
+        bg           = "#0a0a0a"
+        card         = "#111111"
+        text         = "#e8e0cc"
+        muted        = "#888880"
+        bdr          = "#1e1e1e"
+        footer_color = "#444"
+        footer_link  = "#555"
+    mono = "'Courier New', Courier, monospace"
+    sans = "Arial, Helvetica, sans-serif"
+    unsub = f"https://corvo.capital/unsubscribe?user_id={user_id}" if user_id else "https://corvo.capital/unsubscribe"
+    actions = [("01", "Add a ticker"), ("02", "Set your weights"), ("03", "Hit Analyze")]
+    action_rows = ""
+    for i, (num, label) in enumerate(actions):
+        top_pad = "0" if i == 0 else "12px"
+        action_rows += (
+            f'<tr>'
+            f'<td style="padding:{top_pad} 0 12px;width:32px;font-family:{mono};font-size:11px;'
+            f'font-weight:700;color:{amber};vertical-align:top;">{num}</td>'
+            f'<td style="padding:{top_pad} 0 12px;font-family:{sans};font-size:14px;'
+            f'color:{muted};line-height:1.6;">{label}</td>'
+            f'</tr>'
+        )
+        if i < len(actions) - 1:
+            action_rows += (
+                f'<tr><td colspan="2" style="height:1px;background:{bdr};padding:0;font-size:0;line-height:0;">&nbsp;</td></tr>'
+            )
+    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:{bg};">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{bg};">
+    <tr><td align="center" style="padding:48px 16px;">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
+
+        <tr><td align="center" style="padding-bottom:32px;">
+          <p style="margin:0 0 4px;font-family:{mono};font-size:22px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
+          <p style="margin:0;font-family:{sans};font-size:9px;letter-spacing:3px;color:#888;text-transform:uppercase;">Portfolio Intelligence</p>
+        </td></tr>
+
+        <tr><td style="background:{card};border-radius:10px;border:1px solid {bdr};padding:32px 28px 28px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+
+            <tr><td style="padding-bottom:6px;font-family:{sans};font-size:11px;letter-spacing:2px;color:{muted};text-transform:uppercase;">Welcome, {name}</td></tr>
+            <tr><td style="padding-bottom:24px;font-family:{sans};font-size:22px;font-weight:700;color:{text};line-height:1.25;">Your portfolio, with a point of view.</td></tr>
+
+            <tr><td style="padding-bottom:24px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                {action_rows}
+              </table>
+            </td></tr>
+
+            <tr><td>
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr><td align="center" style="border-radius:8px;background-color:{amber};">
+                  <a href="https://corvo.capital/app" target="_blank" rel="noopener noreferrer"
+                     style="display:inline-block;padding:12px 28px;font-family:{sans};font-size:13px;font-weight:700;color:#000;text-decoration:none;border-radius:8px;letter-spacing:0.4px;">Open Corvo</a>
+                </td></tr>
+              </table>
+            </td></tr>
+
+          </table>
+        </td></tr>
+
+        <tr><td align="center" style="padding-top:22px;">
+          <p style="margin:0;font-family:{sans};font-size:11px;color:{footer_color};line-height:1.8;text-align:center;">
+            corvo.capital &nbsp;&middot;&nbsp; Not financial advice &nbsp;&middot;&nbsp;
+            <a href="{unsub}" style="color:{footer_link};text-decoration:none;">Unsubscribe</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+
 # ── Welcome Email ──────────────────────────────────────────────────────────────
 
 class WelcomeEmailRequest(BaseModel):
@@ -1923,19 +2027,7 @@ def send_welcome_email(req: WelcomeEmailRequest):
     """Send a welcome email to a new Corvo user via Resend."""
     print(f"[send-welcome-email] called for {req.email}")
     name = req.display_name or req.email.split("@")[0]
-    html = _email_html(
-        heading=f"Welcome to Corvo, {name}",
-        body_lines=[
-            "Your portfolio, with a point of view.",
-            "Three steps to get started:",
-            "1. Add your tickers.",
-            "2. Set your weights.",
-            "3. Hit Analyze.",
-        ],
-        cta_text="Go to Dashboard",
-        cta_url="https://corvo.capital/app",
-        user_id=req.user_id or "",
-    )
+    html = _welcome_email_html(name=name, user_id=req.user_id or "", email_theme="light")
     ok = _resend(req.email, "Welcome to Corvo", html)
     return {"ok": ok}
 
@@ -2589,7 +2681,7 @@ def unsubscribe(user_id: str = ""):
                     "Content-Type": "application/json",
                     "Prefer": "return=minimal",
                 },
-                json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False},
+                json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False, "price_alerts": False},
                 timeout=8,
             )
             success = resp.status_code in (200, 204)
@@ -2640,11 +2732,12 @@ def unsubscribe(user_id: str = ""):
 @app.get("/email/unsubscribe", response_class=HTMLResponse)
 def email_unsubscribe_type(user_id: str = "", type: str = ""):
     """Unsubscribe a user from a single email type. Called directly from email links."""
-    VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary"}
+    VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary", "price_alerts"}
     LABEL_MAP = {
         "morning_briefing": "Morning Briefing",
         "week_in_review": "Week in Review",
         "monthly_summary": "Monthly Summary",
+        "price_alerts": "Price Alerts",
     }
     col = type if type in VALID_COLUMNS else None
     success = False
@@ -2727,7 +2820,7 @@ def unsubscribe_post(req: UnsubscribeRequest):
         resp = requests.patch(
             f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{req.user_id}",
             headers={**_sb_headers(), "Prefer": "return=minimal"},
-            json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False},
+            json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False, "price_alerts": False},
             timeout=8,
         )
         success = resp.status_code in (200, 204)
@@ -2812,23 +2905,25 @@ def _send_push(subscription: dict, title: str, body: str, icon: str = "", url: s
         return "err"
 
 
-def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, threshold: float):
+def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, threshold: float, user_id: str = "", email_theme: str = "light"):
     """Send a price alert email via Resend."""
     if not to_email:
         return
-    direction = "dropped" if condition == "drops" else "risen"
-    direction_past = "dropped" if condition == "drops" else "rose"
-    subject = f"Price Alert: {ticker} has {direction} {threshold}%"
+    moved = "rose" if condition == "rises" else "fell"
+    subject = f"Price alert: {ticker} {moved} {threshold}%"
+    mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
     html = _email_html(
         heading=f"{ticker} alert triggered",
         label="Price Alert",
         body_lines=[
-            f"<strong style=\"color:#e8e0cc;font-family:'Courier New',Courier,monospace;font-size:20px;\">${price:.2f}</strong>",
-            f"{ticker} {direction_past} by more than {threshold}% from the previous close.",
+            f"<strong style=\"color:{mono_color};font-family:'Courier New',Courier,monospace;font-size:20px;\">${price:.2f}</strong>",
+            f"{ticker} {moved} by more than {threshold}% from the previous close.",
             "Log in to review your position and decide your next move.",
         ],
         cta_text="Review now",
         cta_url="https://corvo.capital/app",
+        user_id=user_id,
+        email_theme=email_theme,
     )
     from_addr = os.environ.get("RESEND_FROM_EMAIL", "Corvo Alerts <alerts@corvo.capital>")
     _resend(to_email, subject, html, from_addr=from_addr)
@@ -2932,7 +3027,18 @@ async def check_price_alerts():
                     if user_resp.status_code == 200:
                         email = user_resp.json().get("email", "")
                         if email:
-                            _send_alert_email(email, ticker, current_price, condition, threshold)
+                            pref_resp = requests.get(
+                                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=price_alerts,email_theme",
+                                headers=_sb_headers(), timeout=5,
+                            )
+                            email_theme = "light"
+                            send_email = True
+                            if pref_resp.status_code == 200 and pref_resp.json():
+                                row = pref_resp.json()[0]
+                                send_email = row.get("price_alerts", True) is not False
+                                email_theme = row.get("email_theme") or "light"
+                            if send_email:
+                                _send_alert_email(email, ticker, current_price, condition, threshold, user_id=user_id, email_theme=email_theme)
 
                     print(f"[alerts] triggered: {ticker} {condition} {threshold}% for user {user_id}")
             except Exception as e:
@@ -3024,7 +3130,18 @@ async def check_price_alerts():
                     if user_resp.status_code == 200:
                         email = user_resp.json().get("email", "")
                         if email:
-                            _send_alert_email(email, pf_name, latest_val, condition, threshold)
+                            pref_resp = requests.get(
+                                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=price_alerts,email_theme",
+                                headers=_sb_headers(), timeout=5,
+                            )
+                            email_theme = "light"
+                            send_email = True
+                            if pref_resp.status_code == 200 and pref_resp.json():
+                                row = pref_resp.json()[0]
+                                send_email = row.get("price_alerts", True) is not False
+                                email_theme = row.get("email_theme") or "light"
+                            if send_email:
+                                _send_alert_email(email, pf_name, latest_val, condition, threshold, user_id=user_id, email_theme=email_theme)
 
                     print(f"[alerts] portfolio triggered: {pf_name} {condition} {threshold}% for user {user_id}")
                 except Exception as e:
@@ -4188,6 +4305,22 @@ def _fetch_user_email_data(user_id: str):
         return None
 
 
+def _fetch_email_theme(user_id: str) -> str:
+    """Return the user's email_theme preference ('light' or 'dark'), defaulting to 'light'."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return "light"
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=email_theme",
+            headers=_sb_headers(), timeout=5,
+        )
+        if resp.status_code == 200 and resp.json():
+            return resp.json()[0].get("email_theme") or "light"
+    except Exception:
+        pass
+    return "light"
+
+
 def _opted_in_user_ids(column: str) -> list:
     """Return user_ids with the given email_preferences column set to true."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
@@ -4293,7 +4426,7 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
         return {"sent": 0, "skipped": "no opted-in users"}
     from datetime import date as _date
     today_str = _date.today().strftime("%B %-d, %Y")
-    subject = f"Your morning briefing -- {today_str}"
+    subject = f"Your morning briefing for {today_str}"
     sent = failed = skipped = 0
     loop = asyncio.get_event_loop()
 
@@ -4305,6 +4438,7 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
                 skipped += 1
                 continue
             email, display_name, tickers, weights = data
+            email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
             finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
             print(f"[morning-brief-email] user={uid} email={email} tickers={tickers} finnhub_key_present={bool(finnhub_key)}")
             portfolio_change = None
@@ -4349,17 +4483,19 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
             teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 90)
             if not teaser:
                 teaser = f"Your portfolio is {pct_str} today. {market_note}"
+            mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
             html = _email_html(
                 heading=f"Good morning, {display_name}",
                 label="Morning Briefing",
                 body_lines=[
-                    f"Your portfolio: <strong style=\"font-family:'Courier New',Courier,monospace;color:#e8e0cc;\">{pct_str}</strong> today.",
+                    f"Your portfolio: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">{pct_str}</strong> today.",
                     teaser,
                 ],
                 cta_text="See your full briefing",
                 cta_url="https://corvo.capital/app?section=briefing",
                 user_id=uid,
                 unsub_type="morning_briefing",
+                email_theme=email_theme,
             )
             ok = await loop.run_in_executor(None, _resend, email, subject, html)
             sent += 1 if ok else 0
@@ -4427,8 +4563,7 @@ async def send_week_in_review_emails(target_user_id=None) -> dict:
     today = _date.today()
     week_start = today - _td(days=today.weekday() + 7)
     week_end = week_start + _td(days=4)
-    date_range = f"{week_start.strftime('%b %-d')} - {week_end.strftime('%b %-d, %Y')}"
-    subject = f"Your week in review -- {date_range}"
+    subject = f"Your week in review: {week_start.strftime('%b %-d')} to {week_end.strftime('%b %-d')}"
     sent = failed = skipped = 0
     loop = asyncio.get_event_loop()
 
@@ -4439,6 +4574,7 @@ async def send_week_in_review_emails(target_user_id=None) -> dict:
                 skipped += 1
                 continue
             email, display_name, tickers, weights = data
+            email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
             weekly_return = await loop.run_in_executor(None, _portfolio_return_yf, tickers, weights, "5d")
             if weekly_return is None:
                 skipped += 1
@@ -4477,17 +4613,19 @@ async def send_week_in_review_emails(target_user_id=None) -> dict:
             teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 90)
             if not teaser:
                 teaser = f"Your portfolio returned {pct_str} last week. {earnings_note}"
+            mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
             html = _email_html(
                 heading=f"Your week in review, {display_name}",
                 label="Week in Review",
                 body_lines=[
-                    f"Last week: <strong style=\"font-family:'Courier New',Courier,monospace;color:#e8e0cc;\">{pct_str}</strong>",
+                    f"Last week: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">{pct_str}</strong>",
                     teaser,
                 ],
                 cta_text="See your full week",
                 cta_url="https://corvo.capital/app",
                 user_id=uid,
                 unsub_type="week_in_review",
+                email_theme=email_theme,
             )
             ok = await loop.run_in_executor(None, _resend, email, subject, html)
             sent += 1 if ok else 0
@@ -4532,7 +4670,7 @@ async def send_monthly_summary_emails(target_user_id=None) -> dict:
     last_month_num = today.month - 1 if today.month > 1 else 12
     last_month_year = today.year if today.month > 1 else today.year - 1
     month_name = _date(last_month_year, last_month_num, 1).strftime("%B %Y")
-    subject = f"Your month in review -- {month_name}"
+    subject = f"Your month in review: {month_name}"
     sent = failed = skipped = 0
     loop = asyncio.get_event_loop()
 
@@ -4543,6 +4681,7 @@ async def send_monthly_summary_emails(target_user_id=None) -> dict:
                 skipped += 1
                 continue
             email, display_name, tickers, weights = data
+            email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
             monthly_return = await loop.run_in_executor(None, _portfolio_return_yf, tickers, weights, "1mo")
             if monthly_return is None:
                 skipped += 1
@@ -4557,17 +4696,19 @@ async def send_monthly_summary_emails(target_user_id=None) -> dict:
             teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 80)
             if not teaser:
                 teaser = f"Your portfolio returned {pct_str} in {month_name}."
+            mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
             html = _email_html(
                 heading=f"{month_name} in review, {display_name}",
                 label="Monthly Summary",
                 body_lines=[
-                    f"Portfolio return: <strong style=\"font-family:'Courier New',Courier,monospace;color:#e8e0cc;\">{pct_str}</strong>",
+                    f"Portfolio return: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">{pct_str}</strong>",
                     teaser,
                 ],
                 cta_text="See your full month",
                 cta_url="https://corvo.capital/app",
                 user_id=uid,
                 unsub_type="monthly_summary",
+                email_theme=email_theme,
             )
             ok = await loop.run_in_executor(None, _resend, email, subject, html)
             sent += 1 if ok else 0
