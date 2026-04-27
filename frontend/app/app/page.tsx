@@ -156,7 +156,7 @@ function useTheme() {
 function useS() {
   return {
     app:        { display: "flex", height: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)" } as React.CSSProperties,
-    sidebarTop: { padding: "14px 16px 12px", borderBottom: "0.5px solid var(--border)" },
+    sidebarTop: { height: 52, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 16px", borderBottom: "0.5px solid var(--border)" },
     logo:       { fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" },
     logoSub:    { fontSize: 11, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
     section:    { padding: "10px 14px", borderBottom: "0.5px solid var(--border)" },
