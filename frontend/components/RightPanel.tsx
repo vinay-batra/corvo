@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Calendar, ChevronRight, X, RefreshCw } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, ChevronDown, X, RefreshCw } from "lucide-react";
 import MarketBrief from "./MarketBrief";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -192,10 +192,22 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
               <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", fontWeight: 600 }}>
                 Market Brief
               </span>
-              <ChevronRight
-                size={13}
-                style={{ color: "var(--text3)", transform: briefCollapsed ? "rotate(0deg)" : "rotate(90deg)", transition: "transform 0.2s" }}
-              />
+              <div style={{
+                display: "flex", alignItems: "center", gap: 4,
+                padding: "3px 8px", borderRadius: 5,
+                border: "0.5px solid var(--border)",
+                background: "var(--bg2)",
+                color: "var(--text2)",
+                fontSize: 10,
+                fontWeight: 600,
+                pointerEvents: "none",
+              }}>
+                {briefCollapsed ? "Expand" : "Collapse"}
+                <ChevronDown
+                  size={11}
+                  style={{ transform: briefCollapsed ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}
+                />
+              </div>
             </button>
             <AnimatePresence>
               {!briefCollapsed && (
