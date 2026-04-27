@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import InfoModal from "./InfoModal";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
@@ -43,8 +44,9 @@ export default function FrontierChart({ data }: { data: any }) {
         opacity: 0.4,
       }} />
 
-      <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 16 }}>
+      <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
         Efficient Frontier
+        <InfoModal title="Efficient Frontier" sections={[{ label: "Plain English", text: "A curve showing the set of portfolios with the highest expected return for each level of risk (volatility). Points on the frontier are considered optimal -- you cannot get more return without taking more risk." }, { label: "Example", text: "Your portfolio dot shows where you sit relative to the curve. If you are below the frontier, you could potentially get the same return with less risk by rebalancing." }, { label: "What's Good?", text: "Portfolios on or near the frontier are considered efficient. Being far below the frontier suggests suboptimal diversification or concentration." }]} />
       </p>
 
       <Plot

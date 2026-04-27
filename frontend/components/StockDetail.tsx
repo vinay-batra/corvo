@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Eye, EyeOff, TrendingUp, CandlestickChart as CandleIcon } from "lucide-react";
+import InfoModal from "./InfoModal";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
@@ -30,10 +31,15 @@ function fmt(n: number | null | undefined, prefix = "", suffix = "", decimals = 
   return `${prefix}${n.toFixed(decimals)}${suffix}`;
 }
 
-function Row({ label, value, color }: { label: string; value: string; color?: string }) {
+type RowTooltip = { title: string; sections: { label: string; text: string }[] };
+
+function Row({ label, value, color, tooltip }: { label: string; value: string; color?: string; tooltip?: RowTooltip }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "0.5px solid var(--border)" }}>
-      <span style={{ fontSize: 11, color: "var(--text3)" }}>{label}</span>
+      <span style={{ fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 5 }}>
+        {label}
+        {tooltip && <InfoModal title={tooltip.title} sections={tooltip.sections} />}
+      </span>
       <span style={{ fontSize: 11, fontFamily: "Space Mono, monospace", fontWeight: 600, color: color || "var(--text)" }}>{value}</span>
     </div>
   );
@@ -843,18 +849,18 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       {/* ── Key Stats + Trading ─────────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
         <Card title="Key Stats">
-          <Row label="Market Cap"   value={fmt(info.market_cap, "$")} />
-          <Row label="P/E (TTM)"    value={fmt(info.pe_ratio, "", "", 1)} />
-          <Row label="Forward P/E"  value={fmt(info.forward_pe, "", "", 1)} />
-          <Row label="EPS (TTM)"    value={fmt(info.eps, "$")} />
-          <Row label="Div Yield"    value={info.dividend_yield != null ? `${info.dividend_yield.toFixed(2)}%` : "-"} />
+          <Row label="Market Cap"  value={fmt(info.market_cap, "$")} tooltip={{ title: "Market Cap", sections: [{ label: "Plain English", text: "Total market value of all outstanding shares. Calculated as stock price multiplied by shares outstanding." }, { label: "Example", text: "If a stock trades at $100 with 1 billion shares outstanding, market cap = $100 billion." }, { label: "What's Good?", text: "Large cap (above $10B) means more stability. Mid cap ($2-10B) has more growth potential. Small cap (under $2B) carries more risk but can offer higher returns." }] }} />
+          <Row label="P/E (TTM)"   value={fmt(info.pe_ratio, "", "", 1)} tooltip={{ title: "P/E Ratio (Trailing Twelve Months)", sections: [{ label: "Plain English", text: "How much you are paying per dollar of earnings. Trailing means based on actual earnings from the past 12 months." }, { label: "Example", text: "P/E of 20 means you pay $20 for every $1 the company earned last year." }, { label: "What's Good?", text: "Below 15 may be undervalued. 15-25 is typical for most stocks. Above 30 suggests high growth expectations or potential overvaluation." }] }} />
+          <Row label="Forward P/E" value={fmt(info.forward_pe, "", "", 1)} tooltip={{ title: "Forward P/E", sections: [{ label: "Plain English", text: "Like P/E, but uses analyst estimates for the next 12 months of earnings rather than past results. More forward-looking." }, { label: "Example", text: "A Forward P/E lower than Trailing P/E suggests analysts expect earnings to grow." }, { label: "What's Good?", text: "Compare against the trailing P/E. If Forward P/E is much lower, earnings growth is expected. If higher, earnings may be declining." }] }} />
+          <Row label="EPS (TTM)"   value={fmt(info.eps, "$")} tooltip={{ title: "Earnings Per Share (Trailing Twelve Months)", sections: [{ label: "Plain English", text: "Total profit divided by shares outstanding. Shows how much the company earned per share over the past 12 months." }, { label: "Example", text: "Net income of $1 billion with 500 million shares = EPS of $2.00." }, { label: "What's Good?", text: "Growing EPS over time is a positive signal. Compare against analyst estimates for forward expectations." }] }} />
+          <Row label="Div Yield"   value={info.dividend_yield != null ? `${info.dividend_yield.toFixed(2)}%` : "-"} tooltip={{ title: "Dividend Yield", sections: [{ label: "Plain English", text: "Annual dividend payment as a percentage of the stock price. The income you receive just from holding the stock, before any price appreciation." }, { label: "Example", text: "A $2 annual dividend on a $50 stock = 4% dividend yield." }, { label: "What's Good?", text: "Above 4-5% can be attractive income, but unusually high yields sometimes signal financial stress. 1-3% is typical for healthy dividend payers." }] }} />
         </Card>
         <Card title="Trading">
-          <Row label="Volume"       value={fmt(info.volume, "", "", 0)} />
-          <Row label="Avg Volume"   value={fmt(info.avg_volume, "", "", 0)} />
-          <Row label="Beta"         value={fmt(info.beta, "", "", 2)} />
-          <Row label="Price/Book"   value={fmt(info.price_to_book, "", "", 2)} />
-          <Row label="Short Ratio"  value={fmt(info.short_ratio, "", "", 2)} />
+          <Row label="Volume"      value={fmt(info.volume, "", "", 0)} tooltip={{ title: "Volume", sections: [{ label: "Plain English", text: "Number of shares traded today. High volume means more market activity and it is easier to buy or sell." }, { label: "Example", text: "Volume of 10 million means 10 million shares changed hands today." }, { label: "What's Good?", text: "Compare to average volume. Significantly higher volume during a price move signals stronger market conviction." }] }} />
+          <Row label="Avg Volume"  value={fmt(info.avg_volume, "", "", 0)} tooltip={{ title: "Average Volume", sections: [{ label: "Plain English", text: "Typical number of shares traded per day, averaged over 30-90 days. A baseline for what is normal for this stock." }, { label: "Example", text: "If average volume is 5 million and today is 15 million, there is a 3x spike in activity." }, { label: "What's Good?", text: "Stocks with higher average volume are easier to trade with less slippage." }] }} />
+          <Row label="Beta"        value={fmt(info.beta, "", "", 2)} tooltip={{ title: "Beta", sections: [{ label: "Plain English", text: "How much the stock moves relative to the overall market. Beta of 1 means it moves in lockstep with the S&P 500." }, { label: "Example", text: "Beta 1.5 = if the S&P drops 10%, this stock tends to drop 15%. Beta 0.5 = moves only half as much." }, { label: "What's Good?", text: "Lower beta (under 1) means less volatility. Higher beta (above 1.5) means amplified swings. Negative beta means it tends to move opposite the market." }] }} />
+          <Row label="Price/Book"  value={fmt(info.price_to_book, "", "", 2)} tooltip={{ title: "Price to Book Ratio", sections: [{ label: "Plain English", text: "Stock price divided by book value (assets minus liabilities) per share. Shows how much you are paying relative to the company's accounting value." }, { label: "Example", text: "P/B of 3 means you pay $3 for every $1 of net assets." }, { label: "What's Good?", text: "Under 1 can indicate undervaluation. 1-3 is typical. Very high values are common in asset-light businesses like software companies." }] }} />
+          <Row label="Short Ratio" value={fmt(info.short_ratio, "", "", 2)} tooltip={{ title: "Short Ratio", sections: [{ label: "Plain English", text: "Estimated number of days it would take short sellers to cover their positions, given average trading volume. A measure of bearish sentiment." }, { label: "Example", text: "Short ratio of 5 means it would take 5 days of average volume for all short sellers to buy back their shares." }, { label: "What's Good?", text: "Above 10 is considered high short interest. If a heavily shorted stock rises, a short squeeze can accelerate gains rapidly." }] }} />
         </Card>
       </div>
 
@@ -913,20 +919,20 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       <Card title="Earnings Calendar" style={{ marginBottom: 10 }}>
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3 }}>Next Earnings</div>
+            <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3, display: "flex", alignItems: "center", gap: 4 }}>Next Earnings <InfoModal title="Next Earnings Date" sections={[{ label: "Plain English", text: "The next scheduled date when the company will report its quarterly financial results. Earnings reports often cause significant price moves." }, { label: "Example", text: "If earnings are in 5 days and implied volatility is high, the market is pricing in a large expected move." }, { label: "What's Good?", text: "Earnings dates can be high risk for option holders as time decay accelerates. Long-term investors should be aware but not necessarily time trades around them." }]} /></div>
             <div style={{ fontFamily: "Space Mono, monospace", fontSize: 15, fontWeight: 600, color: earningsDays !== null && earningsDays >= 0 && earningsDays <= 14 ? AMBER : "var(--text)" }}>{earningsLabel}</div>
           </div>
           <div>
-            <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3 }}>EPS (TTM)</div>
+            <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3, display: "flex", alignItems: "center", gap: 4 }}>EPS (TTM) <InfoModal title="Earnings Per Share (Trailing Twelve Months)" sections={[{ label: "Plain English", text: "Total profit divided by shares outstanding. Shows how much the company earned per share over the past 12 months." }, { label: "Example", text: "Net income of $1 billion with 500 million shares = EPS of $2.00." }, { label: "What's Good?", text: "Growing EPS over time is a positive signal. Compare against forward EPS for expected growth." }]} /></div>
             <div style={{ fontFamily: "Space Mono, monospace", fontSize: 15, fontWeight: 600, color: "var(--text)" }}>{fmt(info.eps, "$")}</div>
           </div>
           <div>
-            <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3 }}>Forward EPS</div>
+            <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3, display: "flex", alignItems: "center", gap: 4 }}>Forward EPS <InfoModal title="Forward EPS (Earnings Per Share Estimate)" sections={[{ label: "Plain English", text: "Analyst consensus estimate for earnings per share over the next 12 months. A forecast, not actual results." }, { label: "Example", text: "If trailing EPS is $3 and forward EPS is $4, analysts expect roughly 33% earnings growth." }, { label: "What's Good?", text: "Compare against trailing EPS to gauge expected growth. Positive growth expectations often support higher valuations." }]} /></div>
             <div style={{ fontFamily: "Space Mono, monospace", fontSize: 15, fontWeight: 600, color: "var(--text)" }}>{fmt(info.eps_forward, "$")}</div>
           </div>
           {info.eps != null && info.eps_forward != null && info.eps !== 0 && (
             <div>
-              <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3 }}>EPS Growth Est.</div>
+              <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3, display: "flex", alignItems: "center", gap: 4 }}>EPS Growth Est. <InfoModal title="EPS Growth Estimate" sections={[{ label: "Plain English", text: "Estimated percentage change in earnings per share, comparing analyst forecasts for next year against the most recent 12-month actuals." }, { label: "Example", text: "Trailing EPS $2, Forward EPS $2.60 = 30% expected EPS growth." }, { label: "What's Good?", text: "Higher expected growth supports higher P/E ratios. Negative EPS growth estimates are a warning sign worth investigating." }]} /></div>
               <div style={{ fontFamily: "Space Mono, monospace", fontSize: 15, fontWeight: 600, color: info.eps_forward > info.eps ? GREEN : RED }}>
                 {`${((info.eps_forward - info.eps) / Math.abs(info.eps) * 100).toFixed(1)}%`}
               </div>
@@ -939,18 +945,18 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       <Card title="Financial Metrics" style={{ marginBottom: 10 }}>
         <div style={{ display: "flex", gap: 0 }}>
           <div style={{ width: "50%", paddingRight: 16, borderRight: "0.5px solid var(--border)" }}>
-            <Row label="Gross Margin"     value={info.gross_margin != null ? `${info.gross_margin.toFixed(1)}%` : "-"} />
-            <Row label="Op. Margin"       value={info.operating_margin != null ? `${info.operating_margin.toFixed(1)}%` : "-"} />
-            <Row label="Profit Margin"    value={info.profit_margin != null ? `${info.profit_margin.toFixed(1)}%` : "-"} />
-            <Row label="Revenue Growth"   value={info.revenue_growth != null ? `${info.revenue_growth.toFixed(1)}%` : "-"} color={info.revenue_growth != null ? (info.revenue_growth >= 0 ? GREEN : RED) : undefined} />
+            <Row label="Gross Margin"   value={info.gross_margin != null ? `${info.gross_margin.toFixed(1)}%` : "-"} tooltip={{ title: "Gross Margin", sections: [{ label: "Plain English", text: "Percentage of revenue left after subtracting cost of goods sold. Measures how efficiently the company produces its product." }, { label: "Example", text: "Revenue $100M, cost of goods $40M = 60% gross margin." }, { label: "What's Good?", text: "Higher is better. Software companies often have 70-90% margins. Retailers might have 20-30%. Compare within the same industry." }] }} />
+            <Row label="Op. Margin"     value={info.operating_margin != null ? `${info.operating_margin.toFixed(1)}%` : "-"} tooltip={{ title: "Operating Margin", sections: [{ label: "Plain English", text: "Percentage of revenue left after all operating expenses (salaries, rent, R&D), before interest and taxes." }, { label: "Example", text: "Revenue $100M, operating costs $85M = 15% operating margin." }, { label: "What's Good?", text: "Above 20% is strong. Below 5% is thin. Compare to industry peers." }] }} />
+            <Row label="Profit Margin"  value={info.profit_margin != null ? `${info.profit_margin.toFixed(1)}%` : "-"} tooltip={{ title: "Net Profit Margin", sections: [{ label: "Plain English", text: "Percentage of revenue that becomes actual profit after all expenses, interest, and taxes." }, { label: "Example", text: "Revenue $100M, net income $12M = 12% profit margin." }, { label: "What's Good?", text: "Above 10% is generally healthy. Compare to industry averages. Rising margins over time is a positive trend." }] }} />
+            <Row label="Revenue Growth" value={info.revenue_growth != null ? `${info.revenue_growth.toFixed(1)}%` : "-"} color={info.revenue_growth != null ? (info.revenue_growth >= 0 ? GREEN : RED) : undefined} tooltip={{ title: "Revenue Growth (Year over Year)", sections: [{ label: "Plain English", text: "Percentage increase in total sales compared to the same period one year ago." }, { label: "Example", text: "Revenue was $1B last year and $1.2B this year = 20% revenue growth." }, { label: "What's Good?", text: "For mature companies, 5-10% is healthy. High-growth companies often target 20%+. Declining revenue is a warning sign." }] }} />
           </div>
           <div style={{ width: "50%", paddingLeft: 16 }}>
-            <Row label="Debt/Equity"      value={fmt(info.debt_to_equity, "", "", 2)} />
-            <Row label="Current Ratio"    value={fmt(info.current_ratio, "", "", 2)} />
-            <Row label="Free Cash Flow"   value={fmt(info.free_cashflow, "$")} />
-            <Row label="Revenue"          value={fmt(info.revenue, "$")} />
-            <Row label="Net Income"       value={fmt(info.net_income, "$")} />
-            <Row label="Insider Own."     value={info.insider_ownership != null ? `${info.insider_ownership.toFixed(1)}%` : "-"} />
+            <Row label="Debt/Equity"    value={fmt(info.debt_to_equity, "", "", 2)} tooltip={{ title: "Debt to Equity Ratio", sections: [{ label: "Plain English", text: "Total debt divided by total shareholder equity. Shows how much the company relies on borrowed money versus its own capital." }, { label: "Example", text: "Debt $500M, equity $250M = debt/equity ratio of 2.0." }, { label: "What's Good?", text: "Under 1.0 is conservative. 1-2 is moderate. Above 2 can signal high financial risk, though capital-intensive industries naturally carry more debt." }] }} />
+            <Row label="Current Ratio"  value={fmt(info.current_ratio, "", "", 2)} tooltip={{ title: "Current Ratio", sections: [{ label: "Plain English", text: "Current assets divided by current liabilities. Measures a company's ability to pay short-term obligations." }, { label: "Example", text: "Current assets $500M, current liabilities $250M = current ratio of 2.0." }, { label: "What's Good?", text: "Above 1.5 is healthy. Below 1.0 means current liabilities exceed assets, which can signal liquidity stress." }] }} />
+            <Row label="Free Cash Flow" value={fmt(info.free_cashflow, "$")} tooltip={{ title: "Free Cash Flow", sections: [{ label: "Plain English", text: "Cash generated from operations after paying for capital expenditures. The actual cash left over that can be used for dividends, buybacks, or growth." }, { label: "Example", text: "Operating cash flow $200M, capex $50M = free cash flow $150M." }, { label: "What's Good?", text: "Consistently positive free cash flow is a sign of financial health. Growing FCF often precedes rising stock prices." }] }} />
+            <Row label="Revenue"        value={fmt(info.revenue, "$")} tooltip={{ title: "Revenue", sections: [{ label: "Plain English", text: "Total income from sales of products or services before any expenses are deducted. Also called the top line." }, { label: "Example", text: "A company sells $500M worth of products or services in a year." }, { label: "What's Good?", text: "Look for consistent growth over time. Compare revenue trends to profit trends to assess how efficiently revenue converts to earnings." }] }} />
+            <Row label="Net Income"     value={fmt(info.net_income, "$")} tooltip={{ title: "Net Income", sections: [{ label: "Plain English", text: "Total profit after all expenses, taxes, and interest have been paid. The bottom line." }, { label: "Example", text: "Revenue $500M minus all expenses = net income of $50M." }, { label: "What's Good?", text: "Consistently positive and growing net income indicates a healthy, profitable business." }] }} />
+            <Row label="Insider Own."   value={info.insider_ownership != null ? `${info.insider_ownership.toFixed(1)}%` : "-"} tooltip={{ title: "Insider Ownership", sections: [{ label: "Plain English", text: "Percentage of company shares held by executives, directors, and other insiders. High insider ownership can align management interests with shareholders." }, { label: "Example", text: "Founders retaining 20% of shares after an IPO shows they believe in the company's future." }, { label: "What's Good?", text: "10-30% insider ownership often signals strong alignment. Very low insider ownership at smaller companies can be a yellow flag." }] }} />
           </div>
         </div>
       </Card>

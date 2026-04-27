@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { fetchCorrelation } from "../lib/api";
 import ErrorState from "./ErrorState";
 import EmptyState from "./EmptyState";
+import InfoModal from "./InfoModal";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
@@ -59,7 +60,7 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
       style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "22px 24px", position: "relative", overflow: "hidden" }}
     >
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, var(--purple), transparent)", opacity: 0.5 }} />
-      <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 16 }}>Correlation Heatmap</p>
+      <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>Correlation Heatmap <InfoModal title="Correlation Heatmap" sections={[{ label: "Plain English", text: "Shows how closely pairs of holdings move together. Values range from -1 (perfectly opposite) to +1 (move in lockstep). 0 means no statistical relationship." }, { label: "Example", text: "NVDA and AMD might show 0.85 correlation -- when one rises, the other usually does too. BND (bonds) vs NVDA might be -0.2, offering true diversification." }, { label: "What's Good?", text: "Lower correlations between holdings mean better diversification. A portfolio where everything is highly correlated (above 0.8) offers little protection in a broad selloff." }]} /></p>
 
       {loading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "6px 0" }}>
