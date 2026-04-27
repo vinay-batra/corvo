@@ -403,7 +403,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
 function HoldingChip({ ticker, price, changeDollar, changePct }: { ticker: string; price: number | null; changeDollar: number | null; changePct: number | null }) {
   const up = changePct == null ? null : changePct >= 0;
   const color = up == null ? "var(--text3)" : up ? GREEN : RED;
-  const sign = up ? "+" : "";
+  const sign = up == null ? "" : up ? "+" : "-";
   const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace" };
   return (
     <div style={{
@@ -420,7 +420,7 @@ function HoldingChip({ ticker, price, changeDollar, changePct }: { ticker: strin
         <span style={{ ...mono, fontSize: 11, fontWeight: 600, color }}>{sign}${Math.abs(changeDollar).toFixed(2)}</span>
       )}
       {changePct != null && (
-        <span style={{ ...mono, fontSize: 11, fontWeight: 600, color, opacity: 0.85 }}>({sign}{changePct.toFixed(2)}%)</span>
+        <span style={{ ...mono, fontSize: 11, fontWeight: 600, color, opacity: 0.85 }}>({sign}{Math.abs(changePct).toFixed(2)}%)</span>
       )}
     </div>
   );
@@ -429,7 +429,7 @@ function HoldingChip({ ticker, price, changeDollar, changePct }: { ticker: strin
 function PortfolioPill({ pct, dollar }: { pct: number; dollar: number | null }) {
   const up = pct >= 0;
   const color = up ? GREEN : RED;
-  const sign = up ? "+" : "";
+  const sign = up ? "+" : "-";
   const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace" };
   return (
     <div style={{
