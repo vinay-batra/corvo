@@ -126,9 +126,11 @@ export default function SettingsPage({
   const [soundEnabled, setSoundEnabled] = useState(false);
 
   // ── Notifications ──────────────────────────────────────────────────────────
-  const [morningBriefing, setMorningBriefing] = useState(false);
-  const [weekInReview, setWeekInReview]       = useState(false);
-  const [monthlySummary, setMonthlySummary]   = useState(false);
+  const [morningBriefing, setMorningBriefing]     = useState(false);
+  const [weekInReview, setWeekInReview]           = useState(false);
+  const [monthlySummary, setMonthlySummary]       = useState(false);
+  const [emailTheme, setEmailTheme]               = useState<"light" | "dark">("light");
+  const [emailThemeSupported, setEmailThemeSupported] = useState(false);
 
   // ── Investor profile ───────────────────────────────────────────────────────
   const [investorType, setInvestorType]           = useState("");
@@ -154,8 +156,34 @@ export default function SettingsPage({
       const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
       if (profile) { setDisplayName(profile.display_name || ""); setAvatarUrl(profile.avatar_url || null); }
 
-      const { data: prefs } = await supabase.from("email_preferences").select("morning_briefing,week_in_review,monthly_summary").eq("user_id", user.id).single();
-      if (prefs) { setMorningBriefing(prefs.morning_briefing ?? false); setWeekInReview(prefs.week_in_review ?? false); setMonthlySummary(prefs.monthly_summary ?? false); }
+      // Try loading email_theme — maybeSingle avoids PGRST116 on missing rows;
+      // a schema error (column doesn't exist) surfaces as a non-null error here.
+      const { data: prefs, error: prefsError } = await supabase
+        .from("email_preferences")
+        .select("morning_briefing,week_in_review,monthly_summary,email_theme")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!prefsError) {
+        setEmailThemeSupported(true);
+        if (prefs) {
+          setMorningBriefing(prefs.morning_briefing ?? false);
+          setWeekInReview(prefs.week_in_review ?? false);
+          setMonthlySummary(prefs.monthly_summary ?? false);
+          setEmailTheme(prefs.email_theme === "dark" ? "dark" : "light");
+        }
+      } else {
+        // email_theme column may not exist — fall back to loading without it
+        const { data: prefsBasic } = await supabase
+          .from("email_preferences")
+          .select("morning_briefing,week_in_review,monthly_summary")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (prefsBasic) {
+          setMorningBriefing(prefsBasic.morning_briefing ?? false);
+          setWeekInReview(prefsBasic.week_in_review ?? false);
+          setMonthlySummary(prefsBasic.monthly_summary ?? false);
+        }
+      }
 
       setPeriod(localStorage.getItem("corvo_period") || "1y");
       setBenchmark(localStorage.getItem("corvo_benchmark") || "^GSPC");
@@ -249,6 +277,16 @@ export default function SettingsPage({
       if (error) throw error;
     } catch {
       toast("Failed to save notification preferences. Please try again.", "error");
+    }
+  };
+
+  const saveEmailTheme = async (theme: "light" | "dark") => {
+    if (!user || !emailThemeSupported) return;
+    try {
+      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, email_theme: theme, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    } catch {
+      toast("Failed to save email theme. Please try again.", "error");
     }
   };
 
@@ -426,6 +464,18 @@ export default function SettingsPage({
       <Row label="Price alerts" desc="Immediate email when a holding hits your set threshold">
         <span style={{ fontSize: 11, color: "var(--text3)" }}>Always on</span>
       </Row>
+      {emailThemeSupported && (
+        <Row label="Email Theme" desc="Light or dark background for all Corvo emails">
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, color: "var(--text3)" }}>{emailTheme === "dark" ? "Dark" : "Light"}</span>
+            <Toggle on={emailTheme === "dark"} onChange={() => {
+              const next: "light" | "dark" = emailTheme === "dark" ? "light" : "dark";
+              setEmailTheme(next);
+              void saveEmailTheme(next);
+            }} />
+          </div>
+        </Row>
+      )}
     </div>
   );
 
