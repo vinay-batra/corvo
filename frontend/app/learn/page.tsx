@@ -1169,7 +1169,7 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
         .gt("xp", 0)
         .order("xp", { ascending: false })
         .limit(10);
-      if (!error && data) setEntries(data.map((r: any, i: number) => ({ display_name: r.display_name || "Anon", total_points: r.xp ?? 0, id: r.id, rank: i + 1 })));
+      if (!error && data) setEntries(data.map((r: any, i: number) => ({ display_name: r.display_name || "Corvo User", total_points: r.xp ?? 0, id: r.id, rank: i + 1 })));
       setLoading(false);
     })();
   }, []);
