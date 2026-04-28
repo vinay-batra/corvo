@@ -149,7 +149,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
 
             {/* Donut chart */}
             {donutData.length > 1 && (
-              <div style={{ flexShrink: 0, width: 180 }}>
+              <div className="div-donut-wrap" style={{ flexShrink: 0, width: 180 }}>
                 <Plot
                   data={[{
                     type: "pie",

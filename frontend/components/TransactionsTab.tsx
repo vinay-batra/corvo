@@ -458,8 +458,8 @@ export default function TransactionsTab() {
         </div>
       ) : view === "log" ? (
         <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" as const }}>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" as const, minWidth: 480 }}>
               <thead>
                 <tr>
                   <SortTh label="Date"        col="date"           sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
@@ -540,8 +540,8 @@ export default function TransactionsTab() {
       ) : (
         /* Summary view */
         <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" as const }}>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" as const, minWidth: 480 }}>
               <thead>
                 <tr>
                   {([

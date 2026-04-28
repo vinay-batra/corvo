@@ -588,8 +588,8 @@ export default function Watchlist() {
         </div>
       ) : (
         <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
               <thead>
                 <tr>
                   {["Ticker", "Company", "Price", "Change 1D", "Sparkline", "Sector", "Actions"].map(col => (

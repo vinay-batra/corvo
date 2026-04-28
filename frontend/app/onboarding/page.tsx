@@ -380,9 +380,11 @@ function OnboardingContent() {
         .ob-step-fwd { animation: ob-slide-fwd 0.28s ease both; }
         .ob-step-back { animation: ob-slide-back 0.28s ease both; }
         .ob-completing { animation: ob-fade-out 0.3s ease forwards; }
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
           .ob-main { padding: 16px !important; }
           .ob-card { padding: 24px 20px 22px !important; }
+          .ob-card h2 { font-size: 18px !important; }
+          .ob-card p { font-size: 12px !important; }
         }
       `}</style>
 

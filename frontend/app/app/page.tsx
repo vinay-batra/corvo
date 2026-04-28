@@ -2311,7 +2311,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   <Card>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                       <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <div className="c-perf-controls" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         {/* Period selector: adjacent to graph */}
                         <div style={{ display: "flex", gap: 3 }}>
                           {PERIODS.map(p => (
