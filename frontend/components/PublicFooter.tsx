@@ -3,10 +3,13 @@
 import React from "react";
 
 const PRODUCT_LINKS = [
-  { label: "Blog", href: "/blog" },
+  { label: "Features", href: "/#features" },
+  { label: "Demo", href: "/app?demo=true" },
+  { label: "Install", href: "/install" },
   { label: "Pricing", href: "/pricing" },
   { label: "Changelog", href: "/changelog" },
-  { label: "Install App", href: "/install" },
+  { label: "Blog", href: "/blog" },
+  { label: "About", href: "/about" },
   { label: "FAQ", href: "/faq" },
 ];
 
