@@ -205,7 +205,9 @@ function InstallStep() {
         ))}
       </div>
       <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 20 }}>
-        You can always find these instructions in Settings.
+        View the full install guide at{" "}
+        <Link href="/install" style={{ color: "var(--accent)", textDecoration: "none" }}>corvo.capital/install</Link>
+        {" "}or in Settings anytime.
       </p>
     </div>
   );

@@ -716,6 +716,15 @@ export default function SettingsPage({
     <div>
       <SectionTitle>Account</SectionTitle>
 
+      <Row label="Get the App" desc="Install Corvo on your phone or desktop for instant access and push notifications">
+        <Link href="/install" style={{ ...btnOutline, display: "inline-block", textDecoration: "none", textAlign: "center" }}
+          onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--accent)")}
+          onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border2)")}
+        >
+          Install
+        </Link>
+      </Row>
+
       <Row label="Replay onboarding" desc="Restart the full setup questionnaire from step 1">
         <button
           onClick={() => { window.location.href = "/onboarding?replay=true"; }}
