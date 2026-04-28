@@ -2,11 +2,7 @@
 
 ### Your portfolio, with a point of view.
 
-[![Live Site](https://img.shields.io/badge/Live%20Site-corvo.capital-black?style=flat-square)](https://corvo.capital)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-[![Built with Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)](https://nextjs.org)
-[![Built with FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
-[![Built with Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com)
+[Live Site](https://corvo.capital) · [Changelog](/CHANGELOG.md) · Next.js · FastAPI · Supabase · All Rights Reserved
 
 ---
 
@@ -158,8 +154,7 @@ ALLOWED_ORIGINS=http://localhost:3000
 
 ## License
 
-Licensed under the [MIT License](LICENSE).  
-Copyright (c) 2026 Vinay Batra.
+Copyright (c) 2026 Vinay Batra. All rights reserved.
 
 ---
 
