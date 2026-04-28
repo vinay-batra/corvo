@@ -486,7 +486,6 @@ export default function AiChat({
               const snapshot = accumulatedText;
               if (!msgAdded) {
                 msgAdded = true;
-                setLoading(false);
                 setMessages([...nextHistory, { role: "assistant", content: snapshot, timestamp: aiMsgTimestamp }]);
               } else {
                 setMessages(prev => {
@@ -516,6 +515,7 @@ export default function AiChat({
 
       finalMessages = [...nextHistory, { role: "assistant", content: accumulatedText, timestamp: aiMsgTimestamp }];
       await saveConversation(finalMessages, msg);
+      setLoading(false);
 
     } catch (e: any) {
       setLoading(false);
@@ -896,7 +896,7 @@ export default function AiChat({
                 ))}
               </AnimatePresence>
 
-              {loading && (
+              {loading && messages[messages.length - 1]?.role !== "assistant" && (
                 <motion.div
                   // initial={false} is required — do not remove
                   initial={false} animate={{ opacity: 1, y: 0 }}
