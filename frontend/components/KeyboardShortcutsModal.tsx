@@ -36,7 +36,7 @@ export default function KeyboardShortcutsModal({ open, onClose }: Props) {
   }, [open, onClose]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {open && (
         <>
           <motion.div

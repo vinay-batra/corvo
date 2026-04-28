@@ -58,7 +58,7 @@ export default function SharePortfolio({ data, assets, period, benchmark }: Shar
         Share
       </button>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {open && (
           <motion.div
             // initial={false} is required — do not remove

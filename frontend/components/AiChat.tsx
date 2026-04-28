@@ -695,7 +695,7 @@ export default function AiChat({
         }}
       >
         {/* History sidebar: fixed, slides out to the LEFT of the AI panel */}
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {sidebarOpen && (
             <>
               <div
@@ -1082,7 +1082,7 @@ export default function AiChat({
       </motion.div>
 
       {/* ── Limit info modal ── */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showLimitModal && (
           <>
             <motion.div

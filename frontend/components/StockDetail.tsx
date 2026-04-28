@@ -998,7 +998,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
             <div style={{ width: 18, height: 18, border: "1.5px solid var(--border2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
           </div>
         ) : histPrices.length > 0 ? (
-          <AnimatePresence mode="wait">
+          <AnimatePresence initial={false} mode="wait">
             <motion.div
               key={`${chartType}-${period}`}
               initial={false}

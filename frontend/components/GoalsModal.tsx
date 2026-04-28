@@ -109,7 +109,7 @@ export default function GoalsModal({ onComplete, onSkip }: Props) {
         {/* Logo mark */}
         <img src="/corvo-logo.svg" width={36} height={36} alt="Corvo" style={{ marginBottom: 20 }} />
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false} mode="wait">
           <motion.div key={step} initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.25 }}>
             <h2 style={{ fontSize: 22, fontWeight: 500, color: C.cream, marginBottom: 6 }}>{STEPS[step].title}</h2>
             <p style={{ fontSize: 13, color: C.cream3, marginBottom: 28, lineHeight: 1.6 }}>{STEPS[step].desc}</p>

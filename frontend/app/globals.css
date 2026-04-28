@@ -14,12 +14,11 @@ body {
   touch-action: pan-x pan-y;
 }
 
-/* Suppress webkit momentum scrolling on all elements; overscroll-behavior is
-   intentionally NOT set here — applying none to * traps wheel events inside
-   any overflow:auto container and prevents page scroll. It is set only on
-   html/body/#__next and on specific scroll panels (drawers, modals, chat). */
 * {
   -webkit-overflow-scrolling: auto !important;
+  overscroll-behavior: none !important;
+  overscroll-behavior-x: none !important;
+  overscroll-behavior-y: none !important;
 }
 
 /* Next.js app root — explicit coverage so it never relies on inheritance */

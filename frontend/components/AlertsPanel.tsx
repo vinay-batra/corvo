@@ -147,7 +147,7 @@ function TickerSearch({ value, onChange }: { value: string; onChange: (ticker: s
         )}
       </div>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {open && results.length > 0 && (
           <motion.div
             // initial={false} is required — do not remove

@@ -401,7 +401,7 @@ export default function DashboardTour({ onComplete }: Props) {
   };
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence initial={false} mode="wait">
       <div key={step} style={{ position: "fixed", inset: 0, zIndex: 850, pointerEvents: "none" }}>
         <style>{`
           @keyframes tourGlow {

@@ -428,7 +428,7 @@ export default function StockCompare() {
                 style={{ width: "100%", padding: "8px 12px", background: "var(--bg3)", border: `0.5px solid ${dropdownOpen ? AMBER + "66" : "var(--border)"}`, borderRadius: 8, color: "var(--text)", fontSize: 12, fontFamily: "var(--font-mono)", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
               />
               {searching && <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 10, height: 10, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
-              <AnimatePresence>
+              <AnimatePresence initial={false}>
                 {dropdownOpen && searchResults.length > 0 && (
                   <motion.div
                     // initial={false} is required — do not remove
@@ -667,7 +667,7 @@ export default function StockCompare() {
           )}
         </>
       )}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {modal && (
           <motion.div
             // initial={false} is required — do not remove

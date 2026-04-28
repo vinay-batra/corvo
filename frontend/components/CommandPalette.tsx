@@ -93,7 +93,7 @@ export default function CommandPalette({ open, onClose, tabs, onTab, onStockSear
   }, [filtered, safeIdx, onClose]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {open && (
         <motion.div
           // initial={false} is required — do not remove

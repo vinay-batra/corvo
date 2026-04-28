@@ -142,7 +142,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
           No recent news found{activeTab !== "ALL" ? ` for ${activeTab}` : ""}.
         </p>
       ) : (
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false} mode="wait">
           <motion.div
             key={activeTab}
             initial={false}

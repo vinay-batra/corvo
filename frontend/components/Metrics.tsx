@@ -175,7 +175,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
         </motion.div>
         );
       })}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {modal!==null&&(
           <motion.div
             // initial={false} is required — do not remove

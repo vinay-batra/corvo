@@ -110,7 +110,7 @@ function BenchmarkDropdown({ localBenchmark, benchmarks, onSelect }: { localBenc
         style={{ padding: "4px 10px", fontSize: 11, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 5, cursor: "pointer", color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
         <span style={{ fontSize: 11, color: "var(--text3)" }}>vs</span>{benchmarks.find(b => b.ticker === localBenchmark)?.label ?? localBenchmark}<span style={{ fontSize: 11, color: "var(--text3)" }}>▾</span>
       </button>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {open && (
           <motion.div
             // initial={false} is required — do not remove
@@ -1627,7 +1627,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         <button onClick={() => setBenchOpen(o => !o)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: "var(--text)" }}>
           <span>{benchLabel}</span><span style={{ color: "var(--text3)", fontSize: 9 }}>▾</span>
         </button>
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {benchOpen && (
             <motion.div
               // initial={false} is required — do not remove
@@ -1722,7 +1722,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       </div>
 
       {/* Mobile drawer */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {sidebarOpen && (
           <>
             <motion.div
@@ -1875,7 +1875,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         {/* Content */}
         <main ref={contentRef} className="c-content" style={S.content}>
           {/* Setup banner (shown when user skipped onboarding) */}
-          <AnimatePresence>
+          <AnimatePresence initial={false}>
             {showSetupBanner && (
               <motion.div
                 // initial={false} is required — do not remove
@@ -1905,7 +1905,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           </AnimatePresence>
 
           {/* Skipped tickers warning banner */}
-          <AnimatePresence>
+          <AnimatePresence initial={false}>
             {skippedTickers.length > 0 && (
               <motion.div
                 // initial={false} is required — do not remove
@@ -1927,7 +1927,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           </AnimatePresence>
 
           {/* Error banner */}
-          <AnimatePresence>
+          <AnimatePresence initial={false}>
             {errorMsg && (
               <motion.div
                 // initial={false} is required — do not remove
@@ -1948,7 +1948,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               </motion.div>
             )}
           </AnimatePresence>
-          <AnimatePresence mode="wait">
+          <AnimatePresence initial={false} mode="wait">
             {activeTab === "stocks" ? (
               <motion.div key="stocks" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 {stockTicker ? (
@@ -2119,7 +2119,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                       ) : wsidOpen && wsidResult ? "Close" : "Get Actions"}
                     </div>
                   </div>
-                  <AnimatePresence>
+                  <AnimatePresence initial={false}>
                     {wsidOpen && (
                       <motion.div
                         // initial={false} is required — do not remove
@@ -2421,7 +2421,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       />
 
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); }} />}
       </AnimatePresence>
       {showTourInvite && (
@@ -2443,7 +2443,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           localStorage.setItem("corvo_tour_completed", "true");
         }} />
       )}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showTour && <OnboardingTour
           assets={assets}
           dataAvailable={data !== null}
@@ -2455,10 +2455,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             if (user) await supabase.from("profiles").upsert({ id: user.id, onboarding_completed: true, updated_at: new Date().toISOString() });
           }} />}
       </AnimatePresence>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showProfile && <ProfileEditor goals={goals} onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }} onClose={() => setShowProfile(false)} />}
       </AnimatePresence>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showSettings && (
           <motion.div
             // initial={false} is required — do not remove
@@ -2481,17 +2481,17 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           </motion.div>
         )}
       </AnimatePresence>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showReferral && <ReferralModal onClose={() => setShowReferral(false)} />}
       </AnimatePresence>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showEmailPrefs && (
           <EmailPreferences
             onClose={() => { setShowEmailPrefs(false); setUnsubscribeMode(false); }}
           />
         )}
       </AnimatePresence>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showAlerts && (
           <AlertsPanel
             assets={assets}
@@ -2532,7 +2532,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       />
 
       {/* Push notification prompt */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showNotifPrompt && <NotificationPrompt onDismiss={() => setShowNotifPrompt(false)} />}
       </AnimatePresence>
 

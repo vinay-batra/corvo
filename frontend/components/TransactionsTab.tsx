@@ -258,7 +258,7 @@ export default function TransactionsTab() {
       </div>
 
       {/* Add transaction form */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showForm && (
           <motion.div
             // initial={false} required — do not remove
@@ -370,7 +370,7 @@ export default function TransactionsTab() {
                 </div>
               </div>
 
-              <AnimatePresence>
+              <AnimatePresence initial={false}>
                 {formErr && (
                   <motion.div
                     // initial={false} required — do not remove
