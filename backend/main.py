@@ -6238,6 +6238,218 @@ def earnings_calendar(tickers: str = Query(default="")):
     return results
 
 
+
+# ── Earnings Impact Preview ────────────────────────────────────────────────────
+
+@app.get("/earnings-preview")
+def earnings_preview(tickers: str = Query(default=""), weights: str = Query(default="")):
+    """Return earnings preview cards for holdings with earnings within 14 days.
+    Includes implied move from options straddle, analyst estimates, and AI portfolio commentary."""
+    from datetime import date, timedelta
+
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not tickers_list:
+        return []
+
+    try:
+        weights_list = [float(w) for w in weights.split(",") if w.strip()]
+    except Exception:
+        weights_list = []
+
+    if len(weights_list) == len(tickers_list):
+        total_w = sum(weights_list) or 1.0
+        weight_map = {t: weights_list[i] / total_w for i, t in enumerate(tickers_list)}
+    else:
+        weight_map = {t: 1.0 / len(tickers_list) for t in tickers_list}
+
+    today = date.today()
+    cutoff = today + timedelta(days=14)
+
+    def _safe(v):
+        try:
+            f = float(v)
+            return None if math.isnan(f) else f
+        except Exception:
+            return None
+
+    preview_items = []
+
+    for ticker in tickers_list:
+        try:
+            ticker_obj = yf.Ticker(ticker)
+            cal = ticker_obj.calendar
+            if cal is None:
+                continue
+
+            if isinstance(cal, dict):
+                raw_date = cal.get("Earnings Date")
+                eps_est = cal.get("EPS Estimate")
+                rev_est = cal.get("Revenue Estimate")
+            else:
+                try:
+                    raw_date = cal.loc["Earnings Date"].iloc[0] if "Earnings Date" in cal.index else None
+                    eps_est = cal.loc["EPS Estimate"].iloc[0] if "EPS Estimate" in cal.index else None
+                    rev_est = cal.loc["Revenue Estimate"].iloc[0] if "Revenue Estimate" in cal.index else None
+                except Exception:
+                    raw_date = eps_est = rev_est = None
+
+            if raw_date is None:
+                continue
+            if isinstance(raw_date, (list, tuple)):
+                raw_date = raw_date[0] if raw_date else None
+            if raw_date is None:
+                continue
+
+            if hasattr(raw_date, "date"):
+                earnings_date = raw_date.date()
+            else:
+                earnings_date = date.fromisoformat(str(raw_date)[:10])
+
+            if earnings_date < today or earnings_date > cutoff:
+                continue
+
+            days_until = (earnings_date - today).days
+
+            try:
+                info = ticker_obj.info
+                company = info.get("longName") or info.get("shortName") or ticker
+                current_price = float(info.get("regularMarketPrice") or info.get("currentPrice") or 0.0)
+            except Exception:
+                company = ticker
+                current_price = 0.0
+
+            # Implied move from ATM straddle price
+            implied_move_pct = None
+            implied_move_source = None
+            try:
+                if current_price > 0:
+                    option_dates = ticker_obj.options
+                    if option_dates:
+                        target_str = earnings_date.isoformat()
+                        candidates = [d for d in option_dates if d >= target_str]
+                        closest_expiry = candidates[0] if candidates else option_dates[-1]
+
+                        chain = ticker_obj.option_chain(closest_expiry)
+                        calls_df = chain.calls
+                        puts_df  = chain.puts
+
+                        if not calls_df.empty and not puts_df.empty:
+                            call_strikes = calls_df["strike"].values
+                            atm_idx = int(abs(call_strikes - current_price).argmin())
+                            atm_strike = call_strikes[atm_idx]
+
+                            atm_call = calls_df[calls_df["strike"] == atm_strike]
+                            atm_put  = puts_df[puts_df["strike"] == atm_strike]
+
+                            if not atm_call.empty and not atm_put.empty:
+                                call_last = float(atm_call["lastPrice"].iloc[0])
+                                put_last  = float(atm_put["lastPrice"].iloc[0])
+                                if call_last + put_last > 0:
+                                    implied_move_pct = round((call_last + put_last) / current_price * 100, 1)
+                                    implied_move_source = "options"
+            except Exception as e:
+                print(f"[earnings-preview] straddle error for {ticker}: {e}")
+
+            # Fallback: annualized IV scaled to days until expiry
+            if implied_move_pct is None:
+                try:
+                    if current_price > 0:
+                        option_dates = ticker_obj.options
+                        if option_dates:
+                            target_str = earnings_date.isoformat()
+                            candidates = [d for d in option_dates if d >= target_str]
+                            closest_expiry = candidates[0] if candidates else option_dates[-1]
+                            exp_date = date.fromisoformat(closest_expiry)
+                            days_to_exp = max((exp_date - today).days, 1)
+
+                            chain = ticker_obj.option_chain(closest_expiry)
+                            calls_df = chain.calls
+                            if not calls_df.empty and "impliedVolatility" in calls_df.columns:
+                                call_strikes = calls_df["strike"].values
+                                atm_idx = int(abs(call_strikes - current_price).argmin())
+                                atm_strike = call_strikes[atm_idx]
+                                atm_call = calls_df[calls_df["strike"] == atm_strike]
+                                if not atm_call.empty:
+                                    iv = float(atm_call["impliedVolatility"].iloc[0])
+                                    if iv > 0:
+                                        implied_move_pct = round(iv * math.sqrt(days_to_exp / 252) * 100, 1)
+                                        implied_move_source = "iv"
+                except Exception as e:
+                    print(f"[earnings-preview] IV fallback error for {ticker}: {e}")
+
+            preview_items.append({
+                "ticker": ticker,
+                "company": company,
+                "date": earnings_date.isoformat(),
+                "days_until": days_until,
+                "eps_estimate": _safe(eps_est),
+                "revenue_estimate": _safe(rev_est),
+                "implied_move_pct": implied_move_pct,
+                "implied_move_source": implied_move_source,
+                "weight": weight_map.get(ticker, 0.0),
+                "ai_commentary": "",
+            })
+        except Exception as e:
+            print(f"[earnings-preview] error for {ticker}: {e}")
+
+    if not preview_items:
+        return []
+
+    # Generate AI commentary for all holdings in one Claude call
+    try:
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if api_key:
+            import anthropic as _ant
+
+            def _fmt_rev(r):
+                if r is None:
+                    return "N/A"
+                if r >= 1_000_000_000:
+                    return f"${r / 1e9:.2f}B"
+                return f"${r / 1e6:.0f}M"
+
+            holdings_block = "\n".join([
+                f"- {item['ticker']} ({item['company']}): {item['weight'] * 100:.1f}% of portfolio, "
+                f"reports in {item['days_until']} day(s) on {item['date']}, "
+                f"EPS estimate: {'$' + str(round(item['eps_estimate'], 2)) if item['eps_estimate'] is not None else 'N/A'}, "
+                f"Revenue estimate: {_fmt_rev(item['revenue_estimate'])}, "
+                f"Implied move: {'+-' + str(item['implied_move_pct']) + '%' if item['implied_move_pct'] is not None else 'unavailable'}"
+                for item in preview_items
+            ])
+
+            prompt = (
+                "For each portfolio holding below, write 1-2 sentences covering: "
+                "what analysts are focused on in this earnings report, and what a beat or miss "
+                "would mean for this specific investor given their position size.\n\n"
+                f"Holdings:\n{holdings_block}\n\n"
+                "Return ONLY a valid JSON object mapping each ticker symbol to its commentary string. "
+                "No markdown fences, no extra text.\n\n"
+                "Rules: no em dashes, no asterisks, no emojis, under 55 words per ticker, "
+                "direct and specific about the weight and what to watch."
+            )
+
+            client = _ant.Anthropic(api_key=api_key)
+            resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1200,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = resp.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+                raw = raw.strip()
+            commentary_map = json.loads(raw)
+            for item in preview_items:
+                item["ai_commentary"] = commentary_map.get(item["ticker"], "")
+    except Exception as e:
+        print(f"[earnings-preview] Claude error: {e}")
+
+    preview_items.sort(key=lambda x: x["date"])
+    return preview_items
+
+
 # ── Events Calendar ────────────────────────────────────────────────────────────
 
 _FALLBACK_EVENTS_2026 = [
