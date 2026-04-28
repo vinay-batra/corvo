@@ -150,6 +150,8 @@ export default function FeedbackButton({ hasChat = true }: { hasChat?: boolean }
                     <div style={{ marginBottom: 16 }}>
                       <label style={{ fontSize: 11, color: "var(--text3)", display: "block", marginBottom: 7 }}>Message</label>
                       <textarea
+                        id="feedback-message"
+                        name="message"
                         value={message}
                         onChange={e => setMessage(e.target.value)}
                         placeholder="Describe the bug or feature you'd like to see..."

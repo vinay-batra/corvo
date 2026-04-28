@@ -280,6 +280,8 @@ export default function TransactionsTab() {
                 <div>
                   <label style={labelStyle}>Ticker</label>
                   <input
+                    id="tx-ticker"
+                    name="ticker"
                     value={ticker}
                     onChange={e => setTicker(e.target.value.toUpperCase())}
                     placeholder="AAPL"
@@ -321,6 +323,8 @@ export default function TransactionsTab() {
                 <div>
                   <label style={labelStyle}>Date</label>
                   <input
+                    id="tx-date"
+                    name="date"
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
@@ -332,6 +336,8 @@ export default function TransactionsTab() {
                 <div>
                   <label style={labelStyle}>Shares</label>
                   <input
+                    id="tx-shares"
+                    name="shares"
                     type="number"
                     min="0"
                     step="any"
@@ -346,6 +352,8 @@ export default function TransactionsTab() {
                 <div>
                   <label style={labelStyle}>Price / Share</label>
                   <input
+                    id="tx-price"
+                    name="price"
                     type="number"
                     min="0"
                     step="any"

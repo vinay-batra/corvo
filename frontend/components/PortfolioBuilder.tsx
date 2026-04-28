@@ -442,6 +442,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 {/* Ticker search */}
                 <div style={{position:"relative",flex:1,zIndex:active===i?50:1}}>
                   <input
+                    id={`ticker-search-${i}`}
+                    name={`ticker-${i}`}
                     value={query[i]??a.ticker}
                     onFocus={()=>setActive(i)}
                     onBlur={()=>{
@@ -544,6 +546,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                         <label style={LABEL_STYLE}>Annual Return</label>
                         <div style={{display:"flex",alignItems:"center",gap:5}}>
                           <input
+                            id={`manual-return-${i}`}
+                            name={`manualReturn-${i}`}
                             type="number" min="0" max="100" step="0.1"
                             placeholder="e.g. 4.5"
                             value={a.manualReturn ?? ""}
@@ -562,6 +566,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                             <div style={{display:"flex",alignItems:"center",gap:5}}>
                               <span style={{fontSize:13,color:"var(--text2)",lineHeight:1,flexShrink:0}}>$</span>
                               <input
+                                id={`purchase-price-${i}`}
+                                name={`purchasePrice-${i}`}
                                 type="number" min="0" step="0.01"
                                 placeholder="0.00"
                                 value={a.purchasePrice ?? ""}
@@ -573,6 +579,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                           <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:130,flex:"1 1 130px",maxWidth:180}}>
                             <label style={LABEL_STYLE}>Purchase Date</label>
                             <input
+                              id={`purchase-date-${i}`}
+                              name={`purchaseDate-${i}`}
                               type="date"
                               value={a.purchaseDate ?? ""}
                               onChange={e=>updatePurchaseDate(i,e.target.value)}
@@ -614,6 +622,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         <div style={{display:"flex",alignItems:"center",gap:6}}>
           <span style={{fontFamily:"Space Mono,monospace",fontSize:13,color:"var(--text2)",lineHeight:1,flexShrink:0}}>$</span>
           <input
+            id="portfolio-value"
+            name="portfolioValue"
             type="number"
             min="0"
             step="1000"

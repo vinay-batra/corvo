@@ -112,6 +112,8 @@ export default function CommandPalette({ open, onClose, tabs, onTab, onStockSear
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: "0.5px solid var(--border)" }}>
               <Command size={16} style={{ color: "var(--text3)", flexShrink: 0 }} />
               <input
+                id="command-palette-search"
+                name="search"
                 ref={inputRef}
                 value={query}
                 onChange={e => setQuery(e.target.value)}

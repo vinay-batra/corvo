@@ -157,6 +157,8 @@ function WaitlistCapture() {
     <div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
         <input
+          id="waitlist-email"
+          name="email"
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
