@@ -157,6 +157,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                 href={article.url || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={e => { if (!article.url) e.preventDefault(); }}
                 initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}

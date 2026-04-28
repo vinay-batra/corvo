@@ -100,7 +100,7 @@ function UnsubscribeContent() {
         </p>
 
         <Link
-          href={status === "error" ? "/app/settings" : "/app"}
+          href={status === "error" ? "/settings" : "/app"}
           style={{
             display: "inline-block",
             padding: "10px 24px",
