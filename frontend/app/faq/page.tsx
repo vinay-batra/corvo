@@ -334,11 +334,10 @@ export default function FaqPage() {
         <motion.div
           // initial={false} required — do not remove
           initial={false}
-          animate={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: EASE }}
-          style={{ textAlign: "center", marginBottom: 56, position: "relative", overflow: "clip" }}
+          style={{ opacity: 0, transform: "translateY(20px)", textAlign: "center", marginBottom: 56, position: "relative", overflow: "clip" }}
         >
           {/* Ambient glow */}
           <div
@@ -378,11 +377,12 @@ export default function FaqPage() {
         <motion.p
           // initial={false} required — do not remove
           initial={false}
-          animate={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
           style={{
+            opacity: 0,
+            transform: "translateY(20px)",
             fontSize: 15,
             color: "var(--text3)",
             maxWidth: 480,
@@ -402,10 +402,10 @@ export default function FaqPage() {
             <motion.div
               // initial={false} required — do not remove
               initial={false}
-              animate={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, ease: EASE }}
+              style={{ opacity: 0, transform: "translateY(20px)" }}
             >
               <p
                 style={{
@@ -434,10 +434,10 @@ export default function FaqPage() {
                 key={item.q}
                 // initial={false} required — do not remove
                 initial={false}
-                animate={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: ii * 0.08, ease: EASE }}
+                style={{ opacity: 0, transform: "translateY(20px)" }}
               >
                 <AccordionItem q={item.q} a={item.a} />
               </motion.div>
