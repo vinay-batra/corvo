@@ -64,7 +64,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
   };
 
   if (!user) return (
-    <a href="/auth" style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, letterSpacing: 1, background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: C.amber, textDecoration: "none", transition: "all 0.2s", fontWeight: 500 }}
+    <a href="/auth" style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, letterSpacing: 1, background: "transparent", border: "1px solid rgba(var(--accent-rgb), 0.3)", color: C.amber, textDecoration: "none", transition: "all 0.2s", fontWeight: 500 }}
       onMouseEnter={e => { (e.target as any).style.background = C.amber2; }}
       onMouseLeave={e => { (e.target as any).style.background = "transparent"; }}>LOG IN</a>
   );
@@ -82,13 +82,13 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
         id="usermenu-btn"
         onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
         style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", height: 32, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(var(--accent-rgb), 0.3)"}
         onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}
       >
         {resolvedAvatar ? (
           <img src={resolvedAvatar} alt="Avatar" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
         ) : (
-          <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
+          <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(var(--accent-rgb), 0.15)", border: "1px solid rgba(var(--accent-rgb), 0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent)", flexShrink: 0 }}>
             {initials}
           </div>
         )}
@@ -110,7 +110,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
               {resolvedAvatar ? (
                 <img src={resolvedAvatar} alt="Avatar" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
               ) : (
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(var(--accent-rgb), 0.15)", border: "1px solid rgba(var(--accent-rgb), 0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "var(--accent)", flexShrink: 0 }}>
                   {initials}
                 </div>
               )}
@@ -185,7 +185,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
               </Link>
             )}
 
-            {/* Replay Tour — in-app only */}
+            {/* Replay Tour (in-app only) */}
             {onReplayTour && (
               <button onClick={() => { setOpen(false); onReplayTour(); }} style={itemStyle}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
@@ -195,7 +195,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
               </button>
             )}
 
-            {/* Replay Onboarding — in-app only */}
+            {/* Replay Onboarding (in-app only) */}
             {onReplayOnboarding && (
               <button onClick={() => { setOpen(false); onReplayOnboarding(); }} style={itemStyle}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
