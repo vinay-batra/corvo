@@ -181,7 +181,7 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
       style={{ gridArea, height: "100%", position: "relative" }}
     >
       <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
-        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "hidden", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
+        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "clip", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
         {children}
       </div>
     </motion.div>
