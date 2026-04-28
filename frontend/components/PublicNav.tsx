@@ -103,7 +103,7 @@ export default function PublicNav() {
           ) : (
             <>
               <Link href="/auth" className="pnav-link" style={{ padding: "7px 16px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Log in</Link>
-              <Link href="/auth" className="pnav-cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "var(--accent)", borderRadius: 8, color: "var(--bg)", textDecoration: "none", transition: "all 0.2s" }}>Get Started</Link>
+              <Link href="/auth?mode=signup" className="pnav-cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "var(--accent)", borderRadius: 8, color: "var(--bg)", textDecoration: "none", transition: "all 0.2s" }}>Get Started</Link>
             </>
           )}
         </div>
@@ -138,7 +138,7 @@ export default function PublicNav() {
           {!loggedIn && (
             <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
               <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Log in</Link>
-              <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Get Started</Link>
+              <Link href="/auth?mode=signup" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Get Started</Link>
             </div>
           )}
         </div>
