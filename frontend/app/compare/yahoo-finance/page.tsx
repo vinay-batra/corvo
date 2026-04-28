@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
-import FeedbackButton from "../../../components/FeedbackButton";
 
 const EASE = [0.25, 0.1, 0.25, 1] as const;
 
@@ -275,7 +274,6 @@ export default function YahooFinanceComparePage() {
 
       {/* ─── FOOTER ─── */}
       <PublicFooter />
-      <FeedbackButton />
     </div>
   );
 }

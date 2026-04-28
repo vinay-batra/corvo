@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
-import FeedbackButton from "../../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "What the VIX Actually Tells You About Your Portfolio | Corvo Blog",
@@ -144,7 +143,6 @@ export default function WhatTheVixTellsYouPage() {
         environment you are operating in. The VIX is one input into that assessment, not the answer.
       </p>
 
-      <FeedbackButton />
     </BlogPost>
   );
 }

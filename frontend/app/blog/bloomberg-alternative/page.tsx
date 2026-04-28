@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
-import FeedbackButton from "../../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "The Best Free Bloomberg Alternative in 2026 | Corvo Blog",
@@ -180,7 +179,6 @@ export default function BloombergAlternativePage() {
         answer is no.
       </p>
 
-      <FeedbackButton />
     </BlogPost>
   );
 }

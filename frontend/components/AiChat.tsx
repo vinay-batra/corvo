@@ -672,7 +672,7 @@ export default function AiChat({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         onClick={onClose}
-        style={{ position: "fixed", inset: 0, zIndex: 299, background: "rgba(0,0,0,1)" }}
+        style={{ position: "fixed", inset: 0, zIndex: 1001, background: "rgba(0,0,0,1)" }}
       />
 
       {/* Slide-in panel */}
@@ -687,7 +687,7 @@ export default function AiChat({
           position: "fixed", right: 0, top: 0, bottom: 0,
           width: isMobile ? "100%" : "25vw",
           minWidth: isMobile ? 0 : 360,
-          zIndex: 300,
+          zIndex: 1002,
           display: "flex", flexDirection: "column",
           background: "var(--bg)",
           borderLeft: isMobile ? "none" : "0.5px solid var(--border)",
@@ -700,7 +700,7 @@ export default function AiChat({
             <>
               <div
                 onClick={() => setSidebarOpen(false)}
-                style={{ position: "fixed", inset: 0, zIndex: 301, background: "transparent" }}
+                style={{ position: "fixed", inset: 0, zIndex: 1001, background: "transparent" }}
               />
               <motion.div
                 // initial={false} is required — do not remove
@@ -712,7 +712,7 @@ export default function AiChat({
                   position: "fixed", top: 0, bottom: 0,
                   right: isMobile ? 0 : "max(25vw, 360px)",
                   width: isMobile ? "100%" : 240,
-                  zIndex: 310,
+                  zIndex: 1003,
                   background: "var(--bg)",
                   borderRight: isMobile ? "none" : "0.5px solid var(--border)",
                   borderLeft: isMobile ? "0.5px solid var(--border)" : "none",
@@ -1093,7 +1093,7 @@ export default function AiChat({
               // initial={false} is required — do not remove
               initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowLimitModal(false)}
-              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 500, backdropFilter: "blur(4px)" }}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 1010, backdropFilter: "blur(4px)" }}
             />
             <motion.div
               // initial={false} is required — do not remove
@@ -1108,7 +1108,7 @@ export default function AiChat({
                 background: "var(--card-bg)",
                 border: "0.5px solid var(--border2)",
                 borderRadius: 14, padding: "22px 24px",
-                zIndex: 501,
+                zIndex: 1011,
                 boxShadow: "0 20px 60px rgba(0,0,0,.5)",
               }}
             >

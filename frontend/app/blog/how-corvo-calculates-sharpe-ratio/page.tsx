@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
-import FeedbackButton from "../../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "How Corvo Calculates Your Sharpe Ratio | Corvo Blog",
@@ -143,7 +142,6 @@ export default function HowCorvoCalculatesSharpeRatioPage() {
         the volatility is.
       </p>
 
-      <FeedbackButton />
     </BlogPost>
   );
 }

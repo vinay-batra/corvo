@@ -5,7 +5,6 @@ import Link from "next/link";
 import { supabase as sb } from "../lib/supabase";
 import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
-import FeedbackButton from "../components/FeedbackButton";
 import PublicFooter from "../components/PublicFooter";
 import { usePWAInstall } from "../hooks/usePWAInstall";
 
@@ -2222,7 +2221,6 @@ export default function Landing() {
       <EmailCaptureBottom />
 
       <PublicFooter />
-      <FeedbackButton />
     </div>
   );
 }

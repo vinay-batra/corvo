@@ -8,7 +8,6 @@ import Cropper from "react-easy-crop";
 import { supabase } from "../../lib/supabase";
 import { SOUND_KEY } from "../../hooks/useSoundEffects";
 import ReferralsDashboard from "@/components/ReferralsDashboard";
-import FeedbackButton from "../../components/FeedbackButton";
 import { useToast } from "../../components/Toast";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -955,7 +954,6 @@ export default function SettingsPage({
         )}
       </AnimatePresence>
 
-      <FeedbackButton />
     </div>
   );
 }

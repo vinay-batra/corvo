@@ -16,7 +16,7 @@ import { supabase } from "../lib/supabase";
 
 const FEEDBACK_TYPES = ["Bug", "Feature Request", "Other"] as const;
 
-export default function FeedbackButton({ hasChat = true }: { hasChat?: boolean }) {
+export default function FeedbackButton() {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<typeof FEEDBACK_TYPES[number]>("Bug");
   const [message, setMessage] = useState("");
@@ -69,8 +69,8 @@ export default function FeedbackButton({ hasChat = true }: { hasChat?: boolean }
         aria-label="Send feedback"
         style={{
           position: "fixed",
-          bottom: "var(--fab-bottom)",
-          right: hasChat ? "calc(var(--fab-edge) + var(--fab-chat-size) + var(--fab-gap))" : "var(--fab-edge)",
+          bottom: 96,
+          right: 24,
           zIndex: 240,
           width: 36, height: 36,
           background: "var(--bg2)",

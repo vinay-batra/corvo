@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import PublicFooter from "@/components/PublicFooter";
-import FeedbackButton from "../../components/FeedbackButton";
 
 const LEVEL_NAMES: Record<number, string> = {
   1: "Newcomer", 2: "Analyst", 3: "Investor", 4: "Portfolio Pro",
@@ -177,7 +176,6 @@ export default function AccountPage() {
 
       </main>
       <PublicFooter />
-      <FeedbackButton />
     </div>
   );
 }

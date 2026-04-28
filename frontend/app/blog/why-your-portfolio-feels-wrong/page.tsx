@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
-import FeedbackButton from "../../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "Why Your Portfolio Feels Wrong Even When the Numbers Look Right | Corvo Blog",
@@ -153,7 +152,6 @@ export default function WhyPortfolioFeelsWrongPage() {
         the time to act, and only then.
       </p>
 
-      <FeedbackButton />
     </BlogPost>
   );
 }

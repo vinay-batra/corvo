@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
-import FeedbackButton from "../../components/FeedbackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -450,7 +449,6 @@ export default function FaqPage() {
       </main>
 
       <PublicFooter />
-      <FeedbackButton />
     </div>
   );
 }

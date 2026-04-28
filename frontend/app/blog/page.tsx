@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import BlogFilteredPosts from "./BlogFilteredPosts";
-import FeedbackButton from "../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -49,7 +48,6 @@ export default function BlogIndexPage() {
       </div>
 
       <BlogFilteredPosts />
-      <FeedbackButton />
     </div>
   );
 }

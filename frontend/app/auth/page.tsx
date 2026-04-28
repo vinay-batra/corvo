@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { posthog } from "../../lib/posthog";
-import FeedbackButton from "../../components/FeedbackButton";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 const C = {
@@ -300,7 +299,6 @@ function AuthForm() {
           </button>
         )}
       </motion.div>
-      <FeedbackButton />
     </div>
   );
 }
