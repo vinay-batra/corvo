@@ -580,6 +580,26 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     w_list = [w / total for w in w_list]
 
     prices = get_prices(tickers_list, period)
+
+    # Inject synthetic 4.5% price series for cash/money market tickers (no market data exists)
+    _PERIOD_DAYS = {"1mo": 21, "3mo": 63, "6mo": 126, "1y": 252, "2y": 504, "3y": 756, "5y": 1260, "10y": 2520, "ytd": 252, "max": 2520}
+    n_synth = _PERIOD_DAYS.get(PERIOD_MAP.get(period, "1y"), 252)
+    has_cash = any(is_cash_ticker(t) for t in tickers_list)
+
+    if has_cash:
+        if prices is None or prices.empty:
+            synth_base = make_synthetic_prices(0.045, n_synth)
+            prices = pd.DataFrame(
+                {t: synth_base.values for t in tickers_list if is_cash_ticker(t)},
+                index=synth_base.index,
+            )
+        else:
+            for t in tickers_list:
+                if is_cash_ticker(t):
+                    n = len(prices)
+                    synth = make_synthetic_prices(0.045, n)
+                    prices[t] = synth.values[:n] if len(synth.values) >= n else synth.values
+
     if prices is None or prices.empty:
         raise HTTPException(status_code=500, detail="Failed to fetch data")
 
@@ -596,7 +616,8 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     sigma_daily = float(np.std(port_returns))
 
     # Override mu with long-term asset-class expected returns so recent bull/bear runs
-    # don't distort forward projections. Fall back to historical mu for unknown tickers.
+    # don't distort forward projections. Individual stocks cap at 10% to prevent recent
+    # high-return periods (e.g. NVDA bull run) from producing absurd 30-year projections.
     ASSET_CLASS_MU = {
         "BND": 0.04, "AGG": 0.04, "TLT": 0.04, "IEF": 0.035, "SHY": 0.03,
         "SGOV": 0.045, "BIL": 0.04, "VBTLX": 0.04, "LQD": 0.045, "HYG": 0.055,
@@ -606,12 +627,33 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
 
     weighted_mu = 0.0
     for t, w in zip(available, avail_w):
-        asset_mu = ASSET_CLASS_MU.get(t, mu_daily * 252)
+        if is_cash_ticker(t):
+            asset_mu = 0.045  # fixed 4.5% for cash/money market
+        elif t in ASSET_CLASS_MU:
+            asset_mu = ASSET_CLASS_MU[t]
+        else:
+            # Cap individual stock historical returns at 10% annual to prevent
+            # recent bull-market periods from distorting long-term projections
+            asset_mu = min(mu_daily * 252, 0.10)
         weighted_mu += w * asset_mu
 
     mu_daily = weighted_mu / 252
-    sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
-    mu_daily = min(mu_daily, 0.25 / 252)
+
+    # Cash-aware sigma: money market funds have near-zero volatility; don't apply
+    # the equity minimum floor (8%) to portfolios that are mostly cash
+    cash_weight = sum(avail_w[i] for i, t in enumerate(available) if is_cash_ticker(t))
+    if cash_weight >= 0.99:
+        sigma_daily = 0.001 / np.sqrt(252)
+    elif cash_weight > 0:
+        equity_sigma = max(sigma_daily, 0.08 / np.sqrt(252))
+        cash_sigma = 0.001 / np.sqrt(252)
+        sigma_daily = equity_sigma * (1 - cash_weight) + cash_sigma * cash_weight
+    else:
+        sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
+
+    # Hard cap at 12% annual return (prevents absurd results over long horizons;
+    # 25% cap was producing +100000% over 30 years)
+    mu_daily = min(mu_daily, 0.12 / 252)
 
     mu = mu_daily * 252
     sigma = sigma_daily * np.sqrt(252)
@@ -758,6 +800,26 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
     tickers = [t.strip().upper() for t in req.tickers]
 
     prices = get_prices(tickers, req.period)
+
+    # Inject synthetic 4.5% price series for cash/money market tickers
+    _PERIOD_DAYS = {"1mo": 21, "3mo": 63, "6mo": 126, "1y": 252, "2y": 504, "3y": 756, "5y": 1260, "10y": 2520, "ytd": 252, "max": 2520}
+    n_synth = _PERIOD_DAYS.get(PERIOD_MAP.get(req.period, "1y"), 252)
+    has_cash = any(is_cash_ticker(t) for t in tickers)
+
+    if has_cash:
+        if prices is None or prices.empty:
+            synth_base = make_synthetic_prices(0.045, n_synth)
+            prices = pd.DataFrame(
+                {t: synth_base.values for t in tickers if is_cash_ticker(t)},
+                index=synth_base.index,
+            )
+        else:
+            for t in tickers:
+                if is_cash_ticker(t):
+                    n = len(prices)
+                    synth = make_synthetic_prices(0.045, n)
+                    prices[t] = synth.values[:n] if len(synth.values) >= n else synth.values
+
     if prices is None or prices.empty:
         raise HTTPException(status_code=500, detail="Failed to fetch price data.")
 
@@ -782,9 +844,30 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
         "GLD": 0.05, "IAU": 0.05, "SLV": 0.04, "DJP": 0.04,
         "SPY": 0.10, "VOO": 0.10, "VTI": 0.10, "IWM": 0.09, "QQQ": 0.11,
     }
-    weighted_mu_annual = sum(avail_w[i] * ASSET_CLASS_MU.get(available[i], mu_hist * 252) for i in range(len(available)))
-    sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
-    mu_annual = min(weighted_mu_annual, 0.25)
+
+    weighted_mu_annual = 0.0
+    for i, t in enumerate(available):
+        if is_cash_ticker(t):
+            weighted_mu_annual += avail_w[i] * 0.045
+        elif t in ASSET_CLASS_MU:
+            weighted_mu_annual += avail_w[i] * ASSET_CLASS_MU[t]
+        else:
+            # Cap individual stock historical returns at 10% to prevent bull-market distortion
+            weighted_mu_annual += avail_w[i] * min(mu_hist * 252, 0.10)
+
+    # Cash-aware sigma: don't apply equity volatility floor to cash-heavy portfolios
+    cash_weight = sum(avail_w[i] for i, t in enumerate(available) if is_cash_ticker(t))
+    if cash_weight >= 0.99:
+        sigma_daily = 0.001 / np.sqrt(252)
+    elif cash_weight > 0:
+        equity_sigma = max(sigma_daily, 0.08 / np.sqrt(252))
+        cash_sigma = 0.001 / np.sqrt(252)
+        sigma_daily = equity_sigma * (1 - cash_weight) + cash_sigma * cash_weight
+    else:
+        sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
+
+    # Hard cap at 12% annual (25% cap was producing +100000% over 30 years)
+    mu_annual = min(weighted_mu_annual, 0.12)
     sigma_annual = sigma_daily * np.sqrt(252)
 
     # Adjust for fees and tax drag (reduce annual return)

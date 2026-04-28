@@ -856,7 +856,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
-  const [retirementResult, setRetirementResult] = useState<any>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
@@ -2353,8 +2352,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   <RetirementSimulator
                     assets={assets}
                     portfolioValue={portfolioInputValue}
-                    savedResult={retirementResult}
-                    onResultChange={setRetirementResult}
                   />
                 </Card>
               </motion.div>
