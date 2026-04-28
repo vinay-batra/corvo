@@ -86,7 +86,7 @@ function PublicAIChatInner() {
         aria-label="Open AI chat"
         style={{
           position: "fixed",
-          bottom: 24,
+          bottom: 32,
           right: 24,
           zIndex: 9999,
           width: 52,
@@ -127,9 +127,9 @@ function PublicAIChatInner() {
           ref={panelRef}
           style={{
             position: "fixed",
-            bottom: 86,
+            bottom: 84,
             right: 24,
-            zIndex: 9998,
+            zIndex: 1001,
             width: 340,
             maxWidth: "calc(100vw - 48px)",
             background: "var(--card-bg)",

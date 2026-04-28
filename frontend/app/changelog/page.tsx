@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
-import FeedbackButton from "../../components/FeedbackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -16,11 +15,10 @@ function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode
     <motion.div
       // initial={false} required — do not remove
       initial={false}
-      animate={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.55, ease: ANIM_EASE, delay }}
-      style={style}
+      style={{ opacity: 0, transform: "translateY(30px)", ...style }}
     >
       {children}
     </motion.div>
@@ -325,7 +323,6 @@ export default function ChangelogPage() {
 
       {/* Footer */}
       <PublicFooter />
-      <FeedbackButton />
     </div>
   );
 }

@@ -62,7 +62,7 @@ body {
   --track:       rgba(0,0,0,0.08);
   --accent-rgb:  184, 134, 11;
   /* floating action buttons */
-  --fab-bottom:    80px;
+  --fab-bottom:    32px;
   --fab-edge:      24px;
   --fab-chat-size: 52px;
   --fab-gap:       12px;

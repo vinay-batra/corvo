@@ -4,7 +4,6 @@ import React from "react";
 import { motion } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
-import FeedbackButton from "../../components/FeedbackButton";
 
 const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
 
@@ -176,7 +175,6 @@ export default function AboutPage() {
       </div>
 
       <PublicFooter />
-      <FeedbackButton />
     </div>
   );
 }

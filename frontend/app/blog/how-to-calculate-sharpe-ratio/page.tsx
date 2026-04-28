@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
-import FeedbackButton from "../../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "How to Calculate Sharpe Ratio for Your Portfolio (And Why It Matters) | Corvo Blog",
@@ -213,7 +212,6 @@ export default function SharpeRatioPage() {
         often explains why a seemingly diversified portfolio underperforms its benchmark on a risk-adjusted basis.
       </p>
 
-      <FeedbackButton />
     </BlogPost>
   );
 }

@@ -9,6 +9,7 @@ import InstallBanner from "@/components/InstallBanner";
 import { ToastProvider } from "@/components/Toast";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import PublicAIChatLoader from "@/components/PublicAIChatLoader";
+import FeedbackButton from "@/components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: { default: "Corvo: Free Portfolio Analytics & AI Investing Tools", template: "%s | Corvo" },
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </PostHogProvider>
         </Suspense>
         <PublicAIChatLoader />
+        <FeedbackButton />
         <Analytics />
         <ServiceWorkerRegistrar />
         <InstallBanner />

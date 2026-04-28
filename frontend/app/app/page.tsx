@@ -55,13 +55,19 @@ import TransactionsTab from "../../components/TransactionsTab";
 import RetirementSimulator from "../../components/RetirementSimulator";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import DashboardTour from "../../components/DashboardTour";
-import FeedbackButton from "../../components/FeedbackButton";
 import { type SavedPortfolioLine } from "../../components/PerformanceChart";
 import EarningsCalendar from "../../components/EarningsCalendar";
 import EventsCalendar from "../../components/EventsCalendar";
 import PriceTargetTracker from "../../components/PriceTargetTracker";
 import { InsiderActivitySummary } from "../../components/InsiderActivity";
 import StockCompare from "../../components/StockCompare";
+import CorrelationHeatmap from "../../components/CorrelationHeatmap";
+import DrawdownChart from "../../components/DrawdownChart";
+import EarningsImpactPreview from "../../components/EarningsImpactPreview";
+import PortfolioHistory from "../../components/PortfolioHistory";
+import PortfolioCompareTab from "../../components/PortfolioCompareTab";
+import SharePortfolio from "../../components/SharePortfolio";
+import ShareImageModal from "../../components/ShareImageModal";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -737,6 +743,7 @@ const TopbarActions = memo(function TopbarActions({
 }: TopbarActionsProps) {
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [aiToast, setAiToast] = useState(false);
+  const [showShareImage, setShowShareImage] = useState(false);
 
   return (
     <>
@@ -788,10 +795,21 @@ const TopbarActions = memo(function TopbarActions({
                     ↓ Download CSV
                   </button>
                 )}
+                {data && (
+                  <button onClick={() => { setShowShareImage(true); setOverflowOpen(false); }}
+                    style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    Share as Image
+                  </button>
+                )}
               </div>
             </>
           )}
         </div>
+
+        {/* Share portfolio button */}
+        {data && <SharePortfolio data={data} assets={assets} period={period} benchmark={benchmark} />}
 
         {/* User menu */}
         <div id="tour-profile-btn" style={{ display: "flex", alignItems: "center" }}>
@@ -2177,6 +2195,14 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <>
                       <TooltipCardHeader title="Earnings Calendar" sections={[{ label: "How it works", text: "Upcoming earnings dates for your holdings within the next 60 days. Click any row to see your portfolio weight, analyst estimates, options-implied expected move, and an AI note on what a beat or miss would mean for your position. Red border means earnings within 7 days." }]} />
                       <EarningsCalendar assets={assets} />
+                      <div style={{ marginTop: 16 }}>
+                        <TooltipCardHeader title="Earnings Impact Preview" sections={[
+                          { label: "Plain English", text: "For each holding with upcoming earnings, shows the options-implied expected move and an AI assessment of whether a beat or miss would meaningfully impact your portfolio given your current weighting." },
+                          { label: "How it works", text: "The expected move is derived from at-the-money options pricing. It represents the market's estimate of the stock's price swing through the earnings event." },
+                          { label: "What to watch", text: "A large expected move on a position with high portfolio weight means earnings season is a significant risk event for you specifically." },
+                        ]} />
+                        <EarningsImpactPreview assets={assets} />
+                      </div>
                     </>
                   )}
                   {newsSubTab === "events" && (
@@ -2529,6 +2555,36 @@ const { dark, toggle: toggleDark }  = useTheme();
                     portfolioValue={portfolioInputValue}
                   />
                 </Card>
+                <Card key="drawdown-card" style={{ marginTop: 16 }}>
+                  <TooltipCardHeader title="Drawdown Chart" sections={[
+                    { label: "Plain English", text: "Shows how far your portfolio has fallen from its peak at each point in time. A drawdown of -20% means the portfolio was 20% below its previous high." },
+                    { label: "Why it matters", text: "Max drawdown is the worst peak-to-trough decline ever. It measures how much pain you would have had to endure to stay invested. A smaller max drawdown means a smoother ride." },
+                    { label: "What's Good", text: "A max drawdown under 20% is generally considered well-managed. Above 40% means the portfolio experienced severe stress. Compare your drawdown to SPY to understand if you are taking more or less risk than the market." },
+                  ]} />
+                  <DrawdownChart assets={assets} period={period} />
+                </Card>
+                <Card key="correlation-card" style={{ marginTop: 16 }}>
+                  <TooltipCardHeader title="Correlation Heatmap" sections={[
+                    { label: "Plain English", text: "Shows how closely each pair of holdings moves together. A value of +1.0 means they move in perfect sync. A value of -1.0 means they move in opposite directions." },
+                    { label: "Why it matters", text: "High correlation (above 0.7) between two holdings means they provide little diversification benefit. If one falls, the other likely falls too." },
+                    { label: "What's Good", text: "A well-diversified portfolio has many pairs below 0.5. Holdings near 0 or negative are natural hedges for each other." },
+                  ]} />
+                  <CorrelationHeatmap assets={assets} period={period} />
+                </Card>
+                <Card key="compare-card" style={{ marginTop: 16 }}>
+                  <TooltipCardHeader title="Portfolio Comparison" sections={[
+                    { label: "Plain English", text: "Compare the historical performance of multiple saved portfolios on a single chart. Select 2 or more saved portfolios to see how they stacked up against each other." },
+                    { label: "How to use", text: "Save portfolios from the sidebar first. Then select 2 or more from the list to compare returns, Sharpe ratio, volatility, and max drawdown side by side." },
+                  ]} />
+                  <PortfolioCompareTab userId={userId} period={period} />
+                </Card>
+                <Card key="history-card" style={{ marginTop: 16 }}>
+                  <TooltipCardHeader title="Portfolio History" sections={[
+                    { label: "Plain English", text: "Shows how all your saved portfolios have performed over time. Each line is one saved portfolio, plotted from its earliest available date." },
+                    { label: "How to use", text: "Save multiple portfolio versions from the sidebar to track how your thinking has evolved. Use the timeframe selector to zoom in on a specific window." },
+                  ]} />
+                  <PortfolioHistory />
+                </Card>
               </motion.div>
             ) : activeTab === "transactions" ? (
               <motion.div key="transactions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
@@ -2572,7 +2628,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5, type: "spring", damping: 20 }}
         style={{
-          position: "fixed", bottom: "var(--fab-bottom)", right: "var(--fab-edge)", zIndex: 250,
+          position: "fixed", bottom: 24, right: 24, zIndex: 1000,
           width: 52, height: 52, borderRadius: "50%",
           background: chatOpen ? "var(--bg3)" : "var(--accent)",
           border: chatOpen ? "1px solid var(--border2)" : "none",
@@ -2694,6 +2750,11 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       {/* Keyboard shortcuts modal */}
       <KeyboardShortcutsModal open={showHelpModal} onClose={() => setShowHelpModal(false)} />
+
+      {/* Share as Image modal */}
+      {showShareImage && data && (
+        <ShareImageModal assets={assets} data={data} onClose={() => setShowShareImage(false)} />
+      )}
 
       {/* What-If drawer */}
       <WhatIfDrawer
@@ -2845,7 +2906,6 @@ const { dark, toggle: toggleDark }  = useTheme();
       </AnimatePresence>
 
       {/* Feedback button */}
-      <FeedbackButton hasChat />
 
     </div>
   );

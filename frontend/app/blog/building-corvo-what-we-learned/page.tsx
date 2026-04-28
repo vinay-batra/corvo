@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
-import FeedbackButton from "../../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "Building a Portfolio Analyzer: What We Learned | Corvo Blog",
@@ -147,7 +146,6 @@ export default function BuildingCorvoWhatWeLearnedPage() {
         they need, at a price that makes sense.
       </p>
 
-      <FeedbackButton />
     </BlogPost>
   );
 }

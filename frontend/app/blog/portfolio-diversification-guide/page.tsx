@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
-import FeedbackButton from "../../../components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: "The Complete Guide to Portfolio Diversification in 2026 | Corvo Blog",
@@ -225,7 +224,6 @@ export default function DiversificationGuidePage() {
         When your health score drops, the platform explains exactly why and suggests specific adjustments.
       </p>
 
-      <FeedbackButton />
     </BlogPost>
   );
 }
