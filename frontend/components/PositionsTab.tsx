@@ -44,13 +44,22 @@ const BENCHMARKS = [
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type SortKey = "ticker" | "company" | "weight" | "value" | "change1d" | "change7d" | "sector";
+type SortKey = "ticker" | "company" | "weight" | "value" | "change1d" | "change7d" | "sector" | "analyst_upside";
 type SortDir = "asc" | "desc";
 
 interface SavedPortfolio {
   id: string;
   name: string;
   assets: { ticker: string; weight: number; purchasePrice?: number }[];
+}
+
+interface AnalystTarget {
+  target_mean: number | null;
+  target_high: number | null;
+  target_low: number | null;
+  upside_pct: number | null;
+  num_analysts: number | null;
+  current_price: number | null;
 }
 
 interface LiveData {
@@ -277,6 +286,9 @@ export default function PositionsTab({
   const [sortKey, setSortKey] = useState<SortKey>("weight");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
+  // Analyst targets
+  const [analystTargets, setAnalystTargets] = useState<Record<string, AnalystTarget>>({});
+
   // ── Load saved portfolios ──────────────────────────────────────────────────
   const loadPortfolios = useCallback(async () => {
     setPortfoliosLoading(true);
@@ -458,6 +470,25 @@ export default function PositionsTab({
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchLive]);
 
+  // ── Fetch analyst targets for all holdings ─────────────────────────────────
+  useEffect(() => {
+    if (!allTickers.length) return;
+    Promise.all(
+      allTickers.map(ticker =>
+        fetch(`${API_URL}/analyst-targets/${ticker}`)
+          .then(r => r.json())
+          .then(d => ({ ticker, d }))
+          .catch(() => ({ ticker, d: null }))
+      )
+    ).then(results => {
+      const map: Record<string, AnalystTarget> = {};
+      results.forEach(({ ticker, d }) => {
+        if (d && !d.detail) map[ticker] = d;
+      });
+      setAnalystTargets(map);
+    });
+  }, [tickersKey]);
+
   // ── Build position rows ────────────────────────────────────────────────────
   function build7dChange(sparkline: number[]): number | null {
     if (sparkline.length < 2) return null;
@@ -492,14 +523,16 @@ export default function PositionsTab({
   const sorted = [...allRows].sort((x, y) => {
     let a: any, b: any;
     switch (sortKey) {
-      case "ticker":   a = x.ticker;      b = y.ticker;      break;
-      case "company":  a = x.company;     b = y.company;     break;
-      case "weight":   a = x.weightFrac;  b = y.weightFrac;  break;
-      case "value":    a = x.value;       b = y.value;       break;
-      case "change1d": a = x.change1d;    b = y.change1d;    break;
-      case "change7d": a = x.change7d;    b = y.change7d;    break;
-      case "sector":   a = x.sector;      b = y.sector;      break;
-      default:         a = x.weightFrac;  b = y.weightFrac;
+      case "ticker":         a = x.ticker;      b = y.ticker;      break;
+      case "company":        a = x.company;     b = y.company;     break;
+      case "weight":         a = x.weightFrac;  b = y.weightFrac;  break;
+      case "value":          a = x.value;       b = y.value;       break;
+      case "change1d":       a = x.change1d;    b = y.change1d;    break;
+      case "change7d":       a = x.change7d;    b = y.change7d;    break;
+      case "sector":         a = x.sector;      b = y.sector;      break;
+      case "analyst_upside": a = analystTargets[x.ticker]?.upside_pct ?? null;
+                             b = analystTargets[y.ticker]?.upside_pct ?? null; break;
+      default:               a = x.weightFrac;  b = y.weightFrac;
     }
     if (a === null || a === undefined) a = sortDir === "asc" ? Infinity : -Infinity;
     if (b === null || b === undefined) b = sortDir === "asc" ? Infinity : -Infinity;
@@ -833,25 +866,26 @@ export default function PositionsTab({
           <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderBottom: "0.5px solid var(--border)", background: "var(--bg2)" }}>
             <span style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>Holdings</span>
             <InfoTooltip
-              text="Ticker: stock or ETF symbol. Company: full name. Weight: allocation % within the portfolio, shown with a bar. Value: estimated dollar amount based on your portfolio size. 1D: today's price change. 7D: change over the last 7 trading days derived from closing prices. Sector: GICS sector classification."
+              text="Ticker: stock or ETF symbol. Company: full name. Weight: allocation % within the portfolio, shown with a bar. Value: estimated dollar amount based on your portfolio size. 1D: today's price change. 7D: change over the last 7 trading days derived from closing prices. Analyst Target: Wall Street consensus price target from Finnhub with upside or downside percentage and a range bar showing analyst low and high targets. Sector: GICS sector classification."
             />
           </div>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
               <thead>
                 <tr>
-                  <SortTh label="Ticker"   sortKey="ticker"   active={sortKey==="ticker"}   dir={sortDir} onClick={() => toggleSort("ticker")} />
-                  <SortTh label="Company"  sortKey="company"  active={sortKey==="company"}  dir={sortDir} onClick={() => toggleSort("company")} />
+                  <SortTh label="Ticker"          sortKey="ticker"         active={sortKey==="ticker"}         dir={sortDir} onClick={() => toggleSort("ticker")} />
+                  <SortTh label="Company"         sortKey="company"        active={sortKey==="company"}        dir={sortDir} onClick={() => toggleSort("company")} />
                   {showPortfolioCol && (
                     <th style={{ padding: "8px 12px", fontSize: 10, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", textAlign: "left", background: "var(--bg2)", position: "sticky", top: 0, borderBottom: "0.5px solid var(--border)", fontWeight: 600, whiteSpace: "nowrap" }}>
                       Portfolio
                     </th>
                   )}
-                  <SortTh label="Weight"   sortKey="weight"   active={sortKey==="weight"}   dir={sortDir} onClick={() => toggleSort("weight")} />
-                  <SortTh label="Value"    sortKey="value"    active={sortKey==="value"}    dir={sortDir} onClick={() => toggleSort("value")} />
-                  <SortTh label="1D"       sortKey="change1d" active={sortKey==="change1d"} dir={sortDir} onClick={() => toggleSort("change1d")} />
-                  <SortTh label="7D"       sortKey="change7d" active={sortKey==="change7d"} dir={sortDir} onClick={() => toggleSort("change7d")} />
-                  <SortTh label="Sector"   sortKey="sector"   active={sortKey==="sector"}   dir={sortDir} onClick={() => toggleSort("sector")} />
+                  <SortTh label="Weight"          sortKey="weight"         active={sortKey==="weight"}         dir={sortDir} onClick={() => toggleSort("weight")} />
+                  <SortTh label="Value"           sortKey="value"          active={sortKey==="value"}          dir={sortDir} onClick={() => toggleSort("value")} />
+                  <SortTh label="1D"              sortKey="change1d"       active={sortKey==="change1d"}       dir={sortDir} onClick={() => toggleSort("change1d")} />
+                  <SortTh label="7D"              sortKey="change7d"       active={sortKey==="change7d"}       dir={sortDir} onClick={() => toggleSort("change7d")} />
+                  <SortTh label="Analyst Target"  sortKey="analyst_upside" active={sortKey==="analyst_upside"} dir={sortDir} onClick={() => toggleSort("analyst_upside")} />
+                  <SortTh label="Sector"          sortKey="sector"         active={sortKey==="sector"}         dir={sortDir} onClick={() => toggleSort("sector")} />
                   <th style={{ padding: "8px 12px", background: "var(--bg2)", borderBottom: "0.5px solid var(--border)", position: "sticky", top: 0, width: 28 }} />
                 </tr>
               </thead>
@@ -865,7 +899,7 @@ export default function PositionsTab({
                       <>
                         {/* Group header */}
                         <tr key={`hdr-${portfolio.id}`}>
-                          <td colSpan={showPortfolioCol ? 9 : 8} style={{
+                          <td colSpan={showPortfolioCol ? 10 : 9} style={{
                             padding: "8px 14px",
                             background: "var(--bg2)",
                             borderBottom: "0.5px solid var(--border)",
@@ -889,6 +923,7 @@ export default function PositionsTab({
                             flashSet={flashSet}
                             showPortfolioCol={showPortfolioCol}
                             onSelectTicker={onSelectTicker}
+                            analystTarget={analystTargets[row.ticker] ?? null}
                           />
                         ))}
                       </>
@@ -904,6 +939,7 @@ export default function PositionsTab({
                       flashSet={flashSet}
                       showPortfolioCol={false}
                       onSelectTicker={onSelectTicker}
+                      analystTarget={analystTargets[row.ticker] ?? null}
                     />
                   ))
                 )}
@@ -914,7 +950,7 @@ export default function PositionsTab({
       )}
 
       <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 10, textAlign: "right" }}>
-        Click any row to open detailed stock view · Value = portfolio value × weight · 7D computed from closing prices
+        Click any row to open detailed stock view · Value = portfolio value × weight · Analyst targets from Finnhub
       </p>
     </div>
   );
@@ -923,18 +959,39 @@ export default function PositionsTab({
 // ── Row sub-component ─────────────────────────────────────────────────────────
 
 function PositionRowEl({
-  row, i, flashSet, showPortfolioCol, onSelectTicker,
+  row, i, flashSet, showPortfolioCol, onSelectTicker, analystTarget,
 }: {
   row: PositionRow;
   i: number;
   flashSet: Set<string>;
   showPortfolioCol: boolean;
   onSelectTicker: (t: string) => void;
+  analystTarget: AnalystTarget | null;
 }) {
   const flashing = flashSet.has(row.ticker);
   const flashClass = flashing && row.change1d !== null
     ? (row.change1d >= 0 ? "pos-flash-up" : "pos-flash-down")
     : "";
+
+  const GREEN = "#4caf7d";
+  const RED   = "#e05c5c";
+
+  // Analyst target range bar
+  const at = analystTarget;
+  const atUpside = at?.upside_pct ?? null;
+  const atIsUp = atUpside != null ? atUpside >= 0 : null;
+  const atColor = atIsUp === true ? GREEN : atIsUp === false ? RED : "var(--text3)";
+
+  // Mini range bar positions
+  let currentPct = 50;
+  let targetPct  = 50;
+  if (at?.target_low != null && at?.target_high != null && at.target_high > at.target_low && at.current_price && at.target_mean) {
+    const range = at.target_high - at.target_low;
+    currentPct = Math.max(3, Math.min(97, ((at.current_price - at.target_low) / range) * 100));
+    targetPct  = Math.max(3, Math.min(97, ((at.target_mean  - at.target_low) / range) * 100));
+  }
+  const fillLeft  = Math.min(currentPct, targetPct);
+  const fillWidth = Math.abs(targetPct - currentPct);
 
   return (
     <motion.tr
@@ -995,6 +1052,59 @@ function PositionRowEl({
       {/* 7D change */}
       <td style={{ padding: "17px 12px" }}>
         <Pill value={row.change7d} />
+      </td>
+
+      {/* Analyst Target */}
+      <td style={{ padding: "12px 12px" }}>
+        {at?.target_mean != null ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 110 }}>
+            {/* Price + upside */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" }}>
+                ${at.target_mean.toFixed(2)}
+              </span>
+              {atUpside != null && (
+                <span style={{
+                  display: "inline-flex", alignItems: "center",
+                  padding: "1px 6px", borderRadius: 4, fontSize: 10, fontWeight: 600,
+                  fontFamily: "Space Mono, monospace",
+                  background: atIsUp ? "rgba(76,175,125,0.1)" : "rgba(224,92,92,0.1)",
+                  color: atColor, whiteSpace: "nowrap",
+                }}>
+                  {atUpside >= 0 ? "+" : ""}{atUpside.toFixed(1)}%
+                </span>
+              )}
+            </div>
+            {/* Mini range bar */}
+            {at.target_low != null && at.target_high != null && (
+              <div style={{ position: "relative", height: 4, background: "var(--bg3)", borderRadius: 2, width: "100%" }}>
+                <div style={{
+                  position: "absolute", top: 0, height: "100%",
+                  left: `${fillLeft}%`, width: `${fillWidth}%`,
+                  background: atIsUp ? "rgba(76,175,125,0.45)" : "rgba(224,92,92,0.45)",
+                  borderRadius: 2,
+                }} />
+                <div style={{
+                  position: "absolute", top: "50%", transform: "translate(-50%, -50%)",
+                  left: `${currentPct}%`,
+                  width: 7, height: 7, borderRadius: "50%",
+                  background: "var(--text2)", border: "1.5px solid var(--bg)", zIndex: 2,
+                }} />
+                <div style={{
+                  position: "absolute", top: "50%", transform: "translate(-50%, -50%)",
+                  left: `${targetPct}%`,
+                  width: 9, height: 9, borderRadius: "50%",
+                  background: atColor, border: "1.5px solid var(--bg)", zIndex: 3,
+                }} />
+              </div>
+            )}
+            {at.num_analysts != null && (
+              <span style={{ fontSize: 9, color: "var(--text3)" }}>{at.num_analysts} analysts</span>
+            )}
+          </div>
+        ) : (
+          <span style={{ fontSize: 11, color: "var(--text3)" }}>-</span>
+        )}
       </td>
 
       {/* Sector */}
