@@ -276,7 +276,6 @@ CASH_TICKERS = {
 def is_cash_ticker(t: str) -> bool:
     """Return True if t should be treated as a cash/money-market equivalent."""
     return t in CASH_TICKERS or (len(t) == 5 and t.endswith("XX"))
-print(f"CASH_TICKERS loaded: {CASH_TICKERS}")
 
 def make_synthetic_prices(annual_return: float, n_days: int, start_date=None) -> pd.Series:
     """Generate synthetic daily price series from an annual return rate."""
@@ -398,16 +397,13 @@ def portfolio(
             or std < 0.001
             or is_cash_ticker(t)
         )
-        print(f"[debug] {t}: needs_synthetic={needs_synthetic}, in_cash={is_cash_ticker(t)}")
         if needs_synthetic:
-            print(f"[synthetic] {t}")
             synthetic = _align_synthetic(make_synthetic_prices(0.045, n_days, start_date))
             if t not in prices.columns:
                 prices[t] = np.nan
             common = prices.index.intersection(synthetic.index)
             prices.loc[common, t] = synthetic.loc[common].values
             if not is_cash_ticker(t):
-                print(f"[skipped] {t}")
                 skipped_tickers.append(t)
 
     # Every ticker is now present — none are excluded from analysis
@@ -503,9 +499,17 @@ def portfolio(
 
 @app.get("/drawdown")
 def drawdown(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"):
+    import re as _re
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers")
+    if len(tickers_list) > 30:
+        raise HTTPException(status_code=400, detail="Too many tickers (max 30)")
+    for t in tickers_list:
+        if not _re.match(r'^[\^A-Z0-9.\-=]{1,12}$', t):
+            raise HTTPException(status_code=400, detail=f"Invalid ticker format: {t}")
+    if period not in ("1mo", "3mo", "6mo", "1y", "2y", "3y", "5y", "10y", "ytd", "max"):
+        raise HTTPException(status_code=400, detail="Invalid period")
 
     if weights:
         try:
@@ -542,9 +546,17 @@ def drawdown(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"):
 
 @app.get("/correlation")
 def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
+    import re as _re
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if len(tickers_list) < 2:
         return {"matrix": [], "tickers": tickers_list}
+    if len(tickers_list) > 30:
+        raise HTTPException(status_code=400, detail="Too many tickers (max 30)")
+    for t in tickers_list:
+        if not _re.match(r'^[\^A-Z0-9.\-=]{1,12}$', t):
+            raise HTTPException(status_code=400, detail=f"Invalid ticker format: {t}")
+    if period not in ("1mo", "3mo", "6mo", "1y", "2y", "3y", "5y", "10y", "ytd", "max"):
+        raise HTTPException(status_code=400, detail="Invalid period")
 
     prices = get_prices(tickers_list, period)
     if prices is None or prices.empty:
@@ -566,9 +578,18 @@ def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
 
 @app.get("/montecarlo")
 def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 8500, years: int = 5):
+    import re as _re
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers")
+    if len(tickers_list) > 30:
+        raise HTTPException(status_code=400, detail="Too many tickers (max 30)")
+    for t in tickers_list:
+        if not _re.match(r'^[\^A-Z0-9.\-=]{1,12}$', t):
+            raise HTTPException(status_code=400, detail=f"Invalid ticker format: {t}")
+    if period not in ("1mo", "3mo", "6mo", "1y", "2y", "3y", "5y", "10y", "ytd", "max"):
+        raise HTTPException(status_code=400, detail="Invalid period")
+    simulations = 8500  # always use canonical count
     years = max(1, min(30, years))
 
     if weights:
@@ -1283,6 +1304,50 @@ def portfolio_dividends(
     return result
 
 
+def _finnhub_fallback(ticker: str, max_results: int = 8) -> list:
+    """Fetch company news from Finnhub. Returns list of normalized article dicts, or [] on failure."""
+    fh_key = os.environ.get("FINNHUB_API_KEY", "")
+    if not fh_key:
+        return []
+    try:
+        from datetime import date, timedelta
+        to_date = date.today().isoformat()
+        from_date = (date.today() - timedelta(days=7)).isoformat()
+        resp = requests.get(
+            f"https://finnhub.io/api/v1/company-news",
+            params={"symbol": ticker, "from": from_date, "to": to_date, "token": fh_key},
+            timeout=6,
+        )
+        if resp.status_code != 200:
+            return []
+        articles = resp.json()
+        if not isinstance(articles, list):
+            return []
+        result = []
+        for a in articles[:max_results]:
+            title = a.get("headline", "")
+            url = a.get("url", "")
+            if not title or not url:
+                continue
+            pub_ts = a.get("datetime", 0)
+            try:
+                pub_date = datetime.fromtimestamp(int(pub_ts), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if pub_ts else ""
+            except Exception:
+                pub_date = ""
+            result.append({
+                "ticker": ticker,
+                "title": title,
+                "summary": a.get("summary", ""),
+                "publisher": a.get("source", ""),
+                "url": url,
+                "published": pub_date,
+            })
+        return result
+    except Exception as e:
+        print(f"[finnhub-fallback] error for {ticker}: {e}")
+        return []
+
+
 @app.get("/news")
 def news(tickers: str = "AAPL"):
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
@@ -1553,7 +1618,7 @@ Rules:
 - Use ## for section headers only. Never use # (single hash) headers."""
 
         response = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-sonnet-4-6",
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -2189,7 +2254,7 @@ def parse_portfolio_image(body: dict):
         media_type = body.get("media_type", "image/jpeg")
 
         response = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-sonnet-4-6",
             max_tokens=1000,
             messages=[{
                 "role": "user",
@@ -4069,7 +4134,7 @@ def portfolio_snapshot(req: SnapshotRequest):
                 portfolio_value = 10000.0 * (1.0 + cumulative_return)
 
     # ── Upsert (merge on portfolio_id + date unique constraint) ──────────────
-    requests.post(
+    upsert_resp = requests.post(
         f"{SUPABASE_URL}/rest/v1/portfolio_snapshots",
         headers={**_sb_headers(), "Prefer": "resolution=merge-duplicates"},
         json={
@@ -4082,6 +4147,9 @@ def portfolio_snapshot(req: SnapshotRequest):
         },
         timeout=10,
     )
+    if upsert_resp.status_code not in (200, 201, 204):
+        print(f"[snapshot] upsert failed: {upsert_resp.status_code} {upsert_resp.text[:200]}")
+        raise HTTPException(status_code=500, detail="Failed to save portfolio snapshot")
 
     return {
         "ok": True,
@@ -5006,8 +5074,10 @@ async def morning_brief_loop():
 
 
 @app.get("/push/test-brief")
-async def test_morning_brief():
-    """Manually trigger the morning market brief push (for testing)."""
+async def test_morning_brief(admin_key: str = ""):
+    """Manually trigger the morning market brief push (for testing). Requires admin_key."""
+    if not SUPABASE_SERVICE_KEY or admin_key != SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
     result = await send_morning_brief()
     return result
 
@@ -6216,8 +6286,10 @@ async def weekly_portfolio_checkup_loop():
 
 
 @app.get("/push/test-weekly-checkup")
-async def test_weekly_checkup_push():
-    """Manually trigger the weekly portfolio checkup push (for testing)."""
+async def test_weekly_checkup_push(admin_key: str = ""):
+    """Manually trigger the weekly portfolio checkup push (for testing). Requires admin_key."""
+    if not SUPABASE_SERVICE_KEY or admin_key != SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return await send_weekly_portfolio_checkup_push()
 
 
@@ -6379,8 +6451,10 @@ async def earnings_reminder_loop():
 
 
 @app.get("/push/test-earnings-reminder")
-async def test_earnings_reminder_push():
-    """Manually trigger the earnings day reminder push (for testing)."""
+async def test_earnings_reminder_push(admin_key: str = ""):
+    """Manually trigger the earnings day reminder push (for testing). Requires admin_key."""
+    if not SUPABASE_SERVICE_KEY or admin_key != SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return await send_earnings_reminder_push()
 
 
@@ -6923,9 +6997,10 @@ def events_calendar():
     to_date = today + timedelta(days=30)
 
     try:
+        fmp_key = os.environ.get("FMP_API_KEY", "demo")
         url = (
             f"https://financialmodelingprep.com/api/v3/economic_calendar"
-            f"?from={today.isoformat()}&to={to_date.isoformat()}&apikey=demo"
+            f"?from={today.isoformat()}&to={to_date.isoformat()}&apikey={fmp_key}"
         )
         resp = requests.get(url, timeout=8)
         if resp.status_code == 200:
