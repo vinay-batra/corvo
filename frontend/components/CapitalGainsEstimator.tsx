@@ -68,14 +68,16 @@ const CapitalGainsEstimator = memo(function CapitalGainsEstimator({
   const hasCostBasis = assets.some(a => a.purchasePrice != null && a.purchasePrice > 0);
 
   useEffect(() => {
-    if (!assets.length || !hasCostBasis) { setData(null); return; }
+    if (!assets.length || !hasCostBasis) { setData(null); setError(false); return; }
+    let cancelled = false;
     setError(false);
     setLoading(true);
     fetchCapitalGains(assets, portfolioValue, ltcgRate)
-      .then(d => setData(d ?? null))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [assets, portfolioValue, ltcgRate, retryCount]);
+      .then(d => { if (!cancelled) setData(d ?? null); })
+      .catch(() => { if (!cancelled) setError(true); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [assets, portfolioValue, ltcgRate, retryCount, hasCostBasis]);
 
   const positive = (data?.total_unrealized_gain_loss ?? 0) >= 0;
 
