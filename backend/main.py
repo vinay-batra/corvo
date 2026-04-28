@@ -1658,6 +1658,7 @@ class ChatRequest(BaseModel):
     user_goals: dict = {}
     market_context: str = ""
     user_id: str | None = None
+    page_context: str = ""
 
     def validate_message(self):
         if not self.message or not self.message.strip():
@@ -1668,8 +1669,11 @@ class ChatRequest(BaseModel):
 
 @app.post("/chat")
 def chat(req: ChatRequest, request: Request):
+    import json as _json
     req.validate_message()
     # Daily limit check (per-user via Supabase); fall back to IP rate limit for unauthenticated
+    daily_limit = BASE_DAILY_CHAT_LIMIT
+    daily_count = 0
     if req.user_id:
         daily_limit = get_daily_chat_limit(req.user_id)
         daily_count = get_daily_chat_count(req.user_id)
@@ -1682,102 +1686,103 @@ def chat(req: ChatRequest, request: Request):
         ip = request.client.host if request.client else "unknown"
         if check_rate_limit(ip, "chat", 20, 3600):
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
-    try:
-        import anthropic
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
 
-        client = anthropic.Anthropic(api_key=api_key)
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
 
-        ctx = req.portfolio_context
-        # Support goals from both portfolio_context (frontend passes it nested) and top-level
-        goals = req.user_goals or ctx.get("goals") or {}
-        tickers = ctx.get("tickers", [])
-        weights = ctx.get("weights", [])
-        ret = ctx.get("portfolio_return", 0)
-        vol = ctx.get("portfolio_volatility", 0)
-        sharpe = ctx.get("sharpe_ratio") or (ret - 0.04) / max(vol, 0.001)
-        dd = ctx.get("max_drawdown", 0)
-        period = ctx.get("period", "1y")
-        benchmark_return = ctx.get("benchmark_return")
-        health_score = ctx.get("health_score")
+    client = anthropic.Anthropic(api_key=api_key)
 
-        # Build rich investor profile from onboarding data
-        profile_lines = []
-        if goals:
-            age = goals.get("age", "")
-            retirement_age = goals.get("retirementAge", "")
-            salary = goals.get("salary", "")
-            invested = goals.get("invested", "")
-            monthly = goals.get("monthlyContribution", "")
-            risk = goals.get("riskTolerance", "moderate")
-            goal = goals.get("goal", "")
-            if age:
-                years_to_retire = int(retirement_age or 65) - int(age) if age else None
-                profile_lines.append(f"Age: {age}" + (f", retiring at {retirement_age} ({years_to_retire} years away)" if retirement_age else ""))
-            if salary:
-                profile_lines.append(f"Salary: ${int(salary):,}/yr")
-            if invested:
-                profile_lines.append(f"Total invested: ${int(invested):,}")
-            if monthly:
-                profile_lines.append(f"Monthly contribution: ${int(monthly):,}")
-            if risk:
-                risk_label = {"conservative": "Conservative (capital preservation priority)", "moderate": "Moderate (balanced growth)", "aggressive": "Aggressive (maximum growth, high risk tolerance)"}.get(risk, risk)
-                profile_lines.append(f"Risk tolerance: {risk_label}")
-            if goal:
-                goal_label = {"retirement": "Retirement", "wealth": "Wealth building", "income": "Passive income", "short": "Short-term gains"}.get(goal, goal)
-                profile_lines.append(f"Investment goal: {goal_label}")
+    ctx = req.portfolio_context
+    # Support goals from both portfolio_context (frontend passes it nested) and top-level
+    goals = req.user_goals or ctx.get("goals") or {}
+    tickers = ctx.get("tickers", [])
+    weights = ctx.get("weights", [])
+    ret = ctx.get("portfolio_return", 0)
+    vol = ctx.get("portfolio_volatility", 0)
+    sharpe = ctx.get("sharpe_ratio") or (ret - 0.04) / max(vol, 0.001)
+    dd = ctx.get("max_drawdown", 0)
+    period = ctx.get("period", "1y")
+    benchmark_return = ctx.get("benchmark_return")
+    health_score = ctx.get("health_score")
 
-        investor_profile = ""
-        if profile_lines:
-            investor_profile = "\n\nINVESTOR PROFILE (from onboarding, always consider this in your answers):\n" + "\n".join(f"• {l}" for l in profile_lines)
+    # Build rich investor profile from onboarding data
+    profile_lines = []
+    if goals:
+        age = goals.get("age", "")
+        retirement_age = goals.get("retirementAge", "")
+        salary = goals.get("salary", "")
+        invested = goals.get("invested", "")
+        monthly = goals.get("monthlyContribution", "")
+        risk = goals.get("riskTolerance", "moderate")
+        goal = goals.get("goal", "")
+        if age:
+            years_to_retire = int(retirement_age or 65) - int(age) if age else None
+            profile_lines.append(f"Age: {age}" + (f", retiring at {retirement_age} ({years_to_retire} years away)" if retirement_age else ""))
+        if salary:
+            profile_lines.append(f"Salary: ${int(salary):,}/yr")
+        if invested:
+            profile_lines.append(f"Total invested: ${int(invested):,}")
+        if monthly:
+            profile_lines.append(f"Monthly contribution: ${int(monthly):,}")
+        if risk:
+            risk_label = {"conservative": "Conservative (capital preservation priority)", "moderate": "Moderate (balanced growth)", "aggressive": "Aggressive (maximum growth, high risk tolerance)"}.get(risk, risk)
+            profile_lines.append(f"Risk tolerance: {risk_label}")
+        if goal:
+            goal_label = {"retirement": "Retirement", "wealth": "Wealth building", "income": "Passive income", "short": "Short-term gains"}.get(goal, goal)
+            profile_lines.append(f"Investment goal: {goal_label}")
 
-        benchmark_text = f"\n- Benchmark Return: {benchmark_return:.2%}" if benchmark_return is not None else ""
-        health_text = f"\n- Portfolio Health Score: {health_score}/100" if health_score is not None else ""
-        market_text = f"\n\nREAL-TIME MARKET PRICES (fetched seconds ago):\n{req.market_context}" if req.market_context else ""
+    investor_profile = ""
+    if profile_lines:
+        investor_profile = "\n\nINVESTOR PROFILE (from onboarding, always consider this in your answers):\n" + "\n".join(f"• {l}" for l in profile_lines)
 
-        portfolio_value = ctx.get("portfolio_value") or (goals.get("invested") if goals else None)
-        beta = ctx.get("beta")
-        individual_returns = ctx.get("individual_returns")
-        rf_rate_ctx = ctx.get("rf_rate", 0.04)
+    health_text = f"\n- Portfolio Health Score: {health_score}/100" if health_score is not None else ""
+    market_text = f"\n\nREAL-TIME MARKET PRICES (fetched seconds ago):\n{req.market_context}" if req.market_context else ""
 
-        portfolio_value_text = f"\n- Portfolio Value: ${int(portfolio_value):,}" if portfolio_value is not None else ""
-        beta_text = f"\n- Beta: {beta:.2f}" if beta is not None else ""
-        individual_returns_text = ""
-        if individual_returns and isinstance(individual_returns, dict):
-            returns_list = ", ".join(f"{t}: {r:.1%}" for t, r in individual_returns.items() if r is not None)
-            if returns_list:
-                individual_returns_text = f"\n- Individual Returns (CAGR): {returns_list}"
+    portfolio_value = ctx.get("portfolio_value") or (goals.get("invested") if goals else None)
+    beta = ctx.get("beta")
+    individual_returns = ctx.get("individual_returns")
+    rf_rate_ctx = ctx.get("rf_rate", 0.04)
 
-        def _holding_label(t: str, w: float) -> str:
-            kind = "cash/money market" if is_cash_ticker(t) else "ETF" if len(t) >= 3 and t.isupper() and not t.endswith("X") else "stock/ETF"
-            return f"{t} ({w:.1%}, {kind})"
+    portfolio_value_text = f"\n- Portfolio Value: ${int(portfolio_value):,}" if portfolio_value is not None else ""
+    beta_text = f"\n- Beta: {beta:.2f}" if beta is not None else ""
+    individual_returns_text = ""
+    if individual_returns and isinstance(individual_returns, dict):
+        returns_list = ", ".join(f"{t}: {r:.1%}" for t, r in individual_returns.items() if r is not None)
+        if returns_list:
+            individual_returns_text = f"\n- Individual Returns (CAGR): {returns_list}"
 
-        holdings_str = ', '.join(_holding_label(t, w) for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"
+    def _holding_label(t: str, w: float) -> str:
+        kind = "cash/money market" if is_cash_ticker(t) else "ETF" if len(t) >= 3 and t.isupper() and not t.endswith("X") else "stock/ETF"
+        return f"{t} ({w:.1%}, {kind})"
 
-        if benchmark_return is not None:
-            vs_bench = "outperformed" if ret > benchmark_return else "underperformed"
-            benchmark_text = f"\n- Benchmark Return ({period}): {benchmark_return:.2%} — portfolio {vs_bench} by {abs(ret - benchmark_return):.2%}"
-        else:
-            benchmark_text = ""
+    holdings_str = ', '.join(_holding_label(t, w) for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"
 
-        weights_equal = len(set(round(w, 3) for w in weights)) == 1 if weights else False
-        weights_note = " (equally weighted)" if weights_equal else ""
+    if benchmark_return is not None:
+        vs_bench = "outperformed" if ret > benchmark_return else "underperformed"
+        benchmark_text = f"\n- Benchmark Return ({period}): {benchmark_return:.2%} — portfolio {vs_bench} by {abs(ret - benchmark_return):.2%}"
+    else:
+        benchmark_text = ""
 
-        # Detect tied largest holdings to prevent incorrect "single largest holding" phrasing
-        tied_largest_note = ""
-        if tickers and weights and len(weights) > 1:
-            max_w = max(weights)
-            tied = [t for t, w in zip(tickers, weights) if abs(w - max_w) < 0.001]
-            if len(tied) == len(tickers):
-                tied_str = ", ".join(tied)
-                tied_largest_note = f"\n- CRITICAL: All holdings ({tied_str}) are equally weighted at {max_w:.1%} each. There is NO single largest holding. Never refer to any one holding as 'the largest'."
-            elif len(tied) > 1:
-                tied_str = " and ".join(tied)
-                tied_largest_note = f"\n- CRITICAL: {tied_str} are tied as the largest holdings at {max_w:.1%} each. Do not single out any one of them as 'the largest holding'."
+    weights_equal = len(set(round(w, 3) for w in weights)) == 1 if weights else False
+    weights_note = " (equally weighted)" if weights_equal else ""
 
-        system = f"""You are Corvo AI, a sharp and direct personal portfolio analyst. You have full context on this investor's portfolio and financial profile.
+    # Detect tied largest holdings to prevent incorrect "single largest holding" phrasing
+    tied_largest_note = ""
+    if tickers and weights and len(weights) > 1:
+        max_w = max(weights)
+        tied = [t for t, w in zip(tickers, weights) if abs(w - max_w) < 0.001]
+        if len(tied) == len(tickers):
+            tied_str = ", ".join(tied)
+            tied_largest_note = f"\n- CRITICAL: All holdings ({tied_str}) are equally weighted at {max_w:.1%} each. There is NO single largest holding. Never refer to any one holding as 'the largest'."
+        elif len(tied) > 1:
+            tied_str = " and ".join(tied)
+            tied_largest_note = f"\n- CRITICAL: {tied_str} are tied as the largest holdings at {max_w:.1%} each. Do not single out any one of them as 'the largest holding'."
+
+    page_context_text = f"\n\nCURRENT PAGE CONTEXT:\n{req.page_context}" if req.page_context else ""
+
+    system = f"""You are Corvo AI, a world-class personal portfolio advisor. You have full access to this investor's portfolio data and financial profile. You also have web search capability to look up current prices, historical events, earnings, analyst ratings, news, and any market data needed to answer questions accurately.
 
 CURRENT PORTFOLIO:
 - Holdings{weights_note}: {holdings_str}
@@ -1785,47 +1790,62 @@ CURRENT PORTFOLIO:
 - Annualized Return (CAGR): {ret:.2%}
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f} (risk-free rate used: {rf_rate_ctx:.2%})
-- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}
+- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{page_context_text}
 
-RESPONSE RULES:
-• Max 220 words for simple questions; up to 300 words for complex multi-part questions
-• Use bullet points (•) for lists
-• Always reference specific numbers from the portfolio
-• Always state the period (e.g. "over the {period} period") when discussing returns
-• When portfolio_value is known, use dollar amounts not just percentages
-• Compare portfolio metrics to the benchmark when benchmark data is available
-• Verify weight percentages before stating them — if equally weighted, say so explicitly
-• If two or more holdings share the maximum weight, do not refer to any single holding as the largest. Instead say they are equal weight. If ALL holdings are equal weight, say the portfolio is equally weighted — never single out any ticker as largest.
-• Never confuse cash or money market positions with equity positions
-• When the investor has a profile, reference their goals/age/timeline in your answer
-• If they ask about risk, factor in their stated risk tolerance
-• Plain text only, no markdown headers or bold
-• Never use em dashes. Never use asterisks (*) or markdown formatting. Write in plain prose only."""
+HOW TO RESPOND:
+• Be a confident, direct advisor. Give specific opinions: say "I think NVDA will struggle because X" not "it depends on many factors."
+• Every response must follow this pattern: (1) here is what is happening, (2) here is why it matters for THIS portfolio specifically, (3) here is what you should consider doing.
+• Use web search to back up claims about market conditions, historical price action, earnings, analyst consensus, and economic events. Never say "I don't have access to" or "I can't check" — search instead.
+• Reference specific numbers from the portfolio in every response.
+• When portfolio_value is known, use dollar amounts not just percentages.
+• State the analysis period (e.g. "over the {period} period") when discussing returns.
+• Compare to benchmark when available.
+• Verify weights before stating them. If equally weighted, say so. Never single out one holding as "the largest" when multiple share the same weight.
+• Never confuse cash/money market positions with equity.
+• Reference the investor's goals, age, and timeline in every substantive response.
+• For questions about a specific trade: give your opinion, then add one brief line at the end: "Not financial advice."
+• Use bullet points (•) for lists of 3 or more items.
+• Plain text only. No markdown headers. No bold formatting.
+• No em dashes. No asterisks. No emoji."""
 
-        messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
-        messages.append({"role": "user", "content": req.message})
+    messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
+    messages.append({"role": "user", "content": req.message})
 
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=1000,
-            system=system,
-            messages=messages,
-        )
-        reply = clean_ai_response(response.content[0].text)
-        # Record usage for daily limit tracking
-        messages_used_now = daily_count + 1 if req.user_id else None
-        if req.user_id:
-            insert_chat_usage(req.user_id)
-        return {
-            "reply": reply,
-            "messages_used": messages_used_now,
-            "messages_limit": daily_limit if req.user_id else None,
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Chat error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    _user_id = req.user_id
+    _daily_count = daily_count
+    _daily_limit = daily_limit
+
+    def generate():
+        try:
+            with client.messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=1024,
+                system=system,
+                messages=messages,
+                tools=[{"type": "web_search_20250305", "name": "web_search"}],
+            ) as stream:
+                for text in stream.text_stream:
+                    # Strip em dashes and asterisks inline
+                    cleaned = text.replace("—", ",").replace("*", "")
+                    if cleaned:
+                        yield f"data: {_json.dumps({'chunk': cleaned})}\n\n"
+
+            if _user_id:
+                insert_chat_usage(_user_id)
+
+            messages_used_now = _daily_count + 1 if _user_id else None
+            yield f"data: {_json.dumps({'done': True, 'messages_used': messages_used_now, 'messages_limit': _daily_limit if _user_id else None})}\n\n"
+
+        except Exception as e:
+            print(f"Chat stream error: {e}")
+            yield f"data: {_json.dumps({'error': str(e)})}\n\n"
+
+    from fastapi.responses import StreamingResponse as _SR
+    return _SR(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/chat/usage")
