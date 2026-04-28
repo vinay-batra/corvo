@@ -63,8 +63,10 @@ async def lifespan(app_: FastAPI):
     review_task       = asyncio.create_task(week_in_review_loop())
     monthly_task      = asyncio.create_task(monthly_summary_loop())
     mkt_close_task    = asyncio.create_task(market_close_summary_loop())
+    checkup_task      = asyncio.create_task(weekly_portfolio_checkup_loop())
+    earnings_task     = asyncio.create_task(earnings_reminder_loop())
     yield
-    for t in (alert_task, brief_task, morning_task, review_task, monthly_task, mkt_close_task):
+    for t in (alert_task, brief_task, morning_task, review_task, monthly_task, mkt_close_task, checkup_task, earnings_task):
         t.cancel()
         try:
             await t
@@ -6010,6 +6012,307 @@ async def test_market_close_email(user_id: str = ""):
         except Exception as e:
             print(f"[test-mkt-close] debug fetch error: {e}")
     return await send_market_close_summary_emails(target_user_id=uid)
+
+
+# ── Weekly Portfolio Checkup Push ──────────────────────────────────────────────
+
+
+def _seconds_until_sunday_8am_et() -> float:
+    """Return seconds until the next Sunday at 8:00 AM ET, minimum 60 s."""
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    # weekday(): Monday=0 ... Sunday=6
+    days_ahead = (6 - now.weekday()) % 7
+    target = (now + timedelta(days=days_ahead)).replace(hour=8, minute=0, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=7)
+    return max((target - now).total_seconds(), 60.0)
+
+
+def _gen_weekly_checkup_verdict(display_name: str, pct_str: str) -> str:
+    """Generate a one-sentence portfolio verdict for the weekly push notification."""
+    try:
+        import anthropic as _anth
+        key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not key:
+            return ""
+        client = _anth.Anthropic(api_key=key)
+        prompt = (
+            f"Write exactly one sentence for a weekly portfolio push notification to {display_name}. "
+            f"Their portfolio returned {pct_str} this week. "
+            "Be specific, direct, and insightful. No em dashes, no asterisks, no markdown."
+        )
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=80,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.content[0].text.strip() if resp.content else ""
+    except Exception as e:
+        print(f"[weekly-checkup] AI verdict error: {e}")
+        return ""
+
+
+async def send_weekly_portfolio_checkup_push() -> dict:
+    """Send a weekly portfolio performance push to all users with push subscriptions (Sunday 8am ET)."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {"error": "Supabase not configured"}
+
+    subs_resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/push_subscriptions?select=id,user_id,subscription",
+        headers=_sb_headers(), timeout=15,
+    )
+    if subs_resp.status_code != 200:
+        return {"error": f"supabase {subs_resp.status_code}"}
+
+    user_subs: dict[str, list] = {}
+    for row in subs_resp.json():
+        uid = row.get("user_id")
+        if uid:
+            user_subs.setdefault(uid, []).append(row)
+
+    if not user_subs:
+        return {"sent": 0, "skipped": "no subscribers"}
+
+    optout_users: set[str] = set()
+    try:
+        optout_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?push_notifications=eq.false&select=user_id",
+            headers=_sb_headers(), timeout=5,
+        )
+        if optout_resp.status_code == 200:
+            optout_users = {r["user_id"] for r in optout_resp.json()}
+    except Exception:
+        pass
+
+    sent = skipped = 0
+    dead_ids: list[str] = []
+    loop = asyncio.get_event_loop()
+
+    for user_id, subs in user_subs.items():
+        if user_id in optout_users:
+            skipped += 1
+            continue
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, user_id)
+            if not data:
+                skipped += 1
+                continue
+            _, display_name, tickers, weights = data
+            weekly_return = await loop.run_in_executor(None, _portfolio_return_yf, tickers, weights, "5d")
+            if weekly_return is None:
+                skipped += 1
+                continue
+            sign = "+" if weekly_return >= 0 else ""
+            pct_str = f"{sign}{weekly_return:.2f}%"
+            verdict = await loop.run_in_executor(None, _gen_weekly_checkup_verdict, display_name, pct_str)
+            title = f"Weekly checkup: {pct_str}"
+            body = verdict or f"Your portfolio returned {pct_str} this week."
+            for sub_row in subs:
+                result = _send_push(sub_row["subscription"], title, body, url="https://corvo.capital/app")
+                if result == "ok":
+                    sent += 1
+                elif result == "dead" and sub_row.get("id"):
+                    dead_ids.append(str(sub_row["id"]))
+        except Exception as e:
+            print(f"[weekly-checkup] error for user {user_id}: {e}")
+            skipped += 1
+
+    for dead_id in dead_ids:
+        try:
+            requests.delete(
+                f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                headers=_sb_headers(), timeout=5,
+            )
+        except Exception:
+            pass
+
+    print(f"[weekly-checkup] done: sent={sent} skipped={skipped} pruned={len(dead_ids)}")
+    return {"sent": sent, "skipped": skipped, "pruned": len(dead_ids)}
+
+
+async def weekly_portfolio_checkup_loop():
+    """Background task: send weekly portfolio checkup push every Sunday at 8am ET."""
+    print("[weekly-checkup] scheduler started")
+    while True:
+        wait = _seconds_until_sunday_8am_et()
+        print(f"[weekly-checkup] sleeping {wait/3600:.1f}h until Sunday 8am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_weekly_portfolio_checkup_push()
+        except Exception as e:
+            print(f"[weekly-checkup] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/push/test-weekly-checkup")
+async def test_weekly_checkup_push():
+    """Manually trigger the weekly portfolio checkup push (for testing)."""
+    return await send_weekly_portfolio_checkup_push()
+
+
+# ── Earnings Day Reminder Push ─────────────────────────────────────────────────
+
+
+def _seconds_until_8am_et() -> float:
+    """Return seconds until the next 8:00 AM ET, minimum 60 s."""
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    target = now.replace(hour=8, minute=0, second=0, microsecond=0)
+    if now >= target:
+        target += timedelta(days=1)
+    return max((target - now).total_seconds(), 60.0)
+
+
+def _fetch_earnings_dates(ticker: str) -> list:
+    """Return a list of upcoming earnings dates (as date objects) for ticker."""
+    try:
+        stock = yf.Ticker(ticker)
+        cal = stock.calendar
+        if cal is None:
+            return []
+        if isinstance(cal, dict):
+            raw = cal.get("Earnings Date", [])
+            if not isinstance(raw, list):
+                raw = [raw]
+        else:
+            # DataFrame — flatten first row of 'Earnings Date' column
+            try:
+                raw = list(cal.loc["Earnings Date"])
+            except Exception:
+                return []
+        dates = []
+        for ed in raw:
+            if ed is None:
+                continue
+            if hasattr(ed, "date"):
+                dates.append(ed.date())
+            elif hasattr(ed, "year"):
+                from datetime import date as _d
+                dates.append(_d(ed.year, ed.month, ed.day))
+        return dates
+    except Exception:
+        return []
+
+
+async def send_earnings_reminder_push() -> dict:
+    """Send push notifications to users whose holdings have earnings today or tomorrow."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {"error": "Supabase not configured"}
+
+    from datetime import date, timedelta
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+
+    subs_resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/push_subscriptions?select=id,user_id,subscription",
+        headers=_sb_headers(), timeout=15,
+    )
+    if subs_resp.status_code != 200:
+        return {"error": f"supabase {subs_resp.status_code}"}
+
+    user_subs: dict[str, list] = {}
+    for row in subs_resp.json():
+        uid = row.get("user_id")
+        if uid:
+            user_subs.setdefault(uid, []).append(row)
+
+    if not user_subs:
+        return {"sent": 0, "skipped": "no subscribers"}
+
+    optout_users: set[str] = set()
+    try:
+        optout_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?push_notifications=eq.false&select=user_id",
+            headers=_sb_headers(), timeout=5,
+        )
+        if optout_resp.status_code == 200:
+            optout_users = {r["user_id"] for r in optout_resp.json()}
+    except Exception:
+        pass
+
+    sent = skipped = 0
+    dead_ids: list[str] = []
+    loop = asyncio.get_event_loop()
+
+    # Cache earnings dates per ticker so we only hit yfinance once across all users
+    ticker_earnings_cache: dict[str, list] = {}
+
+    for user_id, subs in user_subs.items():
+        if user_id in optout_users:
+            skipped += 1
+            continue
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, user_id)
+            if not data:
+                skipped += 1
+                continue
+            _, _, tickers, _ = data
+
+            earnings_today: list[str] = []
+            earnings_tomorrow: list[str] = []
+            for ticker in tickers:
+                if ticker not in ticker_earnings_cache:
+                    ticker_earnings_cache[ticker] = await loop.run_in_executor(
+                        None, _fetch_earnings_dates, ticker
+                    )
+                for ed in ticker_earnings_cache[ticker]:
+                    if ed == today:
+                        earnings_today.append(ticker)
+                    elif ed == tomorrow:
+                        earnings_tomorrow.append(ticker)
+
+            if not earnings_today and not earnings_tomorrow:
+                continue
+
+            parts = [f"{t} reports today" for t in earnings_today] + \
+                    [f"{t} reports tomorrow" for t in earnings_tomorrow]
+            title = "Earnings reminder"
+            body = ", ".join(parts) + ". Review your position before the call."
+
+            for sub_row in subs:
+                result = _send_push(sub_row["subscription"], title, body, url="https://corvo.capital/app")
+                if result == "ok":
+                    sent += 1
+                elif result == "dead" and sub_row.get("id"):
+                    dead_ids.append(str(sub_row["id"]))
+        except Exception as e:
+            print(f"[earnings-reminder] error for user {user_id}: {e}")
+            skipped += 1
+
+    for dead_id in dead_ids:
+        try:
+            requests.delete(
+                f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                headers=_sb_headers(), timeout=5,
+            )
+        except Exception:
+            pass
+
+    print(f"[earnings-reminder] done: sent={sent} skipped={skipped} pruned={len(dead_ids)}")
+    return {"sent": sent, "skipped": skipped, "pruned": len(dead_ids)}
+
+
+async def earnings_reminder_loop():
+    """Background task: send earnings day reminder push every morning at 8am ET."""
+    print("[earnings-reminder] scheduler started")
+    while True:
+        wait = _seconds_until_8am_et()
+        print(f"[earnings-reminder] sleeping {wait/3600:.2f}h until 8am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_earnings_reminder_push()
+        except Exception as e:
+            print(f"[earnings-reminder] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/push/test-earnings-reminder")
+async def test_earnings_reminder_push():
+    """Manually trigger the earnings day reminder push (for testing)."""
+    return await send_earnings_reminder_push()
 
 
 # ── (legacy yfinance stats, retained for portfolio snapshot endpoint) ──────────
