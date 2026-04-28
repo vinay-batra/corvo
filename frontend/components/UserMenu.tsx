@@ -22,12 +22,13 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
   const pathname = usePathname();
   const isInApp = pathname?.startsWith("/app");
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ displayName: string; avatarUrl: string | null } | null>(null);
   const [open, setOpen] = useState(false);
   const [refLinkCopied, setRefLinkCopied] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user)).catch(() => {});
+    supabase.auth.getUser().then(({ data }) => { setUser(data.user); setLoading(false); }).catch(() => { setLoading(false); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user ?? null));
     return () => subscription.unsubscribe();
   }, []);
@@ -63,6 +64,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
     window.location.href = "/";
   };
 
+  if (loading) return null;
   if (!user) return (
     <a href="/auth" style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, letterSpacing: 1, background: "transparent", border: "1px solid rgba(var(--accent-rgb), 0.3)", color: C.amber, textDecoration: "none", transition: "all 0.2s", fontWeight: 500 }}
       onMouseEnter={e => { (e.target as any).style.background = C.amber2; }}
