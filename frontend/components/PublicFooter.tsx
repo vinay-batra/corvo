@@ -2,34 +2,69 @@
 
 import React from "react";
 
+const PRODUCT_LINKS = [
+  { label: "Blog", href: "/blog" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Changelog", href: "/changelog" },
+  { label: "FAQ", href: "/faq" },
+];
+
+const LEGAL_LINKS = [
+  { label: "Privacy", href: "/privacy" },
+  { label: "Terms", href: "/terms" },
+  { label: "GitHub", href: "https://github.com/vinay-batra/corvo", external: true },
+];
+
 export default function PublicFooter() {
   return (
-    <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid var(--border)", padding: "26px 56px" }}>
+    <footer style={{ borderTop: "1px solid var(--border)", padding: "48px 56px" }}>
       <style>{`
-        .pfooter-link:hover { color: var(--accent) !important; }
-        @media(max-width: 600px) { .pfooter-inner { flex-direction: column !important; gap: 12px !important; text-align: center !important; } .pfooter-links { justify-content: center !important; } }
+        .pf-link { font-size: 13px; color: var(--text); text-decoration: none; opacity: 0.75; transition: opacity 0.15s; display: block; margin-bottom: 10px; }
+        .pf-link:hover { opacity: 1; }
+        @media (max-width: 768px) {
+          .pf-inner { flex-direction: column !important; gap: 36px !important; }
+          .pf-right { justify-content: flex-start !important; }
+        }
       `}</style>
-      <div className="pfooter-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto", flexWrap: "wrap", gap: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "var(--text3)" }}>CORVO</span>
-          <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>© 2026 Corvo. All rights reserved.</span>
+      <div className="pf-inner" style={{ maxWidth: 1100, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+
+        {/* Left: wordmark + tagline + copyright */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
+            <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5, margin: 0 }}>
+            Your portfolio, with a point of view.
+          </p>
+          <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
+            &copy; 2026 Corvo. All rights reserved.
+          </p>
         </div>
-        <div className="pfooter-links" style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
-          <a href="/pricing" className="pfooter-link" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }}>Pricing</a>
-          <a href="/privacy" className="pfooter-link" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }}>Privacy</a>
-          <a href="/terms" className="pfooter-link" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }}>Terms</a>
-          <a href="/faq" className="pfooter-link" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }}>FAQ</a>
-          <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" className="pfooter-link" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }}>GitHub</a>
-          <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="pfooter-link" style={{ color: "var(--text3)", textDecoration: "none", display: "flex", alignItems: "center", transition: "color 0.2s" }}>
-            <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"/>
-            </svg>
-          </a>
-          <a href="https://www.producthunt.com/products/corvo" target="_blank" rel="noopener noreferrer" style={{ opacity: 0.45, transition: "opacity 0.2s", display: "flex", alignItems: "center" }} onMouseEnter={e => (e.currentTarget.style.opacity = "0.75")} onMouseLeave={e => (e.currentTarget.style.opacity = "0.45")}>
-            <img alt="Corvo on Product Hunt" width="120" height="26" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1120194&theme=dark&t=1775786806638" style={{ display: "block" }} />
-          </a>
+
+        {/* Right: two link groups */}
+        <div className="pf-right" style={{ display: "flex", gap: 48, alignItems: "flex-start" }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "var(--text2)", marginBottom: 14 }}>Product</div>
+            {PRODUCT_LINKS.map(({ label, href }) => (
+              <a key={label} href={href} className="pf-link">{label}</a>
+            ))}
+          </div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "var(--text2)", marginBottom: 14 }}>Legal &amp; More</div>
+            {LEGAL_LINKS.map(({ label, href, external }) => (
+              <a
+                key={label}
+                href={href}
+                className="pf-link"
+                {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
         </div>
+
       </div>
     </footer>
   );
