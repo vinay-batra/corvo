@@ -43,7 +43,7 @@ function DaysChip({ days }: { days: number }) {
         borderRadius: 10,
         background: urgent ? "rgba(224,92,92,0.12)" : "rgba(201,168,76,0.10)",
         border: `0.5px solid ${urgent ? "rgba(224,92,92,0.3)" : "rgba(201,168,76,0.3)"}`,
-        color: urgent ? "#e05c5c" : "var(--accent)",
+        color: urgent ? "var(--red)" : "var(--accent)",
         whiteSpace: "nowrap" as const,
       }}
     >

@@ -109,7 +109,7 @@ export function InsiderActivitySummary({ assets }: { assets: { ticker: string; w
         {" "}across your holdings. {netBuying
           ? "Insiders are buying more than selling, which typically signals executives believe the stock is undervalued."
           : netSelling
-          ? "Insiders are net selling. This is not always bearish — executives often sell to diversify — but large C-suite sales are worth monitoring."
+          ? "Insiders are net selling. This is not always bearish - executives often sell to diversify - but large C-suite sales are worth monitoring."
           : "Insider buying and selling is balanced. No clear directional signal from management right now."}
       </div>
       <div>
@@ -236,7 +236,7 @@ export default function InsiderActivity({ ticker }: { ticker: string }) {
         {netBuying
           ? `Insiders at ${ticker} are buying more than selling on the open market. When executives purchase shares with their own money, it typically signals confidence in the company's near-term prospects. Pay attention to size and rank: CEO or CFO purchases carry more weight than a single director's small position.`
           : netSelling
-          ? `Insiders at ${ticker} have been net sellers recently. This is not always bearish — executives often sell to diversify personal wealth or meet personal liquidity needs. But if the CEO or CFO is selling large blocks, it is worth investigating whether they have concerns about near-term performance.`
+          ? `Insiders at ${ticker} have been net sellers recently. This is not always bearish - executives often sell to diversify personal wealth or meet personal liquidity needs. But if the CEO or CFO is selling large blocks, it is worth investigating whether they have concerns about near-term performance.`
           : `Insider activity at ${ticker} is balanced between buys and sells. No clear directional signal from management right now. Monitor for any large single transactions from C-suite executives, which tend to be the most informative.`}
       </div>
 

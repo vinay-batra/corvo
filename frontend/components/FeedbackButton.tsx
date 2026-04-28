@@ -159,7 +159,7 @@ export default function FeedbackButton({ hasChat = true }: { hasChat?: boolean }
                     </div>
 
                     {error && (
-                      <p style={{ fontSize: 11, color: "#e05c5c", marginBottom: 12 }}>{error}</p>
+                      <p style={{ fontSize: 11, color: "var(--red)", marginBottom: 12 }}>{error}</p>
                     )}
 
                     <button

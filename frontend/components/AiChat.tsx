@@ -85,7 +85,7 @@ function MessageContent({ content }: { content: string }) {
       if (part.startsWith("**") && part.endsWith("**"))
         return <strong key={pi} style={{ color: "var(--text)", fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
       if (part.startsWith("`") && part.endsWith("`"))
-        return <code key={pi} style={{ fontFamily: "monospace", fontSize: 11, color: "#c9a84c", background: "#0d1117", padding: "1px 5px", borderRadius: 4 }}>{part.slice(1, -1)}</code>;
+        return <code key={pi} style={{ fontFamily: "monospace", fontSize: 11, color: "var(--accent)", background: "var(--bg2)", padding: "1px 5px", borderRadius: 4 }}>{part.slice(1, -1)}</code>;
       return part;
     });
 
@@ -96,8 +96,8 @@ function MessageContent({ content }: { content: string }) {
       i++;
       while (i < lines.length && !lines[i].trim().startsWith("```")) { code.push(lines[i]); i++; }
       elements.push(
-        <pre key={i} style={{ background: "#0d1117", border: "1px solid #1e2a38", borderRadius: 8, padding: "10px 12px", overflowX: "auto", margin: "6px 0" }}>
-          <code style={{ fontFamily: "monospace", fontSize: 11, color: "#c9a84c", whiteSpace: "pre" }}>{code.join("\n")}</code>
+        <pre key={i} style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", overflowX: "auto", margin: "6px 0" }}>
+          <code style={{ fontFamily: "monospace", fontSize: 11, color: "var(--accent)", whiteSpace: "pre" }}>{code.join("\n")}</code>
         </pre>
       );
       i++; continue;
@@ -650,7 +650,7 @@ export default function AiChat({
 
   const pct         = messagesLimit > 0 ? messagesUsed / messagesLimit : 0;
   const remaining   = Math.max(0, messagesLimit - messagesUsed);
-  const limitColor  = pct > 0.8 ? "#ff6b6b" : pct > 0.6 ? "#f59e0b" : "var(--accent)";
+  const limitColor  = pct > 0.8 ? "var(--red)" : pct > 0.6 ? "#f59e0b" : "var(--accent)";
   const hasText     = input.trim().length > 0;
 
   // ── Render ──
@@ -810,7 +810,7 @@ export default function AiChat({
                                   onClick={e => { e.stopPropagation(); deleteConversation(conv.id); }}
                                   title="Delete"
                                   style={{ opacity: 0.4, transition: "opacity .15s, color .15s", background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4, flexShrink: 0, display: "flex" }}
-                                  onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "#ff6b6b"; }}
+                                  onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "var(--red)"; }}
                                   onMouseLeave={e => { e.currentTarget.style.opacity = "0.4"; e.currentTarget.style.color = "var(--text3)"; }}
                                 >
                                   {deletingId === conv.id
@@ -896,7 +896,7 @@ export default function AiChat({
             /* Empty state */
             <div style={{ padding: "28px 14px 20px" }}>
               <div style={{ textAlign: "center", marginBottom: 20 }}>
-                <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#1a1a1a,#0d0d0d)", border: "1px solid rgba(201,168,76,.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", boxShadow: "0 4px 16px rgba(201,168,76,.08)" }}>
+                <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--bg3)", border: "1px solid rgba(201,168,76,.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", boxShadow: "0 4px 16px rgba(201,168,76,.08)" }}>
                   <img src="/corvo-logo.svg" width={30} height={30} alt="Corvo" />
                 </div>
                 <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>

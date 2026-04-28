@@ -106,7 +106,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
         const bullPct = Math.round((bulls / articles.length) * 100);
         const bearPct = Math.round((bears / articles.length) * 100);
         const isBullish = bulls > bears;
-        const barColor = isBullish ? "#5cb88a" : bulls < bears ? "#e05c5c" : "var(--text3)";
+        const barColor = isBullish ? "#5cb88a" : bulls < bears ? "var(--red)" : "var(--text3)";
         return (
           <div style={{ marginBottom: 14, padding: "10px 14px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
             <span style={{ fontSize: 10, color: "var(--text3)", display: "block", marginBottom: 6 }}>
@@ -116,7 +116,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ flex: 1, height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden", display: "flex" }}>
                 <div style={{ width: `${bullPct}%`, background: "#5cb88a", transition: "width 0.4s ease" }} />
-                <div style={{ width: `${bearPct}%`, background: "#e05c5c", transition: "width 0.4s ease" }} />
+                <div style={{ width: `${bearPct}%`, background: "var(--red)", transition: "width 0.4s ease" }} />
               </div>
               <span style={{ fontSize: 11, fontWeight: 700, color: barColor, flexShrink: 0 }}>{bullPct}% bullish</span>
             </div>
@@ -211,7 +211,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                       {(() => {
                         const s = getSentiment(article.title || "");
                         const sc = s === "BULLISH" ? { bg: "rgba(92,184,138,0.12)", color: "#5cb88a", border: "rgba(92,184,138,0.3)" }
-                          : s === "BEARISH" ? { bg: "rgba(224,92,92,0.12)", color: "#e05c5c", border: "rgba(224,92,92,0.3)" }
+                          : s === "BEARISH" ? { bg: "rgba(224,92,92,0.12)", color: "var(--red)", border: "rgba(224,92,92,0.3)" }
                           : { bg: "var(--bg3)", color: "var(--text3)", border: "var(--border)" };
                         return (
                           <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1, padding: "2px 6px", borderRadius: 4, background: sc.bg, color: sc.color, border: `0.5px solid ${sc.border}` }}>

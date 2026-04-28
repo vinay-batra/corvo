@@ -351,7 +351,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
               style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--bg3)", border: "0.5px solid var(--border2)", color: "var(--text3)", fontSize: 9, cursor: "default", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
             >?</button>
             {tooltip && (
-              <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", width: 220, padding: "8px 12px", background: "#0d1117", border: "0.5px solid var(--border2)", borderRadius: 8, fontSize: 11, color: "var(--text2)", lineHeight: 1.5, zIndex: 100, pointerEvents: "none", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+              <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", width: 220, padding: "8px 12px", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 8, fontSize: 11, color: "var(--text2)", lineHeight: 1.5, zIndex: 100, pointerEvents: "none", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
                 The price at which option sellers (market makers) lose the least. Often acts as a gravitational pull on the underlying price as expiry approaches.
               </div>
             )}

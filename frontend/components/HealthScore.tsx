@@ -6,7 +6,7 @@ import { useRef, useState, useEffect } from "react";
 function Ring({ score, size = 96 }: { score: number; size?: number }) {
   const r = (size - 12) / 2, circ = 2 * Math.PI * r, offset = circ - (score / 100) * circ;
   const label = score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Fair" : "Weak";
-  const ringColor = score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "#e05c5c";
+  const ringColor = score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
       <div style={{ position: "relative", width: size, height: size }}>
@@ -121,7 +121,7 @@ export default function HealthScore({
         {inView && <Ring score={score} />}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, paddingTop: 4 }}>
           <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", lineHeight: 1.1 }}>
-            <span style={{ color: score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "#e05c5c" }}>{score}</span>
+            <span style={{ color: score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)" }}>{score}</span>
             <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)" }}> / 100</span>
           </p>
           {loading && !headline && (

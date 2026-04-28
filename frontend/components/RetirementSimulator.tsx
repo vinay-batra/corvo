@@ -576,7 +576,7 @@ export default function RetirementSimulator({
             )}
 
             {/* Outcome columns */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "0.5px solid var(--border)" }}>
+            <div className="rs-outcome-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "0.5px solid var(--border)" }}>
               {[
                 { label: "Low End", sublabel: `${(100 - result.confidence_level) / 2}th pct`, value: result.worst, pctVal: result.worst_pct, color: "var(--red, #e05c5c)" },
                 { label: "Median", sublabel: "50th pct", value: result.median, pctVal: result.median_pct, color: amberColor },
@@ -584,7 +584,7 @@ export default function RetirementSimulator({
               ].map((col, i) => (
                 <div key={col.label} style={{ padding: "18px 16px", borderRight: i < 2 ? "0.5px solid var(--border)" : "none", textAlign: "center" }}>
                   <div style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 6 }}>{col.label}</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "Space Mono, monospace", color: col.color, marginBottom: 3, letterSpacing: "-0.5px" }}>
+                  <div className="rs-outcome-col" style={{ fontSize: 20, fontWeight: 700, fontFamily: "Space Mono, monospace", color: col.color, marginBottom: 3, letterSpacing: "-0.5px" }}>
                     {fmtDollar(col.value)}
                   </div>
                   <div style={{ fontSize: 11, fontFamily: "Space Mono, monospace", color: col.color, opacity: 0.75 }}>
@@ -642,7 +642,13 @@ export default function RetirementSimulator({
         )}
       </AnimatePresence>
 
-      <style>{`@keyframes rs-spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes rs-spin { to { transform: rotate(360deg); } }
+        @media(max-width:768px){
+          .rs-outcome-col { font-size: 15px !important; letter-spacing: -0.3px !important; }
+          .rs-outcome-grid { overflow-x: auto !important; }
+        }
+      `}</style>
     </div>
   );
 }

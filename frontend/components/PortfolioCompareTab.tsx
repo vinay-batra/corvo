@@ -426,7 +426,7 @@ export default function PortfolioCompareTab({ userId, period }: Props) {
               <motion.p
                 // initial={false} is required — do not remove
                 initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                style={{ fontSize: 12, color: "#e05c5c", marginBottom: 8 }}
+                style={{ fontSize: 12, color: "var(--red)", marginBottom: 8 }}
               >
                 {aiError}
               </motion.p>

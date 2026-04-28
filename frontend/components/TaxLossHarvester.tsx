@@ -85,12 +85,12 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets, portfolioValue
 
       {/* Harvestable loss summary */}
       {data && data.losses.length > 0 && (
-        <p style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "#e05c5c", margin: "0 0 20px", lineHeight: 1 }}>
+        <p style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--red)", margin: "0 0 20px", lineHeight: 1 }}>
           {data.total_harvestable_loss < 0
             ? `-$${Math.abs(data.total_harvestable_loss).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             : `$${data.total_harvestable_loss.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 6, fontFamily: "var(--font-body)" }}>
-            harvestable loss / $10k
+            harvestable loss / {portfolioValue >= 1e6 ? `$${(portfolioValue / 1e6).toFixed(1)}M` : `$${(portfolioValue / 1e3).toFixed(0)}K`}
           </span>
         </p>
       )}
@@ -190,7 +190,7 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets, portfolioValue
                     ${(entry.current_price ?? 0).toFixed(2)}
                   </td>
                   <td style={{ padding: "10px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
-                    <span style={{ color: "#e05c5c", fontWeight: 600 }}>
+                    <span style={{ color: "var(--red)", fontWeight: 600 }}>
                       {(entry.loss_pct ?? 0).toFixed(2)}%
                     </span>
                     <span style={{ display: "block", fontSize: 10, color: "rgba(224,92,92,0.7)" }}>

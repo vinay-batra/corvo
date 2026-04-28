@@ -151,40 +151,46 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
 
   const horizonLabel = horizonYears === 1 ? "1 year" : `${horizonYears} years`;
 
+  const fmtMidPct = (a: string | null, b: string | null): string => {
+    if (a == null || b == null) return "--";
+    const mid = (+a + +b) / 2;
+    return `${mid >= 0 ? "+" : ""}${mid.toFixed(1)}%`;
+  };
+
   const probRows = data ? [
     {
       scenario: "Bear case",
       range: "< 5th pct",
       prob: "5%",
-      ret: `${Number(p5) >= 0 ? "+" : ""}${p5}%`,
-      meaning: `Severe downturn — portfolio underperforms nearly all scenarios over ${horizonLabel}`,
+      ret: p5 != null ? `${Number(p5) >= 0 ? "+" : ""}${p5}%` : "--",
+      meaning: `Severe downturn - portfolio underperforms nearly all scenarios over ${horizonLabel}`,
       color: C.red,
       bg: "rgba(224,92,92,0.06)",
     },
     {
       scenario: "Below average",
-      range: "5th – 25th pct",
+      range: "5th - 25th pct",
       prob: "20%",
-      ret: `${((+p5! + +p25!) / 2) >= 0 ? "+" : ""}${((+p5! + +p25!) / 2).toFixed(1)}%`,
+      ret: fmtMidPct(p5, p25),
       meaning: `Portfolio trails expectations but avoids a severe loss`,
       color: dark ? "#c9a84c" : "#b8860b",
       bg: dark ? "rgba(201,168,76,0.04)" : "rgba(184,134,11,0.04)",
     },
     {
       scenario: "Average",
-      range: "25th – 75th pct",
+      range: "25th - 75th pct",
       prob: "50%",
-      ret: `${Number(p50) >= 0 ? "+" : ""}${p50}%`,
-      meaning: `Most likely outcome — returns in line with historical volatility`,
+      ret: p50 != null ? `${Number(p50) >= 0 ? "+" : ""}${p50}%` : "--",
+      meaning: `Most likely outcome - returns in line with historical volatility`,
       color: "var(--text2)",
       bg: "transparent",
     },
     {
       scenario: "Above average",
-      range: "75th – 95th pct",
+      range: "75th - 95th pct",
       prob: "20%",
-      ret: `${((+p75! + +p95!) / 2) >= 0 ? "+" : ""}${((+p75! + +p95!) / 2).toFixed(1)}%`,
-      meaning: `Solid outperformance — favorable macro and company conditions`,
+      ret: fmtMidPct(p75, p95),
+      meaning: `Solid outperformance - favorable macro and company conditions`,
       color: "#7dc98f",
       bg: "rgba(92,184,138,0.04)",
     },
@@ -192,8 +198,8 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
       scenario: "Bull case",
       range: "> 95th pct",
       prob: "5%",
-      ret: `${Number(p95) >= 0 ? "+" : ""}${p95}%`,
-      meaning: `Exceptional run — portfolio outperforms nearly all scenarios`,
+      ret: p95 != null ? `${Number(p95) >= 0 ? "+" : ""}${p95}%` : "--",
+      meaning: `Exceptional run - portfolio outperforms nearly all scenarios`,
       color: C.green,
       bg: "rgba(92,184,138,0.08)",
     },
@@ -276,8 +282,8 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
           {/* Legend */}
           <div style={{ display: "flex", gap: 20, marginBottom: 12, flexWrap: "wrap" }}>
             {[
-              { label: "5th – 95th pct",  fill: true,  linec: amberOuterLine, bg: amberOuter },
-              { label: "25th – 75th pct", fill: true,  linec: amberOuterLine, bg: amberInner },
+              { label: "5th - 95th pct",  fill: true,  linec: amberOuterLine, bg: amberOuter },
+              { label: "25th - 75th pct", fill: true,  linec: amberOuterLine, bg: amberInner },
               { label: "Median",          fill: false, color: amberBright, thick: true },
               { label: "Breakeven",       fill: false, color: "rgba(59,130,246,0.6)", dashed: true },
             ].map((l, i) => (

@@ -134,7 +134,7 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
     const y = H - ((v - min) / range) * H;
     return `${x},${y}`;
   }).join(" ");
-  const color = positive ? "#5cb88a" : "#e05c5c";
+  const color = positive ? "#5cb88a" : "var(--red)";
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
       <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
@@ -177,63 +177,70 @@ export default function Watchlist() {
   // Initialize lists and items: from Supabase if logged in, localStorage otherwise
   useEffect(() => {
     (async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      const uid = authData?.user?.id ?? null;
-      setUserId(uid);
-      userIdRef.current = uid;
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const uid = authData?.user?.id ?? null;
+        setUserId(uid);
+        userIdRef.current = uid;
 
-      if (uid) {
-        // ── Logged-in: load from Supabase ──────────────────────────────
-        const [{ data: dbLists }, { data: dbItems }] = await Promise.all([
-          supabase.from("watchlist_lists").select("*").eq("user_id", uid).order("created_at", { ascending: true }),
-          supabase.from("watchlist_items").select("*").eq("user_id", uid).order("added_at", { ascending: true }),
-        ]);
+        if (uid) {
+          // ── Logged-in: load from Supabase ──────────────────────────────
+          const [{ data: dbLists }, { data: dbItems }] = await Promise.all([
+            supabase.from("watchlist_lists").select("*").eq("user_id", uid).order("created_at", { ascending: true }),
+            supabase.from("watchlist_items").select("*").eq("user_id", uid).order("added_at", { ascending: true }),
+          ]);
 
-        let loadedLists: WatchList[] = (dbLists ?? []).map((r: any) => ({
-          id: r.id, name: r.name, icon: r.icon ?? "chart", tickers: [],
-        }));
-        const loadedItems: WatchItem[] = (dbItems ?? []).map((r: any) => ({
-          ticker: r.ticker, addedAt: r.added_at, listId: r.list_id,
-        }));
+          let loadedLists: WatchList[] = (dbLists ?? []).map((r: any) => ({
+            id: r.id, name: r.name, icon: r.icon ?? "chart", tickers: [],
+          }));
+          const loadedItems: WatchItem[] = (dbItems ?? []).map((r: any) => ({
+            ticker: r.ticker, addedAt: r.added_at, listId: r.list_id,
+          }));
 
-        // New user: create a default list in Supabase
-        if (loadedLists.length === 0) {
-          const defaultId = crypto.randomUUID();
-          await supabase.from("watchlist_lists").insert({ id: defaultId, user_id: uid, name: "My Watchlist", icon: "chart" });
-          loadedLists = [{ id: defaultId, name: "My Watchlist", icon: "chart", tickers: [] }];
-        }
-
-        setLists(loadedLists);
-        setItems(loadedItems);
-        setActiveListId(loadedLists[0].id);
-
-      } else {
-        // ── Logged-out: load from localStorage ────────────────────────
-        let loadedLists: WatchList[] = [];
-        try { const raw = localStorage.getItem(LISTS_KEY); if (raw) loadedLists = JSON.parse(raw); } catch {}
-
-        let loadedItems: WatchItem[] = [];
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            loadedItems = parsed.map((i: any) => typeof i === "string" ? { ticker: i, addedAt: new Date().toISOString(), listId: "" } : i);
+          // New user: create a default list in Supabase
+          if (loadedLists.length === 0) {
+            const defaultId = crypto.randomUUID();
+            await supabase.from("watchlist_lists").insert({ id: defaultId, user_id: uid, name: "My Watchlist", icon: "chart" });
+            loadedLists = [{ id: defaultId, name: "My Watchlist", icon: "chart", tickers: [] }];
           }
-        } catch {}
 
-        if (loadedLists.length === 0) {
-          const defaultList: WatchList = { id: genId(), name: "My Watchlist", icon: "chart", tickers: [] };
-          loadedLists = [defaultList];
-          loadedItems = loadedItems.map(i => ({ ...i, listId: defaultList.id }));
-          try { localStorage.setItem(LISTS_KEY, JSON.stringify(loadedLists)); } catch {}
-          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedItems)); } catch {}
+          setLists(loadedLists);
+          setItems(loadedItems);
+          setActiveListId(loadedLists[0].id);
+
         } else {
-          loadedItems = loadedItems.map(i => ({ ...i, listId: i.listId || loadedLists[0].id }));
-        }
+          // ── Logged-out: load from localStorage ────────────────────────
+          let loadedLists: WatchList[] = [];
+          try { const raw = localStorage.getItem(LISTS_KEY); if (raw) loadedLists = JSON.parse(raw); } catch {}
 
-        setLists(loadedLists);
-        setItems(loadedItems);
-        setActiveListId(loadedLists[0].id);
+          let loadedItems: WatchItem[] = [];
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              loadedItems = parsed.map((i: any) => typeof i === "string" ? { ticker: i, addedAt: new Date().toISOString(), listId: "" } : i);
+            }
+          } catch {}
+
+          if (loadedLists.length === 0) {
+            const defaultList: WatchList = { id: genId(), name: "My Watchlist", icon: "chart", tickers: [] };
+            loadedLists = [defaultList];
+            loadedItems = loadedItems.map(i => ({ ...i, listId: defaultList.id }));
+            try { localStorage.setItem(LISTS_KEY, JSON.stringify(loadedLists)); } catch {}
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedItems)); } catch {}
+          } else {
+            loadedItems = loadedItems.map(i => ({ ...i, listId: i.listId || loadedLists[0].id }));
+          }
+
+          setLists(loadedLists);
+          setItems(loadedItems);
+          setActiveListId(loadedLists[0].id);
+        }
+      } catch {
+        // Fall back to empty state on auth/network error
+        const defaultList: WatchList = { id: genId(), name: "My Watchlist", icon: "chart", tickers: [] };
+        setLists([defaultList]);
+        setActiveListId(defaultList.id);
       }
     })();
   }, []);
@@ -482,7 +489,7 @@ export default function Watchlist() {
                           {lists.length > 1 && (
                             <button onClick={e => { e.stopPropagation(); deleteList(list.id); }}
                               style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent", cursor: "pointer", color: "rgba(224,92,92,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, transition: "color 0.1s, background 0.1s" }}
-                              onMouseEnter={e => { e.currentTarget.style.color = "#e05c5c"; e.currentTarget.style.background = "rgba(224,92,92,0.06)"; }}
+                              onMouseEnter={e => { e.currentTarget.style.color = "var(--red)"; e.currentTarget.style.background = "rgba(224,92,92,0.06)"; }}
                               onMouseLeave={e => { e.currentTarget.style.color = "rgba(224,92,92,0.4)"; e.currentTarget.style.background = "transparent"; }}>
                               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
@@ -576,7 +583,7 @@ export default function Watchlist() {
             </button>
           )}
         </div>
-        {error && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 8 }}>{error}</p>}
+        {error && <p style={{ fontSize: 11, color: "var(--red)", marginTop: 8 }}>{error}</p>}
       </div>
 
       {/* Watchlist table */}
@@ -630,7 +637,7 @@ export default function Watchlist() {
                         {/* Change 1D */}
                         <td style={{ padding: "0 12px" }}>
                           {s?.change_pct != null ? (
-                            <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 7px", borderRadius: 5, fontSize: 11, fontWeight: 600, background: pos ? "rgba(76,175,125,0.1)" : "rgba(224,92,92,0.1)", color: pos ? "#4caf7d" : "#e05c5c" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 7px", borderRadius: 5, fontSize: 11, fontWeight: 600, background: pos ? "rgba(76,175,125,0.1)" : "rgba(224,92,92,0.1)", color: pos ? "#4caf7d" : "var(--red)" }}>
                               {pos ? "+" : ""}{s.change_pct.toFixed(2)}%
                             </span>
                           ) : <span style={{ color: "var(--text3)", fontSize: 11 }}>-</span>}
@@ -653,7 +660,7 @@ export default function Watchlist() {
                           <div style={{ display: "flex", gap: 4, alignItems: "center" }} onClick={e => e.stopPropagation()}>
                             <button onClick={e => { e.stopPropagation(); remove(item.ticker); }}
                               style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", transition: "all 0.15s" }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor = "#e05c5c"; e.currentTarget.style.color = "#e05c5c"; }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--red)"; e.currentTarget.style.color = "var(--red)"; }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
                               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>

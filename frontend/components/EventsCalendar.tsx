@@ -152,7 +152,7 @@ export default function EventsCalendar() {
               border: "0.5px solid rgba(224,92,92,0.3)",
               fontSize: 9,
               fontWeight: 700,
-              color: "#e05c5c",
+              color: "var(--red)",
               letterSpacing: 0.5,
               textTransform: "uppercase",
               flexShrink: 0,

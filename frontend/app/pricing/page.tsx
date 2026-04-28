@@ -553,12 +553,13 @@ export default function PricingPage() {
         @keyframes heroFadeIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeinUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pdot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        @media (max-width: 700px) {
+        @media (max-width: 768px) {
           .pricing-cards { flex-direction: column !important; align-items: stretch !important; }
           .pricing-cards > * { width: 100% !important; max-width: 100% !important; flex: none !important; }
           .nav-links { display: none !important; }
           .pricing-section { padding-left: 20px !important; padding-right: 20px !important; }
           .pricing-section-inner { padding: 0 !important; }
+          .pricing-vote-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
 

@@ -93,7 +93,7 @@ function Pill({ value }: { value: number | null }) {
       display: "inline-flex", alignItems: "center", gap: 2,
       padding: "2px 7px", borderRadius: 5, fontSize: 11, fontWeight: 600,
       background: pos ? "rgba(76,175,125,0.1)" : "rgba(224,92,92,0.1)",
-      color: pos ? "#4caf7d" : "#e05c5c",
+      color: pos ? "#4caf7d" : "var(--red)",
     }}>
       {pos ? "+" : ""}{value.toFixed(2)}%
     </span>
@@ -696,7 +696,7 @@ export default function PositionsTab({
           {worst && worst.change1d !== null && worst.ticker !== best?.ticker && (
             <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", background: "rgba(224,92,92,0.07)", border: "0.5px solid rgba(224,92,92,0.22)", borderRadius: 20 }}>
               <span style={{ fontSize: 11, letterSpacing: 1.5, color: "rgba(224,92,92,0.7)", textTransform: "uppercase" }}>Worst today</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#e05c5c", fontFamily: "Space Mono, monospace" }}>{worst.ticker}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", fontFamily: "Space Mono, monospace" }}>{worst.ticker}</span>
               <Pill value={worst.change1d} />
             </div>
           )}
@@ -977,7 +977,7 @@ function PositionRowEl({
     : "";
 
   const GREEN = "#4caf7d";
-  const RED   = "#e05c5c";
+  const RED   = "var(--red)";
 
   // Analyst target range bar
   const at = analystTarget;

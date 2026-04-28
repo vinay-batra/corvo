@@ -351,8 +351,8 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
         {/* Push notification banner */}
         {pushEnabled === false && (
           <div style={{ margin: "10px 18px 0", padding: "10px 12px", background: "rgba(224,92,92,0.08)", border: "0.5px solid rgba(224,92,92,0.3)", borderRadius: 9, display: "flex", alignItems: "center", gap: 8 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e05c5c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <p style={{ fontSize: 11, color: "#e05c5c", flex: 1, lineHeight: 1.5 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <p style={{ fontSize: 11, color: "var(--red)", flex: 1, lineHeight: 1.5 }}>
               {notifBlocked
                 ? "Notifications are blocked in your browser. Click the lock icon in the address bar to allow them."
                 : "Browser notifications are off. Alerts are saved but you won't receive push notifications."}
@@ -371,7 +371,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
                 setPushEnabled(p === "granted");
                 setNotifBlocked(p === "denied");
               }}
-              style={{ fontSize: 10, padding: "4px 8px", borderRadius: 5, border: "0.5px solid rgba(224,92,92,0.4)", background: "rgba(224,92,92,0.1)", color: "#e05c5c", cursor: "pointer", whiteSpace: "nowrap" }}>
+              style={{ fontSize: 10, padding: "4px 8px", borderRadius: 5, border: "0.5px solid rgba(224,92,92,0.4)", background: "rgba(224,92,92,0.1)", color: "var(--red)", cursor: "pointer", whiteSpace: "nowrap" }}>
               {notifBlocked ? "How to fix" : "Enable"}
             </button>
           </div>
@@ -506,7 +506,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
                       onMouseEnter={e => e.currentTarget.style.borderColor = "var(--border2)"}
                       onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}>
                       <div style={{ width: 32, height: 32, borderRadius: 8, background: a.condition === "drops" ? "rgba(224,92,92,0.1)" : "rgba(76,175,125,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={a.condition === "drops" ? "#e05c5c" : "#4caf7d"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={a.condition === "drops" ? "var(--red)" : "#4caf7d"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           {a.condition === "drops" ? <><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></> : <><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></>}
                         </svg>
                       </div>
@@ -517,7 +517,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
                           <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: a.type === "price" ? "rgba(184,134,11,0.12)" : "rgba(76,175,125,0.12)", color: a.type === "price" ? "var(--accent)" : "#4caf7d", letterSpacing: 0.5, textTransform: "uppercase" as const }}>{a.type}</span>
                         </div>
                         <p style={{ fontSize: 11, color: "var(--text2)" }}>
-                          {a.condition === "drops" ? "Drops" : "Rises"} more than <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: a.condition === "drops" ? "#e05c5c" : "#4caf7d" }}>{a.threshold}%</span>
+                          {a.condition === "drops" ? "Drops" : "Rises"} more than <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: a.condition === "drops" ? "var(--red)" : "#4caf7d" }}>{a.threshold}%</span>
                         </p>
                       </div>
                       {/* edit button */}
@@ -530,7 +530,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
                       {/* delete button */}
                       <button onClick={() => removeAlert(a.id)}
                         style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(224,92,92,0.4)"; e.currentTarget.style.color = "#e05c5c"; }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(224,92,92,0.4)"; e.currentTarget.style.color = "var(--red)"; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                       </button>

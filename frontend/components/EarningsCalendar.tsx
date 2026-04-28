@@ -173,7 +173,7 @@ function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolea
                 {preview?.implied_move_pct != null && (
                   <StatPill
                     label={preview.implied_move_source === "options" ? "Implied Move (options)" : "Expected Move (IV)"}
-                    value={`+/-${preview.implied_move_pct}%`}
+                    value={`+/-${preview.implied_move_pct.toFixed(1)}%`}
                   />
                 )}
               </div>

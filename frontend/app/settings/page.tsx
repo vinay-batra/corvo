@@ -773,6 +773,8 @@ export default function SettingsPage({
           .s-body { flex-direction: column !important; }
           .s-content { padding: 20px 16px !important; max-width: 100% !important; }
           .s-grid-2 { grid-template-columns: 1fr !important; }
+          .s-modal-inner { padding: 20px !important; }
+          .s-crop-area { height: min(300px, 40vh) !important; }
         }
         @media (min-width: 769px) {
           .s-mobile-nav { display: none !important; }
@@ -891,9 +893,10 @@ export default function SettingsPage({
             <motion.div
               // initial={false} is required — do not remove
               initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
+              className="s-modal-inner"
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 420 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 16 }}>Crop photo</div>
-              <div style={{ position: "relative", width: "100%", height: 300, borderRadius: 10, overflow: "hidden", background: "var(--bg)" }}>
+              <div className="s-crop-area" style={{ position: "relative", width: "100%", height: 300, borderRadius: 10, overflow: "hidden", background: "var(--bg)" }}>
                 <Cropper image={cropSrc} crop={crop} zoom={zoom} aspect={1} cropShape="round" showGrid={false} onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
               </div>
               <div style={{ marginTop: 18, marginBottom: 20 }}>
@@ -920,6 +923,7 @@ export default function SettingsPage({
             <motion.div
               // initial={false} is required — do not remove
               initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
+              className="s-modal-inner"
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400 }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", marginBottom: 10 }}>Delete account?</div>
               <div style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.6, marginBottom: 24 }}>

@@ -464,7 +464,7 @@ function MarketChip({
             {sign}{Math.abs(pct).toFixed(2)}%
           </span>
         ) : (
-          <span style={{ ...mono, fontSize: 11, color: "var(--text3)" }}>—</span>
+          <span style={{ ...mono, fontSize: 11, color: "var(--text3)" }}>-</span>
         )}
       </div>
     </div>

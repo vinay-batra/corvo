@@ -381,7 +381,7 @@ function OnboardingContent() {
     field: keyof typeof answers,
     options: { id: string; label: string; desc?: string }[],
   ) => (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+    <div className="ob-select-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
       {options.map(opt => (
         <SelectCard
           key={opt.id}
@@ -396,7 +396,7 @@ function OnboardingContent() {
 
   const renderMultiSelect = () => (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+      <div className="ob-select-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
         {GOALS.map(g => {
           const selected = answers.primary_goals.includes(g.id);
           const maxed = answers.primary_goals.length >= 3 && !selected;
@@ -420,7 +420,7 @@ function OnboardingContent() {
 
   const renderPortfolioBuilder = () => (
     <div>
-      <div style={{ maxHeight: 340, overflowY: "auto", marginBottom: 16 }}>
+      <div className="ob-builder-scroll" style={{ maxHeight: 340, overflowY: "auto", marginBottom: 16 }}>
         <PortfolioBuilder assets={assets} onAssetsChange={setAssets} loading={false} />
       </div>
       <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "center" }}>
@@ -479,6 +479,8 @@ function OnboardingContent() {
           .ob-card { padding: 24px 20px 22px !important; }
           .ob-card h2 { font-size: 18px !important; }
           .ob-card p { font-size: 12px !important; }
+          .ob-select-grid { grid-template-columns: 1fr !important; }
+          .ob-builder-scroll { max-height: min(340px, 45vh) !important; }
         }
       `}</style>
 

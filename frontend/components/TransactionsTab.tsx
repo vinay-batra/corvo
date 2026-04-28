@@ -307,7 +307,7 @@ export default function TransactionsTab() {
                             ? t === "buy" ? "rgba(92,184,138,0.12)" : "rgba(224,92,92,0.12)"
                             : "var(--bg2)",
                           color: txType === t
-                            ? t === "buy" ? "#5cb88a" : "#e05c5c"
+                            ? t === "buy" ? "#5cb88a" : "var(--red)"
                             : "var(--text3)",
                         }}
                       >
@@ -376,7 +376,7 @@ export default function TransactionsTab() {
                     // initial={false} required — do not remove
                     initial={false}
                     animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    style={{ fontSize: 11, color: "#e05c5c", marginBottom: 10 }}
+                    style={{ fontSize: 11, color: "var(--red)", marginBottom: 10 }}
                   >
                     {formErr}
                   </motion.div>
@@ -434,7 +434,7 @@ export default function TransactionsTab() {
               Realized P&amp;L
               <InfoModal title="Realized Profit and Loss" sections={[{ label: "Plain English", text: "Actual profit or loss locked in when you sell shares. Calculated as sale price minus average cost basis, multiplied by shares sold." }, { label: "Example", text: "Avg cost basis $100, sell 10 shares at $130 = realized gain of $300." }, { label: "What's Good?", text: "Positive means you profited on closed positions. Realized losses can sometimes offset realized gains for tax purposes." }]} />
               {": "}
-              <span style={{ ...MONO, fontWeight: 600, color: totalRealizedGain >= 0 ? "#5cb88a" : "#e05c5c" }}>
+              <span style={{ ...MONO, fontWeight: 600, color: totalRealizedGain >= 0 ? "#5cb88a" : "var(--red)" }}>
                 {totalRealizedGain >= 0 ? "+" : "-"}{fmtMoney(totalRealizedGain)}
               </span>
             </div>
@@ -489,7 +489,7 @@ export default function TransactionsTab() {
                         padding: "2px 7px", borderRadius: 4,
                         textTransform: "uppercase" as const,
                         background: t.type === "buy" ? "rgba(92,184,138,0.12)" : "rgba(224,92,92,0.12)",
-                        color: t.type === "buy" ? "#5cb88a" : "#e05c5c",
+                        color: t.type === "buy" ? "#5cb88a" : "var(--red)",
                       }}>
                         {t.type}
                       </span>
@@ -509,7 +509,7 @@ export default function TransactionsTab() {
                           <button
                             onClick={() => handleDelete(t.id)}
                             disabled={deleting}
-                            style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, border: "0.5px solid rgba(224,92,92,0.5)", background: "rgba(224,92,92,0.12)", color: "#e05c5c", cursor: "pointer" }}
+                            style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, border: "0.5px solid rgba(224,92,92,0.5)", background: "rgba(224,92,92,0.12)", color: "var(--red)", cursor: "pointer" }}
                           >
                             {deleting ? "..." : "Confirm"}
                           </button>
@@ -582,7 +582,7 @@ export default function TransactionsTab() {
                       ${fmt(s.totalCost)}
                     </td>
                     <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 600, textAlign: "right", ...MONO,
-                      color: s.realizedGain > 0 ? "#5cb88a" : s.realizedGain < 0 ? "#e05c5c" : "var(--text3)" }}>
+                      color: s.realizedGain > 0 ? "#5cb88a" : s.realizedGain < 0 ? "var(--red)" : "var(--text3)" }}>
                       {s.realizedGain === 0 ? "--" : `${s.realizedGain > 0 ? "+" : "-"}$${fmt(Math.abs(s.realizedGain))}`}
                     </td>
                   </tr>
@@ -596,7 +596,7 @@ export default function TransactionsTab() {
                     ${fmt(totalCostBasis)}
                   </td>
                   <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, textAlign: "right", ...MONO,
-                    color: totalRealizedGain > 0 ? "#5cb88a" : totalRealizedGain < 0 ? "#e05c5c" : "var(--text3)" }}>
+                    color: totalRealizedGain > 0 ? "#5cb88a" : totalRealizedGain < 0 ? "var(--red)" : "var(--text3)" }}>
                     {totalRealizedGain === 0 ? "--" : `${totalRealizedGain > 0 ? "+" : "-"}$${fmt(Math.abs(totalRealizedGain))}`}
                   </td>
                 </tr>
