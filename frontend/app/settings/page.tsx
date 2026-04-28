@@ -134,6 +134,15 @@ export default function SettingsPage({
   const [emailTheme, setEmailTheme]                   = useState<"light" | "dark">("light");
   const [emailThemeSupported, setEmailThemeSupported] = useState(false);
 
+  // ── Push notifications ─────────────────────────────────────────────────────
+  const [pushPermission, setPushPermission]               = useState<NotificationPermission | "unsupported">("default");
+  const [pushMorningBriefing, setPushMorningBriefing]     = useState(false);
+  const [pushMarketClose, setPushMarketClose]             = useState(false);
+  const [pushPriceAlerts, setPushPriceAlerts]             = useState(false);
+  const [pushPriceTargets, setPushPriceTargets]           = useState(false);
+  const [pushWeeklyCheckup, setPushWeeklyCheckup]         = useState(false);
+  const [pushEarningsReminders, setPushEarningsReminders] = useState(false);
+
   // ── Investor profile ───────────────────────────────────────────────────────
   const [investorType, setInvestorType]           = useState("");
   const [primaryGoals, setPrimaryGoals]           = useState<string[]>([]);
@@ -158,11 +167,12 @@ export default function SettingsPage({
       const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
       if (profile) { setDisplayName(profile.display_name || ""); setAvatarUrl(profile.avatar_url || null); }
 
-      // Try loading email_theme — maybeSingle avoids PGRST116 on missing rows;
-      // a schema error (column doesn't exist) surfaces as a non-null error here.
+      // Try loading all notification prefs including push columns and email_theme.
+      // maybeSingle avoids PGRST116 on missing rows; a schema error (column doesn't
+      // exist yet) surfaces as a non-null error here.
       const { data: prefs, error: prefsError } = await supabase
         .from("email_preferences")
-        .select("morning_briefing,market_close_summary,week_in_review,monthly_summary,price_alerts,email_theme")
+        .select("morning_briefing,market_close_summary,week_in_review,monthly_summary,price_alerts,email_theme,push_morning_briefing,push_market_close,push_price_alerts,push_price_targets,push_weekly_checkup,push_earnings_reminders")
         .eq("user_id", user.id)
         .maybeSingle();
       if (!prefsError) {
@@ -174,9 +184,15 @@ export default function SettingsPage({
           setMonthlySummary(prefs.monthly_summary ?? false);
           setPriceAlerts(prefs.price_alerts ?? true);
           setEmailTheme(prefs.email_theme === "dark" ? "dark" : "light");
+          setPushMorningBriefing(prefs.push_morning_briefing ?? false);
+          setPushMarketClose(prefs.push_market_close ?? false);
+          setPushPriceAlerts(prefs.push_price_alerts ?? false);
+          setPushPriceTargets(prefs.push_price_targets ?? false);
+          setPushWeeklyCheckup(prefs.push_weekly_checkup ?? false);
+          setPushEarningsReminders(prefs.push_earnings_reminders ?? false);
         }
       } else {
-        // email_theme column may not exist — fall back to loading without it
+        // Newer push/email_theme columns may not exist yet — fall back to basics
         const { data: prefsBasic } = await supabase
           .from("email_preferences")
           .select("morning_briefing,market_close_summary,week_in_review,monthly_summary,price_alerts")
@@ -188,6 +204,15 @@ export default function SettingsPage({
           setWeekInReview(prefsBasic.week_in_review ?? false);
           setMonthlySummary(prefsBasic.monthly_summary ?? false);
           setPriceAlerts(prefsBasic.price_alerts ?? true);
+        }
+      }
+
+      // Check browser notification permission
+      if (typeof window !== "undefined") {
+        if (!("Notification" in window)) {
+          setPushPermission("unsupported");
+        } else {
+          setPushPermission(Notification.permission);
         }
       }
 
@@ -293,6 +318,33 @@ export default function SettingsPage({
       if (error) throw error;
     } catch {
       toast("Failed to save email theme. Please try again.", "error");
+    }
+  };
+
+  const requestPushPermission = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    const result = await Notification.requestPermission();
+    setPushPermission(result);
+  };
+
+  const savePushPrefs = async (
+    pmb: boolean, pmc: boolean, ppa: boolean, ppt: boolean, pwc: boolean, per: boolean
+  ) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from("email_preferences").upsert({
+        user_id: user.id,
+        push_morning_briefing: pmb,
+        push_market_close: pmc,
+        push_price_alerts: ppa,
+        push_price_targets: ppt,
+        push_weekly_checkup: pwc,
+        push_earnings_reminders: per,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+    } catch {
+      toast("Failed to save push notification preferences. Please try again.", "error");
     }
   };
 
@@ -458,33 +510,93 @@ export default function SettingsPage({
   const renderNotifications = () => (
     <div>
       <SectionTitle>Notifications</SectionTitle>
-      <Row label="Morning Briefing" desc="Daily portfolio and market teaser at 6am ET">
-        <Toggle on={morningBriefing} onChange={() => { const v = !morningBriefing; setMorningBriefing(v); void saveNotifs(v, marketCloseSummary, weekInReview, monthlySummary, priceAlerts); }} />
-      </Row>
-      <Row label="Market Close Summary" desc="Daily recap of your portfolio at 4:05pm ET with best and worst holdings">
-        <Toggle on={marketCloseSummary} onChange={() => { const v = !marketCloseSummary; setMarketCloseSummary(v); void saveNotifs(morningBriefing, v, weekInReview, monthlySummary, priceAlerts); }} />
-      </Row>
-      <Row label="Week in Review" desc="Weekly recap of your portfolio every Monday at 6am ET">
-        <Toggle on={weekInReview} onChange={() => { const v = !weekInReview; setWeekInReview(v); void saveNotifs(morningBriefing, marketCloseSummary, v, monthlySummary, priceAlerts); }} />
-      </Row>
-      <Row label="Monthly Summary" desc="Month-end portfolio return summary on the 1st">
-        <Toggle on={monthlySummary} onChange={() => { const v = !monthlySummary; setMonthlySummary(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, v, priceAlerts); }} />
-      </Row>
-      <Row label="Price Alerts" desc="Get notified immediately when a price alert triggers.">
-        <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, monthlySummary, v); }} />
-      </Row>
-      {emailThemeSupported && (
-        <Row label="Email Theme" desc="Light or dark background for all Corvo emails">
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12, color: "var(--text3)" }}>{emailTheme === "dark" ? "Dark" : "Light"}</span>
-            <Toggle on={emailTheme === "dark"} onChange={() => {
-              const next: "light" | "dark" = emailTheme === "dark" ? "light" : "dark";
-              setEmailTheme(next);
-              void saveEmailTheme(next);
-            }} />
-          </div>
+
+      {/* Email Notifications group */}
+      <div style={{ marginBottom: 36 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4, paddingBottom: 8, borderBottom: "0.5px solid var(--border)" }}>
+          Email Notifications
+        </div>
+        <Row label="Morning Briefing" desc="Daily portfolio and market teaser delivered at 6am ET">
+          <Toggle on={morningBriefing} onChange={() => { const v = !morningBriefing; setMorningBriefing(v); void saveNotifs(v, marketCloseSummary, weekInReview, monthlySummary, priceAlerts); }} />
         </Row>
-      )}
+        <Row label="Market Close Summary" desc="Daily recap of your holdings at 4:05pm ET with best and worst performers">
+          <Toggle on={marketCloseSummary} onChange={() => { const v = !marketCloseSummary; setMarketCloseSummary(v); void saveNotifs(morningBriefing, v, weekInReview, monthlySummary, priceAlerts); }} />
+        </Row>
+        <Row label="Week in Review" desc="Weekly recap of your portfolio performance sent every Monday at 6am ET">
+          <Toggle on={weekInReview} onChange={() => { const v = !weekInReview; setWeekInReview(v); void saveNotifs(morningBriefing, marketCloseSummary, v, monthlySummary, priceAlerts); }} />
+        </Row>
+        <Row label="Monthly Summary" desc="Month-end portfolio return summary sent on the 1st of each month">
+          <Toggle on={monthlySummary} onChange={() => { const v = !monthlySummary; setMonthlySummary(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, v, priceAlerts); }} />
+        </Row>
+        <Row label="Price Alerts" desc="Instant email when a monitored stock crosses your alert price">
+          <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, monthlySummary, v); }} />
+        </Row>
+        {emailThemeSupported && (
+          <Row label="Email Theme" desc="Choose light or dark background for all Corvo emails">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12, color: "var(--text3)" }}>{emailTheme === "dark" ? "Dark" : "Light"}</span>
+              <Toggle on={emailTheme === "dark"} onChange={() => {
+                const next: "light" | "dark" = emailTheme === "dark" ? "light" : "dark";
+                setEmailTheme(next);
+                void saveEmailTheme(next);
+              }} />
+            </div>
+          </Row>
+        )}
+      </div>
+
+      {/* Push Notifications group */}
+      <div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4, paddingBottom: 8, borderBottom: "0.5px solid var(--border)" }}>
+          Push Notifications
+        </div>
+
+        {pushPermission === "unsupported" ? (
+          <div style={{ fontSize: 12, color: "var(--text3)", padding: "12px 0", lineHeight: 1.5 }}>
+            Your browser does not support push notifications.
+          </div>
+        ) : pushPermission === "denied" ? (
+          <div style={{ margin: "12px 0", padding: "12px 14px", borderRadius: "var(--radius)", border: "0.5px solid var(--border)", background: "var(--bg3)" }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--text)", marginBottom: 4 }}>Browser notifications are blocked</div>
+            <div style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
+              To re-enable, open your browser settings, find the Corvo site entry under Notifications, and change the permission to Allow. You may need to reload the page after.
+            </div>
+          </div>
+        ) : pushPermission === "default" ? (
+          <div style={{ margin: "12px 0 16px" }}>
+            <button
+              onClick={requestPushPermission}
+              style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, borderRadius: "var(--radius)", border: "0.5px solid var(--accent)", background: "rgba(var(--accent-rgb), 0.08)", color: "var(--accent)", cursor: "pointer", transition: "background 0.15s" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(var(--accent-rgb), 0.16)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "rgba(var(--accent-rgb), 0.08)")}
+            >
+              Enable Browser Notifications
+            </button>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 7, lineHeight: 1.5 }}>
+              You can still configure your preferences below. Notifications will fire once permission is granted.
+            </div>
+          </div>
+        ) : null}
+
+        <Row label="Morning Briefing" desc="Push notification at 6am ET with your daily market brief">
+          <Toggle on={pushMorningBriefing} onChange={() => { const v = !pushMorningBriefing; setPushMorningBriefing(v); void savePushPrefs(v, pushMarketClose, pushPriceAlerts, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }} />
+        </Row>
+        <Row label="Market Close Summary" desc="Push alert at 4:05pm ET summarizing today's portfolio moves">
+          <Toggle on={pushMarketClose} onChange={() => { const v = !pushMarketClose; setPushMarketClose(v); void savePushPrefs(pushMorningBriefing, v, pushPriceAlerts, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }} />
+        </Row>
+        <Row label="Price Alerts" desc="Instant push when a stock hits your alert price">
+          <Toggle on={pushPriceAlerts} onChange={() => { const v = !pushPriceAlerts; setPushPriceAlerts(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, v, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }} />
+        </Row>
+        <Row label="Price Target Hit" desc="Push notification when a stock reaches your saved price target">
+          <Toggle on={pushPriceTargets} onChange={() => { const v = !pushPriceTargets; setPushPriceTargets(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, v, pushWeeklyCheckup, pushEarningsReminders); }} />
+        </Row>
+        <Row label="Weekly Portfolio Checkup" desc="Monday morning push summarizing your portfolio health score">
+          <Toggle on={pushWeeklyCheckup} onChange={() => { const v = !pushWeeklyCheckup; setPushWeeklyCheckup(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, pushPriceTargets, v, pushEarningsReminders); }} />
+        </Row>
+        <Row label="Earnings Reminders" desc="Push reminder the day before a holding in your portfolio reports earnings">
+          <Toggle on={pushEarningsReminders} onChange={() => { const v = !pushEarningsReminders; setPushEarningsReminders(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, pushPriceTargets, pushWeeklyCheckup, v); }} />
+        </Row>
+      </div>
     </div>
   );
 
