@@ -1116,13 +1116,19 @@ function ChallengeMode({
 
 // ── LevelsReference ───────────────────────────────────────────────────────────
 function LevelsReference({ currentXp }: { currentXp: number }) {
+  const [showAll, setShowAll] = useState(false);
   const currentLevel = getLevel(currentXp);
+  const currentIndex = LEVELS.findIndex(l => l.name === currentLevel.name);
+  const visibleStart = Math.max(0, currentIndex - 2);
+  const visibleEnd = Math.min(LEVELS.length - 1, currentIndex + 5);
+  const displayedLevels = showAll ? LEVELS : LEVELS.slice(visibleStart, visibleEnd + 1);
+  const hasHidden = LEVELS.length > visibleEnd - visibleStart + 1;
   return (
     <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 14, padding: "22px 24px", marginTop: 32 }}>
       <p style={{ fontSize: 10, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase", marginBottom: 6 }}>Progression</p>
       <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 20, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 18 }}>Levels & XP</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {LEVELS.map((lvl, i) => {
+        {displayedLevels.map((lvl) => {
           const isCurrentLevel = currentLevel.name === lvl.name;
           const isUnlocked = currentXp >= lvl.min;
           const xpNeeded = lvl.min > currentXp ? lvl.min - currentXp : 0;
@@ -1148,6 +1154,14 @@ function LevelsReference({ currentXp }: { currentXp: number }) {
           );
         })}
       </div>
+      {hasHidden && (
+        <button
+          onClick={() => setShowAll(v => !v)}
+          style={{ marginTop: 14, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 12, color: AMBER, fontFamily: "inherit", letterSpacing: 0.3 }}
+        >
+          {showAll ? "Show less" : `Show all ${LEVELS.length} levels`}
+        </button>
+      )}
     </div>
   );
 }
