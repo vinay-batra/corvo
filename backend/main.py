@@ -3286,8 +3286,7 @@ class PriceTargetCreate(BaseModel):
     user_id: str
     ticker: str
     target_price: float
-    direction: str  # "above" or "below"
-    notes: str = ""
+    direction: str  # "above" or "below" (also accepts "Rises above" / "Falls below")
 
 
 @app.get("/price-targets/{user_id}")
@@ -3322,15 +3321,29 @@ def get_price_targets(user_id: str):
     return targets
 
 
+_DIRECTION_MAP = {
+    "above": "above",
+    "below": "below",
+    "rises above": "above",
+    "falls below": "below",
+}
+
+def _normalize_direction(raw: str) -> str | None:
+    return _DIRECTION_MAP.get(raw.lower().strip())
+
+
 @app.post("/price-targets")
 def create_price_target(req: PriceTargetCreate):
     """Create a new price target."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-    if req.direction not in ("above", "below"):
-        raise HTTPException(status_code=400, detail="direction must be 'above' or 'below'")
+    direction = _normalize_direction(req.direction)
+    if not direction:
+        raise HTTPException(status_code=400, detail=f"direction must be 'above' or 'below', got '{req.direction}'")
     if req.target_price <= 0:
         raise HTTPException(status_code=400, detail="target_price must be positive")
+    if not req.ticker.strip():
+        raise HTTPException(status_code=400, detail="ticker is required")
     resp = requests.post(
         f"{SUPABASE_URL}/rest/v1/price_targets",
         headers={**_sb_headers(), "Prefer": "return=representation"},
@@ -3338,14 +3351,19 @@ def create_price_target(req: PriceTargetCreate):
             "user_id": req.user_id,
             "ticker": req.ticker.upper().strip(),
             "target_price": req.target_price,
-            "direction": req.direction,
-            "notes": req.notes,
+            "direction": direction,
         },
         timeout=8,
     )
     if resp.status_code not in (200, 201):
-        raise HTTPException(status_code=resp.status_code, detail="Failed to create target")
-    return resp.json()[0] if resp.json() else {}
+        try:
+            err = resp.json()
+            detail = err.get("message") or err.get("detail") or f"Supabase error {resp.status_code}"
+        except Exception:
+            detail = f"Supabase error {resp.status_code}"
+        raise HTTPException(status_code=400, detail=detail)
+    data = resp.json()
+    return data[0] if data else {}
 
 
 @app.patch("/price-targets/{target_id}")
@@ -3353,8 +3371,9 @@ def update_price_target(target_id: str, user_id: str, target_price: float, direc
     """Update a price target's price and direction."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=500, detail="Supabase not configured")
+    direction = _normalize_direction(direction) or direction
     if direction not in ("above", "below"):
-        raise HTTPException(status_code=400, detail="direction must be 'above' or 'below'")
+        raise HTTPException(status_code=400, detail=f"direction must be 'above' or 'below', got '{direction}'")
     resp = requests.patch(
         f"{SUPABASE_URL}/rest/v1/price_targets?id=eq.{target_id}&user_id=eq.{user_id}",
         headers={**_sb_headers(), "Prefer": "return=minimal"},
