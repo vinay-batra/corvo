@@ -123,10 +123,16 @@ body {
   --accent-rgb:  184, 134, 11;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: auto; }
+
+/* Interactive and card elements: never block touch-initiated vertical scroll */
+button, a, [role="button"], [role="tab"], [role="tabpanel"], summary, label,
+.hover-card, .btn, .mi-btn, .cta-shimmer {
+  touch-action: pan-y;
+}
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   /* Firefox scrollbar */
   scrollbar-width: thin;
   scrollbar-color: rgba(184,134,11,0.4) transparent;

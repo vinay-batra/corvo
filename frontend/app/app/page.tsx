@@ -2129,7 +2129,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                         animate={{ opacity: 1, height: "auto", marginTop: 10 }}
                         exit={{ opacity: 0, height: 0, marginTop: 0 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        style={{ overflow: "hidden" }}
+                        style={{ overflow: "clip" }}
                       >
                         <div style={{
                           background: "var(--card-bg)", border: "0.5px solid var(--border2)",
