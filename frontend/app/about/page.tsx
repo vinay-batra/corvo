@@ -47,7 +47,7 @@ export default function AboutPage() {
           <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.1, maxWidth: 1040, margin: "0 auto 16px" }}>
             Most apps show you what happened. Corvo tells you what to do about it.
           </h1>
-          <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "16px auto 0", lineHeight: 1.65 }}>
+          <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "28px auto 0", lineHeight: 1.65 }}>
             Every tool was expensive, outdated, or ugly. So I built a better one.
           </p>
         </FadeUp>
