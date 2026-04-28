@@ -305,7 +305,10 @@ export default function SettingsPage({
   const saveNotifs = async (mb: boolean, mcs: boolean, wr: boolean, ms: boolean, pa: boolean) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, morning_briefing: mb, market_close_summary: mcs, week_in_review: wr, monthly_summary: ms, price_alerts: pa, updated_at: new Date().toISOString() });
+      const { error } = await supabase.from("email_preferences").upsert(
+        { user_id: user.id, morning_briefing: mb, market_close_summary: mcs, week_in_review: wr, monthly_summary: ms, price_alerts: pa, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
       if (error) throw error;
     } catch {
       toast("Failed to save notification preferences. Please try again.", "error");
@@ -315,7 +318,10 @@ export default function SettingsPage({
   const saveEmailTheme = async (theme: "light" | "dark") => {
     if (!user || !emailThemeSupported) return;
     try {
-      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, email_theme: theme, updated_at: new Date().toISOString() });
+      const { error } = await supabase.from("email_preferences").upsert(
+        { user_id: user.id, email_theme: theme, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
       if (error) throw error;
     } catch {
       toast("Failed to save email theme. Please try again.", "error");
@@ -333,16 +339,19 @@ export default function SettingsPage({
   ) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from("email_preferences").upsert({
-        user_id: user.id,
-        push_morning_briefing: pmb,
-        push_market_close: pmc,
-        push_price_alerts: ppa,
-        push_price_targets: ppt,
-        push_weekly_checkup: pwc,
-        push_earnings_reminders: per,
-        updated_at: new Date().toISOString(),
-      });
+      const { error } = await supabase.from("email_preferences").upsert(
+        {
+          user_id: user.id,
+          push_morning_briefing: pmb,
+          push_market_close: pmc,
+          push_price_alerts: ppa,
+          push_price_targets: ppt,
+          push_weekly_checkup: pwc,
+          push_earnings_reminders: per,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
       if (error) throw error;
     } catch {
       toast("Failed to save push notification preferences. Please try again.", "error");
