@@ -524,6 +524,18 @@ input::placeholder { color: var(--text3); }
   /* ── Notifications prompt: stack on mobile ── */
   .c-notif-prompt { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
   .c-notif-prompt button { width: 100% !important; margin-left: 0 !important; }
+
+  /* ── Dividend tracker: hide donut chart on narrow screens ── */
+  .div-donut-wrap { display: none !important; }
+
+  /* ── Toast: keep within viewport ── */
+  .toast { max-width: calc(100vw - 32px) !important; }
+
+  /* ── Back to top button: clear floating chat button ── */
+  .back-to-top { bottom: 84px !important; }
+
+  /* ── Alerts panel: full width on mobile ── */
+  .c-alerts-panel { width: 100% !important; border-left: none !important; border-top: 0.5px solid var(--border) !important; }
 }
 
 /* ── Page transitions ── */

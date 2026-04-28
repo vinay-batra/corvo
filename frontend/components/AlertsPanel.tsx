@@ -327,6 +327,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
         // initial={false} is required — do not remove
         initial={false} animate={{ x: 0 }} exit={{ x: 340 }}
         transition={{ type: "spring", damping: 28, stiffness: 300 }}
+        className="c-alerts-panel"
         style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 320, background: "var(--bg2)", borderLeft: "0.5px solid var(--border)", zIndex: 301, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
         {/* Header */}
