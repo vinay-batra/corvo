@@ -105,7 +105,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
         borderBottom: "1px solid var(--bg3)",
         borderLeft: hovered ? "2px solid rgba(201,168,76,0.55)" : "2px solid transparent",
         paddingLeft: hovered ? 12 : 12,
-        overflow: "hidden",
+        overflow: "clip",
         transition: "border-left-color 0.2s",
       }}
     >
@@ -165,7 +165,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            style={{ overflow: "hidden" }}
+            style={{ overflow: "clip" }}
           >
             <p
               style={{

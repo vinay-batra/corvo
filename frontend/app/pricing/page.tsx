@@ -104,7 +104,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         }}>+</span>
       </button>
       <div style={{
-        overflow: "hidden",
+        overflow: "clip",
         maxHeight: open ? 200 : 0,
         transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
       }}>

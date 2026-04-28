@@ -464,7 +464,7 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
           ) : (
             <AnimatePresence initial={false}>
               {alerts.filter(a => a.type === tab).map(a => (
-                <motion.div key={a.id} initial={false} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
+                <motion.div key={a.id} initial={false} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "clip" }}>
                   {editingId === a.id ? (
                     <div style={{ padding: "12px 14px", border: "0.5px solid var(--accent)", borderRadius: 10, marginBottom: 7, background: "var(--card-bg)" }}>
                       {/* ticker/portfolio label */}

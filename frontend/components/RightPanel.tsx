@@ -216,7 +216,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
                   initial={false}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  style={{ overflow: "hidden", padding: "0 14px 14px" }}
+                  style={{ overflow: "clip", padding: "0 14px 14px" }}
                 >
                   <MarketBrief />
                 </motion.div>

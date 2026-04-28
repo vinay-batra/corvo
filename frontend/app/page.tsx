@@ -695,7 +695,7 @@ function StockTeaserSection() {
 
         {/* Loading skeleton */}
         {loading && (
-          <div style={{ background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 18, overflow: "hidden" }}>
+          <div style={{ background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 18, overflow: "clip" }}>
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--bg3)", animation: "skeletonPulse 1.4s ease-in-out infinite" }} />
@@ -722,7 +722,7 @@ function StockTeaserSection() {
 
         {/* Analysis card */}
         {!loading && result && (
-          <div style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.97)", transition: "opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1)", background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 18, overflow: "hidden", boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)" }}>
+          <div style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.97)", transition: "opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1)", background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 18, overflow: "clip", boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)" }}>
             {/* Card header */}
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -803,7 +803,7 @@ function VisualComparisonSection() {
       {/* Side-by-side panels */}
       <div className="vs-panels" style={{ display: "flex", gap: 0, alignItems: "stretch", maxWidth: 960, margin: "0 auto 28px", position: "relative" }}>
         {/* Yahoo Finance / traditional tools side */}
-        <SlideIn direction="left" style={{ flex: 1, borderRadius: "16px 0 0 16px", overflow: "hidden", border: "1px solid var(--border)", borderRight: "none" }}>
+        <SlideIn direction="left" style={{ flex: 1, borderRadius: "16px 0 0 16px", overflow: "clip", border: "1px solid var(--border)", borderRight: "none" }}>
           <div style={{ background: "var(--bg3)", height: "100%", padding: "22px 20px 20px", fontFamily: "sans-serif", position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 10, marginBottom: 14 }}>
               <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 2, textTransform: "uppercase" }}>YAHOO FINANCE</span>
@@ -843,7 +843,7 @@ function VisualComparisonSection() {
         </div>
 
         {/* Corvo side */}
-        <SlideIn direction="right" delay={0.08} style={{ flex: 1, borderRadius: "0 16px 16px 0", overflow: "hidden", border: "1px solid rgba(201,168,76,0.2)", borderLeft: "none" }}>
+        <SlideIn direction="right" delay={0.08} style={{ flex: 1, borderRadius: "0 16px 16px 0", overflow: "clip", border: "1px solid rgba(201,168,76,0.2)", borderLeft: "none" }}>
           <div style={{ background: "var(--bg2)", height: "100%", padding: "22px 20px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(201,168,76,0.1)", paddingBottom: 10, marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -1077,7 +1077,7 @@ function TickerTape() {
   }, []);
   const doubled = [...items, ...items];
   return (
-    <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "hidden", background: "var(--bg)" }}>
+    <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "clip", background: "var(--bg)" }}>
       <div style={{ display: "flex", gap: 48, animation: "ticker 30s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
         {doubled.map((item, i) => {
           const up = item.change_pct >= 0;
@@ -1172,7 +1172,7 @@ function DemoPreview() {
     "AI insight ready: high tech concentration detected",
   ];
   return (
-    <div data-theme="dark" style={{ background: "#080b10", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 16, overflow: "hidden", boxShadow: "0 0 80px rgba(201,168,76,0.06), 0 32px 80px rgba(0,0,0,0.6)" }}>
+    <div data-theme="dark" style={{ background: "#080b10", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 16, overflow: "clip", boxShadow: "0 0 80px rgba(201,168,76,0.06), 0 32px 80px rgba(0,0,0,0.6)" }}>
       {/* Terminal bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
         {["#e05c5c", "#c9a84c", "#5cb88a"].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.6 }} />)}
@@ -2072,7 +2072,7 @@ export default function Landing() {
           <HeroMetricCard label="Portfolio Return" value="+41.3%" color="#5cb88a" animDelay="0s" style={{ top: 40, left: "-4%", zIndex: 4 }} />
           <HeroMetricCard label="Sharpe Ratio" value="1.92" color="#c9a84c" animDelay="1.2s" style={{ top: 40, right: "-4%", zIndex: 4 }} />
           <HeroMetricCard label="Health Score" value="78 / 100" color="#8eb4c8" animDelay="0.6s" style={{ bottom: 80, right: "-4%", zIndex: 4 }} />
-          <div data-theme="dark" style={{ background: "#0a0e14", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 16, overflow: "hidden", boxShadow: "0 48px 128px rgba(0,0,0,0.7), inset 0 1px 0 rgba(201,168,76,0.08)", display: "flex" }}>
+          <div data-theme="dark" style={{ background: "#0a0e14", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 16, overflow: "clip", boxShadow: "0 48px 128px rgba(0,0,0,0.7), inset 0 1px 0 rgba(201,168,76,0.08)", display: "flex" }}>
             <div className="hero-preview-sidebar" style={{ width: 180, background: "#080b10", borderRight: "1px solid rgba(255,255,255,0.12)", padding: "16px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
               <div style={{ padding: "0 14px 14px", borderBottom: "1px solid rgba(255,255,255,0.1)", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -2170,7 +2170,7 @@ export default function Landing() {
 
       {/* ─── INTERACTIVE DEMO CTA ─── */}
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 24, overflow: "hidden", position: "relative" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 24, overflow: "clip", position: "relative" }}>
           <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.018) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.018) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
           <div style={{ position: "absolute", top: "-30%", right: "-10%", width: "50%", height: "150%", background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 60%)", pointerEvents: "none" }} />
           <div className="demo-grid demo-inner" style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center", padding: "64px 56px" }}>

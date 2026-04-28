@@ -266,7 +266,7 @@ export default function TransactionsTab() {
             animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
             exit={{ opacity: 0, height: 0, marginBottom: 0 }}
             transition={{ duration: 0.18 }}
-            style={{ overflow: "hidden" }}
+            style={{ overflow: "clip" }}
           >
             <form
               onSubmit={handleSubmit}
