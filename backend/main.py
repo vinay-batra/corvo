@@ -3275,6 +3275,107 @@ def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, 
     _resend(to_email, subject, html, from_addr=from_addr)
 
 
+# ── Price Targets ─────────────────────────────────────────────────────────────
+
+class PriceTargetCreate(BaseModel):
+    user_id: str
+    ticker: str
+    target_price: float
+    direction: str  # "above" or "below"
+    notes: str = ""
+
+
+@app.get("/price-targets/{user_id}")
+def get_price_targets(user_id: str):
+    """Return all price targets for a user, including current price and distance."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/price_targets?user_id=eq.{user_id}&order=created_at.desc",
+        headers=_sb_headers(), timeout=10,
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to fetch targets")
+    targets = resp.json()
+
+    # Fetch current prices for unique tickers
+    tickers = list({t["ticker"] for t in targets if not t.get("triggered")})
+    prices: dict[str, float] = {}
+    for ticker in tickers:
+        try:
+            df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
+            if not df.empty:
+                raw = df["Close"].iloc[-1]
+                prices[ticker] = float(raw.iloc[0] if hasattr(raw, "iloc") else raw)
+        except Exception:
+            pass
+
+    for t in targets:
+        ticker = t["ticker"]
+        t["current_price"] = prices.get(ticker)
+
+    return targets
+
+
+@app.post("/price-targets")
+def create_price_target(req: PriceTargetCreate):
+    """Create a new price target."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    if req.direction not in ("above", "below"):
+        raise HTTPException(status_code=400, detail="direction must be 'above' or 'below'")
+    if req.target_price <= 0:
+        raise HTTPException(status_code=400, detail="target_price must be positive")
+    resp = requests.post(
+        f"{SUPABASE_URL}/rest/v1/price_targets",
+        headers={**_sb_headers(), "Prefer": "return=representation"},
+        json={
+            "user_id": req.user_id,
+            "ticker": req.ticker.upper().strip(),
+            "target_price": req.target_price,
+            "direction": req.direction,
+            "notes": req.notes,
+        },
+        timeout=8,
+    )
+    if resp.status_code not in (200, 201):
+        raise HTTPException(status_code=resp.status_code, detail="Failed to create target")
+    return resp.json()[0] if resp.json() else {}
+
+
+@app.patch("/price-targets/{target_id}")
+def update_price_target(target_id: str, user_id: str, target_price: float, direction: str):
+    """Update a price target's price and direction."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    if direction not in ("above", "below"):
+        raise HTTPException(status_code=400, detail="direction must be 'above' or 'below'")
+    resp = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/price_targets?id=eq.{target_id}&user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"target_price": target_price, "direction": direction, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=8,
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=resp.status_code, detail="Update failed")
+    return {"ok": True}
+
+
+@app.delete("/price-targets/{target_id}")
+def delete_price_target(target_id: str, user_id: str):
+    """Delete a price target, verifying ownership by user_id."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    resp = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/price_targets?id=eq.{target_id}&user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        timeout=8,
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=resp.status_code, detail="Delete failed")
+    return {"ok": True}
+
+
 @app.delete("/price-alerts/{alert_id}")
 def delete_price_alert(alert_id: str, user_id: str):
     """Delete a price alert, verifying ownership by user_id."""
@@ -4567,14 +4668,177 @@ async def market_brief_endpoint(force: bool = False):
         return {"error": str(e), "brief": "", "sections": {}, "generated_at": "", "indices": {}, "movers": []}
 
 
+def _gen_price_target_recommendation(ticker: str, current_price: float, target_price: float, direction: str) -> str:
+    """Generate a one-sentence AI action recommendation for a triggered price target."""
+    try:
+        import anthropic
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            return ""
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = (
+            f"{ticker} has {'reached' if direction == 'above' else 'fallen to'} your price target of ${target_price:.2f}. "
+            f"Current price is ${current_price:.2f}. "
+            "In exactly one sentence, give a specific, actionable recommendation for what the investor should consider doing now. "
+            "Be direct and concrete. Do not use asterisks or em dashes."
+        )
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=120,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.content[0].text.strip() if resp.content else ""
+    except Exception as e:
+        print(f"[price-targets] AI recommendation error: {e}")
+        return ""
+
+
+async def check_price_targets():
+    """Check all untriggered price targets against current prices."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/price_targets?triggered=eq.false&select=id,user_id,ticker,target_price,direction,notes",
+            headers=_sb_headers(), timeout=10,
+        )
+        if resp.status_code != 200:
+            return
+        targets = resp.json()
+        if not targets:
+            return
+
+        # Group targets by ticker to minimise API calls
+        ticker_targets: dict[str, list[dict]] = {}
+        for t in targets:
+            ticker = t.get("ticker", "").upper()
+            if ticker:
+                ticker_targets.setdefault(ticker, []).append(t)
+
+        for ticker, target_list in ticker_targets.items():
+            try:
+                df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
+                if df.empty:
+                    continue
+                raw = df["Close"].iloc[-1]
+                current_price = float(raw.iloc[0] if hasattr(raw, "iloc") else raw)
+
+                for target in target_list:
+                    target_price = float(target["target_price"])
+                    direction = target["direction"]
+                    triggered = (
+                        (direction == "above" and current_price >= target_price) or
+                        (direction == "below" and current_price <= target_price)
+                    )
+                    if not triggered:
+                        continue
+
+                    target_id = target["id"]
+                    user_id = target["user_id"]
+
+                    # Mark triggered
+                    requests.patch(
+                        f"{SUPABASE_URL}/rest/v1/price_targets?id=eq.{target_id}",
+                        headers={**_sb_headers(), "Prefer": "return=minimal"},
+                        json={"triggered": True, "triggered_at": datetime.now(timezone.utc).isoformat()},
+                        timeout=5,
+                    )
+
+                    # Generate AI recommendation (run in executor to avoid blocking)
+                    recommendation = await asyncio.get_event_loop().run_in_executor(
+                        None, _gen_price_target_recommendation, ticker, current_price, target_price, direction
+                    )
+
+                    notif_title = f"Price target hit: {ticker}"
+                    direction_word = "reached" if direction == "above" else "fallen to"
+                    notif_body = f"{ticker} has {direction_word} your target of ${target_price:.2f}. Now at ${current_price:.2f}."
+
+                    # Push notification
+                    subs_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                        headers=_sb_headers(), timeout=5,
+                    )
+                    if subs_resp.status_code == 200:
+                        for row in subs_resp.json():
+                            _send_push(row["subscription"], notif_title, notif_body)
+
+                    # Email notification
+                    user_resp = requests.get(
+                        f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                        headers=_sb_headers(), timeout=5,
+                    )
+                    if user_resp.status_code == 200:
+                        email = user_resp.json().get("email", "")
+                        if email:
+                            pref_resp = requests.get(
+                                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=price_alerts,email_theme",
+                                headers=_sb_headers(), timeout=5,
+                            )
+                            send_email = True
+                            email_theme = "light"
+                            if pref_resp.status_code == 200 and pref_resp.json():
+                                row = pref_resp.json()[0]
+                                send_email = row.get("price_alerts", True) is not False
+                                email_theme = row.get("email_theme") or "light"
+                            if send_email:
+                                _send_price_target_email(
+                                    email, ticker, current_price, target_price, direction,
+                                    recommendation, user_id=user_id, email_theme=email_theme
+                                )
+
+                    print(f"[price-targets] triggered: {ticker} {direction} ${target_price:.2f} @ ${current_price:.2f} for user {user_id}")
+            except Exception as e:
+                err_str = str(e)
+                if "401" in err_str or "Unauthorized" in err_str or "Crumb" in err_str:
+                    print(f"[price-targets] yfinance session expired, skipping cycle")
+                    break
+                print(f"[price-targets] error checking {ticker}: {e}")
+    except Exception as e:
+        print(f"[price-targets] check error: {e}")
+
+
+def _send_price_target_email(
+    to_email: str, ticker: str, current_price: float, target_price: float,
+    direction: str, recommendation: str, user_id: str = "", email_theme: str = "light"
+):
+    """Send a price target hit email via Resend."""
+    if not to_email:
+        return
+    direction_word = "reached" if direction == "above" else "fallen to"
+    subject = f"Price target hit: {ticker} has {direction_word} ${target_price:.2f}"
+    mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
+    body_lines = [
+        f"<strong style=\"color:{mono_color};font-family:'Courier New',Courier,monospace;font-size:20px;\">${current_price:.2f}</strong>",
+        f"{ticker} has {direction_word} your price target of ${target_price:.2f}.",
+    ]
+    if recommendation:
+        body_lines.append(recommendation)
+    body_lines.append("Log in to review your position and act on this signal.")
+    html = _email_html(
+        heading=f"{ticker} target hit",
+        label="Price Target",
+        body_lines=body_lines,
+        cta_text="Review portfolio",
+        cta_url="https://corvo.capital/app",
+        user_id=user_id,
+        email_theme=email_theme,
+    )
+    from_addr = os.environ.get("RESEND_FROM_EMAIL", "Corvo Alerts <alerts@corvo.capital>")
+    _resend(to_email, subject, html, from_addr=from_addr)
+
+
 async def price_alert_loop():
-    """Background loop: check price alerts every 60 seconds."""
+    """Background loop: check price alerts and price targets every 60 seconds."""
     print("[alerts] background price alert checker started")
     while True:
         try:
             await check_price_alerts()
         except Exception as e:
             print(f"[alerts] loop error: {e}")
+        try:
+            await check_price_targets()
+        except Exception as e:
+            print(f"[price-targets] loop error: {e}")
         await asyncio.sleep(60)
 
 

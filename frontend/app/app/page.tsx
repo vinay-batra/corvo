@@ -57,6 +57,7 @@ import FeedbackButton from "../../components/FeedbackButton";
 import { type SavedPortfolioLine } from "../../components/PerformanceChart";
 import EarningsCalendar from "../../components/EarningsCalendar";
 import EventsCalendar from "../../components/EventsCalendar";
+import PriceTargetTracker from "../../components/PriceTargetTracker";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -2008,6 +2009,14 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 <PositionsTab
                   onSelectTicker={t => { setStockTicker(t); setActiveTab("stocks"); }}
                 />
+                {/* Price Target Tracker */}
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <div style={S.cardAccent} />
+                    <span style={S.cardTitle}>Price Targets</span>
+                  </div>
+                  <PriceTargetTracker assets={assets} />
+                </div>
               </motion.div>
             ) : activeTab === "news" && data ? (
               <motion.div key="news" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
