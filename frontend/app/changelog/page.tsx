@@ -28,6 +28,13 @@ function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode
 
 const ENTRIES = [
   {
+    date: "Apr 28, 2026",
+    version: "v0.20",
+    title: "AI Chat Web Search, Monte Carlo Overhaul, Rebalance Assistant & 10 More Features",
+    desc: "AI chat now uses web search and streaming responses, so every answer is grounded in live market data and arrives word by word. Monte Carlo simulation rebuilt with 8,500 paths and a 1-to-30 year horizon selector, with a histogram view of terminal wealth distribution and persistent settings. Rebalance Assistant generates a prioritized trade list to bring drifted positions back to target weights. Options Chain Viewer added to Stock Detail with live calls and puts, ITM highlighting, and a Max Pain section. Transaction Log tracks cost basis and purchase history per holding. Health Score algorithm upgraded with weighted sub-scores across risk, diversification, and return quality. Email system rebuilt on Resend with transactional welcome, weekly digest, and morning briefing templates. Portfolio auto-loads from your last saved state on every login. Leaderboard now reads from profiles.xp for accuracy. InfoTooltip system added across all unexplained financial metrics. Global scrolling overhauled to eliminate overscroll bounce and scroll lag on all panels. Morning briefing expand/collapse shows a one-sentence preview when collapsed. Price alerts are now editable inline without deleting and recreating.",
+    tags: ["AI Chat", "Monte Carlo", "Rebalance", "Options", "Email", "UX", "Fixes"],
+  },
+  {
     date: "Apr 26, 2026",
     version: "v0.19",
     title: "Auth Fix, Portfolio Pill & Morning Brief Accuracy",
