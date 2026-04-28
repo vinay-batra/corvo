@@ -115,14 +115,18 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
   const [indexPrices, setIndexPrices] = useState<{ spy: number | null; qqq: number | null; dia: number | null }>({ spy: null, qqq: null, dia: null });
 
   useEffect(() => {
+    const controller = new AbortController();
+    setSummaryLoading(true);
+    setMarket(null);
     const tickerParam = assets.map(a => a.ticker).filter(Boolean).join(",");
     const url = tickerParam
       ? `${API_URL}/market-summary?tickers=${encodeURIComponent(tickerParam)}`
       : `${API_URL}/market-summary`;
-    fetch(url)
+    fetch(url, { signal: controller.signal })
       .then(r => r.json())
-      .then(d => { setMarket(d); setSummaryLoading(false); })
-      .catch(() => { setSummaryLoading(false); });
+      .then(d => { setMarket(d ?? null); setSummaryLoading(false); })
+      .catch(e => { if (e?.name !== "AbortError") setSummaryLoading(false); });
+    return () => controller.abort();
   }, [assets]);
 
   useEffect(() => {

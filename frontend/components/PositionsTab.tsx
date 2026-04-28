@@ -148,6 +148,8 @@ function InfoTooltip({ text }: { text: string }) {
         style={{
           width: 17,
           height: 17,
+          minWidth: 17,
+          minHeight: 17,
           borderRadius: "50%",
           border: `1px solid ${hovered ? "var(--accent)" : "var(--border)"}`,
           background: "transparent",
@@ -157,6 +159,7 @@ function InfoTooltip({ text }: { text: string }) {
           justifyContent: "center",
           padding: 0,
           flexShrink: 0,
+          alignSelf: "center",
           color: hovered ? "var(--accent)" : "var(--text3)",
           transition: "border-color 0.15s, color 0.15s",
         }}
