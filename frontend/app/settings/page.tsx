@@ -126,11 +126,12 @@ export default function SettingsPage({
   const [soundEnabled, setSoundEnabled] = useState(false);
 
   // ── Notifications ──────────────────────────────────────────────────────────
-  const [morningBriefing, setMorningBriefing]     = useState(false);
-  const [weekInReview, setWeekInReview]           = useState(false);
-  const [monthlySummary, setMonthlySummary]       = useState(false);
-  const [priceAlerts, setPriceAlerts]             = useState(true);
-  const [emailTheme, setEmailTheme]               = useState<"light" | "dark">("light");
+  const [morningBriefing, setMorningBriefing]         = useState(false);
+  const [marketCloseSummary, setMarketCloseSummary]   = useState(true);
+  const [weekInReview, setWeekInReview]               = useState(false);
+  const [monthlySummary, setMonthlySummary]           = useState(false);
+  const [priceAlerts, setPriceAlerts]                 = useState(true);
+  const [emailTheme, setEmailTheme]                   = useState<"light" | "dark">("light");
   const [emailThemeSupported, setEmailThemeSupported] = useState(false);
 
   // ── Investor profile ───────────────────────────────────────────────────────
@@ -161,13 +162,14 @@ export default function SettingsPage({
       // a schema error (column doesn't exist) surfaces as a non-null error here.
       const { data: prefs, error: prefsError } = await supabase
         .from("email_preferences")
-        .select("morning_briefing,week_in_review,monthly_summary,price_alerts,email_theme")
+        .select("morning_briefing,market_close_summary,week_in_review,monthly_summary,price_alerts,email_theme")
         .eq("user_id", user.id)
         .maybeSingle();
       if (!prefsError) {
         setEmailThemeSupported(true);
         if (prefs) {
           setMorningBriefing(prefs.morning_briefing ?? false);
+          setMarketCloseSummary(prefs.market_close_summary ?? true);
           setWeekInReview(prefs.week_in_review ?? false);
           setMonthlySummary(prefs.monthly_summary ?? false);
           setPriceAlerts(prefs.price_alerts ?? true);
@@ -177,11 +179,12 @@ export default function SettingsPage({
         // email_theme column may not exist — fall back to loading without it
         const { data: prefsBasic } = await supabase
           .from("email_preferences")
-          .select("morning_briefing,week_in_review,monthly_summary,price_alerts")
+          .select("morning_briefing,market_close_summary,week_in_review,monthly_summary,price_alerts")
           .eq("user_id", user.id)
           .maybeSingle();
         if (prefsBasic) {
           setMorningBriefing(prefsBasic.morning_briefing ?? false);
+          setMarketCloseSummary(prefsBasic.market_close_summary ?? true);
           setWeekInReview(prefsBasic.week_in_review ?? false);
           setMonthlySummary(prefsBasic.monthly_summary ?? false);
           setPriceAlerts(prefsBasic.price_alerts ?? true);
@@ -273,10 +276,10 @@ export default function SettingsPage({
     setAvatarLoading(false);
   };
 
-  const saveNotifs = async (mb: boolean, wr: boolean, ms: boolean, pa: boolean) => {
+  const saveNotifs = async (mb: boolean, mcs: boolean, wr: boolean, ms: boolean, pa: boolean) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, morning_briefing: mb, week_in_review: wr, monthly_summary: ms, price_alerts: pa, updated_at: new Date().toISOString() });
+      const { error } = await supabase.from("email_preferences").upsert({ user_id: user.id, morning_briefing: mb, market_close_summary: mcs, week_in_review: wr, monthly_summary: ms, price_alerts: pa, updated_at: new Date().toISOString() });
       if (error) throw error;
     } catch {
       toast("Failed to save notification preferences. Please try again.", "error");
@@ -456,16 +459,19 @@ export default function SettingsPage({
     <div>
       <SectionTitle>Notifications</SectionTitle>
       <Row label="Morning Briefing" desc="Daily portfolio and market teaser at 6am ET">
-        <Toggle on={morningBriefing} onChange={() => { const v = !morningBriefing; setMorningBriefing(v); void saveNotifs(v, weekInReview, monthlySummary, priceAlerts); }} />
+        <Toggle on={morningBriefing} onChange={() => { const v = !morningBriefing; setMorningBriefing(v); void saveNotifs(v, marketCloseSummary, weekInReview, monthlySummary, priceAlerts); }} />
+      </Row>
+      <Row label="Market Close Summary" desc="Daily recap of your portfolio at 4:05pm ET with best and worst holdings">
+        <Toggle on={marketCloseSummary} onChange={() => { const v = !marketCloseSummary; setMarketCloseSummary(v); void saveNotifs(morningBriefing, v, weekInReview, monthlySummary, priceAlerts); }} />
       </Row>
       <Row label="Week in Review" desc="Weekly recap of your portfolio every Monday at 6am ET">
-        <Toggle on={weekInReview} onChange={() => { const v = !weekInReview; setWeekInReview(v); void saveNotifs(morningBriefing, v, monthlySummary, priceAlerts); }} />
+        <Toggle on={weekInReview} onChange={() => { const v = !weekInReview; setWeekInReview(v); void saveNotifs(morningBriefing, marketCloseSummary, v, monthlySummary, priceAlerts); }} />
       </Row>
       <Row label="Monthly Summary" desc="Month-end portfolio return summary on the 1st">
-        <Toggle on={monthlySummary} onChange={() => { const v = !monthlySummary; setMonthlySummary(v); void saveNotifs(morningBriefing, weekInReview, v, priceAlerts); }} />
+        <Toggle on={monthlySummary} onChange={() => { const v = !monthlySummary; setMonthlySummary(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, v, priceAlerts); }} />
       </Row>
       <Row label="Price Alerts" desc="Get notified immediately when a price alert triggers.">
-        <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(morningBriefing, weekInReview, monthlySummary, v); }} />
+        <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, monthlySummary, v); }} />
       </Row>
       {emailThemeSupported && (
         <Row label="Email Theme" desc="Light or dark background for all Corvo emails">
