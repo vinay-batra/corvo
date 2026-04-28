@@ -31,7 +31,7 @@ function fmtDate(iso: string) {
 
 function urgencyColor(days: number) {
   if (days <= 3) return "var(--red, #e05c5c)";
-  if (days <= 7) return "#e09a3e";
+  if (days <= 7) return "var(--warning, #e09a3e)";
   return "var(--accent)";
 }
 
@@ -204,7 +204,7 @@ const DividendCalendar = memo(function DividendCalendar({
                       <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: uc, background: "rgba(224,92,92,0.1)", border: "0.5px solid rgba(224,92,92,0.3)", borderRadius: 4, padding: "1px 5px" }}>TOMORROW</span>
                     )}
                     {entry.days_until_ex > 1 && entry.days_until_ex <= 7 && (
-                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "#e09a3e", background: "rgba(224,154,62,0.08)", border: "0.5px solid rgba(224,154,62,0.25)", borderRadius: 4, padding: "1px 5px" }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: "var(--warning, #e09a3e)", background: "rgba(224,154,62,0.08)", border: "0.5px solid rgba(224,154,62,0.25)", borderRadius: 4, padding: "1px 5px" }}>
                         {entry.days_until_ex}D
                       </span>
                     )}
