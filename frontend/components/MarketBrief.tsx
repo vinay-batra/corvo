@@ -6,7 +6,7 @@ import { fetchMarketBrief } from "../lib/api";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { posthog } from "../lib/posthog";
 
-const C = { amber: "var(--accent)", green: "#4caf7d", red: "#e05c5c" };
+const C = { amber: "var(--accent)", green: "#4caf7d", red: "var(--red)" };
 const HOUR_MS = 60 * 60 * 1000;
 
 function computeMarketStatus() {

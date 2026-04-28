@@ -312,8 +312,8 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
       {/* Drawdown hint */}
       {ddDate && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-          <div style={{ width: 14, height: 1, borderTop: "1.5px dashed #e05c5c", opacity: 0.6 }} />
-          <span style={{ fontSize: 9, color: "#e05c5c", opacity: 0.7 }}>
+          <div style={{ width: 14, height: 1, borderTop: "1.5px dashed var(--red)", opacity: 0.6 }} />
+          <span style={{ fontSize: 9, color: "var(--red)", opacity: 0.7 }}>
             Max drawdown: {ddDate}
           </span>
         </div>

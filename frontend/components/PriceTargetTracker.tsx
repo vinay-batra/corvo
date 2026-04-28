@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const AMBER = "var(--accent)";
 const GREEN = "#4caf7d";
-const RED = "#e05c5c";
+const RED = "var(--red)";
 
 interface PriceTarget {
   id: string;

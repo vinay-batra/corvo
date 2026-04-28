@@ -302,7 +302,7 @@ export default function PortfolioHistory() {
                   style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ width: 20, height: 2, background: l.color, borderRadius: 1 }} />
                   <span style={{ fontSize: 11, color: "var(--text2)" }}>{l.name}</span>
-                  <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: pos ? "#5cb88a" : "#e05c5c" }}>
+                  <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: pos ? "#5cb88a" : "var(--red)" }}>
                     {pos ? "+" : ""}{totalReturn.toFixed(1)}%
                   </span>
                 </motion.div>

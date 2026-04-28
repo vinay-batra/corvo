@@ -545,14 +545,8 @@ input::placeholder { color: var(--text3); }
   /* ── Alerts panel: full width on mobile ── */
   .c-alerts-panel { width: 100% !important; border-left: none !important; border-top: 0.5px solid var(--border) !important; }
 
-  /* ── Horizontal scroll fallback for any bare table ── */
-  table { max-width: 100%; }
-
-  /* ── Blog post body: prevent code blocks from overflowing ── */
-  .blog-post-body pre { overflow-x: auto !important; max-width: 100% !important; }
-
-  /* ── Modals: ensure they never exceed viewport width ── */
-  [role="dialog"] { max-width: calc(100vw - 32px) !important; }
+  /* ── Prose tables: horizontal scroll on narrow screens ── */
+  .prose table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 }
 
