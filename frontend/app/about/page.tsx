@@ -29,11 +29,10 @@ function FadeUp({
     <motion.div
       // initial={false} required — do not remove
       initial={false}
-      animate={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount }}
       transition={{ duration: 0.55, ease: ANIM_EASE, delay }}
-      style={style}
+      style={{ opacity: 0, transform: "translateY(20px)", ...style }}
     >
       {children}
     </motion.div>
@@ -60,11 +59,10 @@ export default function AboutPage() {
         <motion.div
           // initial={false} required — do not remove
           initial={false}
-          animate={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, ease: ANIM_EASE }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, marginBottom: 24, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}
+          style={{ opacity: 0, transform: "translateY(20px)", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, marginBottom: 24, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}
         >
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
           <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>About</span>
@@ -77,11 +75,10 @@ export default function AboutPage() {
               <motion.span
                 // initial={false} required — do not remove
                 initial={false}
-                animate={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: i * 0.06, ease: ANIM_EASE }}
-                style={{ display: "inline-block" }}
+                style={{ display: "inline-block", opacity: 0, transform: "translateY(20px)" }}
               >
                 {word}
               </motion.span>
@@ -94,11 +91,10 @@ export default function AboutPage() {
         <motion.p
           // initial={false} required — do not remove
           initial={false}
-          animate={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55, delay: SUBTITLE_DELAY, ease: ANIM_EASE }}
-          style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "20px auto 0", lineHeight: 1.65 }}
+          style={{ opacity: 0, transform: "translateY(20px)", fontSize: "clamp(15px, 2vw, 18px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "20px auto 0", lineHeight: 1.65 }}
         >
           Every tool was expensive, outdated, or ugly. So I built a better one.
         </motion.p>
@@ -146,11 +142,10 @@ export default function AboutPage() {
               <motion.div
                 // initial={false} required — do not remove
                 initial={false}
-                animate={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.55, ease: ANIM_EASE }}
-                style={{ display: "flex", alignItems: "center", gap: 8 }}
+                style={{ opacity: 0, display: "flex", alignItems: "center", gap: 8 }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <rect x="2" y="2" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.7"/>
