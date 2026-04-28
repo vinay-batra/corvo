@@ -38,13 +38,13 @@ export default function AboutPage() {
       <PublicNav />
 
       {/* Hero */}
-      <div className="ab-hero" style={{ padding: "140px 56px 80px", textAlign: "center" }}>
+      <div className="ab-hero" style={{ padding: "140px 56px 32px", textAlign: "center" }}>
         <FadeUp>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, marginBottom: 32, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
             <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>About</span>
           </div>
-          <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 5vw, 58px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.08, marginBottom: 24, maxWidth: 760, margin: "0 auto 24px" }}>
+          <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.1, maxWidth: 1040, margin: "0 auto 16px" }}>
             Most apps show you what happened. Corvo tells you what to do about it.
           </h1>
           <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "0 auto", lineHeight: 1.65 }}>
@@ -54,7 +54,7 @@ export default function AboutPage() {
       </div>
 
       {/* Story */}
-      <div className="ab-body" style={{ maxWidth: 640, margin: "0 auto", padding: "64px 56px 80px" }}>
+      <div className="ab-body" style={{ maxWidth: 640, margin: "0 auto", padding: "24px 56px 80px", textAlign: "center" }}>
         <FadeUp delay={0.05}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
             I have always been obsessed with finance and investing. Tracking positions, running analysis, trying to actually understand what my portfolio was doing. But every tool I tried felt like it was built for someone else. The good ones cost money. The free ones were stuck in 2012. None of them felt like they were built by someone who actually cared.
