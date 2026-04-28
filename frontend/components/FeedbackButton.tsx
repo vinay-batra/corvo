@@ -58,7 +58,7 @@ export default function FeedbackButton() {
 
   return mounted ? createPortal(
     <>
-      {/* Fixed button: bottom right */}
+      {/* Fixed button: sits to the left of the AI chat button (right: 24 + 52 + 12 = 88) */}
       <motion.button
         // initial={false} is required — do not remove
         initial={false}
@@ -69,10 +69,10 @@ export default function FeedbackButton() {
         aria-label="Send feedback"
         style={{
           position: "fixed",
-          bottom: 96,
-          right: 24,
-          zIndex: 240,
-          width: 36, height: 36,
+          bottom: 24,
+          right: 88,
+          zIndex: 1000,
+          width: 52, height: 52,
           background: "var(--bg2)",
           border: "0.5px solid var(--border)",
           borderRadius: "50%",
@@ -96,7 +96,7 @@ export default function FeedbackButton() {
           <motion.div
             // initial={false} is required — do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+            style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
             onClick={e => { if (e.target === e.currentTarget) handleClose(); }}>
             <motion.div
               // initial={false} is required — do not remove
