@@ -2861,41 +2861,47 @@ def _finnhub_options(ticker: str, key: str, date: "str | None", current_price: f
 
 @app.get("/options/{ticker}")
 def get_options_chain(ticker: str, date: str = None, request: Request = None):
-    """Fetch options chain for a ticker. Tries Finnhub first, falls back to yfinance.
+    """Fetch options chain for a ticker. Tries yfinance first, falls back to Finnhub.
     Adds Black-Scholes delta for all contracts. Cached 15 min per (ticker, date)."""
+    import traceback as _tb
+
     if request:
         ip = request.client.host if request.client else "unknown"
         if check_rate_limit(ip, "options", 30, 3600):
             raise HTTPException(status_code=429, detail="Rate limit: 30 requests/hr")
 
     ticker = ticker.upper().strip()
+    print(f"[options] request ticker={ticker!r} date={date!r}")
+
     cache_key = f"{ticker}|{date or ''}"
     if cache_key in _options_cache:
         cached, ts = _options_cache[cache_key]
         if time.time() - ts < 900:
+            print(f"[options] cache hit for {ticker}")
             return cached
 
-    # ── Try Finnhub first ────────────────────────────────────────────────────
-    fh_key = os.environ.get("FINNHUB_API_KEY", "")
-    if fh_key:
-        fh_result = _finnhub_options(ticker, fh_key, date, 0.0)
-        if fh_result:
-            _options_cache[cache_key] = (fh_result, time.time())
-            return fh_result
-
-    # ── Fall back to yfinance ────────────────────────────────────────────────
+    # ── Try yfinance first ───────────────────────────────────────────────────
+    yf_error: str | None = None
     try:
+        print(f"[options] yfinance: fetching Ticker({ticker!r})")
         t = yf.Ticker(ticker)
-        expiry_dates: list[str] = list(t.options)
+        raw_options = t.options
+        print(f"[options] yfinance: t.options type={type(raw_options).__name__} value={raw_options!r}")
+        expiry_dates: list[str] = list(raw_options) if raw_options else []
+        print(f"[options] yfinance: expiry_dates count={len(expiry_dates)} first3={expiry_dates[:3]}")
+
         if not expiry_dates:
-            raise HTTPException(status_code=404, detail="No options available for this ticker")
+            raise ValueError(f"yfinance returned no expiry dates for {ticker}")
 
         selected = date if (date and date in expiry_dates) else expiry_dates[0]
+        print(f"[options] yfinance: selected expiry={selected!r}")
 
         info = t.info or {}
         current_price = safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0) or 0.0
+        print(f"[options] yfinance: current_price={current_price} (keys present: currentPrice={info.get('currentPrice')!r}, regularMarketPrice={info.get('regularMarketPrice')!r})")
 
         chain = t.option_chain(selected)
+        print(f"[options] yfinance: chain calls={len(chain.calls)} puts={len(chain.puts)}")
 
         def _process(df, is_call: bool) -> list[dict]:
             rows = []
@@ -2928,13 +2934,33 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
             "puts":             _process(chain.puts, False),
         }
         _options_cache[cache_key] = (result, time.time())
+        print(f"[options] yfinance: success for {ticker}")
         return result
 
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Options error for {ticker}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        yf_error = str(e)
+        print(f"[options] yfinance FAILED for {ticker}: {yf_error}")
+        _tb.print_exc()
+
+    # ── Fall back to Finnhub ─────────────────────────────────────────────────
+    print(f"[options] trying Finnhub fallback for {ticker}")
+    fh_key = os.environ.get("FINNHUB_API_KEY", "")
+    if fh_key:
+        fh_result = _finnhub_options(ticker, fh_key, date, 0.0)
+        if fh_result:
+            print(f"[options] Finnhub success for {ticker}")
+            _options_cache[cache_key] = (fh_result, time.time())
+            return fh_result
+        print(f"[options] Finnhub returned no data for {ticker} (likely free-tier key; options require Finnhub premium)")
+    else:
+        print(f"[options] no FINNHUB_API_KEY set, skipping Finnhub fallback")
+
+    raise HTTPException(
+        status_code=500,
+        detail=f"Options unavailable: yfinance error: {yf_error}. Finnhub fallback also failed (options require a Finnhub premium subscription).",
+    )
 
 
 # Base cache: index prices + news headlines (shared across all ticker combos, 5-min TTL)
