@@ -408,7 +408,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               border:`1px solid ${overweight ? "rgba(224,92,92,0.5)" : !balanced ? "rgba(201,168,76,0.35)" : C.border}`,
               borderRadius:4,
               cursor: balanced ? "default" : !overweight ? "pointer" : "default",
-              color: overweight ? "#e05c5c" : !balanced ? C.amber : C.cream3,
+              color: overweight ? "var(--red)" : !balanced ? C.amber : C.cream3,
               background: overweight ? "rgba(224,92,92,0.06)" : "transparent",
               fontFamily:"Space Mono,monospace",
               transition:"all 0.15s", flexShrink:0,
@@ -418,7 +418,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         </div>
       </div>
 
-      {importError&&<p style={{fontSize:10,color:"#e05c5c",margin:"8px 0"}}>{importError}</p>}
+      {importError&&<p style={{fontSize:10,color:"var(--red)",margin:"8px 0"}}>{importError}</p>}
 
       {/* ── Asset list ────────────────────────────────────────────── */}
       <div style={{marginTop:4, paddingTop:12}}>
@@ -510,7 +510,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 {/* Remove */}
                 <button onClick={(e)=>{ e.stopPropagation(); if(window.confirm(`Remove ${assets[i].ticker} from your portfolio?`)) remove(i); }}
                   style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center",flexShrink:0}}
-                  onMouseEnter={e=>e.currentTarget.style.color="#e05c5c"}
+                  onMouseEnter={e=>e.currentTarget.style.color="var(--red)"}
                   onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}>
                   <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>

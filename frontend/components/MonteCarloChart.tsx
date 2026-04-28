@@ -21,7 +21,7 @@ const YEARS_OPTIONS = [1, 2, 3, 5, 10, 20, 30];
 
 const C = {
   amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", amber3: "rgba(201,168,76,0.06)",
-  red: "#e05c5c", green: "#5cb88a",
+  red: "var(--red)", green: "#5cb88a",
 };
 
 const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfolioValue }: { assets: any[]; period: string; portfolioValue?: number }) {

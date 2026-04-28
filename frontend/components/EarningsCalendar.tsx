@@ -68,7 +68,7 @@ function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolea
     : "var(--border)";
 
   const urgencyColor =
-    days <= 7 ? "#e05c5c"
+    days <= 7 ? "var(--red)"
     : days <= 14 ? "var(--accent)"
     : "var(--text3)";
 

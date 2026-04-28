@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const GREEN = "#4caf7d";
-const RED = "#e05c5c";
+const RED = "var(--red)";
 const AMBER = "#b8860b";
 
 interface InsiderTransaction {

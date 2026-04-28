@@ -52,7 +52,7 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Drawdown Chart</p>
         {data && Array.isArray(data.drawdown) && data.drawdown.length > 0 && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "#e05c5c", letterSpacing: 0, fontWeight: 700 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--red)", letterSpacing: 0, fontWeight: 700 }}>
             Max: {(Math.min(...(data.drawdown as number[]).map((v: number) => v ?? 0)) * 100).toFixed(2)}%
           </span>
         )}

@@ -559,7 +559,6 @@ export default function PricingPage() {
           .nav-links { display: none !important; }
           .pricing-section { padding-left: 20px !important; padding-right: 20px !important; }
           .pricing-section-inner { padding: 0 !important; }
-          .pricing-vote-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
 

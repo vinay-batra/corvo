@@ -3,7 +3,7 @@
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
-const C = { amber: "var(--accent)", red: "#e05c5c" };
+const C = { amber: "var(--accent)", red: "var(--red)" };
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function Num({ value, fmt }: { value: number; fmt: (v: number) => string }) {
@@ -51,7 +51,7 @@ function Sparkline({ values, positive }: { values: number[]; positive: boolean }
   });
   const pathD = "M" + pts.join(" L");
   const fillD = pathD + ` L${W},${H} L0,${H} Z`;
-  const color = positive ? "#4caf7d" : "#e05c5c";
+  const color = positive ? "#4caf7d" : "var(--red)";
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
       <path d={fillD} fill={color} fillOpacity={0.1} />

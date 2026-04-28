@@ -38,6 +38,12 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
           .blog-cta-wrap{margin:0 20px 64px!important}
           .blog-cta-inner{padding:32px 24px!important}
         }
+        @media(max-width:768px){
+          .prose table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+          .prose p,.prose li{font-size:15px!important}
+          .prose h2{font-size:18px!important;margin:36px 0 12px!important}
+          .prose h3{font-size:15px!important;margin:24px 0 10px!important}
+        }
       `}</style>
 
       {/* Fixed grid bg */}

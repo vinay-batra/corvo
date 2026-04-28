@@ -64,7 +64,7 @@ function LiveRow({
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", fontFamily: "Space Mono, monospace" }}>
           ${entry.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
-        <div style={{ fontSize: 11, fontWeight: 600, color: up ? "#4caf7d" : "#e05c5c" }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: up ? "#4caf7d" : "var(--red)" }}>
           {up ? "+" : ""}{entry.change_pct != null ? entry.change_pct.toFixed(2) : "-"}%
         </div>
       </div>
@@ -254,7 +254,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
               {losers.length > 0 && (
                 <>
                   <SectionHeader title="Top Losers">
-                    <TrendingDown size={12} style={{ color: "#e05c5c" }} />
+                    <TrendingDown size={12} style={{ color: "var(--red)" }} />
                   </SectionHeader>
                   {losers.map(e => (
                     <LiveRow key={e.ticker} entry={e} flash={flashSet.has(e.ticker)} onSelect={() => onSelectTicker(e.ticker)} />

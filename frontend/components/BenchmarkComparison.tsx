@@ -6,7 +6,7 @@ const BENCHMARK_LABELS: Record<string, string> = {
   "^RUT": "Russell 2000", "QQQ": "QQQ ETF", "GLD": "Gold",
 };
 
-const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", red: "#e05c5c", green: "#4caf7d" };
+const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", red: "var(--red)", green: "#4caf7d" };
 
 function BenchmarkSkeleton() {
   return (
