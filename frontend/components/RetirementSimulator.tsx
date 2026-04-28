@@ -172,17 +172,18 @@ interface AdvancedField {
   tooltip: string;
 }
 
+// Module-level cache persists the last result across tab switches without causing
+// parent re-renders (which were snapping scroll position back to top)
+let _retirementResultCache: SimResult | null = null;
+
 export default function RetirementSimulator({
   assets,
   portfolioValue,
-  savedResult,
-  onResultChange,
 }: {
   assets: { ticker: string; weight: number }[];
   portfolioValue?: number;
-  savedResult: SimResult | null;
-  onResultChange: (result: SimResult | null) => void;
 }) {
+  const [result, setResult] = useState<SimResult | null>(_retirementResultCache);
   const [years, setYears] = useState(20);
   const [value, setValue] = useState<string>(portfolioValue ? String(Math.round(portfolioValue)) : "");
   const [loading, setLoading] = useState(false);
@@ -240,7 +241,8 @@ export default function RetirementSimulator({
     if (isNaN(v) || v <= 0) { setError("Enter a valid portfolio value."); return; }
     setError(null);
     setLoading(true);
-    onResultChange(null);
+    _retirementResultCache = null;
+    setResult(null);
     startProgress();
     try {
       const res = await fetch(`${API_URL}/portfolio/retirement-simulation`, {
@@ -262,7 +264,9 @@ export default function RetirementSimulator({
         const d = await res.json().catch(() => ({}));
         throw new Error(d.detail || `Error ${res.status}`);
       }
-      onResultChange(await res.json());
+      const r = await res.json();
+      _retirementResultCache = r;
+      setResult(r);
     } catch (e: any) {
       setError(e.message || "Simulation failed. Try again.");
     } finally {
@@ -270,8 +274,6 @@ export default function RetirementSimulator({
       stopProgress();
     }
   };
-
-  const result = savedResult;
 
   const advancedFields: AdvancedField[] = [
     {
