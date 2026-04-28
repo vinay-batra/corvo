@@ -413,6 +413,162 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
   );
 }
 
+// ── Analyst Consensus Card ────────────────────────────────────────────────────
+interface AnalystConsensusFallback {
+  buy: number; hold: number; sell: number;
+  num_analysts: number | null;
+  target_mean: number | null; target_high: number | null; target_low: number | null;
+}
+
+function AnalystConsensusCard({
+  data, currentPrice, accentColor, fallback,
+}: {
+  data: AnalystConsensus | null;
+  currentPrice: number;
+  accentColor: string;
+  fallback: AnalystConsensusFallback;
+}) {
+  const targetMean    = data?.target_mean    ?? fallback.target_mean;
+  const targetHigh    = data?.target_high    ?? fallback.target_high;
+  const targetLow     = data?.target_low     ?? fallback.target_low;
+  const numAnalysts   = data?.num_analysts   ?? fallback.num_analysts;
+  const buy           = data?.buy            ?? fallback.buy;
+  const hold          = data?.hold           ?? fallback.hold;
+  const sell          = data?.sell           ?? fallback.sell;
+
+  const price = currentPrice;
+  const upside = targetMean && price > 0
+    ? ((targetMean / price - 1) * 100)
+    : null;
+  const isUp = upside != null ? upside >= 0 : null;
+  const targetColor = isUp === true ? GREEN : isUp === false ? RED : accentColor;
+
+  const totalVotes = buy + hold + sell;
+
+  // Range bar positions (% from left)
+  let currentPct = 50;
+  let targetPct  = 50;
+  if (targetLow != null && targetHigh != null && targetHigh > targetLow) {
+    const range = targetHigh - targetLow;
+    currentPct = Math.max(2, Math.min(98, ((price      - targetLow) / range) * 100));
+    targetPct  = Math.max(2, Math.min(98, ((targetMean! - targetLow) / range) * 100));
+  }
+  const fillLeft  = Math.min(currentPct, targetPct);
+  const fillWidth = Math.abs(targetPct - currentPct);
+
+  return (
+    <Card title="Analyst Consensus" style={{ marginBottom: 10 }}>
+      {/* Top row: consensus target + analyst count */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
+        <div>
+          {targetMean != null ? (
+            <>
+              <div style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: targetColor, letterSpacing: -0.5, lineHeight: 1 }}>
+                ${targetMean.toFixed(2)}
+              </div>
+              <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 3 }}>Consensus target</div>
+              {upside != null && (
+                <div style={{ fontSize: 11, fontFamily: "Space Mono, monospace", fontWeight: 600, color: targetColor, marginTop: 4 }}>
+                  {upside >= 0 ? "+" : ""}{upside.toFixed(1)}% {upside >= 0 ? "upside" : "downside"} from ${price.toFixed(2)}
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ fontSize: 12, color: "var(--text3)" }}>No consensus target available</div>
+          )}
+        </div>
+        {numAnalysts != null && (
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{numAnalysts}</div>
+            <div style={{ fontSize: 10, color: "var(--text3)" }}>analysts covering</div>
+          </div>
+        )}
+      </div>
+
+      {/* Range bar: low target ... current ... consensus ... high target */}
+      {targetLow != null && targetHigh != null && targetMean != null && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ position: "relative", height: 6, background: "var(--bg3)", borderRadius: 3 }}>
+            {/* Colored fill between current and consensus */}
+            <div style={{
+              position: "absolute", top: 0, height: "100%",
+              left: `${fillLeft}%`, width: `${fillWidth}%`,
+              background: isUp ? `${GREEN}55` : `${RED}55`,
+              borderRadius: 3,
+            }} />
+            {/* Current price dot */}
+            <div style={{
+              position: "absolute", top: "50%", transform: "translate(-50%, -50%)",
+              left: `${currentPct}%`,
+              width: 10, height: 10, borderRadius: "50%",
+              background: "var(--text2)", border: "2px solid var(--bg)", zIndex: 2,
+            }} />
+            {/* Consensus target dot */}
+            <div style={{
+              position: "absolute", top: "50%", transform: "translate(-50%, -50%)",
+              left: `${targetPct}%`,
+              width: 13, height: 13, borderRadius: "50%",
+              background: targetColor, border: "2.5px solid var(--bg)",
+              boxShadow: `0 0 7px ${targetColor}77`, zIndex: 3,
+            }} />
+          </div>
+          {/* Labels */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, fontSize: 9, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>
+            <div>
+              <div style={{ color: RED }}>Low target</div>
+              <div style={{ color: "var(--text2)" }}>${targetLow.toFixed(2)}</div>
+            </div>
+            <div style={{ display: "flex", gap: 16, fontSize: 9 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ color: "var(--text3)" }}>Current</div>
+                <div style={{ color: "var(--text2)" }}>${price.toFixed(2)}</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ color: "var(--text3)" }}>Consensus</div>
+                <div style={{ color: targetColor }}>${targetMean.toFixed(2)}</div>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ color: GREEN }}>High target</div>
+              <div style={{ color: "var(--text2)" }}>${targetHigh.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Buy / Hold / Sell breakdown */}
+      {totalVotes > 0 && (
+        <div>
+          <div style={{ display: "flex", height: 5, borderRadius: 3, overflow: "hidden", gap: 1, marginBottom: 6 }}>
+            <div style={{ flex: buy,  background: GREEN, minWidth: 0 }} />
+            <div style={{ flex: hold, background: accentColor, minWidth: 0 }} />
+            <div style={{ flex: sell, background: RED, minWidth: 0 }} />
+          </div>
+          <div style={{ display: "flex", gap: 14, fontSize: 10 }}>
+            <span style={{ color: GREEN }}>Buy {buy}</span>
+            <span style={{ color: accentColor }}>Hold {hold}</span>
+            <span style={{ color: RED }}>Sell {sell}</span>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+interface AnalystConsensus {
+  ticker: string;
+  current_price: number;
+  target_mean: number | null;
+  target_high: number | null;
+  target_low: number | null;
+  upside_pct: number | null;
+  num_analysts: number | null;
+  buy: number;
+  hold: number;
+  sell: number;
+  last_updated: string | null;
+}
+
 export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   ticker: string;
   onBack: () => void;
@@ -434,6 +590,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const [inWatchlist, setInWatchlist] = useState(false);
   const [livePrice, setLivePrice]     = useState<number | null>(null);
   const [priceFlash, setPriceFlash]   = useState<"up" | "down" | null>(null);
+  const [analystConsensus, setAnalystConsensus] = useState<AnalystConsensus | null>(null);
   const prevPriceRef  = useRef<number | null>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dark, setDark] = useState(true);
@@ -527,6 +684,15 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   }, [ticker]);
 
   useEffect(() => { loadHistory(period); }, [period, loadHistory]);
+
+  // ── Analyst consensus fetch ─────────────────────────────────────────────────
+  useEffect(() => {
+    setAnalystConsensus(null);
+    fetch(`${API_URL}/analyst-targets/${ticker}`)
+      .then(r => r.json())
+      .then(d => { if (d && !d.detail) setAnalystConsensus(d); })
+      .catch(() => {});
+  }, [ticker]);
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const currentPrice = livePrice ?? info?.current_price ?? 0;
@@ -648,7 +814,6 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   if (!info) return null;
 
   const ratingColor = RATING_COLOR[info.analyst_rating] || "var(--text3)";
-  const totalAnalystVotes = (info.analyst_buy ?? 0) + (info.analyst_hold ?? 0) + (info.analyst_sell ?? 0);
 
   const earningsDays = info.earnings_date
     ? Math.round((new Date(info.earnings_date).getTime() - Date.now()) / 86400000)
@@ -864,56 +1029,21 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
         </Card>
       </div>
 
-      {/* ── Analyst Ratings ─────────────────────────────────────────────────── */}
-      <Card title="Analyst Ratings" style={{ marginBottom: 10 }}>
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 160 }}>
-            {totalAnalystVotes > 0 ? (
-              <>
-                <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", gap: 1, marginBottom: 8 }}>
-                  <div style={{ flex: info.analyst_buy ?? 0, background: GREEN, minWidth: 0 }} />
-                  <div style={{ flex: info.analyst_hold ?? 0, background: AMBER, minWidth: 0 }} />
-                  <div style={{ flex: info.analyst_sell ?? 0, background: RED, minWidth: 0 }} />
-                </div>
-                <div style={{ display: "flex", gap: 12, fontSize: 10 }}>
-                  <span style={{ color: GREEN }}>Buy {info.analyst_buy ?? 0}</span>
-                  <span style={{ color: AMBER }}>Hold {info.analyst_hold ?? 0}</span>
-                  <span style={{ color: RED }}>Sell {info.analyst_sell ?? 0}</span>
-                </div>
-              </>
-            ) : <p style={{ fontSize: 11, color: "var(--text3)" }}>No breakdown available</p>}
-          </div>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-            {info.target_mean != null && (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3 }}>Mean Target</div>
-                <div style={{ fontFamily: "Space Mono, monospace", fontSize: 15, fontWeight: 700, color: accentColor }}>${info.target_mean.toFixed(2)}</div>
-                {info.target_mean > currentPrice && currentPrice > 0 && (
-                  <div style={{ fontSize: 9, color: GREEN, marginTop: 2 }}>+{((info.target_mean / currentPrice - 1) * 100).toFixed(1)}% upside</div>
-                )}
-              </div>
-            )}
-            {info.target_high != null && (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3 }}>High</div>
-                <div style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 600, color: GREEN }}>${info.target_high.toFixed(2)}</div>
-              </div>
-            )}
-            {info.target_low != null && (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3 }}>Low</div>
-                <div style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 600, color: RED }}>${info.target_low.toFixed(2)}</div>
-              </div>
-            )}
-            {info.num_analysts != null && (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3 }}>Analysts</div>
-                <div style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{info.num_analysts}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
+      {/* ── Analyst Consensus ────────────────────────────────────────────────── */}
+      <AnalystConsensusCard
+        data={analystConsensus}
+        currentPrice={currentPrice}
+        accentColor={accentColor}
+        fallback={{
+          buy: info.analyst_buy ?? 0,
+          hold: info.analyst_hold ?? 0,
+          sell: info.analyst_sell ?? 0,
+          num_analysts: info.num_analysts ?? null,
+          target_mean: info.target_mean ?? null,
+          target_high: info.target_high ?? null,
+          target_low: info.target_low ?? null,
+        }}
+      />
 
       {/* ── Earnings Calendar ───────────────────────────────────────────────── */}
       <Card title="Earnings Calendar" style={{ marginBottom: 10 }}>

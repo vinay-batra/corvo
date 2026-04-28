@@ -110,3 +110,8 @@ export async function fetchTaxLoss(assets: any[], portfolioValue = 10000) {
   );
   return res.json();
 }
+
+export async function fetchAnalystTargets(ticker: string) {
+  const res = await fetch(`${API_URL}/analyst-targets/${encodeURIComponent(ticker)}`);
+  return res.json();
+}

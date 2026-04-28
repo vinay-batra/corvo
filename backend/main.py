@@ -2436,6 +2436,86 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── Analyst targets endpoint ───────────────────────────────────────────────────
+_analyst_targets_cache: dict[str, tuple[dict, float]] = {}
+
+@app.get("/analyst-targets/{ticker}")
+def analyst_targets_endpoint(ticker: str, request: Request):
+    """Analyst consensus price targets from Finnhub /stock/price-target and /stock/recommendation."""
+    import time as _time_at
+    ticker = ticker.upper().strip()
+    now = _time_at.time()
+
+    if ticker in _analyst_targets_cache:
+        cached, ts = _analyst_targets_cache[ticker]
+        if now - ts < 3600:
+            return cached
+
+    fh_key = os.environ.get("FINNHUB_API_KEY", "")
+    if not fh_key:
+        raise HTTPException(status_code=503, detail="Finnhub API key not configured")
+
+    try:
+        pt_resp = requests.get(
+            f"https://finnhub.io/api/v1/stock/price-target?symbol={ticker}&token={fh_key}",
+            timeout=8,
+        )
+        pt = pt_resp.json() if pt_resp.ok else {}
+
+        rec_resp = requests.get(
+            f"https://finnhub.io/api/v1/stock/recommendation?symbol={ticker}&token={fh_key}",
+            timeout=8,
+        )
+        try:
+            recs = rec_resp.json() if rec_resp.ok else []
+            if not isinstance(recs, list):
+                recs = []
+        except Exception:
+            recs = []
+
+        current_price = 0.0
+        try:
+            info = yf.Ticker(ticker).info or {}
+            current_price = float(safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0) or 0.0)
+        except Exception:
+            pass
+
+        target_mean = safe_float(pt.get("targetMean")) or None
+        target_high = safe_float(pt.get("targetHigh")) or None
+        target_low  = safe_float(pt.get("targetLow"))  or None
+
+        latest_rec = recs[0] if recs else {}
+        num_analysts = pt.get("numberAnalysts")
+        if not num_analysts and latest_rec:
+            num_analysts = (
+                int(latest_rec.get("buy", 0)) + int(latest_rec.get("hold", 0)) +
+                int(latest_rec.get("sell", 0)) + int(latest_rec.get("strongBuy", 0)) +
+                int(latest_rec.get("strongSell", 0))
+            ) or None
+
+        upside_pct = round((target_mean / current_price - 1) * 100, 2) if target_mean and current_price else None
+
+        result = {
+            "ticker": ticker,
+            "current_price": round(current_price, 2),
+            "target_mean": round(target_mean, 2) if target_mean else None,
+            "target_high": round(target_high, 2) if target_high else None,
+            "target_low":  round(target_low,  2) if target_low  else None,
+            "upside_pct":  upside_pct,
+            "num_analysts": int(num_analysts) if num_analysts else None,
+            "buy":  int(latest_rec.get("buy", 0)) + int(latest_rec.get("strongBuy", 0)),
+            "hold": int(latest_rec.get("hold", 0)),
+            "sell": int(latest_rec.get("sell", 0)) + int(latest_rec.get("strongSell", 0)),
+            "last_updated": pt.get("lastUpdated"),
+        }
+
+        _analyst_targets_cache[ticker] = (result, now)
+        return result
+    except Exception as e:
+        print(f"Analyst targets error for {ticker}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 _options_cache: dict[str, tuple[dict, float]] = {}
 
 def _norm_cdf(x: float) -> float:

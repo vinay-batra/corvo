@@ -1729,15 +1729,19 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           .c-bgrid{grid-template-columns:1fr!important}
           .c-risk-grid{grid-template-columns:1fr!important}
           .c-risk-2col{grid-template-columns:1fr!important}
-          .c-content{padding:12px 10px!important;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))!important}
+          .c-content{padding:12px 10px!important;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
-          #tour-desk-chat{display:none!important}
+          #tour-desk-chat{display:flex!important;bottom:20px!important;right:14px!important;width:44px!important;height:44px!important}
           .c-alloc-row{flex-direction:column!important}
           .c-alloc-row>*{flex:none!important;width:100%!important}
           .c-mob-bar #usermenu-btn>span{display:none!important}
           .c-mob-bar #usermenu-btn{padding:3px!important;gap:0!important}
           .c-mob-bar #usermenu-btn svg:last-child{display:none!important}
-          #tour-desk-chat{display:flex!important;bottom:24px!important;right:16px!important}
+          .c-banner{flex-wrap:wrap!important;gap:8px!important}
+          .c-banner-text{flex:1 1 100%!important;min-width:0!important}
+          .c-banner-actions{flex-shrink:0!important}
+          .c-perf-controls{flex-wrap:wrap!important;gap:6px!important}
+          .c-perf-controls>*{flex-shrink:0!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
@@ -1915,14 +1919,15 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               <motion.div
                 // initial={false} is required — do not remove
                 initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                className="c-banner"
                 style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="c-banner-text" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ color: "var(--accent)", fontSize: 13, flexShrink: 0 }}>◎</span>
                   <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.4 }}>
                     Complete your setup: add your portfolio to unlock AI insights and risk analysis.
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <div className="c-banner-actions" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                   <button onClick={() => { setShowSetupBanner(false); window.location.href = "/onboarding"; }}
                     style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "var(--bg)", cursor: "pointer", transition: "opacity 0.15s" }}
                     onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
@@ -1944,14 +1949,15 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               <motion.div
                 // initial={false} is required — do not remove
                 initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                className="c-banner"
                 style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="c-banner-text" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)", flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                   <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.4 }}>
                     No price data found for: <strong style={{ color: "var(--accent)" }}>{skippedTickers.join(", ")}</strong>. Analysis ran with remaining holdings.
                   </span>
                 </div>
-                <button onClick={() => setSkippedTickers([])}
+                <button className="c-banner-actions" onClick={() => setSkippedTickers([])}
                   style={{ width: 22, height: 22, borderRadius: 6, border: "none", background: "rgba(184,134,11,0.1)", color: "var(--accent)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -1965,9 +1971,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               <motion.div
                 // initial={false} is required — do not remove
                 initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                className="c-banner"
                 style={{ border: "0.5px solid rgba(224,92,92,0.4)", borderRadius: 10, padding: "12px 16px", background: "rgba(224,92,92,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <span style={{ fontSize: 13, color: "#e05c5c" }}>{errorMsg}</span>
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <span className="c-banner-text" style={{ fontSize: 13, color: "#e05c5c" }}>{errorMsg}</span>
+                <div className="c-banner-actions" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                   <button onClick={handleAnalyze}
                     style={{ padding: "5px 12px", fontSize: 11, borderRadius: 6, border: "0.5px solid rgba(224,92,92,0.4)", background: "transparent", color: "#e05c5c", cursor: "pointer" }}>
                     Try again
@@ -2063,12 +2070,14 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   <motion.div
                     // initial={false} is required — do not remove
                     initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
+                    className="c-banner"
                     style={{ border: "0.5px solid rgba(184,134,11,0.35)", borderRadius: 10, padding: "10px 16px", background: "rgba(184,134,11,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, zIndex: 10, position: "relative" }}>
-                    <span style={{ fontSize: 12, color: "var(--text2)" }}>
+                    <span className="c-banner-text" style={{ fontSize: 12, color: "var(--text2)" }}>
                       Assets have changed. Re-analyze to update results.
                     </span>
                     <button
                       onClick={handleAnalyze}
+                      className="c-banner-actions"
                       style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "var(--bg)", cursor: "pointer", flexShrink: 0 }}>
                       Reanalyze
                     </button>
