@@ -6,8 +6,8 @@ const PRODUCT_LINKS = [
   { label: "Blog", href: "/blog" },
   { label: "Pricing", href: "/pricing" },
   { label: "Changelog", href: "/changelog" },
-  { label: "FAQ", href: "/faq" },
   { label: "Install App", href: "/install" },
+  { label: "FAQ", href: "/faq" },
 ];
 
 const LEGAL_LINKS = [
