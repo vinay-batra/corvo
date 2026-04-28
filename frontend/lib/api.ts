@@ -116,6 +116,14 @@ export async function fetchAnalystTargets(ticker: string) {
   return res.json();
 }
 
+export async function fetchEarningsPreview(assets: { ticker: string; weight: number }[]) {
+  const total = assets.reduce((s, a) => s + a.weight, 0) || 1;
+  const tickers = assets.map(a => a.ticker).join(",");
+  const weights = assets.map(a => a.weight / total).join(",");
+  const res = await fetch(`${API_URL}/earnings-preview?tickers=${tickers}&weights=${weights}`);
+  return res.json();
+}
+
 export async function fetchNaturalLanguageEdit(
   command: string,
   portfolio: { ticker: string; weight: number }[]
