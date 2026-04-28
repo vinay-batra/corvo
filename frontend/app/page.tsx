@@ -1705,7 +1705,6 @@ export default function Landing() {
   const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [changelogOpen, setChangelogOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{ displayName: string; avatarUrl: string | null; initials: string } | null>(null);
 
   useEffect(() => {
@@ -1745,16 +1744,6 @@ export default function Landing() {
     return () => document.removeEventListener("mousedown", close);
   }, [userMenuOpen]);
 
-  useEffect(() => {
-    if (!changelogOpen) return;
-    const close = (e: MouseEvent) => {
-      const menu = document.getElementById("changelog-dropdown");
-      const btn = document.getElementById("changelog-btn");
-      if (menu && !menu.contains(e.target as Node) && btn && !btn.contains(e.target as Node)) setChangelogOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [changelogOpen]);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -1860,12 +1849,8 @@ export default function Landing() {
           .hero-btns>*{width:min(300px,80vw)!important;justify-content:center!important;text-align:center!important;display:flex!important;align-items:center!important}
           .hero-preview-sidebar{display:none!important}
           .stats-grid>*{border-right:none!important}
-          .changelog-pill-wrap{display:none!important}
-          .changelog-pill-label{display:none!important}
-          .changelog-pill-mobile{display:inline!important}
           .nav-user-name-mobile{display:inline!important}
           .nav-auth-desktop{display:none!important}.nav-install-desktop{display:none!important}
-          #changelog-dropdown{position:fixed!important;top:58px!important;left:16px!important;right:16px!important;width:auto!important;max-width:none!important}
           .vs-panels{flex-direction:column!important}
           .vs-panels>*{flex:none!important;width:100%!important}
           .vs-panels>*:nth-child(1){border-radius:16px 16px 0 0!important;border-right:1px solid rgba(0,200,0,0.15)!important}
@@ -1903,51 +1888,10 @@ export default function Landing() {
       </div>
       {/* NAV */}
       <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "var(--bg)" : "color-mix(in srgb, var(--bg) 60%, transparent)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
-        {/* Logo + What's New */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
-            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
-          </div>
-          <div className="changelog-pill-wrap" style={{ position: "relative" }}>
-            <button
-              id="changelog-btn"
-              onClick={e => { e.stopPropagation(); setChangelogOpen(v => !v); }}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.35)", borderRadius: 20, cursor: "pointer", transition: "all 0.2s" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.1)"; }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite", flexShrink: 0 }} />
-              <span className="changelog-pill-label" style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text2)", fontFamily: "Space Mono,monospace", textTransform: "uppercase" as const }}>What&apos;s New</span>
-              <span className="changelog-pill-mobile" style={{ fontSize: 9, letterSpacing: 1, color: "var(--text2)", fontFamily: "Space Mono,monospace", textTransform: "uppercase" as const, display: "none" }}>NEW</span>
-            </button>
-            {changelogOpen && (
-              <div id="changelog-dropdown" style={{ position: "absolute", top: "calc(100% + 10px)", left: 0, width: 280, background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, padding: "10px", backdropFilter: "blur(24px)", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", zIndex: 200 }}>
-                <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", padding: "4px 8px 10px", borderBottom: "1px solid var(--border)", marginBottom: 6 }}>Recent updates</p>
-                {[
-                  { label: "Mobile Overhaul", desc: "Full mobile rebuild, charts, AI fixes" },
-                  { label: "About Page", desc: "Story, nav polish, light mode default" },
-                  { label: "Light Mode", desc: "Instant theme switching, no flash, all pages" },
-                  { label: "AI Chat Overhaul", desc: "History sidebar, suggestions, richer context" },
-                  { label: "CAGR & Sharpe Fixes", desc: "Live T-bill rate, accurate return metrics" },
-                ].map(({ label, desc }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px", borderRadius: 8, transition: "background 0.15s", cursor: "default" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <span style={{ flexShrink: 0, marginTop: 2, fontSize: 7, fontWeight: 700, letterSpacing: 0.5, color: "#0a0e14", background: "#5cb88a", padding: "2px 5px", borderRadius: 4 }}>NEW</span>
-                    <div>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{label}</p>
-                      <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.4 }}>{desc}</p>
-                    </div>
-                  </div>
-                ))}
-                <div style={{ borderTop: "1px solid var(--border)", marginTop: 6, paddingTop: 8, paddingLeft: 8 }}>
-                  <a href="/changelog" style={{ fontSize: 11, color: "rgba(201,168,76,0.7)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}
-                    onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")}
-                    onMouseLeave={e => (e.currentTarget.style.color = "rgba(201,168,76,0.7)")}>View full changelog →</a>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
+          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
         </div>
         {/* Desktop nav links */}
         <div className="nav-links" style={{ display: "flex", gap: 2, alignItems: "center", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
