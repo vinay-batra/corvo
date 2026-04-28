@@ -8,13 +8,30 @@ import FeedbackButton from "../../components/FeedbackButton";
 
 const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
 
-function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
+/* Headline words — split here so delay math is visible */
+const HEADLINE_WORDS = "Most apps show you what happened. Corvo tells you what to do about it.".split(" ");
+const HEADLINE_WORD_COUNT = HEADLINE_WORDS.length;
+/* Subtitle starts 0.3s after the last word finishes animating */
+const SUBTITLE_DELAY = HEADLINE_WORD_COUNT * 0.06 + 0.3;
+
+function FadeUp({
+  children,
+  delay = 0,
+  amount = 0,
+  style = {},
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  amount?: number;
+  style?: React.CSSProperties;
+}) {
   return (
     <motion.div
       // initial={false} required — do not remove
       initial={false}
+      animate={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
+      viewport={{ once: true, amount }}
       transition={{ duration: 0.55, ease: ANIM_EASE, delay }}
       style={style}
     >
@@ -39,40 +56,74 @@ export default function AboutPage() {
 
       {/* Hero */}
       <div className="ab-hero" style={{ padding: "140px 56px 32px", textAlign: "center" }}>
-        <FadeUp>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, marginBottom: 32, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
-            <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>About</span>
-          </div>
-          <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.1, maxWidth: 1040, margin: "0 auto 16px" }}>
-            Most apps show you what happened. Corvo tells you what to do about it.
-          </h1>
-          <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "28px auto 0", lineHeight: 1.65 }}>
-            Every tool was expensive, outdated, or ugly. So I built a better one.
-          </p>
-        </FadeUp>
+        {/* Badge */}
+        <motion.div
+          // initial={false} required — do not remove
+          initial={false}
+          animate={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, ease: ANIM_EASE }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, marginBottom: 32, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
+          <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>About</span>
+        </motion.div>
+
+        {/* Headline — each word animates in individually, staggered 0.06s */}
+        <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.1, maxWidth: 1040, margin: "0 auto 16px" }}>
+          {HEADLINE_WORDS.map((word, i) => (
+            <React.Fragment key={i}>
+              <motion.span
+                // initial={false} required — do not remove
+                initial={false}
+                animate={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: i * 0.06, ease: ANIM_EASE }}
+                style={{ display: "inline-block" }}
+              >
+                {word}
+              </motion.span>
+              {i < HEADLINE_WORDS.length - 1 && " "}
+            </React.Fragment>
+          ))}
+        </h1>
+
+        {/* Subtitle — fades in 0.3s after last word */}
+        <motion.p
+          // initial={false} required — do not remove
+          initial={false}
+          animate={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.55, delay: SUBTITLE_DELAY, ease: ANIM_EASE }}
+          style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "28px auto 0", lineHeight: 1.65 }}
+        >
+          Every tool was expensive, outdated, or ugly. So I built a better one.
+        </motion.p>
       </div>
 
-      {/* Story */}
+      {/* Story — paragraphs fade up on scroll, 0.1s stagger, 20% threshold */}
       <div className="ab-body" style={{ maxWidth: 640, margin: "0 auto", padding: "24px 56px 80px", textAlign: "center" }}>
-        <FadeUp delay={0.05}>
+        <FadeUp delay={0} amount={0.2}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
             I have always been obsessed with finance and investing. Tracking positions, running analysis, trying to actually understand what my portfolio was doing. But every tool I tried felt like it was built for someone else. The good ones cost money. The free ones were stuck in 2012. None of them felt like they were built by someone who actually cared.
           </p>
         </FadeUp>
-        <FadeUp delay={0.1}>
+        <FadeUp delay={0.1} amount={0.2}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
             So I built Corvo. It started as a personal project, a way to see my portfolio the way I actually wanted to see it. Real metrics. AI that gives useful context. An interface that does not make you feel like you are filing taxes.
           </p>
         </FadeUp>
-        <FadeUp delay={0.15}>
+        <FadeUp delay={0.2} amount={0.2}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300 }}>
             It is still a project. I work on it constantly. Every week there is something new, something better. Built by one person who uses it every day.
           </p>
         </FadeUp>
       </div>
 
-      {/* Founder */}
+      {/* Founder card */}
       <div className="ab-founder" style={{ maxWidth: 640, margin: "0 auto", padding: "0 56px 96px" }}>
         <FadeUp>
           <div style={{ borderRadius: 14, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderLeft: "3px solid var(--accent)", padding: "28px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -91,7 +142,16 @@ export default function AboutPage() {
                 </svg>
                 <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>United States</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* "Building since" badge fades in last */}
+              <motion.div
+                // initial={false} required — do not remove
+                initial={false}
+                animate={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.55, ease: ANIM_EASE }}
+                style={{ display: "flex", alignItems: "center", gap: 8 }}
+              >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <rect x="2" y="2" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.7"/>
                   <rect x="13" y="2" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.4"/>
@@ -99,7 +159,7 @@ export default function AboutPage() {
                   <rect x="13" y="13" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.7"/>
                 </svg>
                 <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>Building since March 2026</span>
-              </div>
+              </motion.div>
             </div>
             <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 16, marginTop: 4 }}>
               <a
