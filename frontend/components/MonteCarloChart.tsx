@@ -12,6 +12,11 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Module-level cache: keyed by simulation params string so results survive tab switches
+// and component remounts without re-firing the expensive backend request.
+const _mcDataCache = new Map<string, any>();
+const _mcInsightCache = new Map<string, string>();
+
 const YEARS_OPTIONS = [1, 2, 3, 5, 10, 20, 30];
 
 const C = {
@@ -48,18 +53,34 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
       "|" + retryCount;
     if (newKey === simKeyRef.current) return;
     simKeyRef.current = newKey;
+
+    // Restore from cache first — avoids re-fetching on tab switch or remount
+    const cached = _mcDataCache.get(newKey);
+    if (cached) {
+      setData(cached);
+      const cachedInsight = _mcInsightCache.get(newKey);
+      if (cachedInsight) setInsight(cachedInsight);
+      return;
+    }
+
     setLoading(true);
     setFetchError(false);
     setInsight(null);
     fetchMonteCarlo(assets, period, simYears)
-      .then((result) => setData(result))
+      .then((result) => {
+        _mcDataCache.set(newKey, result);
+        setData(result);
+      })
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [assets, period, simYears, retryCount]);
 
-  // Fetch Claude insight after simulation data loads
+  // Fetch Claude insight after simulation data loads (skip if already cached)
   useEffect(() => {
     if (!data || data.positive_prob == null) return;
+    // insight may have already been restored from cache in the data effect
+    if (insight !== null) return;
+
     const positiveProb = Math.round(data.positive_prob * 100);
 
     setInsightLoading(true);
@@ -82,11 +103,14 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
     })
       .then(r => r.json())
       .then(r => {
+        let text: string | null = null;
         if (r.detail === "Rate limit exceeded. Try again in an hour.") {
-          setInsight("Insight unavailable - rate limit reached. Try again shortly.");
+          text = "Insight unavailable - rate limit reached. Try again shortly.";
         } else {
-          setInsight(r.insight ?? null);
+          text = r.insight ?? null;
         }
+        if (text) _mcInsightCache.set(simKeyRef.current, text);
+        setInsight(text);
       })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === "AbortError") {
