@@ -640,6 +640,8 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
       <div style={{ position: "relative", marginBottom: 12, zIndex: 1 }}>
         <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Stock Lookup</p>
         <input
+          id="stock-lookup"
+          name="q"
           className="accent-input"
           value={q} onChange={e => setQ(e.target.value)}
           placeholder="Search any ticker or company…"
@@ -1656,6 +1658,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               <>
                 <div style={{ position: "relative" }}>
                   <input
+                    id="nl-command"
+                    name="nlCommand"
                     type="text"
                     value={nlCommand}
                     onChange={e => { setNlCommand(e.target.value); setNlError(null); }}

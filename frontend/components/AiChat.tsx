@@ -772,6 +772,8 @@ export default function AiChat({
                           >
                             {editingConvId === conv.id ? (
                               <input
+                                id="conversation-rename"
+                                name="title"
                                 ref={renameRef}
                                 value={editingTitle}
                                 onChange={e => setEditingTitle(e.target.value)}
@@ -1038,6 +1040,8 @@ export default function AiChat({
           ) : (
             <div style={{ display: "flex", gap: 7, alignItems: "flex-end" }}>
               <textarea
+                id="ai-chat-input"
+                name="message"
                 ref={inputRef}
                 className="cv-input"
                 value={input}
