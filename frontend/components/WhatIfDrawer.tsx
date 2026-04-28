@@ -155,14 +155,14 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
               position: "fixed", left: 0, right: 0, bottom: 0,
               height: "90vh",
               background: "var(--bg2)",
-              borderTop: dark ? "0.5px solid var(--border2)" : "1px solid #d4cfc8",
+              borderTop: "0.5px solid var(--border2)",
               borderRadius: "12px 12px 0 0",
               zIndex: 501, display: "flex", flexDirection: "column", overflow: "hidden",
             } : {
               position: "fixed", top: 0, right: 0, bottom: 0,
               width: "min(900px, 95vw)",
               background: "var(--bg2)",
-              borderLeft: dark ? "0.5px solid var(--border2)" : "1px solid #d4cfc8",
+              borderLeft: "0.5px solid var(--border2)",
               zIndex: 501, display: "flex", flexDirection: "column", overflow: "hidden",
             }}
           >
@@ -237,7 +237,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLORS.whatif }} />
                     <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text)" }}>What-If Scenario</span>
-                    <span style={{ fontSize: 10, color: isBalanced ? "var(--text3)" : "#e05c5c", fontFamily: "var(--font-mono)" }}>
+                    <span style={{ fontSize: 10, color: isBalanced ? "var(--text3)" : "var(--red)", fontFamily: "var(--font-mono)" }}>
                       {Math.round(totalW * 100)}%
                     </span>
                   </div>
@@ -261,7 +261,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                           </span>
                           <button onClick={() => removeAsset(i)}
                             style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center" }}
-                            onMouseEnter={e => e.currentTarget.style.color = "#e05c5c"}
+                            onMouseEnter={e => e.currentTarget.style.color = "var(--red)"}
                             onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                         </div>
                         <input type="range" min="0" max="1" step="0.01" value={a.weight}
@@ -278,7 +278,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
 
                   {/* Validation error */}
                   {!isBalanced && hasValidAssets && (
-                    <p style={{ fontSize: 11, color: "#e05c5c", marginBottom: 8, lineHeight: 1.4 }}>
+                    <p style={{ fontSize: 11, color: "var(--red)", marginBottom: 8, lineHeight: 1.4 }}>
                       Weights must total 100% before running What-If analysis.{" "}
                       <span
                         onClick={equalize}
@@ -308,7 +308,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: COLORS.whatif }}>{m.fmt(wi)}</span>
                               {currentData && (
-                                <span style={{ fontSize: 10, color: better ? "#5cb88a" : "#e05c5c", fontFamily: "var(--font-mono)" }}>
+                                <span style={{ fontSize: 10, color: better ? "#5cb88a" : "var(--red)", fontFamily: "var(--font-mono)" }}>
                                   {better ? "▲" : "▼"} {m.fmt(Math.abs(diff))}
                                 </span>
                               )}

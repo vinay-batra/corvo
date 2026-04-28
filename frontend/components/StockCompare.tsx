@@ -473,7 +473,7 @@ export default function StockCompare() {
           </motion.button>
         )}
 
-        {error && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 8 }}>{error}</p>}
+        {error && <p style={{ fontSize: 11, color: "var(--red)", marginTop: 8 }}>{error}</p>}
         {!comparing && (
           <div style={{ marginTop: 12 }}>
             {tickers.length === 0 && <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 14 }}>Search and add up to 4 tickers to compare performance, stats, and correlation.</p>}
