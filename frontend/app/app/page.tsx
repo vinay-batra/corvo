@@ -37,7 +37,7 @@ import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import TourInviteModal from "../../components/TourInviteModal";
-import { fetchPortfolio, fetchNaturalLanguageEdit } from "../../lib/api";
+import { fetchPortfolio, fetchNaturalLanguageEdit, NLEditResult } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 import AlertsPanel from "../../components/AlertsPanel";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
@@ -819,6 +819,32 @@ const TopbarActions = memo(function TopbarActions({
   );
 });
 
+// Returns 3-4 contextual NL command suggestions based on current portfolio composition.
+// Defined at module level so it can be called inside SidebarInner without capturing stale closures.
+function getNLSuggestions(assets: { ticker: string; weight: number }[]): string[] {
+  if (assets.length === 0) return [];
+  const total = assets.reduce((s, a) => s + a.weight, 0) || 1;
+  const byPct = assets.map(a => ({ ticker: a.ticker.toUpperCase(), pct: (a.weight / total) * 100 })).filter(a => a.ticker);
+  const suggestions: string[] = [];
+
+  const largest = byPct.reduce((m, a) => (a.pct > m.pct ? a : m), byPct[0]);
+  if (largest && largest.pct > 24) suggestions.push(`Reduce ${largest.ticker} by half`);
+
+  const TECH = new Set(["NVDA","AAPL","MSFT","GOOGL","GOOG","META","AMZN","TSLA","AMD","AVGO","INTC","QQQ","XLK","SMH","SOXX"]);
+  const techPct = byPct.filter(a => TECH.has(a.ticker)).reduce((s, a) => s + a.pct, 0);
+  if (techPct > 35) suggestions.push("Reduce tech exposure");
+
+  if (byPct.length > 1) suggestions.push("Rebalance to equal weight");
+
+  const INTL = new Set(["VEU","VXUS","EFA","EEM","VWO","IEFA","IXUS","SCHF"]);
+  if (!byPct.some(a => INTL.has(a.ticker))) suggestions.push("Add international exposure");
+
+  const BONDS = new Set(["BND","AGG","TLT","IEF","SHY","LQD","VBTLX","SGOV","BIL"]);
+  if (!byPct.some(a => BONDS.has(a.ticker))) suggestions.push("Make it more conservative");
+
+  return suggestions.slice(0, 4);
+}
+
 // Card and CardHeader are module-level so React never remounts their children
 // when the parent page re-renders (e.g. on scroll triggering showBackToTop).
 // Defining these inside AppPage created a new function reference every render,
@@ -897,7 +923,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [nlCommand, setNlCommand] = useState("");
   const [nlLoading, setNlLoading] = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
-  const [nlPending, setNlPending] = useState<{ tickers: string[]; weights: number[] } | null>(null);
+  const [nlPending, setNlPending] = useState<NLEditResult | null>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
@@ -1598,40 +1624,72 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       {/* Natural language editor */}
       <div style={{ padding: "10px 14px 0", borderBottom: "0.5px solid var(--border)" }}>
         <div style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 7 }}>Edit with AI</div>
-        <div style={{ position: "relative" }}>
-          <input
-            type="text"
-            value={nlCommand}
-            onChange={e => { setNlCommand(e.target.value); setNlError(null); }}
-            onKeyDown={async e => {
-              if (e.key !== "Enter" || nlLoading || !nlCommand.trim() || !assets.length) return;
-              setNlLoading(true);
-              setNlError(null);
-              setNlPending(null);
-              try {
-                const result = await fetchNaturalLanguageEdit(nlCommand.trim(), assets);
-                if ("error" in result) {
-                  setNlError(result.error);
-                } else {
-                  setNlPending(result);
-                }
-              } catch {
-                setNlError("Request failed. Check your connection and try again.");
-              } finally {
-                setNlLoading(false);
+        {(() => {
+          const runNLCommand = async (cmd: string) => {
+            if (!cmd.trim() || !assets.length || nlLoading) return;
+            setNlCommand(cmd);
+            setNlLoading(true);
+            setNlError(null);
+            setNlPending(null);
+            try {
+              const result = await fetchNaturalLanguageEdit(cmd.trim(), assets);
+              if ("error" in result) {
+                setNlError(result.error);
+              } else {
+                setNlPending(result);
               }
-            }}
-            placeholder={assets.length ? "Try: sell half my NVDA and put it in QQQ" : "Add holdings first"}
-            disabled={nlLoading || !assets.length}
-            style={{ width: "100%", padding: "8px 32px 8px 10px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border2)", borderRadius: 7, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5 }}
-          />
-          {nlLoading && (
-            <div style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite", pointerEvents: "none" }} />
-          )}
-        </div>
-        {nlError && (
-          <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>
-        )}
+            } catch {
+              setNlError("Request failed. Check your connection and try again.");
+            } finally {
+              setNlLoading(false);
+            }
+          };
+          const chips = nlCommand === "" ? getNLSuggestions(assets) : [];
+          return (
+            <>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  value={nlCommand}
+                  onChange={e => { setNlCommand(e.target.value); setNlError(null); }}
+                  onKeyDown={e => { if (e.key === "Enter") runNLCommand(nlCommand); }}
+                  placeholder={assets.length ? "e.g. sell half my NVDA and put it in QQQ" : "Add holdings first"}
+                  disabled={nlLoading || !assets.length}
+                  style={{ width: "100%", padding: "8px 32px 8px 10px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border2)", borderRadius: 7, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5 }}
+                />
+                {nlLoading ? (
+                  <div style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite", pointerEvents: "none" }} />
+                ) : nlCommand.trim() && assets.length ? (
+                  <button
+                    onClick={() => runNLCommand(nlCommand)}
+                    style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--accent)", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}
+                    aria-label="Run command"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  </button>
+                ) : null}
+              </div>
+              {nlError && (
+                <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>
+              )}
+              {chips.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                  {chips.map(chip => (
+                    <button
+                      key={chip}
+                      onClick={() => runNLCommand(chip)}
+                      style={{ padding: "3px 9px", fontSize: 10, fontFamily: "var(--font-body)", background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 12, color: "var(--text3)", cursor: "pointer", lineHeight: 1.5, letterSpacing: 0.2, transition: "all 0.12s", whiteSpace: "nowrap" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.color = "var(--text)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.color = "var(--text3)"; }}
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
         <div style={{ marginBottom: 10 }} />
       </div>
 
@@ -2646,7 +2704,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         {showNotifPrompt && <NotificationPrompt onDismiss={() => setShowNotifPrompt(false)} />}
       </AnimatePresence>
 
-      {/* Natural language edit confirmation modal */}
+      {/* Natural language edit — before/after modal */}
       <AnimatePresence initial={false}>
         {nlPending && (
           <motion.div
@@ -2654,7 +2712,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, overflowY: "auto" }}
             onClick={() => setNlPending(null)}
           >
             <motion.div
@@ -2663,23 +2721,96 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
               onClick={e => e.stopPropagation()}
-              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: "24px 24px 20px", maxWidth: 440, width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.28)" }}
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: "22px 22px 18px", maxWidth: 480, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.32)", maxHeight: "90vh", overflowY: "auto" }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1, flexShrink: 0 }} />
-                <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Confirm portfolio change</span>
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 3, height: 14, background: nlPending.mode === "preview" ? "rgba(59,130,246,0.8)" : "var(--accent)", borderRadius: 1, flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>
+                    {nlPending.mode === "preview" ? "Simulated Preview" : "Confirm Change"}
+                  </span>
+                  {nlPending.mode === "preview" && (
+                    <span style={{ fontSize: 9, letterSpacing: 1, color: "rgba(59,130,246,0.9)", background: "rgba(59,130,246,0.1)", border: "0.5px solid rgba(59,130,246,0.3)", borderRadius: 4, padding: "2px 6px" }}>NOT APPLIED</span>
+                  )}
+                </div>
+                <button onClick={() => setNlPending(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 16, lineHeight: 1, padding: "2px 4px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
-              <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 14, lineHeight: 1.5 }}>
-                This will change your portfolio to:
-              </p>
-              <div style={{ borderRadius: 8, border: "0.5px solid var(--border)", overflow: "hidden", marginBottom: 18 }}>
-                {nlPending.tickers.map((ticker, i) => (
-                  <div key={ticker} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: i < nlPending.tickers.length - 1 ? "0.5px solid var(--border)" : "none", background: i % 2 === 0 ? "var(--bg2)" : "transparent" }}>
-                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text)", fontWeight: 600 }}>{ticker}</span>
-                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text2)" }}>{nlPending.weights[i].toFixed(1)}%</span>
-                  </div>
-                ))}
+
+              {/* AI explanation */}
+              {nlPending.explanation && (
+                <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, marginBottom: 14, padding: "10px 12px", background: "var(--bg3)", borderRadius: 8, border: "0.5px solid var(--border)" }}>
+                  {nlPending.explanation}
+                </p>
+              )}
+
+              {/* Before / after comparison table */}
+              <div style={{ borderRadius: 8, border: "0.5px solid var(--border)", overflow: "hidden", marginBottom: 12 }}>
+                {/* Column headers */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 56px 10px 56px 56px", gap: 0, padding: "6px 12px", background: "var(--bg2)", borderBottom: "0.5px solid var(--border)" }}>
+                  {["Ticker", "Before", "", "After", "Change"].map((h, i) => (
+                    <span key={i} style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", textAlign: i > 0 ? "right" : "left" }}>{h}</span>
+                  ))}
+                </div>
+                {(() => {
+                  const beforeMap = new Map((nlPending.before_tickers || []).map((t, i) => [t, (nlPending.before_weights || [])[i] ?? 0]));
+                  const afterMap = new Map(nlPending.tickers.map((t, i) => [t, nlPending.weights[i]]));
+                  const allTickers = Array.from(new Set([...(nlPending.before_tickers || []), ...nlPending.tickers]));
+                  return allTickers.map((t, rowIdx) => {
+                    const before = beforeMap.has(t) ? beforeMap.get(t)! : null;
+                    const after = afterMap.has(t) ? afterMap.get(t)! : null;
+                    const delta = (after ?? 0) - (before ?? 0);
+                    const isNew = before === null;
+                    const isRemoved = after === null;
+                    const deltaColor = delta > 0.05 ? "#5cb88a" : delta < -0.05 ? "#e05c5c" : "var(--text3)";
+                    return (
+                      <div key={t} style={{ display: "grid", gridTemplateColumns: "1fr 56px 10px 56px 56px", alignItems: "center", padding: "7px 12px", borderBottom: rowIdx < allTickers.length - 1 ? "0.5px solid var(--border)" : "none", background: isNew ? "rgba(92,184,138,0.04)" : isRemoved ? "rgba(224,92,92,0.04)" : "transparent" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 600, color: "var(--text)" }}>{t}</span>
+                          {isNew && <span style={{ fontSize: 8, letterSpacing: 0.8, color: "#5cb88a", background: "rgba(92,184,138,0.12)", padding: "1px 5px", borderRadius: 3 }}>NEW</span>}
+                          {isRemoved && <span style={{ fontSize: 8, letterSpacing: 0.8, color: "#e05c5c", background: "rgba(224,92,92,0.12)", padding: "1px 5px", borderRadius: 3 }}>OUT</span>}
+                        </span>
+                        <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, color: "var(--text3)", textAlign: "right" }}>{before !== null ? `${before.toFixed(1)}%` : "--"}</span>
+                        <span style={{ fontSize: 9, color: "var(--text3)", textAlign: "center" }}>→</span>
+                        <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: after !== null ? 600 : 400, color: after !== null ? "var(--text)" : "var(--text3)", textAlign: "right" }}>{after !== null ? `${after.toFixed(1)}%` : "--"}</span>
+                        <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, color: deltaColor, textAlign: "right" }}>
+                          {isNew ? `+${(after ?? 0).toFixed(1)}%` : isRemoved ? `(${(before ?? 0).toFixed(1)}%)` : Math.abs(delta) > 0.05 ? `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%` : "--"}
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
+
+              {/* Impact metrics */}
+              {nlPending.impact && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                  {[
+                    { label: "Largest position", before: `${nlPending.impact.concentration_before.toFixed(1)}%`, after: `${nlPending.impact.concentration_after.toFixed(1)}%`, improved: nlPending.impact.concentration_after < nlPending.impact.concentration_before - 0.5 },
+                    { label: "Holdings count", before: String(nlPending.impact.holdings_before), after: String(nlPending.impact.holdings_after), improved: nlPending.impact.holdings_after >= nlPending.impact.holdings_before },
+                  ].map(m => (
+                    <div key={m.label} style={{ padding: "8px 10px", background: "var(--bg3)", borderRadius: 7, border: "0.5px solid var(--border)" }}>
+                      <div style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 5 }}>{m.label}</div>
+                      <div style={{ fontFamily: "Space Mono, monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ color: "var(--text3)" }}>{m.before}</span>
+                        <span style={{ color: "var(--text3)", fontSize: 9 }}>→</span>
+                        <span style={{ color: m.improved ? "#5cb88a" : m.after === m.before ? "var(--text2)" : "#e05c5c", fontWeight: 700 }}>{m.after}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Impact summary */}
+              {nlPending.impact_summary && (
+                <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6, marginBottom: 16, fontStyle: "italic" }}>
+                  {nlPending.impact_summary}
+                </p>
+              )}
+
+              {/* Action buttons */}
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => {
@@ -2688,15 +2819,17 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     setNlPending(null);
                     setNlCommand("");
                   }}
-                  style={{ flex: 1, padding: "10px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase", background: "var(--bg)", color: "var(--accent)", border: "1px solid rgba(201,168,76,0.55)", borderRadius: 8, cursor: "pointer" }}
+                  style={{ flex: 1, padding: "10px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 1.5, textTransform: "uppercase", background: "var(--bg)", color: "var(--accent)", border: "1px solid rgba(201,168,76,0.55)", borderRadius: 8, cursor: "pointer", transition: "opacity 0.12s" }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.8"; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
                 >
-                  Apply
+                  {nlPending.mode === "preview" ? "Apply Anyway" : "Apply"}
                 </button>
                 <button
                   onClick={() => setNlPending(null)}
                   style={{ flex: 1, padding: "10px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)", letterSpacing: 1, textTransform: "uppercase", background: "transparent", color: "var(--text3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer" }}
                 >
-                  Cancel
+                  {nlPending.mode === "preview" ? "Close" : "Cancel"}
                 </button>
               </div>
             </motion.div>
