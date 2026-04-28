@@ -2324,17 +2324,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   </AnimatePresence>
                 </div>
 
-                {/* Morning Brief */}
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                    <div style={{ width: 3, height: 14, borderRadius: 2, background: "var(--accent)", flexShrink: 0 }} />
-                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: "var(--text)", textTransform: "uppercase" }}>Morning Brief</span>
-                  </div>
-                  <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 12, padding: "18px 20px" }}>
-                    <MarketBrief />
-                  </div>
-                </div>
-
                 {/* Earnings Impact Preview — only renders when holdings have earnings within 14 days */}
                 <EarningsImpactPreview assets={assets} />
 
