@@ -16,7 +16,7 @@ import { supabase } from "../lib/supabase";
 
 const FEEDBACK_TYPES = ["Bug", "Feature Request", "Other"] as const;
 
-export default function FeedbackButton({ rightOffset = 90 }: { rightOffset?: number }) {
+export default function FeedbackButton({ hasChat = false }: { hasChat?: boolean }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<typeof FEEDBACK_TYPES[number]>("Bug");
   const [message, setMessage] = useState("");
@@ -68,7 +68,10 @@ export default function FeedbackButton({ rightOffset = 90 }: { rightOffset?: num
         title="Send feedback"
         aria-label="Send feedback"
         style={{
-          position: "fixed", bottom: 24, right: rightOffset, zIndex: 240,
+          position: "fixed",
+          bottom: "var(--fab-bottom)",
+          right: hasChat ? "calc(var(--fab-edge) + var(--fab-chat-size) + var(--fab-gap))" : "var(--fab-edge)",
+          zIndex: 240,
           width: 36, height: 36,
           background: "var(--bg2)",
           border: "0.5px solid var(--border)",

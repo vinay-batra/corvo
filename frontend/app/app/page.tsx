@@ -2400,7 +2400,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5, type: "spring", damping: 20 }}
         style={{
-          position: "fixed", bottom: 28, right: 24, zIndex: 250,
+          position: "fixed", bottom: "var(--fab-bottom)", right: "var(--fab-edge)", zIndex: 250,
           width: 52, height: 52, borderRadius: "50%",
           background: chatOpen ? "var(--bg3)" : "var(--accent)",
           border: chatOpen ? "1px solid var(--border2)" : "none",
@@ -2540,7 +2540,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       </AnimatePresence>
 
       {/* Feedback button */}
-      <FeedbackButton />
+      <FeedbackButton hasChat />
 
       {/* Back to top */}
       <button
