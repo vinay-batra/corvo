@@ -841,6 +841,16 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
           0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(76,175,125,0.5) }
           60%      { opacity: 0.6; box-shadow: 0 0 0 5px rgba(76,175,125,0) }
         }
+        @media(max-width:768px){
+          .sd-fin-pair{flex-direction:column!important}
+          .sd-fin-col-l{width:100%!important;padding-right:0!important;border-right:none!important;padding-bottom:12px!important;border-bottom:0.5px solid var(--border)!important}
+          .sd-fin-col-r{width:100%!important;padding-left:0!important;padding-top:12px!important}
+          .sd-stats-grid{grid-template-columns:1fr!important}
+          .sd-tab-row{overflow-x:auto!important;scrollbar-width:none!important;padding-bottom:4px}
+          .sd-tab-row::-webkit-scrollbar{display:none}
+          .sd-price-header{flex-wrap:wrap!important;gap:8px!important}
+          .sd-analyst-row{flex-direction:column!important;gap:10px!important}
+        }
       `}</style>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
@@ -1012,7 +1022,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       </div>
 
       {/* ── Key Stats + Trading ─────────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+      <div className="sd-stats-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
         <Card title="Key Stats">
           <Row label="Market Cap"  value={fmt(info.market_cap, "$")} tooltip={{ title: "Market Cap", sections: [{ label: "Plain English", text: "Total market value of all outstanding shares. Calculated as stock price multiplied by shares outstanding." }, { label: "Example", text: "If a stock trades at $100 with 1 billion shares outstanding, market cap = $100 billion." }, { label: "What's Good?", text: "Large cap (above $10B) means more stability. Mid cap ($2-10B) has more growth potential. Small cap (under $2B) carries more risk but can offer higher returns." }] }} />
           <Row label="P/E (TTM)"   value={fmt(info.pe_ratio, "", "", 1)} tooltip={{ title: "P/E Ratio (Trailing Twelve Months)", sections: [{ label: "Plain English", text: "How much you are paying per dollar of earnings. Trailing means based on actual earnings from the past 12 months." }, { label: "Example", text: "P/E of 20 means you pay $20 for every $1 the company earned last year." }, { label: "What's Good?", text: "Below 15 may be undervalued. 15-25 is typical for most stocks. Above 30 suggests high growth expectations or potential overvaluation." }] }} />
@@ -1073,14 +1083,14 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
 
       {/* ── Financial Metrics ───────────────────────────────────────────────── */}
       <Card title="Financial Metrics" style={{ marginBottom: 10 }}>
-        <div style={{ display: "flex", gap: 0 }}>
-          <div style={{ width: "50%", paddingRight: 16, borderRight: "0.5px solid var(--border)" }}>
+        <div className="sd-fin-pair" style={{ display: "flex", gap: 0 }}>
+          <div className="sd-fin-col-l" style={{ width: "50%", paddingRight: 16, borderRight: "0.5px solid var(--border)" }}>
             <Row label="Gross Margin"   value={info.gross_margin != null ? `${info.gross_margin.toFixed(1)}%` : "-"} tooltip={{ title: "Gross Margin", sections: [{ label: "Plain English", text: "Percentage of revenue left after subtracting cost of goods sold. Measures how efficiently the company produces its product." }, { label: "Example", text: "Revenue $100M, cost of goods $40M = 60% gross margin." }, { label: "What's Good?", text: "Higher is better. Software companies often have 70-90% margins. Retailers might have 20-30%. Compare within the same industry." }] }} />
             <Row label="Op. Margin"     value={info.operating_margin != null ? `${info.operating_margin.toFixed(1)}%` : "-"} tooltip={{ title: "Operating Margin", sections: [{ label: "Plain English", text: "Percentage of revenue left after all operating expenses (salaries, rent, R&D), before interest and taxes." }, { label: "Example", text: "Revenue $100M, operating costs $85M = 15% operating margin." }, { label: "What's Good?", text: "Above 20% is strong. Below 5% is thin. Compare to industry peers." }] }} />
             <Row label="Profit Margin"  value={info.profit_margin != null ? `${info.profit_margin.toFixed(1)}%` : "-"} tooltip={{ title: "Net Profit Margin", sections: [{ label: "Plain English", text: "Percentage of revenue that becomes actual profit after all expenses, interest, and taxes." }, { label: "Example", text: "Revenue $100M, net income $12M = 12% profit margin." }, { label: "What's Good?", text: "Above 10% is generally healthy. Compare to industry averages. Rising margins over time is a positive trend." }] }} />
             <Row label="Revenue Growth" value={info.revenue_growth != null ? `${info.revenue_growth.toFixed(1)}%` : "-"} color={info.revenue_growth != null ? (info.revenue_growth >= 0 ? GREEN : RED) : undefined} tooltip={{ title: "Revenue Growth (Year over Year)", sections: [{ label: "Plain English", text: "Percentage increase in total sales compared to the same period one year ago." }, { label: "Example", text: "Revenue was $1B last year and $1.2B this year = 20% revenue growth." }, { label: "What's Good?", text: "For mature companies, 5-10% is healthy. High-growth companies often target 20%+. Declining revenue is a warning sign." }] }} />
           </div>
-          <div style={{ width: "50%", paddingLeft: 16 }}>
+          <div className="sd-fin-col-r" style={{ width: "50%", paddingLeft: 16 }}>
             <Row label="Debt/Equity"    value={fmt(info.debt_to_equity, "", "", 2)} tooltip={{ title: "Debt to Equity Ratio", sections: [{ label: "Plain English", text: "Total debt divided by total shareholder equity. Shows how much the company relies on borrowed money versus its own capital." }, { label: "Example", text: "Debt $500M, equity $250M = debt/equity ratio of 2.0." }, { label: "What's Good?", text: "Under 1.0 is conservative. 1-2 is moderate. Above 2 can signal high financial risk, though capital-intensive industries naturally carry more debt." }] }} />
             <Row label="Current Ratio"  value={fmt(info.current_ratio, "", "", 2)} tooltip={{ title: "Current Ratio", sections: [{ label: "Plain English", text: "Current assets divided by current liabilities. Measures a company's ability to pay short-term obligations." }, { label: "Example", text: "Current assets $500M, current liabilities $250M = current ratio of 2.0." }, { label: "What's Good?", text: "Above 1.5 is healthy. Below 1.0 means current liabilities exceed assets, which can signal liquidity stress." }] }} />
             <Row label="Free Cash Flow" value={fmt(info.free_cashflow, "$")} tooltip={{ title: "Free Cash Flow", sections: [{ label: "Plain English", text: "Cash generated from operations after paying for capital expenditures. The actual cash left over that can be used for dividends, buybacks, or growth." }, { label: "Example", text: "Operating cash flow $200M, capex $50M = free cash flow $150M." }, { label: "What's Good?", text: "Consistently positive free cash flow is a sign of financial health. Growing FCF often precedes rising stock prices." }] }} />
