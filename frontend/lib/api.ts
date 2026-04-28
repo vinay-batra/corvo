@@ -124,10 +124,26 @@ export async function fetchEarningsPreview(assets: { ticker: string; weight: num
   return res.json();
 }
 
+export interface NLEditResult {
+  mode: "apply" | "preview";
+  tickers: string[];
+  weights: number[];
+  before_tickers: string[];
+  before_weights: number[];
+  explanation: string;
+  impact_summary: string;
+  impact: {
+    concentration_before: number;
+    concentration_after: number;
+    holdings_before: number;
+    holdings_after: number;
+  };
+}
+
 export async function fetchNaturalLanguageEdit(
   command: string,
   portfolio: { ticker: string; weight: number }[]
-): Promise<{ tickers: string[]; weights: number[] } | { error: string }> {
+): Promise<NLEditResult | { error: string }> {
   const res = await fetch(`${API_URL}/portfolio/natural-language-edit`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

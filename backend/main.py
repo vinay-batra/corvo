@@ -1014,32 +1014,58 @@ def portfolio_natural_language_edit(req: NLEditRequest, request: Request):
         if item.ticker
     )
 
-    prompt = (
-        "You are a portfolio editor. The user wants to edit their investment portfolio using a natural language command.\n\n"
-        f"Current portfolio:\n{portfolio_lines}\n\n"
-        f'User command: "{command}"\n\n'
-        "Apply the command to the portfolio. Return ONLY a valid JSON object with exactly these two keys:\n"
-        '- "tickers": array of ticker strings (uppercase, no spaces)\n'
-        '- "weights": array of numbers (percentage weights that sum to exactly 100)\n\n'
-        "Rules:\n"
-        "- All weights must be positive numbers greater than 0\n"
-        "- Weights must sum to exactly 100\n"
-        "- Tickers must be realistic stock, ETF, index, or crypto symbols (e.g. AAPL, SPY, QQQ, BTC-USD)\n"
-        "- Preserve existing holdings that the command does not mention\n"
-        "- 'sell half' means reduce that ticker's weight by 50% and allocate the freed weight to the named target\n"
-        "- 'add X%' means add X percentage points to that ticker, taking proportionally from all other holdings\n"
-        "- 'remove' means eliminate that ticker and redistribute its weight proportionally among remaining holdings\n"
-        "- If you cannot understand the command or executing it would result in an invalid portfolio, "
-        'return {"error": "brief explanation"}\n'
-        "- Do not include any text outside the JSON object\n"
-        "- Do not use markdown, code blocks, or backticks\n"
-        "- Return only the raw JSON object"
-    )
+    # Detect hypothetical / preview commands
+    hypothetical_phrases = [
+        "what would happen if", "what if", "how would", "what happens if",
+        "show me what", "show me how", "suppose", "imagine", "preview",
+        "if i added", "if i removed", "if i bought", "if i sold",
+        "if i increased", "if i decreased", "simulate",
+    ]
+    cmd_lower = command.lower()
+    is_hypothetical = any(ph in cmd_lower for ph in hypothetical_phrases)
+    mode = "preview" if is_hypothetical else "apply"
+
+    prompt = f"""You are a portfolio editor assistant. Apply the user's command to produce a new portfolio.
+
+Current portfolio:
+{portfolio_lines}
+
+User command: "{command}"
+
+Command patterns to handle:
+- "sell half my X and put it in Y" = halve X weight, add freed weight to Y (create Y if not present)
+- "go X% bonds Y% stocks" = replace with ETFs: BND/AGG for bonds, SPY/VOO for stocks, QQQ for growth
+- "remove all tech exposure" = remove NVDA, AAPL, MSFT, GOOGL, GOOG, META, AMZN, TSLA, AMD, AVGO, INTC, QQQ, XLK, SMH and redistribute proportionally to remaining holdings
+- "make it more conservative" = introduce BND at 20-25% and reduce equity positions proportionally
+- "rebalance to equal weight" = divide 100% equally among all current holdings
+- "reduce my largest position by half" = find the highest-weight ticker, halve it, spread freed weight proportionally among all other holdings
+- "add some international exposure" = add VEU or VXUS at 10-15%, reduce all current holdings proportionally
+- "add X at Y%" = add ticker X at Y%, reduce current holdings proportionally
+- "what would happen if I added X at Y%" = same math as above (preview only, same output format)
+- "reduce X exposure" = reduce all holdings in the named sector by roughly half, redistribute to others
+
+Rules:
+- All tickers must be real market symbols (stocks, ETFs, indices)
+- Weights must sum to exactly 100
+- All weights must be greater than 0
+
+Write a plain-English explanation (1-2 sentences, no em dashes, no asterisks) of what changed.
+Write a plain-English impact summary (1 sentence, no em dashes, no asterisks) about risk or diversification.
+
+Return ONLY this JSON, no other text:
+{{
+  "tickers": ["TICKER1", "TICKER2"],
+  "weights": [55.0, 45.0],
+  "explanation": "Reduced NVDA from 40% to 20% and added QQQ at 20% using the freed weight.",
+  "impact_summary": "This reduces single-stock concentration and adds broad Nasdaq index exposure."
+}}
+
+If the command cannot be executed, return: {{"error": "brief reason"}}"""
 
     try:
         msg = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=512,
+            max_tokens=600,
             messages=[{"role": "user", "content": prompt}],
         )
         raw = msg.content[0].text.strip()
@@ -1058,6 +1084,8 @@ def portfolio_natural_language_edit(req: NLEditRequest, request: Request):
 
     tickers = result.get("tickers", [])
     weights = result.get("weights", [])
+    explanation = clean_ai_response(result.get("explanation", ""))
+    impact_summary = clean_ai_response(result.get("impact_summary", ""))
 
     if not tickers or not weights:
         return {"error": "AI returned an empty portfolio."}
@@ -1073,7 +1101,27 @@ def portfolio_natural_language_edit(req: NLEditRequest, request: Request):
     normalized = [round(w / total * 100, 4) for w in weights]
     clean_tickers = [str(t).upper().strip() for t in tickers]
 
-    return {"tickers": clean_tickers, "weights": normalized}
+    # Before/after snapshot and impact metrics computed in Python
+    before_tickers = [item.ticker.upper() for item in req.portfolio if item.ticker]
+    before_weights = [round(pct_weights[i], 4) for i in range(len(before_tickers))]
+    concentration_before = max(before_weights) if before_weights else 0.0
+    concentration_after = max(normalized) if normalized else 0.0
+
+    return {
+        "mode": mode,
+        "tickers": clean_tickers,
+        "weights": normalized,
+        "before_tickers": before_tickers,
+        "before_weights": before_weights,
+        "explanation": explanation,
+        "impact_summary": impact_summary,
+        "impact": {
+            "concentration_before": round(concentration_before, 1),
+            "concentration_after": round(concentration_after, 1),
+            "holdings_before": len(before_tickers),
+            "holdings_after": len(clean_tickers),
+        },
+    }
 
 
 _sectors_cache: dict[str, tuple[dict, float]] = {}
