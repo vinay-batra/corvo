@@ -210,7 +210,7 @@ function WaitlistCapture() {
 const FREE_FEATURES = [
   "Full portfolio analysis (Sharpe, Monte Carlo, drawdown)",
   "AI health score with daily action items",
-  "40 AI chat messages per month",
+  "Up to 40 AI chat messages per day",
   "Watchlist with price alerts",
   "CSV brokerage import",
   "Capital gains estimator",
