@@ -59,6 +59,18 @@ export default function AboutPage() {
         <div style={{ height: 1, background: "linear-gradient(90deg, transparent, var(--border), transparent)" }} />
       </div>
 
+      {/* Founding Statement */}
+      <div style={{ maxWidth: 740, margin: "0 auto", padding: "72px 56px 16px", textAlign: "center" }}>
+        <FadeUp>
+          <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(22px, 3.5vw, 40px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.15, marginBottom: 28 }}>
+            Most apps show you what happened. Corvo tells you what to do about it.
+          </h2>
+          <p style={{ fontSize: "clamp(15px, 2vw, 17px)", color: "var(--text2)", fontWeight: 300, lineHeight: 1.75, maxWidth: 560, margin: "0 auto" }}>
+            Corvo was built on a simple frustration. Every portfolio tool shows you charts and numbers, but none of them tell you what to actually do. Corvo is designed to be the opposite of that.
+          </p>
+        </FadeUp>
+      </div>
+
       {/* Story */}
       <div className="ab-body" style={{ maxWidth: 640, margin: "0 auto", padding: "64px 56px 80px" }}>
         <FadeUp delay={0.05}>
