@@ -2284,7 +2284,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 </motion.div>
                 <div className="c-alloc-row" style={{ display: "flex", gap: 16, marginTop: 12 }}>
                   <motion.div key="allocation-card" initial={false} style={{ flex: 3 }}>
-                    <Card style={{ marginBottom: 0, height: "100%" }}><CardHeader title="Allocation" /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
+                    <Card style={{ marginBottom: 0, height: "100%" }}><TooltipCardHeader title="Allocation" sections={[
+                      { label: "Plain English", text: "Shows how your total portfolio value is split across your holdings, expressed as a percentage of the whole. Each bar segment represents one position's share of the portfolio." },
+                      { label: "Example", text: "If you hold AAPL at 40%, MSFT at 35%, and GOOGL at 25%, those three segments together fill the full bar and add up to 100%." },
+                      { label: "What's Good", text: "No single position dominating more than 25-30% reduces concentration risk. A well-diversified portfolio spreads weight across 5+ holdings without any one outsized bet." },
+                    ]} /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
                   </motion.div>
                   <motion.div key="sector-card" initial={false} style={{ flex: 2 }}>
                     <Card style={{ marginBottom: 0, height: "100%" }}><TooltipCardHeader title="Sector Exposure" sections={[
