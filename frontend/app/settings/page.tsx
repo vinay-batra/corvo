@@ -309,8 +309,9 @@ export default function SettingsPage({
         { user_id: user.id, morning_briefing: mb, market_close_summary: mcs, week_in_review: wr, monthly_summary: ms, price_alerts: pa, updated_at: new Date().toISOString() },
         { onConflict: "user_id" }
       );
-      if (error) throw error;
-    } catch {
+      if (error) { console.error("saveNotifs error:", error); throw error; }
+    } catch (err) {
+      console.error("saveNotifs caught:", err);
       toast("Failed to save notification preferences. Please try again.", "error");
     }
   };
@@ -322,8 +323,9 @@ export default function SettingsPage({
         { user_id: user.id, email_theme: theme, updated_at: new Date().toISOString() },
         { onConflict: "user_id" }
       );
-      if (error) throw error;
-    } catch {
+      if (error) { console.error("saveEmailTheme error:", error); throw error; }
+    } catch (err) {
+      console.error("saveEmailTheme caught:", err);
       toast("Failed to save email theme. Please try again.", "error");
     }
   };
@@ -352,8 +354,9 @@ export default function SettingsPage({
         },
         { onConflict: "user_id" }
       );
-      if (error) throw error;
-    } catch {
+      if (error) { console.error("savePushPrefs error:", error); throw error; }
+    } catch (err) {
+      console.error("savePushPrefs caught:", err);
       toast("Failed to save push notification preferences. Please try again.", "error");
     }
   };
