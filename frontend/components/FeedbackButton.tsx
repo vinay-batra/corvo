@@ -91,7 +91,7 @@ export default function FeedbackButton({ hasChat = false }: { hasChat?: boolean 
       </motion.button>
 
       {/* Modal */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {open && (
           <motion.div
             // initial={false} is required — do not remove

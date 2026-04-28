@@ -133,7 +133,7 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {open && (
         <>
           {/* Backdrop */}

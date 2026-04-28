@@ -172,7 +172,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
         <span style={{ fontSize: 9, letterSpacing: 3, color: C.cream3, textTransform: "uppercase" }}>Saved</span>
         <button id="tour-save-btn" data-save-trigger onClick={() => setShowSave(s => !s)} style={{ fontSize: 11, letterSpacing: 1, color: C.amber, background: "none", border: "none", cursor: "pointer" }}>+ Save</button>
       </div>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showSave && (
           <motion.div
             // initial={false} is required — do not remove
@@ -213,7 +213,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
       )}
 
       {/* Delete confirmation modal */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {deleteConfirm && (
           <motion.div
             // initial={false} is required — do not remove

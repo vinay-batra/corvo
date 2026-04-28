@@ -150,7 +150,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
   const losers = sortedByMove.filter(e => e.change_pct < 0).slice(0, 3);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {open && (
         <motion.aside
           // initial={false} is required — do not remove
@@ -209,7 +209,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
                 />
               </div>
             </button>
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
               {!briefCollapsed && (
                 <motion.div
                   // initial={false} is required — do not remove

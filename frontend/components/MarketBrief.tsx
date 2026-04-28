@@ -163,7 +163,7 @@ export default function MarketBrief() {
 
       {/* Index pills row */}
       <div className="c-market-pills" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {loading ? (
             [1, 2, 3, 4].map(i => (
               <div key={i} style={{ width: 88, height: 26, borderRadius: 20, background: "var(--bg3)", animation: "pulse 1.5s ease-in-out infinite" }} />

@@ -453,7 +453,7 @@ export default function Watchlist() {
             )}
 
             {/* Dropdown */}
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
               {switcherOpen && editingListId !== activeListId && (
                 <motion.div
                   // initial={false} is required — do not remove
@@ -536,7 +536,7 @@ export default function Watchlist() {
             />
             {searchBusy && <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 11, height: 11, border: "1.5px solid rgba(184,134,11,0.25)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
 
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
               {searchOpen && searchResults.length > 0 && (
                 <motion.div
                   // initial={false} is required — do not remove
@@ -600,7 +600,7 @@ export default function Watchlist() {
                 </tr>
               </thead>
               <tbody>
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {activeItems.map((item) => {
                     const s = stockData[item.ticker];
                     const pos = (s?.change_pct ?? 0) >= 0;

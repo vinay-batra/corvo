@@ -422,7 +422,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
 
       {/* ── Asset list ────────────────────────────────────────────── */}
       <div style={{marginTop:4, paddingTop:12}}>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {assets.map((a,i)=>{
           const color=DOTS[i%DOTS.length];
           const res=results[i]||[];
@@ -468,7 +468,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                     }}
                   />
                   {searching[i]&&<div style={{position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",width:9,height:9,border:"1.5px solid rgba(201,168,76,0.2)",borderTopColor:C.amber,borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
-                  <AnimatePresence>
+                  <AnimatePresence initial={false}>
                     {active===i&&(res.length>0||!!searching[i])&&(
                       <motion.div
                         // initial={false} is required — do not remove
@@ -531,7 +531,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               </div>
 
               {/* Expandable detail section */}
-              <AnimatePresence>
+              <AnimatePresence initial={false}>
                 {isExpanded&&(
                   <motion.div
                     // initial={false} is required — do not remove
@@ -630,7 +630,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       </div>
 
       {/* ── Presets Modal ─────────────────────────────────────────── */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showPresetsModal&&(
           <motion.div
             // initial={false} is required — do not remove
@@ -690,7 +690,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       </AnimatePresence>
 
       {/* ── CSV Import Modal ──────────────────────────────────────── */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {showCsvModal&&(
           <motion.div
             // initial={false} is required — do not remove

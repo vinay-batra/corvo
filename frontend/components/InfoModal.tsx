@@ -62,7 +62,7 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
         )}
       </span>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {open && (
           <motion.div
             // initial={false} is required — do not remove

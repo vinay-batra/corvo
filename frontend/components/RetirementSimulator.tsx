@@ -389,7 +389,7 @@ export default function RetirementSimulator({
           Advanced Settings
         </button>
 
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {advancedOpen && (
             <motion.div
               // initial={false} required — do not remove
@@ -489,7 +489,7 @@ export default function RetirementSimulator({
       )}
 
       {/* Progress bar */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {loading && (
           <motion.div
             // initial={false} required — do not remove
@@ -508,6 +508,8 @@ export default function RetirementSimulator({
             </div>
             <div style={{ height: 3, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
               <motion.div
+                // initial={false} required — do not remove
+                initial={false}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.12 }}
                 style={{ height: "100%", background: "var(--accent)", borderRadius: 2 }}
@@ -518,7 +520,7 @@ export default function RetirementSimulator({
       </AnimatePresence>
 
       {/* Result card */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {result && !loading && (
           <motion.div
             // initial={false} required — do not remove
