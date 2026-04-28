@@ -1017,7 +1017,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
               <Plot
                 data={chartTraces}
                 layout={layout}
-                config={{ displayModeBar: false, responsive: true, scrollZoom: true }}
+                config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
                 style={{ width: "100%", height: 248 }}
               />
             </motion.div>

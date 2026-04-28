@@ -168,7 +168,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
               },
             },
           }}
-          config={{ displayModeBar: false, responsive: true }}
+          config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
           style={{ width: "100%", height: 260 }}
         />
         </>

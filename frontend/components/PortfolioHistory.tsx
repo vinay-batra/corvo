@@ -289,7 +289,7 @@ export default function PortfolioHistory() {
               },
               hovermode: "x unified",
             }}
-            config={{ displayModeBar: false, responsive: true }}
+            config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
             style={{ width: "100%" }}
           />
 

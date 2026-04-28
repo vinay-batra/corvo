@@ -108,7 +108,7 @@ export default function FrontierChart({ data }: { data: any }) {
             font: { color: "#e2e8f0", family: "Space Grotesk", size: 11 },
           },
         }}
-        config={{ displayModeBar: false, responsive: true }}
+        config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
         style={{ width: "100%", height: 220 }}
       />
     </motion.div>

@@ -854,7 +854,7 @@ export default function PositionsTab({
                   font: { color: cssVar('--text'), family: "Space Mono, monospace", size: 11 },
                 },
               }}
-              config={{ displayModeBar: false, responsive: true }}
+              config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
               style={{ width: "100%", height: 220, minWidth: 0 }}
               useResizeHandler
             />

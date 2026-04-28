@@ -373,7 +373,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
                 font: { color: "#e8e0cc", family: "Inter", size: 11 },
               },
             }}
-            config={{ displayModeBar: false, responsive: true }}
+            config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
             style={{ width: "100%", height: 300 }}
           />
 

@@ -304,7 +304,7 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
           shapes,
           annotations,
         }}
-        config={{ displayModeBar: false, responsive: true }}
+        config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
         style={{ width: "100%", minWidth: 0, height: isMobile ? 280 : 240 }}
         useResizeHandler
       />
