@@ -24,6 +24,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<{ displayName: string; avatarUrl: string | null } | null>(null);
   const [open, setOpen] = useState(false);
+  const [refLinkCopied, setRefLinkCopied] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user)).catch(() => {});
@@ -105,7 +106,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
             transition={{ duration: 0.15 }}
             style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 182, maxWidth: "calc(100vw - 32px)", background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 6, backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)", zIndex: 200 }}
           >
-            <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ padding: "8px 12px", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
               {resolvedAvatar ? (
                 <img src={resolvedAvatar} alt="Avatar" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
               ) : (
@@ -115,6 +116,49 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
               )}
               <div style={{ fontSize: 12, fontWeight: 600, color: C.cream }}>{resolvedName || user.email?.split("@")[0]}</div>
             </div>
+
+            {/* Referral link callout */}
+            {(() => {
+              const code = user.id.replace(/-/g, "").slice(0, 8);
+              const link = `https://corvo.capital/app?ref=${code}`;
+              const shortLink = `corvo.capital/app?ref=${code}`;
+              return (
+                <div style={{ margin: "0 6px 6px", padding: "10px 11px", background: "rgba(var(--accent-rgb), 0.05)", border: "0.5px solid rgba(var(--accent-rgb), 0.18)", borderRadius: 9 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)", letterSpacing: 0.3 }}>Refer a friend</span>
+                    <span style={{ fontSize: 9, color: "var(--text3)" }}>+5 AI messages each</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ flex: 1, fontSize: 10, fontFamily: "Space Mono, monospace", color: "var(--text3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 5, padding: "4px 7px" }}>
+                      {shortLink}
+                    </div>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(link).then(() => {
+                          setRefLinkCopied(true);
+                          setTimeout(() => setRefLinkCopied(false), 2000);
+                        }).catch(() => {});
+                      }}
+                      title="Copy referral link"
+                      style={{ width: 26, height: 26, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: refLinkCopied ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "color 0.15s" }}
+                    >
+                      {refLinkCopied ? (
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div style={{ height: "0.5px", background: "var(--border)", margin: "2px 6px 4px" }} />
 
             {/* My Account */}
             <Link href="/account" onClick={() => setOpen(false)} style={itemStyle}

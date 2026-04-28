@@ -7,10 +7,11 @@ import { supabase } from "../../lib/supabase";
 import FeedbackButton from "../../components/FeedbackButton";
 
 type ReferralData = {
-  referral_count: number;
-  bonus_messages_earned: number;
+  referrals_count: number;
+  bonus_messages: number;
   referral_link: string;
-  referred_emails: string[];
+  referral_code: string;
+  referred_emails?: string[];
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -45,7 +46,7 @@ export default function ReferralsPage() {
     })();
   }, []);
 
-  const refLink = referralData?.referral_link ?? (user ? `https://corvo.capital/signup?ref=${user.id}` : "");
+  const refLink = referralData?.referral_link ?? (user ? `https://corvo.capital/app?ref=${user.id.replace(/-/g, "").slice(0, 8)}` : "");
 
   const copyLink = () => {
     navigator.clipboard.writeText(refLink).then(() => {
@@ -204,25 +205,50 @@ export default function ReferralsPage() {
         ) : (
           <>
             <Section title="Your Impact">
-              <div style={{ display: "flex", gap: 12, paddingBottom: 14 }}>
-                <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: 12, padding: "16px 18px", border: "0.5px solid var(--border)" }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace" }}>{referralData?.referral_count ?? 0}</div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Referrals completed</div>
+              {/* Reward incentive callout */}
+              <div style={{ marginBottom: 14, padding: "14px 16px", background: "rgba(var(--accent-rgb), 0.05)", border: "0.5px solid rgba(var(--accent-rgb), 0.18)", borderRadius: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--accent)", marginBottom: 5 }}>How rewards work</div>
+                <div style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>
+                  Each friend who signs up using your link unlocks +5 bonus AI messages per day. Once you hit 8 referrals, your +40 message bonus is permanent.
                 </div>
-                <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: 12, padding: "16px 18px", border: "0.5px solid var(--border)" }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace" }}>+{referralData?.bonus_messages_earned ?? 0}</div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>Bonus messages earned</div>
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <div style={{ flex: 1, padding: "8px 10px", background: "rgba(var(--accent-rgb), 0.06)", border: "0.5px solid rgba(var(--accent-rgb), 0.12)", borderRadius: 7, textAlign: "center" as const }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "Space Mono,monospace", color: "var(--accent)" }}>+5</div>
+                    <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>messages per sign-up</div>
+                  </div>
+                  <div style={{ flex: 1, padding: "8px 10px", background: "rgba(var(--accent-rgb), 0.06)", border: "0.5px solid rgba(var(--accent-rgb), 0.12)", borderRadius: 7, textAlign: "center" as const }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "Space Mono,monospace", color: "var(--accent)" }}>+1 mo</div>
+                    <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>Pro free on upgrade</div>
+                  </div>
                 </div>
               </div>
+
+              {/* Stat cards */}
+              <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: 12, padding: "14px 16px", border: "0.5px solid var(--border)" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace", lineHeight: 1 }}>{referralData?.referrals_count ?? 0}</div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 5 }}>Friends referred</div>
+                </div>
+                <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: 12, padding: "14px 16px", border: "0.5px solid var(--border)" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace", lineHeight: 1 }}>+{referralData?.bonus_messages ?? 0}</div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 5 }}>Bonus messages earned</div>
+                </div>
+                <div style={{ flex: 1, background: "var(--card-bg)", borderRadius: 12, padding: "14px 16px", border: "0.5px solid var(--border)" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text3)", fontFamily: "Space Mono,monospace", lineHeight: 1 }}>0</div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 5 }}>Pro upgrades</div>
+                </div>
+              </div>
+
+              {/* Progress bar */}
               {(() => {
-                const bonus = referralData?.bonus_messages_earned ?? 0;
-                const count = referralData?.referral_count ?? 0;
+                const bonus = referralData?.bonus_messages ?? 0;
+                const count = referralData?.referrals_count ?? 0;
                 const capped = bonus >= 40;
                 return (
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                       <span style={{ fontSize: 12, color: "var(--text2)" }}>
-                        {capped ? "Max bonus reached (40 messages)" : `${count} referral${count !== 1 ? "s" : ""} → next +5 messages`}
+                        {capped ? "Maximum bonus reached" : count === 0 ? "Refer your first friend to start earning" : `${count} referred - next referral adds +5 more messages`}
                       </span>
                       <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono,monospace" }}>{bonus}/40</span>
                     </div>
@@ -254,11 +280,39 @@ export default function ReferralsPage() {
             </Section>
 
             <Section title="Share">
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, paddingBottom: 4 }}>
+              {/* Primary: X and email */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <a
+                  href={`https://x.com/intent/tweet?text=${encodeURIComponent(shareMsg)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "11px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, color: "var(--text)", textDecoration: "none", fontSize: 13, fontWeight: 500, transition: "border-color 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border2)")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  Share on X
+                </a>
+                <a
+                  href={`mailto:?subject=${encodeURIComponent("You should check out Corvo")}&body=${encodeURIComponent(shareMsgClean)}`}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "11px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, color: "var(--text)", textDecoration: "none", fontSize: 13, fontWeight: 500, transition: "border-color 0.15s" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border2)")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2" /><polyline points="2,4 12,13 22,4" />
+                  </svg>
+                  Send via email
+                </a>
+              </div>
+              {/* Secondary: all platforms */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
                 {platforms.map(p => (
                   <button key={p.name} onClick={p.action} title={p.name}
-                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 8px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s", minHeight: 64 }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                    style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 8px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s", minHeight: 60 }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border2)")}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
                     <span style={{ color: p.color, display: "flex", alignItems: "center" }}>{p.icon}</span>
                     <span style={{ fontSize: 9, letterSpacing: 0.5, color: "var(--text3)", whiteSpace: "nowrap" as const }}>{p.name}</span>
@@ -270,32 +324,22 @@ export default function ReferralsPage() {
             <Section title="How It Works">
               <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
                 {[
-                  { step: "1", text: "Share your unique referral link with friends or on social media." },
-                  { step: "2", text: "When someone signs up using your link, you both get credited." },
-                  { step: "3", text: "Each referral adds +5 AI chat messages to your daily quota." },
+                  { step: "1", text: "Share your unique referral link with friends or post it on social media." },
+                  { step: "2", text: "When a friend signs up using your link and analyzes their first portfolio, you both get credited." },
+                  { step: "3", text: "You earn +5 bonus AI chat messages per referral, up to +40 total. When Pro launches, each referral who upgrades gives you 1 month free." },
                 ].map(({ step, text }) => (
                   <div key={step} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
-                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent)", flexShrink: 0, fontFamily: "Space Mono,monospace" }}>{step}</div>
-                    <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5 }}>{text}</span>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(var(--accent-rgb), 0.1)", border: "1px solid rgba(var(--accent-rgb), 0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent)", flexShrink: 0, fontFamily: "Space Mono,monospace" }}>{step}</div>
+                    <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6 }}>{text}</span>
                   </div>
                 ))}
-                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                  <div style={{ flex: 1, padding: "14px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 10, textAlign: "center" as const }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace", lineHeight: 1 }}>+5</div>
-                    <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>messages per referral</div>
-                  </div>
-                  <div style={{ flex: 1, padding: "14px 16px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 10, textAlign: "center" as const }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace", lineHeight: 1 }}>40</div>
-                    <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>referrals = unlimited / month</div>
-                  </div>
-                </div>
               </div>
             </Section>
 
             {(referralData?.referred_emails?.length ?? 0) > 0 && (
               <Section title="Referred Users">
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
-                  {referralData!.referred_emails.map((email, i) => (
+                  {referralData!.referred_emails!.map((email, i) => (
                     <div key={i} style={{ fontSize: 12, color: "var(--text2)", fontFamily: "Space Mono,monospace", padding: "6px 10px", background: "var(--card-bg)", borderRadius: 7, border: "0.5px solid var(--border)" }}>
                       {email}
                     </div>
