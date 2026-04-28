@@ -411,7 +411,7 @@ function DemoStrip() {
       </motion.div>
 
       {/* Scrollable step cards */}
-      <div className="demo-scroll" style={{ display: "flex", gap: 20, overflowX: "auto", paddingBottom: 6 }}>
+      <div className="demo-scroll" style={{ display: "flex", justifyContent: "center", gap: 20, overflowX: "auto", paddingBottom: 6 }}>
         {[0, 1, 2].map((i) => (
           <div
             key={i}
