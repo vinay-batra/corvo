@@ -224,7 +224,7 @@ function FAQAIChat() {
         marginTop: 48,
         border: "1px solid rgba(201,168,76,0.4)",
         borderRadius: 20,
-        overflow: "hidden",
+        overflow: "clip",
         background: "var(--card-bg)",
       }}
     >
@@ -339,7 +339,7 @@ export default function FaqPage() {
           initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          style={{ textAlign: "center", marginBottom: 56, position: "relative", overflow: "hidden" }}
+          style={{ textAlign: "center", marginBottom: 56, position: "relative", overflow: "clip" }}
         >
           {/* Ambient glow */}
           <div

@@ -81,7 +81,7 @@ export default function AboutPage() {
       {/* Founder */}
       <div className="ab-founder" style={{ maxWidth: 640, margin: "0 auto", padding: "0 56px 96px" }}>
         <FadeUp>
-          <div style={{ border: "0.5px solid var(--border)", borderRadius: 14, padding: "28px 32px", background: "var(--card-bg)", position: "relative", overflow: "hidden" }}>
+          <div style={{ border: "0.5px solid var(--border)", borderRadius: 14, padding: "28px 32px", background: "var(--card-bg)", position: "relative", overflow: "clip" }}>
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, var(--accent), transparent)" }} />
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 22 }}>Founder</p>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>

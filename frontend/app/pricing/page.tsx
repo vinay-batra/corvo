@@ -276,7 +276,7 @@ function PricingCard({
         borderRadius: 20,
         padding: "36px 32px 40px",
         position: "relative",
-        overflow: "hidden",
+        overflow: "clip",
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(32px)",
         transition: `opacity 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
@@ -501,7 +501,7 @@ function FeatureVoteSection() {
               const voteCount = votes[f.id] ?? 0;
               const hasVoted = voted[f.id] ?? false;
               return (
-                <div key={f.id} style={{ background: "var(--bg3)", border: `0.5px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "var(--bg3)"}`, borderRadius: 14, padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: `opacity 0.6s ease ${i * 0.07}s, transform 0.6s ease ${i * 0.07}s`, position: "relative", overflow: "hidden" }}>
+                <div key={f.id} style={{ background: "var(--bg3)", border: `0.5px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "var(--bg3)"}`, borderRadius: 14, padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: `opacity 0.6s ease ${i * 0.07}s, transform 0.6s ease ${i * 0.07}s`, position: "relative", overflow: "clip" }}>
                   {hasVoted && <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />}
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -574,7 +574,7 @@ export default function PricingPage() {
           paddingTop: 140,
           paddingBottom: 80,
           textAlign: "center",
-          overflow: "hidden",
+          overflow: "clip",
         }}
       >
         {/* Background glows */}

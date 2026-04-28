@@ -16,9 +16,7 @@ body {
 
 * {
   -webkit-overflow-scrolling: auto !important;
-  overscroll-behavior: none !important;
-  overscroll-behavior-x: none !important;
-  overscroll-behavior-y: none !important;
+  /* overscroll-behavior intentionally NOT set here — setting it on * blocks scroll chaining from overflow:hidden containers */
 }
 
 /* Next.js app root — explicit coverage so it never relies on inheritance */

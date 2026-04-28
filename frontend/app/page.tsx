@@ -380,7 +380,7 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M11.5 2L3.5 12h6L8 18 16.5 8h-6L11.5 2z" stroke="#c9a84c" strokeWidth="1.4" strokeLinejoin="round" fill="rgba(201,168,76,0.18)"/></svg>
           </div>
         </div>
-        <div style={{ height: 5, background: "var(--bg3)", borderRadius: 3, overflow: "hidden", marginBottom: 12 }}>
+        <div style={{ height: 5, background: "var(--bg3)", borderRadius: 3, overflow: "clip", marginBottom: 12 }}>
           <div style={{ height: "100%", width: "0%", background: "linear-gradient(90deg, #c9a84c, #f59e0b)", borderRadius: 3, animation: visible ? "xpLoop 5s ease-in-out infinite" : "none" }} />
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -498,7 +498,7 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
         ))}
       </div>
       {/* Dark PDF preview — floating dark card inside white card */}
-      <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "14px 20px", position: "relative", overflow: "hidden" }}>
+      <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "14px 20px", position: "relative", overflow: "clip" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
           {[30, 60, 90, 120].map(y => (
             <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
@@ -1884,7 +1884,7 @@ export default function Landing() {
 
       {/* Fixed grid bg */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.025) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.025) 1px, transparent 1px)", backgroundSize: "80px 80px" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.025) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.025) 1px, transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none" }} />
       </div>
       {/* NAV */}
       <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "var(--bg)" : "color-mix(in srgb, var(--bg) 60%, transparent)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
