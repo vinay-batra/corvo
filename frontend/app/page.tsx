@@ -6,6 +6,7 @@ import { supabase as sb } from "../lib/supabase";
 import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import FeedbackButton from "../components/FeedbackButton";
+import PublicFooter from "../components/PublicFooter";
 import { usePWAInstall } from "../hooks/usePWAInstall";
 
 /* ─── Reveal hook ─── */
@@ -1867,8 +1868,7 @@ export default function Landing() {
         }
         @media(max-width:600px){
           .stats-grid{grid-template-columns:1fr!important}
-          .footer-inner{flex-direction:column!important;gap:12px!important;text-align:center!important}
-          .footer-root{padding:24px 20px!important}
+
           .hero-btns>*{width:100%!important;max-width:360px!important}
           .trust-grid{grid-template-columns:1fr!important}
         }
@@ -2219,33 +2219,7 @@ export default function Landing() {
       {/* EMAIL CAPTURE BOTTOM (prominent, above footer) */}
       <EmailCaptureBottom />
 
-      {/* FOOTER */}
-      <footer className="footer-root" style={{ position: "relative", zIndex: 1, borderTop: "1px solid var(--border)", padding: "26px 56px" }}>
-        <div className="footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src="/corvo-logo.svg" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
-            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "var(--text3)" }}>CORVO</span>
-            <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>© 2026 Corvo. All rights reserved.</span>
-          </div>
-          <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-            <a href="/blog" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Blog</a>
-            <a href="/pricing" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Pricing</a>
-            <a href="/privacy" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Privacy</a>
-            <a href="/terms" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Terms</a>
-            <a href="/faq" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>FAQ</a>
-            <a href="/changelog" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Changelog</a>
-            <a href="https://www.producthunt.com/posts/corvo" target="_blank" rel="noopener noreferrer" aria-label="Corvo on Product Hunt" style={{ display: "flex", alignItems: "center", opacity: 0.6, transition: "opacity 0.2s" }} onMouseEnter={e => (e.currentTarget.style.opacity = "1")} onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}>
-              <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=corvo&theme=dark" alt="Corvo on Product Hunt" style={{ height: 20, width: "auto" }} />
-            </a>
-            <a href="https://github.com/vinay-batra/corvo" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>GitHub</a>
-            <a href="https://x.com/corvocapital" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="x-social-link" style={{ color: "var(--text3)", textDecoration: "none", display: "flex", alignItems: "center", transition: "color 0.2s" }}>
-              <svg width="12" height="12" viewBox="0 0 300 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
       <FeedbackButton />
     </div>
   );
