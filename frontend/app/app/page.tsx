@@ -56,12 +56,10 @@ import DashboardTour from "../../components/DashboardTour";
 import FeedbackButton from "../../components/FeedbackButton";
 import { type SavedPortfolioLine } from "../../components/PerformanceChart";
 import EarningsCalendar from "../../components/EarningsCalendar";
-import EarningsImpactPreview from "../../components/EarningsImpactPreview";
 import EventsCalendar from "../../components/EventsCalendar";
 import PriceTargetTracker from "../../components/PriceTargetTracker";
 import { InsiderActivitySummary } from "../../components/InsiderActivity";
 import StockCompare from "../../components/StockCompare";
-import PortfolioCompareTab from "../../components/PortfolioCompareTab";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -72,7 +70,6 @@ const TABS = [
   { id: "news",       label: "News",       Icon: Newspaper,        href: null },
   { id: "watchlist",     label: "Watchlist",    Icon: Eye,           href: null },
   { id: "transactions",  label: "Transactions", Icon: ClipboardList, href: null },
-  { id: "compare",       label: "Compare",      Icon: CandlestickChart, href: null },
   { id: "learn",         label: "Learn",        Icon: BookOpen,      href: "/learn" },
 ] as const;
 
@@ -85,7 +82,6 @@ const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
   news:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>,
   watchlist:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
   transactions: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>,
-  compare:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
   learn:        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
 };
 
@@ -1627,75 +1623,83 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       </div>
 
       {/* Natural language editor */}
-      <div style={{ padding: "10px 14px 0", borderBottom: "0.5px solid var(--border)" }}>
-        <div style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 7 }}>Edit with AI</div>
-        {(() => {
-          const runNLCommand = async (cmd: string) => {
-            if (!cmd.trim() || !assets.length || nlLoading) return;
-            setNlCommand(cmd);
-            setNlLoading(true);
-            setNlError(null);
-            setNlPending(null);
-            try {
-              const result = await fetchNaturalLanguageEdit(cmd.trim(), assets);
-              if ("error" in result) {
-                setNlError(result.error);
-              } else {
-                setNlPending(result);
+      <div style={{ padding: "10px 14px 12px", borderBottom: "0.5px solid var(--border)", background: "linear-gradient(180deg, rgba(201,168,76,0.04) 0%, transparent 100%)" }}>
+        <div style={{ borderRadius: 10, border: "0.5px solid rgba(201,168,76,0.22)", background: "rgba(201,168,76,0.04)", padding: "10px 11px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", fontWeight: 700 }}>Edit with AI</span>
+          </div>
+          {(() => {
+            const runNLCommand = async (cmd: string) => {
+              if (!cmd.trim() || !assets.length || nlLoading) return;
+              setNlCommand(cmd);
+              setNlLoading(true);
+              setNlError(null);
+              setNlPending(null);
+              try {
+                const result = await fetchNaturalLanguageEdit(cmd.trim(), assets);
+                if ("error" in result) {
+                  setNlError(result.error);
+                } else {
+                  setNlPending(result);
+                }
+              } catch {
+                setNlError("Request failed. Check your connection and try again.");
+              } finally {
+                setNlLoading(false);
               }
-            } catch {
-              setNlError("Request failed. Check your connection and try again.");
-            } finally {
-              setNlLoading(false);
-            }
-          };
-          const chips = nlCommand === "" ? getNLSuggestions(assets) : [];
-          return (
-            <>
-              <div style={{ position: "relative" }}>
-                <input
-                  type="text"
-                  value={nlCommand}
-                  onChange={e => { setNlCommand(e.target.value); setNlError(null); }}
-                  onKeyDown={e => { if (e.key === "Enter") runNLCommand(nlCommand); }}
-                  placeholder={assets.length ? "e.g. sell half my NVDA and put it in QQQ" : "Add holdings first"}
-                  disabled={nlLoading || !assets.length}
-                  style={{ width: "100%", padding: "8px 32px 8px 10px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border2)", borderRadius: 7, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5 }}
-                />
-                {nlLoading ? (
-                  <div style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite", pointerEvents: "none" }} />
-                ) : nlCommand.trim() && assets.length ? (
-                  <button
-                    onClick={() => runNLCommand(nlCommand)}
-                    style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--accent)", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}
-                    aria-label="Run command"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                  </button>
-                ) : null}
-              </div>
-              {nlError && (
-                <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>
-              )}
-              {chips.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
-                  {chips.map(chip => (
+            };
+            const chips = nlCommand === "" ? getNLSuggestions(assets) : [];
+            return (
+              <>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    value={nlCommand}
+                    onChange={e => { setNlCommand(e.target.value); setNlError(null); }}
+                    onKeyDown={e => { if (e.key === "Enter") runNLCommand(nlCommand); }}
+                    placeholder={assets.length ? "e.g. sell half my NVDA and put it in QQQ" : "Add holdings first"}
+                    disabled={nlLoading || !assets.length}
+                    style={{ width: "100%", padding: "9px 34px 9px 11px", fontSize: 11.5, background: "var(--bg)", border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 8, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5, transition: "border-color 0.15s" }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.2)"; }}
+                  />
+                  {nlLoading ? (
+                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: "rgba(0,0,0,0.04)", pointerEvents: "none" }}>
+                      <div style={{ width: 20, height: 20, border: "2px solid rgba(201,168,76,0.18)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.75s linear infinite" }} />
+                    </div>
+                  ) : nlCommand.trim() && assets.length ? (
                     <button
-                      key={chip}
-                      onClick={() => runNLCommand(chip)}
-                      style={{ padding: "3px 9px", fontSize: 10, fontFamily: "var(--font-body)", background: "var(--bg3)", border: "0.5px solid var(--border2)", borderRadius: 12, color: "var(--text3)", cursor: "pointer", lineHeight: 1.5, letterSpacing: 0.2, transition: "all 0.12s", whiteSpace: "nowrap" }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.color = "var(--text)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.color = "var(--text3)"; }}
+                      onClick={() => runNLCommand(nlCommand)}
+                      style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--accent)", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}
+                      aria-label="Run command"
                     >
-                      {chip}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     </button>
-                  ))}
+                  ) : null}
                 </div>
-              )}
-            </>
-          );
-        })()}
-        <div style={{ marginBottom: 10 }} />
+                {nlError && (
+                  <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>
+                )}
+                {chips.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                    {chips.map(chip => (
+                      <button
+                        key={chip}
+                        onClick={() => runNLCommand(chip)}
+                        style={{ padding: "3px 9px", fontSize: 10, fontFamily: "var(--font-body)", background: "rgba(201,168,76,0.07)", border: "0.5px solid rgba(201,168,76,0.18)", borderRadius: 12, color: "var(--text3)", cursor: "pointer", lineHeight: 1.5, letterSpacing: 0.2, transition: "all 0.12s", whiteSpace: "nowrap" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.color = "var(--accent)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.18)"; e.currentTarget.style.color = "var(--text3)"; }}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
       </div>
 
       {/* Builder */}
@@ -2111,18 +2115,16 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   </div>
                 ) : (
                   <div>
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-                      <button
-                        onClick={() => setShowStockCompare(true)}
-                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 7, border: "0.5px solid var(--border)", background: "var(--bg2)", color: "var(--text2)", cursor: "pointer", transition: "all 0.15s" }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                        Compare Stocks
-                      </button>
-                    </div>
                     <StocksSearch onSelect={setStockTicker} />
+                    <button
+                      onClick={() => setShowStockCompare(true)}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginTop: 12, padding: "11px 0", fontSize: 13, fontWeight: 600, borderRadius: 9, border: "0.5px solid var(--border2)", background: "var(--bg2)", color: "var(--text2)", cursor: "pointer", transition: "all 0.15s", letterSpacing: 0.2 }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.background = "rgba(201,168,76,0.07)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.color = "var(--text2)"; e.currentTarget.style.background = "var(--bg2)"; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                      Compare Stocks
+                    </button>
                   </div>
                 )}
               </motion.div>
@@ -2289,7 +2291,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     </div>
                   </div>
                   <AnimatePresence initial={false}>
-                    {wsidOpen && (
+                    {wsidOpen && !wsidLoading && (
                       <motion.div
                         // initial={false} is required — do not remove
                         initial={false}
@@ -2302,15 +2304,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                           background: "var(--card-bg)", border: "0.5px solid var(--border2)",
                           borderRadius: 12, padding: "20px 24px",
                         }}>
-                          {wsidLoading ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text3)", fontSize: 12 }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
-                                <path d="M21 12a9 9 0 11-6.219-8.56" />
-                              </svg>
-                              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-                              Analyzing your portfolio and today's market...
-                            </div>
-                          ) : wsidError ? (
+                          {wsidError ? (
                             <div style={{ fontSize: 12, color: "var(--red)" }}>{wsidError}</div>
                           ) : wsidResult ? (
                             <div>
@@ -2356,8 +2350,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   </AnimatePresence>
                 </div>
 
-                {/* Earnings Impact Preview — only renders when holdings have earnings within 14 days */}
-                <EarningsImpactPreview assets={assets} />
 
                 <motion.div
                   id="tour-desk-metrics"
@@ -2547,17 +2539,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             ) : activeTab === "transactions" ? (
               <motion.div key="transactions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <TransactionsTab />
-              </motion.div>
-            ) : activeTab === "compare" ? (
-              <motion.div key="compare" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <div style={S.cardAccent} />
-                    <span style={S.cardTitle}>Compare Portfolios</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>Select saved portfolios to compare performance, risk metrics, and AI analysis side by side.</p>
-                </div>
-                <PortfolioCompareTab userId={userId} period={period} />
               </motion.div>
             ) : null}
           </AnimatePresence>
