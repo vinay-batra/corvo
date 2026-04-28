@@ -850,7 +850,7 @@ function getNLSuggestions(assets: { ticker: string; weight: number }[]): string[
 }
 
 // Card and CardHeader are module-level so React never remounts their children
-// when the parent page re-renders (e.g. on scroll triggering showBackToTop).
+// when the parent page re-renders.
 // Defining these inside AppPage created a new function reference every render,
 // causing React to unmount/remount children like MonteCarloChart and re-fire simulations.
 const _CARD_BASE: React.CSSProperties = {
@@ -976,8 +976,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [hasSavedPortfolios, setHasSavedPortfolios] = useState(false);
   const contentRef = useRef<HTMLElement | null>(null);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-  const { dark, toggle: toggleDark }  = useTheme();
+const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
   const { canInstall, install: installPWA } = usePWAInstall();
   const S = useS();
@@ -1574,17 +1573,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     return () => window.removeEventListener("click", unlock, true);
   }, []);
 
-  // Back-to-top visibility
-  useEffect(() => {
-    const el = contentRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const next = el.scrollTop > 400;
-      setShowBackToTop(prev => prev === next ? prev : next);
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
 
   const exportCSV = () => {
     if (!data || !assets.length) return;
@@ -2858,15 +2846,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
 
       {/* Feedback button */}
       <FeedbackButton hasChat />
-
-      {/* Back to top */}
-      <button
-        className={`back-to-top${showBackToTop ? " visible" : ""}`}
-        onClick={() => contentRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
-        aria-label="Back to top"
-        title="Back to top">
-        ↑
-      </button>
 
     </div>
   );
