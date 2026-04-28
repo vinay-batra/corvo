@@ -171,6 +171,7 @@ export default function AiChat({
   goals: goalsProp,
   initialMessage,
   pageContext,
+  currentPage,
   onClose,
 }: {
   data?: any;
@@ -178,6 +179,7 @@ export default function AiChat({
   goals?: any;
   initialMessage?: string;
   pageContext?: string;
+  currentPage?: string;
   onClose?: () => void;
 }) {
   // Use refs for values used inside async functions to avoid stale closures
@@ -187,6 +189,9 @@ export default function AiChat({
   // Auth
   const [userId, setUserId]           = useState<string | null>(null);
   const [referralLink, setReferralLink] = useState("");
+
+  // Full user context string sent on every request
+  const [userContextStr, setUserContextStr] = useState("");
 
   // Chat
   const [messages, setMessages]       = useState<Message[]>([]);
@@ -283,7 +288,7 @@ export default function AiChat({
   }, [onClose]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: ud }) => {
+    supabase.auth.getUser().then(async ({ data: ud }) => {
       if (!ud.user) return;
       const uid = ud.user.id;
       setUserId(uid);
@@ -294,7 +299,85 @@ export default function AiChat({
         .then(d => { setMessagesUsed(d.messages_used || 0); setMessagesLimit(d.messages_limit || 15); })
         .catch(() => {});
       loadConversations(uid);
+
+      // Fetch all user context data in parallel for richer AI responses
+      const meta = ud.user.user_metadata || {};
+      const [profileRes, portfoliosRes, emailPrefsRes, alertsRes, targetsRes] = await Promise.allSettled([
+        supabase.from("profiles").select("display_name").eq("id", uid).single(),
+        supabase.from("portfolios").select("name,tickers").eq("user_id", uid).order("updated_at", { ascending: false }),
+        supabase.from("email_preferences").select("morning_briefing,week_in_review,monthly_summary,price_alerts").eq("user_id", uid).single(),
+        supabase.from("price_alerts").select("ticker,type,condition,threshold").eq("user_id", uid).eq("triggered", false),
+        fetch(`${API_URL}/price-targets/${uid}`).then(r => r.ok ? r.json() : []).catch(() => []),
+      ]);
+
+      const displayName =
+        (profileRes.status === "fulfilled" ? profileRes.value.data?.display_name : null) ||
+        ud.user.user_metadata?.full_name ||
+        ud.user.user_metadata?.name ||
+        ud.user.email?.split("@")[0] ||
+        "";
+
+      const savedPortfolios: { name: string; tickers: string[] }[] =
+        portfoliosRes.status === "fulfilled" ? (portfoliosRes.value.data || []) : [];
+
+      const emailPrefs: Record<string, boolean> =
+        emailPrefsRes.status === "fulfilled" ? (emailPrefsRes.value.data || {}) : {};
+
+      const alerts: any[] =
+        alertsRes.status === "fulfilled" ? (alertsRes.value.data || []) : [];
+
+      const targets: any[] =
+        targetsRes.status === "fulfilled" ? targetsRes.value : [];
+
+      const lines: string[] = [];
+
+      if (displayName) lines.push(`USER: ${displayName}`);
+
+      const pageLabel = currentPage || pageContext || "portfolio dashboard";
+      lines.push(`CURRENT PAGE: ${pageLabel}`);
+
+      // Onboarding profile
+      const profileParts: string[] = [];
+      if (meta.investor_type) profileParts.push(`investor type: ${meta.investor_type}`);
+      if (meta.primary_goals?.length) profileParts.push(`goals: ${(meta.primary_goals as string[]).join(", ")}`);
+      if (meta.age_range) profileParts.push(`age range: ${meta.age_range}`);
+      if (meta.income_range) profileParts.push(`income range: ${meta.income_range}`);
+      if (meta.risk_tolerance) profileParts.push(`risk tolerance: ${meta.risk_tolerance}`);
+      if (meta.investment_horizon) profileParts.push(`investment horizon: ${meta.investment_horizon}`);
+      if (meta.referral_source) profileParts.push(`heard about Corvo via: ${meta.referral_source}`);
+      if (profileParts.length) lines.push(`PROFILE: ${profileParts.join("; ")}`);
+
+      if (savedPortfolios.length) {
+        const pfLines = savedPortfolios
+          .slice(0, 5)
+          .map((p: any) => `${p.name || "Unnamed"} (${(p.tickers as string[] || []).join(", ")})`);
+        lines.push(`SAVED PORTFOLIOS: ${pfLines.join(" | ")}`);
+      }
+
+      const enabledEmails = Object.entries(emailPrefs)
+        .filter(([, v]) => v === true)
+        .map(([k]) => k.replace(/_/g, " "));
+      if (Object.keys(emailPrefs).length) {
+        lines.push(`EMAIL SUBSCRIPTIONS: ${enabledEmails.length ? enabledEmails.join(", ") : "none"}`);
+      }
+
+      if (alerts.length) {
+        const alertLines = alerts.slice(0, 10).map((a: any) =>
+          a.type === "price" ? `${a.ticker} ${a.condition} $${a.threshold}` : `portfolio ${a.condition} ${a.threshold}%`
+        );
+        lines.push(`ACTIVE PRICE ALERTS: ${alertLines.join("; ")}`);
+      }
+
+      if (targets.length) {
+        const tgtLines = targets.slice(0, 10).map((t: any) =>
+          `${t.ticker} target $${t.target_price} (${t.direction})`
+        );
+        lines.push(`PRICE TARGETS: ${tgtLines.join("; ")}`);
+      }
+
+      setUserContextStr(lines.join("\n"));
     }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -447,6 +530,7 @@ export default function AiChat({
           market_context,
           user_id: userIdRef.current,
           page_context: pageContext || "",
+          user_context: userContextStr,
         }),
       });
 

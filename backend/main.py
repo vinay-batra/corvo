@@ -1659,6 +1659,7 @@ class ChatRequest(BaseModel):
     market_context: str = ""
     user_id: str | None = None
     page_context: str = ""
+    user_context: str = ""
 
     def validate_message(self):
         if not self.message or not self.message.strip():
@@ -1780,9 +1781,10 @@ def chat(req: ChatRequest, request: Request):
             tied_str = " and ".join(tied)
             tied_largest_note = f"\n- CRITICAL: {tied_str} are tied as the largest holdings at {max_w:.1%} each. Do not single out any one of them as 'the largest holding'."
 
-    page_context_text = f"\n\nCURRENT PAGE CONTEXT:\n{req.page_context}" if req.page_context else ""
+    page_context_text = f"\n\nCURRENT PAGE: {req.page_context}" if req.page_context else ""
+    user_context_block = f"\n\n{req.user_context}" if req.user_context else ""
 
-    system = f"""You are Corvo AI, a world-class personal portfolio advisor. You have full access to this investor's portfolio data and financial profile. You also have web search capability to look up current prices, historical events, earnings, analyst ratings, news, and any market data needed to answer questions accurately.
+    system = f"""You are Corvo AI, a world-class personal portfolio advisor. You have full access to this investor's portfolio data, financial profile, saved portfolios, alerts, and targets. You also have web search capability to look up current prices, historical events, earnings, analyst ratings, news, and any market data needed to answer questions accurately.{user_context_block}
 
 CURRENT PORTFOLIO:
 - Holdings{weights_note}: {holdings_str}
@@ -1793,6 +1795,8 @@ CURRENT PORTFOLIO:
 - Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{page_context_text}
 
 HOW TO RESPOND:
+• Address the user by their first name when it is known.
+• Never say "I don't know which page you're on", "could you tell me more about your portfolio", or "I don't have access to your data" — all context is provided above.
 • Be a confident, direct advisor. Give specific opinions: say "I think NVDA will struggle because X" not "it depends on many factors."
 • Every response must follow this pattern: (1) here is what is happening, (2) here is why it matters for THIS portfolio specifically, (3) here is what you should consider doing.
 • Use web search to back up claims about market conditions, historical price action, earnings, analyst consensus, and economic events. Never say "I don't have access to" or "I can't check" — search instead.
@@ -1803,6 +1807,7 @@ HOW TO RESPOND:
 • Verify weights before stating them. If equally weighted, say so. Never single out one holding as "the largest" when multiple share the same weight.
 • Never confuse cash/money market positions with equity.
 • Reference the investor's goals, age, and timeline in every substantive response.
+• When the user asks about their alerts or price targets, use the ACTIVE PRICE ALERTS and PRICE TARGETS data above.
 • For questions about a specific trade: give your opinion, then add one brief line at the end: "Not financial advice."
 • Use bullet points (•) for lists of 3 or more items.
 • Plain text only. No markdown headers. No bold formatting.

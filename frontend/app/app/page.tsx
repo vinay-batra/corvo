@@ -2482,7 +2482,16 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           assets={assets}
           goals={goals}
           initialMessage={chatInitialMessage}
-          pageContext={activeTab !== "overview" ? `The user is currently on the ${activeTab} tab of their portfolio dashboard.` : undefined}
+          currentPage={{
+            overview:     "portfolio dashboard (overview tab)",
+            positions:    "portfolio dashboard (positions tab)",
+            risk:         "portfolio dashboard (income and tax tab)",
+            news:         "portfolio dashboard (news tab)",
+            watchlist:    "portfolio dashboard (watchlist tab)",
+            simulate:     "portfolio dashboard (Monte Carlo simulations tab)",
+            transactions: "portfolio dashboard (transactions tab)",
+            stocks:       "portfolio dashboard (stock detail overlay)",
+          }[activeTab] || `portfolio dashboard (${activeTab} tab)`}
           onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
         />
       )}
