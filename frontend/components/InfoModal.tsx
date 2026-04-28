@@ -44,7 +44,7 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
     <>
       <span
         onClick={openModal}
-        style={{ display: "inline-flex", alignItems: "center", cursor: "pointer", flexShrink: 0 }}
+        style={{ display: "inline-flex", alignItems: "center", cursor: "pointer", flexShrink: 0, alignSelf: "center" }}
       >
         {children ?? (
           <button
