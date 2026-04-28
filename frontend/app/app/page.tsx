@@ -2375,6 +2375,23 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     ]} /><SectorExposureChart assets={assets} /></Card>
                   </motion.div>
                 </div>
+                {/* Insider Activity summary */}
+                {assets.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <Card style={{ marginBottom: 0 }}>
+                      <TooltipCardHeader
+                        title="Insider Activity"
+                        sections={[
+                          { label: "Plain English", text: "Shows recent SEC Form 4 filings for your holdings. These are open market purchases and sales by company executives, directors, and major shareholders." },
+                          { label: "Why it matters", text: "Insider buying with personal money is one of the strongest bullish signals available. Executives have the most information about their company's prospects. Selling is less informative since it has many non-bearish explanations." },
+                          { label: "What to watch", text: "Focus on C-suite purchases (CEO, CFO, COO). Large buys after a price decline are particularly significant. Isolated small sales by a single executive are usually noise." },
+                        ]}
+                      />
+                      <InsiderActivitySummary assets={assets} />
+                    </Card>
+                  </div>
+                )}
+
                 {data && !isPortfolioSaved && (
                   <motion.div
                     // initial={false} is required — do not remove

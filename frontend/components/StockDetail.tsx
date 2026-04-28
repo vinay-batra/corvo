@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Eye, EyeOff, TrendingUp, CandlestickChart as CandleIcon } from "lucide-react";
 import InfoModal from "./InfoModal";
+import InsiderActivity from "./InsiderActivity";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
@@ -586,7 +587,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const [histLows, setHistLows]       = useState<number[]>([]);
   const [histVolumes, setHistVolumes] = useState<number[]>([]);
   const [histLoading, setHistLoading] = useState(false);
-  const [activeTab, setActiveTab]     = useState<"overview" | "options">("overview");
+  const [activeTab, setActiveTab]     = useState<"overview" | "options" | "insider">("overview");
   const [inWatchlist, setInWatchlist] = useState(false);
   const [livePrice, setLivePrice]     = useState<number | null>(null);
   const [priceFlash, setPriceFlash]   = useState<"up" | "down" | null>(null);
@@ -926,17 +927,24 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", gap: 3, marginBottom: 10, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 9, padding: 3, width: "fit-content" }}>
-        {(["overview", "options"] as const).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            style={{ padding: "6px 16px", fontSize: 11, fontWeight: 500, borderRadius: 7, border: "none", cursor: "pointer", transition: "all 0.15s", background: activeTab === tab ? (tab === "options" ? "rgba(184,134,11,0.12)" : "var(--bg3)") : "transparent", color: activeTab === tab ? (tab === "options" ? accentColor : "var(--text)") : "var(--text3)", letterSpacing: 0.2 }}>
-            {tab === "overview" ? "Overview" : "Options Chain"}
+      <div className="sd-tab-row" style={{ display: "flex", gap: 3, marginBottom: 10, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 9, padding: 3, width: "fit-content" }}>
+        {([
+          { id: "overview", label: "Overview" },
+          { id: "options",  label: "Options Chain" },
+          { id: "insider",  label: "Insider Activity" },
+        ] as const).map(({ id, label }) => (
+          <button key={id} onClick={() => setActiveTab(id)}
+            style={{ padding: "6px 16px", fontSize: 11, fontWeight: 500, borderRadius: 7, border: "none", cursor: "pointer", transition: "all 0.15s", background: activeTab === id ? (id === "overview" ? "var(--bg3)" : "rgba(184,134,11,0.12)") : "transparent", color: activeTab === id ? (id === "overview" ? "var(--text)" : accentColor) : "var(--text3)", letterSpacing: 0.2, whiteSpace: "nowrap" }}>
+            {label}
           </button>
         ))}
       </div>
 
       {/* ── Options tab ──────────────────────────────────────────────────────── */}
       {activeTab === "options" && <OptionsChain ticker={info.ticker} currentPrice={currentPrice} />}
+
+      {/* ── Insider Activity tab ─────────────────────────────────────────────── */}
+      {activeTab === "insider" && <InsiderActivity ticker={info.ticker} />}
 
       {/* ── Overview tab content ─────────────────────────────────────────────── */}
       {activeTab === "overview" && <>
