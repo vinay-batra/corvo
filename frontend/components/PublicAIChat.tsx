@@ -26,6 +26,8 @@ function PublicAIChatInner() {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -33,6 +35,20 @@ function PublicAIChatInner() {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open, messages]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        panelRef.current && !panelRef.current.contains(e.target as Node) &&
+        buttonRef.current && !buttonRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   // Hide on /app routes
   if (pathname.startsWith("/app")) return null;
@@ -65,6 +81,7 @@ function PublicAIChatInner() {
     <>
       {/* Floating bubble */}
       <button
+        ref={buttonRef}
         onClick={() => setOpen((o) => !o)}
         aria-label="Open AI chat"
         style={{
@@ -107,6 +124,7 @@ function PublicAIChatInner() {
       {/* Chat panel */}
       {open && (
         <div
+          ref={panelRef}
           style={{
             position: "fixed",
             bottom: 86,
