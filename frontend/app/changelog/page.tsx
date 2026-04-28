@@ -14,11 +14,12 @@ const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
 function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} required — do not remove
       initial={false}
+      animate={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.55, ease: ANIM_EASE, delay }}
       style={style}
     >
       {children}
@@ -30,22 +31,50 @@ const ENTRIES = [
   {
     date: "Apr 28, 2026",
     version: "v0.20",
-    title: "AI Chat Web Search, Monte Carlo Overhaul, Rebalance Assistant & 10 More Features",
-    desc: "AI chat now uses web search and streaming responses, so every answer is grounded in live market data and arrives word by word. Monte Carlo simulation rebuilt with 8,500 paths and a 1-to-30 year horizon selector, with a histogram view of terminal wealth distribution and persistent settings. Rebalance Assistant generates a prioritized trade list to bring drifted positions back to target weights. Options Chain Viewer added to Stock Detail with live calls and puts, ITM highlighting, and a Max Pain section. Transaction Log tracks cost basis and purchase history per holding. Health Score algorithm upgraded with weighted sub-scores across risk, diversification, and return quality. Email system rebuilt on Resend with transactional welcome, weekly digest, and morning briefing templates. Portfolio auto-loads from your last saved state on every login. Leaderboard now reads from profiles.xp for accuracy. InfoTooltip system added across all unexplained financial metrics. Global scrolling overhauled to eliminate overscroll bounce and scroll lag on all panels. Morning briefing expand/collapse shows a one-sentence preview when collapsed. Price alerts are now editable inline without deleting and recreating.",
-    tags: ["AI Chat", "Monte Carlo", "Rebalance", "Options", "Email", "UX", "Fixes"],
+    title: "UX Fixes, InfoTooltips & Global Scroll Overhaul",
+    desc: "An InfoTooltip system was added across every unexplained financial metric in the app, so hovering any term shows a plain-English explanation without leaving the page. Global scrolling was overhauled to eliminate overscroll bounce and scroll lag on all panels and modal overlays. Morning briefing expand and collapse now shows a one-sentence preview when collapsed instead of hiding all content behind the toggle. Price alerts are now editable inline without needing to delete and recreate the alert from scratch. Portfolio state auto-loads from your last saved session on every login, and the leaderboard was corrected to read from profiles.xp for accurate XP tracking.",
+    tags: ["UX", "Tooltips", "Fixes"],
+  },
+  {
+    date: "Apr 27, 2026",
+    version: "v0.20",
+    title: "Email System Rebuilt on Resend",
+    desc: "The email system was rebuilt on Resend with purpose-built transactional templates for welcome emails, weekly digest, and morning briefing. Welcome emails now go out automatically on account creation with a personalized first-login guide. The weekly digest summarizes performance, key metric changes, and suggested actions based on your portfolio since the last send. Morning briefing emails pull live prices via yfinance at send time so the data is never stale. All templates use the same CSS color variables as the app and render correctly across Gmail, Outlook, and Apple Mail.",
+    tags: ["Email", "Notifications", "Briefing"],
+  },
+  {
+    date: "Apr 23, 2026",
+    version: "v0.20",
+    title: "Rebalance Assistant, Options Chain & Transaction Log",
+    desc: "The Rebalance Assistant generates a prioritized trade list showing exactly how many shares to buy or sell to bring each drifted position back to its target weight. The Options Chain Viewer was added inside Stock Detail with live calls and puts tables, ITM row highlighting, a delta column, and a Max Pain section at the bottom. A Transaction Log now tracks each holding's cost basis and purchase history, giving you a running record of entries and exits. Health Score was upgraded with weighted sub-scores across risk, diversification, and return quality, replacing the simpler composite formula. All three panels respond to the same analyzed portfolio state so no additional analysis run is required to access them.",
+    tags: ["Rebalance", "Options", "Transactions"],
+  },
+  {
+    date: "Apr 22, 2026",
+    version: "v0.20",
+    title: "Monte Carlo Overhaul: 8,500 Paths & 30-Year Horizon",
+    desc: "Monte Carlo simulation was rebuilt from scratch with exactly 8,500 paths for statistically meaningful results. The horizon selector now spans 1 to 30 years, letting you model outcomes across different investment timelines. A histogram view shows the full distribution of terminal wealth so you can see the entire range of outcomes rather than just median and tail values. Simulation settings persist between sessions so your preferred horizon is remembered on every visit. The underlying math uses each holding's historical volatility and cross-asset correlation to generate realistic, correlated paths rather than treating positions independently.",
+    tags: ["Monte Carlo", "Simulations", "Risk"],
+  },
+  {
+    date: "Apr 20, 2026",
+    version: "v0.20",
+    title: "AI Chat: Live Web Search & Streaming Responses",
+    desc: "AI chat now connects to live web search so every answer is grounded in current market data rather than training knowledge alone. Responses stream word by word instead of arriving all at once, making conversations feel more natural. The system prompt was enriched with live portfolio context so the AI references your actual holdings when answering questions about risk, sector exposure, and return quality. Message rate limits and usage tracking were tightened to prevent abuse while keeping the experience smooth for regular users. Chat history now persists across sessions so you can revisit earlier conversations without losing context.",
+    tags: ["AI Chat", "Web Search", "Streaming"],
   },
   {
     date: "Apr 26, 2026",
     version: "v0.19",
     title: "Auth Fix, Portfolio Pill & Morning Brief Accuracy",
-    desc: "Critical auth fix: missing Next.js middleware was causing expired JWTs on every server-side request, silently failing sessions after sign-in. Supabase client is now a true singleton throughout the app. Dashboard ticker scroll adds a live Portfolio pill next to the S&P 500, Nasdaq, and Dow pills, showing your weighted daily dollar and percent change in real time. Morning brief now pulls live prices via the same yfinance logic as the ticker chips, never inferring or approximating. Briefing collapse now shows a one-sentence preview instead of hiding content entirely. Referral links are generated client-side with the full user ID. Onboarding no longer flashes on step transitions, and the header now shows the Corvo logo and user menu.",
+    desc: "Critical auth fix: missing Next.js middleware was causing expired JWTs on every server-side request, silently failing sessions after sign-in. Supabase client is now a true singleton throughout the app. Dashboard ticker scroll adds a live Portfolio pill next to the S&P 500, Nasdaq, and Dow pills, showing your weighted daily dollar and percent change in real time. Morning brief now pulls live prices via the same yfinance logic as the ticker chips, never inferring or approximating. Onboarding no longer flashes on step transitions, and the header now shows the Corvo logo and user menu.",
     tags: ["Auth", "Dashboard", "AI Brief", "Fixes"],
   },
   {
     date: "Apr 25, 2026",
     version: "v0.18",
     title: "Full Mobile Overhaul",
-    desc: "Complete mobile experience rebuilt from the ground up. Dashboard now mirrors desktop with a scrollable tab bar, all pages accessible, and no bottom nav. Performance charts fill exactly to the selected period with axis detail scaled per timeframe. Metric card tooltips fixed. AI insights no longer misidentify largest holdings when weights are equal. What-If analysis now requires 100% weights before running. About page added with founder story. Public pages updated with pill-style eyebrow badges. Light mode is now the default for new and logged-out users. PWA install button added to nav. Mobile audit completed across all pages: AI chat sidebar, onboarding modal, FAQ, pricing, settings, referrals all fixed. Blog posts added for Markets and Product categories. Changelog and README updated.",
+    desc: "Complete mobile experience rebuilt from the ground up across every page in the app. Dashboard now mirrors desktop with a scrollable tab bar and no bottom nav, and performance charts fill exactly to the selected period with axis detail scaled per timeframe. Mobile audit completed across all pages: AI chat sidebar, onboarding modal, FAQ, pricing, settings, and referrals all fixed. Blog posts added for Markets and Product categories, and light mode is now the default for new and logged-out users. PWA install button added to nav and AI insights no longer misidentify largest holdings when weights are equal.",
     tags: ["Mobile", "UI", "Dashboard", "Charts"],
   },
   {
@@ -59,21 +88,21 @@ const ENTRIES = [
     date: "Apr 24, 2026",
     version: "v0.16",
     title: "Light Mode, AI Chat Overhaul, CAGR Metrics & Dashboard Polish",
-    desc: "Full light mode support across all pages: every component now uses CSS variables with instant theme switching and no flash on load. Dashboard now shows CAGR instead of simple return, Sharpe ratio uses live T-bill rate (^IRX), and a stale results banner appears when holdings change after analysis. Money market funds (FDRXX, SPAXX, VMFXX, and others) now tracked with accurate yield-based price series. AI chat redesigned with conversation history sidebar, refreshable suggestions, and a richer system prompt with live portfolio context. Asset removal fixed for multi-asset portfolios. PDF export redesigned with metric cards, benchmark comparison, and investor profile section. Capital Gains Estimator and Dividend Calendar show Coming Soon cards.",
+    desc: "Full light mode support across all pages with CSS variables for instant theme switching and no flash on load. Dashboard now shows CAGR instead of simple return, Sharpe ratio uses the live T-bill rate (^IRX), and a stale results banner appears when holdings change after analysis. Money market funds (FDRXX, SPAXX, VMFXX) now tracked with accurate yield-based price series. AI chat redesigned with conversation history sidebar, refreshable suggestions, and a richer system prompt with live portfolio context. PDF export redesigned with metric cards, benchmark comparison, and an investor profile section.",
     tags: ["Light Mode", "AI Chat", "Dashboard", "Fixes"],
   },
   {
     date: "Apr 21, 2026",
     version: "v0.15",
     title: "Learn Overhaul, SEO, Light Mode Fixes & XP System Improvements",
-    desc: "Learn page overhauled: XP and streak now load correctly on refresh, expanded to 15 levels (Novice through Legend) with a visual reference card. Leaderboard pulls from profiles.xp for accuracy. AI Practice unlocks after first quiz attempt. Daily challenge fail state added with retry button. Arcade grid and lesson step badges improved. Light mode visual overhaul: all component colors now use CSS variables. News tab now requires an analyzed portfolio, consistent with other tabs. Feedback button added to every page via React portal. SEO upgrades: sitemap.xml created, JSON-LD upgraded to schema @graph, Google Search Console verified. Answer option length bias fixed in AI quiz questions.",
+    desc: "Learn page overhauled with XP and streak loading correctly on refresh, expanded to 15 levels from Novice through Legend with a visual reference card. Leaderboard pulls from profiles.xp for accuracy, and AI Practice unlocks after the first quiz attempt. Daily challenge fail state added with a retry button, and arcade grid and lesson step badges improved. Feedback button added to every page via React portal alongside SEO upgrades including a sitemap and upgraded JSON-LD schema. Light mode visual overhaul applied throughout: all component colors now use CSS variables and the news tab now requires an analyzed portfolio for consistency.",
     tags: ["Learn", "XP", "SEO", "Light Mode", "UX"],
   },
   {
     date: "Apr 16, 2026",
     version: "v0.14",
     title: "Cash Tickers, Guided Tour, Custom Date Range & 6 More Features",
-    desc: "Add cash and money market positions (VMFXX, SPAXX, FDRXX) to your portfolio with accurate yield tracking. A post-onboarding guided tour walks every new user through key features. Custom date range picker for all charts. Drawdown annotations mark the worst periods visually. Saved portfolio overlay lets you compare current vs. a saved snapshot. Presets modal for one-click demo portfolios. Company names displayed alongside tickers. Sticky weight header stays visible while scrolling the positions table. Replay onboarding from settings at any time.",
+    desc: "Add cash and money market positions (VMFXX, SPAXX, FDRXX) to your portfolio with accurate yield tracking. A post-onboarding guided tour walks every new user through key features, with the option to replay onboarding from settings at any time. Custom date range picker added for all charts, with drawdown annotations marking the worst periods visually. Saved portfolio overlay lets you compare current positions against a saved snapshot, and a presets modal adds one-click demo portfolios. Company names now appear alongside tickers and the weight header stays sticky while scrolling the positions table.",
     tags: ["Cash", "UX", "Charts"],
   },
   {
@@ -234,35 +263,43 @@ export default function ChangelogPage() {
           <div className="cl-vline" style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "var(--border)" }} />
 
           {ENTRIES.map((entry, i) => (
-            <FadeUp key={i} delay={i * 0.06}>
-              <div className="cl-entry" style={{ display: "flex", gap: 0, marginBottom: 48, position: "relative" }}>
-                {/* Date column */}
-                <div className="cl-date-col" style={{ width: 140, flexShrink: 0, paddingRight: 28, textAlign: "right", paddingTop: 4 }}>
-                  <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>{entry.date}</span>
-                </div>
-
-                {/* Dot */}
-                <div className="cl-dot" style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--card-bg)", border: "2px solid #c9a84c", zIndex: 2 }} />
-
-                {/* Content */}
-                <div className="cl-entry-content" style={{ paddingLeft: 36, flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "#c9a84c", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.4)", padding: "3px 10px", borderRadius: 20 }}>
-                      {entry.version}
-                    </span>
-                    {entry.tags.map(tag => (
-                      <span key={tag} className="tag">{tag}</span>
-                    ))}
-                  </div>
-                  <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", marginBottom: 8, lineHeight: 1.35 }}>
-                    {entry.title}
-                  </h3>
-                  <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.75, fontWeight: 300 }}>
-                    {entry.desc}
-                  </p>
-                </div>
+            <motion.div
+              key={i}
+              // initial={false} required — do not remove
+              initial={false}
+              animate={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, ease: ANIM_EASE }}
+              className="cl-entry"
+              style={{ display: "flex", gap: 0, marginBottom: 48, position: "relative" }}
+            >
+              {/* Date column */}
+              <div className="cl-date-col" style={{ width: 140, flexShrink: 0, paddingRight: 28, textAlign: "right", paddingTop: 4 }}>
+                <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>{entry.date}</span>
               </div>
-            </FadeUp>
+
+              {/* Dot */}
+              <div className="cl-dot" style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--card-bg)", border: "2px solid #c9a84c", zIndex: 2 }} />
+
+              {/* Content */}
+              <div className="cl-entry-content" style={{ paddingLeft: 36, flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "#c9a84c", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.4)", padding: "3px 10px", borderRadius: 20 }}>
+                    {entry.version}
+                  </span>
+                  {entry.tags.map(tag => (
+                    <span key={tag} className="tag">{tag}</span>
+                  ))}
+                </div>
+                <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", marginBottom: 8, lineHeight: 1.35 }}>
+                  {entry.title}
+                </h3>
+                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.75, fontWeight: 300 }}>
+                  {entry.desc}
+                </p>
+              </div>
+            </motion.div>
           ))}
 
         </div>
