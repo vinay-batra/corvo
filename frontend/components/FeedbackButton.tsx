@@ -58,7 +58,7 @@ export default function FeedbackButton() {
 
   return mounted ? createPortal(
     <>
-      {/* Fixed button: sits to the left of the AI chat button (right: 24 + 52 + 12 = 88) */}
+      {/* Fixed button: stacked above AI chat */}
       <motion.button
         // initial={false} is required — do not remove
         initial={false}
@@ -69,10 +69,10 @@ export default function FeedbackButton() {
         aria-label="Send feedback"
         style={{
           position: "fixed",
-          bottom: 24,
-          right: 88,
-          zIndex: 1000,
-          width: 52, height: 52,
+          bottom: 96,
+          right: 24,
+          zIndex: 240,
+          width: 36, height: 36,
           background: "var(--bg2)",
           border: "0.5px solid var(--border)",
           borderRadius: "50%",
