@@ -81,18 +81,46 @@ export default function AboutPage() {
       {/* Founder */}
       <div className="ab-founder" style={{ maxWidth: 640, margin: "0 auto", padding: "0 56px 96px" }}>
         <FadeUp>
-          <div style={{ border: "0.5px solid var(--border)", borderRadius: 14, padding: "28px 32px", background: "var(--card-bg)", position: "relative", overflow: "clip" }}>
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, var(--accent), transparent)" }} />
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 22 }}>Founder</p>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-              <div>
-                <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 8, lineHeight: 1.2 }}>
-                  Vinay Batra
-                </h2>
-                <p style={{ fontSize: 13, color: "var(--text3)", fontWeight: 300, lineHeight: 1.5 }}>
-                  Builder, finance aficionado, perpetual work in progress.
-                </p>
+          <div style={{ borderRadius: 14, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderLeft: "3px solid var(--accent)", padding: "28px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 0 }}>Founder</p>
+            <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, lineHeight: 1.2, margin: 0 }}>
+              Vinay Batra
+            </h2>
+            <p style={{ fontSize: 14, color: "var(--text2)", fontWeight: 300, lineHeight: 1.7, margin: 0 }}>
+              Sophomore in high school. Built Corvo because every portfolio tool was either expensive, outdated, or ugly. Building since 2026.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                  <circle cx="12" cy="9" r="2.5"/>
+                </svg>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>United States</span>
               </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>Building since 2026</span>
+              </div>
+            </div>
+            <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 16, marginTop: 4 }}>
+              <a
+                href="https://www.linkedin.com/in/vinay-batra/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text2)", fontSize: 13, fontWeight: 400, textDecoration: "none", background: "transparent", transition: "border-color 0.2s, color 0.2s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--accent)"; (e.currentTarget as HTMLAnchorElement).style.color = "var(--accent)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLAnchorElement).style.color = "var(--text2)"; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+                LinkedIn
+              </a>
             </div>
           </div>
         </FadeUp>
