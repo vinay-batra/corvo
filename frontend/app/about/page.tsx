@@ -1,14 +1,10 @@
 "use client";
 
-import React from "react";
 import { motion } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
 const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
-
-/* Headline words — split here so delay math is visible */
-const HEADLINE_WORDS = "Most apps show you what happened. Corvo tells you what to do about it.".split(" ");
 
 function FadeUp({
   children,
@@ -64,24 +60,11 @@ export default function AboutPage() {
           <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>About</span>
         </motion.div>
 
-        {/* Headline — each word animates in individually, staggered 0.06s */}
-        <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.1, maxWidth: 1040, margin: "0 auto 80px" }}>
-          {HEADLINE_WORDS.map((word, i) => (
-            <React.Fragment key={i}>
-              <motion.span
-                // initial={false} required — do not remove
-                initial={false}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.45, delay: i * 0.06, ease: ANIM_EASE }}
-                style={{ display: "inline-block", opacity: 0, transform: "translateY(20px)" }}
-              >
-                {word}
-              </motion.span>
-              {i < HEADLINE_WORDS.length - 1 && " "}
-            </React.Fragment>
-          ))}
-        </h1>
+        <FadeUp delay={0.1} style={{ margin: "0 auto 80px", maxWidth: 1040 }}>
+          <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.1 }}>
+            Most apps show you what happened. Corvo tells you what to do about it.
+          </h1>
+        </FadeUp>
       </div>
 
       {/* Story — paragraphs fade up on scroll, 0.1s stagger, 20% threshold */}
