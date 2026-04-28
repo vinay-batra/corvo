@@ -87,7 +87,7 @@ export default function AboutPage() {
               Vinay Batra
             </h2>
             <p style={{ fontSize: 14, color: "var(--text2)", fontWeight: 300, lineHeight: 1.7, margin: 0 }}>
-              Sophomore in high school. Built Corvo because every portfolio tool was either expensive, outdated, or ugly. Building since 2026.
+              Sophomore in high school. Built Corvo because every portfolio tool was either expensive, outdated, or ugly.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -96,15 +96,6 @@ export default function AboutPage() {
                   <circle cx="12" cy="9" r="2.5"/>
                 </svg>
                 <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>United States</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>Building since 2026</span>
               </div>
             </div>
             <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 16, marginTop: 4 }}>
