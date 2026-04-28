@@ -4805,7 +4805,7 @@ def portfolio_dividend_calendar(
     total_income = 0.0
 
     for ticker, weight in zip(ticker_list, normalized_weights):
-        if _is_cash(ticker):
+        if is_cash_ticker(ticker):
             continue
         try:
             t_obj = yf.Ticker(ticker)

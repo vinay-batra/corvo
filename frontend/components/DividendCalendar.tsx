@@ -59,13 +59,20 @@ const DividendCalendar = memo(function DividendCalendar({
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    if (!assets.length) { setData(null); return; }
+    if (!assets.length) { setData(null); setError(false); return; }
+    let cancelled = false;
     setError(false);
     setLoading(true);
     fetchDividendCalendar(assets, portfolioValue)
-      .then(d => setData(d ?? null))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
+      .then(d => { if (!cancelled) setData(d ?? null); })
+      .catch(err => {
+        if (!cancelled) {
+          console.error("DividendCalendar fetch error:", err);
+          setError(true);
+        }
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [assets, portfolioValue, retryCount]);
 
   return (
