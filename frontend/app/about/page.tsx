@@ -47,7 +47,7 @@ export default function AboutPage() {
           <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.1, maxWidth: 1040, margin: "0 auto 16px" }}>
             Most apps show you what happened. Corvo tells you what to do about it.
           </h1>
-          <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "0 auto", lineHeight: 1.65 }}>
+          <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "16px auto 0", lineHeight: 1.65 }}>
             Every tool was expensive, outdated, or ugly. So I built a better one.
           </p>
         </FadeUp>
@@ -98,8 +98,7 @@ export default function AboutPage() {
                   <rect x="2" y="13" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.4"/>
                   <rect x="13" y="13" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.7"/>
                 </svg>
-                <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>Building Sense</span>
-                <span style={{ fontSize: 10, color: "var(--text3)", fontWeight: 300 }}>March 2026</span>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>Building since March 2026</span>
               </div>
             </div>
             <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 16, marginTop: 4 }}>
