@@ -91,6 +91,16 @@ export default function AboutPage() {
                 </svg>
                 <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>United States</span>
               </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="2" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.7"/>
+                  <rect x="13" y="2" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.4"/>
+                  <rect x="2" y="13" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.4"/>
+                  <rect x="13" y="13" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.7"/>
+                </svg>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>Building Sense</span>
+                <span style={{ fontSize: 10, color: "var(--text3)", fontWeight: 300 }}>March 2026</span>
+              </div>
             </div>
             <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 16, marginTop: 4 }}>
               <a
