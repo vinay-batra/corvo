@@ -1671,8 +1671,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                     onBlur={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.2)"; }}
                   />
                   {nlLoading ? (
-                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: "rgba(0,0,0,0.04)", pointerEvents: "none" }}>
-                      <div style={{ width: 20, height: 20, border: "2px solid rgba(201,168,76,0.18)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.75s linear infinite" }} />
+                    <div style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                      <div style={{ width: 14, height: 14, marginLeft: 8, border: "2px solid rgba(201,168,76,0.18)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.75s linear infinite" }} />
                     </div>
                   ) : nlCommand.trim() && assets.length ? (
                     <button
