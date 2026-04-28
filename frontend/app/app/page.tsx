@@ -817,6 +817,42 @@ const TopbarActions = memo(function TopbarActions({
   );
 });
 
+// Card and CardHeader are module-level so React never remounts their children
+// when the parent page re-renders (e.g. on scroll triggering showBackToTop).
+// Defining these inside AppPage created a new function reference every render,
+// causing React to unmount/remount children like MonteCarloChart and re-fire simulations.
+const _CARD_BASE: React.CSSProperties = {
+  border: "0.5px solid var(--border)",
+  borderRadius: 12,
+  padding: "18px 20px",
+  background: "var(--card-bg)",
+  marginBottom: 16,
+  boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)",
+};
+const Card = memo(function Card({ children, style = {} }: { children?: React.ReactNode; style?: React.CSSProperties }) {
+  const [hov, setHov] = useState(false);
+  const cardStyle: React.CSSProperties = {
+    ..._CARD_BASE,
+    ...style,
+    borderLeft: hov ? "2px solid rgba(184,134,11,0.5)" : "0.5px solid var(--border)",
+    transition: "border-left 0.15s, box-shadow 0.15s",
+    boxShadow: hov ? "0 4px 16px rgba(0,0,0,0.2)" : "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)",
+  };
+  return (
+    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={cardStyle}>
+      {children}
+    </div>
+  );
+});
+const CardHeader = function CardHeader({ title }: { title: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+      <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
+      <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{title}</span>
+    </div>
+  );
+};
+
 export default function AppPage() {
   const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number }[]>([]);
   const [portfolioStale, setPortfolioStale] = useState(false);
@@ -1527,24 +1563,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     return arr.map(a => a.weight / total);
   };
 
-  const Card = ({ children, style = {} }: any) => {
-    const [hov, setHov] = useState(false);
-    const cardStyle: React.CSSProperties = {
-      ...S.card,
-      ...style,
-      borderLeft: hov ? "2px solid rgba(184,134,11,0.5)" : "0.5px solid var(--border)",
-      transition: "border-left 0.15s, box-shadow 0.15s",
-      boxShadow: hov ? "0 4px 16px rgba(0,0,0,0.2)" : "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)",
-    };
-    return (
-      <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={cardStyle}>
-        {children}
-      </div>
-    );
-  };
-  const CardHeader = ({ title }: { title: string }) => (
-    <div style={S.cardHeader}><div style={S.cardAccent} /><span style={S.cardTitle}>{title}</span></div>
-  );
 
   const SidebarInner = () => (
     <>
@@ -2338,18 +2356,18 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 </div>
               </motion.div>
             ) : activeTab === "simulate" ? (
-              <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <Card><TooltipCardHeader title="Monte Carlo Simulation" sections={[
+              <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }} style={{ overscrollBehavior: "none" }}>
+                <Card key="mc-card"><TooltipCardHeader title="Monte Carlo Simulation" sections={[
                   { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
                   { label: "Horizon control", text: "Select 1 to 30 years. Shorter horizons are more precise; longer horizons show the compounding range but with wider uncertainty." },
-                ]} /><MonteCarloChart assets={assets} period={period} portfolioValue={portfolioInputValue} /></Card>
-                <Card style={{ marginTop: 16 }}>
+                ]} /><MonteCarloChart key="mc-chart" assets={assets} period={period} portfolioValue={portfolioInputValue} /></Card>
+                <Card key="retire-card" style={{ marginTop: 16 }}>
                   <TooltipCardHeader title="What if I Retire in X Years?" sections={[
                     { label: "What it shows", text: "Runs 8,500 Monte Carlo scenarios projecting your portfolio to retirement. The confidence interval and histogram show the full distribution of outcomes in today's dollars." },
                     { label: "How it works", text: "Uses your current holdings, historical volatility, and long-term expected returns. Advanced settings let you model contributions, inflation, fees, and tax drag." },
                     { label: "Interpreting results", text: "Results are inflation-adjusted by default. The median is the most likely single outcome. The confidence interval captures the realistic range across most scenarios." },
                   ]} />
-                  <RetirementSimulator
+                  <RetirementSimulator key="retire-sim"
                     assets={assets}
                     portfolioValue={portfolioInputValue}
                   />
