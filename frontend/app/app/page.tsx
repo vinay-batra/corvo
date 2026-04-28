@@ -496,7 +496,7 @@ function PortfolioPerformanceTrend({
               xaxis: { showgrid: false, zeroline: false, tickfont: { size: 9, color: "#8a8a8a" }, type: "date" },
               yaxis: { showgrid: true, gridcolor: "rgba(255,255,255,0.05)", zeroline: true, zerolinecolor: "rgba(255,255,255,0.12)", tickfont: { size: 9, color: "#8a8a8a" }, ticksuffix: "%" },
             }}
-            config={{ displayModeBar: false, responsive: true }}
+            config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
             style={{ width: "100%" }}
             useResizeHandler
           />

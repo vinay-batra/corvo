@@ -94,7 +94,7 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
             hovermode: "x unified",
             hoverlabel: { bgcolor: "#0a1020", bordercolor: "rgba(255,64,96,0.3)", font: { color: "#e2e8f0", family: "Space Grotesk", size: 11 } },
           }}
-          config={{ displayModeBar: false, responsive: true }}
+          config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
           style={{ width: "100%", height: 220 }}
         />
         </>

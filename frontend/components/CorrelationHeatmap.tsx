@@ -109,7 +109,7 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
             xaxis: { tickcolor: "transparent", gridcolor: "transparent", linecolor: "transparent" },
             yaxis: { tickcolor: "transparent", gridcolor: "transparent", linecolor: "transparent", autorange: "reversed" },
           }}
-          config={{ displayModeBar: false, responsive: true }}
+          config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
           style={{ width: "100%", height: 260 }}
         />
         </>

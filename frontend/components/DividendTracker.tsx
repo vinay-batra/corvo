@@ -171,7 +171,7 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
                       font: { size: 13, color: dark ? AMBER : "#b8860b", family: "Space Mono, monospace" },
                     }],
                   }}
-                  config={{ displayModeBar: false, responsive: true }}
+                  config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
                   style={{ width: 180, height: 160 }}
                 />
               </div>

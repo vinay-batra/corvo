@@ -594,7 +594,7 @@ export default function StockCompare() {
                 hovermode: "x unified",
                 hoverlabel: { bgcolor: "#0d1117", bordercolor: "rgba(201,168,76,0.4)", font: { color: "#e8e0cc", size: 11 } },
               }}
-              config={{ displayModeBar: false, responsive: true }}
+              config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
               style={{ width: "100%", height: 260 }}
             />
           </div>
@@ -660,7 +660,7 @@ export default function StockCompare() {
                   xaxis: { linecolor: "transparent", tickcolor: "transparent" },
                   yaxis: { linecolor: "transparent", tickcolor: "transparent" },
                 }}
-                config={{ displayModeBar: false, responsive: true }}
+                config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
                 style={{ width: "100%", height: 220 }}
               />
             </div>
