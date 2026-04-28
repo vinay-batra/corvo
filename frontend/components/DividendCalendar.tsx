@@ -116,7 +116,7 @@ const DividendCalendar = memo(function DividendCalendar({
 
       {error && !loading && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "24px 0", textAlign: "center" }}>
-          <span style={{ fontSize: 12, color: "var(--text3)" }}>Unable to load dividend calendar.</span>
+          <span style={{ fontSize: 12, color: "var(--text3)" }}>Could not load dividend data. Please try again.</span>
           <button
             onClick={() => setRetryCount(c => c + 1)}
             style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "0.5px solid rgba(201,168,76,0.4)", borderRadius: 6, padding: "5px 12px", cursor: "pointer" }}
@@ -140,7 +140,7 @@ const DividendCalendar = memo(function DividendCalendar({
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
           <p style={{ fontSize: 12, color: "var(--text3)", margin: 0 }}>
-            No dividend events in the next 90 days for your holdings.
+            No dividend events in the next 90 days for your current holdings.
           </p>
         </div>
       )}
