@@ -44,6 +44,7 @@ body {
   --red:         #c0392b;
   --accent:      #b8860b;
   --accent-text: #8b6914;
+  --warning:     #c17c20;
   --font-body:   'Inter', sans-serif;
   --font-mono:   'Space Mono', monospace;
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
@@ -84,6 +85,7 @@ body {
   --red:         #e05c5c;
   --accent:      #c9a84c;
   --accent-text: #c9a84c;
+  --warning:     #e09a3e;
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
   --card-bg:     #0d1525;
   --bg-card:     #0d1525;
@@ -113,6 +115,7 @@ body {
   --red:         #c0392b;
   --accent:      #b8860b;
   --accent-text: #8b6914;
+  --warning:     #c17c20;
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
   --card-bg:     #ffffff;
   --bg-card:     #ffffff;

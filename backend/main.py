@@ -4702,7 +4702,7 @@ def portfolio_capital_gains(
             try:
                 pdate = date.fromisoformat(purchase_date_str[:10])
                 holding_period_days = (today - pdate).days
-                is_long_term = holding_period_days >= 365
+                is_long_term = holding_period_days > 365
             except Exception:
                 pass
 
@@ -4877,7 +4877,7 @@ def portfolio_dividend_calendar(
                 pay_date_str = (ex_div_date + timedelta(days=28)).isoformat()
 
             allocated_value = portfolio_value * weight
-            div_yield_pct = safe_float(info.get("dividendYield")) or 0.0
+            div_yield_pct = (safe_float(info.get("dividendYield")) or 0.0) * 100  # yfinance returns decimal fraction; convert to pct
             projected_income = allocated_value * div_yield_pct / 100 / freq_count if div_yield_pct else allocated_value * dividend_per_payment / (safe_float(info.get("regularMarketPrice")) or safe_float(info.get("currentPrice")) or 1.0) if dividend_per_payment else 0.0
 
             days_until_ex = (ex_div_date - today).days
