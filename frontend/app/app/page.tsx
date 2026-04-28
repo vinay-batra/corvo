@@ -60,6 +60,8 @@ import EarningsImpactPreview from "../../components/EarningsImpactPreview";
 import EventsCalendar from "../../components/EventsCalendar";
 import PriceTargetTracker from "../../components/PriceTargetTracker";
 import { InsiderActivitySummary } from "../../components/InsiderActivity";
+import StockCompare from "../../components/StockCompare";
+import PortfolioCompareTab from "../../components/PortfolioCompareTab";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -70,6 +72,7 @@ const TABS = [
   { id: "news",       label: "News",       Icon: Newspaper,        href: null },
   { id: "watchlist",     label: "Watchlist",    Icon: Eye,           href: null },
   { id: "transactions",  label: "Transactions", Icon: ClipboardList, href: null },
+  { id: "compare",       label: "Compare",      Icon: CandlestickChart, href: null },
   { id: "learn",         label: "Learn",        Icon: BookOpen,      href: "/learn" },
 ] as const;
 
@@ -82,6 +85,7 @@ const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
   news:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>,
   watchlist:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
   transactions: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>,
+  compare:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
   learn:        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
 };
 
@@ -925,6 +929,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
   const [nlPending, setNlPending] = useState<NLEditResult | null>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
+  const [showStockCompare, setShowStockCompare] = useState(false);
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
   const [showTourInvite, setShowTourInvite] = useState(false);
@@ -1951,7 +1956,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               const isActive = activeTab === tab.id;
               const ts: React.CSSProperties = { padding: "0 11px", height: 40, fontSize: 12, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "color 0.15s" };
               if (tab.href) return <Link key={tab.id} href={tab.href} style={ts} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{tab.label}</Link>;
-              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); }} style={ts}>{tab.label}</button>;
+              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={ts}>{tab.label}</button>;
             })}
           </div>
         </div>
@@ -1987,7 +1992,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 </>
               );
               if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{content}</Link>;
-              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); }} style={tabStyle}>{content}</button>;
+              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
             })}
           </div>
 
@@ -2090,8 +2095,35 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
               <motion.div key="stocks" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 {stockTicker ? (
                   <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} onSelectTicker={t => setStockTicker(t)} />
+                ) : showStockCompare ? (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                      <button
+                        onClick={() => setShowStockCompare(false)}
+                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        Back to Stocks
+                      </button>
+                      <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Compare Stocks</span>
+                    </div>
+                    <StockCompare />
+                  </div>
                 ) : (
-                  <StocksSearch onSelect={setStockTicker} />
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                      <button
+                        onClick={() => setShowStockCompare(true)}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 7, border: "0.5px solid var(--border)", background: "var(--bg2)", color: "var(--text2)", cursor: "pointer", transition: "all 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        Compare Stocks
+                      </button>
+                    </div>
+                    <StocksSearch onSelect={setStockTicker} />
+                  </div>
                 )}
               </motion.div>
             ) : activeTab === "positions" ? (
@@ -2515,6 +2547,17 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
             ) : activeTab === "transactions" ? (
               <motion.div key="transactions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <TransactionsTab />
+              </motion.div>
+            ) : activeTab === "compare" ? (
+              <motion.div key="compare" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <div style={S.cardAccent} />
+                    <span style={S.cardTitle}>Compare Portfolios</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>Select saved portfolios to compare performance, risk metrics, and AI analysis side by side.</p>
+                </div>
+                <PortfolioCompareTab userId={userId} period={period} />
               </motion.div>
             ) : null}
           </AnimatePresence>
