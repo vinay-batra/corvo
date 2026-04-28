@@ -208,24 +208,25 @@ function WaitlistCapture() {
 }
 
 const FREE_FEATURES = [
-  "Portfolio analysis (Sharpe, Monte Carlo, drawdown)",
-  "AI insights and health score",
-  "15 AI chat messages per day",
+  "Full portfolio analysis (Sharpe, Monte Carlo, drawdown)",
+  "AI health score with daily action items",
+  "40 AI chat messages per month",
   "Watchlist with price alerts",
   "CSV brokerage import",
-  "Learn page with XP system",
+  "Capital gains estimator",
+  "Dividend calendar",
+  "Earnings and insider activity tracking",
   "Weekly digest email",
-  "Up to 5 saved portfolios",
 ];
 
 const PRO_EXTRAS = [
   "Unlimited AI chat",
+  "Custom PDF portfolio reports",
+  "SMS price alerts",
+  "Brokerage sync via Plaid",
   "Tax loss harvesting suggestions",
-  "Options chain viewer",
-  "Advanced Monte Carlo scenarios",
   "Priority support",
-  "Unlimited saved portfolios",
-  "PDF report exports (unlimited)",
+  "Early access to new features",
 ];
 
 const FAQS = [
@@ -308,13 +309,13 @@ function PricingCard({
       {/* Price */}
       <div style={{ marginBottom: 6 }}>
         <span style={{ fontFamily: "Space Mono,monospace", fontSize: 44, fontWeight: 700, letterSpacing: -2, color: isPro ? "#c9a84c" : "var(--text)" }}>
-          {isPro ? "$X" : "$0"}
+          {isPro ? "$9" : "$0"}
         </span>
         <span style={{ fontSize: 14, color: "var(--text3)", marginLeft: 4 }}>/mo</span>
       </div>
 
       <p style={{ fontSize: 13.5, color: "var(--text2)", marginBottom: 28, lineHeight: 1.6 }}>
-        {isPro ? "For serious investors" : "Everything you need to get started"}
+        {isPro ? "For investors who want the full picture" : "Everything you need to start investing smarter"}
       </p>
 
       {/* CTA */}
