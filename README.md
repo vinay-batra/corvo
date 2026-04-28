@@ -1,55 +1,73 @@
-# Corvo — Free Portfolio Analytics & AI Investing Tools
+# Corvo
 
-Institutional-grade portfolio analytics for retail investors. Free, no subscription required.
+### Your portfolio, with a point of view.
 
-**Live at [corvo.capital](https://corvo.capital)**
+[![Live Site](https://img.shields.io/badge/Live%20Site-corvo.capital-black?style=flat-square)](https://corvo.capital)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+[![Built with Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![Built with FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
+[![Built with Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com)
 
 ---
 
 ## What is Corvo?
 
-Corvo is a free, AI-powered portfolio analytics platform that gives retail investors access to quantitative analysis tools previously limited to institutional software. Connect to live market data, run risk models, simulate outcomes, and get AI-driven insights — no setup, no subscription.
-
-Upload a portfolio via CSV or build one manually. Corvo handles the rest.
+Corvo is a free, AI-powered portfolio intelligence platform built for retail investors who are tired of dashboards that show numbers without telling them what those numbers mean. Most portfolio tools are built around data display. Corvo is built around advice: every insight surfaces not just what is happening in your portfolio, but why it matters to you specifically and what you should consider doing about it. Whether you want to stress-test your holdings with Monte Carlo simulation, understand your tax exposure before year-end, get a morning briefing on overnight moves, or simply ask "what should I do today?" -- Corvo gives you a direct, personalized answer, not a spreadsheet to interpret yourself.
 
 ---
 
 ## Features
 
 ### Portfolio Analysis
-- CAGR (1Y) for portfolio and individual holdings
-- Sharpe ratio using the live ^IRX T-bill rate, volatility, alpha, beta, max drawdown
-- Monte Carlo simulation (8,500 paths) for projected outcomes
-- Portfolio health score across returns, risk, stability, and resilience
-- Benchmark comparison vs. S&P 500 (^GSPC), NASDAQ (^IXIC), Dow (^DJI)
-- Sector exposure breakdown and correlation heatmap
-- What-If analysis — test portfolio changes side by side
-- Cash and money market position support (VMFXX, SPAXX, FDRXX, and XX-suffix tickers)
+- CAGR across selectable time periods, for both the portfolio and individual holdings
+- Sharpe ratio computed with the live `^IRX` T-bill rate as the risk-free rate
+- Portfolio health score graded across returns, risk, stability, and resilience
+- Max drawdown, alpha, beta, and volatility
+- Monte Carlo simulation with 8,500 paths and a 1 to 30 year projection horizon
+- Benchmark comparison versus the S&P 500, NASDAQ, and Dow Jones
+- Sector exposure breakdown with visual allocation chart
+- Correlation heatmap across all holdings
+- What-If analysis to test portfolio changes side by side before committing
 
 ### AI Tools
-- AI portfolio chat with full portfolio context, persistent history, rename/delete (Claude-powered)
-- AI market brief — daily macro and portfolio-relevant news summary
-- AI insights — plain-English analysis of holdings
+- AI portfolio chat powered by Claude with full portfolio context, web search, persistent history, and conversation management
+- Morning briefing: a daily AI-generated summary of macro news and portfolio-relevant developments
+- "What should I do today?" -- a single-click, direct action recommendation based on your current holdings
+- Rebalance assistant with target allocation suggestions and drift analysis
+- Natural language portfolio editor: describe a change in plain English and Corvo applies it
+- Earnings impact preview: AI analysis of how upcoming earnings could affect your positions
 
-### Tracking
-- Watchlist with live prices and 7-day sparklines
-- Price alerts with browser push notifications
-- Dividend calendar
-- Tax-loss harvesting signals
+### Simulations
+- Monte Carlo engine running exactly 8,500 paths per simulation
+- 1 to 30 year projection horizon with percentile bands
+- Retirement simulator with configurable spending, contribution, and target balance
+- Advanced settings for return assumptions, inflation rate, and withdrawal strategy
 
-### Education
-- Learn tab with XP system and 15 progression levels
-- Daily challenges with a global leaderboard
-- Challenge Mode — timed and scored
-- Arcade: 6 financial mini-games
-- Hand-crafted lessons with worked examples
+### Income and Tax
+- Dividend tracker with upcoming payment calendar and yield-on-cost
+- Capital gains estimator with short-term and long-term breakdowns
+- Tax-loss harvesting signals with correlated replacement suggestions
 
-### Platform
-- PWA — installable on desktop and mobile
-- CSV import; PDF and CSV export with metric cards, benchmark comparison, and investor profile
-- Light and dark mode
-- Cloud sync across devices
-- Multi-currency support (USD, GBP, EUR, JPY, CAD)
+### Market Data
+- Options chain viewer with calls and puts, ITM highlighting, delta column, and max pain
+- Insider trading tracker showing recent SEC filings for held stocks
+- Analyst price targets with consensus rating and upside/downside to current price
+- Watchlist with live quotes, 7-day sparklines, and configurable price alerts
+
+### Notifications and Email
+- Morning briefing email delivered before market open
+- Market close summary with daily portfolio performance
+- Week in Review delivered every Sunday
+- Monthly portfolio summary with rolling performance metrics
+- Price alerts with browser push notification support
+- All email preferences individually configurable from the settings page
+
+### Learn
+- XP system with 15 progression levels
+- Structured lessons with worked examples across investing, options, tax, and risk topics
+- Daily challenges with timed scoring
+- Global leaderboard updated in real time
+- Arcade with financial mini-games
 
 ---
 
@@ -57,70 +75,40 @@ Upload a portfolio via CSV or build one manually. Corvo handles the rest.
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 14, TypeScript, Framer Motion, Recharts, Supabase SSR |
-| Backend | FastAPI (Python), Railway, yfinance, Anthropic Claude API |
+| Frontend | Next.js 14, TypeScript, Framer Motion, Recharts, Plotly |
+| Backend | FastAPI (Python), deployed on Railway |
 | Database | Supabase (PostgreSQL) with Row-Level Security |
 | Auth | Supabase Auth with Cloudflare Turnstile CAPTCHA |
+| AI | Anthropic Claude (claude-sonnet-4-6) with streaming and web search |
+| Market Data | yfinance, Finnhub |
 | Email | Resend |
 | Frontend Hosting | Vercel |
-| API Server | Railway |
-| DNS / Security | Cloudflare |
+| API Hosting | Railway |
 
 ---
 
-## Architecture
+## Live Demo
 
-```
-Browser
-  └─ Next.js (Vercel)
-       ├─ /app          — React Server + Client Components (App Router)
-       ├─ /api          — Next.js API routes (auth callbacks, proxying)
-       └─ Supabase SSR  — session management, row-level security
-
-FastAPI (Railway)
-  ├─ /portfolio        — analytics engine (Sharpe, drawdown, Monte Carlo)
-  ├─ /ai               — Claude API integration
-  ├─ /stocks           — market data fetching and caching
-  └─ /stats            — live user metrics
-
-Supabase
-  ├─ Auth              — magic link, Google, GitHub, Turnstile
-  ├─ portfolios        — cloud-saved portfolio state
-  └─ challenges        — daily challenge scores and leaderboard
-```
-
-```
-portfolio_v2/
-├── frontend/          # Next.js application
-│   ├── app/
-│   │   ├── app/       # Main dashboard and analyzer
-│   │   ├── learn/     # Education platform
-│   │   ├── auth/      # Authentication flows
-│   │   └── settings/  # User settings
-│   └── components/    # Shared UI components
-└── backend/           # FastAPI server
-    └── main.py        # All API endpoints
-```
+**[corvo.capital](https://corvo.capital)** -- free, no subscription required. Sign up with email or Google and your portfolio is live in under a minute.
 
 ---
 
-## Supabase Client and Middleware
+## Getting Started
 
-**Always import the Supabase client from `frontend/lib/supabase.ts`.** Never instantiate a client inline. Inline clients omit `cookieOptions` and will drop sessions on browser close.
+### Prerequisites
 
-**`frontend/middleware.ts` must exist** and call `supabase.auth.getUser()` on every request. Without it, SSR pages receive expired JWTs and users are silently logged out. If you delete or rename this file, auth will break in production even if it appears to work locally.
-
----
-
-## Local Development
+- Node.js 18+
+- Python 3.11+
+- A Supabase project
+- An Anthropic API key
 
 ### Frontend
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local
-# Fill in environment variables (see below)
+cp .env.local.example .env.local
+# Fill in the environment variables listed below
 npm run dev
 # Runs at http://localhost:3000
 ```
@@ -132,8 +120,8 @@ cd backend
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Fill in environment variables (see below)
-uvicorn main:app --reload
+# Fill in the environment variables listed below
+uvicorn main:app --reload --port 8000
 # Runs at http://localhost:8000
 ```
 
@@ -143,7 +131,7 @@ uvicorn main:app --reload
 
 ### Frontend (`frontend/.env.local`)
 
-```
+```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_API_URL=http://localhost:8000
@@ -153,34 +141,28 @@ RESEND_API_KEY=your_resend_api_key
 
 ### Backend (`backend/.env`)
 
-```
+```env
 ANTHROPIC_API_KEY=your_anthropic_api_key
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-ALLOWED_ORIGINS=http://localhost:3000
 FINNHUB_API_KEY=your_finnhub_api_key
 RESEND_API_KEY=your_resend_api_key
 VAPID_PUBLIC_KEY=your_vapid_public_key
 VAPID_PRIVATE_KEY=your_vapid_private_key
+ALLOWED_ORIGINS=http://localhost:3000
 ```
 
-`FINNHUB_API_KEY`, `RESEND_API_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are required in Railway env vars for the email system (Morning Briefing, Week in Review, Monthly Summary) and price alerts to function.
-
-### Supabase tables required
-
-In addition to the tables created by standard migrations, the following tables must exist:
-
-- `transactions` — buy/sell trade log used by the Transaction Log tab and cost basis tracking
-- `health_score_cache` — daily cache for portfolio Health Score to avoid recomputing on every load
+`FINNHUB_API_KEY`, `RESEND_API_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are required for the email system (morning briefing, week in review, monthly summary) and price alerts to function in production.
 
 ---
 
 ## License
 
-Licensed under the [Business Source License 1.1](LICENSE).
-You may view and reference the code, but may not use it to build a competing commercial product.
-Converts to the MIT License on **2029-04-08**.
+Licensed under the [MIT License](LICENSE).  
+Copyright (c) 2026 Vinay Batra.
 
 ---
 
-Built by [Vinay Batra](https://www.linkedin.com/in/vinay-batra/)
+## Built By
+
+Built by Vinay Batra, a sophomore in high school, because every portfolio tool was either expensive, outdated, or ugly.
