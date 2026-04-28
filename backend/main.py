@@ -5617,51 +5617,25 @@ async def send_week_in_review_emails(target_user_id=None) -> dict:
                 continue
             email, display_name, tickers, weights = data
             email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
-            weekly_return = await loop.run_in_executor(None, _portfolio_return_yf, tickers, weights, "5d")
-            if weekly_return is None:
+            ctx = await loop.run_in_executor(None, _portfolio_week_context, tickers, weights)
+            if "portfolio_return" not in ctx:
                 skipped += 1
                 continue
 
-            def _upcoming_earnings_str() -> str:
-                upcoming = []
-                cutoff = today + _td(days=7)
-                for t in tickers[:8]:
-                    try:
-                        cal = yf.Ticker(t).calendar
-                        if not cal:
-                            continue
-                        raw = (cal.get("Earnings Date") if isinstance(cal, dict)
-                               else (cal.loc["Earnings Date"].iloc[0] if "Earnings Date" in cal.index else None))
-                        if raw is None:
-                            continue
-                        if isinstance(raw, (list, tuple)):
-                            raw = raw[0]
-                        ed = raw.date() if hasattr(raw, "date") else _date.fromisoformat(str(raw)[:10])
-                        if today <= ed <= cutoff:
-                            upcoming.append(t)
-                    except Exception:
-                        pass
-                return ", ".join(upcoming) if upcoming else ""
+            port_ret = ctx["portfolio_return"]
+            sign = "+" if port_ret >= 0 else ""
+            pct_str = f"{sign}{port_ret:.2f}%"
+            verdict = await loop.run_in_executor(None, _weekly_advisor_verdict, display_name, ctx, False)
+            if not verdict:
+                verdict = f"Your portfolio returned {pct_str} last week."
 
-            earnings_str = await loop.run_in_executor(None, _upcoming_earnings_str)
-            earnings_note = f"Earnings this week: {earnings_str}." if earnings_str else ""
-            sign = "+" if weekly_return >= 0 else ""
-            pct_str = f"{sign}{weekly_return:.2f}%"
-            prompt = (
-                f"Write 2 concise sentences for a weekly portfolio review email to {display_name}. "
-                f"Their portfolio returned {pct_str} last week. {earnings_note} "
-                "Be direct and forward-looking. No em dashes, no asterisks, no markdown."
-            )
-            teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 90)
-            if not teaser:
-                teaser = f"Your portfolio returned {pct_str} last week. {earnings_note}"
             mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
             html = _email_html(
                 heading=f"Your week in review, {display_name}",
                 label="Week in Review",
                 body_lines=[
                     f"Last week: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">{pct_str}</strong>",
-                    teaser,
+                    verdict,
                 ],
                 cta_text="See your full week",
                 cta_url="https://corvo.capital/app",
@@ -6030,27 +6004,121 @@ def _seconds_until_sunday_8am_et() -> float:
     return max((target - now).total_seconds(), 60.0)
 
 
-def _gen_weekly_checkup_verdict(display_name: str, pct_str: str) -> str:
-    """Generate a one-sentence portfolio verdict for the weekly push notification."""
+def _portfolio_week_context(tickers: list, weights: list) -> dict:
+    """Download weekly price data for all tickers plus SPY and return advisor context."""
+    ctx: dict = {}
+    try:
+        all_dl = list(dict.fromkeys(tickers + ["SPY"]))
+        df = yf.download(all_dl, period="5d", auto_adjust=True, progress=False)
+        if df.empty or len(df) < 2:
+            return ctx
+        close = df["Close"] if isinstance(df.columns, pd.MultiIndex) else df[["Close"]].rename(columns={"Close": all_dl[0]})
+
+        if "SPY" in close.columns:
+            spy_col = close["SPY"].dropna()
+            if len(spy_col) >= 2:
+                ctx["spy_return"] = round((float(spy_col.iloc[-1]) - float(spy_col.iloc[0])) / float(spy_col.iloc[0]) * 100, 2)
+
+        contributions = []
+        port_ret = 0.0
+        for i, ticker in enumerate(tickers):
+            if i >= len(weights) or ticker not in close.columns:
+                continue
+            col = close[ticker].dropna()
+            if len(col) < 2:
+                continue
+            r = (float(col.iloc[-1]) - float(col.iloc[0])) / float(col.iloc[0]) * 100
+            contribution = weights[i] * r
+            port_ret += contribution
+            contributions.append((ticker, contribution, weights[i]))
+
+        if contributions:
+            ctx["portfolio_return"] = round(port_ret, 2)
+            top = max(contributions, key=lambda x: abs(x[1]))
+            ctx["top_ticker"] = top[0]
+            ctx["top_contribution"] = round(top[1], 2)
+            ctx["top_weight_pct"] = round(top[2] * 100, 1)
+
+        sorted_by_weight = sorted(zip(tickers, weights), key=lambda x: x[1], reverse=True)
+        ctx["largest_holding"] = sorted_by_weight[0][0]
+        ctx["largest_weight_pct"] = round(sorted_by_weight[0][1] * 100, 1)
+        top3 = sorted_by_weight[:3]
+        ctx["top3_tickers"] = [t for t, _ in top3]
+        ctx["top3_weight_pct"] = round(sum(w for _, w in top3) * 100, 1)
+    except Exception as e:
+        print(f"[week-ctx] error: {e}")
+    return ctx
+
+
+def _weekly_advisor_verdict(display_name: str, ctx: dict, condensed: bool = False) -> str:
+    """Generate advisor-style weekly verdict. condensed=True returns 2 sentences for push notifications."""
     try:
         import anthropic as _anth
         key = os.environ.get("ANTHROPIC_API_KEY", "")
         if not key:
             return ""
         client = _anth.Anthropic(api_key=key)
-        prompt = (
-            f"Write exactly one sentence for a weekly portfolio push notification to {display_name}. "
-            f"Their portfolio returned {pct_str} this week. "
-            "Be specific, direct, and insightful. No em dashes, no asterisks, no markdown."
-        )
+
+        port_ret = ctx.get("portfolio_return")
+        if port_ret is None:
+            return ""
+        sign = "+" if port_ret >= 0 else ""
+        pct_str = f"{sign}{port_ret:.2f}%"
+
+        ctx_lines = [f"Portfolio return last week: {pct_str}"]
+
+        spy_ret = ctx.get("spy_return")
+        if spy_ret is not None:
+            spy_sign = "+" if spy_ret >= 0 else ""
+            spy_str = f"{spy_sign}{spy_ret:.2f}%"
+            diff = port_ret - spy_ret
+            diff_sign = "+" if diff >= 0 else ""
+            ctx_lines.append(f"S&P 500 last week: {spy_str} (portfolio difference: {diff_sign}{diff:.2f}%)")
+
+        top_ticker = ctx.get("top_ticker")
+        if top_ticker:
+            contrib = ctx.get("top_contribution", 0.0)
+            contrib_sign = "+" if contrib >= 0 else ""
+            weight_pct = ctx.get("top_weight_pct", 0.0)
+            ctx_lines.append(f"Biggest driver: {top_ticker} ({weight_pct}% of portfolio, contributed {contrib_sign}{contrib:.2f}% to return)")
+
+        top3 = ctx.get("top3_tickers", [])
+        top3_w = ctx.get("top3_weight_pct")
+        if top3 and top3_w is not None:
+            ctx_lines.append(f"Top 3 holdings ({', '.join(top3)}) make up {top3_w:.0f}% of portfolio")
+
+        context_block = "\n".join(f"- {line}" for line in ctx_lines)
+
+        if condensed:
+            prompt = (
+                f"You are Corvo, an AI portfolio advisor. Write exactly 2 sentences for {display_name}'s weekly push notification.\n\n"
+                f"Portfolio data:\n{context_block}\n\n"
+                "Sentence 1: A verdict on how the week went relative to the market and the main driver.\n"
+                "Sentence 2: One specific, actionable recommendation.\n\n"
+                "No em dashes. No asterisks. No markdown. Be specific to the numbers, not generic."
+            )
+            max_tokens = 100
+        else:
+            prompt = (
+                f"You are Corvo, an AI portfolio advisor. Write exactly 4 sentences for {display_name}'s weekly review email.\n\n"
+                f"Portfolio data:\n{context_block}\n\n"
+                "Sentence 1: A verdict on how the week went relative to the S&P 500 and why (reference the specific numbers).\n"
+                "Sentence 2: The single biggest driver of performance and what it means for the portfolio.\n"
+                "Sentence 3: The key risk or concentration issue to watch right now.\n"
+                "Sentence 4: One specific, actionable recommendation tied to what just happened.\n\n"
+                "No em dashes. No asterisks. No bullet points. No markdown. Be direct and specific to this portfolio, not generic."
+            )
+            max_tokens = 300
+
         resp = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=80,
+            model="claude-haiku-4-5-20251001",
+            max_tokens=max_tokens,
             messages=[{"role": "user", "content": prompt}],
         )
-        return resp.content[0].text.strip() if resp.content else ""
+        text = resp.content[0].text.strip() if resp.content else ""
+        return clean_ai_response(text)
     except Exception as e:
-        print(f"[weekly-checkup] AI verdict error: {e}")
+        print(f"[weekly-verdict] AI error: {e}")
         return ""
 
 
@@ -6100,13 +6168,14 @@ async def send_weekly_portfolio_checkup_push() -> dict:
                 skipped += 1
                 continue
             _, display_name, tickers, weights = data
-            weekly_return = await loop.run_in_executor(None, _portfolio_return_yf, tickers, weights, "5d")
-            if weekly_return is None:
+            ctx = await loop.run_in_executor(None, _portfolio_week_context, tickers, weights)
+            if "portfolio_return" not in ctx:
                 skipped += 1
                 continue
-            sign = "+" if weekly_return >= 0 else ""
-            pct_str = f"{sign}{weekly_return:.2f}%"
-            verdict = await loop.run_in_executor(None, _gen_weekly_checkup_verdict, display_name, pct_str)
+            port_ret = ctx["portfolio_return"]
+            sign = "+" if port_ret >= 0 else ""
+            pct_str = f"{sign}{port_ret:.2f}%"
+            verdict = await loop.run_in_executor(None, _weekly_advisor_verdict, display_name, ctx, True)
             title = f"Weekly checkup: {pct_str}"
             body = verdict or f"Your portfolio returned {pct_str} this week."
             for sub_row in subs:
