@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Cropper from "react-easy-crop";
 import { supabase } from "../../lib/supabase";
 import { SOUND_KEY } from "../../hooks/useSoundEffects";
@@ -83,6 +84,7 @@ export default function SettingsPage({
   onReplayTour?: () => void;
 }) {
   const { toast } = useToast();
+  const router = useRouter();
 
   // ── Nav state ──────────────────────────────────────────────────────────────
   const [activeCategory, setActiveCategory] = useState<Category>("profile");
@@ -799,11 +801,15 @@ export default function SettingsPage({
             ← Back
           </button>
         ) : (
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", textDecoration: "none", fontSize: 12, transition: "color 0.15s" }}
+          <button onClick={() => {
+            const ref = document.referrer;
+            const inApp = window.history.length > 1 && ref && (ref.includes("corvo.capital") || ref.startsWith(window.location.origin));
+            inApp ? router.back() : router.push("/app");
+          }} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", padding: 0, fontSize: 12, cursor: "pointer", transition: "color 0.15s" }}
             onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
             onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
             ← Back
-          </Link>
+          </button>
         )}
         <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
         <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />

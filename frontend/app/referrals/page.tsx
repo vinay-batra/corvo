@@ -186,7 +186,11 @@ export default function ReferralsPage() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       <header style={{ height: 52, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
-        <button onClick={() => router.back()} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", padding: 0, fontSize: 12, cursor: "pointer", transition: "color 0.15s" }}
+        <button onClick={() => {
+          const ref = document.referrer;
+          const inApp = window.history.length > 1 && ref && (ref.includes("corvo.capital") || ref.startsWith(window.location.origin));
+          inApp ? router.back() : router.push("/app");
+        }} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", padding: 0, fontSize: 12, cursor: "pointer", transition: "color 0.15s" }}
           onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
           onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
           ← Back
