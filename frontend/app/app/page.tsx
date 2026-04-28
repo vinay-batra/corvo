@@ -733,17 +733,17 @@ interface TopbarActionsProps {
   setShowSettings: (v: boolean) => void;
   setShowProfile: (v: boolean) => void;
   setShowDashboardTour: (v: boolean) => void;
+  setShowShareImage: (v: boolean) => void;
 }
 
 const TopbarActions = memo(function TopbarActions({
   dark, toggleDark, alertCount, avatarUrl, displayName,
   data, assets, exportCSV,
   setShowAlerts, setShowEmailPrefs, setShowReferral, setShowSettings,
-  setShowProfile, setShowDashboardTour,
+  setShowProfile, setShowDashboardTour, setShowShareImage,
 }: TopbarActionsProps) {
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [aiToast, setAiToast] = useState(false);
-  const [showShareImage, setShowShareImage] = useState(false);
 
   return (
     <>
@@ -957,6 +957,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [navProfile, setNavProfile] = useState<{ displayName: string; avatarUrl: string | null | undefined }>({ displayName: "", avatarUrl: undefined });
   const referralCodeRef             = useRef<string>("");
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showShareImage, setShowShareImage] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [portfolioInputValue, setPortfolioInputValue] = useState<number>(() => {
     if (typeof window === "undefined") return 10000;
@@ -2027,6 +2028,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             setShowSettings={setShowSettings}
             setShowProfile={setShowProfile}
             setShowDashboardTour={setShowDashboardTour}
+            setShowShareImage={setShowShareImage}
           />
         </header>
 
