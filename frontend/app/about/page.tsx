@@ -93,9 +93,6 @@ export default function AboutPage() {
                   Builder, finance aficionado, perpetual work in progress.
                 </p>
               </div>
-              <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.35)", padding: "4px 12px", borderRadius: 20, flexShrink: 0, letterSpacing: 0.5, alignSelf: "flex-start" }}>
-                v0.16
-              </span>
             </div>
           </div>
         </FadeUp>
