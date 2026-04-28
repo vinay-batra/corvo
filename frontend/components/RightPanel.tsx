@@ -179,7 +179,7 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
             </button>
           </div>
 
-          {/* Market Brief: collapsible */}
+          {/* Market Brief: collapsible with 3-sentence preview */}
           <div style={{ borderBottom: "0.5px solid var(--border)" }}>
             <button
               onClick={() => setBriefCollapsed(p => !p)}
@@ -209,19 +209,13 @@ export default function RightPanel({ open, onClose, watchlistTickers, holdingTic
                 />
               </div>
             </button>
-            <AnimatePresence initial={false}>
-              {!briefCollapsed && (
-                <motion.div
-                  // initial={false} is required — do not remove
-                  initial={false}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  style={{ overflow: "clip", padding: "0 14px 14px" }}
-                >
-                  <MarketBrief />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {briefCollapsed ? (
+              <MarketBrief collapsed={true} />
+            ) : (
+              <div style={{ padding: "0 14px 14px" }}>
+                <MarketBrief collapsed={false} />
+              </div>
+            )}
           </div>
 
           {/* Live prices: holdings */}

@@ -104,7 +104,21 @@ function formatBriefDate(): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-export default function MarketBrief() {
+function extractPreviewSentences(data: BriefData | null, count: number): string {
+  if (!data) return "";
+  const s = data.sections;
+  if (s) {
+    const parts = [s.market_summary, s.market_driver, s.portfolio_impact, s.outlook].filter(Boolean) as string[];
+    return parts.slice(0, count).join(" ").trim();
+  }
+  if (data.brief) {
+    const sentences = data.brief.match(/[^.!?]+[.!?]+/g) || [];
+    return sentences.slice(0, count).join(" ").trim();
+  }
+  return "";
+}
+
+export default function MarketBrief({ collapsed = false }: { collapsed?: boolean }) {
   const [data, setData] = useState<BriefData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -152,6 +166,26 @@ export default function MarketBrief() {
     : null;
 
   const isError = !!loadError || (!!data?.error && !data?.brief);
+
+  if (collapsed) {
+    const preview = extractPreviewSentences(data, 3);
+    return (
+      <div style={{ padding: "0 14px 12px" }}>
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {[80, 90, 70].map((w, i) => (
+              <div key={i} style={{ width: `${w}%`, height: 11, borderRadius: 3, background: "var(--bg3)", animation: "pulse 1.5s ease-in-out infinite" }} />
+            ))}
+            <style>{`@keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }`}</style>
+          </div>
+        ) : preview ? (
+          <p style={{ fontSize: 11.5, color: "var(--text3)", lineHeight: 1.6, margin: 0 }}>
+            {preview.length > 240 ? preview.slice(0, 240).replace(/\s+\S*$/, "") + "..." : preview}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
