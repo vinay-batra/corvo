@@ -168,19 +168,34 @@ export default function MarketBrief({ collapsed = false }: { collapsed?: boolean
   const isError = !!loadError || (!!data?.error && !data?.brief);
 
   if (collapsed) {
-    const preview = extractPreviewSentences(data, 3);
+    const firstSentence = (() => {
+      const text = extractPreviewSentences(data, 1);
+      if (!text) return "";
+      return text.length > 80 ? text.slice(0, 80).trimEnd() + "..." : text;
+    })();
+
     return (
-      <div style={{ padding: "0 14px 12px" }}>
+      <div style={{ padding: "0 14px 10px" }}>
         {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {[80, 90, 70].map((w, i) => (
-              <div key={i} style={{ width: `${w}%`, height: 11, borderRadius: 3, background: "var(--bg3)", animation: "pulse 1.5s ease-in-out infinite" }} />
-            ))}
-            <style>{`@keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }`}</style>
-          </div>
-        ) : preview ? (
-          <p style={{ fontSize: 11.5, color: "var(--text3)", lineHeight: 1.6, margin: 0 }}>
-            {preview.length > 240 ? preview.slice(0, 240).replace(/\s+\S*$/, "") + "..." : preview}
+          <>
+            <div style={{
+              width: "60%", height: 12, borderRadius: 6,
+              background: "var(--border)",
+              overflow: "hidden",
+              position: "relative" as const,
+            }}>
+              <div style={{
+                position: "absolute" as const,
+                inset: 0,
+                background: "linear-gradient(90deg, transparent 0%, var(--border2) 50%, transparent 100%)",
+                animation: "briefShimmer 1.4s ease-in-out infinite",
+              }} />
+            </div>
+            <style>{`@keyframes briefShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }`}</style>
+          </>
+        ) : firstSentence ? (
+          <p style={{ fontSize: 11.5, color: "var(--text3)", lineHeight: 1.5, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {firstSentence}
           </p>
         ) : null}
       </div>
