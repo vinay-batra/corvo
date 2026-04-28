@@ -2150,6 +2150,17 @@ export default function Landing() {
       {/* FEATURED IN */}
       <FeaturedInBar />
 
+      {/* ─── MISSION STATEMENT ─── */}
+      <section className="sec-pad" style={{ position: "relative", zIndex: 1, background: "var(--bg2)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "88px 56px" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto", textAlign: "center" }}>
+          <FadeUp>
+            <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(20px,2.6vw,32px)", fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, lineHeight: 1.4, margin: 0 }}>
+              Most apps show you what happened. Corvo tells you what to do about it.
+            </p>
+          </FadeUp>
+        </div>
+      </section>
+
       {/* ─── FEATURE SHOWCASE: BENTO GRID ─── */}
       <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "64px 56px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
