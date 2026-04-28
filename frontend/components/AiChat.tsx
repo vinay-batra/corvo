@@ -148,7 +148,7 @@ function TypingDots() {
       <style>{`@keyframes typingDot{0%,60%,100%{opacity:.2;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}`}</style>
       <div style={{ display: "flex", gap: 5, alignItems: "center", padding: "4px 2px" }}>
         {[0, 1, 2].map(i => (
-          <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", animation: `typingDot 1.4s ease-in-out infinite`, animationDelay: `${i * 0.18}s` }} />
+          <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--text3)", animation: `typingDot 1.4s ease-in-out infinite`, animationDelay: `${i * 0.18}s` }} />
         ))}
       </div>
     </>
@@ -170,12 +170,14 @@ export default function AiChat({
   assets,
   goals: goalsProp,
   initialMessage,
+  pageContext,
   onClose,
 }: {
   data?: any;
   assets?: any[];
   goals?: any;
   initialMessage?: string;
+  pageContext?: string;
   onClose?: () => void;
 }) {
   // Use refs for values used inside async functions to avoid stale closures
@@ -444,6 +446,7 @@ export default function AiChat({
           portfolio_context: portfolioContext,
           market_context,
           user_id: userIdRef.current,
+          page_context: pageContext || "",
         }),
       });
 
@@ -454,22 +457,74 @@ export default function AiChat({
         return;
       }
       if (!res.ok) throw new Error(`Server error ${res.status}`);
-      const d = await res.json();
+      if (!res.body) throw new Error("No response body");
 
-      const aiMsg: Message = { role: "assistant", content: d.reply, timestamp: Date.now() };
-      const full = [...nextHistory, aiMsg];
-      setMessages(full);
+      // Stream the response progressively
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulatedText = "";
+      let msgAdded = false;
+      const aiMsgTimestamp = Date.now();
+      let finalMessages: Message[] = nextHistory;
 
-      if (d.messages_used !== undefined) setMessagesUsed(d.messages_used);
-      if (d.messages_limit !== undefined) setMessagesLimit(d.messages_limit);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      // Save to Supabase using refs (always current values)
-      await saveConversation(full, msg);
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            if (data.chunk) {
+              accumulatedText += data.chunk;
+              const snapshot = accumulatedText;
+              if (!msgAdded) {
+                msgAdded = true;
+                setLoading(false);
+                setMessages([...nextHistory, { role: "assistant", content: snapshot, timestamp: aiMsgTimestamp }]);
+              } else {
+                setMessages(prev => {
+                  const arr = [...prev];
+                  arr[arr.length - 1] = { ...arr[arr.length - 1], content: snapshot };
+                  return arr;
+                });
+              }
+            }
+
+            if (data.done) {
+              if (data.messages_used !== undefined) setMessagesUsed(data.messages_used);
+              if (data.messages_limit !== undefined) setMessagesLimit(data.messages_limit);
+            }
+
+            if (data.error) throw new Error(data.error);
+          } catch (parseErr: any) {
+            if (parseErr?.message && !parseErr.message.includes("JSON")) throw parseErr;
+          }
+        }
+      }
+
+      if (!msgAdded) {
+        setLoading(false);
+        setMessages([...nextHistory, { role: "assistant", content: accumulatedText || "Something went wrong. Please try again.", timestamp: aiMsgTimestamp }]);
+      }
+
+      finalMessages = [...nextHistory, { role: "assistant", content: accumulatedText, timestamp: aiMsgTimestamp }];
+      await saveConversation(finalMessages, msg);
 
     } catch (e: any) {
-      setMessages([...nextHistory, { role: "assistant", content: `Error: ${e.message || "Request failed."}`, timestamp: Date.now() }]);
+      setLoading(false);
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant" && last.content) return prev;
+        return [...prev.filter(m => m.role !== "assistant" || m.content), { role: "assistant", content: `Error: ${e.message || "Request failed."}`, timestamp: Date.now() }];
+      });
     }
-    setLoading(false);
   };
 
   // ── Utilities ──
@@ -850,7 +905,7 @@ export default function AiChat({
                     <CorvoAvatar size={20} />
                     <span style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)" }}>Corvo AI</span>
                   </div>
-                  <div style={{ padding: "8px 13px", background: "#141414", border: "1px solid rgba(255,255,255,.07)", borderRadius: "3px 16px 16px 16px" }}>
+                  <div style={{ padding: "8px 13px", background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "3px 16px 16px 16px" }}>
                     <TypingDots />
                   </div>
                 </motion.div>

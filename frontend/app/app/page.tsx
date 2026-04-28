@@ -2488,6 +2488,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           assets={assets}
           goals={goals}
           initialMessage={chatInitialMessage}
+          pageContext={activeTab !== "overview" ? `The user is currently on the ${activeTab} tab of their portfolio dashboard.` : undefined}
           onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
         />
       )}
