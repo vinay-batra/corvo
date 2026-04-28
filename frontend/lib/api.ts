@@ -124,6 +124,38 @@ export async function fetchTaxLoss(assets: any[], portfolioValue = 10000) {
   return res.json();
 }
 
+export async function fetchCapitalGains(assets: any[], portfolioValue = 10000, ltcgRate = 15, stcgRate = 22) {
+  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
+  const tickers = normalized.map(a => a.ticker).join(",");
+  const weights = normalized.map(a => a.weight).join(",");
+  const costBasis = normalized.map(a => a.purchasePrice != null ? a.purchasePrice : "").join(",");
+  const purchaseDates = normalized.map(a => a.purchaseDate ?? "").join(",");
+  const params = new URLSearchParams({
+    tickers,
+    weights,
+    cost_basis: costBasis,
+    purchase_dates: purchaseDates,
+    portfolio_value: String(portfolioValue),
+    ltcg_rate: String(ltcgRate),
+    stcg_rate: String(stcgRate),
+  });
+  const res = await fetch(`${API_URL}/portfolio/capital-gains?${params}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchDividendCalendar(assets: any[], portfolioValue = 10000) {
+  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
+  const tickers = normalized.map(a => a.ticker).join(",");
+  const weights = normalized.map(a => a.weight).join(",");
+  const params = new URLSearchParams({ tickers, weights, portfolio_value: String(portfolioValue) });
+  const res = await fetch(`${API_URL}/portfolio/dividend-calendar?${params}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function fetchAnalystTargets(ticker: string) {
   const res = await fetch(`${API_URL}/analyst-targets/${encodeURIComponent(ticker)}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

@@ -4623,6 +4623,290 @@ def portfolio_tax_loss(
     }
 
 
+# ── Capital Gains Estimator ───────────────────────────────────────────────────
+
+@app.get("/portfolio/capital-gains")
+def portfolio_capital_gains(
+    tickers: str = "AAPL",
+    weights: str = "",
+    cost_basis: str = "",
+    purchase_dates: str = "",
+    portfolio_value: float = 10000.0,
+    ltcg_rate: int = 15,
+    stcg_rate: int = 22,
+):
+    """
+    For each ticker with a cost basis, compute unrealized gain/loss, classify ST vs LT,
+    and estimate tax owed using 2024 federal brackets.
+    ltcg_rate: 0, 15, or 20 (caller selects based on income bracket)
+    stcg_rate: 22 (ordinary income; default middle bracket)
+    """
+    from datetime import date, timedelta
+
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {"holdings": [], "total_unrealized_gain_loss": 0.0, "total_estimated_tax": 0.0}
+
+    weight_list: list[float] = []
+    if weights:
+        try:
+            weight_list = [float(w) for w in weights.split(",")]
+        except ValueError:
+            weight_list = []
+    if len(weight_list) != len(ticker_list):
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+    total_w = sum(weight_list) or 1.0
+    normalized_weights = [w / total_w for w in weight_list]
+
+    basis_list: list[float | None] = []
+    for b in cost_basis.split(","):
+        try:
+            v = float(b.strip())
+            basis_list.append(v if v > 0 else None)
+        except ValueError:
+            basis_list.append(None)
+    while len(basis_list) < len(ticker_list):
+        basis_list.append(None)
+
+    date_list: list[str | None] = []
+    for d in purchase_dates.split(","):
+        d = d.strip()
+        date_list.append(d if d else None)
+    while len(date_list) < len(ticker_list):
+        date_list.append(None)
+
+    today = date.today()
+    holdings = []
+    total_gain_loss = 0.0
+    total_tax = 0.0
+
+    for ticker, weight, basis, purchase_date_str in zip(ticker_list, normalized_weights, basis_list, date_list):
+        if basis is None or basis <= 0:
+            continue
+
+        current_price = _get_current_price(ticker)
+        if current_price is None:
+            continue
+
+        gain_per_share = current_price - basis
+        gain_pct = gain_per_share / basis * 100
+
+        allocated_value = portfolio_value * weight
+        # Estimated shares owned based on allocation and cost basis
+        approx_shares = allocated_value / basis
+        estimated_gain_dollars = approx_shares * gain_per_share
+
+        holding_period_days: int | None = None
+        is_long_term: bool | None = None
+        if purchase_date_str:
+            try:
+                pdate = date.fromisoformat(purchase_date_str[:10])
+                holding_period_days = (today - pdate).days
+                is_long_term = holding_period_days >= 365
+            except Exception:
+                pass
+
+        # Tax rate: if holding period unknown, default to LTCG rate (conservative assumption)
+        if is_long_term is True:
+            tax_rate = ltcg_rate
+        elif is_long_term is False:
+            tax_rate = stcg_rate
+        else:
+            tax_rate = ltcg_rate  # unknown holding period — show LTCG as default
+
+        estimated_tax = max(0.0, estimated_gain_dollars * tax_rate / 100)
+
+        if is_long_term is None:
+            term_label = "unknown"
+        elif is_long_term:
+            term_label = "long-term"
+        else:
+            term_label = "short-term"
+
+        # Plain-English insight
+        if estimated_gain_dollars > 0:
+            if is_long_term is False:
+                insight = f"Short-term gain taxed as ordinary income at {tax_rate}%. Consider holding until {(date.fromisoformat(purchase_date_str[:10]) + timedelta(days=366)).strftime('%b %d, %Y')} to qualify for the lower {ltcg_rate}% long-term rate and save ~${(estimated_gain_dollars * (stcg_rate - ltcg_rate) / 100):,.0f}." if purchase_date_str else f"Short-term gain taxed at {tax_rate}%."
+            elif is_long_term is True:
+                insight = f"Long-term gain qualifies for the {ltcg_rate}% preferential rate. Estimated tax if you sell today is ${estimated_tax:,.0f}."
+            else:
+                insight = f"Enter your purchase date to determine if this gain qualifies for the lower long-term rate."
+        elif estimated_gain_dollars < 0:
+            insight = f"Unrealized loss of ${abs(estimated_gain_dollars):,.0f}. Selling now could generate a tax loss to offset other gains."
+        else:
+            insight = "No gain or loss at current prices."
+
+        total_gain_loss += estimated_gain_dollars
+        total_tax += estimated_tax
+
+        holdings.append({
+            "ticker": ticker,
+            "weight": round(weight, 4),
+            "cost_basis": round(basis, 2),
+            "current_price": round(current_price, 2),
+            "purchase_date": purchase_date_str,
+            "holding_period_days": holding_period_days,
+            "is_long_term": is_long_term,
+            "term_label": term_label,
+            "gain_loss_per_share": round(gain_per_share, 2),
+            "gain_loss_pct": round(gain_pct, 2),
+            "allocated_value": round(allocated_value, 2),
+            "estimated_gain_loss_dollars": round(estimated_gain_dollars, 2),
+            "tax_rate": tax_rate,
+            "estimated_tax": round(estimated_tax, 2),
+            "insight": insight,
+        })
+
+    # Sort: largest gains first, losses last
+    holdings.sort(key=lambda x: x["estimated_gain_loss_dollars"], reverse=True)
+
+    return {
+        "holdings": holdings,
+        "total_unrealized_gain_loss": round(total_gain_loss, 2),
+        "total_estimated_tax": round(total_tax, 2),
+        "ltcg_rate_used": ltcg_rate,
+        "stcg_rate_used": stcg_rate,
+    }
+
+
+# ── Dividend Calendar ─────────────────────────────────────────────────────────
+
+@app.get("/portfolio/dividend-calendar")
+def portfolio_dividend_calendar(
+    tickers: str = "AAPL",
+    weights: str = "",
+    portfolio_value: float = 10000.0,
+):
+    """
+    For each ticker, fetch the next ex-dividend date and pay date via yfinance.
+    Returns a 90-day forward calendar of upcoming dividend events sorted by ex-date.
+    """
+    from datetime import date, timedelta
+
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {"calendar": [], "total_projected_income_90d": 0.0}
+
+    weight_list: list[float] = []
+    if weights:
+        try:
+            weight_list = [float(w) for w in weights.split(",")]
+        except ValueError:
+            weight_list = []
+    if len(weight_list) != len(ticker_list):
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+    total_w = sum(weight_list) or 1.0
+    normalized_weights = [w / total_w for w in weight_list]
+
+    today = date.today()
+    cutoff = today + timedelta(days=90)
+    calendar = []
+    total_income = 0.0
+
+    for ticker, weight in zip(ticker_list, normalized_weights):
+        if _is_cash(ticker):
+            continue
+        try:
+            t_obj = yf.Ticker(ticker)
+            try:
+                info = t_obj.info
+            except Exception:
+                info = {}
+
+            ex_div_ts = info.get("exDividendDate")
+            ex_div_date: date | None = None
+            if ex_div_ts:
+                try:
+                    ex_div_date = datetime.fromtimestamp(int(ex_div_ts), tz=timezone.utc).date()
+                except Exception:
+                    ex_div_date = None
+
+            if ex_div_date is None or ex_div_date < today or ex_div_date > cutoff:
+                continue
+
+            div_rate = safe_float(info.get("dividendRate"))  # annual
+            trailing_rate = safe_float(info.get("trailingAnnualDividendRate"))
+            annual_div = div_rate or trailing_rate or 0.0
+
+            # Determine frequency to estimate per-payment amount
+            freq_str = "quarterly"
+            freq_count = 4
+            if div_rate and trailing_rate and trailing_rate > 0:
+                ratio = div_rate / trailing_rate
+                if ratio > 0.9:
+                    # Annual = once/year
+                    freq_count = 1
+                    freq_str = "annual"
+            # Fallback heuristics from lastDividendValue
+            last_div = safe_float(info.get("lastDividendValue")) or 0.0
+            if annual_div > 0 and last_div > 0:
+                ratio = annual_div / last_div
+                if 11 <= ratio <= 13:
+                    freq_count = 12
+                    freq_str = "monthly"
+                elif 3.5 <= ratio <= 4.5:
+                    freq_count = 4
+                    freq_str = "quarterly"
+                elif 1.8 <= ratio <= 2.2:
+                    freq_count = 2
+                    freq_str = "semi-annual"
+                elif ratio <= 1.2:
+                    freq_count = 1
+                    freq_str = "annual"
+
+            dividend_per_payment = last_div if last_div > 0 else (annual_div / freq_count if annual_div > 0 else 0.0)
+
+            # Estimate pay date: typically ~3-4 weeks after ex-date
+            try:
+                cal = t_obj.calendar
+                pay_date_str: str | None = None
+                if isinstance(cal, dict):
+                    raw_pay = cal.get("Dividend Date")
+                    if raw_pay:
+                        try:
+                            if hasattr(raw_pay, "date"):
+                                pay_date_str = raw_pay.date().isoformat()
+                            else:
+                                pay_date_str = str(raw_pay)[:10]
+                        except Exception:
+                            pay_date_str = None
+            except Exception:
+                pay_date_str = None
+
+            if pay_date_str is None:
+                pay_date_str = (ex_div_date + timedelta(days=28)).isoformat()
+
+            allocated_value = portfolio_value * weight
+            div_yield_pct = safe_float(info.get("dividendYield")) or 0.0
+            projected_income = allocated_value * div_yield_pct / 100 / freq_count if div_yield_pct else allocated_value * dividend_per_payment / (safe_float(info.get("regularMarketPrice")) or safe_float(info.get("currentPrice")) or 1.0) if dividend_per_payment else 0.0
+
+            days_until_ex = (ex_div_date - today).days
+            total_income += projected_income
+
+            calendar.append({
+                "ticker": ticker,
+                "company": info.get("longName") or info.get("shortName") or ticker,
+                "ex_date": ex_div_date.isoformat(),
+                "pay_date": pay_date_str,
+                "dividend_per_share": round(dividend_per_payment, 4),
+                "frequency": freq_str,
+                "yield_pct": round(div_yield_pct, 4),
+                "projected_income": round(projected_income, 2),
+                "days_until_ex": days_until_ex,
+                "allocated_value": round(allocated_value, 2),
+            })
+
+        except Exception as e:
+            print(f"dividend-calendar error for {ticker}: {e}")
+
+    calendar.sort(key=lambda x: x["ex_date"])
+
+    return {
+        "calendar": calendar,
+        "total_projected_income_90d": round(total_income, 2),
+    }
+
+
 # ── Portfolio Share Image ─────────────────────────────────────────────────────
 
 @app.get("/portfolio/share-image")

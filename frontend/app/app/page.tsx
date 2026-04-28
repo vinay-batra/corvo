@@ -30,6 +30,8 @@ import UserMenu from "../../components/UserMenu";
 import SectorExposureChart from "../../components/SectorExposureChart";
 import DividendTracker from "../../components/DividendTracker";
 import TaxLossHarvester from "../../components/TaxLossHarvester";
+import CapitalGainsEstimator from "../../components/CapitalGainsEstimator";
+import DividendCalendar from "../../components/DividendCalendar";
 import MonteCarloChart from "../../components/MonteCarloChart";
 import NewsFeed from "../../components/NewsFeed";
 import ExportPDF from "../../components/ExportPDF";
@@ -882,7 +884,7 @@ const CardHeader = function CardHeader({ title }: { title: string }) {
 };
 
 export default function AppPage() {
-  const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number }[]>([]);
+  const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number; purchaseDate?: string }[]>([]);
   const [portfolioStale, setPortfolioStale] = useState(false);
   const lastAnalyzedAssetsRef             = useRef<string>("");
   const [period, setPeriod]               = useState("1y");
@@ -2505,15 +2507,15 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                 </div>
                 <div className="c-risk-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <motion.div key="cge-card" initial={false}>
-                    <Card style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
-                      <CardHeader title="Capital Gains Estimator" />
-                      <span style={{ color: "var(--text3)", fontSize: 13 }}>Coming soon</span>
+                    <Card style={{ marginBottom: 0 }}>
+                      <TooltipCardHeader title="Capital Gains Estimator" sections={[{label:"Plain English",text:"Estimates your federal capital gains tax liability if you were to sell each holding today. Short-term gains (held under 1 year) are taxed as ordinary income. Long-term gains qualify for preferential 0%, 15%, or 20% rates."},{label:"How to use",text:"Enter purchase prices and purchase dates in the sidebar. Select your LTCG tax bracket to see your personalized estimate."},{label:"What's Good",text:"Holdings held over 1 year qualify for lower long-term rates. If you're close to the 1-year mark, waiting to sell can meaningfully reduce your tax bill."}]} />
+                      <CapitalGainsEstimator assets={assets} portfolioValue={portfolioInputValue} />
                     </Card>
                   </motion.div>
                   <motion.div key="div-cal-card" initial={false}>
-                    <Card style={{ marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
-                      <CardHeader title="Dividend Calendar" />
-                      <span style={{ color: "var(--text3)", fontSize: 13 }}>Coming soon</span>
+                    <Card style={{ marginBottom: 0 }}>
+                      <TooltipCardHeader title="Dividend Calendar" sections={[{label:"Plain English",text:"Shows upcoming ex-dividend dates and payment dates for your holdings over the next 90 days, along with projected income based on your portfolio size."},{label:"Ex-date vs Pay date",text:"The ex-dividend date is the cutoff — you must own shares before this date to receive the dividend. The pay date is when the cash actually hits your account."},{label:"What's Good",text:"Holdings highlighted in amber have an ex-dividend date within 7 days. Act before that date to qualify for the upcoming payment."}]} />
+                      <DividendCalendar assets={assets} portfolioValue={portfolioInputValue} />
                     </Card>
                   </motion.div>
                 </div>
