@@ -2,5 +2,8 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "framework": "nextjs",
   "installCommand": "cd frontend && npm install",
-  "outputDirectory": "frontend/.next"
+  "outputDirectory": "frontend/.next",
+  "toolbar": {
+    "enabled": false
+  }
 }
