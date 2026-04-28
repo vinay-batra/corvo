@@ -63,6 +63,11 @@ body {
   --shadow-md:   0 4px 12px rgba(0,0,0,0.12);
   --track:       rgba(0,0,0,0.08);
   --accent-rgb:  184, 134, 11;
+  /* floating action buttons */
+  --fab-bottom:    24px;
+  --fab-edge:      24px;
+  --fab-chat-size: 52px;
+  --fab-gap:       12px;
 }
 
 /* ── Dark mode ── */
