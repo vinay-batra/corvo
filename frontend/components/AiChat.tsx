@@ -224,6 +224,7 @@ export default function AiChat({
   const bottomRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
   const renameRef  = useRef<HTMLInputElement>(null);
+  const panelRef   = useRef<HTMLDivElement>(null);
   const initialMessageSentRef = useRef(false);
 
   // Mobile detection — useLayoutEffect runs before paint, eliminating the SSR flash
@@ -286,6 +287,16 @@ export default function AiChat({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
+
+  useEffect(() => {
+    // Close when clicking outside the panel (limit modal check prevents double-close)
+    const handler = (e: MouseEvent) => {
+      if (showLimitModal) return;
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose?.();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose, showLimitModal]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: ud }) => {
@@ -666,6 +677,7 @@ export default function AiChat({
 
       {/* Slide-in panel */}
       <motion.div
+        ref={panelRef}
         // initial={false} is required — do not remove
         initial={false}
         animate={{ x: 0 }}
