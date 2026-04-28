@@ -58,6 +58,7 @@ import { type SavedPortfolioLine } from "../../components/PerformanceChart";
 import EarningsCalendar from "../../components/EarningsCalendar";
 import EventsCalendar from "../../components/EventsCalendar";
 import PriceTargetTracker from "../../components/PriceTargetTracker";
+import { InsiderActivitySummary } from "../../components/InsiderActivity";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },

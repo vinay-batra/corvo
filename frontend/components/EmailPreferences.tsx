@@ -8,18 +8,19 @@ interface Props {
 }
 
 const TOGGLE_OPTIONS = [
-  { key: "morning_briefing" as const, label: "Morning Briefing",  desc: "Daily portfolio and market teaser at 6am ET" },
-  { key: "week_in_review"  as const, label: "Week in Review",    desc: "Weekly recap of your portfolio every Monday at 6am ET" },
-  { key: "monthly_summary" as const, label: "Monthly Summary",   desc: "Month-end portfolio return summary on the 1st" },
-  { key: "price_alerts"    as const, label: "Price Alerts",      desc: "Email when a price alert you set is triggered" },
+  { key: "push_notifications" as const, label: "Push Notifications", desc: "Browser push for morning brief, market close, and price alerts" },
+  { key: "morning_briefing"   as const, label: "Morning Briefing",   desc: "Daily portfolio and market teaser at 6am ET" },
+  { key: "week_in_review"     as const, label: "Week in Review",     desc: "Weekly recap of your portfolio every Monday at 6am ET" },
+  { key: "monthly_summary"    as const, label: "Monthly Summary",    desc: "Month-end portfolio return summary on the 1st" },
+  { key: "price_alerts"       as const, label: "Price Alert Emails", desc: "Email when a price alert you set is triggered" },
 ] as const;
 
-type BoolKey = "morning_briefing" | "week_in_review" | "monthly_summary" | "price_alerts";
+type BoolKey = "push_notifications" | "morning_briefing" | "week_in_review" | "monthly_summary" | "price_alerts";
 type EmailTheme = "light" | "dark";
 type Prefs = Record<BoolKey, boolean> & { email_theme: EmailTheme };
 
 export default function EmailPreferences({ onClose }: Props) {
-  const [prefs, setPrefs]     = useState<Prefs>({ morning_briefing: false, week_in_review: false, monthly_summary: false, price_alerts: true, email_theme: "light" });
+  const [prefs, setPrefs]     = useState<Prefs>({ push_notifications: true, morning_briefing: false, week_in_review: false, monthly_summary: false, price_alerts: true, email_theme: "light" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [saved,  setSaved]    = useState(false);
@@ -32,16 +33,17 @@ export default function EmailPreferences({ onClose }: Props) {
         if (!user) { setNoUser(true); setLoading(false); return; }
         const { data } = await supabase
           .from("email_preferences")
-          .select("morning_briefing,week_in_review,monthly_summary,price_alerts,email_theme")
+          .select("push_notifications,morning_briefing,week_in_review,monthly_summary,price_alerts,email_theme")
           .eq("user_id", user.id)
           .single();
         if (data) {
           setPrefs({
-            morning_briefing: data.morning_briefing ?? false,
-            week_in_review:   data.week_in_review   ?? false,
-            monthly_summary:  data.monthly_summary  ?? false,
-            price_alerts:     data.price_alerts     ?? true,
-            email_theme:      (data.email_theme === "dark" ? "dark" : "light"),
+            push_notifications: data.push_notifications ?? true,
+            morning_briefing:   data.morning_briefing   ?? false,
+            week_in_review:     data.week_in_review     ?? false,
+            monthly_summary:    data.monthly_summary    ?? false,
+            price_alerts:       data.price_alerts       ?? true,
+            email_theme:        (data.email_theme === "dark" ? "dark" : "light"),
           });
         }
       } catch {}
@@ -64,13 +66,14 @@ export default function EmailPreferences({ onClose }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       await supabase.from("email_preferences").upsert({
-        user_id: user.id,
-        morning_briefing: prefs.morning_briefing,
-        week_in_review:   prefs.week_in_review,
-        monthly_summary:  prefs.monthly_summary,
-        price_alerts:     prefs.price_alerts,
-        email_theme:      prefs.email_theme,
-        updated_at:       new Date().toISOString(),
+        user_id:            user.id,
+        push_notifications: prefs.push_notifications,
+        morning_briefing:   prefs.morning_briefing,
+        week_in_review:     prefs.week_in_review,
+        monthly_summary:    prefs.monthly_summary,
+        price_alerts:       prefs.price_alerts,
+        email_theme:        prefs.email_theme,
+        updated_at:         new Date().toISOString(),
       });
       setSaved(true);
       setTimeout(() => { setSaved(false); onClose(); }, 1100);
