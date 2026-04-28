@@ -37,7 +37,7 @@ import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import TourInviteModal from "../../components/TourInviteModal";
-import { fetchPortfolio } from "../../lib/api";
+import { fetchPortfolio, fetchNaturalLanguageEdit } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 import AlertsPanel from "../../components/AlertsPanel";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
@@ -892,6 +892,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
+  const [nlCommand, setNlCommand] = useState("");
+  const [nlLoading, setNlLoading] = useState(false);
+  const [nlError, setNlError] = useState<string | null>(null);
+  const [nlPending, setNlPending] = useState<{ tickers: string[]; weights: number[] } | null>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
@@ -1474,7 +1478,22 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     if (!userId) return;
     if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) return;
     const asked = localStorage.getItem(NOTIF_ASKED_KEY);
-    if (!asked) setTimeout(() => setShowNotifPrompt(true), 3000);
+    if (asked) return;
+    // Check user's push_notifications preference before prompting
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("email_preferences")
+          .select("push_notifications")
+          .eq("user_id", userId)
+          .single();
+        // If the user explicitly disabled push, don't prompt again
+        if (data && data.push_notifications === false) return;
+      } catch {
+        // No row yet means default true — proceed with prompt
+      }
+      setTimeout(() => setShowNotifPrompt(true), 3000);
+    })();
   }, [userId]);
 
 
@@ -1572,6 +1591,46 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
           <img src="/corvo-logo.svg" width={26} height={26} alt="Corvo" style={{ flexShrink: 0, opacity: 0.9 }} />
           <div style={S.logo}>CORVO</div>
         </Link>
+      </div>
+
+      {/* Natural language editor */}
+      <div style={{ padding: "10px 14px 0", borderBottom: "0.5px solid var(--border)" }}>
+        <div style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 7 }}>Edit with AI</div>
+        <div style={{ position: "relative" }}>
+          <input
+            type="text"
+            value={nlCommand}
+            onChange={e => { setNlCommand(e.target.value); setNlError(null); }}
+            onKeyDown={async e => {
+              if (e.key !== "Enter" || nlLoading || !nlCommand.trim() || !assets.length) return;
+              setNlLoading(true);
+              setNlError(null);
+              setNlPending(null);
+              try {
+                const result = await fetchNaturalLanguageEdit(nlCommand.trim(), assets);
+                if ("error" in result) {
+                  setNlError(result.error);
+                } else {
+                  setNlPending(result);
+                }
+              } catch {
+                setNlError("Request failed. Check your connection and try again.");
+              } finally {
+                setNlLoading(false);
+              }
+            }}
+            placeholder={assets.length ? "Try: sell half my NVDA and put it in QQQ" : "Add holdings first"}
+            disabled={nlLoading || !assets.length}
+            style={{ width: "100%", padding: "8px 32px 8px 10px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border2)", borderRadius: 7, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5 }}
+          />
+          {nlLoading && (
+            <div style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite", pointerEvents: "none" }} />
+          )}
+        </div>
+        {nlError && (
+          <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>
+        )}
+        <div style={{ marginBottom: 10 }} />
       </div>
 
       {/* Builder */}
@@ -2552,6 +2611,64 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       {/* Push notification prompt */}
       <AnimatePresence initial={false}>
         {showNotifPrompt && <NotificationPrompt onDismiss={() => setShowNotifPrompt(false)} />}
+      </AnimatePresence>
+
+      {/* Natural language edit confirmation modal */}
+      <AnimatePresence initial={false}>
+        {nlPending && (
+          <motion.div
+            // initial={false} required — do not remove
+            initial={false}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+            onClick={() => setNlPending(null)}
+          >
+            <motion.div
+              // initial={false} required — do not remove
+              initial={false}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              onClick={e => e.stopPropagation()}
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: "24px 24px 20px", maxWidth: 440, width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.28)" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1, flexShrink: 0 }} />
+                <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Confirm portfolio change</span>
+              </div>
+              <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 14, lineHeight: 1.5 }}>
+                This will change your portfolio to:
+              </p>
+              <div style={{ borderRadius: 8, border: "0.5px solid var(--border)", overflow: "hidden", marginBottom: 18 }}>
+                {nlPending.tickers.map((ticker, i) => (
+                  <div key={ticker} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: i < nlPending.tickers.length - 1 ? "0.5px solid var(--border)" : "none", background: i % 2 === 0 ? "var(--bg2)" : "transparent" }}>
+                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text)", fontWeight: 600 }}>{ticker}</span>
+                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, color: "var(--text2)" }}>{nlPending.weights[i].toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => {
+                    const newAssets = nlPending.tickers.map((ticker, i) => ({ ticker, weight: nlPending.weights[i] / 100 }));
+                    setAssets(newAssets);
+                    setNlPending(null);
+                    setNlCommand("");
+                  }}
+                  style={{ flex: 1, padding: "10px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: 2, textTransform: "uppercase", background: "var(--bg)", color: "var(--accent)", border: "1px solid rgba(201,168,76,0.55)", borderRadius: 8, cursor: "pointer" }}
+                >
+                  Apply
+                </button>
+                <button
+                  onClick={() => setNlPending(null)}
+                  style={{ flex: 1, padding: "10px", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-mono)", letterSpacing: 1, textTransform: "uppercase", background: "transparent", color: "var(--text3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Feedback button */}

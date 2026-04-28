@@ -115,3 +115,15 @@ export async function fetchAnalystTargets(ticker: string) {
   const res = await fetch(`${API_URL}/analyst-targets/${encodeURIComponent(ticker)}`);
   return res.json();
 }
+
+export async function fetchNaturalLanguageEdit(
+  command: string,
+  portfolio: { ticker: string; weight: number }[]
+): Promise<{ tickers: string[]; weights: number[] } | { error: string }> {
+  const res = await fetch(`${API_URL}/portfolio/natural-language-edit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ command, portfolio }),
+  });
+  return res.json();
+}
