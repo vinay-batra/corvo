@@ -1,4 +1,5 @@
 import FeedbackButton from "../../components/FeedbackButton";
+import PublicFooter from "@/components/PublicFooter";
 
 const LAST_UPDATED = "April 7, 2026";
 
@@ -108,6 +109,7 @@ export default function PrivacyPage() {
         <div style={S.divider} />
         <p style={{ ...S.p, fontSize: 12, color: "var(--text3)" }}>© 2026 Corvo. All rights reserved.</p>
       </div>
+      <PublicFooter />
       <FeedbackButton />
     </div>
   );
