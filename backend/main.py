@@ -57,13 +57,14 @@ if os.getenv("SENTRY_DSN"):
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
-    alert_task   = asyncio.create_task(price_alert_loop())
-    brief_task   = asyncio.create_task(morning_brief_loop())
-    morning_task = asyncio.create_task(morning_briefing_email_loop())
-    review_task  = asyncio.create_task(week_in_review_loop())
-    monthly_task = asyncio.create_task(monthly_summary_loop())
+    alert_task        = asyncio.create_task(price_alert_loop())
+    brief_task        = asyncio.create_task(morning_brief_loop())
+    morning_task      = asyncio.create_task(morning_briefing_email_loop())
+    review_task       = asyncio.create_task(week_in_review_loop())
+    monthly_task      = asyncio.create_task(monthly_summary_loop())
+    mkt_close_task    = asyncio.create_task(market_close_summary_loop())
     yield
-    for t in (alert_task, brief_task, morning_task, review_task, monthly_task):
+    for t in (alert_task, brief_task, morning_task, review_task, monthly_task, mkt_close_task):
         t.cancel()
         try:
             await t
@@ -968,6 +969,111 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
         "fee_rate":        req.fee_rate,
         "inflation_adjusted": req.inflation_rate > 0,
     }
+
+
+
+class NLPortfolioItem(BaseModel):
+    ticker: str
+    weight: float
+
+
+class NLEditRequest(BaseModel):
+    command: str
+    portfolio: list[NLPortfolioItem]
+
+
+@app.post("/portfolio/natural-language-edit")
+def portfolio_natural_language_edit(req: NLEditRequest, request: Request):
+    import json as _json
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "nl-edit", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+
+    command = (req.command or "").strip()
+    if not command:
+        raise HTTPException(status_code=400, detail="Command cannot be empty.")
+    if len(command) > 500:
+        raise HTTPException(status_code=400, detail="Command is too long.")
+    if not req.portfolio:
+        raise HTTPException(status_code=400, detail="Portfolio cannot be empty.")
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+    import anthropic
+    client = anthropic.Anthropic(api_key=api_key)
+
+    raw_weights = [item.weight for item in req.portfolio]
+    total_w = sum(raw_weights) or 1.0
+    pct_weights = [w / total_w * 100 for w in raw_weights]
+
+    portfolio_lines = "\n".join(
+        f"  {item.ticker.upper()}: {pct_weights[i]:.2f}%"
+        for i, item in enumerate(req.portfolio)
+        if item.ticker
+    )
+
+    prompt = (
+        "You are a portfolio editor. The user wants to edit their investment portfolio using a natural language command.\n\n"
+        f"Current portfolio:\n{portfolio_lines}\n\n"
+        f'User command: "{command}"\n\n'
+        "Apply the command to the portfolio. Return ONLY a valid JSON object with exactly these two keys:\n"
+        '- "tickers": array of ticker strings (uppercase, no spaces)\n'
+        '- "weights": array of numbers (percentage weights that sum to exactly 100)\n\n'
+        "Rules:\n"
+        "- All weights must be positive numbers greater than 0\n"
+        "- Weights must sum to exactly 100\n"
+        "- Tickers must be realistic stock, ETF, index, or crypto symbols (e.g. AAPL, SPY, QQQ, BTC-USD)\n"
+        "- Preserve existing holdings that the command does not mention\n"
+        "- 'sell half' means reduce that ticker's weight by 50% and allocate the freed weight to the named target\n"
+        "- 'add X%' means add X percentage points to that ticker, taking proportionally from all other holdings\n"
+        "- 'remove' means eliminate that ticker and redistribute its weight proportionally among remaining holdings\n"
+        "- If you cannot understand the command or executing it would result in an invalid portfolio, "
+        'return {"error": "brief explanation"}\n'
+        "- Do not include any text outside the JSON object\n"
+        "- Do not use markdown, code blocks, or backticks\n"
+        "- Return only the raw JSON object"
+    )
+
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=512,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = msg.content[0].text.strip()
+        if raw.startswith("```"):
+            parts = raw.split("```")
+            raw = parts[1] if len(parts) > 1 else parts[0]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+        result = _json.loads(raw)
+    except Exception as e:
+        return {"error": f"Could not parse the AI response: {str(e)}"}
+
+    if "error" in result:
+        return {"error": result["error"]}
+
+    tickers = result.get("tickers", [])
+    weights = result.get("weights", [])
+
+    if not tickers or not weights:
+        return {"error": "AI returned an empty portfolio."}
+    if len(tickers) != len(weights):
+        return {"error": "AI returned mismatched tickers and weights."}
+    if any(w <= 0 for w in weights):
+        return {"error": "All portfolio weights must be positive."}
+
+    total = sum(weights)
+    if abs(total - 100) > 2.5:
+        return {"error": f"Weights sum to {total:.1f}%, not 100%. Please try a more specific command."}
+
+    normalized = [round(w / total * 100, 4) for w in weights]
+    clean_tickers = [str(t).upper().strip() for t in tickers]
+
+    return {"tickers": clean_tickers, "weights": normalized}
 
 
 _sectors_cache: dict[str, tuple[dict, float]] = {}
@@ -2604,6 +2710,71 @@ def analyst_targets_endpoint(ticker: str, request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+_insider_cache: dict[str, tuple[dict, float]] = {}
+
+@app.get("/insider-activity/{ticker}")
+def insider_activity_endpoint(ticker: str, request: Request):
+    """SEC Form 4 insider transactions from Finnhub. 1-hour cache."""
+    import time as _time_ins
+    ticker = ticker.upper().strip()
+    now = _time_ins.time()
+
+    if ticker in _insider_cache:
+        cached, ts = _insider_cache[ticker]
+        if now - ts < 3600:
+            return cached
+
+    fh_key = os.environ.get("FINNHUB_API_KEY", "")
+    if not fh_key:
+        raise HTTPException(status_code=503, detail="Finnhub API key not configured")
+
+    try:
+        resp = requests.get(
+            f"https://finnhub.io/api/v1/stock/insider-transactions?symbol={ticker}&token={fh_key}",
+            timeout=8,
+        )
+        if not resp.ok:
+            raise HTTPException(status_code=resp.status_code, detail="Finnhub request failed")
+
+        raw = resp.json()
+        transactions_raw = raw.get("data", [])
+
+        # Only open market purchases (P) and sales (S) — skip awards, gifts, option exercises
+        processed = []
+        for t in transactions_raw:
+            code = str(t.get("transactionCode", "")).upper()
+            if code not in ("P", "S"):
+                continue
+            change = t.get("change", 0) or 0
+            shares = abs(int(change))
+            if shares == 0:
+                continue
+            price = float(t.get("transactionPrice", 0) or 0)
+            total = shares * price
+            processed.append({
+                "name": t.get("name", "Unknown"),
+                "title": t.get("title", ""),
+                "transaction_type": "buy" if code == "P" else "sell",
+                "shares": shares,
+                "price": round(price, 2),
+                "date": t.get("transactionDate") or t.get("filingDate") or "",
+                "filing_date": t.get("filingDate") or "",
+                "total_value": round(total, 2),
+            })
+
+        processed.sort(key=lambda x: x["date"], reverse=True)
+        processed = processed[:30]
+
+        result = {"ticker": ticker, "transactions": processed}
+        _insider_cache[ticker] = (result, now)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[insider] error for {ticker}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 _options_cache: dict[str, tuple[dict, float]] = {}
 
 def _norm_cdf(x: float) -> float:
@@ -3115,7 +3286,7 @@ def unsubscribe(user_id: str = ""):
                     "Content-Type": "application/json",
                     "Prefer": "return=minimal",
                 },
-                json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False, "price_alerts": False},
+                json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False, "price_alerts": False, "market_close_summary": False},
                 timeout=8,
             )
             success = resp.status_code in (200, 204)
@@ -3166,12 +3337,13 @@ def unsubscribe(user_id: str = ""):
 @app.get("/email/unsubscribe", response_class=HTMLResponse)
 def email_unsubscribe_type(user_id: str = "", type: str = ""):
     """Unsubscribe a user from a single email type. Called directly from email links."""
-    VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary", "price_alerts"}
+    VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary", "price_alerts", "market_close_summary"}
     LABEL_MAP = {
-        "morning_briefing": "Morning Briefing",
-        "week_in_review": "Week in Review",
-        "monthly_summary": "Monthly Summary",
-        "price_alerts": "Price Alerts",
+        "morning_briefing":    "Morning Briefing",
+        "week_in_review":      "Week in Review",
+        "monthly_summary":     "Monthly Summary",
+        "price_alerts":        "Price Alerts",
+        "market_close_summary": "Market Close Summary",
     }
     col = type if type in VALID_COLUMNS else None
     success = False
@@ -3254,7 +3426,7 @@ def unsubscribe_post(req: UnsubscribeRequest):
         resp = requests.patch(
             f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{req.user_id}",
             headers={**_sb_headers(), "Prefer": "return=minimal"},
-            json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False, "price_alerts": False},
+            json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False, "price_alerts": False, "market_close_summary": False, "push_notifications": False},
             timeout=8,
         )
         success = resp.status_code in (200, 204)
@@ -3564,34 +3736,39 @@ async def check_price_alerts():
                     notif_title = "Corvo Price Alert"
                     notif_body = f"{ticker} has {'dropped' if condition == 'drops' else 'risen'} {threshold}%, now at ${current_price:.2f}"
 
-                    # Send push to all subscriptions for this user
-                    subs_resp = requests.get(
-                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                    # Fetch preferences once for both push and email
+                    pref_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=push_notifications,price_alerts,email_theme",
                         headers=_sb_headers(), timeout=5,
                     )
-                    if subs_resp.status_code == 200:
-                        for row in subs_resp.json():
-                            _send_push(row["subscription"], notif_title, notif_body)
+                    send_push = True
+                    send_email = True
+                    email_theme = "light"
+                    if pref_resp.status_code == 200 and pref_resp.json():
+                        prow = pref_resp.json()[0]
+                        send_push = prow.get("push_notifications", True) is not False
+                        send_email = prow.get("price_alerts", True) is not False
+                        email_theme = prow.get("email_theme") or "light"
+
+                    # Send push to all subscriptions for this user
+                    if send_push:
+                        subs_resp = requests.get(
+                            f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if subs_resp.status_code == 200:
+                            for row in subs_resp.json():
+                                _send_push(row["subscription"], notif_title, notif_body)
 
                     # Send email alert
-                    user_resp = requests.get(
-                        f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
-                        headers=_sb_headers(), timeout=5,
-                    )
-                    if user_resp.status_code == 200:
-                        email = user_resp.json().get("email", "")
-                        if email:
-                            pref_resp = requests.get(
-                                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=price_alerts,email_theme",
-                                headers=_sb_headers(), timeout=5,
-                            )
-                            email_theme = "light"
-                            send_email = True
-                            if pref_resp.status_code == 200 and pref_resp.json():
-                                row = pref_resp.json()[0]
-                                send_email = row.get("price_alerts", True) is not False
-                                email_theme = row.get("email_theme") or "light"
-                            if send_email:
+                    if send_email:
+                        user_resp = requests.get(
+                            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if user_resp.status_code == 200:
+                            email = user_resp.json().get("email", "")
+                            if email:
                                 _send_alert_email(email, ticker, current_price, condition, threshold, user_id=user_id, email_theme=email_theme)
 
                     print(f"[alerts] triggered: {ticker} {condition} {threshold}% for user {user_id}")
@@ -3667,34 +3844,39 @@ async def check_price_alerts():
                     notif_title = "Corvo Portfolio Alert"
                     notif_body = f"{pf_name} has {'dropped' if condition == 'drops' else 'risen'} {threshold}% (now ${latest_val:,.0f})"
 
-                    # Send push
-                    subs_resp = requests.get(
-                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                    # Fetch preferences once for both push and email
+                    pref_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=push_notifications,price_alerts,email_theme",
                         headers=_sb_headers(), timeout=5,
                     )
-                    if subs_resp.status_code == 200:
-                        for row in subs_resp.json():
-                            _send_push(row["subscription"], notif_title, notif_body)
+                    send_push = True
+                    send_email = True
+                    email_theme = "light"
+                    if pref_resp.status_code == 200 and pref_resp.json():
+                        prow = pref_resp.json()[0]
+                        send_push = prow.get("push_notifications", True) is not False
+                        send_email = prow.get("price_alerts", True) is not False
+                        email_theme = prow.get("email_theme") or "light"
+
+                    # Send push
+                    if send_push:
+                        subs_resp = requests.get(
+                            f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if subs_resp.status_code == 200:
+                            for row in subs_resp.json():
+                                _send_push(row["subscription"], notif_title, notif_body)
 
                     # Send email
-                    user_resp = requests.get(
-                        f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
-                        headers=_sb_headers(), timeout=5,
-                    )
-                    if user_resp.status_code == 200:
-                        email = user_resp.json().get("email", "")
-                        if email:
-                            pref_resp = requests.get(
-                                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=price_alerts,email_theme",
-                                headers=_sb_headers(), timeout=5,
-                            )
-                            email_theme = "light"
-                            send_email = True
-                            if pref_resp.status_code == 200 and pref_resp.json():
-                                row = pref_resp.json()[0]
-                                send_email = row.get("price_alerts", True) is not False
-                                email_theme = row.get("email_theme") or "light"
-                            if send_email:
+                    if send_email:
+                        user_resp = requests.get(
+                            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if user_resp.status_code == 200:
+                            email = user_resp.json().get("email", "")
+                            if email:
                                 _send_alert_email(email, pf_name, latest_val, condition, threshold, user_id=user_id, email_theme=email_theme)
 
                     print(f"[alerts] portfolio triggered: {pf_name} {condition} {threshold}% for user {user_id}")
@@ -4675,10 +4857,24 @@ async def send_morning_brief() -> dict:
         print(f"[morning-brief] supabase fetch error: {e}")
         return {"error": str(e)}
 
+    # Fetch users who have explicitly disabled push notifications
+    optout_users: set[str] = set()
+    try:
+        optout_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?push_notifications=eq.false&select=user_id",
+            headers=_sb_headers(), timeout=5,
+        )
+        if optout_resp.status_code == 200:
+            optout_users = {r["user_id"] for r in optout_resp.json()}
+    except Exception:
+        pass
+
     sent = failed = removed = 0
     dead_ids: list[str] = []
 
     for row in rows:
+        if row.get("user_id") in optout_users:
+            continue
         sub = row.get("subscription", {})
         row_id = row.get("id")
         result = _send_push(sub, title, body, icon=icon, url=url)
@@ -4738,6 +4934,165 @@ async def test_morning_brief():
     """Manually trigger the morning market brief push (for testing)."""
     result = await send_morning_brief()
     return result
+
+
+@app.get("/push/test")
+async def push_test(user_id: str = ""):
+    """Send a test push notification to all subscriptions for the given user."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=503, detail="Supabase not configured")
+    try:
+        subs_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=id,subscription",
+            headers=_sb_headers(), timeout=5,
+        )
+        if subs_resp.status_code != 200:
+            raise HTTPException(status_code=500, detail=f"Supabase error {subs_resp.status_code}")
+        rows = subs_resp.json()
+        if not rows:
+            return {"status": "no_subscriptions", "sent": 0}
+        sent = dead = 0
+        dead_ids: list[str] = []
+        for row in rows:
+            result = _send_push(
+                row["subscription"],
+                "Corvo test notification",
+                "Push notifications are working correctly.",
+                url="https://corvo.capital/app",
+            )
+            if result == "ok":
+                sent += 1
+            elif result == "dead":
+                dead += 1
+                if row.get("id"):
+                    dead_ids.append(str(row["id"]))
+        for dead_id in dead_ids:
+            try:
+                requests.delete(
+                    f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                    headers=_sb_headers(), timeout=5,
+                )
+            except Exception:
+                pass
+        return {"status": "ok", "sent": sent, "dead": dead}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Market Close Summary Push ─────────────────────────────────────────────────
+
+def _seconds_until_4_05pm_et() -> float:
+    """Return seconds until the next 4:05 PM US/Eastern, minimum 60 s."""
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now_et = datetime.now(ZoneInfo("America/New_York"))
+    target = now_et.replace(hour=16, minute=5, second=0, microsecond=0)
+    if now_et >= target:
+        target += timedelta(days=1)
+    return max((target - now_et).total_seconds(), 60.0)
+
+
+async def send_market_close_brief() -> dict:
+    """Generate and push a market close summary to all opted-in subscribers."""
+    print("[market-close] generating close summary...")
+    try:
+        loop = asyncio.get_event_loop()
+        indices = await loop.run_in_executor(None, _brief_fetch_indices)
+        movers  = await loop.run_in_executor(None, _brief_fetch_movers)
+    except Exception as e:
+        print(f"[market-close] data fetch error: {e}")
+        return {"error": str(e)}
+
+    spy  = indices.get("SPY", 0.0)
+    qqq  = indices.get("QQQ", 0.0)
+    dow  = indices.get("DIA", 0.0)
+
+    direction = "closed higher" if spy > 0 else "closed lower"
+    body = f"Markets {direction}. SPY {spy:+.2f}%  QQQ {qqq:+.2f}%  DOW {dow:+.2f}%"
+    title = "Market Close"
+    icon  = "https://corvo.capital/corvo-logo.png"
+    url   = "https://corvo.capital/app"
+
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        print("[market-close] Supabase not configured, skipping push")
+        return {"skipped": "supabase not configured"}
+
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/push_subscriptions?select=id,user_id,subscription",
+            headers=_sb_headers(), timeout=15,
+        )
+        if resp.status_code != 200:
+            return {"error": f"supabase {resp.status_code}"}
+        rows = resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+    # Skip users who have disabled push notifications
+    optout_users: set[str] = set()
+    try:
+        optout_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?push_notifications=eq.false&select=user_id",
+            headers=_sb_headers(), timeout=5,
+        )
+        if optout_resp.status_code == 200:
+            optout_users = {r["user_id"] for r in optout_resp.json()}
+    except Exception:
+        pass
+
+    sent = failed = removed = 0
+    dead_ids: list[str] = []
+    for row in rows:
+        if row.get("user_id") in optout_users:
+            continue
+        sub = row.get("subscription", {})
+        row_id = row.get("id")
+        result = _send_push(sub, title, body, icon=icon, url=url)
+        if result == "ok":
+            sent += 1
+        elif result == "dead":
+            failed += 1
+            if row_id:
+                dead_ids.append(str(row_id))
+        else:
+            failed += 1
+
+    for dead_id in dead_ids:
+        try:
+            requests.delete(
+                f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                headers=_sb_headers(), timeout=5,
+            )
+            removed += 1
+        except Exception:
+            pass
+
+    print(f"[market-close] done, sent={sent} failed={failed} removed={removed}")
+    return {"sent": sent, "failed": failed, "removed": removed}
+
+
+async def market_close_summary_loop():
+    """Background task: fire market close summary push at 4:05pm ET every day."""
+    print("[market-close] scheduler started")
+    while True:
+        wait = _seconds_until_4_05pm_et()
+        print(f"[market-close] sleeping {wait/3600:.2f}h until 4:05pm ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_market_close_brief()
+        except Exception as e:
+            print(f"[market-close] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/push/test-close")
+async def test_market_close():
+    """Manually trigger the market close summary push (for testing)."""
+    return await send_market_close_brief()
 
 
 # ── Market Brief HTTP endpoint (cached) ───────────────────────────────────────
@@ -4860,34 +5215,39 @@ async def check_price_targets():
                     direction_word = "reached" if direction == "above" else "fallen to"
                     notif_body = f"{ticker} has {direction_word} your target of ${target_price:.2f}. Now at ${current_price:.2f}."
 
-                    # Push notification
-                    subs_resp = requests.get(
-                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                    # Fetch preferences once for both push and email
+                    pref_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=push_notifications,price_alerts,email_theme",
                         headers=_sb_headers(), timeout=5,
                     )
-                    if subs_resp.status_code == 200:
-                        for row in subs_resp.json():
-                            _send_push(row["subscription"], notif_title, notif_body)
+                    send_push = True
+                    send_email = True
+                    email_theme = "light"
+                    if pref_resp.status_code == 200 and pref_resp.json():
+                        prow = pref_resp.json()[0]
+                        send_push = prow.get("push_notifications", True) is not False
+                        send_email = prow.get("price_alerts", True) is not False
+                        email_theme = prow.get("email_theme") or "light"
+
+                    # Push notification
+                    if send_push:
+                        subs_resp = requests.get(
+                            f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if subs_resp.status_code == 200:
+                            for row in subs_resp.json():
+                                _send_push(row["subscription"], notif_title, notif_body)
 
                     # Email notification
-                    user_resp = requests.get(
-                        f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
-                        headers=_sb_headers(), timeout=5,
-                    )
-                    if user_resp.status_code == 200:
-                        email = user_resp.json().get("email", "")
-                        if email:
-                            pref_resp = requests.get(
-                                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=price_alerts,email_theme",
-                                headers=_sb_headers(), timeout=5,
-                            )
-                            send_email = True
-                            email_theme = "light"
-                            if pref_resp.status_code == 200 and pref_resp.json():
-                                row = pref_resp.json()[0]
-                                send_email = row.get("price_alerts", True) is not False
-                                email_theme = row.get("email_theme") or "light"
-                            if send_email:
+                    if send_email:
+                        user_resp = requests.get(
+                            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if user_resp.status_code == 200:
+                            email = user_resp.json().get("email", "")
+                            if email:
                                 _send_price_target_email(
                                     email, ticker, current_price, target_price, direction,
                                     recommendation, user_id=user_id, email_theme=email_theme
@@ -5456,6 +5816,237 @@ async def monthly_summary_loop():
 async def test_monthly_summary_email(user_id: str = ""):
     """Manually trigger the monthly summary email for one user (or all opted-in)."""
     return await send_monthly_summary_emails(target_user_id=user_id or None)
+
+
+
+
+# ── Market Close Summary ────────────────────────────────────────────────────────
+
+
+def _seconds_until_4_05pm_et() -> float:
+    """Return seconds until the next 4:05 PM ET on a weekday (Mon-Fri), minimum 60 s."""
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+
+    now = datetime.now(ZoneInfo("America/New_York"))
+    target = now.replace(hour=16, minute=5, second=0, microsecond=0)
+    if now >= target:
+        target += timedelta(days=1)
+    # Skip Saturday (5) and Sunday (6)
+    while target.weekday() >= 5:
+        target += timedelta(days=1)
+    return max((target - now).total_seconds(), 60.0)
+
+
+async def send_market_close_summary_emails(target_user_id=None) -> dict:
+    """Send market close summary emails and push notifications to opted-in users at 4:05pm ET."""
+    user_ids = [target_user_id] if target_user_id else _opted_in_user_ids("market_close_summary")
+    if not user_ids:
+        return {"sent": 0, "skipped": "no opted-in users"}
+    from datetime import date as _date
+
+    today_str = _date.today().strftime("%B %-d, %Y")
+    subject = f"Your market close summary for {today_str}"
+    sent = failed = skipped = push_sent = push_failed = 0
+    loop = asyncio.get_event_loop()
+    finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+
+    for uid in user_ids:
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
+            if not data:
+                print(f"[mkt-close] skip {uid}: _fetch_user_email_data returned None")
+                skipped += 1
+                continue
+            email, display_name, tickers, weights = data
+            email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
+
+            if not finnhub_key:
+                print(f"[mkt-close] skip {uid}: FINNHUB_API_KEY missing")
+                skipped += 1
+                continue
+
+            def _fetch_close_data():
+                quotes = {}
+                for ticker in tickers[:12]:
+                    q = _finnhub_quote(ticker)
+                    if q and q.get("c", 0) > 0 and q.get("pc", 0) > 0:
+                        quotes[ticker] = q
+                    time.sleep(0.06)
+                return quotes
+
+            quotes = await loop.run_in_executor(None, _fetch_close_data)
+            if not quotes:
+                print(f"[mkt-close] skip {uid}: no Finnhub quotes returned")
+                skipped += 1
+                continue
+
+            # Weighted portfolio % change
+            wsum = 0.0
+            wt = 0.0
+            ticker_changes: dict[str, float] = {}
+            for i, ticker in enumerate(tickers):
+                if ticker not in quotes or i >= len(weights):
+                    continue
+                dp = quotes[ticker].get("dp") or 0.0
+                ticker_changes[ticker] = dp
+                wsum += weights[i] * dp
+                wt += weights[i]
+
+            if wt <= 0 or not ticker_changes:
+                print(f"[mkt-close] skip {uid}: no weighted change data")
+                skipped += 1
+                continue
+
+            portfolio_pct = round(wsum / wt, 2)
+            pct_sign = "+" if portfolio_pct >= 0 else ""
+            pct_str = f"{pct_sign}{portfolio_pct:.2f}%"
+            dollar_per_10k = round(portfolio_pct / 100 * 10000)
+            dollar_sign = "+" if dollar_per_10k >= 0 else ""
+            dollar_str = f"{dollar_sign}${abs(dollar_per_10k):,.0f} per $10K"
+
+            best_ticker = max(ticker_changes, key=lambda t: ticker_changes[t])
+            worst_ticker = min(ticker_changes, key=lambda t: ticker_changes[t])
+            best_pct = ticker_changes[best_ticker]
+            worst_pct = ticker_changes[worst_ticker]
+
+            spy_q = await loop.run_in_executor(None, _finnhub_quote, "SPY")
+            market_note = ""
+            if spy_q and spy_q.get("dp") is not None:
+                sp = spy_q["dp"]
+                market_note = f"The S&P 500 closed {'up' if sp >= 0 else 'down'} {abs(sp):.2f}% today."
+
+            prompt = (
+                f"Write 2-3 sentences for a market close portfolio email to {display_name}. "
+                f"Their portfolio closed {pct_str} today ({dollar_str} invested). "
+                f"Best performer: {best_ticker} ({best_pct:+.2f}%). "
+                f"Worst performer: {worst_ticker} ({worst_pct:+.2f}%). "
+                f"{market_note} "
+                "End with one specific forward-looking sentence about what to watch tomorrow. "
+                "Be direct and specific. No em dashes, no asterisks, no markdown."
+            )
+            summary = await loop.run_in_executor(None, _haiku_teaser, prompt, 150)
+            if not summary:
+                summary = (
+                    f"Your portfolio closed {pct_str} today. "
+                    f"{best_ticker} led at {best_pct:+.2f}% while {worst_ticker} lagged at {worst_pct:+.2f}%."
+                )
+
+            mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
+            html = _email_html(
+                heading=f"Market close, {display_name}",
+                label="Market Close Summary",
+                body_lines=[
+                    (
+                        f"Your portfolio: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">"
+                        f"{pct_str}</strong>"
+                        f"&nbsp; <span style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};font-size:12px;\">"
+                        f"({dollar_str})</span>"
+                    ),
+                    (
+                        f"Best: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">"
+                        f"{best_ticker} {best_pct:+.2f}%</strong>"
+                        f"&nbsp;&nbsp; Worst: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">"
+                        f"{worst_ticker} {worst_pct:+.2f}%</strong>"
+                    ),
+                    summary,
+                ],
+                cta_text="See your portfolio",
+                cta_url="https://corvo.capital/app",
+                user_id=uid,
+                unsub_type="market_close_summary",
+                email_theme=email_theme,
+            )
+            ok = await loop.run_in_executor(None, _resend, email, subject, html)
+            sent += 1 if ok else 0
+            failed += 0 if ok else 1
+
+            # Push notification to all subscriptions for this user
+            push_title = f"Market Close: {pct_str}"
+            push_body = f"Best: {best_ticker} {best_pct:+.2f}% | Worst: {worst_ticker} {worst_pct:+.2f}%"
+            if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+                try:
+                    subs_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{uid}&select=id,subscription",
+                        headers=_sb_headers(),
+                        timeout=8,
+                    )
+                    if subs_resp.status_code == 200:
+                        dead_ids: list[str] = []
+                        for row in subs_resp.json():
+                            result = _send_push(
+                                row["subscription"],
+                                push_title,
+                                push_body,
+                                url="https://corvo.capital/app",
+                            )
+                            if result == "ok":
+                                push_sent += 1
+                            elif result == "dead":
+                                push_failed += 1
+                                if row.get("id"):
+                                    dead_ids.append(str(row["id"]))
+                            else:
+                                push_failed += 1
+                        for dead_id in dead_ids:
+                            try:
+                                requests.delete(
+                                    f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                                    headers=_sb_headers(),
+                                    timeout=5,
+                                )
+                            except Exception:
+                                pass
+                except Exception as e:
+                    print(f"[mkt-close] push error for {uid}: {e}")
+
+        except Exception as e:
+            print(f"[mkt-close] error for {uid}: {e}")
+            failed += 1
+
+    print(
+        f"[mkt-close] done: sent={sent} failed={failed} skipped={skipped} "
+        f"push_sent={push_sent} push_failed={push_failed}"
+    )
+    return {
+        "sent": sent,
+        "failed": failed,
+        "skipped": skipped,
+        "push_sent": push_sent,
+        "push_failed": push_failed,
+    }
+
+
+async def market_close_summary_loop():
+    """Background task: send market close summary at 4:05pm ET on weekdays."""
+    print("[mkt-close] scheduler started")
+    while True:
+        wait = _seconds_until_4_05pm_et()
+        print(f"[mkt-close] sleeping {wait/3600:.2f}h until next weekday 4:05pm ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_market_close_summary_emails()
+        except Exception as e:
+            print(f"[mkt-close] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/email/test-market-close")
+async def test_market_close_email(user_id: str = ""):
+    """Manually trigger the market close summary email and push for one user (or all opted-in)."""
+    uid = user_id or None
+    if uid and SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        try:
+            pref_resp = requests.get(
+                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{uid}&select=*",
+                headers=_sb_headers(),
+                timeout=8,
+            )
+            print(f"[test-mkt-close] email_preferences status={pref_resp.status_code} body={pref_resp.text}")
+            print(f"[test-mkt-close] FINNHUB_API_KEY present={bool(os.environ.get('FINNHUB_API_KEY', ''))}")
+        except Exception as e:
+            print(f"[test-mkt-close] debug fetch error: {e}")
+    return await send_market_close_summary_emails(target_user_id=uid)
 
 
 # ── (legacy yfinance stats, retained for portfolio snapshot endpoint) ──────────
