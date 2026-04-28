@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase";
 import UserMenu from "../../components/UserMenu";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 
-const TOTAL = 8;
+const TOTAL = 9;
 
 const INVESTOR_TYPES = [
   { id: "beginner",      label: "Beginner investor",     desc: "New to investing" },
@@ -76,6 +76,7 @@ const STEP_TITLES = [
   "What is your risk tolerance?",
   "What is your investment horizon?",
   "How did you hear about Corvo?",
+  "Take Corvo with you",
 ];
 
 function SelectCard({
@@ -116,6 +117,97 @@ function SelectCard({
         </div>
       )}
     </button>
+  );
+}
+
+function InstallStep() {
+  const [platform, setPlatform] = useState<"ios" | "android" | "desktop">("desktop");
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    if (/iPhone|iPad|iPod/i.test(ua)) setPlatform("ios");
+    else if (/Android/i.test(ua)) setPlatform("android");
+    else setPlatform("desktop");
+  }, []);
+
+  const config = {
+    ios: {
+      heading: "On iPhone or iPad",
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="4" width="32" height="40" rx="5" stroke="var(--accent)" strokeWidth="1.5"/>
+          <circle cx="24" cy="38" r="2" fill="var(--accent)"/>
+          <path d="M24 18v-6M21 14.5l3-3 3 3" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M19 18h10" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round"/>
+          <path d="M17 23h14M17 27h10" stroke="var(--text3)" strokeWidth="1.1" strokeLinecap="round"/>
+        </svg>
+      ),
+      instructions: [
+        "Tap the Share button at the bottom of Safari",
+        'Tap "Add to Home Screen"',
+        'Tap "Add" to confirm',
+      ],
+    },
+    android: {
+      heading: "On Android",
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="22" r="12" stroke="var(--accent)" strokeWidth="1.5"/>
+          <path d="M12 22h24" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round"/>
+          <path d="M24 10v24" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round"/>
+          <circle cx="14" cy="16" r="2" fill="var(--accent)" opacity="0.5"/>
+          <circle cx="34" cy="16" r="2" fill="var(--accent)" opacity="0.5"/>
+          <path d="M11 11l4 5M37 11l-4 5" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round"/>
+          <path d="M18 36h12M20 40h8" stroke="var(--text3)" strokeWidth="1.1" strokeLinecap="round"/>
+        </svg>
+      ),
+      instructions: [
+        "Tap the three-dot menu in Chrome",
+        'Tap "Add to Home Screen"',
+        'Tap "Add" to confirm',
+      ],
+    },
+    desktop: {
+      heading: "On Desktop",
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="10" width="40" height="26" rx="3" stroke="var(--accent)" strokeWidth="1.5"/>
+          <path d="M17 40h14M24 36v4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="39" cy="14" r="3.5" fill="rgba(201,168,76,0.15)" stroke="var(--accent)" strokeWidth="1.2"/>
+          <path d="M38 14h2M39 13v2" stroke="var(--accent)" strokeWidth="1" strokeLinecap="round"/>
+          <path d="M10 19h14M10 24h18M10 29h10" stroke="var(--text3)" strokeWidth="1.1" strokeLinecap="round"/>
+        </svg>
+      ),
+      instructions: [
+        "Click the install icon in your browser's address bar",
+        'Click "Install"',
+        "Corvo opens as a standalone app",
+      ],
+    },
+  };
+
+  const current = config[platform];
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+        {current.icon}
+      </div>
+      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 20 }}>{current.heading}</p>
+      <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
+        {current.instructions.map((instruction, i) => (
+          <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+            <span style={{
+              fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+              color: "var(--accent)", background: "rgba(var(--accent-rgb), 0.1)",
+              borderRadius: 4, padding: "2px 7px", flexShrink: 0, marginTop: 1,
+            }}>{i + 1}</span>
+            <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.55 }}>{instruction}</span>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 20 }}>
+        You can always find these instructions in Settings.
+      </p>
+    </div>
   );
 }
 
@@ -208,6 +300,7 @@ function OnboardingContent() {
     if (step === 5) return answers.risk_tolerance !== "";
     if (step === 6) return answers.investment_horizon !== "";
     if (step === 7) return answers.referral_source !== "";
+    if (step === 8) return true;
     return false;
   };
 
@@ -346,6 +439,7 @@ function OnboardingContent() {
       case 5: return renderSingleSelect("risk_tolerance", RISK_LEVELS);
       case 6: return renderSingleSelect("investment_horizon", HORIZONS);
       case 7: return renderSingleSelect("referral_source", REFERRAL_SOURCES);
+      case 8: return <InstallStep />;
       default: return null;
     }
   };
@@ -479,12 +573,12 @@ function OnboardingContent() {
             </button>
 
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              {step === 4 && (
+              {(step === 4 || step === 8) && (
                 <button
                   onClick={handleNext}
                   style={{ fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                 >
-                  Skip this step
+                  {step === 8 ? "Skip" : "Skip this step"}
                 </button>
               )}
               <button
@@ -503,7 +597,7 @@ function OnboardingContent() {
                   letterSpacing: 0.2,
                 }}
               >
-                {completing ? "..." : isLast ? "Finish" : "Next"}
+                {completing ? "..." : isLast ? "Done" : "Next"}
               </button>
             </div>
           </div>
