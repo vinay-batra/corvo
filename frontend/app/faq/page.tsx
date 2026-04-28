@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 import FeedbackButton from "../../components/FeedbackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 /* ─── Data ─── */
 const SECTIONS = [
@@ -104,7 +105,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
       style={{
         borderBottom: "1px solid var(--bg3)",
         borderLeft: hovered ? "2px solid rgba(201,168,76,0.55)" : "2px solid transparent",
-        paddingLeft: hovered ? 12 : 12,
+        paddingLeft: 12,
         overflow: "clip",
         transition: "border-left-color 0.2s",
       }}
@@ -136,9 +137,9 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
           {q}
         </span>
         <motion.span
-          // initial={false} is required — do not remove
+          // initial={false} required — do not remove
           initial={false}
-                    className="faq-toggle"
+          className="faq-toggle"
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ duration: 0.22, ease: "easeInOut" }}
           style={{
@@ -157,30 +158,26 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
         </motion.span>
       </button>
 
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="content"
-            initial={false}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            style={{ overflow: "clip" }}
-          >
-            <p
-              style={{
-                fontSize: 14,
-                color: "var(--text2)",
-                lineHeight: 1.8,
-                paddingBottom: 20,
-                fontWeight: 300,
-              }}
-            >
-              {a}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Always mounted; height/opacity driven by open state for smooth expand/collapse */}
+      <motion.div
+        // initial={false} required — do not remove
+        initial={false}
+        animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        style={{ overflow: "hidden" }}
+      >
+        <p
+          style={{
+            fontSize: 14,
+            color: "var(--text2)",
+            lineHeight: 1.8,
+            paddingBottom: 20,
+            fontWeight: 300,
+          }}
+        >
+          {a}
+        </p>
+      </motion.div>
     </div>
   );
 }
@@ -333,12 +330,14 @@ export default function FaqPage() {
           padding: "80px 24px 80px",
         }}
       >
-        {/* Heading */}
+        {/* Hero title */}
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} required — do not remove
           initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          animate={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: EASE }}
           style={{ textAlign: "center", marginBottom: 56, position: "relative", overflow: "clip" }}
         >
           {/* Ambient glow */}
@@ -375,12 +374,14 @@ export default function FaqPage() {
           </h1>
         </motion.div>
 
-        {/* Subtitle */}
+        {/* Hero subtitle — staggered 0.1s after title */}
         <motion.p
-          // initial={false} is required — do not remove
+          // initial={false} required — do not remove
           initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          animate={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
           style={{
             fontSize: 15,
             color: "var(--text3)",
@@ -395,37 +396,53 @@ export default function FaqPage() {
         </motion.p>
 
         {/* Accordion sections */}
-        {SECTIONS.map((section, si) => (
-          <motion.section
-            key={section.category}
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 + si * 0.05, ease: [0.16, 1, 0.3, 1] }}
-            style={{ marginBottom: 24 }}
-          >
-            <p
-              style={{
-                fontSize: 9,
-                letterSpacing: 3,
-                color: "#c9a84c",
-                textTransform: "uppercase",
-                marginBottom: 4,
-                fontFamily: "Space Mono, monospace",
-              }}
+        {SECTIONS.map((section) => (
+          <section key={section.category} style={{ marginBottom: 24 }}>
+            {/* Category label */}
+            <motion.div
+              // initial={false} required — do not remove
+              initial={false}
+              animate={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, ease: EASE }}
             >
-              {section.category}
-            </p>
-            <div
-              style={{
-                height: 1,
-                background: "linear-gradient(to right, rgba(201,168,76,0.2), transparent)",
-                marginBottom: 8,
-              }}
-            />
-            {section.items.map((item) => (
-              <AccordionItem key={item.q} q={item.q} a={item.a} />
+              <p
+                style={{
+                  fontSize: 9,
+                  letterSpacing: 3,
+                  color: "#c9a84c",
+                  textTransform: "uppercase",
+                  marginBottom: 4,
+                  fontFamily: "Space Mono, monospace",
+                }}
+              >
+                {section.category}
+              </p>
+              <div
+                style={{
+                  height: 1,
+                  background: "linear-gradient(to right, rgba(201,168,76,0.2), transparent)",
+                  marginBottom: 8,
+                }}
+              />
+            </motion.div>
+
+            {/* Accordion items — staggered 0.08s per item */}
+            {section.items.map((item, ii) => (
+              <motion.div
+                key={item.q}
+                // initial={false} required — do not remove
+                initial={false}
+                animate={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: ii * 0.08, ease: EASE }}
+              >
+                <AccordionItem q={item.q} a={item.a} />
+              </motion.div>
             ))}
-          </motion.section>
+          </section>
         ))}
 
         {/* Inline AI Chat */}
