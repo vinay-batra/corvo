@@ -2181,7 +2181,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
                   )}
                   {newsSubTab === "earnings" && (
                     <>
-                      <TooltipCardHeader title="Earnings Calendar" sections={[{ label: "How it works", text: "Upcoming earnings dates for your holdings within the next 60 days. Red border means earnings in 7 days or less." }]} />
+                      <TooltipCardHeader title="Earnings Calendar" sections={[{ label: "How it works", text: "Upcoming earnings dates for your holdings within the next 60 days. Click any row to see your portfolio weight, analyst estimates, options-implied expected move, and an AI note on what a beat or miss would mean for your position. Red border means earnings within 7 days." }]} />
                       <EarningsCalendar assets={assets} />
                     </>
                   )}
