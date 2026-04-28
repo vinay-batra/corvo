@@ -588,7 +588,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                             />
                           </div>
                         </div>
-                        <p style={{fontSize:11,color:"var(--text-muted)",margin:0,lineHeight:1.4}}>Used for P&L and tax loss harvesting estimates. For multiple transactions, use the transaction log (coming soon).</p>
+                        <p style={{fontSize:11,color:"var(--text-muted)",margin:0,lineHeight:1.4}}>Used for P&L, tax loss harvesting, and dividend calculations.</p>
                       </div>
                     )}
                   </motion.div>
