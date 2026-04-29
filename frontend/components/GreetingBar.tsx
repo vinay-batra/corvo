@@ -29,10 +29,21 @@ function computeMarketStatus() {
   const mins = h * 60 + m;
   const OPEN = 9 * 60 + 30;
   const CLOSE = 16 * 60;
+  const PRE_OPEN = 4 * 60;
+  const AH_END = 20 * 60;
+  const DAY = 24 * 60;
   const fmt = (n: number) => {
     const hh = Math.floor(n / 60);
     const mm = n % 60;
     return hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
+  };
+  const minsToOpen = (): number => {
+    if (dow >= 1 && dow <= 5 && mins < OPEN) return OPEN - mins;
+    const left = DAY - mins;
+    if (dow === 5) return left + 2 * DAY + OPEN;
+    if (dow === 6) return left + DAY + OPEN;
+    if (dow === 0) return left + OPEN;
+    return left + OPEN;
   };
   const time = new Date().toLocaleString("en-US", {
     timeZone: "America/New_York",
@@ -40,10 +51,12 @@ function computeMarketStatus() {
     minute: "2-digit",
     hour12: true,
   }) + " ET";
-  if (dow === 0 || dow === 6) return { dot: "var(--text3)",  label: "Closed · Opens Mon 9:30 AM ET", time, glow: false };
-  if (mins < OPEN)            return { dot: "var(--accent)", label: `Pre-Market · Opens in ${fmt(OPEN - mins)}`, time, glow: false };
+  if (dow === 0 || dow === 6) return { dot: "var(--text3)", label: `Closed · Opens Monday in ${fmt(minsToOpen())}`, time, glow: false };
+  if (mins < PRE_OPEN)        return { dot: "var(--text3)", label: `Closed · Opens in ${fmt(minsToOpen())}`, time, glow: false };
+  if (mins < OPEN)            return { dot: "var(--accent)", label: `Pre-Market · Opens in ${fmt(minsToOpen())}`, time, glow: false };
   if (mins < CLOSE)           return { dot: "var(--chip-pos)", label: `Open · Closes in ${fmt(CLOSE - mins)}`, time, glow: true };
-  return                             { dot: "var(--text3)",  label: "After Hours", time, glow: false };
+  if (mins < AH_END)          return { dot: "var(--text3)", label: `After Hours · Opens in ${fmt(minsToOpen())}`, time, glow: false };
+  return                             { dot: "var(--text3)", label: `Closed · Opens in ${fmt(minsToOpen())}`, time, glow: false };
 }
 
 type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
@@ -105,7 +118,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
 
   const [mkt, setMkt] = useState(() => computeMarketStatus());
   useEffect(() => {
-    const id = setInterval(() => setMkt(computeMarketStatus()), 30000);
+    const id = setInterval(() => setMkt(computeMarketStatus()), 60000);
     return () => clearInterval(id);
   }, []);
 
