@@ -1706,6 +1706,8 @@ export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{ displayName: string; avatarUrl: string | null; initials: string } | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [refLinkCopied, setRefLinkCopied] = useState(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -1719,6 +1721,7 @@ export default function Landing() {
     sb.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setLoggedIn(true);
+        setUserId(session.user.id);
         const { data: prof } = await sb.from("profiles").select("display_name,avatar_url").eq("id", session.user.id).single();
         const name = prof?.display_name || session.user.email?.split("@")[0] || "User";
         setUserProfile({ displayName: name, avatarUrl: prof?.avatar_url || null, initials: name[0].toUpperCase() });
@@ -1896,12 +1899,12 @@ export default function Landing() {
         <div className="nav-links" style={{ display: "flex", gap: 2, alignItems: "center", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
           <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", letterSpacing: 0.3, transition: "color 0.2s", fontFamily: "Inter,sans-serif" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Features</button>
           <Link href="/app?demo=true" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Demo</Link>
-          <Link href="/pricing" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Pricing</Link>
-          <Link href="/blog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Blog</Link>
-          <Link href="/changelog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
           <Link href="/install" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Install</Link>
-          <Link href="/faq" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
+          <Link href="/pricing" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Pricing</Link>
+          <Link href="/changelog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
+          <Link href="/blog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Blog</Link>
           <Link href="/about" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>About</Link>
+          <Link href="/faq" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
         </div>
         {/* Right side */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1987,12 +1990,12 @@ export default function Landing() {
         <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 99, background: "var(--bg)", borderBottom: "1px solid var(--border)", backdropFilter: "blur(20px)", padding: "16px 24px 24px", display: "flex", flexDirection: "column" as const, gap: 0 }}>
           <button onClick={() => { document.getElementById("features")?.scrollIntoView({ behavior: "smooth" }); setMobileMenuOpen(false); }} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", background: "none", border: "none", borderBottom: "0.5px solid var(--border)", cursor: "pointer", textAlign: "left" as const, fontFamily: "Inter,sans-serif" }}>Features</button>
           <Link href="/app?demo=true" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Demo</Link>
-          <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Pricing</Link>
-          <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Blog</Link>
-          <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>
           <Link href="/install" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Install</Link>
-          <Link href="/faq" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>FAQ</Link>
+          <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Pricing</Link>
+          <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>
+          <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Blog</Link>
           <Link href="/about" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>About</Link>
+          <Link href="/faq" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>FAQ</Link>
           {canInstall && (
             <button
               onClick={() => { setMobileMenuOpen(false); install(); }}
