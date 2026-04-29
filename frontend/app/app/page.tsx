@@ -797,14 +797,6 @@ const TopbarActions = memo(function TopbarActions({
                     ↓ Download CSV
                   </button>
                 )}
-                {data && (
-                  <button onClick={() => { setShowShareImage(true); setOverflowOpen(false); }}
-                    style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    Share as Image
-                  </button>
-                )}
               </div>
             </>
           )}
