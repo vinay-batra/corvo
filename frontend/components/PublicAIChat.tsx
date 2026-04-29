@@ -84,11 +84,12 @@ function PublicAIChatInner() {
         ref={buttonRef}
         onClick={() => setOpen((o) => !o)}
         aria-label="Open AI chat"
+        className="corvo-ai-chat-btn"
         style={{
           position: "fixed",
-          bottom: 32,
+          bottom: 24,
           right: 24,
-          zIndex: 9999,
+          zIndex: 1000,
           width: 52,
           height: 52,
           borderRadius: "50%",

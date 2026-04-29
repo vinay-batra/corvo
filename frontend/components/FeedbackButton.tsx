@@ -67,12 +67,13 @@ export default function FeedbackButton() {
         onClick={() => setOpen(true)}
         title="Send feedback"
         aria-label="Send feedback"
+        className="corvo-feedback-btn"
         style={{
           position: "fixed",
-          bottom: 96,
-          right: 24,
-          zIndex: 240,
-          width: 36, height: 36,
+          bottom: 24,
+          right: 88,
+          zIndex: 1000,
+          width: 44, height: 44,
           background: "var(--bg2)",
           border: "0.5px solid var(--border)",
           borderRadius: "50%",
