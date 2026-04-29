@@ -42,14 +42,15 @@ export default function SharePortfolio({ data, assets, period, benchmark }: Shar
     <>
       <button onClick={() => setOpen(true)}
         style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "5px 10px", background: "rgba(255,255,255,0.04)",
-          border: `1px solid ${C.border}`, borderRadius: 7,
-          color: C.cream3, fontSize: 11, cursor: "pointer",
+          height: 32, display: "flex", alignItems: "center", gap: 5,
+          padding: "0 12px", background: "transparent",
+          border: "0.5px solid var(--border)", borderRadius: 8,
+          color: "var(--text3)", fontSize: 11, fontFamily: "var(--font-mono)",
+          cursor: "pointer", letterSpacing: 0.5, whiteSpace: "nowrap",
           transition: "all 0.15s",
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.3)"; e.currentTarget.style.color = C.amber; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.cream3; }}>
+        onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
           <polyline points="16 6 12 2 8 6"/>
