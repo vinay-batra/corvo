@@ -479,9 +479,12 @@ export default function PositionsTab({
     Promise.all(
       allTickers.map(ticker =>
         fetch(`${API_URL}/analyst-targets/${ticker}`)
-          .then(r => r.json())
+          .then(r => {
+            if (!r.ok) { console.error(`[analyst-targets] ${ticker}: HTTP ${r.status}`); return null; }
+            return r.json();
+          })
           .then(d => ({ ticker, d }))
-          .catch(() => ({ ticker, d: null }))
+          .catch(e => { console.error(`[analyst-targets] ${ticker}:`, e); return { ticker, d: null }; })
       )
     ).then(results => {
       const map: Record<string, AnalystTarget> = {};
