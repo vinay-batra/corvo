@@ -1932,6 +1932,59 @@ def process_referral_bonus(user_id: str, referral_code: str):
         print(f"[referral] process_referral_bonus error: {e}")
 
 
+class ReferralRedeemRequest(BaseModel):
+    referrer_code: str
+    new_user_id: str
+
+@app.post("/referrals/redeem")
+def redeem_referral(req: ReferralRedeemRequest):
+    """Credit the referrer +5 bonus messages when a new user signs up via their link."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not req.referrer_code or not req.new_user_id:
+        return {"success": False, "detail": "Missing parameters"}
+    try:
+        chk = requests.get(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{req.new_user_id}&select=referral_credited",
+            headers=_sb_headers(), timeout=5,
+        )
+        if chk.status_code == 200:
+            rows = chk.json()
+            if rows and rows[0].get("referral_credited"):
+                return {"success": False, "detail": "Already credited"}
+
+        ref_prefix = f"{req.referrer_code[:8]}-"
+        ref_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=ilike.{ref_prefix}%&select=id,bonus_messages_per_day",
+            headers=_sb_headers(), timeout=5,
+        )
+        if ref_resp.status_code != 200 or not ref_resp.json():
+            return {"success": False, "detail": "Referrer not found"}
+        ref_rows = ref_resp.json()
+        referrer_id = ref_rows[0]["id"]
+        if referrer_id == req.new_user_id:
+            return {"success": False, "detail": "Self-referral not allowed"}
+
+        current_bonus = int(ref_rows[0].get("bonus_messages_per_day") or 0)
+        new_bonus = min(current_bonus + 5, 25)
+
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{referrer_id}",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json={"bonus_messages_per_day": new_bonus, "updated_at": datetime.now(timezone.utc).isoformat()},
+            timeout=5,
+        )
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{req.new_user_id}",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json={"referral_credited": True, "updated_at": datetime.now(timezone.utc).isoformat()},
+            timeout=5,
+        )
+        print(f"[referral] redeem: credited referrer {referrer_id} +5 bonus (total: {new_bonus}) for new user {req.new_user_id}")
+        return {"success": True}
+    except Exception as e:
+        print(f"[referral] redeem error: {e}")
+        return {"success": False, "detail": "Internal error"}
+
+
 @app.get("/referrals")
 def get_referrals(user_id: str = ""):
     """Return referral data for a user."""

@@ -51,7 +51,6 @@ function AuthForm() {
       if (error) setError(error.message);
       else {
         posthog.capture("signup_completed", { method: "email_password" });
-        setSuccess("Check your email to confirm your account.");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const userId = signUpData.user?.id ?? null;
         const displayName = email.split("@")[0] || null;
@@ -60,6 +59,16 @@ function AuthForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, display_name: displayName, user_id: userId }),
         }).catch(() => {});
+        const pendingReferral = localStorage.getItem("corvo_pending_referral");
+        if (pendingReferral && userId) {
+          fetch(`${apiUrl}/referrals/redeem`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ referrer_code: pendingReferral, new_user_id: userId }),
+          }).catch(() => {});
+          localStorage.removeItem("corvo_pending_referral");
+        }
+        window.location.href = "/onboarding";
       }
     } else if (mode === "magic") {
       const { error } = await supabase.auth.signInWithOtp({
