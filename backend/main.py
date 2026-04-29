@@ -862,6 +862,12 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
     mu_hist = float(np.mean(port_returns))
     sigma_daily = float(np.std(port_returns))
 
+    # Portfolio CAGR (geometric return) over the available price history — more conservative
+    # than arithmetic mean * 252, especially for volatile portfolios with recent bull runs
+    n_years_hist = max(len(port_returns), 1) / 252.0
+    port_total_growth = float((1.0 + pd.Series(port_returns)).prod())
+    port_cagr = max(-0.99, port_total_growth ** (1.0 / n_years_hist) - 1.0)
+
     ASSET_CLASS_MU = {
         "BND": 0.04, "AGG": 0.04, "TLT": 0.04, "IEF": 0.035, "SHY": 0.03,
         "SGOV": 0.045, "BIL": 0.04, "VBTLX": 0.04, "LQD": 0.045, "HYG": 0.055,
@@ -876,8 +882,9 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
         elif t in ASSET_CLASS_MU:
             weighted_mu_annual += avail_w[i] * ASSET_CLASS_MU[t]
         else:
-            # Cap individual stock historical returns at 10% to prevent bull-market distortion
-            weighted_mu_annual += avail_w[i] * min(mu_hist * 252, 0.10)
+            # Use portfolio CAGR capped at 12% — prevents recent 1-year bull markets from
+            # inflating long-term projections
+            weighted_mu_annual += avail_w[i] * min(port_cagr, 0.12)
 
     # Cash-aware sigma: don't apply equity volatility floor to cash-heavy portfolios
     cash_weight = sum(avail_w[i] for i, t in enumerate(available) if is_cash_ticker(t))
@@ -2837,18 +2844,27 @@ def analyst_targets_endpoint(ticker: str, request: Request):
             recs = []
 
         current_price = 0.0
+        yf_target_mean = None
+        yf_target_high = None
+        yf_target_low  = None
+        yf_num_analysts = None
         try:
             info = yf.Ticker(ticker).info or {}
             current_price = float(safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0) or 0.0)
+            yf_target_mean = safe_float(info.get("targetMeanPrice")) or None
+            yf_target_high = safe_float(info.get("targetHighPrice")) or None
+            yf_target_low  = safe_float(info.get("targetLowPrice"))  or None
+            yf_num_analysts = int(info.get("numberOfAnalystOpinions") or 0) or None
         except Exception:
             pass
 
-        target_mean = safe_float(pt.get("targetMean")) or None
-        target_high = safe_float(pt.get("targetHigh")) or None
-        target_low  = safe_float(pt.get("targetLow"))  or None
+        # Finnhub targets preferred; fall back to yfinance when Finnhub returns nothing
+        target_mean = safe_float(pt.get("targetMean")) or yf_target_mean or None
+        target_high = safe_float(pt.get("targetHigh")) or yf_target_high or None
+        target_low  = safe_float(pt.get("targetLow"))  or yf_target_low  or None
 
         latest_rec = recs[0] if recs else {}
-        num_analysts = pt.get("numberAnalysts")
+        num_analysts = pt.get("numberAnalysts") or yf_num_analysts
         if not num_analysts and latest_rec:
             num_analysts = (
                 int(latest_rec.get("buy", 0)) + int(latest_rec.get("hold", 0)) +
@@ -2883,8 +2899,9 @@ _insider_cache: dict[str, tuple[dict, float]] = {}
 
 @app.get("/insider-activity/{ticker}")
 def insider_activity_endpoint(ticker: str, request: Request):
-    """SEC Form 4 insider transactions from Finnhub. 1-hour cache."""
+    """SEC Form 4 insider transactions. Finnhub primary (6-month window), yfinance fallback. 1-hour cache."""
     import time as _time_ins
+    from datetime import timedelta
     ticker = ticker.upper().strip()
     now = _time_ins.time()
 
@@ -2893,55 +2910,79 @@ def insider_activity_endpoint(ticker: str, request: Request):
         if now - ts < 3600:
             return cached
 
+    processed = []
+
+    # --- Finnhub primary source ---
     fh_key = os.environ.get("FINNHUB_API_KEY", "")
-    if not fh_key:
-        raise HTTPException(status_code=503, detail="Finnhub API key not configured")
+    if fh_key:
+        try:
+            from_date = (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d")
+            resp = requests.get(
+                f"https://finnhub.io/api/v1/stock/insider-transactions?symbol={ticker}&from={from_date}&token={fh_key}",
+                timeout=8,
+            )
+            if resp.ok:
+                for t in resp.json().get("data", []):
+                    code = str(t.get("transactionCode", "")).upper()
+                    if code not in ("P", "S"):
+                        continue
+                    change = t.get("change", 0) or 0
+                    shares = abs(int(change))
+                    if shares == 0:
+                        continue
+                    price = float(t.get("transactionPrice", 0) or 0)
+                    processed.append({
+                        "name": t.get("name", "Unknown"),
+                        "title": t.get("title", ""),
+                        "transaction_type": "buy" if code == "P" else "sell",
+                        "shares": shares,
+                        "price": round(price, 2),
+                        "date": t.get("transactionDate") or t.get("filingDate") or "",
+                        "filing_date": t.get("filingDate") or "",
+                        "total_value": round(shares * price, 2),
+                    })
+            else:
+                print(f"[insider] Finnhub {ticker}: HTTP {resp.status_code}")
+        except Exception as e:
+            print(f"[insider] Finnhub error for {ticker}: {e}")
 
-    try:
-        resp = requests.get(
-            f"https://finnhub.io/api/v1/stock/insider-transactions?symbol={ticker}&token={fh_key}",
-            timeout=8,
-        )
-        if not resp.ok:
-            raise HTTPException(status_code=resp.status_code, detail="Finnhub request failed")
+    # --- yfinance fallback when Finnhub returns nothing ---
+    if not processed:
+        try:
+            txns = yf.Ticker(ticker).insider_transactions
+            if txns is not None and not txns.empty:
+                for _, row in txns.iterrows():
+                    txn = str(row.get("Transaction", row.get("Text", ""))).lower()
+                    if not any(kw in txn for kw in ("purchase", "buy", "sale", "sell")):
+                        continue
+                    is_buy = "purchase" in txn or ("buy" in txn and "sell" not in txn)
+                    shares_raw = row.get("Shares", row.get("#Shares", 0))
+                    shares = int(abs(float(shares_raw or 0)))
+                    if shares == 0:
+                        continue
+                    value = float(row.get("Value", 0) or 0)
+                    price = value / shares if shares > 0 else 0.0
+                    date_val = row.get("Date", "")
+                    date_str = str(date_val)[:10] if date_val else ""
+                    processed.append({
+                        "name": str(row.get("Insider", row.get("Name", "Unknown"))),
+                        "title": str(row.get("Position", row.get("Title", ""))),
+                        "transaction_type": "buy" if is_buy else "sell",
+                        "shares": shares,
+                        "price": round(price, 2),
+                        "date": date_str,
+                        "filing_date": date_str,
+                        "total_value": round(abs(value), 2),
+                    })
+        except Exception as e:
+            print(f"[insider] yfinance fallback error for {ticker}: {e}")
 
-        raw = resp.json()
-        transactions_raw = raw.get("data", [])
+    processed.sort(key=lambda x: x["date"], reverse=True)
+    processed = processed[:30]
 
-        # Only open market purchases (P) and sales (S) — skip awards, gifts, option exercises
-        processed = []
-        for t in transactions_raw:
-            code = str(t.get("transactionCode", "")).upper()
-            if code not in ("P", "S"):
-                continue
-            change = t.get("change", 0) or 0
-            shares = abs(int(change))
-            if shares == 0:
-                continue
-            price = float(t.get("transactionPrice", 0) or 0)
-            total = shares * price
-            processed.append({
-                "name": t.get("name", "Unknown"),
-                "title": t.get("title", ""),
-                "transaction_type": "buy" if code == "P" else "sell",
-                "shares": shares,
-                "price": round(price, 2),
-                "date": t.get("transactionDate") or t.get("filingDate") or "",
-                "filing_date": t.get("filingDate") or "",
-                "total_value": round(total, 2),
-            })
-
-        processed.sort(key=lambda x: x["date"], reverse=True)
-        processed = processed[:30]
-
-        result = {"ticker": ticker, "transactions": processed}
-        _insider_cache[ticker] = (result, now)
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"[insider] error for {ticker}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    result = {"ticker": ticker, "transactions": processed}
+    _insider_cache[ticker] = (result, now)
+    return result
 
 
 _options_cache: dict[str, tuple[dict, float]] = {}
