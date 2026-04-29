@@ -295,24 +295,37 @@ function getTooltipPos(ring: RingPos, forcePlacement?: "bottom" | "top"): { top:
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const clampLeft = (l: number) => Math.min(Math.max(l, 10), vw - TW - 10);
+  // Never let the tooltip bottom edge fall below the viewport
+  const clampTop = (t: number) => Math.min(Math.max(t, 10), vh - TH - 10);
+
+  const canFitBelow = ring.top + ring.height + PAD + TH < vh;
+  const canFitAbove = ring.top - PAD - TH > 0;
 
   if (forcePlacement === "bottom") {
-    return { top: ring.top + ring.height + PAD, left: clampLeft(ring.left), placement: "bottom" };
+    // Flip to top if it would overflow the bottom
+    if (!canFitBelow && canFitAbove) {
+      return { top: clampTop(ring.top - PAD - TH), left: clampLeft(ring.left), placement: "top" };
+    }
+    return { top: clampTop(ring.top + ring.height + PAD), left: clampLeft(ring.left), placement: "bottom" };
   }
   if (forcePlacement === "top") {
-    return { top: Math.max(ring.top - PAD - TH, 10), left: clampLeft(ring.left), placement: "top" };
+    // Flip to bottom if it would overflow the top
+    if (!canFitAbove && canFitBelow) {
+      return { top: clampTop(ring.top + ring.height + PAD), left: clampLeft(ring.left), placement: "bottom" };
+    }
+    return { top: clampTop(ring.top - PAD - TH), left: clampLeft(ring.left), placement: "top" };
   }
 
-  if (ring.top + ring.height + PAD + TH < vh) {
-    return { top: ring.top + ring.height + PAD, left: clampLeft(ring.left), placement: "bottom" };
+  if (canFitBelow) {
+    return { top: clampTop(ring.top + ring.height + PAD), left: clampLeft(ring.left), placement: "bottom" };
   }
-  if (ring.top - PAD - TH > 0) {
-    return { top: ring.top - PAD - TH, left: clampLeft(ring.left), placement: "top" };
+  if (canFitAbove) {
+    return { top: clampTop(ring.top - PAD - TH), left: clampLeft(ring.left), placement: "top" };
   }
   if (ring.left + ring.width + PAD + TW < vw) {
-    return { top: Math.max(ring.top + ring.height / 2 - TH / 2, 10), left: ring.left + ring.width + PAD, placement: "right" };
+    return { top: clampTop(ring.top + ring.height / 2 - TH / 2), left: ring.left + ring.width + PAD, placement: "right" };
   }
-  return { top: Math.max(ring.top + ring.height / 2 - TH / 2, 10), left: Math.max(ring.left - TW - PAD, 10), placement: "left" };
+  return { top: clampTop(ring.top + ring.height / 2 - TH / 2), left: Math.max(ring.left - TW - PAD, 10), placement: "left" };
 }
 
 interface Props {
@@ -437,7 +450,17 @@ export default function DashboardTour({ onComplete }: Props) {
         {/* Tooltip card — hidden while DOM is settling, transition:none prevents position snap */}
         {!settling && (tooltipPos || noTarget) && (
           <div
-            style={{
+            style={isMobile ? {
+              position: "fixed",
+              bottom: 80,
+              left: 16,
+              right: 16,
+              width: "auto",
+              zIndex: 852,
+              pointerEvents: "auto",
+              animation: "tourIn 0.22s ease-out",
+              transition: "none",
+            } : {
               position: "fixed",
               top: tooltipPos ? tooltipPos.top : "50%",
               left: tooltipPos ? tooltipPos.left : "50%",
