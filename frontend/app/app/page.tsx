@@ -1075,6 +1075,12 @@ const { dark, toggle: toggleDark }  = useTheme();
       localStorage.setItem("corvo_pending_referral", refCode);
     }
 
+    // Auto-start tour when arriving from onboarding via ?tour=true
+    if (params.get("tour") === "true") {
+      window.history.replaceState(null, "", window.location.pathname);
+      setTimeout(() => setShowDashboardTour(true), 1000);
+    }
+
     // Portfolio sharing via base64 URL param
     const portfolioParam = params.get("portfolio");
     if (portfolioParam) {
@@ -1115,7 +1121,16 @@ const { dark, toggle: toggleDark }  = useTheme();
     // Load nav profile and (on first visit per session) redirect to /onboarding if not yet complete
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setInitializing(false); return; }
+      if (!user) {
+        const urlRef = new URLSearchParams(window.location.search).get("ref") || localStorage.getItem("corvo_pending_referral");
+        if (urlRef) {
+          localStorage.setItem("corvo_pending_referral", urlRef);
+          window.location.replace("/auth?mode=signup");
+          return;
+        }
+        setInitializing(false);
+        return;
+      }
       setUserId(user.id);
 
       // Always load nav profile (avatar + display name)

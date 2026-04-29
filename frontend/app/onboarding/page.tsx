@@ -376,7 +376,7 @@ function OnboardingContent() {
       localStorage.setItem("corvo_just_onboarded", "true");
     }
 
-    router.push("/app");
+    router.push("/app?tour=true");
   };
 
   const renderSingleSelect = (
