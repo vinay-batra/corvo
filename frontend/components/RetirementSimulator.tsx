@@ -62,7 +62,7 @@ function HistogramChart({ counts, edges, ciLow, ciHigh, median, startingValue, c
   const chartW = 400;
   const chartH = 90;
   const padT = 4;
-  const padB = 20;
+  const padB = 4;
   const totalH = chartH + padT + padB;
 
   const minVal = edges[0];
@@ -127,15 +127,13 @@ function HistogramChart({ counts, edges, ciLow, ciHigh, median, startingValue, c
           x1={0} y1={padT + chartH} x2={chartW} y2={padT + chartH}
           stroke={dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"} strokeWidth="0.5"
         />
-
-        {/* X-axis edge labels */}
-        <text x={2} y={totalH - 2} fontSize="8" fill={dark ? "rgba(232,224,204,0.4)" : "#9a9a98"} textAnchor="start">
-          {fmtLabel(minVal)}
-        </text>
-        <text x={chartW - 2} y={totalH - 2} fontSize="8" fill={dark ? "rgba(232,224,204,0.4)" : "#9a9a98"} textAnchor="end">
-          {fmtLabel(maxVal)}
-        </text>
       </svg>
+
+      {/* X-axis labels outside SVG to avoid stretching from preserveAspectRatio="none" */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+        <span style={{ fontSize: 9, color: dark ? "rgba(232,224,204,0.4)" : "#9a9a98" }}>{fmtLabel(minVal)}</span>
+        <span style={{ fontSize: 9, color: dark ? "rgba(232,224,204,0.4)" : "#9a9a98" }}>{fmtLabel(maxVal)}</span>
+      </div>
 
       {/* Legend */}
       <div style={{ display: "flex", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
@@ -190,6 +188,7 @@ export default function RetirementSimulator({
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [openTooltipId, setOpenTooltipId] = useState<string | null>(null);
   const [dark, setDark] = useState(true);
 
   // Advanced settings
@@ -282,7 +281,7 @@ export default function RetirementSimulator({
       value: contribution,
       setValue: setContribution,
       prefix: "$",
-      tooltip: "Extra money you plan to add to the portfolio each year. This compounds over time and can significantly improve long-term outcomes.",
+      tooltip: "The amount you plan to add to your portfolio each year",
     },
     {
       id: "inflation",
@@ -290,7 +289,7 @@ export default function RetirementSimulator({
       value: inflationRate,
       setValue: setInflationRate,
       suffix: "%",
-      tooltip: "Expected average annual inflation. Results are shown in today's dollars so you understand real purchasing power, not just nominal growth.",
+      tooltip: "The expected annual rate of inflation, used to show results in today's dollars. Default 2.5% matches historical US average.",
     },
     {
       id: "fee",
@@ -298,7 +297,7 @@ export default function RetirementSimulator({
       value: feeRate,
       setValue: setFeeRate,
       suffix: "%",
-      tooltip: "The annual cost of your funds or advisory fees as a percentage. Even small fees compound over decades and meaningfully reduce final wealth.",
+      tooltip: "Total annual fees as a percentage of portfolio value. Index ETFs typically charge 0.03-0.20%.",
     },
     {
       id: "tax",
@@ -306,7 +305,7 @@ export default function RetirementSimulator({
       value: taxDrag,
       setValue: setTaxDrag,
       suffix: "%",
-      tooltip: "Annual reduction in returns due to taxes on dividends and capital gains. Use 0% for tax-advantaged accounts like a 401k or IRA.",
+      tooltip: "Estimated reduction in returns from taxes on dividends and capital gains each year. 0% assumes tax-advantaged account.",
     },
   ];
 
@@ -399,6 +398,10 @@ export default function RetirementSimulator({
               transition={{ duration: 0.2 }}
               style={{ overflow: "hidden" }}
             >
+              {/* Overlay to close tooltip on outside click */}
+              {openTooltipId && (
+                <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setOpenTooltipId(null)} />
+              )}
               <div style={{
                 display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
                 gap: 12, padding: "14px 16px",
@@ -410,13 +413,30 @@ export default function RetirementSimulator({
                       <label style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--text3)", textTransform: "uppercase" }}>
                         {field.label}
                       </label>
-                      <span title={field.tooltip} style={{ cursor: "help", lineHeight: 0 }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="8" x2="12" y2="12" />
-                          <line x1="12" y1="16" x2="12.01" y2="16" />
-                        </svg>
-                      </span>
+                      <div style={{ position: "relative", lineHeight: 0, zIndex: 100 }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenTooltipId(openTooltipId === field.id ? null : field.id); }}
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0, display: "flex" }}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                          </svg>
+                        </button>
+                        {openTooltipId === field.id && (
+                          <div style={{
+                            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 100,
+                            background: "var(--card-bg)", border: "0.5px solid var(--border)",
+                            borderRadius: 8, padding: "10px 12px",
+                            fontSize: 11, color: "var(--text2)", lineHeight: 1.6,
+                            width: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.14)",
+                            whiteSpace: "normal",
+                          }}>
+                            {field.tooltip}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div style={{ position: "relative" }}>
                       {field.prefix && (
@@ -453,13 +473,30 @@ export default function RetirementSimulator({
                     <label style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--text3)", textTransform: "uppercase" }}>
                       Confidence Level
                     </label>
-                    <span title="Controls the width of the outcome range shown. 90% means 9 out of 10 simulated paths fell between the low and high values. Higher confidence = wider range." style={{ cursor: "help", lineHeight: 0 }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                      </svg>
-                    </span>
+                    <div style={{ position: "relative", lineHeight: 0, zIndex: 100 }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setOpenTooltipId(openTooltipId === "confidence" ? null : "confidence"); }}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0, display: "flex" }}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="8" x2="12" y2="12" />
+                          <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                      </button>
+                      {openTooltipId === "confidence" && (
+                        <div style={{
+                          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 100,
+                          background: "var(--card-bg)", border: "0.5px solid var(--border)",
+                          borderRadius: 8, padding: "10px 12px",
+                          fontSize: 11, color: "var(--text2)", lineHeight: 1.6,
+                          width: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.14)",
+                          whiteSpace: "normal",
+                        }}>
+                          The percentage of simulated scenarios that fall within the shown range. 99% means only 1% of outcomes fall outside.
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div style={{ display: "flex", gap: 4 }}>
                     {[90, 95, 99].map(cl => (

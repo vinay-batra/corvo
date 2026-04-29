@@ -64,8 +64,13 @@ export function InsiderActivitySummary({ assets }: { assets: { ticker: string; w
     Promise.allSettled(
       tickers.map(t =>
         fetch(`${API_URL}/insider-activity/${t}`)
-          .then(r => (r.ok ? r.json() : null))
-          .catch(() => null)
+          .then(r => {
+            if (!r.ok) {
+              return r.json().then(e => { console.error(`[insider] ${t}: HTTP ${r.status}`, e); return null; }).catch(() => null);
+            }
+            return r.json();
+          })
+          .catch(e => { console.error(`[insider] ${t}:`, e); return null; })
       )
     ).then(results => {
       const combined: (InsiderTransaction & { ticker: string })[] = [];
