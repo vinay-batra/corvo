@@ -770,9 +770,7 @@ export default function SettingsPage({
           </button>
         ) : (
           <button onClick={() => {
-            const ref = document.referrer;
-            const inApp = window.history.length > 1 && ref && (ref.includes("corvo.capital") || ref.startsWith(window.location.origin));
-            inApp ? router.back() : router.push("/app");
+            window.history.length <= 1 ? router.push("/app") : router.back();
           }} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text3)", background: "none", border: "none", padding: 0, fontSize: 12, cursor: "pointer", transition: "color 0.15s" }}
             onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
             onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>

@@ -1944,6 +1944,47 @@ export default function Landing() {
               </button>
               {userMenuOpen && (
                 <div id="user-menu-dropdown" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, minWidth: 182, background: "var(--card-bg)", border: "1px solid var(--border2)", borderRadius: 12, padding: "6px", backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", zIndex: 200 }}>
+                  {/* Referral callout */}
+                  {userId && (() => {
+                    const code = userId.replace(/-/g, "").slice(0, 8);
+                    const link = `https://corvo.capital/app?ref=${code}`;
+                    const shortLink = `corvo.capital/app?ref=${code}`;
+                    return (
+                      <div style={{ margin: "0 6px 6px", padding: "10px 11px", background: "rgba(var(--accent-rgb), 0.05)", border: "0.5px solid rgba(var(--accent-rgb), 0.18)", borderRadius: 9 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)", letterSpacing: 0.3 }}>Refer a friend</span>
+                          <span style={{ fontSize: 9, color: "var(--text3)" }}>+5 AI messages each</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <div style={{ flex: 1, fontSize: 10, fontFamily: "Space Mono, monospace", color: "var(--text3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 5, padding: "4px 7px" }}>
+                            {shortLink}
+                          </div>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(link).then(() => {
+                                setRefLinkCopied(true);
+                                setTimeout(() => setRefLinkCopied(false), 2000);
+                              }).catch(() => {});
+                            }}
+                            title="Copy referral link"
+                            style={{ width: 26, height: 26, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: refLinkCopied ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "color 0.15s" }}
+                          >
+                            {refLinkCopied ? (
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <div style={{ height: "0.5px", background: "var(--border)", margin: "2px 6px 4px" }} />
                   <Link href="/account" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                     My Account
