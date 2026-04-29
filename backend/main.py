@@ -868,23 +868,11 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
     port_total_growth = float((1.0 + pd.Series(port_returns)).prod())
     port_cagr = max(-0.99, port_total_growth ** (1.0 / n_years_hist) - 1.0)
 
-    ASSET_CLASS_MU = {
-        "BND": 0.04, "AGG": 0.04, "TLT": 0.04, "IEF": 0.035, "SHY": 0.03,
-        "SGOV": 0.045, "BIL": 0.04, "VBTLX": 0.04, "LQD": 0.045, "HYG": 0.055,
-        "GLD": 0.05, "IAU": 0.05, "SLV": 0.04, "DJP": 0.04,
-        "SPY": 0.10, "VOO": 0.10, "VTI": 0.10, "IWM": 0.09, "QQQ": 0.11,
-    }
-
-    weighted_mu_annual = 0.0
-    for i, t in enumerate(available):
-        if is_cash_ticker(t):
-            weighted_mu_annual += avail_w[i] * 0.045
-        elif t in ASSET_CLASS_MU:
-            weighted_mu_annual += avail_w[i] * ASSET_CLASS_MU[t]
-        else:
-            # Use portfolio CAGR capped at 12% — prevents recent 1-year bull markets from
-            # inflating long-term projections
-            weighted_mu_annual += avail_w[i] * min(port_cagr, 0.12)
+    # Use portfolio historical CAGR directly, capped at 12% nominal.
+    # port_cagr is the geometric (compounded) annual return over the price history period —
+    # more accurate than arithmetic mean * 252, especially for volatile portfolios.
+    # Floor at 0% to prevent negative forward projections from short bad-period snapshots.
+    mu_annual = min(max(port_cagr, 0.0), 0.12)
 
     # Cash-aware sigma: don't apply equity volatility floor to cash-heavy portfolios
     cash_weight = sum(avail_w[i] for i, t in enumerate(available) if is_cash_ticker(t))
@@ -897,8 +885,6 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
     else:
         sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
 
-    # Hard cap at 12% annual (25% cap was producing +100000% over 30 years)
-    mu_annual = min(weighted_mu_annual, 0.12)
     sigma_annual = sigma_daily * np.sqrt(252)
 
     # Adjust for fees and tax drag (reduce annual return)
@@ -2892,7 +2878,13 @@ def analyst_targets_endpoint(ticker: str, request: Request):
         return result
     except Exception as e:
         print(f"Analyst targets error for {ticker}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return null data gracefully so frontend shows N/A instead of crashing
+        return {
+            "ticker": ticker, "current_price": 0,
+            "target_mean": None, "target_high": None, "target_low": None,
+            "upside_pct": None, "num_analysts": None,
+            "buy": 0, "hold": 0, "sell": 0, "last_updated": None,
+        }
 
 
 _insider_cache: dict[str, tuple[dict, float]] = {}
@@ -2924,17 +2916,20 @@ def insider_activity_endpoint(ticker: str, request: Request):
             if resp.ok:
                 for t in resp.json().get("data", []):
                     code = str(t.get("transactionCode", "")).upper()
-                    if code not in ("P", "S"):
+                    # P = open market purchase, S = open market sale, D = disposition (also a sell signal)
+                    if code not in ("P", "S", "D"):
                         continue
                     change = t.get("change", 0) or 0
-                    shares = abs(int(change))
+                    # "share" field is total shares after the transaction; use "change" first, fall back to "share"
+                    shares = abs(int(float(change))) if change else abs(int(float(t.get("share", 0) or 0)))
                     if shares == 0:
                         continue
                     price = float(t.get("transactionPrice", 0) or 0)
+                    txn_type = "buy" if code == "P" else "sell"
                     processed.append({
                         "name": t.get("name", "Unknown"),
                         "title": t.get("title", ""),
-                        "transaction_type": "buy" if code == "P" else "sell",
+                        "transaction_type": txn_type,
                         "shares": shares,
                         "price": round(price, 2),
                         "date": t.get("transactionDate") or t.get("filingDate") or "",

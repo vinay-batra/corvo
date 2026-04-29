@@ -129,9 +129,11 @@ function HistogramChart({ counts, edges, ciLow, ciHigh, median, startingValue, c
         />
       </svg>
 
-      {/* X-axis labels outside SVG to avoid stretching from preserveAspectRatio="none" */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+      {/* X-axis labels: min, two intermediate ticks, max — avoids overlap from preserveAspectRatio="none" */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3, position: "relative" }}>
         <span style={{ fontSize: 9, color: dark ? "rgba(232,224,204,0.4)" : "#9a9a98" }}>{fmtLabel(minVal)}</span>
+        <span style={{ fontSize: 9, color: dark ? "rgba(232,224,204,0.4)" : "#9a9a98", position: "absolute", left: "33%", transform: "translateX(-50%)" }}>{fmtLabel(minVal + valRange / 3)}</span>
+        <span style={{ fontSize: 9, color: dark ? "rgba(232,224,204,0.4)" : "#9a9a98", position: "absolute", left: "67%", transform: "translateX(-50%)" }}>{fmtLabel(minVal + (valRange * 2) / 3)}</span>
         <span style={{ fontSize: 9, color: dark ? "rgba(232,224,204,0.4)" : "#9a9a98" }}>{fmtLabel(maxVal)}</span>
       </div>
 
@@ -188,7 +190,6 @@ export default function RetirementSimulator({
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [openTooltipId, setOpenTooltipId] = useState<string | null>(null);
   const [dark, setDark] = useState(true);
 
   // Advanced settings
@@ -197,8 +198,25 @@ export default function RetirementSimulator({
   const [feeRate, setFeeRate] = useState("0.05");
   const [taxDrag, setTaxDrag] = useState("0");
   const [confidenceLevel, setConfidenceLevel] = useState(90);
+  const [tooltipInfo, setTooltipInfo] = useState<{ id: string; text: string; top: number; left: number } | null>(null);
 
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Close tooltip on outside click
+  useEffect(() => {
+    if (!tooltipInfo) return;
+    const handler = () => setTooltipInfo(null);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [tooltipInfo]);
+
+  const openTooltip = (e: React.MouseEvent, id: string, text: string) => {
+    e.stopPropagation();
+    if (tooltipInfo?.id === id) { setTooltipInfo(null); return; }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const left = Math.min(rect.left, (typeof window !== "undefined" ? window.innerWidth : 400) - 248);
+    setTooltipInfo({ id, text, top: rect.bottom + 6, left });
+  };
 
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
@@ -311,6 +329,22 @@ export default function RetirementSimulator({
 
   return (
     <div style={{ padding: "20px 0 4px" }}>
+      {/* Fixed-position tooltip popover — escapes overflow:hidden animation container */}
+      {tooltipInfo && (
+        <div
+          onMouseDown={e => e.stopPropagation()}
+          style={{
+            position: "fixed", top: tooltipInfo.top, left: tooltipInfo.left, zIndex: 9999,
+            background: "var(--card-bg)", border: "0.5px solid var(--border)",
+            borderRadius: 8, padding: "10px 12px",
+            fontSize: 11, color: "var(--text2)", lineHeight: 1.6,
+            maxWidth: 220, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", whiteSpace: "normal",
+          }}
+        >
+          {tooltipInfo.text}
+        </div>
+      )}
+
       {/* Input row */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 12 }}>
         <div style={{ flex: "1 1 160px", minWidth: 140 }}>
@@ -398,10 +432,6 @@ export default function RetirementSimulator({
               transition={{ duration: 0.2 }}
               style={{ overflow: "hidden" }}
             >
-              {/* Overlay to close tooltip on outside click */}
-              {openTooltipId && (
-                <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setOpenTooltipId(null)} />
-              )}
               <div style={{
                 display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
                 gap: 12, padding: "14px 16px",
@@ -413,30 +443,16 @@ export default function RetirementSimulator({
                       <label style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--text3)", textTransform: "uppercase" }}>
                         {field.label}
                       </label>
-                      <div style={{ position: "relative", lineHeight: 0, zIndex: 100 }}>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setOpenTooltipId(openTooltipId === field.id ? null : field.id); }}
-                          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0, display: "flex" }}
-                        >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="8" x2="12" y2="12" />
-                            <line x1="12" y1="16" x2="12.01" y2="16" />
-                          </svg>
-                        </button>
-                        {openTooltipId === field.id && (
-                          <div style={{
-                            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 100,
-                            background: "var(--card-bg)", border: "0.5px solid var(--border)",
-                            borderRadius: 8, padding: "10px 12px",
-                            fontSize: 11, color: "var(--text2)", lineHeight: 1.6,
-                            width: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.14)",
-                            whiteSpace: "normal",
-                          }}>
-                            {field.tooltip}
-                          </div>
-                        )}
-                      </div>
+                      <button
+                        onClick={(e) => openTooltip(e, field.id, field.tooltip)}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0, display: "flex" }}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="8" x2="12" y2="12" />
+                          <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                      </button>
                     </div>
                     <div style={{ position: "relative" }}>
                       {field.prefix && (
@@ -473,30 +489,16 @@ export default function RetirementSimulator({
                     <label style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--text3)", textTransform: "uppercase" }}>
                       Confidence Level
                     </label>
-                    <div style={{ position: "relative", lineHeight: 0, zIndex: 100 }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setOpenTooltipId(openTooltipId === "confidence" ? null : "confidence"); }}
-                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0, display: "flex" }}
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="8" x2="12" y2="12" />
-                          <line x1="12" y1="16" x2="12.01" y2="16" />
-                        </svg>
-                      </button>
-                      {openTooltipId === "confidence" && (
-                        <div style={{
-                          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 100,
-                          background: "var(--card-bg)", border: "0.5px solid var(--border)",
-                          borderRadius: 8, padding: "10px 12px",
-                          fontSize: 11, color: "var(--text2)", lineHeight: 1.6,
-                          width: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.14)",
-                          whiteSpace: "normal",
-                        }}>
-                          The percentage of simulated scenarios that fall within the shown range. 99% means only 1% of outcomes fall outside.
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      onClick={(e) => openTooltip(e, "confidence", "The percentage of simulated scenarios that fall within the shown range. 99% means only 1% of outcomes fall outside.")}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 0, display: "flex" }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                    </button>
                   </div>
                   <div style={{ display: "flex", gap: 4 }}>
                     {[90, 95, 99].map(cl => (
