@@ -726,6 +726,8 @@ interface TopbarActionsProps {
   displayName: string;
   data: any;
   assets: any[];
+  period: string;
+  benchmark: string;
   exportCSV: () => void;
   setShowAlerts: (v: boolean) => void;
   setShowEmailPrefs: (v: boolean) => void;
@@ -738,7 +740,7 @@ interface TopbarActionsProps {
 
 const TopbarActions = memo(function TopbarActions({
   dark, toggleDark, alertCount, avatarUrl, displayName,
-  data, assets, exportCSV,
+  data, assets, period, benchmark, exportCSV,
   setShowAlerts, setShowEmailPrefs, setShowReferral, setShowSettings,
   setShowProfile, setShowDashboardTour, setShowShareImage,
 }: TopbarActionsProps) {
@@ -2021,6 +2023,8 @@ const { dark, toggle: toggleDark }  = useTheme();
             displayName={navProfile.displayName}
             data={data}
             assets={assets}
+            period={period}
+            benchmark={benchmark}
             exportCSV={exportCSV}
             setShowAlerts={setShowAlerts}
             setShowEmailPrefs={setShowEmailPrefs}

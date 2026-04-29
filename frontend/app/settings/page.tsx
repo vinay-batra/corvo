@@ -168,44 +168,19 @@ export default function SettingsPage({
       const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
       if (profile) { setDisplayName(profile.display_name || ""); setAvatarUrl(profile.avatar_url || null); }
 
-      // Try loading all notification prefs including push columns and email_theme.
-      // maybeSingle avoids PGRST116 on missing rows; a schema error (column doesn't
-      // exist yet) surfaces as a non-null error here.
-      const { data: prefs, error: prefsError } = await supabase
+      // Only select the 5 columns that are guaranteed to exist in the schema.
+      // Push and email_theme columns may not be migrated yet — omit them to avoid 400 errors.
+      const { data: prefs } = await supabase
         .from("email_preferences")
-        .select("morning_briefing,market_close_summary,week_in_review,monthly_summary,price_alerts,email_theme,push_morning_briefing,push_market_close,push_price_alerts,push_price_targets,push_weekly_checkup,push_earnings_reminders")
+        .select("morning_briefing,market_close_summary,week_in_review,monthly_summary,price_alerts")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (!prefsError) {
-        setEmailThemeSupported(true);
-        if (prefs) {
-          setMorningBriefing(prefs.morning_briefing ?? false);
-          setMarketCloseSummary(prefs.market_close_summary ?? true);
-          setWeekInReview(prefs.week_in_review ?? false);
-          setMonthlySummary(prefs.monthly_summary ?? false);
-          setPriceAlerts(prefs.price_alerts ?? true);
-          setEmailTheme(prefs.email_theme === "dark" ? "dark" : "light");
-          setPushMorningBriefing(prefs.push_morning_briefing ?? false);
-          setPushMarketClose(prefs.push_market_close ?? false);
-          setPushPriceAlerts(prefs.push_price_alerts ?? false);
-          setPushPriceTargets(prefs.push_price_targets ?? false);
-          setPushWeeklyCheckup(prefs.push_weekly_checkup ?? false);
-          setPushEarningsReminders(prefs.push_earnings_reminders ?? false);
-        }
-      } else {
-        // Newer push/email_theme columns may not exist yet — fall back to basics
-        const { data: prefsBasic } = await supabase
-          .from("email_preferences")
-          .select("morning_briefing,market_close_summary,week_in_review,monthly_summary,price_alerts")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (prefsBasic) {
-          setMorningBriefing(prefsBasic.morning_briefing ?? false);
-          setMarketCloseSummary(prefsBasic.market_close_summary ?? true);
-          setWeekInReview(prefsBasic.week_in_review ?? false);
-          setMonthlySummary(prefsBasic.monthly_summary ?? false);
-          setPriceAlerts(prefsBasic.price_alerts ?? true);
-        }
+      if (prefs) {
+        setMorningBriefing(prefs.morning_briefing ?? false);
+        setMarketCloseSummary(prefs.market_close_summary ?? true);
+        setWeekInReview(prefs.week_in_review ?? false);
+        setMonthlySummary(prefs.monthly_summary ?? false);
+        setPriceAlerts(prefs.price_alerts ?? true);
       }
 
       // Check browser notification permission
@@ -336,29 +311,11 @@ export default function SettingsPage({
     setPushPermission(result);
   };
 
+  // Push preference columns not yet in DB schema — suppress DB writes until migration is applied.
   const savePushPrefs = async (
-    pmb: boolean, pmc: boolean, ppa: boolean, ppt: boolean, pwc: boolean, per: boolean
+    _pmb: boolean, _pmc: boolean, _ppa: boolean, _ppt: boolean, _pwc: boolean, _per: boolean
   ) => {
-    if (!user) return;
-    try {
-      const { error } = await supabase.from("email_preferences").upsert(
-        {
-          user_id: user.id,
-          push_morning_briefing: pmb,
-          push_market_close: pmc,
-          push_price_alerts: ppa,
-          push_price_targets: ppt,
-          push_weekly_checkup: pwc,
-          push_earnings_reminders: per,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
-      if (error) { console.error("savePushPrefs error:", error); throw error; }
-    } catch (err) {
-      console.error("savePushPrefs caught:", err);
-      toast("Failed to save push notification preferences. Please try again.", "error");
-    }
+    console.warn("Push preference columns not yet in DB schema");
   };
 
   const saveProfileQuestionnaire = async () => {
