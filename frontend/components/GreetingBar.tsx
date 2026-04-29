@@ -15,10 +15,9 @@ function getGreeting(): string {
 
 function getBriefingTitle(): string {
   const h = new Date().getHours();
-  if (h >= 5 && h < 12) return "Morning Brief";
-  if (h >= 12 && h < 17) return "Afternoon Brief";
-  if (h >= 17 && h < 21) return "Evening Brief";
-  return "Night Brief";
+  if (h < 12) return "Morning Brief";
+  if (h < 17) return "Afternoon Brief";
+  return "Evening Brief";
 }
 
 function computeMarketStatus() {
@@ -283,11 +282,13 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
           transition={{ duration: 0.32, ease: "easeOut" }}
           style={{ overflow: "hidden" }}
         >
-          {!summaryLoading && market?.market && (
+          {summaryLoading ? (
+            <p style={{ fontSize: 12, color: "var(--text2)", margin: "6px 0 0", fontWeight: 300 }}>Market data loading...</p>
+          ) : market?.market ? (
             <p style={{ fontSize: 12, color: "var(--text3)", margin: "6px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", fontWeight: 300, lineHeight: 1.5 }}>
               {market.market.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() ?? market.market.split(" ").slice(0, 15).join(" ")}
             </p>
-          )}
+          ) : null}
         </motion.div>
 
         <motion.div
