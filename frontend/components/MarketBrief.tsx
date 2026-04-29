@@ -18,21 +18,34 @@ function computeMarketStatus() {
   const mins = h * 60 + m;
   const OPEN = 9 * 60 + 30;
   const CLOSE = 16 * 60;
+  const PRE_OPEN = 4 * 60;
+  const AH_END = 20 * 60;
+  const DAY = 24 * 60;
   const fmt = (n: number) => {
     const hh = Math.floor(n / 60);
     const mm = n % 60;
     return hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
   };
-  if (dow === 0 || dow === 6) return { dot: "#666", label: "Closed · Opens Mon 9:30 AM ET" };
-  if (mins < OPEN) return { dot: C.amber, label: `Pre-Market · Opens in ${fmt(OPEN - mins)}` };
-  if (mins < CLOSE) return { dot: C.green, label: `Open · Closes in ${fmt(CLOSE - mins)}` };
-  return { dot: "#666", label: `After Hours · Closed ${fmt(mins - CLOSE)} ago` };
+  const minsToOpen = (): number => {
+    if (dow >= 1 && dow <= 5 && mins < OPEN) return OPEN - mins;
+    const left = DAY - mins;
+    if (dow === 5) return left + 2 * DAY + OPEN;
+    if (dow === 6) return left + DAY + OPEN;
+    if (dow === 0) return left + OPEN;
+    return left + OPEN;
+  };
+  if (dow === 0 || dow === 6) return { dot: "#666", label: `Closed · Opens Monday in ${fmt(minsToOpen())}` };
+  if (mins < PRE_OPEN)        return { dot: "#666", label: `Closed · Opens in ${fmt(minsToOpen())}` };
+  if (mins < OPEN)            return { dot: C.amber, label: `Pre-Market · Opens in ${fmt(minsToOpen())}` };
+  if (mins < CLOSE)           return { dot: C.green, label: `Open · Closes in ${fmt(CLOSE - mins)}` };
+  if (mins < AH_END)          return { dot: "#666", label: `After Hours · Opens in ${fmt(minsToOpen())}` };
+  return                             { dot: "#666", label: `Closed · Opens in ${fmt(minsToOpen())}` };
 }
 
 function MarketStatusPill() {
   const [s, setS] = useState(() => computeMarketStatus());
   useEffect(() => {
-    const id = setInterval(() => setS(computeMarketStatus()), 30000);
+    const id = setInterval(() => setS(computeMarketStatus()), 60000);
     return () => clearInterval(id);
   }, []);
   return (

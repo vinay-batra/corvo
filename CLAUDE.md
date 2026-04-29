@@ -135,6 +135,10 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 - Monte Carlo simulations always run exactly 8,500 paths — never 5,000 or any other number
 - `overscroll-behavior: none` must be set globally in `globals.css` on `html`, `body`, and all major layout containers — never remove this
 - AI chat endpoint (`POST /chat`) uses `claude-sonnet-4-6` with `web_search` tool enabled and streaming responses
+- Never use `animate={{ opacity: 0 }}` or `animate={{ y: X }}` together with `whileInView` — use inline CSS `opacity: 0` and `transform` for the initial hidden state instead; combining both causes the animation to fire immediately and skip the scroll trigger
+- `market_close_summary` column exists in the `email_preferences` Supabase table — do not re-add it in migrations
+- Both feedback and AI chat buttons render from `app/layout.tsx` globally — do not add them to individual pages or they will appear twice
+- Market hours countdown always shows time until next open or close — "After Hours", "Closed", and weekend states must include a live countdown, not a static label
 
 ## Mobile Rules
 
@@ -170,7 +174,7 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.20
+- Version: v0.21
 
 ## Deployment
 

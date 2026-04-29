@@ -40,9 +40,12 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Advanced settings for return assumptions, inflation rate, and withdrawal strategy
 
 ### Income and Tax
-- Dividend tracker with upcoming payment calendar and yield-on-cost
-- Capital gains estimator with short-term and long-term breakdowns
+- Dividend Calendar with 90-day ex-date lookahead, early-warning flags, and projected income total
+- Capital Gains Estimator with LT/ST auto-classification, configurable LTCG tax bracket, and per-ticker insights
 - Tax-loss harvesting signals with correlated replacement suggestions
+
+### Installation
+- `/install` page with platform-specific guides, animated device mockups, and an interactive demo strip
 
 ### Market Data
 - Options chain viewer with calls and puts, ITM highlighting, delta column, and max pain

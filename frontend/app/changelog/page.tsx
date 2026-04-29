@@ -28,6 +28,13 @@ function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode
 const ENTRIES = [
   {
     date: "Apr 28, 2026",
+    version: "v0.21",
+    title: "Capital Gains Estimator, Dividend Calendar & /install Page",
+    desc: "Capital Gains Estimator is now live in the Income and Tax tab with automatic long-term and short-term classification, a configurable LTCG tax bracket selector, and per-ticker realized gain insights. The Dividend Calendar shows a 90-day lookahead of upcoming ex-dates with warnings when a position goes ex-dividend within the next five trading days and a projected income total for the period. The /install page gives every platform a dedicated installation guide with animated device mockups and an interactive demo strip. Seven components that were built but not yet wired up are now reachable from the dashboard: Correlation Heatmap, Drawdown Chart, Portfolio Compare, Portfolio History, Earnings Impact Preview, Share Portfolio, and Share Image Modal. Referral flow was tightened so ref links route through signup, onboarding, and tour in the correct order with bonus credit applied on redeem. Sixteen stability fixes across the frontend and backend including a showShareImage crash, broken whileInView animations across public pages, and eight backend bugs in main.py.",
+    tags: ["Income", "Tax", "Dividends", "Install", "Fixes"],
+  },
+  {
+    date: "Apr 28, 2026",
     version: "v0.20",
     title: "UX Fixes, InfoTooltips & Global Scroll Overhaul",
     desc: "An InfoTooltip system was added across every unexplained financial metric in the app, so hovering any term shows a plain-English explanation without leaving the page. Global scrolling was overhauled to eliminate overscroll bounce and scroll lag on all panels and modal overlays. Morning briefing expand and collapse now shows a one-sentence preview when collapsed instead of hiding all content behind the toggle. Price alerts are now editable inline without needing to delete and recreate the alert from scratch. Portfolio state auto-loads from your last saved session on every login, and the leaderboard was corrected to read from profiles.xp for accurate XP tracking.",
