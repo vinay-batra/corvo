@@ -188,7 +188,7 @@ function useS() {
     cardAccent: { width: 3, height: 14, background: "var(--accent)", borderRadius: 1 },
     cardTitle:  { fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
     metricsGrid:{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 12 },
-    bottomGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 },
+    bottomGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
   };
 }
 

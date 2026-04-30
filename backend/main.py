@@ -29,6 +29,7 @@ print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', ''
 print(f"[startup] RESEND_FROM_EMAIL: {os.environ.get('RESEND_FROM_EMAIL', 'NOT SET')}")
 print(f"[startup] SUPABASE_URL: {'SET' if SUPABASE_URL else 'NOT SET'}")
 print(f"[startup] FINNHUB_API_KEY: {'SET' if os.environ.get('FINNHUB_API_KEY') else 'NOT SET'}")
+print(f"[startup] deployed at {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
 
 # ── In-memory rate limiting ────────────────────────────────────────────────────
 RATE_LIMITS: dict[str, list[float]] = {}
