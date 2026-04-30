@@ -402,7 +402,46 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
 }
 
 /* ─── Stock Deep Dives bento card ─── */
+const API_URL_PUBLIC = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+const AAPL_FALLBACK = {
+  price: 213.49,
+  changePct: 0.94,
+  up: true,
+  pe: "31.2",
+  revenue: "$391B",
+  eps: "$6.57",
+  sentiment: "Bullish",
+};
+
 function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
+  const [aapl, setAapl] = useState<typeof AAPL_FALLBACK | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_URL_PUBLIC}/stock/AAPL`)
+      .then((r) => r.json())
+      .then((d) => {
+        const rev = d.revenue ? `$${Math.round(d.revenue / 1e9)}B` : AAPL_FALLBACK.revenue;
+        const rating = d.analyst_rating || "N/A";
+        const isBullish = ["Strong Buy", "Buy"].includes(rating);
+        setAapl({
+          price: d.current_price ?? AAPL_FALLBACK.price,
+          changePct: Math.abs(d.change_pct ?? AAPL_FALLBACK.changePct),
+          up: (d.change_pct ?? AAPL_FALLBACK.changePct) >= 0,
+          pe: d.pe_ratio != null ? String(d.pe_ratio) : AAPL_FALLBACK.pe,
+          revenue: rev,
+          eps: d.eps != null ? `$${d.eps.toFixed(2)}` : AAPL_FALLBACK.eps,
+          sentiment: isBullish ? "Bullish" : rating === "Hold" ? "Neutral" : "Bearish",
+        });
+      })
+      .catch(() => setAapl(AAPL_FALLBACK))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const data = aapl ?? AAPL_FALLBACK;
+  const sentimentColor = data.sentiment === "Bullish" ? "var(--green)" : data.sentiment === "Bearish" ? "var(--red)" : "var(--accent)";
+
   return (
     <BentoCard delay={delay} style={{ gridArea: "deepdives", padding: "28px" }}>
       <div style={{ position: "absolute", top: -30, left: -30, width: 160, height: 160, background: "radial-gradient(ellipse, rgba(92,184,138,0.05) 0%, transparent 70%)", pointerEvents: "none", borderRadius: "50%" }} />
@@ -414,20 +453,43 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--bg3)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>AAPL</div>
             <div>
-              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>$189.40</p>
-              <p style={{ fontSize: 10, color: "var(--green)" }}>+1.82% today</p>
+              {loading ? (
+                <>
+                  <div style={{ width: 72, height: 14, background: "rgba(255,255,255,0.08)", borderRadius: 4, marginBottom: 5 }} />
+                  <div style={{ width: 48, height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 4 }} />
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>${data.price.toFixed(2)}</p>
+                  <p style={{ fontSize: 10, color: data.up ? "var(--green)" : "var(--red)" }}>{data.up ? "+" : "-"}{data.changePct.toFixed(2)}% today</p>
+                </>
+              )}
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            {[{ l: "P/E Ratio", v: "28.4", c: "var(--text)" }, { l: "Revenue", v: "$391B", c: "var(--text)" }, { l: "EPS", v: "$6.57", c: "var(--text)" }, { l: "Sentiment", v: "Bullish", c: "var(--green)" }].map((s, i) => (
-              <div key={i} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 8, padding: "8px 10px" }}>
-                <p style={{ fontSize: 6, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 3 }}>{s.l}</p>
-                <p style={{ fontSize: 11, fontWeight: 600, color: s.c, display: "flex", alignItems: "center", gap: 4 }}>
-                  {i === 3 && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", display: "inline-block", flexShrink: 0 }} />}
-                  {s.v}
-                </p>
-              </div>
-            ))}
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 8, padding: "8px 10px" }}>
+                  <div style={{ width: "60%", height: 7, background: "rgba(255,255,255,0.06)", borderRadius: 3, marginBottom: 6 }} />
+                  <div style={{ width: "80%", height: 11, background: "rgba(255,255,255,0.08)", borderRadius: 3 }} />
+                </div>
+              ))
+            ) : (
+              [
+                { l: "P/E Ratio", v: data.pe, c: "var(--text)" },
+                { l: "Revenue", v: data.revenue, c: "var(--text)" },
+                { l: "EPS", v: data.eps, c: "var(--text)" },
+                { l: "Sentiment", v: data.sentiment, c: sentimentColor },
+              ].map((s, i) => (
+                <div key={i} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 8, padding: "8px 10px" }}>
+                  <p style={{ fontSize: 6, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 3 }}>{s.l}</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: s.c, display: "flex", alignItems: "center", gap: 4 }}>
+                    {i === 3 && <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.c, display: "inline-block", flexShrink: 0 }} />}
+                    {s.v}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
         <svg width="130" height="72" viewBox="0 0 130 72" style={{ flexShrink: 0 }}>

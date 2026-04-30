@@ -2414,7 +2414,7 @@ def _email_html(
     mono  = "'Courier New', Courier, monospace"
     sans  = "Arial, Helvetica, sans-serif"
     if unsub_type and user_id:
-        unsub = f"{RAILWAY_BASE_URL}/email/unsubscribe?user_id={user_id}&type={unsub_type}"
+        unsub = f"https://corvo.capital/unsubscribe?user_id={user_id}&type={unsub_type}"
     elif user_id:
         unsub = f"https://corvo.capital/unsubscribe?user_id={user_id}"
     else:
@@ -3682,25 +3682,40 @@ def email_unsubscribe_type(user_id: str = "", type: str = ""):
 
 class UnsubscribeRequest(BaseModel):
     user_id: str
+    type: str | None = None
+
+
+_UNSUB_VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary", "price_alerts", "market_close_summary"}
 
 
 @app.post("/unsubscribe")
 def unsubscribe_post(req: UnsubscribeRequest):
-    """Disable all email preferences for the user. Called from the frontend unsubscribe page."""
+    """Disable email preferences for the user. If type is provided, disable only that preference; otherwise disable all."""
     if not req.user_id:
         raise HTTPException(status_code=400, detail="user_id is required")
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=503, detail="Service temporarily unavailable")
     try:
+        if req.type and req.type in _UNSUB_VALID_COLUMNS:
+            patch_body = {req.type: False}
+        else:
+            patch_body = {
+                "morning_briefing": False,
+                "week_in_review": False,
+                "monthly_summary": False,
+                "price_alerts": False,
+                "market_close_summary": False,
+                "push_notifications": False,
+            }
         resp = requests.patch(
             f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{req.user_id}",
             headers={**_sb_headers(), "Prefer": "return=minimal"},
-            json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False, "price_alerts": False, "market_close_summary": False, "push_notifications": False},
+            json=patch_body,
             timeout=8,
         )
         success = resp.status_code in (200, 204)
         return {"ok": success}
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=503, detail="Service temporarily unavailable")
 
 
