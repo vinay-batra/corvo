@@ -1093,10 +1093,10 @@ If the command cannot be executed, return: {{"error": "brief reason"}}"""
             raw = raw.strip()
         result = _json.loads(raw)
     except Exception as e:
-        return {"error": f"Could not parse the AI response: {str(e)}"}
+        raise HTTPException(status_code=422, detail=f"Could not parse the AI response: {str(e)}")
 
     if "error" in result:
-        return {"error": result["error"]}
+        raise HTTPException(status_code=422, detail=result["error"])
 
     tickers = result.get("tickers", [])
     weights = result.get("weights", [])
@@ -1104,15 +1104,15 @@ If the command cannot be executed, return: {{"error": "brief reason"}}"""
     impact_summary = clean_ai_response(result.get("impact_summary", ""))
 
     if not tickers or not weights:
-        return {"error": "AI returned an empty portfolio."}
+        raise HTTPException(status_code=422, detail="AI returned an empty portfolio.")
     if len(tickers) != len(weights):
-        return {"error": "AI returned mismatched tickers and weights."}
+        raise HTTPException(status_code=422, detail="AI returned mismatched tickers and weights.")
     if any(w <= 0 for w in weights):
-        return {"error": "All portfolio weights must be positive."}
+        raise HTTPException(status_code=422, detail="All portfolio weights must be positive.")
 
     total = sum(weights)
     if abs(total - 100) > 2.5:
-        return {"error": f"Weights sum to {total:.1f}%, not 100%. Please try a more specific command."}
+        raise HTTPException(status_code=422, detail=f"Weights sum to {total:.1f}%, not 100%. Please try a more specific command.")
 
     normalized = [round(w / total * 100, 4) for w in weights]
     clean_tickers = [str(t).upper().strip() for t in tickers]
@@ -1962,10 +1962,12 @@ class ReferralRedeemRequest(BaseModel):
     new_user_id: str
 
 @app.post("/referrals/redeem")
-def redeem_referral(req: ReferralRedeemRequest):
+def redeem_referral(req: ReferralRedeemRequest, request: Request):
     """Credit the referrer +5 bonus messages when a new user signs up via their link."""
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not req.referrer_code or not req.new_user_id:
+    new_user_id = _verify_jwt_user(request)
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not req.referrer_code:
         return {"success": False, "detail": "Missing parameters"}
+    req.new_user_id = new_user_id
     try:
         chk = requests.get(
             f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{req.new_user_id}&select=referral_credited",
@@ -2054,6 +2056,14 @@ class ChatRequest(BaseModel):
 def chat(req: ChatRequest, request: Request):
     import json as _json
     req.validate_message()
+    # Verify JWT if Authorization header is present; reject unverified self-reported user_id
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        verified_user_id = _verify_jwt_user(request)
+        req.user_id = verified_user_id
+    elif req.user_id:
+        # user_id in body but no JWT to verify it — reject rather than trust self-reported id
+        raise HTTPException(status_code=401, detail="Authorization header required when providing user_id")
     # Daily limit check (per-user via Supabase); fall back to IP rate limit for unauthenticated
     daily_limit = BASE_DAILY_CHAT_LIMIT
     daily_count = 0
@@ -2321,7 +2331,17 @@ def generate_questions(req: GenerateQuestionsRequest, request: Request):
 
 
 @app.post("/parse-portfolio-image")
-def parse_portfolio_image(body: dict):
+def parse_portfolio_image(body: dict, request: Request):
+    # Rate limit: max 10 per user per day (in-memory)
+    user_id = body.get("user_id", "") or (request.client.host if request.client else "anon")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    record = _image_parse_daily.get(user_id)
+    if record and record["date"] == today:
+        if record["count"] >= 10:
+            raise HTTPException(status_code=429, detail="Image parse limit reached (10/day)")
+        record["count"] += 1
+    else:
+        _image_parse_daily[user_id] = {"date": today, "count": 1}
     try:
         import anthropic
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -2470,7 +2490,7 @@ def _resend(to: str, subject: str, html: str, from_addr: str = "Corvo <hello@cor
             timeout=12,
         )
         if resp.status_code in (200, 201):
-            print(f"[resend] sent '{subject}' to {to} (id={resp.json().get('id')})")
+            print(f"[resend] sent '{subject}' (id={resp.json().get('id')})")
             return True
         print(f"[resend] error {resp.status_code}: {resp.text[:200]}")
         return False
@@ -2582,7 +2602,7 @@ class WelcomeEmailRequest(BaseModel):
 @app.post("/send-welcome-email")
 def send_welcome_email(req: WelcomeEmailRequest):
     """Send a welcome email to a new Corvo user via Resend."""
-    print(f"[send-welcome-email] called for {req.email}")
+    print(f"[send-welcome-email] called")
     name = req.display_name or req.email.split("@")[0]
     html = _welcome_email_html(name=name, user_id=req.user_id or "", email_theme="light")
     ok = _resend(req.email, "Welcome to Corvo", html)
@@ -3091,8 +3111,7 @@ def _finnhub_options(ticker: str, key: str, date: "str | None", current_price: f
             "calls":            _proc_fh(calls_raw, True),
             "puts":             _proc_fh(puts_raw, False),
         }
-    except Exception as e:
-        print(f"[options] Finnhub failed for {ticker}: {e}")
+    except Exception:
         return None
 
 
@@ -3108,37 +3127,29 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
             raise HTTPException(status_code=429, detail="Rate limit: 30 requests/hr")
 
     ticker = ticker.upper().strip()
-    print(f"[options] request ticker={ticker!r} date={date!r}")
 
     cache_key = f"{ticker}|{date or ''}"
     if cache_key in _options_cache:
         cached, ts = _options_cache[cache_key]
         if time.time() - ts < 900:
-            print(f"[options] cache hit for {ticker}")
             return cached
 
     # ── Try yfinance first ───────────────────────────────────────────────────
     yf_error: str | None = None
     try:
-        print(f"[options] yfinance: fetching Ticker({ticker!r})")
         t = yf.Ticker(ticker)
         raw_options = t.options
-        print(f"[options] yfinance: t.options type={type(raw_options).__name__} value={raw_options!r}")
         expiry_dates: list[str] = list(raw_options) if raw_options else []
-        print(f"[options] yfinance: expiry_dates count={len(expiry_dates)} first3={expiry_dates[:3]}")
 
         if not expiry_dates:
             raise ValueError(f"yfinance returned no expiry dates for {ticker}")
 
         selected = date if (date and date in expiry_dates) else expiry_dates[0]
-        print(f"[options] yfinance: selected expiry={selected!r}")
 
         info = t.info or {}
         current_price = safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0) or 0.0
-        print(f"[options] yfinance: current_price={current_price} (keys present: currentPrice={info.get('currentPrice')!r}, regularMarketPrice={info.get('regularMarketPrice')!r})")
 
         chain = t.option_chain(selected)
-        print(f"[options] yfinance: chain calls={len(chain.calls)} puts={len(chain.puts)}")
 
         def _process(df, is_call: bool) -> list[dict]:
             rows = []
@@ -3171,28 +3182,21 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
             "puts":             _process(chain.puts, False),
         }
         _options_cache[cache_key] = (result, time.time())
-        print(f"[options] yfinance: success for {ticker}")
         return result
 
     except HTTPException:
         raise
     except Exception as e:
         yf_error = str(e)
-        print(f"[options] yfinance FAILED for {ticker}: {yf_error}")
         _tb.print_exc()
 
     # ── Fall back to Finnhub ─────────────────────────────────────────────────
-    print(f"[options] trying Finnhub fallback for {ticker}")
     fh_key = os.environ.get("FINNHUB_API_KEY", "")
     if fh_key:
         fh_result = _finnhub_options(ticker, fh_key, date, 0.0)
         if fh_result:
-            print(f"[options] Finnhub success for {ticker}")
             _options_cache[cache_key] = (fh_result, time.time())
             return fh_result
-        print(f"[options] Finnhub returned no data for {ticker} (likely free-tier key; options require Finnhub premium)")
-    else:
-        print(f"[options] no FINNHUB_API_KEY set, skipping Finnhub fallback")
 
     raise HTTPException(
         status_code=500,
@@ -3683,8 +3687,10 @@ class UnsubscribeRequest(BaseModel):
 @app.post("/unsubscribe")
 def unsubscribe_post(req: UnsubscribeRequest):
     """Disable all email preferences for the user. Called from the frontend unsubscribe page."""
-    if not req.user_id or not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return {"ok": False, "error": "missing user_id or supabase config"}
+    if not req.user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
     try:
         resp = requests.patch(
             f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{req.user_id}",
@@ -3693,11 +3699,9 @@ def unsubscribe_post(req: UnsubscribeRequest):
             timeout=8,
         )
         success = resp.status_code in (200, 204)
-        print(f"[unsubscribe-post] user_id={req.user_id} status={resp.status_code}")
         return {"ok": success}
     except Exception as e:
-        print(f"[unsubscribe-post] error: {e}")
-        return {"ok": False, "error": str(e)}
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
 
 
 # ── Push Notification Endpoints ───────────────────────────────────────────────
@@ -3715,7 +3719,10 @@ def get_vapid_public_key():
 
 
 @app.post("/push/subscribe")
-def push_subscribe(req: PushSubscribeRequest):
+def push_subscribe(req: PushSubscribeRequest, request: Request):
+    verified_id = _verify_jwt_user(request)
+    if verified_id != req.user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=503, detail="Supabase not configured")
     try:
@@ -3808,8 +3815,11 @@ class PriceTargetCreate(BaseModel):
 
 
 @app.get("/price-targets/{user_id}")
-def get_price_targets(user_id: str):
+def get_price_targets(user_id: str, request: Request):
     """Return all price targets for a user, including current price and distance."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     resp = requests.get(
@@ -3851,8 +3861,10 @@ def _normalize_direction(raw: str) -> str | None:
 
 
 @app.post("/price-targets")
-def create_price_target(req: PriceTargetCreate):
+def create_price_target(req: PriceTargetCreate, request: Request):
     """Create a new price target."""
+    verified_id = _verify_jwt_user(request)
+    req.user_id = verified_id
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     direction = _normalize_direction(req.direction)
@@ -5568,7 +5580,7 @@ async def market_brief_endpoint(force: bool = False):
         _market_brief_cache["ts"] = now
         return result
     except Exception as e:
-        return {"error": str(e), "brief": "", "sections": {}, "generated_at": "", "indices": {}, "movers": []}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def _gen_price_target_recommendation(ticker: str, current_price: float, target_price: float, direction: str) -> str:
@@ -5782,7 +5794,7 @@ def _fetch_user_email_data(user_id: str):
             f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
             headers=_sb_headers(), timeout=8,
         )
-        print(f"[email-data] auth.users query for {user_id}: status={ur.status_code}")
+        print(f"[email-data] auth.users query: status={ur.status_code}")
         if ur.status_code != 200:
             print(f"[email-data] skip {user_id}: Supabase auth.users returned status {ur.status_code} body={ur.text[:200]}")
             return None
@@ -5816,7 +5828,7 @@ def _fetch_user_email_data(user_id: str):
             weights = [1.0 / len(tickers)] * len(tickers)
         else:
             weights = [w / total for w in weights]
-        print(f"[email-data] success {user_id}: email={email} tickers={tickers}")
+        print(f"[email-data] success {user_id}: tickers={tickers}")
         return email, display_name, tickers, weights
     except Exception as e:
         print(f"[email-data] skip {user_id}: Supabase error: {e}")
@@ -6427,20 +6439,10 @@ async def market_close_summary_loop():
 
 
 @app.get("/email/test-market-close")
-async def test_market_close_email(user_id: str = ""):
-    """Manually trigger the market close summary email and push for one user (or all opted-in)."""
+async def test_market_close_email(user_id: str = "", request: Request = None):
+    """Manually trigger the market close summary email and push for one user (or all opted-in). Requires X-Admin-Key header."""
+    _require_admin_key(request)
     uid = user_id or None
-    if uid and SUPABASE_URL and SUPABASE_SERVICE_KEY:
-        try:
-            pref_resp = requests.get(
-                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{uid}&select=*",
-                headers=_sb_headers(),
-                timeout=8,
-            )
-            print(f"[test-mkt-close] email_preferences status={pref_resp.status_code} body={pref_resp.text}")
-            print(f"[test-mkt-close] FINNHUB_API_KEY present={bool(os.environ.get('FINNHUB_API_KEY', ''))}")
-        except Exception as e:
-            print(f"[test-mkt-close] debug fetch error: {e}")
     return await send_market_close_summary_emails(target_user_id=uid)
 
 
@@ -6850,42 +6852,32 @@ def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
     Primary: compute 7-day portfolio stats directly from yfinance.
     Cash-like tickers use synthetic 4.5% annual return.
     """
-    print(f"[digest-yf] START tickers={tickers} weights_raw={weights_raw}")
     if not tickers:
-        print("[digest-yf] no tickers — returning None")
         return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
 
     try:
         w_list = [float(w) for w in (weights_raw or [])]
-    except Exception as e:
-        print(f"[digest-yf] weight parse error: {e}, using equal weights")
+    except Exception:
         w_list = []
     if len(w_list) != len(tickers):
-        print(f"[digest-yf] weight/ticker mismatch ({len(w_list)} vs {len(tickers)}), using equal weights")
         w_list = [1.0 / len(tickers)] * len(tickers)
     total = sum(w_list)
     if total > 0:
         w_list = [w / total for w in w_list]
-    print(f"[digest-yf] normalized weights: {[round(w, 4) for w in w_list]}")
 
     real_tickers = [t for t in tickers if not is_cash_ticker(t)]
-    cash_tickers = [t for t in tickers if is_cash_ticker(t)]
-    print(f"[digest-yf] real_tickers={real_tickers} cash_tickers={cash_tickers}")
 
     close_df = pd.DataFrame()
     if real_tickers:
         dl_arg = real_tickers[0] if len(real_tickers) == 1 else real_tickers
         for attempt in range(3):
             try:
-                print(f"[digest-yf] yfinance download attempt {attempt + 1}/3: {dl_arg}")
                 raw = yf.download(dl_arg, period="14d", auto_adjust=True, progress=False)
                 if raw is None or raw.empty:
                     import yfinance as _yf2
                     _yf2.set_tz_cache_location("/tmp/yf_tz_cache")
                     raw = _yf2.download(dl_arg, period="14d", auto_adjust=True, progress=False, timeout=30)
-                print(f"[digest-yf] raw shape={raw.shape if raw is not None else None}, columns={list(raw.columns)[:8] if raw is not None and not raw.empty else []}")
                 if raw is None or raw.empty:
-                    print(f"[digest-yf] attempt {attempt + 1}: empty/None response")
                     if attempt < 2:
                         time.sleep(2)
                         continue
@@ -6902,19 +6894,12 @@ def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
                     else:
                         close_df = raw.iloc[:, :1].rename(columns={raw.columns[0]: real_tickers[0]})
                 close_df = close_df.dropna(how="all").tail(8)
-                print(f"[digest-yf] close_df shape={close_df.shape} columns={list(close_df.columns)}")
-                if not close_df.empty:
-                    print(f"[digest-yf] close_df tail:\n{close_df.tail(3).to_string()}")
                 break
-            except Exception as e:
-                print(f"[digest-yf] attempt {attempt + 1} error: {e}")
+            except Exception:
                 if attempt < 2:
                     time.sleep(2)
-                else:
-                    print("[digest-yf] all 3 download attempts failed")
 
     n = len(close_df) if not close_df.empty else 8
-    print(f"[digest-yf] building port_series with n={n}")
     port_series = np.zeros(n)
     weight_applied = 0.0
 
@@ -6924,14 +6909,11 @@ def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
             synthetic = np.array([(1 + daily_r) ** i for i in range(n)])
             port_series = port_series + synthetic * w
             weight_applied += w
-            print(f"[digest-yf] {t}: cash synthetic w={w:.4f}")
         else:
             if close_df.empty or t not in close_df.columns:
-                print(f"[digest-yf] {t}: not in close_df (available={list(close_df.columns) if not close_df.empty else []})")
                 continue
             col = close_df[t].dropna()
             if len(col) < 2:
-                print(f"[digest-yf] {t}: only {len(col)} data points after dropna, skipping")
                 continue
             values = col.values.astype(float)
             normalized = values / values[0]
@@ -6944,26 +6926,18 @@ def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
                 aligned = normalized[-n:]
             port_series = port_series + aligned * w
             weight_applied += w
-            print(f"[digest-yf] {t}: {n_ticker} pts, w={w:.4f}, price=[{values[0]:.2f}..{values[-1]:.2f}], ret={((values[-1]/values[0])-1)*100:.2f}%")
-
-    print(f"[digest-yf] weight_applied={weight_applied:.4f} port_series={port_series.tolist()}")
 
     if weight_applied < 0.01:
-        print("[digest-yf] no weight applied — all real tickers failed and no cash tickers")
         return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
 
     if weight_applied < 0.99:
         port_series = port_series / weight_applied
-        print(f"[digest-yf] rescaled for partial weight ({weight_applied:.4f})")
 
     if len(port_series) < 2:
-        print("[digest-yf] port_series too short")
         return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
 
     synth_snapshots = [{"portfolio_value": v * 10000} for v in port_series.tolist()]
-    result = _compute_portfolio_week_stats(synth_snapshots)
-    print(f"[digest-yf] RESULT: {result}")
-    return result
+    return _compute_portfolio_week_stats(synth_snapshots)
 
 
 def _compute_portfolio_week_stats(snapshots: list[dict]) -> dict:
