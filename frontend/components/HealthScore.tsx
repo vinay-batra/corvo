@@ -61,6 +61,32 @@ function localScore(data: any): number {
   return Math.round(rS * 0.3 + shS * 0.3 + vS * 0.25 + dS * 0.15);
 }
 
+function localSubScores(data: any): { label: string; score: number }[] {
+  const annRet = data.annualized_return ?? data.portfolio_return ?? 0;
+  const vol = data.portfolio_volatility ?? 0;
+  const sharpe = data.sharpe_ratio ?? (vol > 0 ? (annRet - 0.04) / vol : 0);
+  const dd = data.max_drawdown ?? 0;
+  return [
+    { label: "Returns", score: Math.round(Math.min(Math.max(((annRet + 0.3) / 0.6) * 100, 0), 100)) },
+    { label: "Risk-Adjusted", score: Math.round(Math.min(Math.max((sharpe / 3) * 100, 0), 100)) },
+    { label: "Stability", score: Math.round(Math.min(Math.max((1 - vol / 0.6) * 100, 0), 100)) },
+    { label: "Resilience", score: Math.round(Math.min(Math.max((1 + dd / 0.5) * 100, 0), 100)) },
+  ];
+}
+
+function SubScoreRow({ label, score }: { label: string; score: number }) {
+  const color = score >= 80 ? "#4caf7d" : score >= 60 ? "#b8860b" : "var(--red)";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ fontSize: 10, color: "var(--text3)", minWidth: 84 }}>{label}</span>
+      <div style={{ flex: 1, height: 3, background: "var(--bg3)", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ width: `${score}%`, height: "100%", background: color, borderRadius: 2, transition: "width 0.8s ease-out" }} />
+      </div>
+      <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, color, minWidth: 24, textAlign: "right" }}>{score}</span>
+    </div>
+  );
+}
+
 export default function HealthScore({
   data,
   userId,
@@ -106,6 +132,7 @@ export default function HealthScore({
 
   const score = hsData?.score ?? fallbackScore;
   const headline = hsData?.headline ?? "";
+  const subScores = localSubScores(data);
 
   return (
     <div ref={ref} className="hs-root" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -128,6 +155,13 @@ export default function HealthScore({
             <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.5 }}>{headline}</p>
           )}
         </div>
+      </div>
+
+      {/* Sub-score breakdown */}
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        {subScores.map((s) => (
+          <SubScoreRow key={s.label} label={s.label} score={s.score} />
+        ))}
       </div>
     </div>
   );
