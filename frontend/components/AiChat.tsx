@@ -316,12 +316,14 @@ export default function AiChat({
 
       // Fetch all user context data in parallel for richer AI responses
       const meta = ud.user.user_metadata || {};
+      const { data: { session: ctxSession } } = await supabase.auth.getSession();
+      const ctxToken = ctxSession?.access_token ?? "";
       const [profileRes, portfoliosRes, emailPrefsRes, alertsRes, targetsRes] = await Promise.allSettled([
         supabase.from("profiles").select("display_name,life_events").eq("id", uid).single(),
         supabase.from("portfolios").select("name,tickers").eq("user_id", uid).order("updated_at", { ascending: false }),
         supabase.from("email_preferences").select("morning_briefing,week_in_review,monthly_summary,price_alerts").eq("user_id", uid).single(),
         supabase.from("price_alerts").select("ticker,type,condition,threshold").eq("user_id", uid).eq("triggered", false),
-        fetch(`${API_URL}/price-targets/${uid}`).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`${API_URL}/price-targets/${uid}`, ctxToken ? { headers: { "Authorization": `Bearer ${ctxToken}` } } : {}).then(r => r.ok ? r.json() : []).catch(() => []),
       ]);
 
       const displayName =
@@ -567,9 +569,14 @@ export default function AiChat({
         if (lines.length > 0) market_context = `Current prices: ${lines.join(", ")}`;
       }
 
+      const { data: { session: chatSession } } = await supabase.auth.getSession();
+      const chatToken = chatSession?.access_token ?? "";
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(chatToken ? { "Authorization": `Bearer ${chatToken}` } : {}),
+        },
         body: JSON.stringify({
           message: msg,
           history: messages,
