@@ -65,8 +65,6 @@ import StockCompare from "../../components/StockCompare";
 import CorrelationHeatmap from "../../components/CorrelationHeatmap";
 import DrawdownChart from "../../components/DrawdownChart";
 import EarningsImpactPreview from "../../components/EarningsImpactPreview";
-import PortfolioHistory from "../../components/PortfolioHistory";
-import PortfolioCompareTab from "../../components/PortfolioCompareTab";
 import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
 import PaperTrading from "../../components/PaperTrading";
@@ -2598,20 +2596,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                     { label: "What's Good", text: "A well-diversified portfolio has many pairs below 0.5. Holdings near 0 or negative are natural hedges for each other." },
                   ]} />
                   <CorrelationHeatmap assets={assets} period={period} />
-                </Card>
-                <Card key="compare-card" style={{ marginTop: 16 }}>
-                  <TooltipCardHeader title="Portfolio Comparison" sections={[
-                    { label: "Plain English", text: "Compare the historical performance of multiple saved portfolios on a single chart. Select 2 or more saved portfolios to see how they stacked up against each other." },
-                    { label: "How to use", text: "Save portfolios from the sidebar first. Then select 2 or more from the list to compare returns, Sharpe ratio, volatility, and max drawdown side by side." },
-                  ]} />
-                  <PortfolioCompareTab userId={userId} period={period} />
-                </Card>
-                <Card key="history-card" style={{ marginTop: 16 }}>
-                  <TooltipCardHeader title="Portfolio History" sections={[
-                    { label: "Plain English", text: "Shows how all your saved portfolios have performed over time. Each line is one saved portfolio, plotted from its earliest available date." },
-                    { label: "How to use", text: "Save multiple portfolio versions from the sidebar to track how your thinking has evolved. Use the timeframe selector to zoom in on a specific window." },
-                  ]} />
-                  <PortfolioHistory />
                 </Card>
               </motion.div>
             ) : activeTab === "paper_trade" ? (
