@@ -2842,6 +2842,9 @@ def stock_detail(ticker: str, request: Request):
                 except Exception:
                     pass
 
+        er_raw = info.get("annualReportExpenseRatio") or info.get("expenseRatio")
+        er_pct = _round(safe_float(er_raw) * 100, 4) if er_raw is not None else None
+
         return {
             "ticker": ticker,
             "name": info.get("longName") or info.get("shortName") or ticker,
@@ -2887,6 +2890,9 @@ def stock_detail(ticker: str, request: Request):
             "similar_stocks": similar_stocks,
             "bid": _round(si("bid", 0), 2),
             "ask": _round(si("ask", 0), 2),
+            "quote_type": info.get("quoteType") or "EQUITY",
+            "expense_ratio": er_pct,
+            "total_assets": si("totalAssets") or None,
         }
     except Exception as e:
         print(f"Stock detail error for {ticker}: {e}")

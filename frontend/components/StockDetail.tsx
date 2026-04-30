@@ -85,6 +85,9 @@ interface StockInfo {
   free_cashflow: number | null;
   short_ratio: number | null; insider_ownership: number | null;
   similar_stocks: { ticker: string; price: number; change_pct: number }[];
+  quote_type: string;
+  expense_ratio: number | null;
+  total_assets: number | null;
 }
 
 // ── Options Chain ─────────────────────────────────────────────────────────────
@@ -863,6 +866,14 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
 
   const ratingColor = RATING_COLOR[info.analyst_rating] || "var(--text3)";
 
+  const isCrypto = info.quote_type === "CRYPTOCURRENCY" || info.ticker.endsWith("-USD");
+  const isBondETF = info.quote_type === "ETF" && (
+    ["BND", "TLT", "AGG", "SCHZ", "IEF", "SHY"].includes(info.ticker) ||
+    (info.name || "").toLowerCase().includes("bond")
+  );
+  const isETF = info.quote_type === "ETF" && !isBondETF;
+  const isStock = !isCrypto && !isETF && !isBondETF;
+
   const earningsDays = info.earnings_date
     ? Math.round((new Date(info.earnings_date).getTime() - Date.now()) / 86400000)
     : null;
@@ -928,9 +939,20 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
               <span style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.2, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {info.name}
               </span>
-              <span style={{ padding: "2px 7px", borderRadius: 5, fontSize: 9, background: `${ratingColor}22`, color: ratingColor, border: `0.5px solid ${ratingColor}55`, fontWeight: 600, letterSpacing: 0.5, flexShrink: 0 }}>
-                Analyst: {info.analyst_rating}
-              </span>
+              {isStock ? (
+                <span style={{ padding: "3px 7px", borderRadius: 5, fontSize: 9, background: `${ratingColor}22`, color: ratingColor, border: `0.5px solid ${ratingColor}55`, fontWeight: 600, letterSpacing: 0.5, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 1, lineHeight: 1.3 }}>
+                  <span>Analyst: {info.analyst_rating}</span>
+                  {((info.analyst_buy ?? 0) + (info.analyst_hold ?? 0) + (info.analyst_sell ?? 0)) > 0 && (
+                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 8, color: "var(--text3)", fontWeight: 400, letterSpacing: 0 }}>
+                      {info.analyst_buy ?? 0}B · {info.analyst_hold ?? 0}H · {info.analyst_sell ?? 0}S
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span style={{ padding: "2px 7px", borderRadius: 5, fontSize: 9, background: "transparent", color: "var(--text2)", border: "0.5px solid var(--border)", fontWeight: 600, letterSpacing: 0.5, flexShrink: 0 }}>
+                  {isCrypto ? "Crypto" : isBondETF ? "Bond ETF" : "ETF"}
+                </span>
+              )}
             </div>
             {/* Row 2: Sector · Industry */}
             {info.sector && (
@@ -1084,6 +1106,12 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
           <Row label="Forward P/E" value={fmt(info.forward_pe, "", "", 1)} tooltip={{ title: "Forward P/E", sections: [{ label: "Plain English", text: "Like P/E, but uses analyst estimates for the next 12 months of earnings rather than past results. More forward-looking." }, { label: "Example", text: "A Forward P/E lower than Trailing P/E suggests analysts expect earnings to grow." }, { label: "What's Good?", text: "Compare against the trailing P/E. If Forward P/E is much lower, earnings growth is expected. If higher, earnings may be declining." }] }} />
           <Row label="EPS (TTM)"   value={fmt(info.eps, "$")} tooltip={{ title: "Earnings Per Share (Trailing Twelve Months)", sections: [{ label: "Plain English", text: "Total profit divided by shares outstanding. Shows how much the company earned per share over the past 12 months." }, { label: "Example", text: "Net income of $1 billion with 500 million shares = EPS of $2.00." }, { label: "What's Good?", text: "Growing EPS over time is a positive signal. Compare against analyst estimates for forward expectations." }] }} />
           <Row label="Div Yield"   value={info.dividend_yield != null ? `${info.dividend_yield.toFixed(2)}%` : "-"} tooltip={{ title: "Dividend Yield", sections: [{ label: "Plain English", text: "Annual dividend payment as a percentage of the stock price. The income you receive just from holding the stock, before any price appreciation." }, { label: "Example", text: "A $2 annual dividend on a $50 stock = 4% dividend yield." }, { label: "What's Good?", text: "Above 4-5% can be attractive income, but unusually high yields sometimes signal financial stress. 1-3% is typical for healthy dividend payers." }] }} />
+          {(isETF || isBondETF) && info.expense_ratio != null && (
+            <Row label="Expense Ratio" value={`${info.expense_ratio.toFixed(2)}%`} tooltip={{ title: "Expense Ratio", sections: [{ label: "Plain English", text: "The annual fee charged by the fund as a percentage of assets. Deducted automatically from returns, not billed separately." }, { label: "Example", text: "A 0.03% expense ratio on a $10,000 investment costs $3 per year." }, { label: "What's Good?", text: "Lower is better. Broad index ETFs typically charge 0.03-0.20%. Anything above 0.50% warrants scrutiny." }] }} />
+          )}
+          {(isETF || isBondETF) && info.total_assets != null && info.total_assets > 0 && (
+            <Row label="AUM" value={fmt(info.total_assets, "$")} tooltip={{ title: "Assets Under Management", sections: [{ label: "Plain English", text: "Total value of all assets held in the fund. Larger funds tend to have better liquidity and lower bid-ask spreads." }, { label: "What's Good?", text: "Funds above $1B are generally considered liquid. Very small ETFs under $50M can have wider spreads and closure risk." }] }} />
+          )}
         </Card>
         <Card title="Trading">
           <Row label="Volume"      value={fmt(info.volume, "", "", 0)} tooltip={{ title: "Volume", sections: [{ label: "Plain English", text: "Number of shares traded today. High volume means more market activity and it is easier to buy or sell." }, { label: "Example", text: "Volume of 10 million means 10 million shares changed hands today." }, { label: "What's Good?", text: "Compare to average volume. Significantly higher volume during a price move signals stronger market conviction." }] }} />
@@ -1095,20 +1123,22 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       </div>
 
       {/* ── Analyst Consensus ────────────────────────────────────────────────── */}
-      <AnalystConsensusCard
-        data={analystConsensus}
-        currentPrice={currentPrice}
-        accentColor={accentColor}
-        fallback={{
-          buy: info.analyst_buy ?? 0,
-          hold: info.analyst_hold ?? 0,
-          sell: info.analyst_sell ?? 0,
-          num_analysts: info.num_analysts ?? null,
-          target_mean: info.target_mean ?? null,
-          target_high: info.target_high ?? null,
-          target_low: info.target_low ?? null,
-        }}
-      />
+      {isStock && (
+        <AnalystConsensusCard
+          data={analystConsensus}
+          currentPrice={currentPrice}
+          accentColor={accentColor}
+          fallback={{
+            buy: info.analyst_buy ?? 0,
+            hold: info.analyst_hold ?? 0,
+            sell: info.analyst_sell ?? 0,
+            num_analysts: info.num_analysts ?? null,
+            target_mean: info.target_mean ?? null,
+            target_high: info.target_high ?? null,
+            target_low: info.target_low ?? null,
+          }}
+        />
+      )}
 
       {/* ── Earnings Calendar ───────────────────────────────────────────────── */}
       <Card title="Earnings Calendar" style={{ marginBottom: 10 }}>
