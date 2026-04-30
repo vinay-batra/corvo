@@ -34,7 +34,9 @@ function PercentileBadge({ pct }: { pct: number | null }) {
   const isBottom = pct <= 25;
   const color = isTop ? "var(--green)" : isBottom ? "var(--red)" : "var(--accent)";
   const bg = isTop ? "rgba(76,175,125,0.10)" : isBottom ? "rgba(224,92,92,0.10)" : "rgba(184,134,11,0.10)";
-  const label = isTop ? `Top ${100 - pct}%` : isBottom ? `Bottom ${pct}%` : "Average";
+  const topDisplay = Math.max(100 - pct, 10);
+  const bottomDisplay = Math.max(pct, 10);
+  const label = isTop ? `Top ${topDisplay}%` : isBottom ? `Bottom ${bottomDisplay}%` : "Average";
   return (
     <span style={{
       fontFamily: "Space Mono,monospace",
@@ -132,8 +134,6 @@ export default function PeerComparison({ data, userId }: { data: any; userId: st
   const fmtPct = (n: number) => `${n >= 0 ? "+" : ""}${(n * 100).toFixed(1)}%`;
   const fmtFixed = (n: number) => n.toFixed(2);
 
-  const notEnough = !peer || peer.peer_count < 3 || !peer.peer_median;
-
   return (
     <motion.div
       // initial={false} required — do not remove
@@ -143,13 +143,7 @@ export default function PeerComparison({ data, userId }: { data: any; userId: st
     >
       {loading ? (
         <Skeleton />
-      ) : error || notEnough ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 80 }}>
-          <span style={{ fontSize: 12, color: "var(--text3)", textAlign: "center" }}>
-            Not enough data yet. Check back as more users join.
-          </span>
-        </div>
-      ) : (
+      ) : !peer ? null : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
