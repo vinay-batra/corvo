@@ -4579,6 +4579,214 @@ Rules:
     return result
 
 
+_peer_stats_cache: dict = {"distributions": None, "top_tickers": None, "ts": 0.0, "count": 0}
+_PEER_CACHE_TTL = 1800  # 30 minutes
+
+
+def _compute_peer_stats() -> dict | None:
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return None
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/portfolios?select=user_id,tickers,weights",
+            headers=_sb_headers(), timeout=15,
+        )
+        if resp.status_code != 200:
+            return None
+        portfolios = resp.json()
+        if not portfolios:
+            return None
+
+        all_tickers: set = set()
+        valid_portfolios = []
+        ticker_counts: dict = {}
+
+        for p in portfolios:
+            tickers = p.get("tickers") or []
+            weights_raw = p.get("weights") or []
+            if not tickers:
+                continue
+            if len(weights_raw) != len(tickers):
+                weights_raw = [1.0] * len(tickers)
+            total_w = sum(float(w) for w in weights_raw)
+            if total_w <= 0:
+                total_w = len(tickers)
+                weights_raw = [1.0] * len(tickers)
+            weights = [float(w) / total_w for w in weights_raw]
+            for t in tickers:
+                ticker_counts[t] = ticker_counts.get(t, 0) + 1
+                if not is_cash_ticker(t):
+                    all_tickers.add(t)
+            valid_portfolios.append({"tickers": tickers, "weights": weights})
+
+        if not valid_portfolios:
+            return None
+
+        # Batch price download
+        prices_df = None
+        ticker_list = list(all_tickers)
+        if ticker_list:
+            try:
+                raw = yf.download(ticker_list, period="1y", auto_adjust=True, progress=False, group_by="ticker")
+                if raw is not None and not raw.empty:
+                    if isinstance(raw.columns, pd.MultiIndex):
+                        prices_df = raw.xs("Close", level=1, axis=1)
+                    else:
+                        prices_df = raw[["Close"]].rename(columns={"Close": ticker_list[0]})
+            except Exception:
+                prices_df = None
+
+        try:
+            tbill = yf.Ticker("^IRX")
+            rf_rate = tbill.fast_info.last_price / 100
+            if not rf_rate or rf_rate < 0:
+                rf_rate = 0.04
+        except Exception:
+            rf_rate = 0.04
+
+        distributions: dict = {"cagr": [], "sharpe": [], "volatility": [], "max_drawdown": []}
+
+        for p in valid_portfolios:
+            try:
+                tickers = p["tickers"]
+                weights = p["weights"]
+                n_rows = len(prices_df) if prices_df is not None and not prices_df.empty else 252
+                price_arr = np.zeros(n_rows)
+                weight_used = 0.0
+
+                for t, w in zip(tickers, weights):
+                    if is_cash_ticker(t):
+                        synth = make_synthetic_prices(0.045, n_rows)
+                        vals = synth.values
+                        if len(vals) < n_rows:
+                            vals = np.pad(vals, (0, n_rows - len(vals)), constant_values=vals[-1])
+                        price_arr += vals[:n_rows] * w
+                        weight_used += w
+                    elif prices_df is not None and t in prices_df.columns:
+                        col = prices_df[t].values
+                        if len(col) >= n_rows:
+                            price_arr += col[:n_rows] * w
+                        else:
+                            padded = np.pad(col, (0, n_rows - len(col)), constant_values=np.nan)
+                            price_arr += padded * w
+                        weight_used += w
+
+                if weight_used < 0.1:
+                    continue
+
+                price_arr = price_arr / weight_used
+                valid_mask = ~np.isnan(price_arr)
+                price_clean = price_arr[valid_mask]
+                if len(price_clean) < 20:
+                    continue
+
+                rets = np.diff(price_clean) / price_clean[:-1]
+                if len(rets) < 5:
+                    continue
+
+                total_ret = float((1 + rets).prod() - 1)
+                n_years = len(rets) / 252
+                cagr = float((1 + total_ret) ** (1 / n_years) - 1) if n_years > 0 else total_ret
+                vol = float(np.std(rets) * np.sqrt(252))
+                sharpe = (cagr - rf_rate) / vol if vol > 0 else 0.0
+
+                cum = np.cumprod(1 + rets)
+                running_max = np.maximum.accumulate(cum)
+                max_dd = float(np.min((cum - running_max) / running_max))
+
+                distributions["cagr"].append(cagr)
+                distributions["sharpe"].append(sharpe)
+                distributions["volatility"].append(vol)
+                distributions["max_drawdown"].append(max_dd)
+            except Exception:
+                continue
+
+        top_tickers = [
+            t for t, _ in sorted(
+                [(t, c) for t, c in ticker_counts.items() if not is_cash_ticker(t)],
+                key=lambda x: -x[1]
+            )[:5]
+        ]
+
+        return {
+            "distributions": distributions,
+            "top_tickers": top_tickers,
+            "count": len(distributions["cagr"]),
+        }
+    except Exception as e:
+        print(f"[peer-comparison] _compute_peer_stats error: {e}")
+        return None
+
+
+@app.get("/portfolio/peer-comparison")
+def portfolio_peer_comparison(
+    request: Request,
+    user_cagr: float = 0.0,
+    user_sharpe: float = 0.0,
+    user_volatility: float = 0.0,
+    user_max_drawdown: float = 0.0,
+):
+    _verify_jwt_user(request)
+
+    now = time.time()
+    if _peer_stats_cache["distributions"] is None or (now - _peer_stats_cache["ts"]) > _PEER_CACHE_TTL:
+        result = _compute_peer_stats()
+        if result:
+            _peer_stats_cache["distributions"] = result["distributions"]
+            _peer_stats_cache["top_tickers"] = result["top_tickers"]
+            _peer_stats_cache["count"] = result["count"]
+            _peer_stats_cache["ts"] = now
+
+    distributions = _peer_stats_cache.get("distributions")
+    top_tickers = _peer_stats_cache.get("top_tickers") or []
+    peer_count = _peer_stats_cache.get("count") or 0
+
+    if not distributions or peer_count < 3:
+        return {
+            "user": {"cagr": user_cagr, "sharpe": user_sharpe, "volatility": user_volatility, "max_drawdown": user_max_drawdown},
+            "peer_median": None,
+            "percentiles": None,
+            "top_tickers": [],
+            "peer_count": peer_count,
+        }
+
+    def _median(vals: list) -> float:
+        if not vals:
+            return 0.0
+        s = sorted(vals)
+        n = len(s)
+        mid = n // 2
+        return s[mid] if n % 2 == 1 else (s[mid - 1] + s[mid]) / 2
+
+    def _pct_rank(val: float, dist: list) -> int:
+        if not dist:
+            return 50
+        return round(sum(1 for x in dist if x < val) / len(dist) * 100)
+
+    peer_median = {
+        "cagr": safe_float(_median(distributions["cagr"])),
+        "sharpe": safe_float(_median(distributions["sharpe"])),
+        "volatility": safe_float(_median(distributions["volatility"])),
+        "max_drawdown": safe_float(_median(distributions["max_drawdown"])),
+    }
+
+    percentiles = {
+        "cagr": _pct_rank(user_cagr, distributions["cagr"]),
+        "sharpe": _pct_rank(user_sharpe, distributions["sharpe"]),
+        # Lower is better for volatility and drawdown — invert rank
+        "volatility": 100 - _pct_rank(user_volatility, distributions["volatility"]),
+        "max_drawdown": 100 - _pct_rank(user_max_drawdown, distributions["max_drawdown"]),
+    }
+
+    return {
+        "user": {"cagr": user_cagr, "sharpe": user_sharpe, "volatility": user_volatility, "max_drawdown": user_max_drawdown},
+        "peer_median": peer_median,
+        "percentiles": percentiles,
+        "top_tickers": top_tickers,
+        "peer_count": peer_count,
+    }
+
+
 @app.get("/portfolio/history")
 def get_portfolio_history(portfolio_id: str, user_id: str = ""):
     """Return all snapshots for a portfolio ordered by date ascending."""
@@ -7959,3 +8167,277 @@ Overall portfolio: annualized return {req.portfolio_return:.2%}, volatility {req
     raw = response.content[0].text.strip()
     plan = clean_ai_response(raw)
     return {"holdings": holdings, "plan": plan}
+
+
+# ── Paper Trading ──────────────────────────────────────────────────────────────
+
+class PaperBuyRequest(BaseModel):
+    ticker: str
+    shares: float
+
+class PaperSellRequest(BaseModel):
+    ticker: str
+    shares: float
+
+
+def _paper_live_price(ticker: str) -> float | None:
+    """Fetch latest live price for a ticker, using fast_info first then 1m candles."""
+    try:
+        t = yf.Ticker(ticker)
+        info = t.fast_info
+        price = getattr(info, "last_price", None)
+        if price and float(price) > 0:
+            return float(price)
+    except Exception:
+        pass
+    try:
+        df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
+        if not df.empty:
+            raw = df["Close"].iloc[-1]
+            return float(raw.iloc[0] if hasattr(raw, "iloc") else raw)
+    except Exception:
+        pass
+    return None
+
+
+def _get_or_create_paper_portfolio(user_id: str) -> dict:
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}&limit=1",
+        headers=_sb_headers(), timeout=5,
+    )
+    if resp.status_code == 200 and resp.json():
+        return resp.json()[0]
+    # Create fresh portfolio
+    create = requests.post(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio",
+        headers={**_sb_headers(), "Prefer": "return=representation"},
+        json={"user_id": user_id, "cash": 10000.0, "positions": {}, "starting_value": 10000.0},
+        timeout=5,
+    )
+    if create.status_code in (200, 201):
+        return create.json()[0]
+    raise HTTPException(status_code=500, detail="Failed to create paper portfolio")
+
+
+@app.get("/paper-trading/{user_id}/history")
+def get_paper_trade_history(user_id: str, request: Request):
+    """Return all paper trades for a user ordered newest first. JWT verified."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/paper_trades?user_id=eq.{user_id}&order=executed_at.desc",
+        headers=_sb_headers(), timeout=5,
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to fetch trade history")
+    return resp.json()
+
+
+@app.get("/paper-trading/{user_id}")
+def get_paper_portfolio(user_id: str, request: Request):
+    """Return paper portfolio with live prices, total value, and P&L. JWT verified."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    portfolio = _get_or_create_paper_portfolio(user_id)
+    positions_raw = portfolio.get("positions", {}) or {}
+    cash = float(portfolio.get("cash", 10000))
+    starting_value = float(portfolio.get("starting_value", 10000))
+    created_at = portfolio.get("created_at", "")
+
+    enriched: list[dict] = []
+    total_holdings_value = 0.0
+
+    for ticker, pos in positions_raw.items():
+        shares = float(pos.get("shares", 0))
+        avg_cost = float(pos.get("avg_cost", 0))
+        if shares < 0.0001:
+            continue
+        price = _paper_live_price(ticker)
+        current_value = shares * price if price else shares * avg_cost
+        cost_basis = shares * avg_cost
+        pl_dollar = current_value - cost_basis
+        pl_pct = (pl_dollar / cost_basis * 100) if cost_basis else 0.0
+        total_holdings_value += current_value
+        enriched.append({
+            "ticker": ticker,
+            "shares": shares,
+            "avg_cost": avg_cost,
+            "current_price": price,
+            "current_value": current_value,
+            "pl_dollar": pl_dollar,
+            "pl_pct": pl_pct,
+        })
+
+    total_value = cash + total_holdings_value
+    total_pl = total_value - starting_value
+    total_return_pct = (total_pl / starting_value * 100) if starting_value else 0.0
+
+    # S&P 500 return since portfolio creation
+    sp500_return_pct = None
+    if created_at:
+        try:
+            start_date = created_at[:10]
+            df = yf.download("^GSPC", start=start_date, progress=False, auto_adjust=True)
+            if not df.empty and len(df) >= 2:
+                s = df["Close"].iloc[0]
+                e = df["Close"].iloc[-1]
+                s_val = float(s.iloc[0] if hasattr(s, "iloc") else s)
+                e_val = float(e.iloc[0] if hasattr(e, "iloc") else e)
+                if s_val > 0:
+                    sp500_return_pct = (e_val - s_val) / s_val * 100
+        except Exception:
+            pass
+
+    return {
+        "cash": cash,
+        "positions": enriched,
+        "total_value": total_value,
+        "total_holdings_value": total_holdings_value,
+        "total_return_pct": total_return_pct,
+        "total_pl": total_pl,
+        "starting_value": starting_value,
+        "sp500_return_pct": sp500_return_pct,
+        "created_at": created_at,
+    }
+
+
+@app.post("/paper-trading/buy")
+def paper_trade_buy(body: PaperBuyRequest, request: Request):
+    """Buy shares in paper portfolio. JWT verified."""
+    user_id = _verify_jwt_user(request)
+    ticker = body.ticker.upper().strip()
+    shares = float(body.shares)
+
+    if not ticker:
+        raise HTTPException(status_code=400, detail="Ticker required")
+    if shares <= 0:
+        raise HTTPException(status_code=400, detail="Shares must be positive")
+
+    price = _paper_live_price(ticker)
+    if not price:
+        raise HTTPException(status_code=400, detail=f"Could not fetch price for {ticker}. Check the ticker and try again.")
+
+    total_cost = round(shares * price, 6)
+    portfolio = _get_or_create_paper_portfolio(user_id)
+    cash = float(portfolio.get("cash", 0))
+    positions = dict(portfolio.get("positions", {}) or {})
+
+    if total_cost > cash:
+        raise HTTPException(status_code=400, detail=f"Insufficient cash. Need ${total_cost:.2f}, have ${cash:.2f}")
+
+    existing = positions.get(ticker, {"shares": 0.0, "avg_cost": 0.0})
+    old_shares = float(existing.get("shares", 0))
+    old_avg = float(existing.get("avg_cost", 0))
+    new_shares = old_shares + shares
+    new_avg = ((old_shares * old_avg) + total_cost) / new_shares
+
+    positions[ticker] = {"shares": new_shares, "avg_cost": new_avg}
+    new_cash = round(cash - total_cost, 6)
+
+    upd = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"cash": new_cash, "positions": positions, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=5,
+    )
+    if upd.status_code not in (200, 201, 204):
+        raise HTTPException(status_code=500, detail="Failed to update portfolio")
+
+    requests.post(
+        f"{SUPABASE_URL}/rest/v1/paper_trades",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"user_id": user_id, "ticker": ticker, "action": "buy", "shares": shares, "price": price, "total": total_cost},
+        timeout=5,
+    )
+
+    return {"status": "ok", "ticker": ticker, "shares": shares, "price": price, "total": total_cost, "cash_remaining": new_cash}
+
+
+@app.post("/paper-trading/sell")
+def paper_trade_sell(body: PaperSellRequest, request: Request):
+    """Sell shares from paper portfolio. JWT verified."""
+    user_id = _verify_jwt_user(request)
+    ticker = body.ticker.upper().strip()
+    shares = float(body.shares)
+
+    if shares <= 0:
+        raise HTTPException(status_code=400, detail="Shares must be positive")
+
+    portfolio = _get_or_create_paper_portfolio(user_id)
+    cash = float(portfolio.get("cash", 0))
+    positions = dict(portfolio.get("positions", {}) or {})
+
+    if ticker not in positions:
+        raise HTTPException(status_code=400, detail=f"No position in {ticker}")
+
+    existing = positions[ticker]
+    owned = float(existing.get("shares", 0))
+    if shares > owned + 0.0001:
+        raise HTTPException(status_code=400, detail=f"Insufficient shares. Own {owned:.4f}, selling {shares}")
+
+    price = _paper_live_price(ticker)
+    if not price:
+        raise HTTPException(status_code=400, detail=f"Could not fetch price for {ticker}")
+
+    proceeds = round(shares * price, 6)
+    new_cash = round(cash + proceeds, 6)
+    remaining = owned - shares
+
+    if remaining < 0.0001:
+        del positions[ticker]
+    else:
+        positions[ticker] = {"shares": remaining, "avg_cost": existing.get("avg_cost", 0)}
+
+    upd = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"cash": new_cash, "positions": positions, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=5,
+    )
+    if upd.status_code not in (200, 201, 204):
+        raise HTTPException(status_code=500, detail="Failed to update portfolio")
+
+    requests.post(
+        f"{SUPABASE_URL}/rest/v1/paper_trades",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"user_id": user_id, "ticker": ticker, "action": "sell", "shares": shares, "price": price, "total": proceeds},
+        timeout=5,
+    )
+
+    return {"status": "ok", "ticker": ticker, "shares": shares, "price": price, "total": proceeds, "cash_remaining": new_cash}
+
+
+@app.post("/paper-trading/reset")
+def reset_paper_portfolio(request: Request):
+    """Reset paper portfolio to $10,000 and clear all trade history. JWT verified."""
+    user_id = _verify_jwt_user(request)
+
+    requests.delete(
+        f"{SUPABASE_URL}/rest/v1/paper_trades?user_id=eq.{user_id}",
+        headers=_sb_headers(), timeout=5,
+    )
+
+    upd = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"cash": 10000.0, "positions": {}, "starting_value": 10000.0, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=5,
+    )
+    # If no portfolio row exists yet, create one
+    if upd.status_code == 204:
+        check = requests.get(
+            f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}&limit=1",
+            headers=_sb_headers(), timeout=5,
+        )
+        if check.status_code == 200 and not check.json():
+            requests.post(
+                f"{SUPABASE_URL}/rest/v1/paper_portfolio",
+                headers={**_sb_headers(), "Prefer": "return=minimal"},
+                json={"user_id": user_id, "cash": 10000.0, "positions": {}, "starting_value": 10000.0},
+                timeout=5,
+            )
+
+    return {"status": "reset"}

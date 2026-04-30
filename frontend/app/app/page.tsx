@@ -23,6 +23,7 @@ import PerformanceChart from "../../components/PerformanceChart";
 import HealthScore from "../../components/HealthScore";
 import AiInsights from "../../components/AiInsights";
 import BenchmarkComparison from "../../components/BenchmarkComparison";
+import PeerComparison from "../../components/PeerComparison";
 import Breakdown from "../../components/Breakdown";
 import AiChat from "../../components/AiChat";
 import SavedPortfolios from "../../components/SavedPortfolios";
@@ -2470,6 +2471,15 @@ const { dark, toggle: toggleDark }  = useTheme();
                         { label: "Plain English", text: `Compares your portfolio's return against ${benchLabel} over the same period.` },
                         { label: "Example", text: "If your portfolio returned +18% and S&P 500 returned +10%, you outperformed by +8 percentage points (pp)." },
                         { label: "What's Good", text: "Consistently beating your benchmark by 2-5pp is exceptional. Even matching it while taking less risk is a win." },
+                      ],
+                    },
+                    {
+                      title: "HOW YOU COMPARE",
+                      content: <PeerComparison data={data} userId={userId} />,
+                      sections: [
+                        { label: "Plain English", text: "Anonymous comparison of your portfolio metrics against all Corvo users." },
+                        { label: "Example", text: "If your Sharpe ratio is in the top 20%, your badge shows Top 20%." },
+                        { label: "What's Good", text: "Top 25% is strong for any metric. Aim to beat the median on CAGR and Sharpe while staying below it on volatility and drawdown." },
                       ],
                     },
                   ].map(({ title, content, sections }) => (
