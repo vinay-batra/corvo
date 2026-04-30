@@ -884,7 +884,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
                 {info.name}
               </span>
               <span style={{ padding: "2px 7px", borderRadius: 5, fontSize: 9, background: `${ratingColor}22`, color: ratingColor, border: `0.5px solid ${ratingColor}55`, fontWeight: 600, letterSpacing: 0.5, flexShrink: 0 }}>
-                {info.analyst_rating}
+                Analyst: {info.analyst_rating}
               </span>
             </div>
             {/* Row 2: Sector · Industry */}
