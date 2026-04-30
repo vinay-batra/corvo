@@ -2543,23 +2543,33 @@ const { dark, toggle: toggleDark }  = useTheme();
               </motion.div>
             ) : activeTab === "risk" ? (
               <motion.div key="risk" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <div style={{ marginBottom: 12 }}>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and a $10,000 portfolio value."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your $10k portfolio, you'd earn ~$90/year from it."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days. You must own the stock before that date to receive the dividend."}]} /><DividendTracker assets={assets} /></Card>
+                {/* Row 1: Dividend Income (left) + Dividend Calendar (right) */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <motion.div key="div-income-card" initial={false}>
+                    <Card style={{ marginBottom: 0 }}>
+                      <TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and your portfolio size."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your portfolio, you'd earn roughly 0.9% of your total value from it annually."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days. You must own the stock before that date to receive the dividend."}]} />
+                      <DividendTracker assets={assets} />
+                    </Card>
+                  </motion.div>
+                  <motion.div key="div-cal-card" initial={false}>
+                    <Card style={{ marginBottom: 0 }}>
+                      <TooltipCardHeader title="Dividend Calendar" sections={[{label:"Plain English",text:"Shows upcoming ex-dividend dates and payment dates for your holdings over the next 90 days, along with projected income based on your portfolio size."},{label:"Ex-date vs Pay date",text:"The ex-dividend date is the cutoff. You must own shares before this date to receive the dividend. The pay date is when the cash actually hits your account."},{label:"What's Good",text:"Holdings highlighted in amber have an ex-dividend date within 7 days. Act before that date to qualify for the upcoming payment."}]} />
+                      <DividendCalendar assets={assets} portfolioValue={portfolioInputValue} />
+                    </Card>
+                  </motion.div>
                 </div>
-                <div style={{ marginBottom: 12 }}>
-                  <Card style={{ marginBottom: 0 }}><TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same (or substantially identical) security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} /><TaxLossHarvester assets={assets} portfolioValue={portfolioInputValue} /></Card>
-                </div>
-                <div className="c-risk-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {/* Row 2: Capital Gains (left) + Tax Loss Harvesting (right) */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <motion.div key="cge-card" initial={false}>
                     <Card style={{ marginBottom: 0 }}>
                       <TooltipCardHeader title="Capital Gains Estimator" sections={[{label:"Plain English",text:"Estimates your federal capital gains tax liability if you were to sell each holding today. Short-term gains (held under 1 year) are taxed as ordinary income. Long-term gains qualify for preferential 0%, 15%, or 20% rates."},{label:"How to use",text:"Enter purchase prices and purchase dates in the sidebar. Select your LTCG tax bracket to see your personalized estimate."},{label:"What's Good",text:"Holdings held over 1 year qualify for lower long-term rates. If you're close to the 1-year mark, waiting to sell can meaningfully reduce your tax bill."}]} />
                       <CapitalGainsEstimator assets={assets} portfolioValue={portfolioInputValue} />
                     </Card>
                   </motion.div>
-                  <motion.div key="div-cal-card" initial={false}>
+                  <motion.div key="tlh-card" initial={false}>
                     <Card style={{ marginBottom: 0 }}>
-                      <TooltipCardHeader title="Dividend Calendar" sections={[{label:"Plain English",text:"Shows upcoming ex-dividend dates and payment dates for your holdings over the next 90 days, along with projected income based on your portfolio size."},{label:"Ex-date vs Pay date",text:"The ex-dividend date is the cutoff — you must own shares before this date to receive the dividend. The pay date is when the cash actually hits your account."},{label:"What's Good",text:"Holdings highlighted in amber have an ex-dividend date within 7 days. Act before that date to qualify for the upcoming payment."}]} />
-                      <DividendCalendar assets={assets} portfolioValue={portfolioInputValue} />
+                      <TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same or substantially identical security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} />
+                      <TaxLossHarvester assets={assets} portfolioValue={portfolioInputValue} />
                     </Card>
                   </motion.div>
                 </div>

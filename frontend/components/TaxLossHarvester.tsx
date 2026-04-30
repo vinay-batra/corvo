@@ -114,21 +114,9 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets, portfolioValue
           minHeight={100}
         />
       ) : noPurchasePrices ? (
-        <div
-          style={{
-            height: 100,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            gap: 6,
-            color: "var(--text-muted)",
-            fontSize: 12,
-            textAlign: "center",
-          }}
-        >
-          <span>Enter purchase prices in the sidebar to see tax loss harvesting opportunities.</span>
-        </div>
+        <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 12, padding: "10px 0", margin: 0 }}>
+          Enter purchase prices in the sidebar to see tax loss harvesting opportunities.
+        </p>
       ) : data && data.losses.length === 0 ? (
         <div
           style={{
@@ -225,9 +213,9 @@ const TaxLossHarvester = memo(function TaxLossHarvester({ assets, portfolioValue
           </table>
         </div>
       ) : (
-        <div style={{ height: 100, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 12 }}>
+        <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 12, padding: "10px 0", margin: 0 }}>
           No data available
-        </div>
+        </p>
       )}
     </motion.div>
   );

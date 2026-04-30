@@ -5332,8 +5332,9 @@ def portfolio_dividend_calendar(
                 pay_date_str = (ex_div_date + timedelta(days=28)).isoformat()
 
             allocated_value = portfolio_value * weight
-            div_yield_pct = (safe_float(info.get("dividendYield")) or 0.0) * 100  # yfinance returns decimal fraction; convert to pct
-            projected_income = allocated_value * div_yield_pct / 100 / freq_count if div_yield_pct else allocated_value * dividend_per_payment / (safe_float(info.get("regularMarketPrice")) or safe_float(info.get("currentPrice")) or 1.0) if dividend_per_payment else 0.0
+            dividend_yield = safe_float(info.get("dividendYield")) or 0.0  # raw decimal from yfinance (e.g. 0.0086 for 0.86%)
+            div_yield_pct = round(dividend_yield * 100, 2)
+            projected_income = allocated_value * dividend_yield / freq_count if dividend_yield else allocated_value * dividend_per_payment / (safe_float(info.get("regularMarketPrice")) or safe_float(info.get("currentPrice")) or 1.0) if dividend_per_payment else 0.0
 
             days_until_ex = (ex_div_date - today).days
             total_income += projected_income
@@ -5345,7 +5346,7 @@ def portfolio_dividend_calendar(
                 "pay_date": pay_date_str,
                 "dividend_per_share": round(dividend_per_payment, 4),
                 "frequency": freq_str,
-                "yield_pct": round(div_yield_pct, 4),
+                "yield_pct": div_yield_pct,
                 "projected_income": round(projected_income, 2),
                 "days_until_ex": days_until_ex,
                 "allocated_value": round(allocated_value, 2),
@@ -7627,7 +7628,7 @@ def earnings_preview(tickers: str = Query(default=""), weights: str = Query(defa
                 "direct and specific about the weight and what to watch."
             )
 
-            client = _ant.Anthropic(api_key=api_key)
+            client = _ant.Anthropic(api_key=api_key, timeout=10.0)
             resp = client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=1200,

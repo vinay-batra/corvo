@@ -230,6 +230,19 @@ const DividendTracker = memo(function DividendTracker({ assets }: { assets: any[
             </div>
           </div>
 
+          {/* AI insight */}
+          {payers.length > 0 && (() => {
+            const top = [...payers].sort((a, b) => (b.dividend_yield ?? 0) - (a.dividend_yield ?? 0))[0];
+            const insight = weightedYield < 1.5
+              ? `${top.ticker} is your primary dividend source at ${(top.dividend_yield ?? 0).toFixed(2)}% yield. Consider adding VYM or SCHD for higher income.`
+              : `${top.ticker} leads at ${(top.dividend_yield ?? 0).toFixed(2)}% yield. Your ${weightedYield.toFixed(2)}% portfolio yield is on track for meaningful income generation.`;
+            return (
+              <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 12, lineHeight: 1.5, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                {insight}
+              </p>
+            );
+          })()}
+
           {/* Non-payers collapsed section */}
           {nonPayers.length > 0 && (
             <div style={{ marginTop: 12 }}>
