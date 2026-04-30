@@ -120,9 +120,9 @@ function MobileDesktopBanner() {
   if (dismissed) return null;
   return (
     <div style={{ display: "none" }} className="mobile-desktop-banner">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: "#c9a84c" }} aria-hidden="true">
-        <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="#c9a84c" strokeWidth="1.4" />
-        <path d="M5.5 14h5M8 12v2" stroke="#c9a84c" strokeWidth="1.4" strokeLinecap="round" />
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: "var(--accent)" }} aria-hidden="true">
+        <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="var(--accent)" strokeWidth="1.4" />
+        <path d="M5.5 14h5M8 12v2" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round" />
       </svg>
       <span style={{ flex: 1, fontSize: 11, color: "var(--text2)", letterSpacing: 0.2 }}>
         For the best experience, view Corvo on desktop
@@ -145,8 +145,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 /* ─── Stat Item (extracted to avoid hook-in-loop) ─── */
 function StatItem({ target, suffix, label, delay, borderRight }: { target: number; suffix: string; label: string; delay: number; borderRight?: boolean }) {
   return (
-    <FadeUp delay={delay} style={{ textAlign: "center", padding: "44px 20px", borderRight: borderRight ? "1px solid rgba(201,168,76,0.08)" : "none" }}>
-      <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(32px,3.5vw,48px)", fontWeight: 700, color: "#c9a84c", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>
+    <FadeUp delay={delay} style={{ textAlign: "center", padding: "44px 20px", borderRight: borderRight ? "1px solid rgba(var(--accent-rgb),0.08)" : "none" }}>
+      <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(32px,3.5vw,48px)", fontWeight: 700, color: "var(--accent)", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>
         <Counter target={target} suffix={suffix} />
       </p>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" }}>{label}</p>
@@ -192,16 +192,16 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
 function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "portfolio", padding: "32px 32px 28px" }}>
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Portfolio Analyzer</p>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>Portfolio Analyzer</p>
       <h3 style={{ fontSize: 21, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Full portfolio intelligence</h3>
       <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 24, lineHeight: 1.7, maxWidth: 360 }}>Sharpe ratio, volatility, max drawdown, and benchmark comparison, updated live as markets move.</p>
       <div data-theme="dark" style={{ background: "#080b10", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: "14px 16px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           {([
-            { l: "Return", v: "+18.4%", c: "#c9a84c" },
-            { l: "Sharpe", v: "0.66", c: "#e8e0cc" },
-            { l: "Drawdown", v: "-14.2%", c: "#e05c5c" },
-            { l: "Beta", v: "0.84", c: "#e8e0cc" },
+            { l: "Return", v: "+18.4%", c: "var(--accent)" },
+            { l: "Sharpe", v: "0.66", c: "var(--text)" },
+            { l: "Drawdown", v: "-14.2%", c: "var(--red)" },
+            { l: "Beta", v: "0.84", c: "var(--text)" },
           ] as { l: string; v: React.ReactNode; c: string }[]).map((m, i) => (
             <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 9, padding: "9px 10px" }}>
               <p style={{ fontSize: 6, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
@@ -211,15 +211,15 @@ function BentoPortfolioCard({ delay = 0 }: { delay?: number }) {
         </div>
         <svg width="100%" height="52" viewBox="0 0 500 52" preserveAspectRatio="none">
           <defs>
-            <linearGradient id="portGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a84c" stopOpacity="0.2" /><stop offset="100%" stopColor="#c9a84c" stopOpacity="0" /></linearGradient>
+            <linearGradient id="portGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--accent)" stopOpacity="0.2" /><stop offset="100%" stopColor="var(--accent)" stopOpacity="0" /></linearGradient>
           </defs>
           <path d="M0,44 C60,40 120,32 190,20 C260,8 320,6 390,4 C430,3 465,5 500,2 L500,52 L0,52Z" fill="url(#portGrd)" />
-          <path d="M0,44 C60,40 120,32 190,20 C260,8 320,6 390,4 C430,3 465,5 500,2" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+          <path d="M0,44 C60,40 120,32 190,20 C260,8 320,6 390,4 C430,3 465,5 500,2" fill="none" stroke="var(--accent)" strokeWidth="1.5" />
           <path d="M0,44 C80,42 160,38 240,33 C320,28 400,23 500,19" fill="none" stroke="rgba(232,224,204,0.14)" strokeWidth="1" strokeDasharray="4 3" />
         </svg>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
           {["JAN", "MAR", "JUN", "SEP", "NOW"].map((l, i) => (
-            <span key={i} style={{ fontSize: 7, color: i === 4 ? "#c9a84c" : "rgba(232,224,204,0.2)", fontFamily: "Space Mono,monospace" }}>{l}</span>
+            <span key={i} style={{ fontSize: 7, color: i === 4 ? "var(--accent)" : "rgba(232,224,204,0.2)", fontFamily: "Space Mono,monospace" }}>{l}</span>
           ))}
         </div>
       </div>
@@ -241,28 +241,28 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
   }, [displayed]);
   return (
     <BentoCard delay={delay} style={{ gridArea: "aichat", padding: "28px" }}>
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>AI Chat</p>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>AI Chat</p>
       <h3 style={{ fontSize: 19, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Ask anything, get answers</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 20, lineHeight: 1.7 }}>Your AI knows your exact holdings, goals, and risk tolerance.</p>
       <div data-theme="dark" style={{ display: "flex", flexDirection: "column", gap: 9, background: "#080b10", borderRadius: 12, padding: "12px" }}>
         <div style={{ background: "var(--bg2)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
           <p style={{ fontSize: 11, color: "var(--text)" }}>Am I taking too much risk?</p>
         </div>
-        <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "12px 12px 12px 2px", padding: "10px 13px", display: "flex", gap: 8, minHeight: 56 }}>
+        <div style={{ background: "rgba(var(--accent-rgb),0.06)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: "12px 12px 12px 2px", padding: "10px 13px", display: "flex", gap: 8, minHeight: 56 }}>
           <img src="/corvo-logo.svg" width={12} height={10} alt="" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
           <p style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.65 }}>
             {displayed}
             {displayed.length < FULL_TEXT.length && (
-              <span style={{ display: "inline-block", width: 1.5, height: 11, background: "#c9a84c", marginLeft: 1, verticalAlign: "middle", animation: "pdot 0.7s step-end infinite" }} />
+              <span style={{ display: "inline-block", width: 1.5, height: 11, background: "var(--accent)", marginLeft: 1, verticalAlign: "middle", animation: "pdot 0.7s step-end infinite" }} />
             )}
           </p>
         </div>
         <div style={{ background: "var(--bg2)", borderRadius: "12px 12px 2px 12px", padding: "10px 13px", alignSelf: "flex-end" }}>
           <p style={{ fontSize: 11, color: "var(--text)" }}>What's my Sharpe ratio?</p>
         </div>
-        <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "12px 12px 12px 2px", padding: "12px 16px", display: "flex", gap: 5, alignItems: "center" }}>
+        <div style={{ background: "rgba(var(--accent-rgb),0.06)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: "12px 12px 12px 2px", padding: "12px 16px", display: "flex", gap: 5, alignItems: "center" }}>
           {[0, 1, 2].map(i => (
-            <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "#c9a84c", animation: `pdot 1.2s infinite ${i * 0.22}s` }} />
+            <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", animation: `pdot 1.2s infinite ${i * 0.22}s` }} />
           ))}
         </div>
       </div>
@@ -295,7 +295,7 @@ function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
   }, []);
   return (
     <BentoCard delay={delay} style={{ gridArea: "watchlist", padding: "28px" }}>
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Watchlist + Alerts</p>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>Watchlist + Alerts</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Never miss a move</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Set price & percent alerts on any ticker worldwide.</p>
       <div data-theme="dark" style={{ display: "flex", flexDirection: "column", gap: 7, background: "#080b10", borderRadius: 12, padding: "8px" }}>
@@ -307,13 +307,13 @@ function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
             transition: "background 0.3s ease",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#c9a84c", fontFamily: "Space Mono,monospace" }}>{s.ticker[0]}</div>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace" }}>{s.ticker[0]}</div>
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>{s.ticker}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 10, color: "rgba(232,224,204,0.6)", fontFamily: "Space Mono,monospace" }}>${s.price}</span>
-              {s.alert && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />}
-              <span style={{ fontSize: 10, fontFamily: "Space Mono,monospace", color: s.up ? "#5cb88a" : "#e05c5c", fontWeight: 600, transition: "color 0.3s ease" }}>
+              {s.alert && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />}
+              <span style={{ fontSize: 10, fontFamily: "Space Mono,monospace", color: s.up ? "var(--green)" : "var(--red)", fontWeight: 600, transition: "color 0.3s ease" }}>
                 {s.change >= 0 ? "+" : ""}{Math.abs(s.change).toFixed(1)}%
               </span>
             </div>
@@ -367,29 +367,29 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "learnxp", padding: "28px" }}>
       <div ref={ref} style={{ position: "absolute" }} />
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Learn & Earn XP</p>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>Learn & Earn XP</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Level up your knowledge</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Finance lessons that earn XP and unlock real features.</p>
       <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <div>
             <p style={{ fontSize: 7, letterSpacing: 2, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 4 }}>Level 7 · Portfolio Pro</p>
-            <p style={{ fontFamily: "Space Mono,monospace", fontSize: 24, fontWeight: 700, color: "#c9a84c", letterSpacing: -1 }}>{xp.toLocaleString()} XP</p>
+            <p style={{ fontFamily: "Space Mono,monospace", fontSize: 24, fontWeight: 700, color: "var(--accent)", letterSpacing: -1 }}>{xp.toLocaleString()} XP</p>
           </div>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M11.5 2L3.5 12h6L8 18 16.5 8h-6L11.5 2z" stroke="#c9a84c" strokeWidth="1.4" strokeLinejoin="round" fill="rgba(201,168,76,0.18)"/></svg>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M11.5 2L3.5 12h6L8 18 16.5 8h-6L11.5 2z" stroke="var(--accent)" strokeWidth="1.4" strokeLinejoin="round" fill="rgba(var(--accent-rgb),0.18)"/></svg>
           </div>
         </div>
         <div style={{ height: 5, background: "var(--bg3)", borderRadius: 3, overflow: "clip", marginBottom: 12 }}>
-          <div style={{ height: "100%", width: "0%", background: "linear-gradient(90deg, #c9a84c, #f59e0b)", borderRadius: 3, animation: visible ? "xpLoop 5s ease-in-out infinite" : "none" }} />
+          <div style={{ height: "100%", width: "0%", background: "linear-gradient(90deg, var(--accent), var(--accent))", borderRadius: 3, animation: visible ? "xpLoop 5s ease-in-out infinite" : "none" }} />
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {["Risk Basics", "Diversification", "Options"].map((b, i) => (
             <div key={i} style={{
               fontSize: 9, padding: "4px 9px", borderRadius: 6,
-              background: i < 2 ? "rgba(201,168,76,0.1)" : "var(--bg3)",
-              color: i < 2 ? "#c9a84c" : "rgba(232,224,204,0.6)",
-              border: i < 2 ? "1px solid rgba(201,168,76,0.18)" : "1px solid var(--border)",
+              background: i < 2 ? "rgba(var(--accent-rgb),0.1)" : "var(--bg3)",
+              color: i < 2 ? "var(--accent)" : "rgba(232,224,204,0.6)",
+              border: i < 2 ? "1px solid rgba(var(--accent-rgb),0.18)" : "1px solid var(--border)",
               opacity: visChecks > i ? 1 : 0,
               transform: visChecks > i ? "translateY(0)" : "translateY(5px)",
               transition: "opacity 0.35s ease, transform 0.35s ease",
@@ -406,7 +406,7 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "deepdives", padding: "28px" }}>
       <div style={{ position: "absolute", top: -30, left: -30, width: 160, height: 160, background: "radial-gradient(ellipse, rgba(92,184,138,0.05) 0%, transparent 70%)", pointerEvents: "none", borderRadius: "50%" }} />
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Stock Deep Dives</p>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>Stock Deep Dives</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Research any stock, instantly</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>AI-powered fundamentals, news sentiment, and price history analysis.</p>
       <div data-theme="dark" style={{ display: "flex", gap: 14, alignItems: "flex-start", background: "#080b10", borderRadius: 12, padding: "12px" }}>
@@ -415,15 +415,15 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
             <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--bg3)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>AAPL</div>
             <div>
               <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", fontFamily: "Space Mono,monospace" }}>$189.40</p>
-              <p style={{ fontSize: 10, color: "#5cb88a" }}>+1.82% today</p>
+              <p style={{ fontSize: 10, color: "var(--green)" }}>+1.82% today</p>
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            {[{ l: "P/E Ratio", v: "28.4", c: "#e8e0cc" }, { l: "Revenue", v: "$391B", c: "#e8e0cc" }, { l: "EPS", v: "$6.57", c: "#e8e0cc" }, { l: "Sentiment", v: "Bullish", c: "#5cb88a" }].map((s, i) => (
+            {[{ l: "P/E Ratio", v: "28.4", c: "var(--text)" }, { l: "Revenue", v: "$391B", c: "var(--text)" }, { l: "EPS", v: "$6.57", c: "var(--text)" }, { l: "Sentiment", v: "Bullish", c: "var(--green)" }].map((s, i) => (
               <div key={i} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 8, padding: "8px 10px" }}>
                 <p style={{ fontSize: 6, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 3 }}>{s.l}</p>
                 <p style={{ fontSize: 11, fontWeight: 600, color: s.c, display: "flex", alignItems: "center", gap: 4 }}>
-                  {i === 3 && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#5cb88a", display: "inline-block", flexShrink: 0 }} />}
+                  {i === 3 && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", display: "inline-block", flexShrink: 0 }} />}
                   {s.v}
                 </p>
               </div>
@@ -431,9 +431,9 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
           </div>
         </div>
         <svg width="130" height="72" viewBox="0 0 130 72" style={{ flexShrink: 0 }}>
-          <defs><linearGradient id="ddGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#5cb88a" stopOpacity="0.2" /><stop offset="100%" stopColor="#5cb88a" stopOpacity="0" /></linearGradient></defs>
+          <defs><linearGradient id="ddGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--green)" stopOpacity="0.2" /><stop offset="100%" stopColor="var(--green)" stopOpacity="0" /></linearGradient></defs>
           <path d="M0,60 C18,54 30,44 48,32 C66,20 78,28 96,20 C112,13 122,8 130,3 L130,72 L0,72Z" fill="url(#ddGrd)" />
-          <path d="M0,60 C18,54 30,44 48,32 C66,20 78,28 96,20 C112,13 122,8 130,3" fill="none" stroke="#5cb88a" strokeWidth="1.5" />
+          <path d="M0,60 C18,54 30,44 48,32 C66,20 78,28 96,20 C112,13 122,8 130,3" fill="none" stroke="var(--green)" strokeWidth="1.5" />
         </svg>
       </div>
     </BentoCard>
@@ -444,31 +444,31 @@ function BentoDeepDivesCard({ delay = 0 }: { delay?: number }) {
 function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "montecarlo", padding: "28px" }}>
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>Monte Carlo Simulation</p>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>Monte Carlo Simulation</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>See your future in 8,500 paths</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Simulate outcomes based on your actual volatility and correlation.</p>
       <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "14px" }}>
         <svg width="100%" height="110" viewBox="0 0 280 110" preserveAspectRatio="none">
           <defs>
-            <linearGradient id="mcFan" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="rgba(92,184,138,0.12)" /><stop offset="100%" stopColor="rgba(201,168,76,0.04)" /></linearGradient>
+            <linearGradient id="mcFan" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="rgba(92,184,138,0.12)" /><stop offset="100%" stopColor="rgba(var(--accent-rgb),0.04)" /></linearGradient>
           </defs>
           <path d="M0,88 C40,82 80,62 130,38 C180,14 230,6 280,2 L280,95 C230,90 180,84 130,78 C80,72 40,74 0,88Z" fill="url(#mcFan)" />
           {["M0,88 C40,80 80,58 130,32 C180,6 230,2 280,1", "M0,88 C40,83 80,64 130,42 C180,20 230,12 280,8", "M0,88 C40,85 80,70 130,52 C180,34 230,24 280,20", "M0,88 C40,84 80,67 130,46 C180,26 230,16 280,12", "M0,88 C40,86 80,74 130,60 C180,46 230,36 280,30"].map((d, i) => (
-            <path key={i} d={d} fill="none" stroke={`rgba(201,168,76,${0.06 + i * 0.02})`} strokeWidth="0.7"
+            <path key={i} d={d} fill="none" stroke={`rgba(var(--accent-rgb),${0.06 + i * 0.02})`} strokeWidth="0.7"
               pathLength="1" strokeDasharray="1" style={{ animation: `drawLoopLine 5s ease-in-out ${i * 0.25}s infinite` }} />
           ))}
-          <path d="M0,88 C40,84 80,68 130,46 C180,24 230,14 280,10" fill="none" stroke="rgba(201,168,76,0.65)" strokeWidth="2"
+          <path d="M0,88 C40,84 80,68 130,46 C180,24 230,14 280,10" fill="none" stroke="rgba(var(--accent-rgb),0.65)" strokeWidth="2"
             pathLength="1" strokeDasharray="1" style={{ animation: "drawLoopLine 5s ease-in-out 0.2s infinite" }} />
           <path d="M0,88 C40,86 80,76 130,64 C180,52 230,44 280,40" fill="none" stroke="rgba(224,92,92,0.4)" strokeWidth="1" strokeDasharray="4 3" />
           <path d="M0,88 C40,81 80,59 130,32 C180,5 230,1 280,0" fill="none" stroke="rgba(92,184,138,0.4)" strokeWidth="1" strokeDasharray="4 3" />
           <text x="240" y="8" fontSize="7" fill="rgba(92,184,138,0.7)" fontFamily="monospace">90th</text>
-          <text x="240" y="16" fontSize="7" fill="rgba(201,168,76,0.7)" fontFamily="monospace">50th</text>
+          <text x="240" y="16" fontSize="7" fill="rgba(var(--accent-rgb),0.7)" fontFamily="monospace">50th</text>
           <text x="240" y="42" fontSize="7" fill="rgba(224,92,92,0.7)" fontFamily="monospace">10th</text>
         </svg>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
           <div>
             <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 3 }}>Median at Retirement</p>
-            <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1 }}>
+            <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -1 }}>
               <LoopCounter prefix="$" target={2.3} decimals={1} suffix="M" duration={2000} loopEvery={5000} />
             </p>
           </div>
@@ -486,7 +486,7 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
 function BentoExportCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "exportshare", padding: "28px" }}>
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase", marginBottom: 10 }}>PDF Reports</p>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>PDF Reports</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Export & share</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, marginBottom: 18 }}>Generate a full portfolio report in one click.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 18 }}>
@@ -501,46 +501,46 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
       <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "14px 20px", position: "relative", overflow: "clip" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
           {[30, 60, 90, 120].map(y => (
-            <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
+            <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(var(--accent-rgb),0.07)" strokeWidth="0.5" />
           ))}
           {[80, 160, 240, 320].map(x => (
-            <line key={x} x1={x} y1="0" x2={x} y2="150" stroke="rgba(201,168,76,0.05)" strokeWidth="0.5" />
+            <line key={x} x1={x} y1="0" x2={x} y2="150" stroke="rgba(var(--accent-rgb),0.05)" strokeWidth="0.5" />
           ))}
         </svg>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, position: "relative", zIndex: 1 }}>
-          <span style={{ fontSize: 7.5, fontFamily: "Space Mono,monospace", fontWeight: 700, letterSpacing: 1.8, color: "#c9a84c", textTransform: "uppercase" }}>Portfolio Report</span>
+          <span style={{ fontSize: 7.5, fontFamily: "Space Mono,monospace", fontWeight: 700, letterSpacing: 1.8, color: "var(--accent)", textTransform: "uppercase" }}>Portfolio Report</span>
           <svg width="13" height="13" viewBox="0 0 64 64" fill="none" style={{ flexShrink: 0 }}>
-            <circle cx="32" cy="32" r="29" fill="#c9a84c" opacity="0.85" />
-            <path d="M46 14 C38 9 28 9 20 14 C12 19 8 25 8 32 C8 39 12 45 20 50 C28 55 38 55 46 50 L46 44 C40 48 33 49 27 46 C20 43 17 38 17 32 C17 26 20 21 27 18 C33 15 40 16 46 20 Z" fill="#06090e" />
+            <circle cx="32" cy="32" r="29" fill="var(--accent)" opacity="0.85" />
+            <path d="M46 14 C38 9 28 9 20 14 C12 19 8 25 8 32 C8 39 12 45 20 50 C28 55 38 55 46 50 L46 44 C40 48 33 49 27 46 C20 43 17 38 17 32 C17 26 20 21 27 18 C33 15 40 16 46 20 Z" fill="var(--bg)" />
           </svg>
         </div>
         <div style={{ position: "relative", zIndex: 1, marginBottom: 10 }}>
           <svg width="100%" height="72" viewBox="0 0 360 72" preserveAspectRatio="none">
             <defs>
               <linearGradient id="pdfChartGrd" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.28" />
-                <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
               </linearGradient>
             </defs>
             {[18, 36, 54].map(y => (
-              <line key={y} x1="0" y1={y} x2="360" y2={y} stroke="rgba(201,168,76,0.07)" strokeWidth="0.5" />
+              <line key={y} x1="0" y1={y} x2="360" y2={y} stroke="rgba(var(--accent-rgb),0.07)" strokeWidth="0.5" />
             ))}
             <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2 L360,72 L0,72Z" fill="url(#pdfChartGrd)" />
             <path d="M0,64 C30,62 55,56 85,47 C115,38 130,28 160,20 C190,12 220,14 250,9 C280,4 315,5 360,2"
-              fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             {([[0,64],[85,47],[160,20],[250,9],[360,2]] as [number,number][]).map(([x,y], i) => (
-              <circle key={i} cx={x} cy={y} r="2.5" fill="#c9a84c" opacity="0.9" />
+              <circle key={i} cx={x} cy={y} r="2.5" fill="var(--accent)" opacity="0.9" />
             ))}
           </svg>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, position: "relative", zIndex: 1 }}>
           {([
-            { label: "Sharpe", value: "0.66", color: "#e8e0cc" },
-            { label: "Return", value: "+18.4%", color: "#c9a84c" },
-            { label: "Drawdown", value: "-14.2%", color: "#e05c5c" },
-            { label: "Volatility", value: "12.1%", color: "#e8e0cc" },
+            { label: "Sharpe", value: "0.66", color: "var(--text)" },
+            { label: "Return", value: "+18.4%", color: "var(--accent)" },
+            { label: "Drawdown", value: "-14.2%", color: "var(--red)" },
+            { label: "Volatility", value: "12.1%", color: "var(--text)" },
           ] as { label: string; value: React.ReactNode; color: string }[]).map((stat, i) => (
-            <div key={i} style={{ background: "rgba(201,168,76,0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(201,168,76,0.09)" }}>
+            <div key={i} style={{ background: "rgba(var(--accent-rgb),0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(var(--accent-rgb),0.09)" }}>
               <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.6)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
               <p style={{ fontSize: 9, fontWeight: 700, color: stat.color, fontFamily: "Space Mono,monospace" }}>{stat.value}</p>
             </div>
@@ -640,14 +640,14 @@ function StockTeaserSection() {
     }
   };
 
-  const healthColor = (h: number) => h >= 80 ? "#5cb88a" : h >= 60 ? "#c9a84c" : "#e05c5c";
+  const healthColor = (h: number) => h >= 80 ? "var(--green)" : h >= 60 ? "var(--accent)" : "var(--red)";
   const healthLabel = (h: number) => h >= 80 ? "Strong" : h >= 60 ? "Moderate" : "Weak";
 
   return (
     <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
       <div style={{ maxWidth: 780, margin: "0 auto" }}>
         <FadeUp style={{ textAlign: "center", marginBottom: 40 }}>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Interactive Preview</p>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 16 }}>Interactive Preview</p>
           <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,40px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.1, marginBottom: 12 }}>Try it right now</h2>
           <p style={{ fontSize: 15, color: "var(--text2)", fontWeight: 300 }}>Search any stock and see what Corvo finds</p>
         </FadeUp>
@@ -657,7 +657,7 @@ function StockTeaserSection() {
         <FadeUp delay={0.15} style={{ display: "flex", gap: 10, maxWidth: 540, margin: "0 auto 28px" }}>
           <div style={{ flex: 1, position: "relative" }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", opacity: 0.3, pointerEvents: "none" }}>
-              <circle cx="6.5" cy="6.5" r="4.5" stroke="#e8e0cc" strokeWidth="1.4"/><line x1="10" y1="10" x2="14" y2="14" stroke="#e8e0cc" strokeWidth="1.4" strokeLinecap="round"/>
+              <circle cx="6.5" cy="6.5" r="4.5" stroke="var(--text)" strokeWidth="1.4"/><line x1="10" y1="10" x2="14" y2="14" stroke="var(--text)" strokeWidth="1.4" strokeLinecap="round"/>
             </svg>
             <input
               type="text"
@@ -666,16 +666,16 @@ function StockTeaserSection() {
               onKeyDown={e => e.key === "Enter" && handleSearch()}
               placeholder="AAPL, TSLA, NVDA, BTC-USD…"
               style={{ width: "100%", padding: "14px 16px 14px 40px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", fontFamily: "Space Mono,monospace", transition: "border-color 0.2s", letterSpacing: 0.5 }}
-              onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.5)")}
+              onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)")}
               onBlur={e => (e.target.style.borderColor = "var(--border)")}
             />
           </div>
           <button
             onClick={() => handleSearch()}
             disabled={loading}
-            style={{ padding: "14px 24px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 13, fontWeight: 700, cursor: loading ? "wait" : "pointer", letterSpacing: 0.3, flexShrink: 0, transition: "background 0.2s, transform 0.15s", opacity: loading ? 0.8 : 1 }}
-            onMouseEnter={e => { if (!loading) { (e.currentTarget as HTMLButtonElement).style.background = "#d4b558"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; } }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#c9a84c"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}>
+            style={{ padding: "14px 24px", background: "var(--accent)", border: "none", borderRadius: 12, color: "var(--bg)", fontSize: 13, fontWeight: 700, cursor: loading ? "wait" : "pointer", letterSpacing: 0.3, flexShrink: 0, transition: "background 0.2s, transform 0.15s", opacity: loading ? 0.8 : 1 }}
+            onMouseEnter={e => { if (!loading) { (e.currentTarget as HTMLButtonElement).style.background = "var(--accent)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; } }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--accent)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}>
             {loading ? "…" : "Analyze →"}
           </button>
         </FadeUp>
@@ -685,9 +685,9 @@ function StockTeaserSection() {
         <FadeUp delay={0.25} style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", marginBottom: 48 }}>
           {["AAPL", "MSFT", "NVDA", "TSLA", "SPY", "BTC-USD"].map(t => (
             <button key={t} onClick={() => handleSearch(t)} disabled={loading}
-              style={{ padding: "5px 12px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 20, fontSize: 10, color: "rgba(201,168,76,0.7)", fontFamily: "Space Mono,monospace", cursor: loading ? "wait" : "pointer", letterSpacing: 0.5, transition: "all 0.2s" }}
-              onMouseEnter={e => { if (!loading) { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.12)"; (e.currentTarget as HTMLButtonElement).style.color = "#c9a84c"; } }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(201,168,76,0.7)"; }}>
+              style={{ padding: "5px 12px", background: "rgba(var(--accent-rgb),0.06)", border: "1px solid rgba(var(--accent-rgb),0.15)", borderRadius: 20, fontSize: 10, color: "rgba(var(--accent-rgb),0.7)", fontFamily: "Space Mono,monospace", cursor: loading ? "wait" : "pointer", letterSpacing: 0.5, transition: "all 0.2s" }}
+              onMouseEnter={e => { if (!loading) { (e.currentTarget as HTMLButtonElement).style.background = "rgba(var(--accent-rgb),0.12)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)"; } }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(var(--accent-rgb),0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(var(--accent-rgb),0.7)"; }}>
               {t}
             </button>
           ))}
@@ -695,7 +695,7 @@ function StockTeaserSection() {
 
         {/* Loading skeleton */}
         {loading && (
-          <div style={{ background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 18, overflow: "clip" }}>
+          <div style={{ background: "var(--card-bg)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: 18, overflow: "clip" }}>
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--bg3)", animation: "skeletonPulse 1.4s ease-in-out infinite" }} />
@@ -714,7 +714,7 @@ function StockTeaserSection() {
                 </div>
               ))}
             </div>
-            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", background: "rgba(201,168,76,0.02)" }}>
+            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", background: "rgba(var(--accent-rgb),0.02)" }}>
               <div style={{ width: "70%", height: 10, borderRadius: 4, background: "var(--bg3)", animation: "skeletonPulse 1.4s ease-in-out 0.2s infinite" }} />
             </div>
           </div>
@@ -722,28 +722,28 @@ function StockTeaserSection() {
 
         {/* Analysis card */}
         {!loading && result && (
-          <div style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.97)", transition: "opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1)", background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: 18, overflow: "clip", boxShadow: "0 0 60px rgba(201,168,76,0.06), 0 24px 64px rgba(0,0,0,0.5)" }}>
+          <div style={{ opacity: cardVisible ? 1 : 0, transform: cardVisible ? "translateY(0) scale(1)" : "translateY(16px) scale(0.97)", transition: "opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1)", background: "var(--card-bg)", border: "1px solid rgba(var(--accent-rgb),0.18)", borderRadius: 18, overflow: "clip", boxShadow: "0 0 60px rgba(var(--accent-rgb),0.06), 0 24px 64px rgba(0,0,0,0.5)" }}>
             {/* Card header */}
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 8, fontWeight: 700, color: "#c9a84c", letterSpacing: 0.5, textAlign: "center" as const, padding: 2 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 8, fontWeight: 700, color: "var(--accent)", letterSpacing: 0.5, textAlign: "center" as const, padding: 2 }}>
                   {query || "-"}
                 </div>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                     <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3 }}>{result.name}</p>
                     {result.isLive && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 7px", background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.2)", borderRadius: 10, fontSize: 8, color: "#5cb88a", letterSpacing: 0.5 }}>
-                        <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#5cb88a", display: "inline-block", animation: "pdot 2s infinite" }} />
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 7px", background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.2)", borderRadius: 10, fontSize: 8, color: "var(--green)", letterSpacing: 0.5 }}>
+                        <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--green)", display: "inline-block", animation: "pdot 2s infinite" }} />
                         LIVE
                       </span>
                     )}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                      <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, lineHeight: 1.1 }}>{result.price}</p>
+                      <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -1, lineHeight: 1.1 }}>{result.price}</p>
                       {result.changePct != null && (
-                        <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", fontWeight: 600, color: result.changePct >= 0 ? "#5cb88a" : "#e05c5c" }}>
+                        <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", fontWeight: 600, color: result.changePct >= 0 ? "var(--green)" : "var(--red)" }}>
                           {result.changePct >= 0 ? "+" : ""}{result.changePct.toFixed(2)}%
                         </span>
                       )}
@@ -766,7 +766,7 @@ function StockTeaserSection() {
                 { label: "Sharpe (Est.)", value: result.sharpe, color: "var(--text)" },
                 result.peRatio != null
                   ? { label: "P/E Ratio", value: result.peRatio, color: "var(--text)" }
-                  : { label: "Volatility", value: result.volatility, color: result.volatility !== "-" && parseFloat(result.volatility) > 40 ? "#e05c5c" : "var(--text)" },
+                  : { label: "Volatility", value: result.volatility, color: result.volatility !== "-" && parseFloat(result.volatility) > 40 ? "var(--red)" : "var(--text)" },
                 { label: "Health (Est.)", value: result.health > 0 ? `${result.health}/100` : "-", color: healthColor(result.health) },
               ].map((m, i) => (
                 <div key={i} style={{ padding: "18px 20px", borderRight: i < 2 ? "1px solid var(--border)" : "none" }}>
@@ -776,16 +776,16 @@ function StockTeaserSection() {
               ))}
             </div>
             {/* AI insight */}
-            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", background: "rgba(201,168,76,0.03)", display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", background: "rgba(var(--accent-rgb),0.03)", display: "flex", alignItems: "flex-start", gap: 10 }}>
               <img src="/corvo-logo.svg" width={14} height={11} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, fontStyle: "italic" as const }}>{result.insight}</p>
             </div>
             {/* CTA */}
             <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ fontSize: 11, color: "var(--text3)" }}>{result.isLive ? "Live market data · Preview only" : "Powered by Corvo · Preview only"}</p>
-              <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "#c9a84c", borderRadius: 9, fontSize: 12, fontWeight: 700, color: "#0a0e14", textDecoration: "none", transition: "background 0.2s" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#d4b558")}
-                onMouseLeave={e => (e.currentTarget.style.background = "#c9a84c")}>
+              <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "var(--accent)", borderRadius: 9, fontSize: 12, fontWeight: 700, color: "var(--bg)", textDecoration: "none", transition: "background 0.2s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--accent)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "var(--accent)")}>
                 See full analysis →
               </Link>
             </div>
@@ -837,27 +837,27 @@ function VisualComparisonSection() {
 
         {/* VS divider */}
         <div style={{ width: 52, flexShrink: 0, display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", background: "var(--bg)", position: "relative", zIndex: 2 }}>
-          <div style={{ width: 1, flex: 1, background: "rgba(201,168,76,0.1)" }} />
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--bg)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c", fontFamily: "Space Mono,monospace", flexShrink: 0, zIndex: 3 }}>VS</div>
-          <div style={{ width: 1, flex: 1, background: "rgba(201,168,76,0.1)" }} />
+          <div style={{ width: 1, flex: 1, background: "rgba(var(--accent-rgb),0.1)" }} />
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--bg)", border: "1px solid rgba(var(--accent-rgb),0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent)", fontFamily: "Space Mono,monospace", flexShrink: 0, zIndex: 3 }}>VS</div>
+          <div style={{ width: 1, flex: 1, background: "rgba(var(--accent-rgb),0.1)" }} />
         </div>
 
         {/* Corvo side */}
-        <SlideIn direction="right" delay={0.08} style={{ flex: 1, borderRadius: "0 16px 16px 0", overflow: "clip", border: "1px solid rgba(201,168,76,0.2)", borderLeft: "none" }}>
+        <SlideIn direction="right" delay={0.08} style={{ flex: 1, borderRadius: "0 16px 16px 0", overflow: "clip", border: "1px solid rgba(var(--accent-rgb),0.2)", borderLeft: "none" }}>
           <div style={{ background: "var(--bg2)", height: "100%", padding: "22px 20px 20px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(201,168,76,0.1)", paddingBottom: 10, marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(var(--accent-rgb),0.1)", paddingBottom: 10, marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                 <img src="/corvo-logo.svg" width={16} height={13} alt="" />
-                <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#c9a84c" }}>CORVO</span>
+                <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "var(--accent)" }}>CORVO</span>
               </div>
-              <span style={{ fontSize: 10, color: "#5cb88a", fontWeight: 700, background: "rgba(92,184,138,0.1)", border: "1px solid rgba(92,184,138,0.3)", padding: "2px 8px", borderRadius: 4 }}>$0/mo</span>
+              <span style={{ fontSize: 10, color: "var(--green)", fontWeight: 700, background: "rgba(92,184,138,0.1)", border: "1px solid rgba(92,184,138,0.3)", padding: "2px 8px", borderRadius: 4 }}>$0/mo</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 12 }}>
               {[
-                { l: "Price", v: "$260.14", c: "#e8e0cc" },
-                { l: "Health Score", v: "84 / 100", c: "#5cb88a" },
-                { l: "Sharpe Ratio", v: "1.42", c: "#c9a84c" },
-                { l: "Volatility", v: "18.3%", c: "#e8e0cc" },
+                { l: "Price", v: "$260.14", c: "var(--text)" },
+                { l: "Health Score", v: "84 / 100", c: "var(--green)" },
+                { l: "Sharpe Ratio", v: "1.42", c: "var(--accent)" },
+                { l: "Volatility", v: "18.3%", c: "var(--text)" },
               ].map((m, i) => (
                 <div key={i} style={{ background: "rgba(255,255,255,0.025)", borderRadius: 8, padding: "9px 11px" }}>
                   <p style={{ fontSize: 6.5, letterSpacing: 1.5, color: "rgba(232,224,204,0.28)", textTransform: "uppercase", marginBottom: 4 }}>{m.l}</p>
@@ -867,12 +867,12 @@ function VisualComparisonSection() {
             </div>
             <div style={{ background: "rgba(255,255,255,0.018)", borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
               <svg width="100%" height="36" viewBox="0 0 300 36" preserveAspectRatio="none">
-                <defs><linearGradient id="vsGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a84c" stopOpacity="0.2"/><stop offset="100%" stopColor="#c9a84c" stopOpacity="0"/></linearGradient></defs>
+                <defs><linearGradient id="vsGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--accent)" stopOpacity="0.2"/><stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/></linearGradient></defs>
                 <path d="M0,30 C50,26 100,20 150,14 C200,8 250,10 300,3 L300,36 L0,36Z" fill="url(#vsGrd)"/>
-                <path d="M0,30 C50,26 100,20 150,14 C200,8 250,10 300,3" fill="none" stroke="#c9a84c" strokeWidth="1.5"/>
+                <path d="M0,30 C50,26 100,20 150,14 C200,8 250,10 300,3" fill="none" stroke="var(--accent)" strokeWidth="1.5"/>
               </svg>
             </div>
-            <div style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 8, padding: "9px 12px", display: "flex", gap: 7, alignItems: "flex-start" }}>
+            <div style={{ background: "rgba(var(--accent-rgb),0.05)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: 8, padding: "9px 12px", display: "flex", gap: 7, alignItems: "flex-start" }}>
               <img src="/corvo-logo.svg" width={11} height={9} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
               <p style={{ fontSize: 10, color: "var(--text2)", lineHeight: 1.6 }}>Strong cash flow and buyback program supports price stability.</p>
             </div>
@@ -887,24 +887,24 @@ function VisualComparisonSection() {
 /* ─── How It Works icons ─── */
 const HowIconSearch = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="7.5" stroke="rgba(201,168,76,0.85)" strokeWidth="1.5"/>
-    <line x1="12" y1="9" x2="12" y2="15" stroke="rgba(201,168,76,0.85)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="9" y1="12" x2="15" y2="12" stroke="rgba(201,168,76,0.85)" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="17.8" y1="17.8" x2="23" y2="23" stroke="rgba(201,168,76,0.85)" strokeWidth="1.5" strokeLinecap="round"/>
+    <circle cx="12" cy="12" r="7.5" stroke="rgba(var(--accent-rgb),0.85)" strokeWidth="1.5"/>
+    <line x1="12" y1="9" x2="12" y2="15" stroke="rgba(var(--accent-rgb),0.85)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="9" y1="12" x2="15" y2="12" stroke="rgba(var(--accent-rgb),0.85)" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="17.8" y1="17.8" x2="23" y2="23" stroke="rgba(var(--accent-rgb),0.85)" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 );
 const HowIconSparkle = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2.5 L15.6 12.4 L25.5 14 L15.6 15.6 L14 25.5 L12.4 15.6 L2.5 14 L12.4 12.4 Z" stroke="rgba(201,168,76,0.85)" strokeWidth="1.5" strokeLinejoin="round" fill="rgba(201,168,76,0.08)"/>
-    <circle cx="6.5" cy="6.5" r="1.2" fill="rgba(201,168,76,0.45)"/>
-    <circle cx="21.5" cy="21.5" r="1.2" fill="rgba(201,168,76,0.45)"/>
+    <path d="M14 2.5 L15.6 12.4 L25.5 14 L15.6 15.6 L14 25.5 L12.4 15.6 L2.5 14 L12.4 12.4 Z" stroke="rgba(var(--accent-rgb),0.85)" strokeWidth="1.5" strokeLinejoin="round" fill="rgba(var(--accent-rgb),0.08)"/>
+    <circle cx="6.5" cy="6.5" r="1.2" fill="rgba(var(--accent-rgb),0.45)"/>
+    <circle cx="21.5" cy="21.5" r="1.2" fill="rgba(var(--accent-rgb),0.45)"/>
   </svg>
 );
 const HowIconTarget = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="14" cy="14" r="10.5" stroke="rgba(201,168,76,0.85)" strokeWidth="1.5"/>
-    <circle cx="14" cy="14" r="6" stroke="rgba(201,168,76,0.5)" strokeWidth="1.5"/>
-    <path d="M10.5 14 L13 16.5 L17.5 11.5" stroke="rgba(201,168,76,0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="14" cy="14" r="10.5" stroke="rgba(var(--accent-rgb),0.85)" strokeWidth="1.5"/>
+    <circle cx="14" cy="14" r="6" stroke="rgba(var(--accent-rgb),0.5)" strokeWidth="1.5"/>
+    <path d="M10.5 14 L13 16.5 L17.5 11.5" stroke="rgba(var(--accent-rgb),0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -920,8 +920,8 @@ function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon:
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ textAlign: "center", padding: "0 28px", position: "relative", zIndex: 1 }}
     >
-      <div style={{ width: 80, height: 80, borderRadius: 22, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.22)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 0 40px rgba(201,168,76,0.18), 0 0 80px rgba(201,168,76,0.08)" }}>{icon}</div>
-      <p style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, color: "rgba(201,168,76,0.4)", letterSpacing: 2, marginBottom: 12 }}>{n}</p>
+      <div style={{ width: 80, height: 80, borderRadius: 22, background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.22)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 0 40px rgba(var(--accent-rgb),0.18), 0 0 80px rgba(var(--accent-rgb),0.08)" }}>{icon}</div>
+      <p style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, color: "rgba(var(--accent-rgb),0.4)", letterSpacing: 2, marginBottom: 12 }}>{n}</p>
       <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 10, letterSpacing: -0.4 }}>{title}</h3>
       <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 230, margin: "0 auto" }}>{desc}</p>
     </motion.div>
@@ -942,7 +942,7 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
       <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
       <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, flex: 1 }}>{text}</p>
       <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{name}</p>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}>{name}</p>
         <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{role}</p>
       </div>
     </motion.div>
@@ -993,19 +993,19 @@ function MobileTestimonialCarousel() {
         <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
         <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24 }}>{card.text}</p>
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#c9a84c" }}>{card.name}</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}>{card.name}</p>
           <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{card.role}</p>
         </div>
       </div>
-      <button onClick={prev} aria-label="Previous testimonial" style={{ position: "absolute", left: -2, top: "45%", transform: "translateY(-50%)", background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      <button onClick={prev} aria-label="Previous testimonial" style={{ position: "absolute", left: -2, top: "45%", transform: "translateY(-50%)", background: "rgba(var(--accent-rgb),0.12)", border: "1px solid rgba(var(--accent-rgb),0.3)", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </button>
-      <button onClick={next} aria-label="Next testimonial" style={{ position: "absolute", right: -2, top: "45%", transform: "translateY(-50%)", background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      <button onClick={next} aria-label="Next testimonial" style={{ position: "absolute", right: -2, top: "45%", transform: "translateY(-50%)", background: "rgba(var(--accent-rgb),0.12)", border: "1px solid rgba(var(--accent-rgb),0.3)", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </button>
       <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 20 }}>
         {MOBILE_TESTIMONIALS.map((_, i) => (
-          <button key={i} onClick={() => { setIdx(i); pauseAndResume(); }} aria-label={`Go to testimonial ${i + 1}`} style={{ width: i === idx ? 20 : 8, height: 8, borderRadius: 4, background: i === idx ? "#c9a84c" : "rgba(201,168,76,0.25)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.3s ease" }} />
+          <button key={i} onClick={() => { setIdx(i); pauseAndResume(); }} aria-label={`Go to testimonial ${i + 1}`} style={{ width: i === idx ? 20 : 8, height: 8, borderRadius: 4, background: i === idx ? "var(--accent)" : "rgba(var(--accent-rgb),0.25)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.3s ease" }} />
         ))}
       </div>
     </div>
@@ -1077,15 +1077,15 @@ function TickerTape() {
   }, []);
   const doubled = [...items, ...items];
   return (
-    <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(201,168,76,0.07)", borderBottom: "1px solid rgba(201,168,76,0.07)", padding: "9px 0", overflow: "clip", background: "var(--bg)" }}>
+    <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(var(--accent-rgb),0.07)", borderBottom: "1px solid rgba(var(--accent-rgb),0.07)", padding: "9px 0", overflow: "clip", background: "var(--bg)" }}>
       <div style={{ display: "flex", gap: 48, animation: "ticker 30s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
         {doubled.map((item, i) => {
           const up = item.change_pct >= 0;
           return (
             <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11, fontFamily: "Space Mono,monospace" }}>
-              <span style={{ color: "#c9a84c", letterSpacing: 1 }}>{item.ticker}</span>
+              <span style={{ color: "var(--accent)", letterSpacing: 1 }}>{item.ticker}</span>
               <span style={{ color: "var(--text3)", letterSpacing: 0.5 }}>{item.price != null ? (item.price < 100 ? `$${item.price.toFixed(2)}` : `$${item.price.toLocaleString()}`) : "-"}</span>
-              <span style={{ color: up ? "#5cb88a" : "#e05c5c", fontWeight: 600 }}>{up ? "+" : ""}{item.change_pct != null ? item.change_pct.toFixed(2) : "-"}%</span>
+              <span style={{ color: up ? "var(--green)" : "var(--red)", fontWeight: 600 }}>{up ? "+" : ""}{item.change_pct != null ? item.change_pct.toFixed(2) : "-"}%</span>
             </span>
           );
         })}
@@ -1101,18 +1101,18 @@ function AnimatedHeroChart() {
       <svg style={{ width: "100%", height: "100%" }} viewBox="0 0 1200 280" preserveAspectRatio="none">
         <defs>
           <linearGradient id="heroChartFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.07" />
-            <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.07" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d="M0,248 C100,236 220,212 340,186 C460,160 560,132 680,104 C780,80 880,86 960,64 C1040,44 1110,28 1200,14 L1200,280 L0,280Z"
           fill="url(#heroChartFill)" />
         <path d="M0,248 C100,236 220,212 340,186 C460,160 560,132 680,104 C780,80 880,86 960,64 C1040,44 1110,28 1200,14"
-          fill="none" stroke="rgba(201,168,76,0.14)" strokeWidth="12" strokeLinecap="round"
+          fill="none" stroke="rgba(var(--accent-rgb),0.14)" strokeWidth="12" strokeLinecap="round"
           strokeDasharray="2900" strokeDashoffset="2900"
           style={{ animation: "drawChart 3s cubic-bezier(0.4,0,0.2,1) 0.4s forwards" }} />
         <path d="M0,248 C100,236 220,212 340,186 C460,160 560,132 680,104 C780,80 880,86 960,64 C1040,44 1110,28 1200,14"
-          fill="none" stroke="#c9a84c" strokeWidth="2" opacity="0.5"
+          fill="none" stroke="var(--accent)" strokeWidth="2" opacity="0.5"
           strokeDasharray="2900" strokeDashoffset="2900"
           style={{ animation: "drawChart 3s cubic-bezier(0.4,0,0.2,1) 0.4s forwards" }} />
       </svg>
@@ -1120,7 +1120,7 @@ function AnimatedHeroChart() {
         {["Jan", "Mar", "Jun", "Sep"].map(l => (
           <span key={l} style={{ fontSize: 9, fontFamily: "Space Mono, monospace", color: "rgba(232,224,204,0.18)", letterSpacing: 1 }}>{l}</span>
         ))}
-        <span style={{ fontSize: 9, fontFamily: "Space Mono, monospace", color: "rgba(201,168,76,0.45)", letterSpacing: 1 }}>Now</span>
+        <span style={{ fontSize: 9, fontFamily: "Space Mono, monospace", color: "rgba(var(--accent-rgb),0.45)", letterSpacing: 1 }}>Now</span>
       </div>
     </div>
   );
@@ -1130,9 +1130,9 @@ function AnimatedHeroChart() {
 function HeroMetricCard({ label, value, color, animDelay, style }: { label: string; value: string; color: string; animDelay?: string; style: React.CSSProperties }) {
   return (
     <div className="hero-metric-card" style={{
-      position: "absolute", background: "rgba(10,14,20,0.9)", border: "1px solid rgba(201,168,76,0.2)",
+      position: "absolute", background: "rgba(10,14,20,0.9)", border: "1px solid rgba(var(--accent-rgb),0.2)",
       borderRadius: 12, padding: "10px 14px", backdropFilter: "blur(16px)",
-      boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(201,168,76,0.05)", zIndex: 3,
+      boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(var(--accent-rgb),0.05)", zIndex: 3,
       animation: `float 6s ease-in-out ${animDelay ?? "0s"} infinite`,
       ...style,
     }}>
@@ -1172,15 +1172,15 @@ function DemoPreview() {
     "AI insight ready: high tech concentration detected",
   ];
   return (
-    <div data-theme="dark" style={{ background: "#080b10", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 16, overflow: "clip", boxShadow: "0 0 80px rgba(201,168,76,0.06), 0 32px 80px rgba(0,0,0,0.6)" }}>
+    <div data-theme="dark" style={{ background: "#080b10", border: "1px solid rgba(var(--accent-rgb),0.15)", borderRadius: 16, overflow: "clip", boxShadow: "0 0 80px rgba(var(--accent-rgb),0.06), 0 32px 80px rgba(0,0,0,0.6)" }}>
       {/* Terminal bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-        {["#e05c5c", "#c9a84c", "#5cb88a"].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.6 }} />)}
+        {["var(--red)", "var(--accent)", "var(--green)"].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.6 }} />)}
         <span style={{ fontSize: 9, color: "rgba(232,224,204,0.5)", marginLeft: 8, fontFamily: "Space Mono,monospace" }}>corvo.capital/app?demo=true</span>
       </div>
       {/* Metrics row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, padding: "16px 16px 8px" }}>
-        {[{ l: "Portfolio Return", v: "+18.4%", c: "#c9a84c" }, { l: "Health Score", v: "78/100", c: "#5cb88a" }, { l: "Risk Level", v: "Moderate", c: "#e8e0cc" }].map((m, i) => (
+        {[{ l: "Portfolio Return", v: "+18.4%", c: "var(--accent)" }, { l: "Health Score", v: "78/100", c: "var(--green)" }, { l: "Risk Level", v: "Moderate", c: "var(--text)" }].map((m, i) => (
           <div key={i} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 12px" }}>
             <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
             <p style={{ fontFamily: "Space Mono,monospace", fontSize: 14, fontWeight: 700, color: m.c }}>{m.v}</p>
@@ -1190,19 +1190,19 @@ function DemoPreview() {
       {/* Chart placeholder */}
       <div style={{ margin: "0 16px 8px", background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "12px", height: 72, display: "flex", alignItems: "flex-end" }}>
         <svg width="100%" height="52" viewBox="0 0 400 52" preserveAspectRatio="none">
-          <defs><linearGradient id="demoGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a84c" stopOpacity="0.18" /><stop offset="100%" stopColor="#c9a84c" stopOpacity="0" /></linearGradient></defs>
+          <defs><linearGradient id="demoGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--accent)" stopOpacity="0.18" /><stop offset="100%" stopColor="var(--accent)" stopOpacity="0" /></linearGradient></defs>
           <path d="M0,44 C55,40 110,31 180,19 C250,7 310,5 370,3 C385,3 395,4 400,2 L400,52 L0,52Z" fill="url(#demoGrd)" />
-          <path d="M0,44 C55,40 110,31 180,19 C250,7 310,5 370,3 C385,3 395,4 400,2" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+          <path d="M0,44 C55,40 110,31 180,19 C250,7 310,5 370,3 C385,3 395,4 400,2" fill="none" stroke="var(--accent)" strokeWidth="1.5" />
         </svg>
       </div>
       {/* AI terminal lines */}
-      <div style={{ margin: "0 16px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 10, padding: "12px 14px", fontFamily: "Space Mono,monospace", minHeight: 72 }}>
-        <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(201,168,76,0.5)", marginBottom: 8, textTransform: "uppercase" }}>AI Analysis</p>
+      <div style={{ margin: "0 16px 16px", background: "rgba(var(--accent-rgb),0.04)", border: "1px solid rgba(var(--accent-rgb),0.1)", borderRadius: 10, padding: "12px 14px", fontFamily: "Space Mono,monospace", minHeight: 72 }}>
+        <p style={{ fontSize: 8, letterSpacing: 2, color: "rgba(var(--accent-rgb),0.5)", marginBottom: 8, textTransform: "uppercase" }}>AI Analysis</p>
         {lines.slice(0, step + 1).map((l, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5, opacity: i === step ? 1 : 0.45, transition: "opacity 0.4s" }}>
-            <span style={{ color: "#c9a84c", fontSize: 8 }}>›</span>
+            <span style={{ color: "var(--accent)", fontSize: 8 }}>›</span>
             <span style={{ fontSize: 10, color: i === step ? "rgba(232,224,204,0.8)" : "rgba(232,224,204,0.4)" }}>{l}</span>
-            {i === step && <span style={{ display: "inline-block", width: 6, height: 12, background: "#c9a84c", animation: "pdot 1s infinite", marginLeft: 2 }} />}
+            {i === step && <span style={{ display: "inline-block", width: 6, height: 12, background: "var(--accent)", animation: "pdot 1s infinite", marginLeft: 2 }} />}
           </div>
         ))}
       </div>
@@ -1265,9 +1265,9 @@ function EmailPopupModal() {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.18)",
+          background: "var(--card-bg)", border: "1px solid rgba(var(--accent-rgb),0.18)",
           borderRadius: 20, padding: "40px 36px", width: "100%", maxWidth: 420,
-          position: "relative", boxShadow: "0 40px 120px rgba(0,0,0,0.8), 0 0 60px rgba(201,168,76,0.08)",
+          position: "relative", boxShadow: "0 40px 120px rgba(0,0,0,0.8), 0 0 60px rgba(var(--accent-rgb),0.08)",
         }}>
         {/* Close button */}
         <button
@@ -1285,7 +1285,7 @@ function EmailPopupModal() {
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
           <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, letterSpacing: 3, color: "#c9a84c" }}>CORVO</span>
+          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, letterSpacing: 3, color: "var(--accent)" }}>CORVO</span>
         </div>
 
         <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 8, lineHeight: 1.2 }}>
@@ -1297,8 +1297,8 @@ function EmailPopupModal() {
 
         {status === "done" ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", background: "rgba(76,175,125,0.08)", border: "1px solid rgba(76,175,125,0.2)", borderRadius: 10 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5cb88a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            <span style={{ fontSize: 14, color: "#5cb88a", fontWeight: 500 }}>{"You're on the list!"}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span style={{ fontSize: 14, color: "var(--green)", fontWeight: 500 }}>{"You're on the list!"}</span>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1314,7 +1314,7 @@ function EmailPopupModal() {
                 color: "var(--text)", fontSize: 14, outline: "none",
                 transition: "border-color 0.2s",
               }}
-              onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
+              onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.4)")}
               onBlur={e => (e.target.style.borderColor = "var(--border)")}
             />
             <button
@@ -1322,14 +1322,14 @@ function EmailPopupModal() {
               disabled={status === "loading"}
               className="cta-shimmer"
               style={{
-                padding: "13px", background: "#c9a84c", border: "none",
-                borderRadius: 10, color: "#0a0e14", fontSize: 14, fontWeight: 700,
+                padding: "13px", background: "var(--accent)", border: "none",
+                borderRadius: 10, color: "var(--bg)", fontSize: 14, fontWeight: 700,
                 cursor: status === "loading" ? "wait" : "pointer",
                 letterSpacing: 0.3,
               }}>
               {status === "loading" ? "Subscribing..." : "Subscribe"}
             </button>
-            {status === "error" && <p style={{ fontSize: 12, color: "#e05c5c", margin: 0 }}>Something went wrong. Try again.</p>}
+            {status === "error" && <p style={{ fontSize: 12, color: "var(--red)", margin: 0 }}>Something went wrong. Try again.</p>}
           </div>
         )}
 
@@ -1360,7 +1360,7 @@ function EmailCaptureBottom() {
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
           <img src="/corvo-logo.svg" width={36} height={36} alt="Corvo" style={{ opacity: 0.7 }} />
         </div>
-        <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Stay Ahead</p>
+        <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 16 }}>Stay Ahead</p>
         <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,40px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 12, lineHeight: 1.2 }}>
           Your edge starts here
         </h2>
@@ -1369,22 +1369,22 @@ function EmailCaptureBottom() {
         </p>
         {status === "done" ? (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.25)", borderRadius: 12, padding: "18px 32px" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5cb88a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            <span style={{ fontSize: 15, color: "#5cb88a", fontWeight: 500 }}>{"You're on the list!"}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span style={{ fontSize: 15, color: "var(--green)", fontWeight: 500 }}>{"You're on the list!"}</span>
           </div>
         ) : (
           <div className="email-cap-row" style={{ display: "flex", gap: 10, maxWidth: 480, margin: "0 auto" }}>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="your@email.com"
               style={{ flex: 1, minWidth: 0, padding: "15px 20px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
-              onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
+              onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.4)")}
               onBlur={e => (e.target.style.borderColor = "var(--border)")} />
             <button onClick={submit} disabled={status === "loading"} className="cta-shimmer"
-              style={{ padding: "15px 28px", background: "#c9a84c", border: "none", borderRadius: 12, color: "#0a0e14", fontSize: 14, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, minHeight: 44 }}>
+              style={{ padding: "15px 28px", background: "var(--accent)", border: "none", borderRadius: 12, color: "var(--bg)", fontSize: 14, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, minHeight: 44 }}>
               {status === "loading" ? "..." : "Subscribe Free"}
             </button>
           </div>
         )}
-        {status === "error" && <p style={{ fontSize: 12, color: "#e05c5c", marginTop: 12 }}>Something went wrong. Try again.</p>}
+        {status === "error" && <p style={{ fontSize: 12, color: "var(--red)", marginTop: 12 }}>Something went wrong. Try again.</p>}
         <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 18 }}>No spam. Unsubscribe at any time.</p>
       </div>
       </FadeUp>
@@ -1399,9 +1399,9 @@ function FeaturedInBar() {
       name: "Hacker News",
       icon: (
         <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="20" r="19" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.2)" strokeWidth="1"/>
-          <path d="M12 12l8 12 8-12" stroke="#c9a84c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.85"/>
-          <line x1="20" y1="24" x2="20" y2="30" stroke="#c9a84c" strokeWidth="2.2" strokeLinecap="round" opacity="0.85"/>
+          <circle cx="20" cy="20" r="19" fill="rgba(var(--accent-rgb),0.08)" stroke="rgba(var(--accent-rgb),0.2)" strokeWidth="1"/>
+          <path d="M12 12l8 12 8-12" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.85"/>
+          <line x1="20" y1="24" x2="20" y2="30" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" opacity="0.85"/>
         </svg>
       ),
     },
@@ -1409,13 +1409,13 @@ function FeaturedInBar() {
       name: "Reddit",
       icon: (
         <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="20" r="19" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.2)" strokeWidth="1"/>
-          <circle cx="20" cy="21" r="7" stroke="#c9a84c" strokeWidth="1.8" opacity="0.85"/>
-          <circle cx="14.5" cy="19.5" r="1.8" fill="#c9a84c" opacity="0.85"/>
-          <circle cx="25.5" cy="19.5" r="1.8" fill="#c9a84c" opacity="0.85"/>
-          <path d="M16.5 24.5c1 1 6 1 7 0" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" opacity="0.85"/>
-          <circle cx="26" cy="12" r="2" fill="#c9a84c" opacity="0.7"/>
-          <path d="M20 14.5L25 12.5" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+          <circle cx="20" cy="20" r="19" fill="rgba(var(--accent-rgb),0.08)" stroke="rgba(var(--accent-rgb),0.2)" strokeWidth="1"/>
+          <circle cx="20" cy="21" r="7" stroke="var(--accent)" strokeWidth="1.8" opacity="0.85"/>
+          <circle cx="14.5" cy="19.5" r="1.8" fill="var(--accent)" opacity="0.85"/>
+          <circle cx="25.5" cy="19.5" r="1.8" fill="var(--accent)" opacity="0.85"/>
+          <path d="M16.5 24.5c1 1 6 1 7 0" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" opacity="0.85"/>
+          <circle cx="26" cy="12" r="2" fill="var(--accent)" opacity="0.7"/>
+          <path d="M20 14.5L25 12.5" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
         </svg>
       ),
     },
@@ -1423,20 +1423,20 @@ function FeaturedInBar() {
       name: "LinkedIn",
       icon: (
         <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="20" r="19" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.2)" strokeWidth="1"/>
-          <rect x="11" y="17" width="4" height="12" rx="1" fill="#c9a84c" opacity="0.85"/>
-          <circle cx="13" cy="13" r="2.2" fill="#c9a84c" opacity="0.85"/>
-          <rect x="18" y="17" width="4" height="12" rx="1" fill="#c9a84c" opacity="0.85"/>
-          <path d="M22 21c0-2.5 6-3 6 1v7h-4v-7c0-0.8-0.5-1.5-2-1z" fill="#c9a84c" opacity="0.85"/>
+          <circle cx="20" cy="20" r="19" fill="rgba(var(--accent-rgb),0.08)" stroke="rgba(var(--accent-rgb),0.2)" strokeWidth="1"/>
+          <rect x="11" y="17" width="4" height="12" rx="1" fill="var(--accent)" opacity="0.85"/>
+          <circle cx="13" cy="13" r="2.2" fill="var(--accent)" opacity="0.85"/>
+          <rect x="18" y="17" width="4" height="12" rx="1" fill="var(--accent)" opacity="0.85"/>
+          <path d="M22 21c0-2.5 6-3 6 1v7h-4v-7c0-0.8-0.5-1.5-2-1z" fill="var(--accent)" opacity="0.85"/>
         </svg>
       ),
     },
   ];
   return (
-    <FadeUp className="featured-bar" style={{ position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(201,168,76,0.07)" }}>
+    <FadeUp className="featured-bar" style={{ position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(var(--accent-rgb),0.07)" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
         <span style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", flexShrink: 0 }}>As Seen On</span>
-        <div style={{ width: 1, height: 20, background: "rgba(201,168,76,0.1)", flexShrink: 0 }} />
+        <div style={{ width: 1, height: 20, background: "rgba(var(--accent-rgb),0.1)", flexShrink: 0 }} />
         {platforms.map((p, i) => (
           <motion.div
             key={i}
@@ -1465,7 +1465,7 @@ function SparklineChart({ prices, positive }: { prices: number[]; positive: bool
     const y = h - ((p - min) / range) * h * 0.85 - h * 0.075;
     return `${x},${y}`;
   }).join(" ");
-  const color = positive ? "#5cb88a" : "#e05c5c";
+  const color = positive ? "var(--green)" : "var(--red)";
   const fillId = `sf-${positive ? "g" : "r"}`;
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ flexShrink: 0 }}>
@@ -1506,22 +1506,22 @@ function GrowthCalculatorSection() {
     <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
         <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Portfolio Calculator</p>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 16 }}>Portfolio Calculator</p>
           <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 12 }}>See your money grow</h2>
           <p style={{ fontSize: 15, color: "var(--text2)", fontWeight: 300 }}>Adjust the inputs and watch your portfolio project forward</p>
         </Reveal>
 
-        <div style={{ background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 20, padding: "40px 48px", boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}>
+        <div style={{ background: "var(--card-bg)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: 20, padding: "40px 48px", boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}>
           {/* Sliders */}
           <div className="calc-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, marginBottom: 44 }}>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
                 <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Starting Portfolio</p>
-                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -0.5 }}>${principal.toLocaleString()}</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5 }}>${principal.toLocaleString()}</p>
               </div>
               <input type="range" min={1000} max={500000} step={1000} value={principal}
                 onChange={e => setPrincipal(Number(e.target.value))}
-                style={{ width: "100%", accentColor: "#c9a84c", cursor: "pointer", height: 4 }} />
+                style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer", height: 4 }} />
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
                 <span style={{ fontSize: 9, color: "var(--text3)" }}>$1K</span>
                 <span style={{ fontSize: 9, color: "var(--text3)" }}>$500K</span>
@@ -1530,11 +1530,11 @@ function GrowthCalculatorSection() {
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
                 <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Monthly Contribution</p>
-                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "#c9a84c", letterSpacing: -0.5 }}>${monthly.toLocaleString()}</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5 }}>${monthly.toLocaleString()}</p>
               </div>
               <input type="range" min={0} max={5000} step={50} value={monthly}
                 onChange={e => setMonthly(Number(e.target.value))}
-                style={{ width: "100%", accentColor: "#c9a84c", cursor: "pointer", height: 4 }} />
+                style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer", height: 4 }} />
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
                 <span style={{ fontSize: 9, color: "var(--text3)" }}>$0</span>
                 <span style={{ fontSize: 9, color: "var(--text3)" }}>$5K/mo</span>
@@ -1548,9 +1548,9 @@ function GrowthCalculatorSection() {
               { label: "10-Year Projection", value: fmt(project(10)), sublabel: "at 8% avg annual return" },
               { label: "30-Year Projection", value: fmt(project(30)), sublabel: "at 8% avg annual return" },
             ].map(({ label, value, sublabel }) => (
-              <div key={label} style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 12, padding: "20px 24px" }}>
+              <div key={label} style={{ background: "rgba(var(--accent-rgb),0.05)", border: "1px solid rgba(var(--accent-rgb),0.15)", borderRadius: 12, padding: "20px 24px" }}>
                 <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 8 }}>{label}</p>
-                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "#c9a84c", letterSpacing: -1, marginBottom: 4 }}>{value}</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "var(--accent)", letterSpacing: -1, marginBottom: 4 }}>{value}</p>
                 <p style={{ fontSize: 10, color: "var(--text3)" }}>{sublabel}</p>
               </div>
             ))}
@@ -1563,15 +1563,15 @@ function GrowthCalculatorSection() {
                 const pct = (values[i] / maxVal) * 100;
                 return (
                   <div key={yr} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                    <p style={{ fontSize: 9, fontFamily: "Space Mono,monospace", color: "#c9a84c", letterSpacing: -0.3 }}>{fmt(values[i])}</p>
+                    <p style={{ fontSize: 9, fontFamily: "Space Mono,monospace", color: "var(--accent)", letterSpacing: -0.3 }}>{fmt(values[i])}</p>
                     <div style={{ width: "100%", position: "relative", height: 80 }}>
                       <div style={{
                         position: "absolute", bottom: 0, left: 0, right: 0,
                         height: `${pct}%`,
-                        background: `linear-gradient(to top, rgba(201,168,76,0.7), rgba(201,168,76,0.2))`,
+                        background: `linear-gradient(to top, rgba(var(--accent-rgb),0.7), rgba(var(--accent-rgb),0.2))`,
                         borderRadius: "6px 6px 2px 2px",
                         transition: "height 0.5s cubic-bezier(0.16,1,0.3,1)",
-                        boxShadow: "0 0 16px rgba(201,168,76,0.15)",
+                        boxShadow: "0 0 16px rgba(var(--accent-rgb),0.15)",
                       }} />
                     </div>
                     <p style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>{yr}yr</p>
@@ -1586,7 +1586,7 @@ function GrowthCalculatorSection() {
             These are estimates based on historical S&amp;P 500 average returns. Corvo runs 8,500 Monte Carlo simulations for your actual portfolio.
           </p>
           <div style={{ textAlign: "center" as const }}>
-            <Link href="/app" className="cta cta-shimmer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 32px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", letterSpacing: 0.2 }}>
+            <Link href="/app" className="cta cta-shimmer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 32px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "var(--accent)", color: "var(--bg)", textDecoration: "none", letterSpacing: 0.2 }}>
               Run real Monte Carlo on my portfolio →
             </Link>
           </div>
@@ -1607,7 +1607,7 @@ function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title:
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 18, padding: "32px 28px", display: "flex", flexDirection: "column", gap: 16 }}
     >
-      <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.18)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(201,168,76,0.1)" }}>
+      <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.18)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(var(--accent-rgb),0.1)" }}>
         {icon}
       </div>
       <div>
@@ -1624,9 +1624,9 @@ function SecurityTrustSection() {
     {
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <rect x="5" y="11" width="14" height="10" rx="2" stroke="#c9a84c" strokeWidth="1.5"/>
-          <path d="M8 11V7a4 4 0 018 0v4" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round"/>
-          <circle cx="12" cy="16" r="1.5" fill="#c9a84c"/>
+          <rect x="5" y="11" width="14" height="10" rx="2" stroke="var(--accent)" strokeWidth="1.5"/>
+          <path d="M8 11V7a4 4 0 018 0v4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="12" cy="16" r="1.5" fill="var(--accent)"/>
         </svg>
       ),
       title: "End-to-end encryption",
@@ -1635,8 +1635,8 @@ function SecurityTrustSection() {
     {
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M12 3L4 7v5c0 4.4 3.4 8.5 8 9.5C17.6 20.5 21 16.4 21 12V7L12 3z" stroke="#c9a84c" strokeWidth="1.5" strokeLinejoin="round"/>
-          <path d="M9 12l2 2 4-4" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M12 3L4 7v5c0 4.4 3.4 8.5 8 9.5C17.6 20.5 21 16.4 21 12V7L12 3z" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round"/>
+          <path d="M9 12l2 2 4-4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ),
       title: "Never sold or shared",
@@ -1645,9 +1645,9 @@ function SecurityTrustSection() {
     {
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <rect x="2" y="6" width="20" height="13" rx="2" stroke="#c9a84c" strokeWidth="1.5"/>
-          <path d="M2 10h20" stroke="#c9a84c" strokeWidth="1.5"/>
-          <rect x="5" y="13" width="4" height="2" rx="0.5" fill="#c9a84c" opacity="0.7"/>
+          <rect x="2" y="6" width="20" height="13" rx="2" stroke="var(--accent)" strokeWidth="1.5"/>
+          <path d="M2 10h20" stroke="var(--accent)" strokeWidth="1.5"/>
+          <rect x="5" y="13" width="4" height="2" rx="0.5" fill="var(--accent)" opacity="0.7"/>
         </svg>
       ),
       title: "No credit card required",
@@ -1656,8 +1656,8 @@ function SecurityTrustSection() {
     {
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="#c9a84c" strokeWidth="1.5"/>
-          <path d="M8.5 12l2.5 2.5 4.5-4.5" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="12" cy="12" r="9" stroke="var(--accent)" strokeWidth="1.5"/>
+          <path d="M8.5 12l2.5 2.5 4.5-4.5" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ),
       title: "Cancel anytime",
@@ -1668,7 +1668,7 @@ function SecurityTrustSection() {
     <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Security & Trust</p>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 16 }}>Security & Trust</p>
           <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>Your data, protected</h2>
         </Reveal>
         <div className="trust-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
@@ -1812,21 +1812,21 @@ export default function Landing() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
-        ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:2px}
+        ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(var(--accent-rgb),0.2);border-radius:2px}
         @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
         @keyframes pdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.25;transform:scale(0.45)}}
         @keyframes fadein{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes heroGrad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
         @keyframes lineGrow{from{width:0}to{width:100%}}
-        @keyframes amberPulse{0%,100%{box-shadow:0 0 24px rgba(201,168,76,0.3),0 12px 40px rgba(201,168,76,0.15)}50%{box-shadow:0 0 48px rgba(201,168,76,0.5),0 16px 60px rgba(201,168,76,0.25)}}
+        @keyframes amberPulse{0%,100%{box-shadow:0 0 24px rgba(var(--accent-rgb),0.3),0 12px 40px rgba(var(--accent-rgb),0.15)}50%{box-shadow:0 0 48px rgba(var(--accent-rgb),0.5),0 16px 60px rgba(var(--accent-rgb),0.25)}}
         @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
         @keyframes drawChart{to{stroke-dashoffset:0}}
         @keyframes skeletonPulse{0%,100%{opacity:0.4}50%{opacity:0.9}}
         @keyframes drawLoopLine{0%,3%{stroke-dashoffset:1}65%,87%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
         @keyframes xpLoop{0%,5%{width:0%}55%,82%{width:72%}92%,100%{width:0%}}
-        .cta{transition:all 0.25s!important}.cta:hover{background:#d4b558!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(201,168,76,0.25)!important}
-        .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(201,168,76,0.4)!important;color:#c9a84c!important}
+        .cta{transition:all 0.25s!important}.cta:hover{background:var(--accent)!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(var(--accent-rgb),0.25)!important}
+        .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(var(--accent-rgb),0.4)!important;color:var(--accent)!important}
         .nl:hover{color:var(--accent)!important}
         .demo-btn{animation:amberPulse 3s ease-in-out infinite}
         @media(max-width:900px){
@@ -1859,7 +1859,7 @@ export default function Landing() {
           .vs-panels>*:nth-child(1){border-radius:16px 16px 0 0!important;border-right:1px solid rgba(0,200,0,0.15)!important}
           .vs-panels>*:nth-child(2){width:100%!important;height:44px!important;flex-direction:row!important}
           .vs-panels>*:nth-child(2)>div:first-child,.vs-panels>*:nth-child(2)>div:last-child{width:auto!important;flex:1!important;height:1px!important}
-          .vs-panels>*:nth-child(3){border-radius:0 0 16px 16px!important;border-left:1px solid rgba(201,168,76,0.2)!important}
+          .vs-panels>*:nth-child(3){border-radius:0 0 16px 16px!important;border-left:1px solid rgba(var(--accent-rgb),0.2)!important}
           .calc-grid{grid-template-columns:1fr!important;gap:24px!important}
           .email-cap-row{flex-direction:column!important}
           .demo-inner{padding:32px 20px!important;gap:32px!important}
@@ -1874,10 +1874,10 @@ export default function Landing() {
           .hero-btns>*{width:100%!important;max-width:360px!important}
           .trust-grid{grid-template-columns:1fr!important}
         }
-        .x-social-link:hover{color:#c9a84c!important}
+        .x-social-link:hover{color:var(--accent)!important}
         .mobile-desktop-banner{display:none!important}
         @media(max-width:767px){
-          .mobile-desktop-banner{display:flex!important;align-items:center;gap:8px;background:var(--bg2);border-bottom:1px solid rgba(201,168,76,0.12);padding:7px 14px;position:relative;z-index:200}
+          .mobile-desktop-banner{display:flex!important;align-items:center;gap:8px;background:var(--bg2);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:7px 14px;position:relative;z-index:200}
         }
       `}</style>
 
@@ -1886,7 +1886,7 @@ export default function Landing() {
 
       {/* Fixed grid bg */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.025) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.025) 1px, transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(var(--accent-rgb),0.025) 1px, transparent 1px),linear-gradient(90deg, rgba(var(--accent-rgb),0.025) 1px, transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none" }} />
       </div>
       {/* NAV */}
       <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "var(--bg)" : "color-mix(in srgb, var(--bg) 60%, transparent)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
@@ -1932,15 +1932,15 @@ export default function Landing() {
           </button>
           {loggedIn ? (
             <div style={{ position: "relative" }}>
-              <button id="user-menu-btn" onClick={e => { e.stopPropagation(); setUserMenuOpen(v => !v); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)")} onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
+              <button id="user-menu-btn" onClick={e => { e.stopPropagation(); setUserMenuOpen(v => !v); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(var(--accent-rgb),0.3)")} onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
                 {userProfile?.avatarUrl ? (
                   <img src={userProfile.avatarUrl} alt="" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" as const }} />
                 ) : (
-                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#c9a84c" }}>{userProfile?.initials ?? "?"}</div>
+                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--accent-rgb),0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent)" }}>{userProfile?.initials ?? "?"}</div>
                 )}
                 <span className="nav-user-name" style={{ fontSize: 12, color: "var(--text2)", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{userProfile?.displayName}</span>
                 <span className="nav-user-name-mobile" style={{ display: "none", fontSize: 12, color: "var(--text2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{userProfile?.displayName?.split(" ")[0] || "Account"}</span>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.4, flexShrink: 0 }}><path d="M2 3.5L5 6.5L8 3.5" stroke="#e8e0cc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.4, flexShrink: 0 }}><path d="M2 3.5L5 6.5L8 3.5" stroke="var(--text)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
               {userMenuOpen && (
                 <div id="user-menu-dropdown" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, minWidth: 182, background: "var(--card-bg)", border: "1px solid var(--border2)", borderRadius: 12, padding: "6px", backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", zIndex: 200 }}>
@@ -2012,7 +2012,7 @@ export default function Landing() {
           ) : (
             <div className="nav-auth-desktop" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <Link href="/auth" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Sign In</Link>
-              <Link href="/auth?mode=signup" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "#c9a84c", borderRadius: 8, color: "#0a0e14", textDecoration: "none" }}>Get Started Free</Link>
+              <Link href="/auth?mode=signup" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "var(--accent)", borderRadius: 8, color: "var(--bg)", textDecoration: "none" }}>Get Started Free</Link>
             </div>
           )}
           {/* Hamburger */}
@@ -2047,11 +2047,11 @@ export default function Landing() {
           )}
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             {loggedIn ? (
-              <Link href="/app" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 10 }}>Go to App</Link>
+              <Link href="/app" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Go to App</Link>
             ) : (
               <>
                 <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Sign In</Link>
-                <Link href="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "#0a0e14", textDecoration: "none", background: "#c9a84c", borderRadius: 10 }}>Get Started Free</Link>
+                <Link href="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Get Started Free</Link>
               </>
             )}
           </div>
@@ -2061,9 +2061,9 @@ export default function Landing() {
       {/* HERO */}
       <section style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "110px 24px 70px" }}>
         <AnimatedHeroChart />
-        <div style={{ position: "relative", zIndex: 1, animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.4)", borderRadius: 24, marginBottom: 36, background: "rgba(201,168,76,0.08)" }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
-          <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>AI-Powered Portfolio Intelligence</span>
+        <div style={{ position: "relative", zIndex: 1, animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(var(--accent-rgb),0.4)", borderRadius: 24, marginBottom: 36, background: "rgba(var(--accent-rgb),0.08)" }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
+          <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>AI-Powered Portfolio Intelligence</span>
         </div>
 
         <motion.h1
@@ -2080,7 +2080,7 @@ export default function Landing() {
                 style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
             ))}
           </span>
-          <span style={{ display: "block", color: "#c9a84c", position: "relative" }}>
+          <span style={{ display: "block", color: "var(--accent)", position: "relative" }}>
             {["better", "than", "a", "pie", "chart."].map((w, i) => (
               <motion.span
                 // initial={false} is required — do not remove
@@ -2088,7 +2088,7 @@ export default function Landing() {
                 key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
                 style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
             ))}
-            <span style={{ position: "absolute", bottom: 2, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(201,168,76,0.35), transparent)" }} />
+            <span style={{ position: "absolute", bottom: 2, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.35), transparent)" }} />
           </span>
         </motion.h1>
 
@@ -2106,27 +2106,27 @@ export default function Landing() {
           className="hero-btns"
           style={{ display: "flex", gap: 12, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
           {loggedIn ? (
-            <Link href="/app" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Go to Dashboard →</Link>
+            <Link href="/app" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>Go to Dashboard →</Link>
           ) : (
-            <Link href="/auth?mode=signup" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "#c9a84c", color: "#0a0e14", textDecoration: "none" }}>Start for free →</Link>
+            <Link href="/auth?mode=signup" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>Start for free →</Link>
           )}
         </motion.div>
 
         {/* Dashboard preview */}
         <div style={{ animation: "fadein 1s cubic-bezier(0.16,1,0.3,1) 0.8s both, float 7s ease-in-out 2.5s infinite", width: "min(920px,92vw)", position: "relative" }}>
-          <HeroMetricCard label="Portfolio Return" value="+41.3%" color="#5cb88a" animDelay="0s" style={{ top: 40, left: "-4%", zIndex: 4 }} />
-          <HeroMetricCard label="Sharpe Ratio" value="1.92" color="#c9a84c" animDelay="1.2s" style={{ top: 40, right: "-4%", zIndex: 4 }} />
+          <HeroMetricCard label="Portfolio Return" value="+41.3%" color="var(--green)" animDelay="0s" style={{ top: 40, left: "-4%", zIndex: 4 }} />
+          <HeroMetricCard label="Sharpe Ratio" value="1.92" color="var(--accent)" animDelay="1.2s" style={{ top: 40, right: "-4%", zIndex: 4 }} />
           <HeroMetricCard label="Health Score" value="78 / 100" color="#8eb4c8" animDelay="0.6s" style={{ bottom: 80, right: "-4%", zIndex: 4 }} />
-          <div data-theme="dark" style={{ background: "#0a0e14", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 16, overflow: "clip", boxShadow: "0 48px 128px rgba(0,0,0,0.7), inset 0 1px 0 rgba(201,168,76,0.08)", display: "flex" }}>
+          <div data-theme="dark" style={{ background: "var(--bg)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: 16, overflow: "clip", boxShadow: "0 48px 128px rgba(0,0,0,0.7), inset 0 1px 0 rgba(var(--accent-rgb),0.08)", display: "flex" }}>
             <div className="hero-preview-sidebar" style={{ width: 180, background: "#080b10", borderRight: "1px solid rgba(255,255,255,0.12)", padding: "16px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
               <div style={{ padding: "0 14px 14px", borderBottom: "1px solid rgba(255,255,255,0.1)", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                   <img src="/corvo-logo.svg" width={18} height={14} alt="Corvo" />
-                  <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#e8e0cc" }}>CORVO</span>
+                  <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "var(--text)" }}>CORVO</span>
                 </div>
               </div>
               {["◈  Overview", "◬  Risk", "◎  Simulate", "⊞  Compare", "◷  News", "◆  AI Chat"].map((t, i) => (
-                <div key={i} style={{ padding: "7px 14px", fontSize: 10, color: i === 0 ? "#c9a84c" : "rgba(232,224,204,0.6)", background: i === 0 ? "rgba(201,168,76,0.06)" : "transparent", borderLeft: i === 0 ? "2px solid #c9a84c" : "2px solid transparent" }}>{t}</div>
+                <div key={i} style={{ padding: "7px 14px", fontSize: 10, color: i === 0 ? "var(--accent)" : "rgba(232,224,204,0.6)", background: i === 0 ? "rgba(var(--accent-rgb),0.06)" : "transparent", borderLeft: i === 0 ? "2px solid var(--accent)" : "2px solid transparent" }}>{t}</div>
               ))}
               <div style={{ marginTop: "auto", padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
                 <div style={{ fontSize: 9, color: "rgba(232,224,204,0.5)", letterSpacing: 1 }}>AAPL · MSFT · NVDA</div>
@@ -2136,13 +2136,13 @@ export default function Landing() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <div style={{ display: "flex", gap: 6 }}>
                   {["Overview", "Risk", "Simulate", "Compare"].map((t, i) => (
-                    <div key={i} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 9, background: i === 0 ? "rgba(255,255,255,0.14)" : "transparent", color: i === 0 ? "#e8e0cc" : "rgba(232,224,204,0.6)", border: i === 0 ? "1px solid rgba(255,255,255,0.2)" : "1px solid transparent" }}>{t}</div>
+                    <div key={i} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 9, background: i === 0 ? "rgba(255,255,255,0.14)" : "transparent", color: i === 0 ? "var(--text)" : "rgba(232,224,204,0.6)", border: i === 0 ? "1px solid rgba(255,255,255,0.2)" : "1px solid transparent" }}>{t}</div>
                   ))}
                 </div>
-                <div style={{ fontSize: 9, color: "rgba(201,168,76,0.4)", fontFamily: "Space Mono,monospace" }}>1Y · S&amp;P 500</div>
+                <div style={{ fontSize: 9, color: "rgba(var(--accent-rgb),0.4)", fontFamily: "Space Mono,monospace" }}>1Y · S&amp;P 500</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 7, marginBottom: 10 }}>
-                {[{ l: "Return", v: "+18.4%", c: "#c9a84c" }, { l: "Volatility", v: "22.1%", c: "#e8e0cc" }, { l: "Sharpe", v: "0.66", c: "#e8e0cc" }, { l: "Drawdown", v: "-14.2%", c: "#e05c5c" }].map((m, i) => (
+                {[{ l: "Return", v: "+18.4%", c: "var(--accent)" }, { l: "Volatility", v: "22.1%", c: "var(--text)" }, { l: "Sharpe", v: "0.66", c: "var(--text)" }, { l: "Drawdown", v: "-14.2%", c: "var(--red)" }].map((m, i) => (
                   <div key={i} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "10px 10px 8px" }}>
                     <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.5)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
                     <p style={{ fontFamily: "Space Mono,monospace", fontSize: 15, fontWeight: 700, color: m.c, letterSpacing: -0.5 }}>{m.v}</p>
@@ -2153,28 +2153,28 @@ export default function Landing() {
                 <div style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 12px" }}>
                   <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.5)", textTransform: "uppercase", marginBottom: 6 }}>Performance vs S&amp;P 500</p>
                   <svg width="100%" height="52" viewBox="0 0 600 52" preserveAspectRatio="none">
-                    <defs><linearGradient id="grd2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a84c" stopOpacity="0.18" /><stop offset="100%" stopColor="#c9a84c" stopOpacity="0" /></linearGradient></defs>
+                    <defs><linearGradient id="grd2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--accent)" stopOpacity="0.18" /><stop offset="100%" stopColor="var(--accent)" stopOpacity="0" /></linearGradient></defs>
                     <path d="M0,44 C60,40 120,34 180,26 C240,18 300,14 360,11 C420,8 480,12 600,4 L600,52 L0,52Z" fill="url(#grd2)" />
-                    <path d="M0,44 C60,40 120,34 180,26 C240,18 300,14 360,11 C420,8 480,12 600,4" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+                    <path d="M0,44 C60,40 120,34 180,26 C240,18 300,14 360,11 C420,8 480,12 600,4" fill="none" stroke="var(--accent)" strokeWidth="1.5" />
                     <path d="M0,44 C80,42 160,39 240,35 C320,31 400,27 480,24 C540,22 570,25 600,20" fill="none" stroke="rgba(232,224,204,0.15)" strokeWidth="1" strokeDasharray="3 3" />
                   </svg>
                 </div>
                 <div style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 12px" }}>
                   <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.5)", textTransform: "uppercase", marginBottom: 8 }}>Health Score</p>
-                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "#c9a84c", letterSpacing: -2, lineHeight: 1 }}>78</p>
-                  <p style={{ fontSize: 8, color: "#5cb88a", letterSpacing: 1, marginTop: 3 }}>GOOD</p>
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "var(--accent)", letterSpacing: -2, lineHeight: 1 }}>78</p>
+                  <p style={{ fontSize: 8, color: "var(--green)", letterSpacing: 1, marginTop: 3 }}>GOOD</p>
                   <div style={{ marginTop: 8, height: 3, background: "rgba(255,255,255,0.14)", borderRadius: 2 }}>
-                    <div style={{ width: "78%", height: "100%", background: "#c9a84c", borderRadius: 2 }} />
+                    <div style={{ width: "78%", height: "100%", background: "var(--accent)", borderRadius: 2 }} />
                   </div>
                 </div>
               </div>
-              <div style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.14)", borderRadius: 8, padding: "9px 12px", display: "flex", alignItems: "flex-start", gap: 8 }}>
+              <div style={{ background: "rgba(var(--accent-rgb),0.05)", border: "1px solid rgba(var(--accent-rgb),0.14)", borderRadius: 8, padding: "9px 12px", display: "flex", alignItems: "flex-start", gap: 8 }}>
                 <img src="/corvo-logo.svg" width={14} height={11} alt="" style={{ marginTop: 2, opacity: 0.8 }} />
                 <p style={{ fontSize: 10, color: "rgba(232,224,204,0.85)", lineHeight: 1.55 }}>Your tech concentration is high at 67%. Consider adding BND or GLD to reduce correlation risk.</p>
               </div>
             </div>
           </div>
-          <div style={{ position: "absolute", bottom: -30, left: "25%", right: "25%", height: 50, background: "radial-gradient(ellipse, rgba(201,168,76,0.18) 0%, transparent 70%)", filter: "blur(16px)" }} />
+          <div style={{ position: "absolute", bottom: -30, left: "25%", right: "25%", height: 50, background: "radial-gradient(ellipse, rgba(var(--accent-rgb),0.18) 0%, transparent 70%)", filter: "blur(16px)" }} />
         </div>
       </section>
 
@@ -2183,7 +2183,7 @@ export default function Landing() {
 
       {/* ─── STATS BAR ─── */}
       <section style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ background: "var(--bg)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(201,168,76,0.08)", borderBottom: "1px solid rgba(201,168,76,0.08)" }}>
+        <div style={{ background: "var(--bg)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(var(--accent-rgb),0.08)", borderBottom: "1px solid rgba(var(--accent-rgb),0.08)" }}>
           <div className="stats-grid" style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
             <StatItem target={liveUserCount ?? 847} suffix="+" label="Active Users" delay={0} borderRight />
             <StatItem target={5500} suffix="+" label="Portfolios Analyzed" delay={0.1} borderRight />
@@ -2215,16 +2215,16 @@ export default function Landing() {
 
       {/* ─── INTERACTIVE DEMO CTA ─── */}
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", background: "var(--card-bg)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 24, overflow: "clip", position: "relative" }}>
-          <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(201,168,76,0.018) 1px, transparent 1px),linear-gradient(90deg, rgba(201,168,76,0.018) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", top: "-30%", right: "-10%", width: "50%", height: "150%", background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 60%)", pointerEvents: "none" }} />
+        <div style={{ maxWidth: 1100, margin: "0 auto", background: "var(--card-bg)", border: "1px solid rgba(var(--accent-rgb),0.1)", borderRadius: 24, overflow: "clip", position: "relative" }}>
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(var(--accent-rgb),0.018) 1px, transparent 1px),linear-gradient(90deg, rgba(var(--accent-rgb),0.018) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: "-30%", right: "-10%", width: "50%", height: "150%", background: "radial-gradient(ellipse, rgba(var(--accent-rgb),0.05) 0%, transparent 60%)", pointerEvents: "none" }} />
           <div className="demo-grid demo-inner" style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center", padding: "64px 56px" }}>
             <div>
               <Reveal>
-                <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 18 }}>Live Demo</p>
+                <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Live Demo</p>
                 <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(26px,3vw,40px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.15, marginBottom: 18 }}>See it in action.<br /><span style={{ whiteSpace: "nowrap" }}>No signup needed.</span></h2>
                 <p style={{ fontSize: 15, color: "var(--text2)", lineHeight: 1.8, fontWeight: 300, marginBottom: 36 }}>Explore a live portfolio with real market data. Ask the AI anything. Run Monte Carlo. All before you create an account.</p>
-                <Link href="/app?demo=true" className="demo-btn" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "16px 40px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "#c9a84c", color: "#0a0e14", textDecoration: "none", letterSpacing: 0.2 }}>
+                <Link href="/app?demo=true" className="demo-btn" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "16px 40px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "var(--accent)", color: "var(--bg)", textDecoration: "none", letterSpacing: 0.2 }}>
                   Try a live demo →
                 </Link>
                 <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 16 }}>No credit card · No account required</p>

@@ -2,7 +2,7 @@ export default function Loading() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#0a0e14",
+      background: "var(--bg)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -26,7 +26,7 @@ export default function Loading() {
         width: 22,
         height: 22,
         border: "2px solid rgba(201,168,76,0.15)",
-        borderTopColor: "#c9a84c",
+        borderTopColor: "var(--accent)",
         borderRadius: "50%",
         animation: "spin 0.75s linear infinite",
       }} />

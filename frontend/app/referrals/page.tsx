@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 type ReferralData = {
   referrals_count: number;
@@ -184,6 +186,8 @@ export default function ReferralsPage() {
     <div style={{ minHeight: "100vh", background: "transparent", color: "var(--text)", fontFamily: "Inter,sans-serif" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
+      <PublicNav />
+
       <header style={{ height: 52, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16, background: "var(--bg)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
         <button onClick={() => {
           window.history.length <= 1 ? router.push("/app") : router.back();
@@ -357,6 +361,8 @@ export default function ReferralsPage() {
           {toast}
         </div>
       )}
+
+      <PublicFooter />
     </div>
   );
 }
