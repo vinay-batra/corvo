@@ -45,6 +45,12 @@ function fmtRev(r: number): string {
   return `$${r.toFixed(0)}`;
 }
 
+function fmtDollars(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}K`;
+  return `$${Math.round(n)}`;
+}
+
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -58,7 +64,15 @@ function StatPill({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolean }) {
+function EarningsRow({
+  row,
+  previewLoading,
+  portfolioValue,
+}: {
+  row: Row;
+  previewLoading: boolean;
+  portfolioValue: number;
+}) {
   const [expanded, setExpanded] = useState(false);
   const { days, preview } = row;
 
@@ -72,8 +86,16 @@ function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolea
     : days <= 14 ? "var(--accent)"
     : "var(--text3)";
 
+  const exposure = portfolioValue > 0 && row.weight > 0
+    ? row.weight * portfolioValue
+    : null;
+
+  const moveAmt = exposure != null && preview?.implied_move_pct != null
+    ? exposure * (preview.implied_move_pct / 100)
+    : null;
+
   const hasExpanded = row.eps_estimate != null || row.revenue_estimate != null ||
-    row.weight > 0 || preview != null;
+    row.weight > 0 || preview != null || days <= 14;
 
   return (
     <div
@@ -100,8 +122,8 @@ function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolea
           cursor: hasExpanded ? "pointer" : "default",
         }}
       >
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
             <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>
               {row.ticker}
             </span>
@@ -114,6 +136,17 @@ function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolea
                 color: "var(--accent)", whiteSpace: "nowrap" as const,
               }}>
                 {(row.weight * 100).toFixed(1)}%
+              </span>
+            )}
+            {preview?.implied_move_pct != null && (
+              <span style={{
+                fontFamily: "Space Mono, monospace",
+                fontSize: 9, fontWeight: 700,
+                padding: "1px 6px", borderRadius: 8,
+                background: "rgba(76,175,125,0.10)", border: "0.5px solid rgba(76,175,125,0.25)",
+                color: "var(--green)", whiteSpace: "nowrap" as const,
+              }}>
+                +/-{preview.implied_move_pct.toFixed(1)}%
               </span>
             )}
           </div>
@@ -159,10 +192,10 @@ function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolea
               flexDirection: "column",
               gap: 14,
             }}>
-              {/* Stat pills row */}
+              {/* Stat pills */}
               <div style={{ display: "flex", gap: 20, flexWrap: "wrap" as const }}>
-                {row.weight > 0 && (
-                  <StatPill label="Your weight" value={`${(row.weight * 100).toFixed(1)}%`} />
+                {exposure != null && (
+                  <StatPill label="Your exposure" value={fmtDollars(exposure)} />
                 )}
                 {row.eps_estimate != null && (
                   <StatPill label="EPS Estimate" value={`$${row.eps_estimate.toFixed(2)}`} />
@@ -172,13 +205,13 @@ function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolea
                 )}
                 {preview?.implied_move_pct != null && (
                   <StatPill
-                    label={preview.implied_move_source === "options" ? "Implied Move (options)" : "Expected Move (IV)"}
-                    value={`+/-${preview.implied_move_pct.toFixed(1)}%`}
+                    label={preview.implied_move_source === "options" ? "Implied move (straddle)" : "Expected move (IV)"}
+                    value={`+/-${preview.implied_move_pct.toFixed(1)}%${moveAmt != null ? ` (~${fmtDollars(moveAmt)})` : ""}`}
                   />
                 )}
               </div>
 
-              {/* AI commentary */}
+              {/* Loading state */}
               {previewLoading && days <= 14 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{
@@ -191,6 +224,7 @@ function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolea
                 </div>
               )}
 
+              {/* AI commentary */}
               {!previewLoading && preview?.ai_commentary && (
                 <div style={{
                   padding: "10px 12px",
@@ -207,7 +241,15 @@ function EarningsRow({ row, previewLoading }: { row: Row; previewLoading: boolea
                 </div>
               )}
 
-              {!previewLoading && !preview && days <= 14 && (
+              {/* Earnings today — AI not yet available */}
+              {!previewLoading && days === 0 && !preview?.ai_commentary && (
+                <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
+                  Earnings are today. Check back after market close for AI analysis.
+                </p>
+              )}
+
+              {/* No preview for non-today upcoming */}
+              {!previewLoading && days > 0 && days <= 14 && !preview && (
                 <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
                   AI analysis not available for this ticker.
                 </p>
@@ -231,7 +273,13 @@ interface Asset {
   weight: number;
 }
 
-export default function EarningsCalendar({ assets }: { assets: Asset[] }) {
+export default function EarningsCalendar({
+  assets,
+  portfolioValue = 0,
+}: {
+  assets: Asset[];
+  portfolioValue?: number;
+}) {
   const [rows, setRows] = useState<Row[]>([]);
   const [previewLoading, setPreviewLoading] = useState(true);
   const [calLoading, setCalLoading] = useState(true);
@@ -261,7 +309,7 @@ export default function EarningsCalendar({ assets }: { assets: Asset[] }) {
       .catch(() => {})
       .finally(() => setCalLoading(false));
 
-    // Fetch preview (slower — has AI call) — enriches rows when ready
+    // Fetch preview (slower, has AI) — enriches rows when ready
     fetch(`${API_URL}/earnings-preview?tickers=${tickers}&weights=${weights}`)
       .then(r => r.json())
       .then((preview: (CalEntry & PreviewExtra)[]) => {
@@ -276,7 +324,6 @@ export default function EarningsCalendar({ assets }: { assets: Asset[] }) {
             ai_commentary: p.ai_commentary,
           };
         }
-        // Merge preview into existing rows; use preview weight where available
         setRows(prev => prev.map(r => ({
           ...r,
           weight: pMap[r.ticker]?.weight ?? r.weight,
@@ -314,11 +361,13 @@ export default function EarningsCalendar({ assets }: { assets: Asset[] }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4 }}>
-        Click any row to see your exposure and AI analysis.
-      </p>
       {rows.map(row => (
-        <EarningsRow key={row.ticker} row={row} previewLoading={previewLoading} />
+        <EarningsRow
+          key={row.ticker}
+          row={row}
+          previewLoading={previewLoading}
+          portfolioValue={portfolioValue}
+        />
       ))}
     </div>
   );

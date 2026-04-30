@@ -2211,7 +2211,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   {newsSubTab === "earnings" && (
                     <>
                       <TooltipCardHeader title="Earnings Calendar" sections={[{ label: "How it works", text: "Upcoming earnings dates for your holdings within the next 60 days. Click any row to see your portfolio weight, analyst estimates, options-implied expected move, and an AI note on what a beat or miss would mean for your position. Red border means earnings within 7 days." }]} />
-                      <EarningsCalendar assets={assets} />
+                      <EarningsCalendar assets={assets} portfolioValue={portfolioInputValue} />
                       <div style={{ marginTop: 16 }}>
                         <TooltipCardHeader title="Earnings Impact Preview" sections={[
                           { label: "Plain English", text: "For each holding with upcoming earnings, shows the options-implied expected move and an AI assessment of whether a beat or miss would meaningfully impact your portfolio given your current weighting." },
