@@ -84,7 +84,7 @@ export default function PortfolioCompareTab({ userId, period }: Props) {
   // Load saved portfolios from localStorage
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("corvo_saved_portfolios");
+      const raw = typeof window !== "undefined" ? localStorage.getItem("corvo_saved_portfolios") : null;
       if (raw) {
         const parsed = JSON.parse(raw);
         const portfolios: SavedPortfolio[] = (Array.isArray(parsed) ? parsed : [])

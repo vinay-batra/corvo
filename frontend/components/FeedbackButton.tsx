@@ -127,7 +127,7 @@ export default function FeedbackButton() {
                     initial={false} animate={{ opacity: 1, y: 0 }}
                     style={{ textAlign: "center", padding: "20px 0" }}>
                     <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(92,184,138,0.12)", border: "1px solid rgba(92,184,138,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5cb88a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </div>

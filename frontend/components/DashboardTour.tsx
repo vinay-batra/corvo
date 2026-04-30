@@ -394,7 +394,7 @@ export default function DashboardTour({ onComplete }: Props) {
   };
 
   const handleDone = () => {
-    localStorage.setItem(TOUR_KEY, "true");
+    if (typeof window !== "undefined") localStorage.setItem(TOUR_KEY, "true");
     onComplete();
   };
 

@@ -45,6 +45,7 @@ function computeHealth(data: any): number {
 
 export function saveHistorySnapshot(portfolioId: string, data: any) {
   try {
+    if (typeof window === "undefined") return;
     const key = HISTORY_KEY_PREFIX + portfolioId;
     const existing = JSON.parse(localStorage.getItem(key) || "[]");
     const snapshot = {
@@ -61,14 +62,15 @@ export function saveHistorySnapshot(portfolioId: string, data: any) {
 }
 
 export function loadHistory(portfolioId: string): any[] {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY_PREFIX + portfolioId) || "[]"); } catch { return []; }
+  try { if (typeof window === "undefined") return []; return JSON.parse(localStorage.getItem(HISTORY_KEY_PREFIX + portfolioId) || "[]"); } catch { return []; }
 }
 
 function loadLocal(): Portfolio[] {
-  try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+  try { if (typeof window === "undefined") return []; const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
 }
 function saveLocal(portfolios: Portfolio[]) {
   try {
+    if (typeof window === "undefined") return;
     localStorage.setItem(LS_KEY, JSON.stringify(portfolios));
     // Notify PositionsTab (same page) that portfolios changed
     window.dispatchEvent(new CustomEvent("corvo:portfolio-saved"));

@@ -60,7 +60,9 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    ["corvo_tour_completed", "corvo_onboarding_skipped", "corvo_setup_banner_dismissed", "corvo_pending_referral"].forEach(k => localStorage.removeItem(k));
+    if (typeof window !== "undefined") {
+      ["corvo_tour_completed", "corvo_onboarding_skipped", "corvo_setup_banner_dismissed", "corvo_pending_referral"].forEach(k => localStorage.removeItem(k));
+    }
     window.location.href = "/";
   };
 

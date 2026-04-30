@@ -11,7 +11,7 @@ import { usePWAInstall } from "../hooks/usePWAInstall";
 function useTheme() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
-    const stored = localStorage.getItem("corvo_theme");
+    const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_theme") : null;
     const isDark = stored ? stored === "dark" : false;
     setDark(isDark);
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
@@ -20,7 +20,7 @@ function useTheme() {
     const next = !dark;
     setDark(next);
     document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
-    localStorage.setItem("corvo_theme", next ? "dark" : "light");
+    if (typeof window !== "undefined") localStorage.setItem("corvo_theme", next ? "dark" : "light");
   };
   return { dark, toggle };
 }

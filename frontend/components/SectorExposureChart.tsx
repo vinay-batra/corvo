@@ -113,7 +113,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
               hovertemplate: "<b>%{label}</b><br>%{percent}<extra></extra>",
               marker: {
                 colors: SECTOR_COLORS.slice(0, labels.length),
-                line: { color: "#0d0d0c", width: 2 },
+                line: { color: "var(--text)", width: 2 },
               },
             },
           ]}
@@ -152,7 +152,7 @@ const SectorExposureChart = memo(function SectorExposureChart({
                 showarrow: false,
                 font: {
                   size: 18,
-                  color: dark ? "#c9a84c" : "#b8860b",
+                  color: "var(--accent)",
                   family: "Space Grotesk, Inter, sans-serif",
                 },
                 align: "center",

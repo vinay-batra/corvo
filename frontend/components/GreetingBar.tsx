@@ -161,7 +161,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
   const toggleBriefing = () => {
     setBriefingCollapsed(c => {
       const next = !c;
-      try { localStorage.setItem("corvo_briefing_collapsed", String(next)); } catch {}
+      try { if (typeof window !== "undefined") localStorage.setItem("corvo_briefing_collapsed", String(next)); } catch {}
       return next;
     });
   };
