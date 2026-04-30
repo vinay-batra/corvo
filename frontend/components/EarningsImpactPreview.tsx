@@ -65,15 +65,11 @@ function StatPill({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EarningsCard({ item, index }: { item: EarningsItem; index: number }) {
+function EarningsCard({ item }: { item: EarningsItem }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <motion.div
-      // initial={false} is required — do not remove
-      initial={false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06 }}
+    <div
       style={{
         border: "0.5px solid var(--border2)",
         borderRadius: 10,
@@ -110,6 +106,17 @@ function EarningsCard({ item, index }: { item: EarningsItem; index: number }) {
                 {item.ticker}
               </span>
               <DaysChip days={item.days_until} />
+              {item.implied_move_pct != null && (
+                <span style={{
+                  fontFamily: "Space Mono, monospace",
+                  fontSize: 9, fontWeight: 700,
+                  padding: "1px 6px", borderRadius: 8,
+                  background: "rgba(76,175,125,0.10)", border: "0.5px solid rgba(76,175,125,0.25)",
+                  color: "var(--green)", whiteSpace: "nowrap" as const,
+                }}>
+                  +/-{item.implied_move_pct.toFixed(1)}%
+                </span>
+              )}
             </div>
             <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
               {item.company}
@@ -122,11 +129,9 @@ function EarningsCard({ item, index }: { item: EarningsItem; index: number }) {
             <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 1 }}>
               {fmtDate(item.date)}
             </div>
-            {item.implied_move_pct != null && (
-              <div style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 700, color: "#4caf7d" }}>
-                +/-{item.implied_move_pct}%
-              </div>
-            )}
+            <div style={{ fontFamily: "Space Mono, monospace", fontSize: 10, color: "var(--text2)", fontWeight: 600 }}>
+              {(item.weight * 100).toFixed(1)}% of portfolio
+            </div>
           </div>
           {expanded ? (
             <ChevronUp size={13} color="var(--text3)" />
@@ -164,11 +169,11 @@ function EarningsCard({ item, index }: { item: EarningsItem; index: number }) {
                 )}
                 {item.implied_move_pct != null && (
                   <StatPill
-                    label={item.implied_move_source === "options" ? "Implied Move (straddle)" : "Implied Move (IV)"}
-                    value={`+/-${item.implied_move_pct}%`}
+                    label={item.implied_move_source === "options" ? "Implied move (straddle)" : "Implied move (IV)"}
+                    value={`+/-${item.implied_move_pct.toFixed(1)}%`}
                   />
                 )}
-                <StatPill label="Portfolio Weight" value={`${(item.weight * 100).toFixed(1)}%`} />
+                <StatPill label="Portfolio weight" value={`${(item.weight * 100).toFixed(1)}%`} />
               </div>
 
               {/* AI commentary */}
@@ -180,18 +185,25 @@ function EarningsCard({ item, index }: { item: EarningsItem; index: number }) {
                   borderRadius: 8,
                 }}>
                   <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600, marginBottom: 6 }}>
-                    Corvo Preview
+                    Corvo preview
                   </div>
                   <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>
                     {item.ai_commentary}
                   </p>
                 </div>
               )}
+
+              {/* Today fallback */}
+              {!item.ai_commentary && item.days_until === 0 && (
+                <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
+                  Earnings are today. Check back after market close for AI analysis.
+                </p>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
@@ -203,19 +215,24 @@ export default function EarningsImpactPreview({ assets }: Props) {
   const [items, setItems] = useState<EarningsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   const load = useCallback(async () => {
-    if (!assets.length) return;
+    if (!assets.length) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    setFetchError(false);
     try {
       const data = await fetchEarningsPreview(assets);
       if (Array.isArray(data)) setItems(data);
     } catch {
-      // silently ignore — earnings preview is non-critical
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
-  }, [assets]);
+  }, [assets]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     load();
@@ -229,6 +246,14 @@ export default function EarningsImpactPreview({ assets }: Props) {
         ))}
         <style>{`@keyframes ep-pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }`}</style>
       </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <p style={{ fontSize: 11, color: "var(--text3)", margin: "8px 0 0" }}>
+        Could not load earnings preview. Try refreshing.
+      </p>
     );
   }
 
@@ -280,8 +305,8 @@ export default function EarningsImpactPreview({ assets }: Props) {
             style={{ overflow: "clip" }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {items.map((item, i) => (
-                <EarningsCard key={item.ticker} item={item} index={i} />
+              {items.map((item) => (
+                <EarningsCard key={item.ticker} item={item} />
               ))}
             </div>
           </motion.div>
