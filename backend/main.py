@@ -4761,7 +4761,10 @@ def portfolio_peer_comparison(
     def _pct_rank(val: float, dist: list) -> int:
         if not dist:
             return 50
-        return round(sum(1 for x in dist if x < val) / len(dist) * 100)
+        n = len(dist)
+        rank = sum(1 for x in dist if x < val)
+        # Use (rank / (n + 1)) to avoid 0% and 100% edge cases
+        return round(rank / (n + 1) * 100)
 
     peer_median = {
         "cagr": safe_float(_median(distributions["cagr"])),
@@ -4770,13 +4773,17 @@ def portfolio_peer_comparison(
         "max_drawdown": safe_float(_median(distributions["max_drawdown"])),
     }
 
-    percentiles = {
-        "cagr": _pct_rank(user_cagr, distributions["cagr"]),
-        "sharpe": _pct_rank(user_sharpe, distributions["sharpe"]),
-        # Lower is better for volatility and drawdown — invert rank
-        "volatility": 100 - _pct_rank(user_volatility, distributions["volatility"]),
-        "max_drawdown": 100 - _pct_rank(user_max_drawdown, distributions["max_drawdown"]),
-    }
+    # Only show percentile badges when there are enough portfolios for meaningful comparison
+    if peer_count >= 10:
+        percentiles = {
+            "cagr": _pct_rank(user_cagr, distributions["cagr"]),
+            "sharpe": _pct_rank(user_sharpe, distributions["sharpe"]),
+            # Lower is better for volatility and drawdown — invert rank
+            "volatility": 100 - _pct_rank(user_volatility, distributions["volatility"]),
+            "max_drawdown": 100 - _pct_rank(user_max_drawdown, distributions["max_drawdown"]),
+        }
+    else:
+        percentiles = None
 
     return {
         "user": {"cagr": user_cagr, "sharpe": user_sharpe, "volatility": user_volatility, "max_drawdown": user_max_drawdown},

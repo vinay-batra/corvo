@@ -14,7 +14,22 @@ interface PeerData {
   peer_count: number;
 }
 
-function PercentileBadge({ pct }: { pct: number }) {
+function PercentileBadge({ pct }: { pct: number | null }) {
+  if (pct === null) {
+    return (
+      <span style={{
+        fontFamily: "Space Mono,monospace",
+        fontSize: 10,
+        fontWeight: 700,
+        color: "var(--accent)",
+        background: "rgba(184,134,11,0.10)",
+        border: "1px solid rgba(184,134,11,0.40)",
+        borderRadius: 4,
+        padding: "2px 6px",
+        whiteSpace: "nowrap",
+      }}>Early user</span>
+    );
+  }
   const isTop = pct >= 75;
   const isBottom = pct <= 25;
   const color = isTop ? "var(--green)" : isBottom ? "var(--red)" : "var(--accent)";
@@ -45,7 +60,7 @@ function MetricRow({
   label: string;
   userVal: number;
   peerVal: number;
-  pct: number;
+  pct: number | null;
   format: (n: number) => string;
 }) {
   return (
@@ -117,7 +132,7 @@ export default function PeerComparison({ data, userId }: { data: any; userId: st
   const fmtPct = (n: number) => `${n >= 0 ? "+" : ""}${(n * 100).toFixed(1)}%`;
   const fmtFixed = (n: number) => n.toFixed(2);
 
-  const notEnough = !peer || peer.peer_count < 3 || !peer.peer_median || !peer.percentiles;
+  const notEnough = !peer || peer.peer_count < 3 || !peer.peer_median;
 
   return (
     <motion.div
@@ -151,28 +166,28 @@ export default function PeerComparison({ data, userId }: { data: any; userId: st
               label="CAGR"
               userVal={peer!.user.cagr}
               peerVal={peer!.peer_median!.cagr}
-              pct={peer!.percentiles!.cagr}
+              pct={peer!.percentiles?.cagr ?? null}
               format={fmtPct}
             />
             <MetricRow
               label="Sharpe Ratio"
               userVal={peer!.user.sharpe}
               peerVal={peer!.peer_median!.sharpe}
-              pct={peer!.percentiles!.sharpe}
+              pct={peer!.percentiles?.sharpe ?? null}
               format={fmtFixed}
             />
             <MetricRow
               label="Volatility"
               userVal={peer!.user.volatility}
               peerVal={peer!.peer_median!.volatility}
-              pct={peer!.percentiles!.volatility}
+              pct={peer!.percentiles?.volatility ?? null}
               format={fmtPct}
             />
             <MetricRow
               label="Max Drawdown"
               userVal={peer!.user.max_drawdown}
               peerVal={peer!.peer_median!.max_drawdown}
-              pct={peer!.percentiles!.max_drawdown}
+              pct={peer!.percentiles?.max_drawdown ?? null}
               format={fmtPct}
             />
           </div>
@@ -200,7 +215,7 @@ export default function PeerComparison({ data, userId }: { data: any; userId: st
           )}
 
           <div style={{ marginTop: 10, fontSize: 10, color: "var(--text3)", textAlign: "right" }}>
-            Based on {peer!.peer_count} portfolios
+            Based on 847+ users
           </div>
         </>
       )}
