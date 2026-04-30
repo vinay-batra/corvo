@@ -1817,6 +1817,38 @@ def _sb_headers():
         "Content-Type": "application/json",
     }
 
+
+def _require_admin_key(request: Request) -> None:
+    """Raise 401 unless X-Admin-Key header matches SUPABASE_SERVICE_ROLE_KEY."""
+    key = request.headers.get("X-Admin-Key", "")
+    if not SUPABASE_SERVICE_KEY or key != SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+def _verify_jwt_user(request: Request) -> str:
+    """Extract and verify user_id from Authorization Bearer token via Supabase. Raises 401 on failure."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = auth_header[7:]
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=503, detail="Auth service not configured")
+    resp = requests.get(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={"Authorization": f"Bearer {token}", "apikey": SUPABASE_SERVICE_KEY},
+        timeout=5,
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user_id = resp.json().get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Could not extract user from token")
+    return user_id
+
+
+# Per-user daily rate limit for image parsing {user_id: {"date": str, "count": int}}
+_image_parse_daily: dict = {}
+
 def get_daily_chat_limit(user_id: str) -> int:
     """Return effective daily chat limit: base 15 + bonus (max 40 total)."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
@@ -5448,17 +5480,17 @@ async def morning_brief_loop():
 
 
 @app.get("/push/test-brief")
-async def test_morning_brief(admin_key: str = ""):
-    """Manually trigger the morning market brief push (for testing). Requires admin_key."""
-    if not SUPABASE_SERVICE_KEY or admin_key != SUPABASE_SERVICE_KEY:
-        raise HTTPException(status_code=403, detail="Forbidden")
+async def test_morning_brief(request: Request):
+    """Manually trigger the morning market brief push (for testing). Requires X-Admin-Key header."""
+    _require_admin_key(request)
     result = await send_morning_brief()
     return result
 
 
 @app.get("/push/test")
-async def push_test(user_id: str = ""):
-    """Send a test push notification to all subscriptions for the given user."""
+async def push_test(user_id: str = "", request: Request = None):
+    """Send a test push notification to all subscriptions for the given user. Requires X-Admin-Key header."""
+    _require_admin_key(request)
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
@@ -6009,32 +6041,10 @@ async def morning_briefing_email_loop():
 
 
 @app.get("/email/test-morning-briefing")
-async def test_morning_briefing_email(user_id: str = ""):
-    """Manually trigger the morning briefing email for one user (or all opted-in)."""
+async def test_morning_briefing_email(user_id: str = "", request: Request = None):
+    """Manually trigger the morning briefing email for one user (or all opted-in). Requires X-Admin-Key header."""
+    _require_admin_key(request)
     uid = user_id or None
-    if uid and SUPABASE_URL and SUPABASE_SERVICE_KEY:
-        try:
-            # Log auth.users email lookup
-            auth_resp = requests.get(
-                f"{SUPABASE_URL}/auth/v1/admin/users/{uid}",
-                headers=_sb_headers(), timeout=8,
-            )
-            print(f"[test-morning-briefing] auth.users status={auth_resp.status_code}")
-            if auth_resp.status_code == 200:
-                auth_data = auth_resp.json()
-                print(f"[test-morning-briefing] auth.users email={auth_data.get('email', '(empty)')} confirmed_at={auth_data.get('email_confirmed_at', '(none)')}")
-            else:
-                print(f"[test-morning-briefing] auth.users error body={auth_resp.text[:300]}")
-            # Log email_preferences row
-            pref_resp = requests.get(
-                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{uid}&select=*",
-                headers=_sb_headers(), timeout=8,
-            )
-            print(f"[test-morning-briefing] email_preferences status={pref_resp.status_code} body={pref_resp.text}")
-            finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
-            print(f"[test-morning-briefing] FINNHUB_API_KEY present={bool(finnhub_key)}")
-        except Exception as e:
-            print(f"[test-morning-briefing] debug fetch error: {e}")
     return await send_morning_briefing_emails(target_user_id=uid)
 
 
@@ -6113,8 +6123,9 @@ async def week_in_review_loop():
 
 
 @app.get("/email/test-week-in-review")
-async def test_week_in_review_email(user_id: str = ""):
-    """Manually trigger the week-in-review email for one user (or all opted-in)."""
+async def test_week_in_review_email(user_id: str = "", request: Request = None):
+    """Manually trigger the week-in-review email for one user (or all opted-in). Requires X-Admin-Key header."""
+    _require_admin_key(request)
     return await send_week_in_review_emails(target_user_id=user_id or None)
 
 
@@ -6196,8 +6207,9 @@ async def monthly_summary_loop():
 
 
 @app.get("/email/test-monthly-summary")
-async def test_monthly_summary_email(user_id: str = ""):
-    """Manually trigger the monthly summary email for one user (or all opted-in)."""
+async def test_monthly_summary_email(user_id: str = "", request: Request = None):
+    """Manually trigger the monthly summary email for one user (or all opted-in). Requires X-Admin-Key header."""
+    _require_admin_key(request)
     return await send_monthly_summary_emails(target_user_id=user_id or None)
 
 
@@ -6660,10 +6672,9 @@ async def weekly_portfolio_checkup_loop():
 
 
 @app.get("/push/test-weekly-checkup")
-async def test_weekly_checkup_push(admin_key: str = ""):
-    """Manually trigger the weekly portfolio checkup push (for testing). Requires admin_key."""
-    if not SUPABASE_SERVICE_KEY or admin_key != SUPABASE_SERVICE_KEY:
-        raise HTTPException(status_code=403, detail="Forbidden")
+async def test_weekly_checkup_push(request: Request):
+    """Manually trigger the weekly portfolio checkup push (for testing). Requires X-Admin-Key header."""
+    _require_admin_key(request)
     return await send_weekly_portfolio_checkup_push()
 
 
@@ -6825,10 +6836,9 @@ async def earnings_reminder_loop():
 
 
 @app.get("/push/test-earnings-reminder")
-async def test_earnings_reminder_push(admin_key: str = ""):
-    """Manually trigger the earnings day reminder push (for testing). Requires admin_key."""
-    if not SUPABASE_SERVICE_KEY or admin_key != SUPABASE_SERVICE_KEY:
-        raise HTTPException(status_code=403, detail="Forbidden")
+async def test_earnings_reminder_push(request: Request):
+    """Manually trigger the earnings day reminder push (for testing). Requires X-Admin-Key header."""
+    _require_admin_key(request)
     return await send_earnings_reminder_push()
 
 
@@ -7406,17 +7416,16 @@ def events_calendar():
 # ── Admin: one-time test-alert cleanup ──────────────────────────────────────
 
 @app.delete("/admin/cleanup-test-alerts")
-def admin_cleanup_test_alerts(admin_key: str = ""):
+def admin_cleanup_test_alerts(request: Request):
     """
     Delete the two test price alerts created during dev testing:
       - AAPL rises more than 0.001%
       - Any alert drops more than 10% (threshold = 10)
-    Requires admin_key matching SUPABASE_SERVICE_ROLE_KEY to prevent misuse.
+    Requires X-Admin-Key header matching SUPABASE_SERVICE_ROLE_KEY.
     """
+    _require_admin_key(request)
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-    if admin_key != SUPABASE_SERVICE_KEY:
-        raise HTTPException(status_code=403, detail="Forbidden")
 
     deleted = []
     errors = []

@@ -1,21 +1,23 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-7a78d.up.railway.app";
+
 const cspHeader = [
   "default-src 'self'",
   // unsafe-inline required for theme detection inline script in layout.tsx; unsafe-eval intentionally omitted
   "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com",
-  "style-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com",
+  "style-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://fonts.googleapis.com",
   "img-src 'self' data: https:",
-  "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co https://web-production-7a78d.up.railway.app https://app.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.ingest.sentry.io https://vitals.vercel-insights.com https://*.vercel-insights.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  `connect-src 'self' https://*.supabase.co ${apiUrl} https://app.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.ingest.sentry.io https://vitals.vercel-insights.com https://*.vercel-insights.com`,
   "frame-src 'none'",
   "object-src 'none'",
   "base-uri 'self'",
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  typescript: { ignoreBuildErrors: true },
+  typescript: { ignoreBuildErrors: false },
   async headers() {
     return [
       {
