@@ -245,6 +245,24 @@ export default function Watchlist() {
     })();
   }, []);
 
+  // Sync items when StockDetail's Watch button toggles
+  useEffect(() => {
+    const handleUpdate = async () => {
+      const uid = userIdRef.current;
+      if (!uid) return;
+      try {
+        const { data: dbItems } = await supabase
+          .from("watchlist_items")
+          .select("*")
+          .eq("user_id", uid)
+          .order("added_at", { ascending: true });
+        setItems((dbItems ?? []).map((r: any) => ({ ticker: r.ticker, addedAt: r.added_at, listId: r.list_id })));
+      } catch {}
+    };
+    window.addEventListener("corvo:watchlist-updated", handleUpdate);
+    return () => window.removeEventListener("corvo:watchlist-updated", handleUpdate);
+  }, []);
+
   const fetchData = useCallback(async (tickerList: string[]) => {
     if (!tickerList.length) return;
     setLoadingAll(true);
@@ -324,6 +342,16 @@ export default function Watchlist() {
         .eq("list_id", activeListId)
         .eq("ticker", ticker)
         .then(() => {});
+    }
+  };
+
+  const clearAll = async () => {
+    saveItems(items.filter(i => i.listId !== activeListId));
+    setStockData({});
+    if (userId) {
+      try {
+        await supabase.from("watchlist_items").delete().eq("user_id", userId).eq("list_id", activeListId);
+      } catch {}
     }
   };
 
@@ -580,6 +608,15 @@ export default function Watchlist() {
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.color = "var(--accent)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+          )}
+          {activeItems.length > 0 && (
+            <button onClick={clearAll}
+              style={{ padding: "9px 10px", background: "transparent", border: "none", borderRadius: 8, color: "var(--red)", fontSize: 11, cursor: "pointer", flexShrink: 0, opacity: 0.6, transition: "opacity 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = "1"; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = "0.6"; }}
+              title="Clear all items from this list">
+              Clear all
             </button>
           )}
         </div>
