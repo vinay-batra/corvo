@@ -2023,7 +2023,8 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </>
               );
               if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{content}</Link>;
-              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
+              const tourId = tab.id === "paper_trade" ? "tour-tab-paper-trade" : tab.id === "transactions" ? "tour-tab-transactions" : undefined;
+              return <button key={tab.id} id={tourId} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
             })}
           </div>
 
@@ -2702,7 +2703,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         />
       )}
       {showDashboardTour && (
-        <DashboardTour onComplete={() => {
+        <DashboardTour tabCount={TABS.length} onComplete={() => {
           setShowDashboardTour(false);
           localStorage.setItem("corvo_tour_completed", "true");
         }} />
