@@ -9,6 +9,7 @@ import { supabase } from "../../lib/supabase";
 import { SOUND_KEY } from "../../hooks/useSoundEffects";
 import ReferralsDashboard from "@/components/ReferralsDashboard";
 import { useToast } from "../../components/Toast";
+import LifeEvents, { type LifeEvent } from "../../components/LifeEvents";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,7 @@ export default function SettingsPage({
   const [investmentHorizon, setInvestmentHorizon] = useState("");
   const [savingProfileQ, setSavingProfileQ]       = useState(false);
   const [profileQSaved, setProfileQSaved]         = useState(false);
+  const [lifeEvents, setLifeEvents]               = useState<LifeEvent[]>([]);
 
   // ── Delete account ─────────────────────────────────────────────────────────
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -165,8 +167,12 @@ export default function SettingsPage({
       if (!user) { window.location.href = "/auth"; return; }
       setUser(user);
 
-      const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url").eq("id", user.id).single();
-      if (profile) { setDisplayName(profile.display_name || ""); setAvatarUrl(profile.avatar_url || null); }
+      const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url,life_events").eq("id", user.id).single();
+      if (profile) {
+        setDisplayName(profile.display_name || "");
+        setAvatarUrl(profile.avatar_url || null);
+        setLifeEvents(Array.isArray(profile.life_events) ? profile.life_events : []);
+      }
 
       // Only select the 5 columns that are guaranteed to exist in the schema.
       // Push and email_theme columns may not be migrated yet — omit them to avoid 400 errors.
@@ -671,6 +677,20 @@ export default function SettingsPage({
             {profileQSaved ? "Saved" : savingProfileQ ? "..." : "Save"}
           </button>
         </div>
+      </div>
+
+      <div style={{ marginTop: 28, paddingTop: 24, borderTop: "0.5px solid var(--border)" }}>
+        <FieldLabel>Life Events</FieldLabel>
+        <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14, lineHeight: 1.5 }}>
+          Corvo factors these into its advice. Remove any that no longer apply.
+        </p>
+        {user && (
+          <LifeEvents
+            mode="settings"
+            userId={user.id}
+            initialEvents={lifeEvents}
+          />
+        )}
       </div>
     </div>
   );
