@@ -202,3 +202,52 @@ export async function fetchNaturalLanguageEdit(
   });
   return res.json();
 }
+
+// ── Paper Trading ──────────────────────────────────────────────────────────────
+
+function authHeaders(token: string) {
+  return { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+}
+
+export async function fetchPaperPortfolio(userId: string, token: string) {
+  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/${userId}`, { headers: authHeaders(token) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchPaperHistory(userId: string, token: string) {
+  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/${userId}/history`, { headers: authHeaders(token) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function paperBuy(ticker: string, shares: number, token: string) {
+  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/buy`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ ticker, shares }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}
+
+export async function paperSell(ticker: string, shares: number, token: string) {
+  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/sell`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ ticker, shares }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}
+
+export async function paperReset(token: string) {
+  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/reset`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}

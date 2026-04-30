@@ -9,7 +9,7 @@ import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
   MessageSquare, Eye, PanelLeftOpen,
   Sun, Moon, CandlestickChart, Sparkles, BookOpen,
-  Calendar, CheckCircle2, ClipboardList,
+  Calendar, CheckCircle2, ClipboardList, TrendingUp,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
 import InfoModal from "../../components/InfoModal";
@@ -69,14 +69,16 @@ import PortfolioHistory from "../../components/PortfolioHistory";
 import PortfolioCompareTab from "../../components/PortfolioCompareTab";
 import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
+import PaperTrading from "../../components/PaperTrading";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
   { id: "positions",  label: "Positions",  Icon: CandlestickChart, href: null },
   { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
   { id: "risk",       label: "Income & Tax", Icon: ShieldAlert,      href: null },
-  { id: "simulate",   label: "Simulations",Icon: FlaskConical,     href: null },
-  { id: "news",       label: "News",       Icon: Newspaper,        href: null },
+  { id: "simulate",    label: "Simulations", Icon: FlaskConical,  href: null },
+  { id: "paper_trade", label: "Paper Trade", Icon: TrendingUp,    href: null },
+  { id: "news",        label: "News",        Icon: Newspaper,     href: null },
   { id: "watchlist",     label: "Watchlist",    Icon: Eye,           href: null },
   { id: "transactions",  label: "Transactions", Icon: ClipboardList, href: null },
   { id: "learn",         label: "Learn",        Icon: BookOpen,      href: "/learn" },
@@ -87,8 +89,9 @@ const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
   positions: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
   stocks:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
   risk:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
-  simulate:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
-  news:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>,
+  simulate:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+  paper_trade: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+  news:        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>,
   watchlist:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
   transactions: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>,
   learn:        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
@@ -942,6 +945,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
   const [nlPending, setNlPending] = useState<NLEditResult | null>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
+  const [paperCtx, setPaperCtx] = useState("");
   const [showStockCompare, setShowStockCompare] = useState(false);
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
@@ -2609,6 +2613,10 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <PortfolioHistory />
                 </Card>
               </motion.div>
+            ) : activeTab === "paper_trade" ? (
+              <motion.div key="paper_trade" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                {userId ? <PaperTrading userId={userId} onContextChange={setPaperCtx} /> : null}
+              </motion.div>
             ) : activeTab === "transactions" ? (
               <motion.div key="transactions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <TransactionsTab />
@@ -2634,9 +2642,11 @@ const { dark, toggle: toggleDark }  = useTheme();
             news:         "portfolio dashboard (news tab)",
             watchlist:    "portfolio dashboard (watchlist tab)",
             simulate:     "portfolio dashboard (Monte Carlo simulations tab)",
+            paper_trade:  "portfolio dashboard (paper trading tab)",
             transactions: "portfolio dashboard (transactions tab)",
             stocks:       "portfolio dashboard (stock detail overlay)",
           }[activeTab] || `portfolio dashboard (${activeTab} tab)`}
+          extraContext={activeTab === "paper_trade" && paperCtx ? paperCtx : undefined}
           onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
         />
       )}
