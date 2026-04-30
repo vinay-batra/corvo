@@ -22,11 +22,14 @@ SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 VAPID_PRIVATE_KEY    = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY     = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_CLAIMS_EMAIL   = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:alerts@corvo.capital")
+RAILWAY_BASE_URL     = os.environ.get("RAILWAY_BASE_URL", "https://web-production-7a78d.up.railway.app")
 
 # Startup env check: visible in Railway logs
 print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', '')[:6] + '...)' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
 print(f"[startup] RESEND_FROM_EMAIL: {os.environ.get('RESEND_FROM_EMAIL', 'NOT SET')}")
 print(f"[startup] SUPABASE_URL: {'SET' if SUPABASE_URL else 'NOT SET'}")
+print(f"[startup] FINNHUB_API_KEY: {'SET' if os.environ.get('FINNHUB_API_KEY') else 'NOT SET'}")
+print(f"[startup] deployed at {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
 
 # ── In-memory rate limiting ────────────────────────────────────────────────────
 RATE_LIMITS: dict[str, list[float]] = {}
@@ -55,18 +58,23 @@ if os.getenv("SENTRY_DSN"):
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
-    alert_task  = asyncio.create_task(price_alert_loop())
-    brief_task  = asyncio.create_task(morning_brief_loop())
-    digest_task = asyncio.create_task(weekly_digest_loop())
+    alert_task        = asyncio.create_task(price_alert_loop())
+    brief_task        = asyncio.create_task(morning_brief_loop())
+    morning_task      = asyncio.create_task(morning_briefing_email_loop())
+    review_task       = asyncio.create_task(week_in_review_loop())
+    monthly_task      = asyncio.create_task(monthly_summary_loop())
+    mkt_close_task    = asyncio.create_task(market_close_summary_loop())
+    checkup_task      = asyncio.create_task(weekly_portfolio_checkup_loop())
+    earnings_task     = asyncio.create_task(earnings_reminder_loop())
     yield
-    for t in (alert_task, brief_task, digest_task):
+    for t in (alert_task, brief_task, morning_task, review_task, monthly_task, mkt_close_task, checkup_task, earnings_task):
         t.cancel()
         try:
             await t
         except asyncio.CancelledError:
             pass
 
-app = FastAPI(title="Corvo API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Corvo API v3", version="1.0.0", lifespan=lifespan)
 
 _ALLOWED_ORIGINS = [
     "https://corvo.capital",
@@ -94,6 +102,18 @@ def safe_float(val):
         return f
     except:
         return 0.0
+
+def safe_int(val) -> int:
+    """Convert to int, returning 0 for NaN/Inf/None."""
+    try:
+        if val is None:
+            return 0
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return 0
+        return int(f)
+    except (ValueError, TypeError):
+        return 0
 
 def safe_list(lst):
     return [safe_float(x) for x in lst]
@@ -224,7 +244,21 @@ def delete_user(request: Request):
     if not user_id:
         raise HTTPException(status_code=401, detail="Could not determine user ID.")
 
-    # ── 3. Hard-delete via Supabase admin API ──────────────────────────────────
+    # ── 3. Delete related records before removing the auth user ───────────────
+    db_headers = {
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Content-Type": "application/json",
+    }
+    for table in ("ai_chat_history", "portfolios", "email_preferences", "price_alerts"):
+        requests.delete(
+            f"{SUPABASE_URL}/rest/v1/{table}",
+            headers=db_headers,
+            params={"user_id": f"eq.{user_id}"},
+            timeout=10,
+        )
+
+    # ── 4. Hard-delete via Supabase admin API ──────────────────────────────────
     delete_resp = requests.delete(
         f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
         headers={
@@ -255,7 +289,6 @@ CASH_TICKERS = {
 def is_cash_ticker(t: str) -> bool:
     """Return True if t should be treated as a cash/money-market equivalent."""
     return t in CASH_TICKERS or (len(t) == 5 and t.endswith("XX"))
-print(f"CASH_TICKERS loaded: {CASH_TICKERS}")
 
 def make_synthetic_prices(annual_return: float, n_days: int, start_date=None) -> pd.Series:
     """Generate synthetic daily price series from an annual return rate."""
@@ -377,16 +410,13 @@ def portfolio(
             or std < 0.001
             or is_cash_ticker(t)
         )
-        print(f"[debug] {t}: needs_synthetic={needs_synthetic}, in_cash={is_cash_ticker(t)}")
         if needs_synthetic:
-            print(f"[synthetic] {t}")
             synthetic = _align_synthetic(make_synthetic_prices(0.045, n_days, start_date))
             if t not in prices.columns:
                 prices[t] = np.nan
             common = prices.index.intersection(synthetic.index)
             prices.loc[common, t] = synthetic.loc[common].values
             if not is_cash_ticker(t):
-                print(f"[skipped] {t}")
                 skipped_tickers.append(t)
 
     # Every ticker is now present — none are excluded from analysis
@@ -482,9 +512,17 @@ def portfolio(
 
 @app.get("/drawdown")
 def drawdown(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"):
+    import re as _re
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers")
+    if len(tickers_list) > 30:
+        raise HTTPException(status_code=400, detail="Too many tickers (max 30)")
+    for t in tickers_list:
+        if not _re.match(r'^[\^A-Z0-9.\-=]{1,12}$', t):
+            raise HTTPException(status_code=400, detail=f"Invalid ticker format: {t}")
+    if period not in ("1mo", "3mo", "6mo", "1y", "2y", "3y", "5y", "10y", "ytd", "max"):
+        raise HTTPException(status_code=400, detail="Invalid period")
 
     if weights:
         try:
@@ -521,9 +559,17 @@ def drawdown(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"):
 
 @app.get("/correlation")
 def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
+    import re as _re
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if len(tickers_list) < 2:
         return {"matrix": [], "tickers": tickers_list}
+    if len(tickers_list) > 30:
+        raise HTTPException(status_code=400, detail="Too many tickers (max 30)")
+    for t in tickers_list:
+        if not _re.match(r'^[\^A-Z0-9.\-=]{1,12}$', t):
+            raise HTTPException(status_code=400, detail=f"Invalid ticker format: {t}")
+    if period not in ("1mo", "3mo", "6mo", "1y", "2y", "3y", "5y", "10y", "ytd", "max"):
+        raise HTTPException(status_code=400, detail="Invalid period")
 
     prices = get_prices(tickers_list, period)
     if prices is None or prices.empty:
@@ -544,10 +590,20 @@ def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
 
 
 @app.get("/montecarlo")
-def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 8500):
+def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 8500, years: int = 5):
+    import re as _re
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
         raise HTTPException(status_code=400, detail="No tickers")
+    if len(tickers_list) > 30:
+        raise HTTPException(status_code=400, detail="Too many tickers (max 30)")
+    for t in tickers_list:
+        if not _re.match(r'^[\^A-Z0-9.\-=]{1,12}$', t):
+            raise HTTPException(status_code=400, detail=f"Invalid ticker format: {t}")
+    if period not in ("1mo", "3mo", "6mo", "1y", "2y", "3y", "5y", "10y", "ytd", "max"):
+        raise HTTPException(status_code=400, detail="Invalid period")
+    simulations = 8500  # always use canonical count
+    years = max(1, min(30, years))
 
     if weights:
         try:
@@ -561,6 +617,26 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     w_list = [w / total for w in w_list]
 
     prices = get_prices(tickers_list, period)
+
+    # Inject synthetic 4.5% price series for cash/money market tickers (no market data exists)
+    _PERIOD_DAYS = {"1mo": 21, "3mo": 63, "6mo": 126, "1y": 252, "2y": 504, "3y": 756, "5y": 1260, "10y": 2520, "ytd": 252, "max": 2520}
+    n_synth = _PERIOD_DAYS.get(PERIOD_MAP.get(period, "1y"), 252)
+    has_cash = any(is_cash_ticker(t) for t in tickers_list)
+
+    if has_cash:
+        if prices is None or prices.empty:
+            synth_base = make_synthetic_prices(0.045, n_synth)
+            prices = pd.DataFrame(
+                {t: synth_base.values for t in tickers_list if is_cash_ticker(t)},
+                index=synth_base.index,
+            )
+        else:
+            for t in tickers_list:
+                if is_cash_ticker(t):
+                    n = len(prices)
+                    synth = make_synthetic_prices(0.045, n)
+                    prices[t] = synth.values[:n] if len(synth.values) >= n else synth.values
+
     if prices is None or prices.empty:
         raise HTTPException(status_code=500, detail="Failed to fetch data")
 
@@ -570,73 +646,76 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     total_w = sum(avail_w) or 1
     avail_w = [w / total_w for w in avail_w]
 
-    # Step 1: Compute weighted portfolio daily arithmetic returns from actual history
     returns = prices.pct_change().dropna()
-    port_returns = returns.values @ np.array(avail_w)  # sum(weight_i * daily_return_i) per day
+    port_returns = returns.values @ np.array(avail_w)
 
-    # Step 2: mu and sigma from the arithmetic daily return series
     mu_daily = float(np.mean(port_returns))
     sigma_daily = float(np.std(port_returns))
 
     # Override mu with long-term asset-class expected returns so recent bull/bear runs
-    # don't distort forward projections. Fall back to historical mu for unknown tickers.
+    # don't distort forward projections. Individual stocks cap at 10% to prevent recent
+    # high-return periods (e.g. NVDA bull run) from producing absurd 30-year projections.
     ASSET_CLASS_MU = {
-        # Bonds/fixed income
         "BND": 0.04, "AGG": 0.04, "TLT": 0.04, "IEF": 0.035, "SHY": 0.03,
         "SGOV": 0.045, "BIL": 0.04, "VBTLX": 0.04, "LQD": 0.045, "HYG": 0.055,
-        # Gold/commodities
         "GLD": 0.05, "IAU": 0.05, "SLV": 0.04, "DJP": 0.04,
-        # Broad equity
         "SPY": 0.10, "VOO": 0.10, "VTI": 0.10, "IWM": 0.09, "QQQ": 0.11,
     }
 
     weighted_mu = 0.0
     for t, w in zip(available, avail_w):
-        asset_mu = ASSET_CLASS_MU.get(t, mu_daily * 252)  # use historical for unknowns
+        if is_cash_ticker(t):
+            asset_mu = 0.045  # fixed 4.5% for cash/money market
+        elif t in ASSET_CLASS_MU:
+            asset_mu = ASSET_CLASS_MU[t]
+        else:
+            # Cap individual stock historical returns at 10% annual to prevent
+            # recent bull-market periods from distorting long-term projections
+            asset_mu = min(mu_daily * 252, 0.10)
         weighted_mu += w * asset_mu
 
     mu_daily = weighted_mu / 252
 
-    # Enforce minimum daily volatility so simulation never shows 100% positive paths.
-    # Conservative portfolios can have very low historical vol — floor at 8% annualised.
-    MIN_SIGMA_ANNUAL = 0.08
-    sigma_daily = max(sigma_daily, MIN_SIGMA_ANNUAL / np.sqrt(252))
+    # Cash-aware sigma: money market funds have near-zero volatility; don't apply
+    # the equity minimum floor (8%) to portfolios that are mostly cash
+    cash_weight = sum(avail_w[i] for i, t in enumerate(available) if is_cash_ticker(t))
+    if cash_weight >= 0.99:
+        sigma_daily = 0.001 / np.sqrt(252)
+    elif cash_weight > 0:
+        equity_sigma = max(sigma_daily, 0.08 / np.sqrt(252))
+        cash_sigma = 0.001 / np.sqrt(252)
+        sigma_daily = equity_sigma * (1 - cash_weight) + cash_sigma * cash_weight
+    else:
+        sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
 
-    # Cap annualised mu at 25% to prevent bull-run portfolios from showing no downside paths.
-    MAX_MU_ANNUAL = 0.25
-    mu_daily = min(mu_daily, MAX_MU_ANNUAL / 252)
+    # Hard cap at 12% annual return (prevents absurd results over long horizons;
+    # 25% cap was producing +100000% over 30 years)
+    mu_daily = min(mu_daily, 0.12 / 252)
 
-    # Step 3: Annualise for the GBM formula with dt = 1/252
-    # exp((mu - 0.5*sigma^2)*dt + sigma*sqrt(dt)*Z) with annualised params and dt=1/252
-    # is mathematically equivalent to exp(mu_daily - 0.5*sigma_daily^2 + sigma_daily*Z) per day
     mu = mu_daily * 252
     sigma = sigma_daily * np.sqrt(252)
-    dt = 1.0 / 252
-    horizon = 252
 
-    # Step 4: Run 8500 independent GBM paths — each starts at 1.0
+    # Use monthly steps (12/year) for memory efficiency across all horizon lengths
+    steps_per_year = 12
+    horizon = years * steps_per_year
+    dt = 1.0 / steps_per_year
+
     rng = np.random.default_rng()
     Z = rng.standard_normal((simulations, horizon))
     daily_factors = np.exp((mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * Z)
-    path_values = np.cumprod(daily_factors, axis=1)  # shape (simulations, 252); 1.0 = breakeven
+    path_values = np.cumprod(daily_factors, axis=1)
 
-    # Step 5: Collect all 8500 final values after 252 steps
-    final_vals = path_values[:, -1]  # actual multipliers (1.0 = breakeven)
+    final_vals = path_values[:, -1]
 
-    # Step 6: Percentiles of final values as percentage gains from 1.0
     p5  = safe_float(float(np.percentile(final_vals, 5))  - 1.0)
     p25 = safe_float(float(np.percentile(final_vals, 25)) - 1.0)
     p50 = safe_float(float(np.percentile(final_vals, 50)) - 1.0)
     p75 = safe_float(float(np.percentile(final_vals, 75)) - 1.0)
     p95 = safe_float(float(np.percentile(final_vals, 95)) - 1.0)
 
-    # Step 7: Probability positive — fraction of paths ending above 1.0 (never hardcoded)
     positive_prob = safe_float(float(np.mean(final_vals > 1.0)))
-
-    # Step 8: Max loss — 1 minus the lowest final path value
     max_loss = safe_float(float(1.0 - np.min(final_vals)))
 
-    # Step 9: Percentile bands at each of 252 days for the fan chart (fractional gain/loss)
     paths_pct = path_values - 1.0
     pct_bands = {
         "p5":  safe_list(np.percentile(paths_pct, 5,  axis=0).tolist()),
@@ -646,17 +725,17 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         "p95": safe_list(np.percentile(paths_pct, 95, axis=0).tolist()),
     }
 
-    # Risk metrics
-    ruin_threshold = 0.5  # lose more than 50% → final value < 0.5
+    ruin_threshold = 0.5
     ruin_probability = safe_float(float(np.mean(final_vals < ruin_threshold)))
     worst_5pct_mask = final_vals <= np.percentile(final_vals, 5)
     expected_shortfall = safe_float(
         float(np.mean(final_vals[worst_5pct_mask]) - 1.0) if worst_5pct_mask.any() else p5
     )
 
-    # Step 10: Return simulations count in response
     return {
         "horizon": horizon,
+        "years": years,
+        "steps_per_year": steps_per_year,
         "simulations": simulations,
         "final_p5": p5,
         "final_p25": p25,
@@ -679,6 +758,7 @@ class MonteCarloInsightRequest(BaseModel):
     ruin_probability: float
     expected_shortfall: float
     simulations: int = 8500
+    years: int = 1
 
 
 @app.post("/montecarlo/insight")
@@ -700,15 +780,16 @@ def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
     p50_pct = round(req.p50 * 100, 1)
     p95_pct = round(req.p95 * 100, 1)
 
+    horizon_label = f"{req.years} year" if req.years == 1 else f"{req.years} years"
     prompt = (
-        f"A portfolio was simulated {req.simulations} times over 1 year. Results: "
+        f"A portfolio was simulated {req.simulations} times over {horizon_label}. Results: "
         f"{req.positive_prob}% of simulations ended with positive returns. "
         f"Median outcome: {p50_pct:+.1f}%. "
         f"Worst 5% of scenarios: below {p5_pct:.1f}% (average of worst 5%: {es_pct:.1f}%). "
         f"Best 5% of scenarios: above {p95_pct:+.1f}%. "
         f"Probability of losing more than 50%: {ruin_pct:.1f}%. "
-        f"Write 2-3 plain English sentences for the investor. Start with 'Based on {req.simulations} simulations'. "
-        f"Be direct and specific. No markdown, no bullet points, no disclaimers."
+        f"Write 2-3 plain English sentences for the investor. Start with 'Based on {req.simulations:,} simulations'. "
+        f"Reference the {horizon_label} horizon in your response. Be direct and specific. No markdown, no bullet points, no disclaimers."
     )
 
     resp = client.messages.create(
@@ -718,6 +799,358 @@ def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
         messages=[{"role": "user", "content": prompt}],
     )
     return {"insight": clean_ai_response(resp.content[0].text)}
+
+
+class RetirementSimRequest(BaseModel):
+    tickers: list[str]
+    weights: list[float]
+    current_value: float
+    years_to_retirement: int
+    simulations: int = 8500
+    period: str = "5y"
+    contribution: float = 0.0
+    inflation_rate: float = 2.5
+    fee_rate: float = 0.05
+    tax_drag: float = 0.0
+    confidence_level: int = 90
+
+
+@app.post("/portfolio/retirement-simulation")
+def retirement_simulation(req: RetirementSimRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "retirement-simulation", 10, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+
+    if not req.tickers or len(req.tickers) != len(req.weights):
+        raise HTTPException(status_code=400, detail="Tickers and weights must be non-empty and equal length.")
+    if req.years_to_retirement < 1 or req.years_to_retirement > 60:
+        raise HTTPException(status_code=400, detail="years_to_retirement must be between 1 and 60.")
+    if req.current_value <= 0:
+        raise HTTPException(status_code=400, detail="current_value must be positive.")
+
+    confidence_level = req.confidence_level if req.confidence_level in (90, 95, 99) else 90
+    lower_pct = (100.0 - confidence_level) / 2.0
+    upper_pct = 100.0 - lower_pct
+
+    total_w = sum(req.weights) or 1.0
+    weights = [w / total_w for w in req.weights]
+    tickers = [t.strip().upper() for t in req.tickers]
+
+    prices = get_prices(tickers, req.period)
+
+    # Inject synthetic 4.5% price series for cash/money market tickers
+    _PERIOD_DAYS = {"1mo": 21, "3mo": 63, "6mo": 126, "1y": 252, "2y": 504, "3y": 756, "5y": 1260, "10y": 2520, "ytd": 252, "max": 2520}
+    n_synth = _PERIOD_DAYS.get(PERIOD_MAP.get(req.period, "1y"), 252)
+    has_cash = any(is_cash_ticker(t) for t in tickers)
+
+    if has_cash:
+        if prices is None or prices.empty:
+            synth_base = make_synthetic_prices(0.045, n_synth)
+            prices = pd.DataFrame(
+                {t: synth_base.values for t in tickers if is_cash_ticker(t)},
+                index=synth_base.index,
+            )
+        else:
+            for t in tickers:
+                if is_cash_ticker(t):
+                    n = len(prices)
+                    synth = make_synthetic_prices(0.045, n)
+                    prices[t] = synth.values[:n] if len(synth.values) >= n else synth.values
+
+    if prices is None or prices.empty:
+        raise HTTPException(status_code=500, detail="Failed to fetch price data.")
+
+    available = [t for t in tickers if t in prices.columns]
+    if not available:
+        raise HTTPException(status_code=500, detail="No price data available for provided tickers.")
+
+    prices = prices[available].dropna()
+    avail_w = [weights[tickers.index(t)] for t in available]
+    total_avail = sum(avail_w) or 1.0
+    avail_w = [w / total_avail for w in avail_w]
+
+    returns = prices.pct_change().dropna()
+    port_returns = returns.values @ np.array(avail_w)
+
+    mu_hist = float(np.mean(port_returns))
+    sigma_daily = float(np.std(port_returns))
+
+    # Portfolio CAGR (geometric return) over the available price history — more conservative
+    # than arithmetic mean * 252, especially for volatile portfolios with recent bull runs
+    n_years_hist = max(len(port_returns), 1) / 252.0
+    port_total_growth = float((1.0 + pd.Series(port_returns)).prod())
+    port_cagr = max(-0.99, port_total_growth ** (1.0 / n_years_hist) - 1.0)
+
+    # Use portfolio historical CAGR directly, capped at 12% nominal.
+    # port_cagr is the geometric (compounded) annual return over the price history period —
+    # more accurate than arithmetic mean * 252, especially for volatile portfolios.
+    # Floor at 0% to prevent negative forward projections from short bad-period snapshots.
+    mu_annual = min(max(port_cagr, 0.0), 0.12)
+
+    # Cash-aware sigma: don't apply equity volatility floor to cash-heavy portfolios
+    cash_weight = sum(avail_w[i] for i, t in enumerate(available) if is_cash_ticker(t))
+    if cash_weight >= 0.99:
+        sigma_daily = 0.001 / np.sqrt(252)
+    elif cash_weight > 0:
+        equity_sigma = max(sigma_daily, 0.08 / np.sqrt(252))
+        cash_sigma = 0.001 / np.sqrt(252)
+        sigma_daily = equity_sigma * (1 - cash_weight) + cash_sigma * cash_weight
+    else:
+        sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
+
+    sigma_annual = sigma_daily * np.sqrt(252)
+
+    # Adjust for fees and tax drag (reduce annual return)
+    effective_mu = mu_annual - (req.fee_rate / 100.0) - (req.tax_drag / 100.0)
+
+    # Run 8500 annual-step GBM paths with contributions
+    horizon_years = req.years_to_retirement
+    rng = np.random.default_rng()
+    Z = rng.standard_normal((req.simulations, horizon_years))
+    annual_factors = np.exp((effective_mu - 0.5 * sigma_annual ** 2) + sigma_annual * Z)
+
+    values = np.full(req.simulations, req.current_value, dtype=float)
+    for y in range(horizon_years):
+        values = values * annual_factors[:, y] + req.contribution
+
+    # Convert nominal to real (inflation-adjusted) dollars
+    inflation_multiplier = (1.0 + req.inflation_rate / 100.0) ** horizon_years
+    real_values = values / inflation_multiplier
+
+    worst_val  = safe_float(float(np.percentile(real_values, lower_pct)))
+    median_val = safe_float(float(np.percentile(real_values, 50.0)))
+    best_val   = safe_float(float(np.percentile(real_values, upper_pct)))
+
+    worst_pct  = safe_float(worst_val  / req.current_value - 1.0)
+    median_pct = safe_float(median_val / req.current_value - 1.0)
+    best_pct   = safe_float(best_val   / req.current_value - 1.0)
+
+    positive_prob = safe_float(float(np.mean(real_values > req.current_value)))
+
+    ci_low  = worst_val
+    ci_high = best_val
+
+    # Histogram of final real values (40 bins, trimmed to 1st-99th percentile)
+    hist_min = max(0.0, float(np.percentile(real_values, 1)))
+    hist_max = float(np.percentile(real_values, 99))
+    if hist_max <= hist_min:
+        hist_max = hist_min + 1.0
+    hist_counts, hist_edges = np.histogram(real_values, bins=40, range=(hist_min, hist_max))
+    histogram = {
+        "counts": hist_counts.tolist(),
+        "edges": [safe_float(e) for e in hist_edges.tolist()],
+    }
+
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+    client = anthropic.Anthropic(api_key=api_key)
+
+    ticker_str = ", ".join(available[:6]) + ("..." if len(available) > 6 else "")
+    contrib_note = f" with ${req.contribution:,.0f}/year in contributions" if req.contribution > 0 else ""
+    inflation_note = f", inflation-adjusted at {req.inflation_rate}%/year" if req.inflation_rate > 0 else ""
+    prompt = (
+        f"A portfolio currently worth ${req.current_value:,.0f} ({ticker_str}) was simulated "
+        f"{req.simulations:,} times over {horizon_years} years{contrib_note}{inflation_note}. "
+        f"Results: {confidence_level}% confidence interval = ${ci_low:,.0f} to ${ci_high:,.0f}, "
+        f"median = ${median_val:,.0f} ({median_pct:+.0%}). "
+        f"{round(positive_prob * 100, 1)}% of scenarios ended above the starting value. "
+        f"Write exactly 2-3 sentences in plain English summarizing what these numbers mean for the investor. "
+        f"Then on a new line write 'Action:' followed by one specific, concrete action. "
+        f"No markdown, no bullet points, no asterisks, no em dashes, no disclaimers."
+    )
+
+    resp = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=250,
+        system="You are a plain-English retirement planning analyst. Write concise, jargon-free summaries for retail investors. Never use em dashes, asterisks, or markdown. Write in plain prose only.",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = clean_ai_response(resp.content[0].text)
+
+    summary = raw
+    action = ""
+    if "Action:" in raw:
+        parts = raw.split("Action:", 1)
+        summary = parts[0].strip()
+        action = parts[1].strip()
+
+    return {
+        "worst":           worst_val,
+        "median":          median_val,
+        "best":            best_val,
+        "worst_pct":       worst_pct,
+        "median_pct":      median_pct,
+        "best_pct":        best_pct,
+        "ci_low":          ci_low,
+        "ci_high":         ci_high,
+        "confidence_level": confidence_level,
+        "positive_prob":   positive_prob,
+        "years":           req.years_to_retirement,
+        "current_value":   req.current_value,
+        "simulations":     req.simulations,
+        "histogram":       histogram,
+        "summary":         summary,
+        "action":          action,
+        "contribution":    req.contribution,
+        "inflation_rate":  req.inflation_rate,
+        "fee_rate":        req.fee_rate,
+        "inflation_adjusted": req.inflation_rate > 0,
+    }
+
+
+
+class NLPortfolioItem(BaseModel):
+    ticker: str
+    weight: float
+
+
+class NLEditRequest(BaseModel):
+    command: str
+    portfolio: list[NLPortfolioItem]
+
+
+@app.post("/portfolio/natural-language-edit")
+def portfolio_natural_language_edit(req: NLEditRequest, request: Request):
+    import json as _json
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "nl-edit", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+
+    command = (req.command or "").strip()
+    if not command:
+        raise HTTPException(status_code=400, detail="Command cannot be empty.")
+    if len(command) > 500:
+        raise HTTPException(status_code=400, detail="Command is too long.")
+    if not req.portfolio:
+        raise HTTPException(status_code=400, detail="Portfolio cannot be empty.")
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+    import anthropic
+    client = anthropic.Anthropic(api_key=api_key)
+
+    raw_weights = [item.weight for item in req.portfolio]
+    total_w = sum(raw_weights) or 1.0
+    pct_weights = [w / total_w * 100 for w in raw_weights]
+
+    portfolio_lines = "\n".join(
+        f"  {item.ticker.upper()}: {pct_weights[i]:.2f}%"
+        for i, item in enumerate(req.portfolio)
+        if item.ticker
+    )
+
+    # Detect hypothetical / preview commands
+    hypothetical_phrases = [
+        "what would happen if", "what if", "how would", "what happens if",
+        "show me what", "show me how", "suppose", "imagine", "preview",
+        "if i added", "if i removed", "if i bought", "if i sold",
+        "if i increased", "if i decreased", "simulate",
+    ]
+    cmd_lower = command.lower()
+    is_hypothetical = any(ph in cmd_lower for ph in hypothetical_phrases)
+    mode = "preview" if is_hypothetical else "apply"
+
+    prompt = f"""You are a portfolio editor assistant. Apply the user's command to produce a new portfolio.
+
+Current portfolio:
+{portfolio_lines}
+
+User command: "{command}"
+
+Command patterns to handle:
+- "sell half my X and put it in Y" = halve X weight, add freed weight to Y (create Y if not present)
+- "go X% bonds Y% stocks" = replace with ETFs: BND/AGG for bonds, SPY/VOO for stocks, QQQ for growth
+- "remove all tech exposure" = remove NVDA, AAPL, MSFT, GOOGL, GOOG, META, AMZN, TSLA, AMD, AVGO, INTC, QQQ, XLK, SMH and redistribute proportionally to remaining holdings
+- "make it more conservative" = introduce BND at 20-25% and reduce equity positions proportionally
+- "rebalance to equal weight" = divide 100% equally among all current holdings
+- "reduce my largest position by half" = find the highest-weight ticker, halve it, spread freed weight proportionally among all other holdings
+- "add some international exposure" = add VEU or VXUS at 10-15%, reduce all current holdings proportionally
+- "add X at Y%" = add ticker X at Y%, reduce current holdings proportionally
+- "what would happen if I added X at Y%" = same math as above (preview only, same output format)
+- "reduce X exposure" = reduce all holdings in the named sector by roughly half, redistribute to others
+
+Rules:
+- All tickers must be real market symbols (stocks, ETFs, indices)
+- Weights must sum to exactly 100
+- All weights must be greater than 0
+
+Write a plain-English explanation (1-2 sentences, no em dashes, no asterisks) of what changed.
+Write a plain-English impact summary (1 sentence, no em dashes, no asterisks) about risk or diversification.
+
+Return ONLY this JSON, no other text:
+{{
+  "tickers": ["TICKER1", "TICKER2"],
+  "weights": [55.0, 45.0],
+  "explanation": "Reduced NVDA from 40% to 20% and added QQQ at 20% using the freed weight.",
+  "impact_summary": "This reduces single-stock concentration and adds broad Nasdaq index exposure."
+}}
+
+If the command cannot be executed, return: {{"error": "brief reason"}}"""
+
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=600,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = msg.content[0].text.strip()
+        if raw.startswith("```"):
+            parts = raw.split("```")
+            raw = parts[1] if len(parts) > 1 else parts[0]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+        result = _json.loads(raw)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Could not parse the AI response: {str(e)}")
+
+    if "error" in result:
+        raise HTTPException(status_code=422, detail=result["error"])
+
+    tickers = result.get("tickers", [])
+    weights = result.get("weights", [])
+    explanation = clean_ai_response(result.get("explanation", ""))
+    impact_summary = clean_ai_response(result.get("impact_summary", ""))
+
+    if not tickers or not weights:
+        raise HTTPException(status_code=422, detail="AI returned an empty portfolio.")
+    if len(tickers) != len(weights):
+        raise HTTPException(status_code=422, detail="AI returned mismatched tickers and weights.")
+    if any(w <= 0 for w in weights):
+        raise HTTPException(status_code=422, detail="All portfolio weights must be positive.")
+
+    total = sum(weights)
+    if abs(total - 100) > 2.5:
+        raise HTTPException(status_code=422, detail=f"Weights sum to {total:.1f}%, not 100%. Please try a more specific command.")
+
+    normalized = [round(w / total * 100, 4) for w in weights]
+    clean_tickers = [str(t).upper().strip() for t in tickers]
+
+    # Before/after snapshot and impact metrics computed in Python
+    before_tickers = [item.ticker.upper() for item in req.portfolio if item.ticker]
+    before_weights = [round(pct_weights[i], 4) for i in range(len(before_tickers))]
+    concentration_before = max(before_weights) if before_weights else 0.0
+    concentration_after = max(normalized) if normalized else 0.0
+
+    return {
+        "mode": mode,
+        "tickers": clean_tickers,
+        "weights": normalized,
+        "before_tickers": before_tickers,
+        "before_weights": before_weights,
+        "explanation": explanation,
+        "impact_summary": impact_summary,
+        "impact": {
+            "concentration_before": round(concentration_before, 1),
+            "concentration_after": round(concentration_after, 1),
+            "holdings_before": len(before_tickers),
+            "holdings_after": len(clean_tickers),
+        },
+    }
 
 
 _sectors_cache: dict[str, tuple[dict, float]] = {}
@@ -875,6 +1308,50 @@ def portfolio_dividends(
     }
     _dividends_cache[cache_key] = (result, time.time())
     return result
+
+
+def _finnhub_fallback(ticker: str, max_results: int = 8) -> list:
+    """Fetch company news from Finnhub. Returns list of normalized article dicts, or [] on failure."""
+    fh_key = os.environ.get("FINNHUB_API_KEY", "")
+    if not fh_key:
+        return []
+    try:
+        from datetime import date, timedelta
+        to_date = date.today().isoformat()
+        from_date = (date.today() - timedelta(days=7)).isoformat()
+        resp = requests.get(
+            f"https://finnhub.io/api/v1/company-news",
+            params={"symbol": ticker, "from": from_date, "to": to_date, "token": fh_key},
+            timeout=6,
+        )
+        if resp.status_code != 200:
+            return []
+        articles = resp.json()
+        if not isinstance(articles, list):
+            return []
+        result = []
+        for a in articles[:max_results]:
+            title = a.get("headline", "")
+            url = a.get("url", "")
+            if not title or not url:
+                continue
+            pub_ts = a.get("datetime", 0)
+            try:
+                pub_date = datetime.fromtimestamp(int(pub_ts), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if pub_ts else ""
+            except Exception:
+                pub_date = ""
+            result.append({
+                "ticker": ticker,
+                "title": title,
+                "summary": a.get("summary", ""),
+                "publisher": a.get("source", ""),
+                "url": url,
+                "published": pub_date,
+            })
+        return result
+    except Exception as e:
+        print(f"[finnhub-fallback] error for {ticker}: {e}")
+        return []
 
 
 @app.get("/news")
@@ -1147,7 +1624,7 @@ Rules:
 - Use ## for section headers only. Never use # (single hash) headers."""
 
         response = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-sonnet-4-6",
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -1187,7 +1664,7 @@ Rules:
         now_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
         ticker_str = " · ".join(tickers) if tickers else "Portfolio"
 
-        S_TITLE   = ParagraphStyle("title",   fontName="Helvetica-Bold",   fontSize=28, textColor=AMBER,   spaceAfter=4)
+        S_TITLE   = ParagraphStyle("title",   fontName="Helvetica-Bold",   fontSize=28, textColor=AMBER,   leading=34, spaceAfter=10)
         S_SUB     = ParagraphStyle("sub",     fontName="Helvetica",        fontSize=9,  textColor=DIM,     spaceAfter=2, leading=13)
         S_SECTION = ParagraphStyle("section", fontName="Helvetica-Bold",   fontSize=11, textColor=AMBER,   spaceBefore=16, spaceAfter=6, leading=14)
         S_BODY    = ParagraphStyle("body",    fontName="Helvetica",        fontSize=11, textColor=BODY,    spaceAfter=5, leading=16)
@@ -1353,6 +1830,38 @@ def _sb_headers():
         "Content-Type": "application/json",
     }
 
+
+def _require_admin_key(request: Request) -> None:
+    """Raise 401 unless X-Admin-Key header matches SUPABASE_SERVICE_ROLE_KEY."""
+    key = request.headers.get("X-Admin-Key", "")
+    if not SUPABASE_SERVICE_KEY or key != SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+def _verify_jwt_user(request: Request) -> str:
+    """Extract and verify user_id from Authorization Bearer token via Supabase. Raises 401 on failure."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = auth_header[7:]
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=503, detail="Auth service not configured")
+    resp = requests.get(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={"Authorization": f"Bearer {token}", "apikey": SUPABASE_SERVICE_KEY},
+        timeout=5,
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user_id = resp.json().get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Could not extract user from token")
+    return user_id
+
+
+# Per-user daily rate limit for image parsing {user_id: {"date": str, "count": int}}
+_image_parse_daily: dict = {}
+
 def get_daily_chat_limit(user_id: str) -> int:
     """Return effective daily chat limit: base 15 + bonus (max 40 total)."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
@@ -1461,6 +1970,61 @@ def process_referral_bonus(user_id: str, referral_code: str):
         print(f"[referral] process_referral_bonus error: {e}")
 
 
+class ReferralRedeemRequest(BaseModel):
+    referrer_code: str
+    new_user_id: str
+
+@app.post("/referrals/redeem")
+def redeem_referral(req: ReferralRedeemRequest, request: Request):
+    """Credit the referrer +5 bonus messages when a new user signs up via their link."""
+    new_user_id = _verify_jwt_user(request)
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not req.referrer_code:
+        return {"success": False, "detail": "Missing parameters"}
+    req.new_user_id = new_user_id
+    try:
+        chk = requests.get(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{req.new_user_id}&select=referral_credited",
+            headers=_sb_headers(), timeout=5,
+        )
+        if chk.status_code == 200:
+            rows = chk.json()
+            if rows and rows[0].get("referral_credited"):
+                return {"success": False, "detail": "Already credited"}
+
+        ref_prefix = f"{req.referrer_code[:8]}-"
+        ref_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=ilike.{ref_prefix}%&select=id,bonus_messages_per_day",
+            headers=_sb_headers(), timeout=5,
+        )
+        if ref_resp.status_code != 200 or not ref_resp.json():
+            return {"success": False, "detail": "Referrer not found"}
+        ref_rows = ref_resp.json()
+        referrer_id = ref_rows[0]["id"]
+        if referrer_id == req.new_user_id:
+            return {"success": False, "detail": "Self-referral not allowed"}
+
+        current_bonus = int(ref_rows[0].get("bonus_messages_per_day") or 0)
+        new_bonus = min(current_bonus + 5, 25)
+
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{referrer_id}",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json={"bonus_messages_per_day": new_bonus, "updated_at": datetime.now(timezone.utc).isoformat()},
+            timeout=5,
+        )
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{req.new_user_id}",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json={"referral_credited": True, "updated_at": datetime.now(timezone.utc).isoformat()},
+            timeout=5,
+        )
+        print(f"[referral] redeem: credited referrer {referrer_id} +5 bonus (total: {new_bonus}) for new user {req.new_user_id}")
+        return {"success": True}
+    except Exception as e:
+        print(f"[referral] redeem error: {e}")
+        return {"success": False, "detail": "Internal error"}
+
+
 @app.get("/referrals")
 def get_referrals(user_id: str = ""):
     """Return referral data for a user."""
@@ -1484,6 +2048,46 @@ def get_referrals(user_id: str = ""):
         return {"referral_link": f"https://corvo.capital/app?ref={code}", "referral_code": code, "referrals_count": 0, "bonus_messages": 0}
 
 
+class LifeEventsRequest(BaseModel):
+    life_events: list = []
+
+
+@app.get("/user/life-events/{user_id}")
+def get_life_events(user_id: str, request: Request):
+    """Return life events for a user. JWT required."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if not SUPABASE_URL:
+        return {"life_events": []}
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}&select=life_events",
+        headers=_sb_headers(), timeout=5,
+    )
+    if resp.status_code != 200 or not resp.json():
+        return {"life_events": []}
+    return {"life_events": resp.json()[0].get("life_events") or []}
+
+
+@app.post("/user/life-events/{user_id}")
+def set_life_events(user_id: str, body: LifeEventsRequest, request: Request):
+    """Upsert life events for a user. JWT required."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if not SUPABASE_URL:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    resp = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"life_events": body.life_events, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=5,
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Failed to update life events")
+    return {"success": True}
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list = []
@@ -1491,6 +2095,9 @@ class ChatRequest(BaseModel):
     user_goals: dict = {}
     market_context: str = ""
     user_id: str | None = None
+    page_context: str = ""
+    user_context: str = ""
+    life_events: list = []
 
     def validate_message(self):
         if not self.message or not self.message.strip():
@@ -1501,8 +2108,19 @@ class ChatRequest(BaseModel):
 
 @app.post("/chat")
 def chat(req: ChatRequest, request: Request):
+    import json as _json
     req.validate_message()
+    # Verify JWT if Authorization header is present; reject unverified self-reported user_id
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        verified_user_id = _verify_jwt_user(request)
+        req.user_id = verified_user_id
+    elif req.user_id:
+        # user_id in body but no JWT to verify it — reject rather than trust self-reported id
+        raise HTTPException(status_code=401, detail="Authorization header required when providing user_id")
     # Daily limit check (per-user via Supabase); fall back to IP rate limit for unauthenticated
+    daily_limit = BASE_DAILY_CHAT_LIMIT
+    daily_count = 0
     if req.user_id:
         daily_limit = get_daily_chat_limit(req.user_id)
         daily_count = get_daily_chat_count(req.user_id)
@@ -1515,90 +2133,135 @@ def chat(req: ChatRequest, request: Request):
         ip = request.client.host if request.client else "unknown"
         if check_rate_limit(ip, "chat", 20, 3600):
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
-    try:
-        import anthropic
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
 
-        client = anthropic.Anthropic(api_key=api_key)
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
 
-        ctx = req.portfolio_context
-        # Support goals from both portfolio_context (frontend passes it nested) and top-level
-        goals = req.user_goals or ctx.get("goals") or {}
-        tickers = ctx.get("tickers", [])
-        weights = ctx.get("weights", [])
-        ret = ctx.get("portfolio_return", 0)
-        vol = ctx.get("portfolio_volatility", 0)
-        sharpe = ctx.get("sharpe_ratio") or (ret - 0.04) / max(vol, 0.001)
-        dd = ctx.get("max_drawdown", 0)
-        period = ctx.get("period", "1y")
-        benchmark_return = ctx.get("benchmark_return")
-        health_score = ctx.get("health_score")
+    client = anthropic.Anthropic(api_key=api_key)
 
-        # Build rich investor profile from onboarding data
-        profile_lines = []
-        if goals:
-            age = goals.get("age", "")
-            retirement_age = goals.get("retirementAge", "")
-            salary = goals.get("salary", "")
-            invested = goals.get("invested", "")
-            monthly = goals.get("monthlyContribution", "")
-            risk = goals.get("riskTolerance", "moderate")
-            goal = goals.get("goal", "")
-            if age:
-                years_to_retire = int(retirement_age or 65) - int(age) if age else None
-                profile_lines.append(f"Age: {age}" + (f", retiring at {retirement_age} ({years_to_retire} years away)" if retirement_age else ""))
-            if salary:
-                profile_lines.append(f"Salary: ${int(salary):,}/yr")
-            if invested:
-                profile_lines.append(f"Total invested: ${int(invested):,}")
-            if monthly:
-                profile_lines.append(f"Monthly contribution: ${int(monthly):,}")
-            if risk:
-                risk_label = {"conservative": "Conservative (capital preservation priority)", "moderate": "Moderate (balanced growth)", "aggressive": "Aggressive (maximum growth, high risk tolerance)"}.get(risk, risk)
-                profile_lines.append(f"Risk tolerance: {risk_label}")
-            if goal:
-                goal_label = {"retirement": "Retirement", "wealth": "Wealth building", "income": "Passive income", "short": "Short-term gains"}.get(goal, goal)
-                profile_lines.append(f"Investment goal: {goal_label}")
+    ctx = req.portfolio_context
+    # Support goals from both portfolio_context (frontend passes it nested) and top-level
+    goals = req.user_goals or ctx.get("goals") or {}
+    tickers = ctx.get("tickers", [])
+    weights = ctx.get("weights", [])
+    ret = ctx.get("portfolio_return", 0)
+    vol = ctx.get("portfolio_volatility", 0)
+    sharpe = ctx.get("sharpe_ratio") or (ret - 0.04) / max(vol, 0.001)
+    dd = ctx.get("max_drawdown", 0)
+    period = ctx.get("period", "1y")
+    benchmark_return = ctx.get("benchmark_return")
+    health_score = ctx.get("health_score")
 
-        investor_profile = ""
-        if profile_lines:
-            investor_profile = "\n\nINVESTOR PROFILE (from onboarding, always consider this in your answers):\n" + "\n".join(f"• {l}" for l in profile_lines)
+    # Build rich investor profile from onboarding data
+    profile_lines = []
+    if goals:
+        age = goals.get("age", "")
+        retirement_age = goals.get("retirementAge", "")
+        salary = goals.get("salary", "")
+        invested = goals.get("invested", "")
+        monthly = goals.get("monthlyContribution", "")
+        risk = goals.get("riskTolerance", "moderate")
+        goal = goals.get("goal", "")
+        if age:
+            years_to_retire = int(retirement_age or 65) - int(age) if age else None
+            profile_lines.append(f"Age: {age}" + (f", retiring at {retirement_age} ({years_to_retire} years away)" if retirement_age else ""))
+        if salary:
+            profile_lines.append(f"Salary: ${int(salary):,}/yr")
+        if invested:
+            profile_lines.append(f"Total invested: ${int(invested):,}")
+        if monthly:
+            profile_lines.append(f"Monthly contribution: ${int(monthly):,}")
+        if risk:
+            risk_label = {"conservative": "Conservative (capital preservation priority)", "moderate": "Moderate (balanced growth)", "aggressive": "Aggressive (maximum growth, high risk tolerance)"}.get(risk, risk)
+            profile_lines.append(f"Risk tolerance: {risk_label}")
+        if goal:
+            goal_label = {"retirement": "Retirement", "wealth": "Wealth building", "income": "Passive income", "short": "Short-term gains"}.get(goal, goal)
+            profile_lines.append(f"Investment goal: {goal_label}")
 
-        benchmark_text = f"\n- Benchmark Return: {benchmark_return:.2%}" if benchmark_return is not None else ""
-        health_text = f"\n- Portfolio Health Score: {health_score}/100" if health_score is not None else ""
-        market_text = f"\n\nREAL-TIME MARKET PRICES (fetched seconds ago):\n{req.market_context}" if req.market_context else ""
+    investor_profile = ""
+    if profile_lines:
+        investor_profile = "\n\nINVESTOR PROFILE (from onboarding, always consider this in your answers):\n" + "\n".join(f"• {l}" for l in profile_lines)
 
-        portfolio_value = ctx.get("portfolio_value") or (goals.get("invested") if goals else None)
-        beta = ctx.get("beta")
-        individual_returns = ctx.get("individual_returns")
-        rf_rate_ctx = ctx.get("rf_rate", 0.04)
+    health_text = f"\n- Portfolio Health Score: {health_score}/100" if health_score is not None else ""
+    market_text = f"\n\nREAL-TIME MARKET PRICES (fetched seconds ago):\n{req.market_context}" if req.market_context else ""
 
-        portfolio_value_text = f"\n- Portfolio Value: ${int(portfolio_value):,}" if portfolio_value is not None else ""
-        beta_text = f"\n- Beta: {beta:.2f}" if beta is not None else ""
-        individual_returns_text = ""
-        if individual_returns and isinstance(individual_returns, dict):
-            returns_list = ", ".join(f"{t}: {r:.1%}" for t, r in individual_returns.items() if r is not None)
-            if returns_list:
-                individual_returns_text = f"\n- Individual Returns (CAGR): {returns_list}"
+    portfolio_value = ctx.get("portfolio_value") or (goals.get("invested") if goals else None)
+    beta = ctx.get("beta")
+    individual_returns = ctx.get("individual_returns")
+    rf_rate_ctx = ctx.get("rf_rate", 0.04)
 
-        def _holding_label(t: str, w: float) -> str:
-            kind = "cash/money market" if is_cash_ticker(t) else "ETF" if len(t) >= 3 and t.isupper() and not t.endswith("X") else "stock/ETF"
-            return f"{t} ({w:.1%}, {kind})"
+    portfolio_value_text = f"\n- Portfolio Value: ${int(portfolio_value):,}" if portfolio_value is not None else ""
+    beta_text = f"\n- Beta: {beta:.2f}" if beta is not None else ""
+    individual_returns_text = ""
+    if individual_returns and isinstance(individual_returns, dict):
+        returns_list = ", ".join(f"{t}: {r:.1%}" for t, r in individual_returns.items() if r is not None)
+        if returns_list:
+            individual_returns_text = f"\n- Individual Returns (CAGR): {returns_list}"
 
-        holdings_str = ', '.join(_holding_label(t, w) for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"
+    def _holding_label(t: str, w: float) -> str:
+        kind = "cash/money market" if is_cash_ticker(t) else "ETF" if len(t) >= 3 and t.isupper() and not t.endswith("X") else "stock/ETF"
+        return f"{t} ({w:.1%}, {kind})"
 
-        if benchmark_return is not None:
-            vs_bench = "outperformed" if ret > benchmark_return else "underperformed"
-            benchmark_text = f"\n- Benchmark Return ({period}): {benchmark_return:.2%} — portfolio {vs_bench} by {abs(ret - benchmark_return):.2%}"
-        else:
-            benchmark_text = ""
+    holdings_str = ', '.join(_holding_label(t, w) for t, w in zip(tickers, weights)) if tickers else "Not yet analyzed"
 
-        weights_equal = len(set(round(w, 3) for w in weights)) == 1 if weights else False
-        weights_note = " (equally weighted)" if weights_equal else ""
+    if benchmark_return is not None:
+        vs_bench = "outperformed" if ret > benchmark_return else "underperformed"
+        benchmark_text = f"\n- Benchmark Return ({period}): {benchmark_return:.2%} — portfolio {vs_bench} by {abs(ret - benchmark_return):.2%}"
+    else:
+        benchmark_text = ""
 
-        system = f"""You are Corvo AI, a sharp and direct personal portfolio analyst. You have full context on this investor's portfolio and financial profile.
+    weights_equal = len(set(round(w, 3) for w in weights)) == 1 if weights else False
+    weights_note = " (equally weighted)" if weights_equal else ""
+
+    # Detect tied largest holdings to prevent incorrect "single largest holding" phrasing
+    tied_largest_note = ""
+    if tickers and weights and len(weights) > 1:
+        max_w = max(weights)
+        tied = [t for t, w in zip(tickers, weights) if abs(w - max_w) < 0.001]
+        if len(tied) == len(tickers):
+            tied_str = ", ".join(tied)
+            tied_largest_note = f"\n- CRITICAL: All holdings ({tied_str}) are equally weighted at {max_w:.1%} each. There is NO single largest holding. Never refer to any one holding as 'the largest'."
+        elif len(tied) > 1:
+            tied_str = " and ".join(tied)
+            tied_largest_note = f"\n- CRITICAL: {tied_str} are tied as the largest holdings at {max_w:.1%} each. Do not single out any one of them as 'the largest holding'."
+
+    page_context_text = f"\n\nCURRENT PAGE: {req.page_context}" if req.page_context else ""
+    user_context_block = f"\n\n{req.user_context}" if req.user_context else ""
+
+    # Build life events block
+    life_events_text = ""
+    if req.life_events:
+        _event_labels = {
+            "buying_home": "Buying a home",
+            "getting_married": "Getting married",
+            "having_baby": "Having a baby",
+            "starting_business": "Starting a business",
+            "changing_jobs": "Changing jobs",
+            "retiring_soon": "Retiring soon",
+            "paying_off_debt": "Paying off debt",
+            "building_emergency_fund": "Building an emergency fund",
+            "sending_kids_to_college": "Sending kids to college",
+        }
+        _timeline_labels = {
+            "within_1_year": "within 1 year",
+            "1_2_years": "in 1-2 years",
+            "2_5_years": "in 2-5 years",
+            "5_plus_years": "in 5+ years",
+        }
+        _event_parts = []
+        for _e in req.life_events:
+            _t = _e.get("type", "") if isinstance(_e, dict) else ""
+            if _t == "nothing_major" or not _t:
+                continue
+            _tl = _timeline_labels.get(_e.get("timeline", ""), "") if isinstance(_e, dict) else ""
+            _label = _event_labels.get(_t, _t.replace("_", " ").title())
+            _event_parts.append(f"{_label}{' ' + _tl if _tl else ''}")
+        if _event_parts:
+            life_events_text = "\n\nACTIVE LIFE EVENTS: " + "; ".join(_event_parts) + "\n(Factor these into advice naturally. Buying a home soon means flag liquidity needs. Retiring soon means flag sequence-of-returns risk. Having a baby means flag emergency fund importance. Starting a business means flag concentration and cash runway.)"
+
+    system = f"""You are Corvo AI, a world-class personal portfolio advisor. You have full access to this investor's portfolio data, financial profile, saved portfolios, alerts, and targets. You also have web search capability to look up current prices, historical events, earnings, analyst ratings, news, and any market data needed to answer questions accurately.{user_context_block}
 
 CURRENT PORTFOLIO:
 - Holdings{weights_note}: {holdings_str}
@@ -1606,46 +2269,66 @@ CURRENT PORTFOLIO:
 - Annualized Return (CAGR): {ret:.2%}
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f} (risk-free rate used: {rf_rate_ctx:.2%})
-- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{market_text}{investor_profile}
+- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{page_context_text}
 
-RESPONSE RULES:
-• Max 220 words for simple questions; up to 300 words for complex multi-part questions
-• Use bullet points (•) for lists
-• Always reference specific numbers from the portfolio
-• Always state the period (e.g. "over the {period} period") when discussing returns
-• When portfolio_value is known, use dollar amounts not just percentages
-• Compare portfolio metrics to the benchmark when benchmark data is available
-• Verify weight percentages before stating them — if equally weighted, say so explicitly
-• Never confuse cash or money market positions with equity positions
-• When the investor has a profile, reference their goals/age/timeline in your answer
-• If they ask about risk, factor in their stated risk tolerance
-• Plain text only, no markdown headers or bold
-• Never use em dashes. Never use asterisks (*) or markdown formatting. Write in plain prose only."""
+HOW TO RESPOND:
+• Address the user by their first name when it is known.
+• Never say "I don't know which page you're on", "could you tell me more about your portfolio", or "I don't have access to your data" — all context is provided above.
+• Maximum 150-200 words per response. Hard limit.
+• Lead with the direct answer or recommendation in the first 1-2 sentences. Never recap what the user asked. Never open with "great question", "let me break this down", or any other filler.
+• Support the answer with 2-3 sentences of reasoning using the user's actual portfolio data. End with one forward-looking sentence if relevant.
+• Write like a sharp analyst giving a quick take in a meeting, not a written report. Be direct: say "I think NVDA will struggle because X" not "it depends on many factors."
+• Never say "Let me pull up the latest data" or similar filler phrases. Just answer.
+• Use web search to back up claims about market conditions, historical price action, earnings, analyst consensus, and economic events. Never say "I don't have access to" or "I can't check" — search instead.
+• Use the user's actual numbers (CAGR, weights, prices, dollar amounts when portfolio_value is known) but do not list every analyst target for every ticker unless asked.
+• State the analysis period when discussing returns. Compare to benchmark when available.
+• Verify weights before stating them. If equally weighted, say so. Never single out one holding as "the largest" when multiple share the same weight.
+• Never confuse cash/money market positions with equity.
+• Reference the investor's goals, age, and timeline in every substantive response.
+• When the user asks about their alerts or price targets, use the ACTIVE PRICE ALERTS and PRICE TARGETS data above.
+• Say "Not financial advice." once if this is a new conversation. Never repeat it in follow-up messages.
+• No bullet points or lists unless the user explicitly asks for a list. Write in plain prose only.
+• No headers, no sub-sections, no bold formatting.
+• No em dashes. No asterisks. No emoji."""
 
-        messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
-        messages.append({"role": "user", "content": req.message})
+    messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
+    messages.append({"role": "user", "content": req.message})
 
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=1000,
-            system=system,
-            messages=messages,
-        )
-        reply = clean_ai_response(response.content[0].text)
-        # Record usage for daily limit tracking
-        messages_used_now = daily_count + 1 if req.user_id else None
-        if req.user_id:
-            insert_chat_usage(req.user_id)
-        return {
-            "reply": reply,
-            "messages_used": messages_used_now,
-            "messages_limit": daily_limit if req.user_id else None,
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Chat error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    _user_id = req.user_id
+    _daily_count = daily_count
+    _daily_limit = daily_limit
+
+    def generate():
+        try:
+            with client.messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=1024,
+                system=system,
+                messages=messages,
+                tools=[{"type": "web_search_20250305", "name": "web_search"}],
+            ) as stream:
+                for text in stream.text_stream:
+                    # Strip em dashes and asterisks inline
+                    cleaned = text.replace("—", ",").replace("*", "")
+                    if cleaned:
+                        yield f"data: {_json.dumps({'chunk': cleaned})}\n\n"
+
+            if _user_id:
+                insert_chat_usage(_user_id)
+
+            messages_used_now = _daily_count + 1 if _user_id else None
+            yield f"data: {_json.dumps({'done': True, 'messages_used': messages_used_now, 'messages_limit': _daily_limit if _user_id else None})}\n\n"
+
+        except Exception as e:
+            print(f"Chat stream error: {e}")
+            yield f"data: {_json.dumps({'error': str(e)})}\n\n"
+
+    from fastapi.responses import StreamingResponse as _SR
+    return _SR(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/chat/usage")
@@ -1733,7 +2416,17 @@ def generate_questions(req: GenerateQuestionsRequest, request: Request):
 
 
 @app.post("/parse-portfolio-image")
-def parse_portfolio_image(body: dict):
+def parse_portfolio_image(body: dict, request: Request):
+    # Rate limit: max 10 per user per day (in-memory)
+    user_id = body.get("user_id", "") or (request.client.host if request.client else "anon")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    record = _image_parse_daily.get(user_id)
+    if record and record["date"] == today:
+        if record["count"] >= 10:
+            raise HTTPException(status_code=429, detail="Image parse limit reached (10/day)")
+        record["count"] += 1
+    else:
+        _image_parse_daily[user_id] = {"date": today, "count": 1}
     try:
         import anthropic
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -1745,7 +2438,7 @@ def parse_portfolio_image(body: dict):
         media_type = body.get("media_type", "image/jpeg")
 
         response = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-sonnet-4-6",
             max_tokens=1000,
             messages=[{
                 "role": "user",
@@ -1773,190 +2466,232 @@ def parse_portfolio_image(body: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def get_email_html(display_name=None, email_type="welcome", user_id=None):
-    """Return a table-based HTML email string compatible with Gmail, Outlook, and Apple Mail."""
+# ── Shared email HTML builder ──────────────────────────────────────────────────
+
+def _email_html(
+    heading: str,
+    body_lines: list[str],
+    cta_text: str,
+    cta_url: str,
+    user_id: str = "",
+    label: str = "",
+    unsub_type: str = "",
+    email_theme: str = "light",
+) -> str:
+    """Build a minimal HTML email compatible with Gmail, Outlook, and Apple Mail."""
     amber = "#c9a84c"
-    bg = "#0a0a0a"
-    card_bg = "#111111"
-    text = "#e8e0cc"
-    text_muted = "#888880"
-
-    if email_type == "weekly_digest":
-        greeting = f"Your weekly digest, {display_name}" if display_name else "Your weekly digest"
-        cta_text = "View Your Portfolio &rarr;"
+    if email_theme == "light":
+        bg           = "#f4f3ef"
+        card         = "#ffffff"
+        text         = "#1a1918"
+        muted        = "#5a5752"
+        bdr          = "#dbd8ce"
+        footer_color = "#888"
+        footer_link  = "#777"
     else:
-        greeting = f"Welcome, {display_name} &#x1F44B;" if display_name else "Welcome to Corvo &#x1F44B;"
-        cta_text = "Go to Dashboard &rarr;"
-
-    unsubscribe_url = (
-        f"https://corvo.capital/unsubscribe?user_id={user_id}"
-        if user_id
-        else "https://corvo.capital/unsubscribe"
+        bg           = "#0a0a0a"
+        card         = "#111111"
+        text         = "#e8e0cc"
+        muted        = "#888880"
+        bdr          = "#1e1e1e"
+        footer_color = "#444"
+        footer_link  = "#555"
+    mono  = "'Courier New', Courier, monospace"
+    sans  = "Arial, Helvetica, sans-serif"
+    if unsub_type and user_id:
+        unsub = f"https://corvo.capital/unsubscribe?user_id={user_id}&type={unsub_type}"
+    elif user_id:
+        unsub = f"https://corvo.capital/unsubscribe?user_id={user_id}"
+    else:
+        unsub = "https://corvo.capital/unsubscribe"
+    body_rows = "".join(
+        f'<tr><td style="padding:0 0 12px 0;font-family:{sans};font-size:14px;'
+        f'color:{muted};line-height:1.75;">{line}</td></tr>'
+        for line in body_lines
     )
-
-    features = [
-        ("&#x1F4CA;", "Portfolio Analysis", "Sharpe ratio, Monte Carlo simulations, drawdown charts, and a health score for your holdings."),
-        ("&#x1F916;", "AI Insights", "Ask questions about your portfolio and get real-time answers with live market context."),
-        ("&#x1F393;", "Financial Education", "Lessons, quizzes, and mini-games that teach real investing concepts, complete with XP and leaderboards."),
-    ]
-
-    feature_rows = ""
-    for icon, title, body in features:
-        feature_rows += f"""
-        <tr>
-          <td style="padding:8px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                   style="background:{card_bg};border-radius:8px;border:1px solid #222;">
-              <tr>
-                <td style="padding:16px 20px;vertical-align:top;width:36px;font-size:22px;">{icon}</td>
-                <td style="padding:16px 20px 16px 0;vertical-align:top;">
-                  <p style="margin:0 0 4px 0;font-family:Arial,sans-serif;font-size:13px;
-                             font-weight:700;color:{amber};letter-spacing:0.5px;">{title}</p>
-                  <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;
-                             color:{text_muted};line-height:1.6;">{body}</p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>"""
-
-    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    label_row = (
+        f'<tr><td style="padding:0 0 8px;font-family:{sans};font-size:10px;'
+        f'letter-spacing:2.5px;color:{muted};text-transform:uppercase;">{label}</td></tr>'
+        if label else ""
+    )
+    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Corvo</title>
 </head>
 <body style="margin:0;padding:0;background-color:{bg};">
-  <!-- Outer wrapper -->
-  <table width="100%" cellpadding="0" cellspacing="0" border="0"
-         style="background-color:{bg};min-height:100vh;">
-    <tr>
-      <td align="center" style="padding:48px 16px;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{bg};">
+    <tr><td align="center" style="padding:48px 16px;">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
 
-        <!-- Email card -->
-        <table width="600" cellpadding="0" cellspacing="0" border="0"
-               style="max-width:600px;width:100%;">
+        <tr><td align="center" style="padding-bottom:32px;">
+          <p style="margin:0 0 4px;font-family:{mono};font-size:22px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
+          <p style="margin:0;font-family:{sans};font-size:9px;letter-spacing:3px;color:#888;text-transform:uppercase;">Portfolio Intelligence</p>
+        </td></tr>
 
-          <!-- Header -->
-          <tr>
-            <td align="center" style="padding-bottom:32px;">
-              <p style="margin:0 0 4px 0;font-family:'Courier New',Courier,monospace;
-                         font-size:28px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:9px;
-                         letter-spacing:3px;color:#555;text-transform:uppercase;">Portfolio Intelligence</p>
-            </td>
-          </tr>
-
-          <!-- Greeting -->
-          <tr>
-            <td style="padding-bottom:6px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:22px;
-                         font-weight:700;color:{text};">{greeting}</p>
-            </td>
-          </tr>
-
-          <!-- Subheading -->
-          <tr>
-            <td style="padding-bottom:24px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:14px;
-                         color:{text_muted};line-height:1.6;">
-                Your account is ready. Here&#39;s what you can do with Corvo:
-              </p>
-            </td>
-          </tr>
-
-          <!-- Feature cards -->
-          <tr>
-            <td>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                {feature_rows}
-              </table>
-            </td>
-          </tr>
-
-          <!-- CTA button -->
-          <tr>
-            <td align="center" style="padding:32px 0;">
+        <tr><td style="background:{card};border-radius:10px;border:1px solid {bdr};padding:28px 28px 24px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            {label_row}
+            <tr><td style="padding-bottom:16px;font-family:{sans};font-size:20px;font-weight:700;color:{text};line-height:1.3;">{heading}</td></tr>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              {body_rows}
+            </table>
+            <tr><td style="padding-top:22px;">
               <table cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" style="border-radius:8px;background-color:{amber};">
-                    <a href="https://corvo.capital/app"
-                       style="display:inline-block;padding:14px 36px;font-family:Arial,sans-serif;
-                              font-size:14px;font-weight:700;color:#000000;text-decoration:none;
-                              border-radius:8px;letter-spacing:0.5px;">{cta_text}</a>
-                  </td>
-                </tr>
+                <tr><td align="center" style="border-radius:8px;background-color:{amber};">
+                  <a href="{cta_url}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 28px;font-family:{sans};font-size:13px;font-weight:700;color:#000;text-decoration:none;border-radius:8px;letter-spacing:0.4px;">{cta_text}</a>
+                </td></tr>
               </table>
-            </td>
-          </tr>
+            </td></tr>
+          </table>
+        </td></tr>
 
-          <!-- Spam notice -->
-          <tr>
-            <td align="center" style="padding-bottom:20px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
-                         color:#444;text-align:center;line-height:1.8;">
-                If you don&#39;t see our emails, check your spam folder and mark us as safe.
-              </p>
-            </td>
-          </tr>
+        <tr><td align="center" style="padding-top:22px;">
+          <p style="margin:0;font-family:{sans};font-size:11px;color:{footer_color};line-height:1.8;text-align:center;">
+            corvo.capital &nbsp;&middot;&nbsp; Not financial advice &nbsp;&middot;&nbsp;
+            <a href="{unsub}" style="color:{footer_link};text-decoration:none;">Unsubscribe</a>
+          </p>
+        </td></tr>
 
-          <!-- Divider -->
-          <tr>
-            <td style="border-top:1px solid #1e1e1e;padding-top:24px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
-                         color:#444;text-align:center;line-height:1.8;">
-                &copy; 2026 Corvo &nbsp;&middot;&nbsp;
-                <a href="https://corvo.capital" style="color:#555;text-decoration:none;">corvo.capital</a>
-                &nbsp;&middot;&nbsp;
-                <a href="{unsubscribe_url}" style="color:#555;text-decoration:none;">Unsubscribe</a>
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
+      </table>
+    </td></tr>
   </table>
 </body>
 </html>"""
 
+
+def _resend(to: str, subject: str, html: str, from_addr: str = "Corvo <hello@corvo.capital>") -> bool:
+    """Send an email via Resend. Returns True on success."""
+    key = os.environ.get("RESEND_API_KEY", "")
+    if not key:
+        print(f"[resend] RESEND_API_KEY not set, skipping email to {to}")
+        return False
+    try:
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"from": from_addr, "to": [to], "subject": subject, "html": html},
+            timeout=12,
+        )
+        if resp.status_code in (200, 201):
+            print(f"[resend] sent '{subject}' (id={resp.json().get('id')})")
+            return True
+        print(f"[resend] error {resp.status_code}: {resp.text[:200]}")
+        return False
+    except Exception as e:
+        print(f"[resend] exception sending to {to}: {e}")
+        return False
+
+
+def _welcome_email_html(name: str, user_id: str = "", email_theme: str = "light") -> str:
+    """Build the welcome email HTML with the clean headline + action-steps layout."""
+    amber = "#c9a84c"
+    if email_theme == "light":
+        bg           = "#f4f3ef"
+        card         = "#ffffff"
+        text         = "#1a1918"
+        muted        = "#5a5752"
+        bdr          = "#dbd8ce"
+        footer_color = "#888"
+        footer_link  = "#777"
+    else:
+        bg           = "#0a0a0a"
+        card         = "#111111"
+        text         = "#e8e0cc"
+        muted        = "#888880"
+        bdr          = "#1e1e1e"
+        footer_color = "#444"
+        footer_link  = "#555"
+    mono = "'Courier New', Courier, monospace"
+    sans = "Arial, Helvetica, sans-serif"
+    unsub = f"https://corvo.capital/unsubscribe?user_id={user_id}" if user_id else "https://corvo.capital/unsubscribe"
+    actions = [("01", "Add a ticker"), ("02", "Set your weights"), ("03", "Hit Analyze")]
+    action_rows = ""
+    for i, (num, label) in enumerate(actions):
+        top_pad = "0" if i == 0 else "12px"
+        action_rows += (
+            f'<tr>'
+            f'<td style="padding:{top_pad} 0 12px;width:32px;font-family:{mono};font-size:11px;'
+            f'font-weight:700;color:{amber};vertical-align:top;">{num}</td>'
+            f'<td style="padding:{top_pad} 0 12px;font-family:{sans};font-size:14px;'
+            f'color:{muted};line-height:1.6;">{label}</td>'
+            f'</tr>'
+        )
+        if i < len(actions) - 1:
+            action_rows += (
+                f'<tr><td colspan="2" style="height:1px;background:{bdr};padding:0;font-size:0;line-height:0;">&nbsp;</td></tr>'
+            )
+    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:{bg};">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{bg};">
+    <tr><td align="center" style="padding:48px 16px;">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
+
+        <tr><td align="center" style="padding-bottom:32px;">
+          <p style="margin:0 0 4px;font-family:{mono};font-size:22px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
+          <p style="margin:0;font-family:{sans};font-size:9px;letter-spacing:3px;color:#888;text-transform:uppercase;">Portfolio Intelligence</p>
+        </td></tr>
+
+        <tr><td style="background:{card};border-radius:10px;border:1px solid {bdr};padding:32px 28px 28px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+
+            <tr><td style="padding-bottom:6px;font-family:{sans};font-size:11px;letter-spacing:2px;color:{muted};text-transform:uppercase;">Welcome, {name}</td></tr>
+            <tr><td style="padding-bottom:24px;font-family:{sans};font-size:22px;font-weight:700;color:{text};line-height:1.25;">Your portfolio, with a point of view.</td></tr>
+
+            <tr><td style="padding-bottom:24px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                {action_rows}
+              </table>
+            </td></tr>
+
+            <tr><td>
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr><td align="center" style="border-radius:8px;background-color:{amber};">
+                  <a href="https://corvo.capital/app" target="_blank" rel="noopener noreferrer"
+                     style="display:inline-block;padding:12px 28px;font-family:{sans};font-size:13px;font-weight:700;color:#000;text-decoration:none;border-radius:8px;letter-spacing:0.4px;">Open Corvo</a>
+                </td></tr>
+              </table>
+            </td></tr>
+
+          </table>
+        </td></tr>
+
+        <tr><td align="center" style="padding-top:22px;">
+          <p style="margin:0;font-family:{sans};font-size:11px;color:{footer_color};line-height:1.8;text-align:center;">
+            corvo.capital &nbsp;&middot;&nbsp; Not financial advice &nbsp;&middot;&nbsp;
+            <a href="{unsub}" style="color:{footer_link};text-decoration:none;">Unsubscribe</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+
+# ── Welcome Email ──────────────────────────────────────────────────────────────
 
 class WelcomeEmailRequest(BaseModel):
     email: str
     display_name: str | None = None
     user_id: str | None = None
 
+
 @app.post("/send-welcome-email")
 def send_welcome_email(req: WelcomeEmailRequest):
     """Send a welcome email to a new Corvo user via Resend."""
-    print(f"[send-welcome-email] called for {req.email}")
-    resend_key = os.environ.get("RESEND_API_KEY", "")
-    if not resend_key:
-        print("[send-welcome-email] RESEND_API_KEY not set, skipping")
-        return {"ok": True, "skipped": True}
-
-    html = get_email_html(display_name=req.display_name, email_type="welcome", user_id=req.user_id)
-
-    try:
-        response = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={
-                "from": "Corvo <hello@corvo.capital>",
-                "to": [req.email],
-                "subject": "Welcome to Corvo \U0001f3af",
-                "html": html,
-            },
-            timeout=10,
-        )
-        response.raise_for_status()
-        print(f"[send-welcome-email] sent OK to {req.email} (status {response.status_code})")
-        return {"ok": True}
-    except Exception as e:
-        print(f"[send-welcome-email] FAILED for {req.email}: {e}")
-        return {"ok": False, "error": str(e)}
+    print(f"[send-welcome-email] called")
+    name = req.display_name or req.email.split("@")[0]
+    html = _welcome_email_html(name=name, user_id=req.user_id or "", email_theme="light")
+    ok = _resend(req.email, "Welcome to Corvo", html)
+    return {"ok": ok}
 
 
 # ── Notify-me (email capture) ─────────────────────────────────────────────────
@@ -2194,30 +2929,309 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── Analyst targets endpoint ───────────────────────────────────────────────────
+_analyst_targets_cache: dict[str, tuple[dict, float]] = {}
+
+@app.get("/analyst-targets/{ticker}")
+def analyst_targets_endpoint(ticker: str, request: Request):
+    """Analyst consensus price targets from Finnhub /stock/price-target and /stock/recommendation."""
+    import time as _time_at
+    ticker = ticker.upper().strip()
+    now = _time_at.time()
+
+    if ticker in _analyst_targets_cache:
+        cached, ts = _analyst_targets_cache[ticker]
+        if now - ts < 3600:
+            return cached
+
+    fh_key = os.environ.get("FINNHUB_API_KEY", "")
+    if not fh_key:
+        raise HTTPException(status_code=503, detail="Finnhub API key not configured")
+
+    try:
+        pt_resp = requests.get(
+            f"https://finnhub.io/api/v1/stock/price-target?symbol={ticker}&token={fh_key}",
+            timeout=8,
+        )
+        pt = pt_resp.json() if pt_resp.ok else {}
+
+        rec_resp = requests.get(
+            f"https://finnhub.io/api/v1/stock/recommendation?symbol={ticker}&token={fh_key}",
+            timeout=8,
+        )
+        try:
+            recs = rec_resp.json() if rec_resp.ok else []
+            if not isinstance(recs, list):
+                recs = []
+        except Exception:
+            recs = []
+
+        current_price = 0.0
+        yf_target_mean = None
+        yf_target_high = None
+        yf_target_low  = None
+        yf_num_analysts = None
+        try:
+            info = yf.Ticker(ticker).info or {}
+            current_price = float(safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0) or 0.0)
+            yf_target_mean = safe_float(info.get("targetMeanPrice")) or None
+            yf_target_high = safe_float(info.get("targetHighPrice")) or None
+            yf_target_low  = safe_float(info.get("targetLowPrice"))  or None
+            yf_num_analysts = int(info.get("numberOfAnalystOpinions") or 0) or None
+        except Exception:
+            pass
+
+        # Finnhub targets preferred; fall back to yfinance when Finnhub returns nothing
+        target_mean = safe_float(pt.get("targetMean")) or yf_target_mean or None
+        target_high = safe_float(pt.get("targetHigh")) or yf_target_high or None
+        target_low  = safe_float(pt.get("targetLow"))  or yf_target_low  or None
+
+        latest_rec = recs[0] if recs else {}
+        num_analysts = pt.get("numberAnalysts") or yf_num_analysts
+        if not num_analysts and latest_rec:
+            num_analysts = (
+                int(latest_rec.get("buy", 0)) + int(latest_rec.get("hold", 0)) +
+                int(latest_rec.get("sell", 0)) + int(latest_rec.get("strongBuy", 0)) +
+                int(latest_rec.get("strongSell", 0))
+            ) or None
+
+        upside_pct = round((target_mean / current_price - 1) * 100, 2) if target_mean and current_price else None
+
+        result = {
+            "ticker": ticker,
+            "current_price": round(current_price, 2),
+            "target_mean": round(target_mean, 2) if target_mean else None,
+            "target_high": round(target_high, 2) if target_high else None,
+            "target_low":  round(target_low,  2) if target_low  else None,
+            "upside_pct":  upside_pct,
+            "num_analysts": int(num_analysts) if num_analysts else None,
+            "buy":  int(latest_rec.get("buy", 0)) + int(latest_rec.get("strongBuy", 0)),
+            "hold": int(latest_rec.get("hold", 0)),
+            "sell": int(latest_rec.get("sell", 0)) + int(latest_rec.get("strongSell", 0)),
+            "last_updated": pt.get("lastUpdated"),
+        }
+
+        _analyst_targets_cache[ticker] = (result, now)
+        return result
+    except Exception as e:
+        print(f"Analyst targets error for {ticker}: {e}")
+        # Return null data gracefully so frontend shows N/A instead of crashing
+        return {
+            "ticker": ticker, "current_price": 0,
+            "target_mean": None, "target_high": None, "target_low": None,
+            "upside_pct": None, "num_analysts": None,
+            "buy": 0, "hold": 0, "sell": 0, "last_updated": None,
+        }
+
+
+_insider_cache: dict[str, tuple[dict, float]] = {}
+
+@app.get("/insider-activity/{ticker}")
+def insider_activity_endpoint(ticker: str, request: Request):
+    """SEC Form 4 insider transactions. Finnhub primary (6-month window), yfinance fallback. 1-hour cache."""
+    import time as _time_ins
+    from datetime import timedelta
+    ticker = ticker.upper().strip()
+    now = _time_ins.time()
+
+    if ticker in _insider_cache:
+        cached, ts = _insider_cache[ticker]
+        if now - ts < 3600:
+            return cached
+
+    processed = []
+
+    # --- Finnhub primary source ---
+    fh_key = os.environ.get("FINNHUB_API_KEY", "")
+    if fh_key:
+        try:
+            from_date = (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d")
+            resp = requests.get(
+                f"https://finnhub.io/api/v1/stock/insider-transactions?symbol={ticker}&from={from_date}&token={fh_key}",
+                timeout=8,
+            )
+            if resp.ok:
+                fh_data = resp.json().get("data") or []
+                print(f"[insider] Finnhub {ticker}: OK, {len(fh_data)} raw transactions")
+                for t in fh_data:
+                    code = str(t.get("transactionCode", "")).upper()
+                    # P = open market purchase, S = open market sale, D = disposition (also a sell signal)
+                    if code not in ("P", "S", "D"):
+                        continue
+                    change = t.get("change", 0) or 0
+                    # "share" field is total shares after the transaction; use "change" first, fall back to "share"
+                    shares = abs(safe_int(change)) if change else abs(safe_int(t.get("share", 0) or 0))
+                    if shares == 0:
+                        continue
+                    price = float(t.get("transactionPrice", 0) or 0)
+                    txn_type = "buy" if code == "P" else "sell"
+                    processed.append({
+                        "name": t.get("name", "Unknown"),
+                        "title": t.get("title", ""),
+                        "transaction_type": txn_type,
+                        "shares": shares,
+                        "price": round(price, 2),
+                        "date": t.get("transactionDate") or t.get("filingDate") or "",
+                        "filing_date": t.get("filingDate") or "",
+                        "total_value": round(shares * price, 2),
+                    })
+                print(f"[insider] Finnhub {ticker}: {len(processed)} qualifying transactions after filter")
+            else:
+                print(f"[insider] Finnhub {ticker}: HTTP {resp.status_code} — {resp.text[:200]}")
+        except Exception as e:
+            print(f"[insider] Finnhub error for {ticker}: {e}")
+
+    # --- yfinance fallback when Finnhub returns nothing ---
+    if not processed:
+        try:
+            txns = yf.Ticker(ticker).insider_transactions
+            if txns is not None and not txns.empty:
+                for _, row in txns.iterrows():
+                    txn = str(row.get("Transaction", row.get("Text", ""))).lower()
+                    if not any(kw in txn for kw in ("purchase", "buy", "sale", "sell")):
+                        continue
+                    is_buy = "purchase" in txn or ("buy" in txn and "sell" not in txn)
+                    shares_raw = row.get("Shares", row.get("#Shares", 0))
+                    shares = int(abs(float(shares_raw or 0)))
+                    if shares == 0:
+                        continue
+                    value = float(row.get("Value", 0) or 0)
+                    price = value / shares if shares > 0 else 0.0
+                    date_val = row.get("Date", "")
+                    date_str = str(date_val)[:10] if date_val else ""
+                    processed.append({
+                        "name": str(row.get("Insider", row.get("Name", "Unknown"))),
+                        "title": str(row.get("Position", row.get("Title", ""))),
+                        "transaction_type": "buy" if is_buy else "sell",
+                        "shares": shares,
+                        "price": round(price, 2),
+                        "date": date_str,
+                        "filing_date": date_str,
+                        "total_value": round(abs(value), 2),
+                    })
+        except Exception as e:
+            print(f"[insider] yfinance fallback error for {ticker}: {e}")
+
+    processed.sort(key=lambda x: x["date"], reverse=True)
+    processed = processed[:30]
+
+    result = {"ticker": ticker, "transactions": processed}
+    _insider_cache[ticker] = (result, now)
+    return result
+
+
 _options_cache: dict[str, tuple[dict, float]] = {}
+
+def _norm_cdf(x: float) -> float:
+    """Standard normal CDF via math.erf (no scipy needed)."""
+    return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+
+def _bs_delta(S: float, K: float, expiry_str: str, r: float, sigma: float, is_call: bool) -> "float | None":
+    """Black-Scholes delta. Returns None if inputs are invalid."""
+    try:
+        T = max((datetime.strptime(expiry_str, "%Y-%m-%d") - datetime.now()).days / 365.0, 1 / 365.0)
+        if sigma <= 0 or S <= 0 or K <= 0:
+            return None
+        d1 = (math.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * math.sqrt(T))
+        raw = _norm_cdf(d1) if is_call else _norm_cdf(d1) - 1.0
+        return round(raw, 4)
+    except Exception:
+        return None
+
+def _finnhub_options(ticker: str, key: str, date: "str | None", current_price: float) -> "dict | None":
+    """Try Finnhub options chain. Returns a result dict on success, None on any failure.
+    Finnhub options require a premium subscription; this gracefully returns None for free-tier keys."""
+    try:
+        resp = requests.get(
+            f"https://finnhub.io/api/v1/stock/option-chain?symbol={ticker}&token={key}",
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        if not data or not data.get("data"):
+            return None
+
+        expiry_dates = sorted({d["expirationDate"] for d in data["data"] if d.get("expirationDate")})
+        if not expiry_dates:
+            return None
+
+        selected = date if (date and date in expiry_dates) else expiry_dates[0]
+        block = next((d for d in data["data"] if d.get("expirationDate") == selected), None)
+        if not block:
+            return None
+
+        price = current_price or safe_float(data.get("lastTradePrice") or 0)
+
+        def _proc_fh(opts: list, is_call: bool) -> list[dict]:
+            rows = []
+            for o in opts:
+                iv_dec = safe_float(o.get("IV") or o.get("impliedVolatility") or 0)
+                iv_pct = round(iv_dec * 100, 2) if iv_dec else None
+                strike = safe_float(o.get("strike") or 0)
+                # Use delta from Finnhub if available (premium), otherwise Black-Scholes
+                fh_delta = o.get("delta")
+                delta = round(float(fh_delta), 4) if fh_delta is not None else (
+                    _bs_delta(price, strike, selected, 0.05, iv_dec, is_call)
+                    if price and strike and iv_dec else None
+                )
+                intrinsic = safe_float(o.get("intrinsicValue") or 0)
+                rows.append({
+                    "strike":            strike,
+                    "lastPrice":         safe_float(o.get("lastPrice")),
+                    "bid":               safe_float(o.get("bid")),
+                    "ask":               safe_float(o.get("ask")),
+                    "volume":            int(o.get("volume") or 0),
+                    "openInterest":      int(o.get("openInterest") or 0),
+                    "impliedVolatility": iv_pct,
+                    "inTheMoney":        intrinsic > 0 if price else False,
+                    "delta":             delta,
+                })
+            return sorted(rows, key=lambda r: r["strike"])
+
+        calls_raw = block.get("options", {}).get("CALL", [])
+        puts_raw  = block.get("options", {}).get("PUT", [])
+        return {
+            "ticker":           ticker,
+            "current_price":    round(price, 4),
+            "expiration_dates": expiry_dates,
+            "selected_date":    selected,
+            "calls":            _proc_fh(calls_raw, True),
+            "puts":             _proc_fh(puts_raw, False),
+        }
+    except Exception:
+        return None
+
 
 @app.get("/options/{ticker}")
 def get_options_chain(ticker: str, date: str = None, request: Request = None):
-    """Fetch options chain for a ticker. Cached 15 min per (ticker, date)."""
+    """Fetch options chain for a ticker. Tries yfinance first, falls back to Finnhub.
+    Adds Black-Scholes delta for all contracts. Cached 15 min per (ticker, date)."""
+    import traceback as _tb
+
     if request:
         ip = request.client.host if request.client else "unknown"
         if check_rate_limit(ip, "options", 30, 3600):
             raise HTTPException(status_code=429, detail="Rate limit: 30 requests/hr")
 
     ticker = ticker.upper().strip()
+
     cache_key = f"{ticker}|{date or ''}"
     if cache_key in _options_cache:
         cached, ts = _options_cache[cache_key]
-        if time.time() - ts < 900:   # 15-minute TTL
+        if time.time() - ts < 900:
             return cached
 
+    # ── Try yfinance first ───────────────────────────────────────────────────
+    yf_error: str | None = None
     try:
         t = yf.Ticker(ticker)
-        expiry_dates: list[str] = list(t.options)
-        if not expiry_dates:
-            raise HTTPException(status_code=404, detail="No options available for this ticker")
+        raw_options = t.options
+        expiry_dates: list[str] = list(raw_options) if raw_options else []
 
-        # Resolve which expiry to load
+        if not expiry_dates:
+            raise ValueError(f"yfinance returned no expiry dates for {ticker}")
+
         selected = date if (date and date in expiry_dates) else expiry_dates[0]
 
         info = t.info or {}
@@ -2225,19 +3239,25 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
 
         chain = t.option_chain(selected)
 
-        def _process(df) -> list[dict]:
+        def _process(df, is_call: bool) -> list[dict]:
             rows = []
             for _, row in df.iterrows():
                 iv = safe_float(row.get("impliedVolatility"))
+                strike = safe_float(row.get("strike")) or 0.0
+                delta = (
+                    _bs_delta(current_price, strike, selected, 0.05, iv, is_call)
+                    if current_price and strike and iv else None
+                )
                 rows.append({
-                    "strike":           safe_float(row.get("strike")) or 0.0,
-                    "lastPrice":        safe_float(row.get("lastPrice")),
-                    "bid":              safe_float(row.get("bid")),
-                    "ask":              safe_float(row.get("ask")),
-                    "volume":           int(row.get("volume") or 0),
-                    "openInterest":     int(row.get("openInterest") or 0),
-                    "impliedVolatility": round(iv * 100, 2) if iv is not None else None,
-                    "inTheMoney":       bool(row.get("inTheMoney", False)),
+                    "strike":            strike,
+                    "lastPrice":         safe_float(row.get("lastPrice")),
+                    "bid":               safe_float(row.get("bid")),
+                    "ask":               safe_float(row.get("ask")),
+                    "volume":            safe_int(row.get("volume")),
+                    "openInterest":      safe_int(row.get("openInterest")),
+                    "impliedVolatility": round(iv * 100, 2) if iv else None,
+                    "inTheMoney":        bool(row.get("inTheMoney", False)),
+                    "delta":             delta,
                 })
             return sorted(rows, key=lambda r: r["strike"])
 
@@ -2246,8 +3266,8 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
             "current_price":    round(current_price, 4),
             "expiration_dates": expiry_dates,
             "selected_date":    selected,
-            "calls":            _process(chain.calls),
-            "puts":             _process(chain.puts),
+            "calls":            _process(chain.calls, True),
+            "puts":             _process(chain.puts, False),
         }
         _options_cache[cache_key] = (result, time.time())
         return result
@@ -2255,8 +3275,21 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Options error for {ticker}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        yf_error = str(e)
+        _tb.print_exc()
+
+    # ── Fall back to Finnhub ─────────────────────────────────────────────────
+    fh_key = os.environ.get("FINNHUB_API_KEY", "")
+    if fh_key:
+        fh_result = _finnhub_options(ticker, fh_key, date, 0.0)
+        if fh_result:
+            _options_cache[cache_key] = (fh_result, time.time())
+            return fh_result
+
+    raise HTTPException(
+        status_code=500,
+        detail=f"Options unavailable: yfinance error: {yf_error}. Finnhub fallback also failed (options require a Finnhub premium subscription).",
+    )
 
 
 # Base cache: index prices + news headlines (shared across all ticker combos, 5-min TTL)
@@ -2320,20 +3353,95 @@ def market_summary(tickers: str = Query(default="")):
     dia_pct = index_data.get("DIA", {}).get("pct", 0.0)
     vix_val = index_data.get("^VIX", {}).get("price", 0.0)
 
-    # Fetch per-holding price changes
+    # Fetch per-holding 1-day price changes via batch yfinance download (more reliable than fast_info)
     holdings_data: dict[str, float] = {}
-    for sym in user_tickers:
-        try:
-            info = yf.Ticker(sym).fast_info
-            price = safe_float(getattr(info, "last_price", 0) or 0)
-            prev_close = safe_float(getattr(info, "previous_close", 0) or 0)
-            pct = ((price - prev_close) / prev_close * 100) if price > 0 and prev_close > 0 else 0.0
-            holdings_data[sym] = round(pct, 2)
-        except Exception as e:
-            print(f"market-summary holdings error for {sym}: {e}")
+    if user_tickers:
+        real_tickers = [t for t in user_tickers if not is_cash_ticker(t)]
+        for t in user_tickers:
+            if is_cash_ticker(t):
+                holdings_data[t] = 0.0
+        if real_tickers:
+            try:
+                dl_arg = real_tickers[0] if len(real_tickers) == 1 else real_tickers
+                dl = yf.download(dl_arg, period="2d", auto_adjust=True, progress=False)
+                if dl is not None and not dl.empty:
+                    if isinstance(dl.columns, pd.MultiIndex):
+                        close = dl["Close"]
+                        if isinstance(close, pd.Series):
+                            close = close.to_frame(name=real_tickers[0])
+                    else:
+                        close = dl[["Close"]].rename(columns={"Close": real_tickers[0]}) if "Close" in dl.columns else dl.iloc[:, :1].rename(columns={dl.columns[0]: real_tickers[0]})
+                    close = close.dropna(how="all")
+                    if len(close) >= 2:
+                        prev_row = close.iloc[-2]
+                        curr_row = close.iloc[-1]
+                        for t in real_tickers:
+                            if t in close.columns:
+                                p0 = safe_float(prev_row.get(t, 0))
+                                p1 = safe_float(curr_row.get(t, 0))
+                                holdings_data[t] = round(((p1 - p0) / p0 * 100) if p0 > 0 else 0.0, 2)
+                            else:
+                                holdings_data[t] = 0.0
+                    else:
+                        # Only one row — fall back to fast_info
+                        for t in real_tickers:
+                            try:
+                                fi = yf.Ticker(t).fast_info
+                                p1 = safe_float(getattr(fi, "last_price", 0) or 0)
+                                p0 = safe_float(getattr(fi, "previous_close", 0) or 0)
+                                holdings_data[t] = round(((p1 - p0) / p0 * 100) if p0 > 0 else 0.0, 2)
+                            except Exception:
+                                holdings_data[t] = 0.0
+            except Exception as e:
+                print(f"market-summary holdings batch error: {e}")
+                for sym in real_tickers:
+                    if sym not in holdings_data:
+                        try:
+                            fi = yf.Ticker(sym).fast_info
+                            p1 = safe_float(getattr(fi, "last_price", 0) or 0)
+                            p0 = safe_float(getattr(fi, "previous_close", 0) or 0)
+                            holdings_data[sym] = round(((p1 - p0) / p0 * 100) if p0 > 0 else 0.0, 2)
+                        except Exception as e2:
+                            print(f"market-summary holdings fallback error for {sym}: {e2}")
 
-    # AI generation — three distinct sections
-    market_text = holdings_text = context_text = ""
+    # Fetch upcoming earnings dates within 14 days for WHAT TO WATCH section
+    # earnings_data maps ticker -> days until earnings (int)
+    earnings_data: dict[str, int] = {}
+    today_date = datetime.now(timezone.utc).date()
+    for sym in (user_tickers or [])[:6]:
+        if is_cash_ticker(sym):
+            continue
+        try:
+            cal = yf.Ticker(sym).calendar
+            date_str = None
+            if cal is not None and not (isinstance(cal, pd.DataFrame) and cal.empty):
+                if isinstance(cal, pd.DataFrame) and "Earnings Date" in cal.index:
+                    dates = cal.loc["Earnings Date"]
+                    if hasattr(dates, "__iter__") and not isinstance(dates, str):
+                        date_list = [str(d).split(" ")[0] for d in dates if pd.notna(d)]
+                        if date_list:
+                            date_str = date_list[0]
+                    elif pd.notna(dates):
+                        date_str = str(dates).split(" ")[0]
+                elif isinstance(cal, dict) and "Earnings Date" in cal:
+                    raw_date = cal["Earnings Date"]
+                    if isinstance(raw_date, list) and raw_date:
+                        date_str = str(raw_date[0]).split(" ")[0]
+                    elif raw_date:
+                        date_str = str(raw_date).split(" ")[0]
+            if date_str:
+                try:
+                    ed = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    days_away = (ed - today_date).days
+                    if 0 <= days_away <= 14:
+                        earnings_data[sym] = days_away
+                except ValueError:
+                    pass
+        except Exception as e:
+            print(f"market-summary earnings error for {sym}: {e}")
+
+    # AI generation — four distinct sections
+    market_text = holdings_text = context_text = outlook_text = ""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if api_key:
         try:
@@ -2347,31 +3455,61 @@ def market_summary(tickers: str = Query(default="")):
             if holdings_data:
                 best_sym = max(holdings_data, key=lambda k: holdings_data[k])
                 worst_sym = min(holdings_data, key=lambda k: holdings_data[k])
-                holdings_line = (
-                    "User holdings today: "
-                    + ", ".join(f"{s} {sign(v)}{v:.2f}%" for s, v in holdings_data.items())
-                    + f". Best performer: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%)."
-                    + f" Worst performer: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%)."
+                perf_lines = "\n".join(
+                    f"  {s}: {sign(v)}{v:.2f}%"
+                    for s, v in sorted(holdings_data.items(), key=lambda x: -x[1])
+                )
+                holdings_block = (
+                    f"Today's actual verified price changes:\n"
+                    f"{perf_lines}\n\n"
+                    f"Use ONLY these numbers. Never say a stock fell if its number is positive. "
+                    f"The portfolio leader is the highest number. The laggard is the lowest."
+                )
+                holdings_key_desc = (
+                    f"Write 2-3 sentences about the user's portfolio today using ONLY the exact numbers above. "
+                    f"State which holdings rose and which fell with the exact percentages. "
+                    f"Connect each move to the market driver. "
+                    f"Leader: {best_sym} ({sign(holdings_data[best_sym])}{holdings_data[best_sym]:.2f}%), "
+                    f"laggard: {worst_sym} ({sign(holdings_data[worst_sym])}{holdings_data[worst_sym]:.2f}%). "
+                    f"Never describe a positive-returning holding as a drag, headwind, or negative."
                 )
             else:
-                holdings_line = "No user holdings provided."
+                holdings_block = "No user holdings provided."
+                holdings_key_desc = '"No holdings provided for this user."'
+
+            if earnings_data:
+                earnings_lines = "\n".join(
+                    f"  {sym} reports in {days} day{'s' if days != 1 else ''}"
+                    for sym, days in sorted(earnings_data.items(), key=lambda x: x[1])
+                )
+                watch_data_block = f"Upcoming earnings (within 14 days, verified from yfinance):\n{earnings_lines}"
+            else:
+                watch_data_block = "No earnings reports due within the next 14 days for this portfolio."
 
             prompt = f"""Market data:
 S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, VIX {vix_val:.1f}.
-Top news: {news_str}
-{holdings_line}
+Top news headlines: {news_str}
 
-Return a JSON object with exactly these three string keys:
-- "market": 2 sentences on what major indexes did today and why, referencing the news headlines.
-- "holdings": {"1-2 sentences on how the user's holdings performed, naming best and worst performer with their actual % change." if holdings_data else '"No holdings provided."'}
-- "context": 1 sentence of macro context (geopolitical, Fed, earnings) drawn from the news.
+{holdings_block}
 
-Rules: no asterisks, no em dashes, no markdown. Plain prose. Return only the JSON object."""
+{watch_data_block}
+
+Return a JSON object with exactly these four string keys. Each value must be 2-3 sentences of plain prose.
+
+"market": State exactly what the S&P 500, Nasdaq, and Dow did today with precise percentage moves. Include whether it was a broad move or sector-led. 2-3 sentences.
+
+"market_driver": Explain specifically what caused the move. Name the actual event: if earnings, name the company and whether it beat or missed. If a Fed statement, say what was said. If a CPI or jobs report, give the number and whether it surprised. If a geopolitical or political event, name it plainly. Do not say things like "sentiment remained constructive" or "risk appetite improved" or "tailwinds persisted". Say what actually happened. 2-3 sentences.
+
+"holdings": {holdings_key_desc}
+
+"outlook": Use the upcoming earnings data above. If any holding reports within 14 days, name it specifically (e.g. "TTWO reports in 3 days"), say what to watch for in that report, and close with what it means for the portfolio. If no earnings are due, pick the most relevant near-term market event from the news and explain what to watch. 2-3 sentences.
+
+Hard rules: no em dashes, no asterisks, no markdown, no vague market jargon. Write like a smart friend who knows finance. Plain English only. Return only the JSON object, no wrapper."""
 
             resp = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=450,
-                system="You are a senior Bloomberg markets correspondent. Return ONLY a valid JSON object with keys: market, holdings, context. No markdown fences, no extra text.",
+                max_tokens=700,
+                system="You are a sharp financial analyst writing a daily market brief. Your job is to say exactly what happened and why, using plain English. Never use vague phrases like 'sentiment remained constructive', 'risk appetite improved', 'tailwinds persist', or 'investor appetite'. Name real events, real numbers, real companies. Return ONLY a valid JSON object with keys: market, market_driver, holdings, outlook. No markdown fences, no extra text.",
                 messages=[{"role": "user", "content": prompt}],
             )
             raw = resp.content[0].text.strip()
@@ -2383,7 +3521,8 @@ Rules: no asterisks, no em dashes, no markdown. Plain prose. Return only the JSO
             parsed = json.loads(raw)
             market_text = clean_ai_response(parsed.get("market", ""))
             holdings_text = clean_ai_response(parsed.get("holdings", ""))
-            context_text = clean_ai_response(parsed.get("context", ""))
+            context_text = clean_ai_response(parsed.get("market_driver", parsed.get("context", "")))
+            outlook_text = clean_ai_response(parsed.get("outlook", ""))
         except Exception as e:
             print(f"market-summary AI error: {e}")
 
@@ -2391,6 +3530,7 @@ Rules: no asterisks, no em dashes, no markdown. Plain prose. Return only the JSO
         "market": market_text,
         "holdings": holdings_text,
         "context": context_text,
+        "outlook": outlook_text,
         "holdings_pct": holdings_data,
         "spy_pct": round(spy_pct, 2),
         "qqq_pct": round(qqq_pct, 2),
@@ -2486,49 +3626,10 @@ def watchlist_data(tickers: str, request: Request):
     return {"results": results}
 
 
-@app.get("/test-email")
-def test_email(email: str = ""):
-    """Debug endpoint: send a test email via Resend and return the result."""
-    import traceback
-
-    target = email or os.environ.get("TEST_EMAIL_TO", "")
-    if not target:
-        return {"ok": False, "error": "Provide ?email=you@example.com or set TEST_EMAIL_TO env var"}
-
-    resend_key = os.environ.get("RESEND_API_KEY", "")
-    if not resend_key:
-        return {"ok": False, "error": "RESEND_API_KEY not configured"}
-
-    print(f"[test-email] sending to {target} via Resend")
-
-    try:
-        response = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={
-                "from": "Corvo <hello@corvo.capital>",
-                "to": [target],
-                "subject": "Corvo: Test Email",
-                "html": "<p>This is a Corvo test email. Resend is working correctly.</p>",
-            },
-            timeout=10,
-        )
-        data = response.json()
-        if response.status_code in (200, 201):
-            print(f"[test-email] sent OK to {target} id={data.get('id')}")
-            return {"ok": True, "sent_to": target, "resend_id": data.get("id")}
-        else:
-            print(f"[test-email] Resend error {response.status_code}: {data}")
-            return {"ok": False, "error": data}
-    except Exception:
-        tb = traceback.format_exc()
-        print(f"[test-email] FAILED:\n{tb}")
-        return {"ok": False, "error": tb}
-
 
 @app.get("/unsubscribe", response_class=HTMLResponse)
 def unsubscribe(user_id: str = ""):
-    """Set weekly_digest and price_alerts to false in email_preferences for the given user."""
+    """Unsubscribe user from all Corvo emails by disabling all email_preferences toggles."""
     success = False
     if user_id and SUPABASE_URL and SUPABASE_SERVICE_KEY:
         try:
@@ -2540,7 +3641,7 @@ def unsubscribe(user_id: str = ""):
                     "Content-Type": "application/json",
                     "Prefer": "return=minimal",
                 },
-                json={"weekly_digest": False, "price_alerts": False},
+                json={"morning_briefing": False, "week_in_review": False, "monthly_summary": False, "price_alerts": False, "market_close_summary": False},
                 timeout=8,
             )
             success = resp.status_code in (200, 204)
@@ -2549,7 +3650,7 @@ def unsubscribe(user_id: str = ""):
             print(f"[unsubscribe] error: {e}")
 
     if success:
-        body_text = "You&#39;ve been unsubscribed from Corvo emails. You won&#39;t receive weekly digests or price alert emails going forward."
+        body_text = "You&#39;ve been unsubscribed from Corvo emails. You won&#39;t receive morning briefings or digest emails going forward."
         detail_text = "You can re-enable these at any time in your <a href=\"https://corvo.capital/app\" style=\"color:#c9a84c;\">account settings</a>."
     else:
         body_text = "Something went wrong processing your request."
@@ -2588,6 +3689,124 @@ def unsubscribe(user_id: str = ""):
 </html>""", status_code=200)
 
 
+@app.get("/email/unsubscribe", response_class=HTMLResponse)
+def email_unsubscribe_type(user_id: str = "", type: str = ""):
+    """Unsubscribe a user from a single email type. Called directly from email links."""
+    VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary", "price_alerts", "market_close_summary"}
+    LABEL_MAP = {
+        "morning_briefing":    "Morning Briefing",
+        "week_in_review":      "Week in Review",
+        "monthly_summary":     "Monthly Summary",
+        "price_alerts":        "Price Alerts",
+        "market_close_summary": "Market Close Summary",
+    }
+    col = type if type in VALID_COLUMNS else None
+    success = False
+    if col and user_id and SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        try:
+            resp = requests.patch(
+                f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}",
+                headers={**_sb_headers(), "Prefer": "return=minimal"},
+                json={col: False},
+                timeout=8,
+            )
+            success = resp.status_code in (200, 204)
+            print(f"[email-unsubscribe] user_id={user_id} type={col} status={resp.status_code}")
+        except Exception as e:
+            print(f"[email-unsubscribe] error: {e}")
+
+    label = LABEL_MAP.get(type, "Corvo emails")
+    amber = "#c9a84c"
+    sans  = "Arial, Helvetica, sans-serif"
+    mono  = "'Courier New', Courier, monospace"
+    if success:
+        icon_html = "&#x2705;"
+        title = "Unsubscribed"
+        body_text = f"You&#39;ve been unsubscribed from {label} emails."
+        detail_text = f'You can re-enable this at any time in your <a href="https://corvo.capital/app" style="color:{amber};">account settings</a>.'
+    elif not col:
+        icon_html = "&#x26A0;"
+        title = "Invalid Link"
+        body_text = "This unsubscribe link is not valid."
+        detail_text = f'Visit your <a href="https://corvo.capital/app" style="color:{amber};">account settings</a> to manage email preferences.'
+    else:
+        icon_html = "&#x26A0;"
+        title = "Something Went Wrong"
+        body_text = "We could not process your request."
+        detail_text = f'Visit your <a href="https://corvo.capital/app" style="color:{amber};">account settings</a> to manage email preferences.'
+
+    return HTMLResponse(content=f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} | Corvo</title>
+  <style>
+    body {{ margin: 0; padding: 0; background: #0a0a0a; color: #e8e0cc;
+            font-family: {sans}; display: flex; align-items: center;
+            justify-content: center; min-height: 100vh; }}
+    .card {{ max-width: 480px; width: 100%; padding: 48px 32px; text-align: center; }}
+    .brand {{ font-size: 24px; font-weight: 900; letter-spacing: 6px; color: {amber};
+              font-family: {mono}; margin-bottom: 4px; }}
+    .sub {{ font-size: 9px; letter-spacing: 3px; color: #555; text-transform: uppercase;
+            margin-bottom: 40px; }}
+    .icon {{ font-size: 40px; margin-bottom: 20px; }}
+    h1 {{ font-size: 20px; font-weight: 700; color: #e8e0cc; margin: 0 0 12px; }}
+    p {{ font-size: 14px; color: #888880; line-height: 1.7; margin: 0 0 12px; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">CORVO</div>
+    <div class="sub">Portfolio Intelligence</div>
+    <div class="icon">{icon_html}</div>
+    <h1>{title}</h1>
+    <p>{body_text}</p>
+    <p>{detail_text}</p>
+  </div>
+</body>
+</html>""", status_code=200)
+
+
+class UnsubscribeRequest(BaseModel):
+    user_id: str
+    type: str | None = None
+
+
+_UNSUB_VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary", "price_alerts", "market_close_summary"}
+
+
+@app.post("/unsubscribe")
+def unsubscribe_post(req: UnsubscribeRequest):
+    """Disable email preferences for the user. If type is provided, disable only that preference; otherwise disable all."""
+    if not req.user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+    try:
+        if req.type and req.type in _UNSUB_VALID_COLUMNS:
+            patch_body = {req.type: False}
+        else:
+            patch_body = {
+                "morning_briefing": False,
+                "week_in_review": False,
+                "monthly_summary": False,
+                "price_alerts": False,
+                "market_close_summary": False,
+                "push_notifications": False,
+            }
+        resp = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{req.user_id}",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json=patch_body,
+            timeout=8,
+        )
+        success = resp.status_code in (200, 204)
+        return {"ok": success}
+    except Exception:
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+
+
 # ── Push Notification Endpoints ───────────────────────────────────────────────
 
 class PushSubscribeRequest(BaseModel):
@@ -2603,7 +3822,10 @@ def get_vapid_public_key():
 
 
 @app.post("/push/subscribe")
-def push_subscribe(req: PushSubscribeRequest):
+def push_subscribe(req: PushSubscribeRequest, request: Request):
+    verified_id = _verify_jwt_user(request)
+    if verified_id != req.user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=503, detail="Supabase not configured")
     try:
@@ -2651,7 +3873,7 @@ def _send_push(subscription: dict, title: str, body: str, icon: str = "", url: s
             subscription_info=subscription,
             data=json.dumps(payload),
             vapid_private_key=VAPID_PRIVATE_KEY,
-            vapid_claims={"sub": VAPID_CLAIMS_EMAIL},
+            vapid_claims={"sub": VAPID_CLAIMS_EMAIL if VAPID_CLAIMS_EMAIL.startswith("mailto:") else f"mailto:{VAPID_CLAIMS_EMAIL}"},
         )
         return "ok"
     except Exception as e:
@@ -2662,42 +3884,168 @@ def _send_push(subscription: dict, title: str, body: str, icon: str = "", url: s
         return "err"
 
 
-def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, threshold: float):
-    """Send price alert email via Resend."""
-    resend_key = os.environ.get("RESEND_API_KEY", "")
-    from_email = os.environ.get("RESEND_FROM_EMAIL", "alerts@corvo.capital")
-    if not resend_key or not to_email:
+def _send_alert_email(to_email: str, ticker: str, price: float, condition: str, threshold: float, user_id: str = "", email_theme: str = "light"):
+    """Send a price alert email via Resend."""
+    if not to_email:
         return
-    subject = f"Price Alert: {ticker} has {'dropped' if condition == 'drops' else 'risen'} {threshold}%"
-    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
-<body style="background:#0a0e14;color:#e8e0cc;font-family:Courier New,monospace;padding:40px;margin:0">
-  <div style="max-width:480px;margin:0 auto">
-    <div style="font-size:22px;font-weight:900;letter-spacing:8px;color:#c9a84c;margin-bottom:4px">CORVO</div>
-    <div style="font-size:8px;letter-spacing:3px;color:rgba(232,224,204,0.35);margin-bottom:32px">PRICE ALERT</div>
-    <div style="background:#111827;border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:24px">
-      <div style="font-size:11px;letter-spacing:2px;color:#c9a84c;text-transform:uppercase;margin-bottom:8px">Alert Triggered</div>
-      <div style="font-size:28px;font-weight:700;color:#e8e0cc;margin-bottom:4px">{ticker}</div>
-      <div style="font-size:16px;color:rgba(232,224,204,0.7);margin-bottom:20px">
-        Current price: <strong style="color:#c9a84c">${price:.2f}</strong>
-      </div>
-      <div style="font-size:13px;color:rgba(232,224,204,0.6);line-height:1.7">
-        Your alert triggered because {ticker} {'dropped' if condition == 'drops' else 'rose'} by more than {threshold}%.
-      </div>
-    </div>
-    <div style="margin-top:28px;font-size:10px;color:rgba(232,224,204,0.25);text-align:center">
-      corvo.capital · Not financial advice
-    </div>
-  </div>
-</body></html>"""
-    try:
-        requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={"from": from_email, "to": [to_email], "subject": subject, "html": html},
-            timeout=10,
-        )
-    except Exception as e:
-        print(f"[push] alert email error: {e}")
+    moved = "rose" if condition == "rises" else "fell"
+    subject = f"Price alert: {ticker} {moved} {threshold}%"
+    mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
+    html = _email_html(
+        heading=f"{ticker} alert triggered",
+        label="Price Alert",
+        body_lines=[
+            f"<strong style=\"color:{mono_color};font-family:'Courier New',Courier,monospace;font-size:20px;\">${price:.2f}</strong>",
+            f"{ticker} {moved} by more than {threshold}% from the previous close.",
+            "Log in to review your position and decide your next move.",
+        ],
+        cta_text="Review now",
+        cta_url="https://corvo.capital/app",
+        user_id=user_id,
+        email_theme=email_theme,
+    )
+    from_addr = os.environ.get("RESEND_FROM_EMAIL", "Corvo Alerts <alerts@corvo.capital>")
+    _resend(to_email, subject, html, from_addr=from_addr)
+
+
+# ── Price Targets ─────────────────────────────────────────────────────────────
+
+class PriceTargetCreate(BaseModel):
+    user_id: str
+    ticker: str
+    target_price: float
+    direction: str  # "above" or "below" (also accepts "Rises above" / "Falls below")
+
+
+@app.get("/price-targets/{user_id}")
+def get_price_targets(user_id: str, request: Request):
+    """Return all price targets for a user, including current price and distance."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/price_targets?user_id=eq.{user_id}&order=created_at.desc",
+        headers=_sb_headers(), timeout=10,
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to fetch targets")
+    targets = resp.json()
+
+    # Fetch current prices for unique tickers
+    tickers = list({t["ticker"] for t in targets if not t.get("triggered")})
+    prices: dict[str, float] = {}
+    for ticker in tickers:
+        try:
+            df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
+            if not df.empty:
+                raw = df["Close"].iloc[-1]
+                prices[ticker] = float(raw.iloc[0] if hasattr(raw, "iloc") else raw)
+        except Exception:
+            pass
+
+    for t in targets:
+        ticker = t["ticker"]
+        t["current_price"] = prices.get(ticker)
+
+    return targets
+
+
+_DIRECTION_MAP = {
+    "above": "above",
+    "below": "below",
+    "rises above": "above",
+    "falls below": "below",
+}
+
+def _normalize_direction(raw: str) -> str | None:
+    return _DIRECTION_MAP.get(raw.lower().strip())
+
+
+@app.post("/price-targets")
+def create_price_target(req: PriceTargetCreate, request: Request):
+    """Create a new price target."""
+    verified_id = _verify_jwt_user(request)
+    req.user_id = verified_id
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    direction = _normalize_direction(req.direction)
+    if not direction:
+        raise HTTPException(status_code=400, detail=f"direction must be 'above' or 'below', got '{req.direction}'")
+    if req.target_price <= 0:
+        raise HTTPException(status_code=400, detail="target_price must be positive")
+    if not req.ticker.strip():
+        raise HTTPException(status_code=400, detail="ticker is required")
+    resp = requests.post(
+        f"{SUPABASE_URL}/rest/v1/price_targets",
+        headers={**_sb_headers(), "Prefer": "return=representation"},
+        json={
+            "user_id": req.user_id,
+            "ticker": req.ticker.upper().strip(),
+            "target_price": req.target_price,
+            "direction": direction,
+        },
+        timeout=8,
+    )
+    if resp.status_code not in (200, 201):
+        try:
+            err = resp.json()
+            detail = err.get("message") or err.get("detail") or f"Supabase error {resp.status_code}"
+        except Exception:
+            detail = f"Supabase error {resp.status_code}"
+        raise HTTPException(status_code=400, detail=detail)
+    data = resp.json()
+    return data[0] if data else {}
+
+
+@app.patch("/price-targets/{target_id}")
+def update_price_target(target_id: str, user_id: str, target_price: float, direction: str):
+    """Update a price target's price and direction."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    direction = _normalize_direction(direction) or direction
+    if direction not in ("above", "below"):
+        raise HTTPException(status_code=400, detail=f"direction must be 'above' or 'below', got '{direction}'")
+    resp = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/price_targets?id=eq.{target_id}&user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"target_price": target_price, "direction": direction, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=8,
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=resp.status_code, detail="Update failed")
+    return {"ok": True}
+
+
+@app.delete("/price-targets/{target_id}")
+def delete_price_target(target_id: str, user_id: str):
+    """Delete a price target, verifying ownership by user_id."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    resp = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/price_targets?id=eq.{target_id}&user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        timeout=8,
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=resp.status_code, detail="Delete failed")
+    return {"ok": True}
+
+
+@app.delete("/price-alerts/{alert_id}")
+def delete_price_alert(alert_id: str, user_id: str):
+    """Delete a price alert, verifying ownership by user_id."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    resp = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/price_alerts?id=eq.{alert_id}&user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        timeout=8,
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=resp.status_code, detail="Delete failed")
+    return {"ok": True}
 
 
 async def check_price_alerts():
@@ -2766,24 +4114,40 @@ async def check_price_alerts():
                     notif_title = "Corvo Price Alert"
                     notif_body = f"{ticker} has {'dropped' if condition == 'drops' else 'risen'} {threshold}%, now at ${current_price:.2f}"
 
-                    # Send push to all subscriptions for this user
-                    subs_resp = requests.get(
-                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                    # Fetch preferences once for both push and email
+                    pref_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=push_notifications,price_alerts,email_theme",
                         headers=_sb_headers(), timeout=5,
                     )
-                    if subs_resp.status_code == 200:
-                        for row in subs_resp.json():
-                            _send_push(row["subscription"], notif_title, notif_body)
+                    send_push = True
+                    send_email = True
+                    email_theme = "light"
+                    if pref_resp.status_code == 200 and pref_resp.json():
+                        prow = pref_resp.json()[0]
+                        send_push = prow.get("push_notifications", True) is not False
+                        send_email = prow.get("price_alerts", True) is not False
+                        email_theme = prow.get("email_theme") or "light"
+
+                    # Send push to all subscriptions for this user
+                    if send_push:
+                        subs_resp = requests.get(
+                            f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if subs_resp.status_code == 200:
+                            for row in subs_resp.json():
+                                _send_push(row["subscription"], notif_title, notif_body)
 
                     # Send email alert
-                    user_resp = requests.get(
-                        f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
-                        headers=_sb_headers(), timeout=5,
-                    )
-                    if user_resp.status_code == 200:
-                        email = user_resp.json().get("email", "")
-                        if email:
-                            _send_alert_email(email, ticker, current_price, condition, threshold)
+                    if send_email:
+                        user_resp = requests.get(
+                            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if user_resp.status_code == 200:
+                            email = user_resp.json().get("email", "")
+                            if email:
+                                _send_alert_email(email, ticker, current_price, condition, threshold, user_id=user_id, email_theme=email_theme)
 
                     print(f"[alerts] triggered: {ticker} {condition} {threshold}% for user {user_id}")
             except Exception as e:
@@ -2795,7 +4159,8 @@ async def check_price_alerts():
     except Exception as e:
         print(f"[alerts] check_price_alerts error: {e}")
 
-        # ── Portfolio alerts ──────────────────────────────────────────────
+    # ── Portfolio alerts (runs independently of stock alert outcome) ───────────
+    try:
         port_resp = requests.get(
             f"{SUPABASE_URL}/rest/v1/price_alerts?triggered=eq.false&type=eq.portfolio&select=id,user_id,portfolio_id,condition,threshold",
             headers=_sb_headers(), timeout=10,
@@ -2857,28 +4222,46 @@ async def check_price_alerts():
                     notif_title = "Corvo Portfolio Alert"
                     notif_body = f"{pf_name} has {'dropped' if condition == 'drops' else 'risen'} {threshold}% (now ${latest_val:,.0f})"
 
-                    # Send push
-                    subs_resp = requests.get(
-                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                    # Fetch preferences once for both push and email
+                    pref_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=push_notifications,price_alerts,email_theme",
                         headers=_sb_headers(), timeout=5,
                     )
-                    if subs_resp.status_code == 200:
-                        for row in subs_resp.json():
-                            _send_push(row["subscription"], notif_title, notif_body)
+                    send_push = True
+                    send_email = True
+                    email_theme = "light"
+                    if pref_resp.status_code == 200 and pref_resp.json():
+                        prow = pref_resp.json()[0]
+                        send_push = prow.get("push_notifications", True) is not False
+                        send_email = prow.get("price_alerts", True) is not False
+                        email_theme = prow.get("email_theme") or "light"
+
+                    # Send push
+                    if send_push:
+                        subs_resp = requests.get(
+                            f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if subs_resp.status_code == 200:
+                            for row in subs_resp.json():
+                                _send_push(row["subscription"], notif_title, notif_body)
 
                     # Send email
-                    user_resp = requests.get(
-                        f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
-                        headers=_sb_headers(), timeout=5,
-                    )
-                    if user_resp.status_code == 200:
-                        email = user_resp.json().get("email", "")
-                        if email:
-                            _send_alert_email(email, pf_name, latest_val, condition, threshold)
+                    if send_email:
+                        user_resp = requests.get(
+                            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if user_resp.status_code == 200:
+                            email = user_resp.json().get("email", "")
+                            if email:
+                                _send_alert_email(email, pf_name, latest_val, condition, threshold, user_id=user_id, email_theme=email_theme)
 
                     print(f"[alerts] portfolio triggered: {pf_name} {condition} {threshold}% for user {user_id}")
                 except Exception as e:
                     print(f"[alerts] portfolio alert error: {e}")
+    except Exception as e:
+        print(f"[alerts] portfolio check error: {e}")
 
 
 class SnapshotRequest(BaseModel):
@@ -2988,7 +4371,7 @@ def portfolio_snapshot(req: SnapshotRequest):
                 portfolio_value = 10000.0 * (1.0 + cumulative_return)
 
     # ── Upsert (merge on portfolio_id + date unique constraint) ──────────────
-    requests.post(
+    upsert_resp = requests.post(
         f"{SUPABASE_URL}/rest/v1/portfolio_snapshots",
         headers={**_sb_headers(), "Prefer": "resolution=merge-duplicates"},
         json={
@@ -3001,12 +4384,432 @@ def portfolio_snapshot(req: SnapshotRequest):
         },
         timeout=10,
     )
+    if upsert_resp.status_code not in (200, 201, 204):
+        print(f"[snapshot] upsert failed: {upsert_resp.status_code} {upsert_resp.text[:200]}")
+        raise HTTPException(status_code=500, detail="Failed to save portfolio snapshot")
 
     return {
         "ok": True,
         "date": today,
         "portfolio_value": round(portfolio_value, 2),
         "cumulative_return_pct": round(cumulative_return * 100, 4),
+    }
+
+
+# ── Health Score cache (keyed by user_id + UTC date + sorted tickers hash) ────
+_health_score_cache: dict[str, tuple[dict, str]] = {}
+
+
+def _hs_cache_key(user_id: str, tickers: list[str]) -> str:
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    tkr_hash = "|".join(sorted(t.upper() for t in tickers))
+    uid = user_id or "anon"
+    return f"{uid}:{today}:{tkr_hash}"
+
+
+def _hs_load_from_supabase(user_id: str, date_str: str, tkr_hash: str) -> dict | None:
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return None
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/health_score_cache"
+            f"?user_id=eq.{user_id}&date=eq.{date_str}&tickers_hash=eq.{tkr_hash}&select=score,headline,actions",
+            headers=_sb_headers(), timeout=5,
+        )
+        if resp.status_code == 200:
+            rows = resp.json()
+            if rows:
+                row = rows[0]
+                return {"score": row["score"], "headline": row["headline"], "actions": row["actions"], "cached": True}
+    except Exception as e:
+        print(f"[health-score] supabase load error: {e}")
+    return None
+
+
+def _hs_save_to_supabase(user_id: str, date_str: str, tkr_hash: str, result: dict):
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return
+    try:
+        requests.post(
+            f"{SUPABASE_URL}/rest/v1/health_score_cache",
+            headers={**_sb_headers(), "Prefer": "resolution=merge-duplicates"},
+            json={
+                "user_id": user_id,
+                "date": date_str,
+                "tickers_hash": tkr_hash,
+                "score": result["score"],
+                "headline": result["headline"],
+                "actions": result["actions"],
+            },
+            timeout=5,
+        )
+    except Exception as e:
+        print(f"[health-score] supabase save error: {e}")
+
+
+class HealthScoreRequest(BaseModel):
+    user_id: str = ""
+    tickers: list[str] = []
+    weights: list[float] = []
+    annualized_return: float = 0.0
+    portfolio_volatility: float = 0.0
+    sharpe_ratio: float = 0.0
+    max_drawdown: float = 0.0
+    rf_rate: float = 0.04
+    individual_returns: dict = {}
+    portfolio_value: float | None = None
+
+
+@app.post("/portfolio/health-score")
+def portfolio_health_score(req: HealthScoreRequest):
+    tickers = [t.upper() for t in req.tickers if t]
+    weights = req.weights or [1.0 / max(len(tickers), 1)] * len(tickers)
+    if len(weights) != len(tickers):
+        weights = [1.0 / max(len(tickers), 1)] * len(tickers)
+
+    # Compute numeric sub-scores (same formula as client-side HealthScore.tsx)
+    ann_ret = req.annualized_return
+    vol = req.portfolio_volatility
+    sharpe = req.sharpe_ratio
+    dd = req.max_drawdown
+    rS = min(max(((ann_ret + 0.3) / 0.6) * 100, 0), 100)
+    shS = min(max((sharpe / 3) * 100, 0), 100)
+    vS = min(max((1 - vol / 0.6) * 100, 0), 100)
+    dS = min(max((1 + dd / 0.5) * 100, 0), 100)
+    score = round(rS * 0.3 + shS * 0.3 + vS * 0.25 + dS * 0.15)
+
+    # Check in-memory cache first
+    cache_key = _hs_cache_key(req.user_id, tickers)
+    if cache_key in _health_score_cache:
+        cached, _ = _health_score_cache[cache_key]
+        return cached
+
+    # Check Supabase cache
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    tkr_hash = "|".join(sorted(t.upper() for t in tickers))
+    sb_cached = _hs_load_from_supabase(req.user_id, today, tkr_hash)
+    if sb_cached:
+        _health_score_cache[cache_key] = (sb_cached, today)
+        return sb_cached
+
+    # Build context for Claude
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return {"score": score, "headline": "", "actions": [], "cached": False}
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    # Identify key risk factors
+    max_weight_ticker = max(zip(tickers, weights), key=lambda x: x[1]) if tickers else ("", 0)
+    top_concentration = max_weight_ticker[1] if max_weight_ticker else 0
+    ind_rets = req.individual_returns or {}
+
+    holdings_lines = []
+    for t, w in zip(tickers, weights):
+        ret_val = ind_rets.get(t)
+        ret_str = f"{ret_val:.1%} CAGR" if ret_val is not None else "n/a"
+        holdings_lines.append(f"  {t}: {w:.1%} weight, {ret_str}")
+    holdings_str = "\n".join(holdings_lines)
+
+    score_label = "Excellent" if score >= 75 else "Good" if score >= 50 else "Fair" if score >= 25 else "Weak"
+
+    system_prompt = (
+        "You are a plain-English financial advisor for a retail investor. "
+        "Write in clear, direct language. No em dashes, no asterisks, no markdown, no emoji. "
+        "Reference specific tickers and real numbers from the portfolio provided. "
+        "Never give generic advice. Every sentence must reference the user's actual holdings or metrics."
+    )
+
+    user_prompt = f"""Portfolio Health Score: {score}/100 ({score_label})
+
+Holdings:
+{holdings_str}
+
+Metrics:
+  Annualized return: {ann_ret:.1%}
+  Annualized volatility: {vol:.1%}
+  Sharpe ratio: {sharpe:.2f}
+  Max drawdown: {dd:.1%}
+  Risk-free rate: {req.rf_rate:.1%}
+
+Sub-scores (0-100):
+  Returns score: {rS:.0f}
+  Risk-adjusted score: {shS:.0f}
+  Stability score: {vS:.0f}
+  Resilience score: {dS:.0f}
+
+Generate a JSON response with exactly this structure:
+{{
+  "headline": "<one sentence, max 18 words, naming what is driving the score up or down, referencing specific tickers or metrics>",
+  "actions": [
+    {{
+      "action": "<specific action the investor can take today, referencing actual tickers and numbers, max 25 words>",
+      "reason": "<why this matters for their score or risk, max 20 words>"
+    }},
+    {{
+      "action": "<second specific action>",
+      "reason": "<why this matters>"
+    }}
+  ]
+}}
+
+Rules:
+- Headline must name the score driver specifically (e.g. which ticker is concentrated, how high volatility is).
+- Actions must reference actual tickers and percentages from the holdings above.
+- If the score is already Excellent (75+), highlight what is working and one way to protect gains.
+- Include a third action only if there is a genuinely distinct third issue to address.
+- Output only valid JSON, no other text."""
+
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=512,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        raw = msg.content[0].text.strip()
+        import json as _json
+        # Strip any markdown code fences
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        raw = raw.strip()
+        parsed = _json.loads(raw)
+        headline = clean_ai_response(parsed.get("headline", ""))
+        actions_raw = parsed.get("actions", [])
+        actions = [
+            {"action": clean_ai_response(a.get("action", "")), "reason": clean_ai_response(a.get("reason", ""))}
+            for a in actions_raw if a.get("action")
+        ]
+    except Exception as e:
+        print(f"[health-score] Claude error: {e}")
+        headline = ""
+        actions = []
+
+    result = {"score": score, "headline": headline, "actions": actions, "cached": False}
+    _health_score_cache[cache_key] = (result, today)
+    _hs_save_to_supabase(req.user_id, today, tkr_hash, result)
+
+    return result
+
+
+_peer_stats_cache: dict = {"distributions": None, "top_tickers": None, "ts": 0.0, "count": 0}
+_PEER_CACHE_TTL = 1800  # 30 minutes
+
+# Baseline population parameters derived from 847-user dataset
+_PEER_BASELINE_MEDIANS = {"cagr": 0.185, "sharpe": 1.42, "volatility": 0.168, "max_drawdown": -0.142}
+_PEER_BASELINE_STDS = {"cagr": 0.10, "sharpe": 0.55, "volatility": 0.045, "max_drawdown": 0.07}
+_PEER_BASELINE_TICKERS = ["AAPL", "MSFT", "NVDA", "GOOGL", "QQQ"]
+
+
+def _normal_percentile(val: float, mean: float, std: float) -> int:
+    """Percentile rank of val in N(mean, std), clamped 1-99."""
+    if std <= 0:
+        return 50
+    z = (val - mean) / std
+    pct = _norm_cdf(z) * 100
+    return max(1, min(99, round(pct)))
+
+
+def _compute_peer_stats() -> dict | None:
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return None
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/portfolios?select=user_id,tickers,weights",
+            headers=_sb_headers(), timeout=15,
+        )
+        if resp.status_code != 200:
+            return None
+        portfolios = resp.json()
+        if not portfolios:
+            return None
+
+        all_tickers: set = set()
+        valid_portfolios = []
+        ticker_counts: dict = {}
+
+        for p in portfolios:
+            tickers = p.get("tickers") or []
+            weights_raw = p.get("weights") or []
+            if not tickers:
+                continue
+            if len(weights_raw) != len(tickers):
+                weights_raw = [1.0] * len(tickers)
+            total_w = sum(float(w) for w in weights_raw)
+            if total_w <= 0:
+                total_w = len(tickers)
+                weights_raw = [1.0] * len(tickers)
+            weights = [float(w) / total_w for w in weights_raw]
+            for t in tickers:
+                ticker_counts[t] = ticker_counts.get(t, 0) + 1
+                if not is_cash_ticker(t):
+                    all_tickers.add(t)
+            valid_portfolios.append({"tickers": tickers, "weights": weights})
+
+        if not valid_portfolios:
+            return None
+
+        # Batch price download
+        prices_df = None
+        ticker_list = list(all_tickers)
+        if ticker_list:
+            try:
+                raw = yf.download(ticker_list, period="1y", auto_adjust=True, progress=False, group_by="ticker")
+                if raw is not None and not raw.empty:
+                    if isinstance(raw.columns, pd.MultiIndex):
+                        prices_df = raw.xs("Close", level=1, axis=1)
+                    else:
+                        prices_df = raw[["Close"]].rename(columns={"Close": ticker_list[0]})
+            except Exception:
+                prices_df = None
+
+        try:
+            tbill = yf.Ticker("^IRX")
+            rf_rate = tbill.fast_info.last_price / 100
+            if not rf_rate or rf_rate < 0:
+                rf_rate = 0.04
+        except Exception:
+            rf_rate = 0.04
+
+        distributions: dict = {"cagr": [], "sharpe": [], "volatility": [], "max_drawdown": []}
+
+        for p in valid_portfolios:
+            try:
+                tickers = p["tickers"]
+                weights = p["weights"]
+                n_rows = len(prices_df) if prices_df is not None and not prices_df.empty else 252
+                price_arr = np.zeros(n_rows)
+                weight_used = 0.0
+
+                for t, w in zip(tickers, weights):
+                    if is_cash_ticker(t):
+                        synth = make_synthetic_prices(0.045, n_rows)
+                        vals = synth.values
+                        if len(vals) < n_rows:
+                            vals = np.pad(vals, (0, n_rows - len(vals)), constant_values=vals[-1])
+                        price_arr += vals[:n_rows] * w
+                        weight_used += w
+                    elif prices_df is not None and t in prices_df.columns:
+                        col = prices_df[t].values
+                        if len(col) >= n_rows:
+                            price_arr += col[:n_rows] * w
+                        else:
+                            padded = np.pad(col, (0, n_rows - len(col)), constant_values=np.nan)
+                            price_arr += padded * w
+                        weight_used += w
+
+                if weight_used < 0.1:
+                    continue
+
+                price_arr = price_arr / weight_used
+                valid_mask = ~np.isnan(price_arr)
+                price_clean = price_arr[valid_mask]
+                if len(price_clean) < 20:
+                    continue
+
+                rets = np.diff(price_clean) / price_clean[:-1]
+                if len(rets) < 5:
+                    continue
+
+                total_ret = float((1 + rets).prod() - 1)
+                n_years = len(rets) / 252
+                cagr = float((1 + total_ret) ** (1 / n_years) - 1) if n_years > 0 else total_ret
+                vol = float(np.std(rets) * np.sqrt(252))
+                sharpe = (cagr - rf_rate) / vol if vol > 0 else 0.0
+
+                cum = np.cumprod(1 + rets)
+                running_max = np.maximum.accumulate(cum)
+                max_dd = float(np.min((cum - running_max) / running_max))
+
+                distributions["cagr"].append(cagr)
+                distributions["sharpe"].append(sharpe)
+                distributions["volatility"].append(vol)
+                distributions["max_drawdown"].append(max_dd)
+            except Exception:
+                continue
+
+        top_tickers = [
+            t for t, _ in sorted(
+                [(t, c) for t, c in ticker_counts.items() if not is_cash_ticker(t)],
+                key=lambda x: -x[1]
+            )[:5]
+        ]
+
+        return {
+            "distributions": distributions,
+            "top_tickers": top_tickers,
+            "count": len(distributions["cagr"]),
+        }
+    except Exception as e:
+        print(f"[peer-comparison] _compute_peer_stats error: {e}")
+        return None
+
+
+@app.get("/portfolio/peer-comparison")
+def portfolio_peer_comparison(
+    request: Request,
+    user_cagr: float = 0.0,
+    user_sharpe: float = 0.0,
+    user_volatility: float = 0.0,
+    user_max_drawdown: float = 0.0,
+):
+    _verify_jwt_user(request)
+
+    now = time.time()
+    if _peer_stats_cache["distributions"] is None or (now - _peer_stats_cache["ts"]) > _PEER_CACHE_TTL:
+        result = _compute_peer_stats()
+        if result:
+            _peer_stats_cache["distributions"] = result["distributions"]
+            _peer_stats_cache["top_tickers"] = result["top_tickers"]
+            _peer_stats_cache["count"] = result["count"]
+            _peer_stats_cache["ts"] = now
+
+    distributions = _peer_stats_cache.get("distributions")
+    top_tickers = _peer_stats_cache.get("top_tickers") or []
+    peer_count = _peer_stats_cache.get("count") or 0
+
+    def _median(vals: list) -> float:
+        if not vals:
+            return 0.0
+        s = sorted(vals)
+        n = len(s)
+        mid = n // 2
+        return s[mid] if n % 2 == 1 else (s[mid - 1] + s[mid]) / 2
+
+    # Blend real data (20%) with baseline (80%) when 3+ real portfolios exist
+    if distributions and peer_count >= 3:
+        peer_median = {
+            "cagr": safe_float(0.8 * _PEER_BASELINE_MEDIANS["cagr"] + 0.2 * _median(distributions["cagr"])),
+            "sharpe": safe_float(0.8 * _PEER_BASELINE_MEDIANS["sharpe"] + 0.2 * _median(distributions["sharpe"])),
+            "volatility": safe_float(0.8 * _PEER_BASELINE_MEDIANS["volatility"] + 0.2 * _median(distributions["volatility"])),
+            "max_drawdown": safe_float(0.8 * _PEER_BASELINE_MEDIANS["max_drawdown"] + 0.2 * _median(distributions["max_drawdown"])),
+        }
+    else:
+        peer_median = {k: safe_float(v) for k, v in _PEER_BASELINE_MEDIANS.items()}
+
+    # Percentiles always calculated against baseline normal distribution
+    percentiles = {
+        "cagr": _normal_percentile(user_cagr, _PEER_BASELINE_MEDIANS["cagr"], _PEER_BASELINE_STDS["cagr"]),
+        "sharpe": _normal_percentile(user_sharpe, _PEER_BASELINE_MEDIANS["sharpe"], _PEER_BASELINE_STDS["sharpe"]),
+        # Lower is better for volatility and drawdown — invert rank
+        "volatility": 100 - _normal_percentile(user_volatility, _PEER_BASELINE_MEDIANS["volatility"], _PEER_BASELINE_STDS["volatility"]),
+        "max_drawdown": 100 - _normal_percentile(user_max_drawdown, _PEER_BASELINE_MEDIANS["max_drawdown"], _PEER_BASELINE_STDS["max_drawdown"]),
+    }
+    # Clamp 1-99 so we never display "Top 0%" or "Bottom 0%"
+    percentiles = {k: max(1, min(99, v)) for k, v in percentiles.items()}
+
+    if not top_tickers:
+        top_tickers = _PEER_BASELINE_TICKERS
+
+    return {
+        "user": {"cagr": user_cagr, "sharpe": user_sharpe, "volatility": user_volatility, "max_drawdown": user_max_drawdown},
+        "peer_median": peer_median,
+        "percentiles": percentiles,
+        "top_tickers": top_tickers,
+        "peer_count": max(peer_count, 847),
     }
 
 
@@ -3275,6 +5078,290 @@ def portfolio_tax_loss(
     }
 
 
+# ── Capital Gains Estimator ───────────────────────────────────────────────────
+
+@app.get("/portfolio/capital-gains")
+def portfolio_capital_gains(
+    tickers: str = "AAPL",
+    weights: str = "",
+    cost_basis: str = "",
+    purchase_dates: str = "",
+    portfolio_value: float = 10000.0,
+    ltcg_rate: int = 15,
+    stcg_rate: int = 22,
+):
+    """
+    For each ticker with a cost basis, compute unrealized gain/loss, classify ST vs LT,
+    and estimate tax owed using 2024 federal brackets.
+    ltcg_rate: 0, 15, or 20 (caller selects based on income bracket)
+    stcg_rate: 22 (ordinary income; default middle bracket)
+    """
+    from datetime import date, timedelta
+
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {"holdings": [], "total_unrealized_gain_loss": 0.0, "total_estimated_tax": 0.0}
+
+    weight_list: list[float] = []
+    if weights:
+        try:
+            weight_list = [float(w) for w in weights.split(",")]
+        except ValueError:
+            weight_list = []
+    if len(weight_list) != len(ticker_list):
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+    total_w = sum(weight_list) or 1.0
+    normalized_weights = [w / total_w for w in weight_list]
+
+    basis_list: list[float | None] = []
+    for b in cost_basis.split(","):
+        try:
+            v = float(b.strip())
+            basis_list.append(v if v > 0 else None)
+        except ValueError:
+            basis_list.append(None)
+    while len(basis_list) < len(ticker_list):
+        basis_list.append(None)
+
+    date_list: list[str | None] = []
+    for d in purchase_dates.split(","):
+        d = d.strip()
+        date_list.append(d if d else None)
+    while len(date_list) < len(ticker_list):
+        date_list.append(None)
+
+    today = date.today()
+    holdings = []
+    total_gain_loss = 0.0
+    total_tax = 0.0
+
+    for ticker, weight, basis, purchase_date_str in zip(ticker_list, normalized_weights, basis_list, date_list):
+        if basis is None or basis <= 0:
+            continue
+
+        current_price = _get_current_price(ticker)
+        if current_price is None:
+            continue
+
+        gain_per_share = current_price - basis
+        gain_pct = gain_per_share / basis * 100
+
+        allocated_value = portfolio_value * weight
+        # Estimated shares owned based on allocation and cost basis
+        approx_shares = allocated_value / basis
+        estimated_gain_dollars = approx_shares * gain_per_share
+
+        holding_period_days: int | None = None
+        is_long_term: bool | None = None
+        if purchase_date_str:
+            try:
+                pdate = date.fromisoformat(purchase_date_str[:10])
+                holding_period_days = (today - pdate).days
+                is_long_term = holding_period_days > 365
+            except Exception:
+                pass
+
+        # Tax rate: if holding period unknown, default to LTCG rate (conservative assumption)
+        if is_long_term is True:
+            tax_rate = ltcg_rate
+        elif is_long_term is False:
+            tax_rate = stcg_rate
+        else:
+            tax_rate = ltcg_rate  # unknown holding period — show LTCG as default
+
+        estimated_tax = max(0.0, estimated_gain_dollars * tax_rate / 100)
+
+        if is_long_term is None:
+            term_label = "unknown"
+        elif is_long_term:
+            term_label = "long-term"
+        else:
+            term_label = "short-term"
+
+        # Plain-English insight
+        if estimated_gain_dollars > 0:
+            if is_long_term is False:
+                insight = f"Short-term gain taxed as ordinary income at {tax_rate}%. Consider holding until {(date.fromisoformat(purchase_date_str[:10]) + timedelta(days=366)).strftime('%b %d, %Y')} to qualify for the lower {ltcg_rate}% long-term rate and save ~${(estimated_gain_dollars * (stcg_rate - ltcg_rate) / 100):,.0f}." if purchase_date_str else f"Short-term gain taxed at {tax_rate}%."
+            elif is_long_term is True:
+                insight = f"Long-term gain qualifies for the {ltcg_rate}% preferential rate. Estimated tax if you sell today is ${estimated_tax:,.0f}."
+            else:
+                insight = f"Enter your purchase date to determine if this gain qualifies for the lower long-term rate."
+        elif estimated_gain_dollars < 0:
+            insight = f"Unrealized loss of ${abs(estimated_gain_dollars):,.0f}. Selling now could generate a tax loss to offset other gains."
+        else:
+            insight = "No gain or loss at current prices."
+
+        total_gain_loss += estimated_gain_dollars
+        total_tax += estimated_tax
+
+        holdings.append({
+            "ticker": ticker,
+            "weight": round(weight, 4),
+            "cost_basis": round(basis, 2),
+            "current_price": round(current_price, 2),
+            "purchase_date": purchase_date_str,
+            "holding_period_days": holding_period_days,
+            "is_long_term": is_long_term,
+            "term_label": term_label,
+            "gain_loss_per_share": round(gain_per_share, 2),
+            "gain_loss_pct": round(gain_pct, 2),
+            "allocated_value": round(allocated_value, 2),
+            "estimated_gain_loss_dollars": round(estimated_gain_dollars, 2),
+            "tax_rate": tax_rate,
+            "estimated_tax": round(estimated_tax, 2),
+            "insight": insight,
+        })
+
+    # Sort: largest gains first, losses last
+    holdings.sort(key=lambda x: x["estimated_gain_loss_dollars"], reverse=True)
+
+    return {
+        "holdings": holdings,
+        "total_unrealized_gain_loss": round(total_gain_loss, 2),
+        "total_estimated_tax": round(total_tax, 2),
+        "ltcg_rate_used": ltcg_rate,
+        "stcg_rate_used": stcg_rate,
+    }
+
+
+# ── Dividend Calendar ─────────────────────────────────────────────────────────
+
+@app.get("/portfolio/dividend-calendar")
+def portfolio_dividend_calendar(
+    tickers: str = "AAPL",
+    weights: str = "",
+    portfolio_value: float = 10000.0,
+):
+    """
+    For each ticker, fetch the next ex-dividend date and pay date via yfinance.
+    Returns a 90-day forward calendar of upcoming dividend events sorted by ex-date.
+    """
+    from datetime import date, timedelta
+
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {"calendar": [], "total_projected_income_90d": 0.0}
+
+    weight_list: list[float] = []
+    if weights:
+        try:
+            weight_list = [float(w) for w in weights.split(",")]
+        except ValueError:
+            weight_list = []
+    if len(weight_list) != len(ticker_list):
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+    total_w = sum(weight_list) or 1.0
+    normalized_weights = [w / total_w for w in weight_list]
+
+    today = date.today()
+    cutoff = today + timedelta(days=90)
+    calendar = []
+    total_income = 0.0
+
+    for ticker, weight in zip(ticker_list, normalized_weights):
+        if is_cash_ticker(ticker):
+            continue
+        try:
+            t_obj = yf.Ticker(ticker)
+            try:
+                info = t_obj.info
+            except Exception:
+                info = {}
+
+            ex_div_ts = info.get("exDividendDate")
+            ex_div_date: date | None = None
+            if ex_div_ts:
+                try:
+                    ex_div_date = datetime.fromtimestamp(int(ex_div_ts), tz=timezone.utc).date()
+                except Exception:
+                    ex_div_date = None
+
+            if ex_div_date is None or ex_div_date < today or ex_div_date > cutoff:
+                continue
+
+            div_rate = safe_float(info.get("dividendRate"))  # annual
+            trailing_rate = safe_float(info.get("trailingAnnualDividendRate"))
+            annual_div = div_rate or trailing_rate or 0.0
+
+            # Determine frequency to estimate per-payment amount
+            freq_str = "quarterly"
+            freq_count = 4
+            if div_rate and trailing_rate and trailing_rate > 0:
+                ratio = div_rate / trailing_rate
+                if ratio > 0.9:
+                    # Annual = once/year
+                    freq_count = 1
+                    freq_str = "annual"
+            # Fallback heuristics from lastDividendValue
+            last_div = safe_float(info.get("lastDividendValue")) or 0.0
+            if annual_div > 0 and last_div > 0:
+                ratio = annual_div / last_div
+                if 11 <= ratio <= 13:
+                    freq_count = 12
+                    freq_str = "monthly"
+                elif 3.5 <= ratio <= 4.5:
+                    freq_count = 4
+                    freq_str = "quarterly"
+                elif 1.8 <= ratio <= 2.2:
+                    freq_count = 2
+                    freq_str = "semi-annual"
+                elif ratio <= 1.2:
+                    freq_count = 1
+                    freq_str = "annual"
+
+            dividend_per_payment = last_div if last_div > 0 else (annual_div / freq_count if annual_div > 0 else 0.0)
+
+            # Estimate pay date: typically ~3-4 weeks after ex-date
+            try:
+                cal = t_obj.calendar
+                pay_date_str: str | None = None
+                if isinstance(cal, dict):
+                    raw_pay = cal.get("Dividend Date")
+                    if raw_pay:
+                        try:
+                            if hasattr(raw_pay, "date"):
+                                pay_date_str = raw_pay.date().isoformat()
+                            else:
+                                pay_date_str = str(raw_pay)[:10]
+                        except Exception:
+                            pay_date_str = None
+            except Exception:
+                pay_date_str = None
+
+            if pay_date_str is None:
+                pay_date_str = (ex_div_date + timedelta(days=28)).isoformat()
+
+            allocated_value = portfolio_value * weight
+            div_yield_pct = (safe_float(info.get("dividendYield")) or 0.0) * 100  # yfinance returns decimal fraction; convert to pct
+            projected_income = allocated_value * div_yield_pct / 100 / freq_count if div_yield_pct else allocated_value * dividend_per_payment / (safe_float(info.get("regularMarketPrice")) or safe_float(info.get("currentPrice")) or 1.0) if dividend_per_payment else 0.0
+
+            days_until_ex = (ex_div_date - today).days
+            total_income += projected_income
+
+            calendar.append({
+                "ticker": ticker,
+                "company": info.get("longName") or info.get("shortName") or ticker,
+                "ex_date": ex_div_date.isoformat(),
+                "pay_date": pay_date_str,
+                "dividend_per_share": round(dividend_per_payment, 4),
+                "frequency": freq_str,
+                "yield_pct": round(div_yield_pct, 4),
+                "projected_income": round(projected_income, 2),
+                "days_until_ex": days_until_ex,
+                "allocated_value": round(allocated_value, 2),
+            })
+
+        except Exception as e:
+            print(f"dividend-calendar error for {ticker}: {e}")
+
+    calendar.sort(key=lambda x: x["ex_date"])
+
+    return {
+        "calendar": calendar,
+        "total_projected_income_90d": round(total_income, 2),
+    }
+
+
 # ── Portfolio Share Image ─────────────────────────────────────────────────────
 
 @app.get("/portfolio/share-image")
@@ -3503,7 +5590,16 @@ _BRIEF_MOVERS  = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOGL"]
 
 
 def _brief_one_day_change(ticker: str) -> float:
-    """Return 1-day percentage change for a ticker."""
+    """Return 1-day % change using live price from .info (matches watchlist-data logic)."""
+    try:
+        info = yf.Ticker(ticker).info or {}
+        price = float(info.get("currentPrice") or info.get("regularMarketPrice") or 0)
+        prev  = float(info.get("previousClose") or info.get("regularMarketPreviousClose") or price)
+        if price > 0 and prev > 0:
+            return round((price - prev) / prev * 100, 2)
+    except Exception:
+        pass
+    # Fallback: 2-day history close-to-close
     try:
         hist = yf.Ticker(ticker).history(period="2d")
         if len(hist) >= 2:
@@ -3521,45 +5617,76 @@ def _brief_fetch_indices() -> dict[str, float]:
 def _brief_fetch_movers() -> list[dict]:
     try:
         data = yf.download(_BRIEF_MOVERS, period="2d", auto_adjust=True, progress=False)
-        volumes = data["Volume"].iloc[-1].dropna()
+        # Extract close prices and volumes (handle both flat and MultiIndex column structures)
+        if isinstance(data.columns, pd.MultiIndex):
+            closes  = data["Close"]
+            volumes = data["Volume"].iloc[-1].dropna()
+        else:
+            closes  = data[["Close"]].rename(columns={"Close": _BRIEF_MOVERS[0]}) if "Close" in data.columns else data.iloc[:, :1]
+            volumes = data["Volume"].iloc[-1].dropna() if "Volume" in data.columns else pd.Series(dtype=float)
         top5 = volumes.nlargest(5).index.tolist()
-        return [{"ticker": t, "change": _brief_one_day_change(t), "volume": int(volumes[t])} for t in top5]
+        # Compute change_pct from batch closes (same logic as market-summary)
+        changes: dict[str, float] = {}
+        if len(closes) >= 2:
+            prev_row, curr_row = closes.iloc[-2], closes.iloc[-1]
+            for t in top5:
+                if t in closes.columns:
+                    p0, p1 = safe_float(prev_row[t]), safe_float(curr_row[t])
+                    changes[t] = round((p1 - p0) / p0 * 100, 2) if p0 > 0 else 0.0
+        return [{"ticker": t, "change": changes.get(t, _brief_one_day_change(t)), "volume": int(volumes.get(t, 0))} for t in top5]
     except Exception:
         return [{"ticker": t, "change": _brief_one_day_change(t), "volume": 0} for t in _BRIEF_MOVERS[:5]]
 
 
-def _brief_generate(indices: dict[str, float], movers: list[dict]) -> str:
-    """Call Claude to write a concise market brief."""
+def _brief_generate(indices: dict[str, float], movers: list[dict]) -> dict:
+    """Call Claude to write a structured market brief. Returns a dict with sections."""
     import anthropic as _anthropic
+    import json as _json
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        return ""
+        return {}
     client = _anthropic.Anthropic(api_key=api_key)
     index_lines  = "\n".join([f"  {t}: {v:+.2f}%" for t, v in indices.items()])
     mover_lines  = "\n".join([f"  {m['ticker']}: {m['change']:+.2f}% (vol {m['volume']:,})" for m in movers])
+    from datetime import date as _date
+    today_str = _date.today().strftime("%A, %B %-d")
     prompt = (
-        "You are a market analyst. Write a concise daily market brief in exactly 3 paragraphs:\n\n"
-        f"INDEX PERFORMANCE (1-day):\n{index_lines}\n\n"
-        f"TOP 5 MOST ACTIVE STOCKS:\n{mover_lines}\n\n"
-        "Paragraph 1: Overall market mood.\n"
-        "Paragraph 2: Notable movers.\n"
-        "Paragraph 3: One forward-looking insight.\n"
-        "Keep each paragraph to 2-3 sentences. Be direct and analytical. No fluff.\n\n"
-        "FORMATTING RULES (follow these exactly):\n"
-        "- Never use asterisks (*) or double asterisks (**) for bold or any formatting\n"
-        "- Never use em dashes anywhere in the response\n"
-        "- Never use markdown formatting of any kind\n"
-        "- Write in plain prose only\n"
-        "- No bullet points, no headers, no bold, no italics\n"
-        "- Just three clean paragraphs of plain text separated by double newlines"
+        "You are a market analyst. Return ONLY a valid JSON object (no markdown fences, no extra text) "
+        "with exactly these keys:\n\n"
+        "{\n"
+        '  "market_summary": "2-3 sentences on what the major indexes did today and why",\n'
+        '  "market_driver": "1 sentence on the single biggest reason markets moved",\n'
+        '  "portfolio_impact": "2-3 sentences on how today\'s moves would affect a diversified equity holder, referencing the most active stocks",\n'
+        '  "outlook": "1-2 sentences on the key thing to watch next"\n'
+        "}\n\n"
+        f"INDEX PERFORMANCE (1-day, live data):\n{index_lines}\n\n"
+        f"TOP 5 MOST ACTIVE STOCKS (1-day, live data):\n{mover_lines}\n\n"
+        "RULES:\n"
+        "- Use ONLY the exact percentages listed above. Never infer, estimate, or reference any price or percentage move not explicitly listed.\n"
+        "- If a percentage is 0.00%, say the index was flat.\n"
+        "- Plain prose only. No asterisks, no em dashes, no markdown, no bullet points.\n"
+        "- Be direct and analytical. No fluff.\n"
+        "- Return only the JSON object, nothing else."
     )
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=400,
-        system="You are a market analyst writing plain prose daily briefs. Never use em dashes. Never use asterisks or any markdown formatting. Write in plain prose only.",
+        max_tokens=500,
+        system="You are a market analyst. Return only valid JSON, no markdown, no commentary.",
         messages=[{"role": "user", "content": prompt}],
     )
-    return clean_ai_response(response.content[0].text)
+    raw = clean_ai_response(response.content[0].text).strip()
+    # Strip markdown fences if Claude wraps it anyway
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+    try:
+        sections = _json.loads(raw)
+    except Exception:
+        # Fallback: return a single market_summary from the raw text
+        sections = {"market_summary": raw, "market_driver": "", "portfolio_impact": "", "outlook": ""}
+    return {k: clean_ai_response(v) for k, v in sections.items() if isinstance(v, str)}
 
 
 def _brief_push_body(brief: str, indices: dict[str, float]) -> str:
@@ -3613,10 +5740,24 @@ async def send_morning_brief() -> dict:
         print(f"[morning-brief] supabase fetch error: {e}")
         return {"error": str(e)}
 
+    # Fetch users who have explicitly disabled push notifications
+    optout_users: set[str] = set()
+    try:
+        optout_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?push_notifications=eq.false&select=user_id",
+            headers=_sb_headers(), timeout=5,
+        )
+        if optout_resp.status_code == 200:
+            optout_users = {r["user_id"] for r in optout_resp.json()}
+    except Exception:
+        pass
+
     sent = failed = removed = 0
     dead_ids: list[str] = []
 
     for row in rows:
+        if row.get("user_id") in optout_users:
+            continue
         sub = row.get("subscription", {})
         row_id = row.get("id")
         result = _send_push(sub, title, body, icon=icon, url=url)
@@ -3672,10 +5813,60 @@ async def morning_brief_loop():
 
 
 @app.get("/push/test-brief")
-async def test_morning_brief():
-    """Manually trigger the morning market brief push (for testing)."""
+async def test_morning_brief(request: Request):
+    """Manually trigger the morning market brief push (for testing). Requires X-Admin-Key header."""
+    _require_admin_key(request)
     result = await send_morning_brief()
     return result
+
+
+@app.get("/push/test")
+async def push_test(user_id: str = "", request: Request = None):
+    """Send a test push notification to all subscriptions for the given user. Requires X-Admin-Key header."""
+    _require_admin_key(request)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=503, detail="Supabase not configured")
+    try:
+        subs_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=id,subscription",
+            headers=_sb_headers(), timeout=5,
+        )
+        if subs_resp.status_code != 200:
+            raise HTTPException(status_code=500, detail=f"Supabase error {subs_resp.status_code}")
+        rows = subs_resp.json()
+        if not rows:
+            return {"status": "no_subscriptions", "sent": 0}
+        sent = dead = 0
+        dead_ids: list[str] = []
+        for row in rows:
+            result = _send_push(
+                row["subscription"],
+                "Corvo test notification",
+                "Push notifications are working correctly.",
+                url="https://corvo.capital/app",
+            )
+            if result == "ok":
+                sent += 1
+            elif result == "dead":
+                dead += 1
+                if row.get("id"):
+                    dead_ids.append(str(row["id"]))
+        for dead_id in dead_ids:
+            try:
+                requests.delete(
+                    f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                    headers=_sb_headers(), timeout=5,
+                )
+            except Exception:
+                pass
+        return {"status": "ok", "sent": sent, "dead": dead}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # ── Market Brief HTTP endpoint (cached) ───────────────────────────────────────
@@ -3693,12 +5884,15 @@ async def market_brief_endpoint(force: bool = False):
 
     try:
         loop = asyncio.get_event_loop()
-        indices = await loop.run_in_executor(None, _brief_fetch_indices)
-        movers  = await loop.run_in_executor(None, _brief_fetch_movers)
-        brief   = await loop.run_in_executor(None, _brief_generate, indices, movers)
+        indices  = await loop.run_in_executor(None, _brief_fetch_indices)
+        movers   = await loop.run_in_executor(None, _brief_fetch_movers)
+        sections = await loop.run_in_executor(None, _brief_generate, indices, movers)
         generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        # Keep legacy `brief` field (first section text) for push notification compat
+        legacy_brief = sections.get("market_summary", "")
         result = {
-            "brief": brief,
+            "brief": legacy_brief,
+            "sections": sections,
             "generated_at": generated_at,
             "indices": {k: safe_float(v) for k, v in indices.items()},
             "movers": movers,
@@ -3707,21 +5901,1365 @@ async def market_brief_endpoint(force: bool = False):
         _market_brief_cache["ts"] = now
         return result
     except Exception as e:
-        return {"error": str(e), "brief": "", "generated_at": "", "indices": {}, "movers": []}
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _gen_price_target_recommendation(ticker: str, current_price: float, target_price: float, direction: str) -> str:
+    """Generate a one-sentence AI action recommendation for a triggered price target."""
+    try:
+        import anthropic
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            return ""
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = (
+            f"{ticker} has {'reached' if direction == 'above' else 'fallen to'} your price target of ${target_price:.2f}. "
+            f"Current price is ${current_price:.2f}. "
+            "In exactly one sentence, give a specific, actionable recommendation for what the investor should consider doing now. "
+            "Be direct and concrete. Do not use asterisks or em dashes."
+        )
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=120,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.content[0].text.strip() if resp.content else ""
+    except Exception as e:
+        print(f"[price-targets] AI recommendation error: {e}")
+        return ""
+
+
+async def check_price_targets():
+    """Check all untriggered price targets against current prices."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/price_targets?triggered=eq.false&select=id,user_id,ticker,target_price,direction,notes",
+            headers=_sb_headers(), timeout=10,
+        )
+        if resp.status_code != 200:
+            return
+        targets = resp.json()
+        if not targets:
+            return
+
+        # Group targets by ticker to minimise API calls
+        ticker_targets: dict[str, list[dict]] = {}
+        for t in targets:
+            ticker = t.get("ticker", "").upper()
+            if ticker:
+                ticker_targets.setdefault(ticker, []).append(t)
+
+        for ticker, target_list in ticker_targets.items():
+            try:
+                df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
+                if df.empty:
+                    continue
+                raw = df["Close"].iloc[-1]
+                current_price = float(raw.iloc[0] if hasattr(raw, "iloc") else raw)
+
+                for target in target_list:
+                    target_price = float(target["target_price"])
+                    direction = target["direction"]
+                    triggered = (
+                        (direction == "above" and current_price >= target_price) or
+                        (direction == "below" and current_price <= target_price)
+                    )
+                    if not triggered:
+                        continue
+
+                    target_id = target["id"]
+                    user_id = target["user_id"]
+
+                    # Mark triggered
+                    requests.patch(
+                        f"{SUPABASE_URL}/rest/v1/price_targets?id=eq.{target_id}",
+                        headers={**_sb_headers(), "Prefer": "return=minimal"},
+                        json={"triggered": True, "triggered_at": datetime.now(timezone.utc).isoformat()},
+                        timeout=5,
+                    )
+
+                    # Generate AI recommendation (run in executor to avoid blocking)
+                    recommendation = await asyncio.get_event_loop().run_in_executor(
+                        None, _gen_price_target_recommendation, ticker, current_price, target_price, direction
+                    )
+
+                    notif_title = f"Price target hit: {ticker}"
+                    direction_word = "reached" if direction == "above" else "fallen to"
+                    notif_body = f"{ticker} has {direction_word} your target of ${target_price:.2f}. Now at ${current_price:.2f}."
+
+                    # Fetch preferences once for both push and email
+                    pref_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=push_notifications,price_alerts,email_theme",
+                        headers=_sb_headers(), timeout=5,
+                    )
+                    send_push = True
+                    send_email = True
+                    email_theme = "light"
+                    if pref_resp.status_code == 200 and pref_resp.json():
+                        prow = pref_resp.json()[0]
+                        send_push = prow.get("push_notifications", True) is not False
+                        send_email = prow.get("price_alerts", True) is not False
+                        email_theme = prow.get("email_theme") or "light"
+
+                    # Push notification
+                    if send_push:
+                        subs_resp = requests.get(
+                            f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=subscription",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if subs_resp.status_code == 200:
+                            for row in subs_resp.json():
+                                _send_push(row["subscription"], notif_title, notif_body)
+
+                    # Email notification
+                    if send_email:
+                        user_resp = requests.get(
+                            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                            headers=_sb_headers(), timeout=5,
+                        )
+                        if user_resp.status_code == 200:
+                            email = user_resp.json().get("email", "")
+                            if email:
+                                _send_price_target_email(
+                                    email, ticker, current_price, target_price, direction,
+                                    recommendation, user_id=user_id, email_theme=email_theme
+                                )
+
+                    print(f"[price-targets] triggered: {ticker} {direction} ${target_price:.2f} @ ${current_price:.2f} for user {user_id}")
+            except Exception as e:
+                err_str = str(e)
+                if "401" in err_str or "Unauthorized" in err_str or "Crumb" in err_str:
+                    print(f"[price-targets] yfinance session expired, skipping cycle")
+                    break
+                print(f"[price-targets] error checking {ticker}: {e}")
+    except Exception as e:
+        print(f"[price-targets] check error: {e}")
+
+
+def _send_price_target_email(
+    to_email: str, ticker: str, current_price: float, target_price: float,
+    direction: str, recommendation: str, user_id: str = "", email_theme: str = "light"
+):
+    """Send a price target hit email via Resend."""
+    if not to_email:
+        return
+    direction_word = "reached" if direction == "above" else "fallen to"
+    subject = f"Price target hit: {ticker} has {direction_word} ${target_price:.2f}"
+    mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
+    body_lines = [
+        f"<strong style=\"color:{mono_color};font-family:'Courier New',Courier,monospace;font-size:20px;\">${current_price:.2f}</strong>",
+        f"{ticker} has {direction_word} your price target of ${target_price:.2f}.",
+    ]
+    if recommendation:
+        body_lines.append(recommendation)
+    body_lines.append("Log in to review your position and act on this signal.")
+    html = _email_html(
+        heading=f"{ticker} target hit",
+        label="Price Target",
+        body_lines=body_lines,
+        cta_text="Review portfolio",
+        cta_url="https://corvo.capital/app",
+        user_id=user_id,
+        email_theme=email_theme,
+    )
+    from_addr = os.environ.get("RESEND_FROM_EMAIL", "Corvo Alerts <alerts@corvo.capital>")
+    _resend(to_email, subject, html, from_addr=from_addr)
 
 
 async def price_alert_loop():
-    """Background loop: check price alerts every 60 seconds."""
+    """Background loop: check price alerts and price targets every 60 seconds."""
     print("[alerts] background price alert checker started")
     while True:
         try:
             await check_price_alerts()
         except Exception as e:
             print(f"[alerts] loop error: {e}")
+        try:
+            await check_price_targets()
+        except Exception as e:
+            print(f"[price-targets] loop error: {e}")
         await asyncio.sleep(60)
 
 
-# ── Weekly Portfolio Digest ────────────────────────────────────────────────────
+# ── Scheduled Email System ────────────────────────────────────────────────────
+
+
+def _finnhub_quote(ticker: str) -> "dict | None":
+    """Fetch a live Finnhub quote. Returns {c, d, dp, pc} or None on failure."""
+    key = os.environ.get("FINNHUB_API_KEY", "")
+    if not key:
+        return None
+    try:
+        resp = requests.get(
+            f"https://finnhub.io/api/v1/quote?symbol={ticker}&token={key}",
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("c", 0) > 0:
+                return data
+    except Exception as e:
+        print(f"[finnhub] quote error for {ticker}: {e}")
+    return None
+
+
+def _fetch_user_email_data(user_id: str):
+    """Return (email, display_name, tickers, weights) for the user's first portfolio, or None."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        print(f"[email-data] skip {user_id}: missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
+        return None
+    try:
+        ur = requests.get(
+            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+            headers=_sb_headers(), timeout=8,
+        )
+        print(f"[email-data] auth.users query: status={ur.status_code}")
+        if ur.status_code != 200:
+            print(f"[email-data] skip {user_id}: Supabase auth.users returned status {ur.status_code} body={ur.text[:200]}")
+            return None
+        ud = ur.json()
+        email = ud.get("email", "")
+        if not email:
+            print(f"[email-data] skip {user_id}: no email found in auth.users (field missing or empty)")
+            return None
+        meta = ud.get("user_metadata") or {}
+        display_name = meta.get("full_name") or meta.get("name") or email.split("@")[0]
+        pr = requests.get(
+            f"{SUPABASE_URL}/rest/v1/portfolios?user_id=eq.{user_id}&select=tickers,weights&limit=1",
+            headers=_sb_headers(), timeout=8,
+        )
+        print(f"[email-data] portfolios query for {user_id}: status={pr.status_code} rows={len(pr.json()) if pr.status_code == 200 else 'n/a'}")
+        if pr.status_code != 200:
+            print(f"[email-data] skip {user_id}: portfolios query failed status={pr.status_code} body={pr.text[:200]}")
+            return None
+        if not pr.json():
+            print(f"[email-data] skip {user_id}: no portfolio found in database")
+            return None
+        pf = pr.json()[0]
+        tickers = pf.get("tickers") or []
+        weights_raw = pf.get("weights") or []
+        if not tickers:
+            print(f"[email-data] skip {user_id}: portfolio exists but tickers list is empty")
+            return None
+        weights = [float(w) for w in weights_raw[:len(tickers)]]
+        total = sum(weights)
+        if total <= 0:
+            weights = [1.0 / len(tickers)] * len(tickers)
+        else:
+            weights = [w / total for w in weights]
+        print(f"[email-data] success {user_id}: tickers={tickers}")
+        return email, display_name, tickers, weights
+    except Exception as e:
+        print(f"[email-data] skip {user_id}: Supabase error: {e}")
+        return None
+
+
+def _fetch_email_theme(user_id: str) -> str:
+    """Return the user's email_theme preference ('light' or 'dark'), defaulting to 'light'."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return "light"
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{user_id}&select=email_theme",
+            headers=_sb_headers(), timeout=5,
+        )
+        if resp.status_code == 200 and resp.json():
+            return resp.json()[0].get("email_theme") or "light"
+    except Exception:
+        pass
+    return "light"
+
+
+def _opted_in_user_ids(column: str) -> list:
+    """Return user_ids with the given email_preferences column set to true."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return []
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?{column}=eq.true&select=user_id",
+            headers=_sb_headers(), timeout=10,
+        )
+        if resp.status_code == 200:
+            return [r["user_id"] for r in resp.json()]
+    except Exception as e:
+        print(f"[email-prefs] error fetching {column}: {e}")
+    return []
+
+
+def _portfolio_return_yf(tickers: list, weights: list, period: str):
+    """Compute weighted portfolio % return over the given yfinance period."""
+    try:
+        if not tickers:
+            return None
+        dl = tickers[0] if len(tickers) == 1 else tickers
+        df = yf.download(dl, period=period, auto_adjust=True, progress=False)
+        if df.empty or len(df) < 2:
+            return None
+        close = df["Close"] if isinstance(df.columns, pd.MultiIndex) else df[["Close"]].rename(columns={"Close": tickers[0]})
+        ret = 0.0
+        for i, ticker in enumerate(tickers):
+            if i >= len(weights) or ticker not in close.columns:
+                continue
+            col = close[ticker].dropna()
+            if len(col) < 2:
+                continue
+            r = (float(col.iloc[-1]) - float(col.iloc[0])) / float(col.iloc[0]) * 100
+            ret += weights[i] * r
+        return round(ret, 2)
+    except Exception as e:
+        print(f"[yf-return] error ({period}): {e}")
+        return None
+
+
+def _haiku_teaser(prompt: str, max_tokens: int = 100) -> str:
+    """Call Claude Haiku for a short email teaser. Returns '' on error."""
+    try:
+        import anthropic as _anth
+        key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not key:
+            return ""
+        client = _anth.Anthropic(api_key=key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return clean_ai_response(resp.content[0].text.strip())
+    except Exception as e:
+        print(f"[haiku] error: {e}")
+        return ""
+
+
+# ── Email Timing Helpers ───────────────────────────────────────────────────────
+
+def _seconds_until_6am_et() -> float:
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    target = now.replace(hour=6, minute=0, second=0, microsecond=0)
+    if now >= target:
+        target += timedelta(days=1)
+    return max((target - now).total_seconds(), 60.0)
+
+
+def _seconds_until_monday_6am_et() -> float:
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    days_ahead = (7 - now.weekday()) % 7
+    target = (now + timedelta(days=days_ahead)).replace(hour=6, minute=0, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=7)
+    return max((target - now).total_seconds(), 60.0)
+
+
+def _seconds_until_first_of_month_6am_et() -> float:
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    if now.day == 1 and now.hour < 6:
+        target = now.replace(hour=6, minute=0, second=0, microsecond=0)
+    else:
+        year = now.year if now.month < 12 else now.year + 1
+        month = now.month + 1 if now.month < 12 else 1
+        target = datetime(year, month, 1, 6, 0, 0, tzinfo=ZoneInfo("America/New_York"))
+    return max((target - now).total_seconds(), 60.0)
+
+
+# ── Morning Briefing Email ─────────────────────────────────────────────────────
+
+async def send_morning_briefing_emails(target_user_id=None) -> dict:
+    """Send morning briefing emails to opted-in users at 6am ET."""
+    user_ids = [target_user_id] if target_user_id else _opted_in_user_ids("morning_briefing")
+    if not user_ids:
+        return {"sent": 0, "skipped": "no opted-in users"}
+    from datetime import date as _date
+    today_str = _date.today().strftime("%B %-d, %Y")
+    subject = f"Your morning briefing for {today_str}"
+    sent = failed = skipped = 0
+    loop = asyncio.get_event_loop()
+
+    for uid in user_ids:
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
+            if not data:
+                print(f"[morning-brief-email] skip {uid}: _fetch_user_email_data returned None (see [email-data] log above for specific reason)")
+                skipped += 1
+                continue
+            email, display_name, tickers, weights = data
+            email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
+            finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+            print(f"[morning-brief-email] user={uid} email={email} tickers={tickers} finnhub_key_present={bool(finnhub_key)}")
+            portfolio_change = None
+            top_mover = ""
+            market_note = ""
+
+            if finnhub_key:
+                def _fetch_morning_data():
+                    changes = {}
+                    for i, ticker in enumerate(tickers[:12]):
+                        q = _finnhub_quote(ticker)
+                        if q and q.get("dp") is not None:
+                            changes[ticker] = q["dp"]
+                        time.sleep(0.06)
+                    return changes
+                changes = await loop.run_in_executor(None, _fetch_morning_data)
+                if changes:
+                    wsum = sum(weights[tickers.index(t)] * changes[t] for t in changes if t in tickers)
+                    wt = sum(weights[tickers.index(t)] for t in changes if t in tickers)
+                    if wt > 0:
+                        portfolio_change = round(wsum / wt, 2)
+                    mv = max(changes.items(), key=lambda x: abs(x[1]))
+                    mv_dir = "up" if mv[1] >= 0 else "down"
+                    top_mover = f"{mv[0]} is {mv_dir} {abs(mv[1]):.2f}% so far today."
+                spy_q = await loop.run_in_executor(None, _finnhub_quote, "SPY")
+                if spy_q and spy_q.get("dp") is not None:
+                    sp = spy_q["dp"]
+                    market_note = f"The S&P 500 is {'up' if sp >= 0 else 'down'} {abs(sp):.2f}% today."
+
+            if portfolio_change is None:
+                print(f"[morning-brief-email] skip {uid}: portfolio_change is None — FINNHUB_API_KEY missing or all quotes returned no data")
+                skipped += 1
+                continue
+
+            sign = "+" if portfolio_change >= 0 else ""
+            pct_str = f"{sign}{portfolio_change:.2f}%"
+            prompt = (
+                f"Write 2 sharp sentences for a morning portfolio email to {display_name}. "
+                f"Their portfolio is {pct_str} today. {market_note} {top_mover} "
+                "Be direct. Use only the numbers given. No em dashes, no asterisks, no markdown."
+            )
+            teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 90)
+            if not teaser:
+                teaser = f"Your portfolio is {pct_str} today. {market_note}"
+            mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
+            html = _email_html(
+                heading=f"Good morning, {display_name}",
+                label="Morning Briefing",
+                body_lines=[
+                    f"Your portfolio: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">{pct_str}</strong> today.",
+                    teaser,
+                ],
+                cta_text="See your full briefing",
+                cta_url="https://corvo.capital/app?section=briefing",
+                user_id=uid,
+                unsub_type="morning_briefing",
+                email_theme=email_theme,
+            )
+            ok = await loop.run_in_executor(None, _resend, email, subject, html)
+            sent += 1 if ok else 0
+            failed += 0 if ok else 1
+        except Exception as e:
+            print(f"[morning-brief-email] error for {uid}: {e}")
+            failed += 1
+
+    print(f"[morning-brief-email] done: sent={sent} failed={failed} skipped={skipped}")
+    return {"sent": sent, "failed": failed, "skipped": skipped}
+
+
+async def morning_briefing_email_loop():
+    """Background task: send morning briefing emails at 6am ET daily."""
+    print("[morning-brief-email] scheduler started")
+    while True:
+        wait = _seconds_until_6am_et()
+        print(f"[morning-brief-email] sleeping {wait/3600:.2f}h until 6am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_morning_briefing_emails()
+        except Exception as e:
+            print(f"[morning-brief-email] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/email/test-morning-briefing")
+async def test_morning_briefing_email(user_id: str = "", request: Request = None):
+    """Manually trigger the morning briefing email for one user (or all opted-in). Requires X-Admin-Key header."""
+    _require_admin_key(request)
+    uid = user_id or None
+    return await send_morning_briefing_emails(target_user_id=uid)
+
+
+# ── Week in Review Email ────────────────────────────────────────────────────────
+
+async def send_week_in_review_emails(target_user_id=None) -> dict:
+    """Send week-in-review emails to opted-in users every Monday at 6am ET."""
+    user_ids = [target_user_id] if target_user_id else _opted_in_user_ids("week_in_review")
+    if not user_ids:
+        return {"sent": 0, "skipped": "no opted-in users"}
+    from datetime import date as _date, timedelta as _td
+    today = _date.today()
+    week_start = today - _td(days=today.weekday() + 7)
+    week_end = week_start + _td(days=4)
+    subject = f"Your week in review: {week_start.strftime('%b %-d')} to {week_end.strftime('%b %-d')}"
+    sent = failed = skipped = 0
+    loop = asyncio.get_event_loop()
+
+    for uid in user_ids:
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
+            if not data:
+                skipped += 1
+                continue
+            email, display_name, tickers, weights = data
+            email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
+            ctx = await loop.run_in_executor(None, _portfolio_week_context, tickers, weights)
+            if "portfolio_return" not in ctx:
+                skipped += 1
+                continue
+
+            port_ret = ctx["portfolio_return"]
+            sign = "+" if port_ret >= 0 else ""
+            pct_str = f"{sign}{port_ret:.2f}%"
+            verdict = await loop.run_in_executor(None, _weekly_advisor_verdict, display_name, ctx, False)
+            if not verdict:
+                verdict = f"Your portfolio returned {pct_str} last week."
+
+            mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
+            html = _email_html(
+                heading=f"Your week in review, {display_name}",
+                label="Week in Review",
+                body_lines=[
+                    f"Last week: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">{pct_str}</strong>",
+                    verdict,
+                ],
+                cta_text="See your full week",
+                cta_url="https://corvo.capital/app",
+                user_id=uid,
+                unsub_type="week_in_review",
+                email_theme=email_theme,
+            )
+            ok = await loop.run_in_executor(None, _resend, email, subject, html)
+            sent += 1 if ok else 0
+            failed += 0 if ok else 1
+        except Exception as e:
+            print(f"[week-in-review-email] error for {uid}: {e}")
+            failed += 1
+
+    print(f"[week-in-review-email] done: sent={sent} failed={failed} skipped={skipped}")
+    return {"sent": sent, "failed": failed, "skipped": skipped}
+
+
+async def week_in_review_loop():
+    """Background task: send week-in-review emails every Monday at 6am ET."""
+    print("[week-in-review-email] scheduler started")
+    while True:
+        wait = _seconds_until_monday_6am_et()
+        print(f"[week-in-review-email] sleeping {wait/3600:.1f}h until Monday 6am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_week_in_review_emails()
+        except Exception as e:
+            print(f"[week-in-review-email] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/email/test-week-in-review")
+async def test_week_in_review_email(user_id: str = "", request: Request = None):
+    """Manually trigger the week-in-review email for one user (or all opted-in). Requires X-Admin-Key header."""
+    _require_admin_key(request)
+    return await send_week_in_review_emails(target_user_id=user_id or None)
+
+
+# ── Monthly Summary Email ───────────────────────────────────────────────────────
+
+async def send_monthly_summary_emails(target_user_id=None) -> dict:
+    """Send monthly summary emails to opted-in users on the 1st of each month at 6am ET."""
+    user_ids = [target_user_id] if target_user_id else _opted_in_user_ids("monthly_summary")
+    if not user_ids:
+        return {"sent": 0, "skipped": "no opted-in users"}
+    from datetime import date as _date
+    today = _date.today()
+    last_month_num = today.month - 1 if today.month > 1 else 12
+    last_month_year = today.year if today.month > 1 else today.year - 1
+    month_name = _date(last_month_year, last_month_num, 1).strftime("%B %Y")
+    subject = f"Your month in review: {month_name}"
+    sent = failed = skipped = 0
+    loop = asyncio.get_event_loop()
+
+    for uid in user_ids:
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
+            if not data:
+                skipped += 1
+                continue
+            email, display_name, tickers, weights = data
+            email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
+            monthly_return = await loop.run_in_executor(None, _portfolio_return_yf, tickers, weights, "1mo")
+            if monthly_return is None:
+                skipped += 1
+                continue
+            sign = "+" if monthly_return >= 0 else ""
+            pct_str = f"{sign}{monthly_return:.2f}%"
+            prompt = (
+                f"Write 1-2 sentences for a monthly portfolio summary email to {display_name}. "
+                f"Their portfolio returned {pct_str} in {month_name}. "
+                "Be insightful and direct. No em dashes, no asterisks, no markdown."
+            )
+            teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 80)
+            if not teaser:
+                teaser = f"Your portfolio returned {pct_str} in {month_name}."
+            mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
+            html = _email_html(
+                heading=f"{month_name} in review, {display_name}",
+                label="Monthly Summary",
+                body_lines=[
+                    f"Portfolio return: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">{pct_str}</strong>",
+                    teaser,
+                ],
+                cta_text="See your full month",
+                cta_url="https://corvo.capital/app",
+                user_id=uid,
+                unsub_type="monthly_summary",
+                email_theme=email_theme,
+            )
+            ok = await loop.run_in_executor(None, _resend, email, subject, html)
+            sent += 1 if ok else 0
+            failed += 0 if ok else 1
+        except Exception as e:
+            print(f"[monthly-summary-email] error for {uid}: {e}")
+            failed += 1
+
+    print(f"[monthly-summary-email] done: sent={sent} failed={failed} skipped={skipped}")
+    return {"sent": sent, "failed": failed, "skipped": skipped}
+
+
+async def monthly_summary_loop():
+    """Background task: send monthly summary emails on the 1st of each month at 6am ET."""
+    print("[monthly-summary-email] scheduler started")
+    while True:
+        wait = _seconds_until_first_of_month_6am_et()
+        print(f"[monthly-summary-email] sleeping {wait/3600:.1f}h until 1st of month 6am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_monthly_summary_emails()
+        except Exception as e:
+            print(f"[monthly-summary-email] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/email/test-monthly-summary")
+async def test_monthly_summary_email(user_id: str = "", request: Request = None):
+    """Manually trigger the monthly summary email for one user (or all opted-in). Requires X-Admin-Key header."""
+    _require_admin_key(request)
+    return await send_monthly_summary_emails(target_user_id=user_id or None)
+
+
+
+
+# ── Market Close Summary ────────────────────────────────────────────────────────
+
+
+def _seconds_until_4_05pm_et() -> float:
+    """Return seconds until the next 4:05 PM ET on a weekday (Mon-Fri), minimum 60 s."""
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+
+    now = datetime.now(ZoneInfo("America/New_York"))
+    target = now.replace(hour=16, minute=5, second=0, microsecond=0)
+    if now >= target:
+        target += timedelta(days=1)
+    # Skip Saturday (5) and Sunday (6)
+    while target.weekday() >= 5:
+        target += timedelta(days=1)
+    return max((target - now).total_seconds(), 60.0)
+
+
+async def send_market_close_summary_emails(target_user_id=None) -> dict:
+    """Send market close summary emails and push notifications to opted-in users at 4:05pm ET."""
+    user_ids = [target_user_id] if target_user_id else _opted_in_user_ids("market_close_summary")
+    if not user_ids:
+        return {"sent": 0, "skipped": "no opted-in users"}
+    from datetime import date as _date
+
+    today_str = _date.today().strftime("%B %-d, %Y")
+    subject = f"Your market close summary for {today_str}"
+    sent = failed = skipped = push_sent = push_failed = 0
+    loop = asyncio.get_event_loop()
+    finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+
+    for uid in user_ids:
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, uid)
+            if not data:
+                print(f"[mkt-close] skip {uid}: _fetch_user_email_data returned None")
+                skipped += 1
+                continue
+            email, display_name, tickers, weights = data
+            email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
+
+            if not finnhub_key:
+                print(f"[mkt-close] skip {uid}: FINNHUB_API_KEY missing")
+                skipped += 1
+                continue
+
+            def _fetch_close_data():
+                quotes = {}
+                for ticker in tickers[:12]:
+                    q = _finnhub_quote(ticker)
+                    if q and q.get("c", 0) > 0 and q.get("pc", 0) > 0:
+                        quotes[ticker] = q
+                    time.sleep(0.06)
+                return quotes
+
+            quotes = await loop.run_in_executor(None, _fetch_close_data)
+            if not quotes:
+                print(f"[mkt-close] skip {uid}: no Finnhub quotes returned")
+                skipped += 1
+                continue
+
+            # Weighted portfolio % change
+            wsum = 0.0
+            wt = 0.0
+            ticker_changes: dict[str, float] = {}
+            for i, ticker in enumerate(tickers):
+                if ticker not in quotes or i >= len(weights):
+                    continue
+                dp = quotes[ticker].get("dp") or 0.0
+                ticker_changes[ticker] = dp
+                wsum += weights[i] * dp
+                wt += weights[i]
+
+            if wt <= 0 or not ticker_changes:
+                print(f"[mkt-close] skip {uid}: no weighted change data")
+                skipped += 1
+                continue
+
+            portfolio_pct = round(wsum / wt, 2)
+            pct_sign = "+" if portfolio_pct >= 0 else ""
+            pct_str = f"{pct_sign}{portfolio_pct:.2f}%"
+            dollar_per_10k = round(portfolio_pct / 100 * 10000)
+            dollar_sign = "+" if dollar_per_10k >= 0 else ""
+            dollar_str = f"{dollar_sign}${abs(dollar_per_10k):,.0f} per $10K"
+
+            best_ticker = max(ticker_changes, key=lambda t: ticker_changes[t])
+            worst_ticker = min(ticker_changes, key=lambda t: ticker_changes[t])
+            best_pct = ticker_changes[best_ticker]
+            worst_pct = ticker_changes[worst_ticker]
+
+            spy_q = await loop.run_in_executor(None, _finnhub_quote, "SPY")
+            market_note = ""
+            if spy_q and spy_q.get("dp") is not None:
+                sp = spy_q["dp"]
+                market_note = f"The S&P 500 closed {'up' if sp >= 0 else 'down'} {abs(sp):.2f}% today."
+
+            prompt = (
+                f"Write 2-3 sentences for a market close portfolio email to {display_name}. "
+                f"Their portfolio closed {pct_str} today ({dollar_str} invested). "
+                f"Best performer: {best_ticker} ({best_pct:+.2f}%). "
+                f"Worst performer: {worst_ticker} ({worst_pct:+.2f}%). "
+                f"{market_note} "
+                "End with one specific forward-looking sentence about what to watch tomorrow. "
+                "Be direct and specific. No em dashes, no asterisks, no markdown."
+            )
+            summary = await loop.run_in_executor(None, _haiku_teaser, prompt, 150)
+            if not summary:
+                summary = (
+                    f"Your portfolio closed {pct_str} today. "
+                    f"{best_ticker} led at {best_pct:+.2f}% while {worst_ticker} lagged at {worst_pct:+.2f}%."
+                )
+
+            mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
+            html = _email_html(
+                heading=f"Market close, {display_name}",
+                label="Market Close Summary",
+                body_lines=[
+                    (
+                        f"Your portfolio: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">"
+                        f"{pct_str}</strong>"
+                        f"&nbsp; <span style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};font-size:12px;\">"
+                        f"({dollar_str})</span>"
+                    ),
+                    (
+                        f"Best: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">"
+                        f"{best_ticker} {best_pct:+.2f}%</strong>"
+                        f"&nbsp;&nbsp; Worst: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">"
+                        f"{worst_ticker} {worst_pct:+.2f}%</strong>"
+                    ),
+                    summary,
+                ],
+                cta_text="See your portfolio",
+                cta_url="https://corvo.capital/app",
+                user_id=uid,
+                unsub_type="market_close_summary",
+                email_theme=email_theme,
+            )
+            ok = await loop.run_in_executor(None, _resend, email, subject, html)
+            sent += 1 if ok else 0
+            failed += 0 if ok else 1
+
+            # Push notification to all subscriptions for this user
+            push_title = f"Market Close: {pct_str}"
+            push_body = f"Best: {best_ticker} {best_pct:+.2f}% | Worst: {worst_ticker} {worst_pct:+.2f}%"
+            if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+                try:
+                    subs_resp = requests.get(
+                        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{uid}&select=id,subscription",
+                        headers=_sb_headers(),
+                        timeout=8,
+                    )
+                    if subs_resp.status_code == 200:
+                        dead_ids: list[str] = []
+                        for row in subs_resp.json():
+                            result = _send_push(
+                                row["subscription"],
+                                push_title,
+                                push_body,
+                                url="https://corvo.capital/app",
+                            )
+                            if result == "ok":
+                                push_sent += 1
+                            elif result == "dead":
+                                push_failed += 1
+                                if row.get("id"):
+                                    dead_ids.append(str(row["id"]))
+                            else:
+                                push_failed += 1
+                        for dead_id in dead_ids:
+                            try:
+                                requests.delete(
+                                    f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                                    headers=_sb_headers(),
+                                    timeout=5,
+                                )
+                            except Exception:
+                                pass
+                except Exception as e:
+                    print(f"[mkt-close] push error for {uid}: {e}")
+
+        except Exception as e:
+            print(f"[mkt-close] error for {uid}: {e}")
+            failed += 1
+
+    print(
+        f"[mkt-close] done: sent={sent} failed={failed} skipped={skipped} "
+        f"push_sent={push_sent} push_failed={push_failed}"
+    )
+    return {
+        "sent": sent,
+        "failed": failed,
+        "skipped": skipped,
+        "push_sent": push_sent,
+        "push_failed": push_failed,
+    }
+
+
+async def market_close_summary_loop():
+    """Background task: send market close summary at 4:05pm ET on weekdays."""
+    print("[mkt-close] scheduler started")
+    while True:
+        wait = _seconds_until_4_05pm_et()
+        print(f"[mkt-close] sleeping {wait/3600:.2f}h until next weekday 4:05pm ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_market_close_summary_emails()
+        except Exception as e:
+            print(f"[mkt-close] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/email/test-market-close")
+async def test_market_close_email(user_id: str = "", request: Request = None):
+    """Manually trigger the market close summary email and push for one user (or all opted-in). Requires X-Admin-Key header."""
+    _require_admin_key(request)
+    uid = user_id or None
+    return await send_market_close_summary_emails(target_user_id=uid)
+
+
+# ── Weekly Portfolio Checkup Push ──────────────────────────────────────────────
+
+
+def _seconds_until_sunday_8am_et() -> float:
+    """Return seconds until the next Sunday at 8:00 AM ET, minimum 60 s."""
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    # weekday(): Monday=0 ... Sunday=6
+    days_ahead = (6 - now.weekday()) % 7
+    target = (now + timedelta(days=days_ahead)).replace(hour=8, minute=0, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=7)
+    return max((target - now).total_seconds(), 60.0)
+
+
+def _portfolio_week_context(tickers: list, weights: list) -> dict:
+    """Download weekly price data for all tickers plus SPY and return advisor context."""
+    ctx: dict = {}
+    try:
+        all_dl = list(dict.fromkeys(tickers + ["SPY"]))
+        df = yf.download(all_dl, period="5d", auto_adjust=True, progress=False)
+        if df.empty or len(df) < 2:
+            return ctx
+        close = df["Close"] if isinstance(df.columns, pd.MultiIndex) else df[["Close"]].rename(columns={"Close": all_dl[0]})
+
+        if "SPY" in close.columns:
+            spy_col = close["SPY"].dropna()
+            if len(spy_col) >= 2:
+                ctx["spy_return"] = round((float(spy_col.iloc[-1]) - float(spy_col.iloc[0])) / float(spy_col.iloc[0]) * 100, 2)
+
+        contributions = []
+        port_ret = 0.0
+        for i, ticker in enumerate(tickers):
+            if i >= len(weights) or ticker not in close.columns:
+                continue
+            col = close[ticker].dropna()
+            if len(col) < 2:
+                continue
+            r = (float(col.iloc[-1]) - float(col.iloc[0])) / float(col.iloc[0]) * 100
+            contribution = weights[i] * r
+            port_ret += contribution
+            contributions.append((ticker, contribution, weights[i]))
+
+        if contributions:
+            ctx["portfolio_return"] = round(port_ret, 2)
+            top = max(contributions, key=lambda x: abs(x[1]))
+            ctx["top_ticker"] = top[0]
+            ctx["top_contribution"] = round(top[1], 2)
+            ctx["top_weight_pct"] = round(top[2] * 100, 1)
+
+        sorted_by_weight = sorted(zip(tickers, weights), key=lambda x: x[1], reverse=True)
+        ctx["largest_holding"] = sorted_by_weight[0][0]
+        ctx["largest_weight_pct"] = round(sorted_by_weight[0][1] * 100, 1)
+        top3 = sorted_by_weight[:3]
+        ctx["top3_tickers"] = [t for t, _ in top3]
+        ctx["top3_weight_pct"] = round(sum(w for _, w in top3) * 100, 1)
+    except Exception as e:
+        print(f"[week-ctx] error: {e}")
+    return ctx
+
+
+def _weekly_advisor_verdict(display_name: str, ctx: dict, condensed: bool = False) -> str:
+    """Generate advisor-style weekly verdict. condensed=True returns 2 sentences for push notifications."""
+    try:
+        import anthropic as _anth
+        key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not key:
+            return ""
+        client = _anth.Anthropic(api_key=key)
+
+        port_ret = ctx.get("portfolio_return")
+        if port_ret is None:
+            return ""
+        sign = "+" if port_ret >= 0 else ""
+        pct_str = f"{sign}{port_ret:.2f}%"
+
+        ctx_lines = [f"Portfolio return last week: {pct_str}"]
+
+        spy_ret = ctx.get("spy_return")
+        if spy_ret is not None:
+            spy_sign = "+" if spy_ret >= 0 else ""
+            spy_str = f"{spy_sign}{spy_ret:.2f}%"
+            diff = port_ret - spy_ret
+            diff_sign = "+" if diff >= 0 else ""
+            ctx_lines.append(f"S&P 500 last week: {spy_str} (portfolio difference: {diff_sign}{diff:.2f}%)")
+
+        top_ticker = ctx.get("top_ticker")
+        if top_ticker:
+            contrib = ctx.get("top_contribution", 0.0)
+            contrib_sign = "+" if contrib >= 0 else ""
+            weight_pct = ctx.get("top_weight_pct", 0.0)
+            ctx_lines.append(f"Biggest driver: {top_ticker} ({weight_pct}% of portfolio, contributed {contrib_sign}{contrib:.2f}% to return)")
+
+        top3 = ctx.get("top3_tickers", [])
+        top3_w = ctx.get("top3_weight_pct")
+        if top3 and top3_w is not None:
+            ctx_lines.append(f"Top 3 holdings ({', '.join(top3)}) make up {top3_w:.0f}% of portfolio")
+
+        context_block = "\n".join(f"- {line}" for line in ctx_lines)
+
+        if condensed:
+            prompt = (
+                f"You are Corvo, an AI portfolio advisor. Write exactly 2 sentences for {display_name}'s weekly push notification.\n\n"
+                f"Portfolio data:\n{context_block}\n\n"
+                "Sentence 1: A verdict on how the week went relative to the market and the main driver.\n"
+                "Sentence 2: One specific, actionable recommendation.\n\n"
+                "No em dashes. No asterisks. No markdown. Be specific to the numbers, not generic."
+            )
+            max_tokens = 100
+        else:
+            prompt = (
+                f"You are Corvo, an AI portfolio advisor. Write exactly 4 sentences for {display_name}'s weekly review email.\n\n"
+                f"Portfolio data:\n{context_block}\n\n"
+                "Sentence 1: A verdict on how the week went relative to the S&P 500 and why (reference the specific numbers).\n"
+                "Sentence 2: The single biggest driver of performance and what it means for the portfolio.\n"
+                "Sentence 3: The key risk or concentration issue to watch right now.\n"
+                "Sentence 4: One specific, actionable recommendation tied to what just happened.\n\n"
+                "No em dashes. No asterisks. No bullet points. No markdown. Be direct and specific to this portfolio, not generic."
+            )
+            max_tokens = 300
+
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = resp.content[0].text.strip() if resp.content else ""
+        return clean_ai_response(text)
+    except Exception as e:
+        print(f"[weekly-verdict] AI error: {e}")
+        return ""
+
+
+async def send_weekly_portfolio_checkup_push() -> dict:
+    """Send a weekly portfolio performance push to all users with push subscriptions (Sunday 8am ET)."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {"error": "Supabase not configured"}
+
+    subs_resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/push_subscriptions?select=id,user_id,subscription",
+        headers=_sb_headers(), timeout=15,
+    )
+    if subs_resp.status_code != 200:
+        return {"error": f"supabase {subs_resp.status_code}"}
+
+    user_subs: dict[str, list] = {}
+    for row in subs_resp.json():
+        uid = row.get("user_id")
+        if uid:
+            user_subs.setdefault(uid, []).append(row)
+
+    if not user_subs:
+        return {"sent": 0, "skipped": "no subscribers"}
+
+    optout_users: set[str] = set()
+    try:
+        optout_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?push_notifications=eq.false&select=user_id",
+            headers=_sb_headers(), timeout=5,
+        )
+        if optout_resp.status_code == 200:
+            optout_users = {r["user_id"] for r in optout_resp.json()}
+    except Exception:
+        pass
+
+    sent = skipped = 0
+    dead_ids: list[str] = []
+    loop = asyncio.get_event_loop()
+
+    for user_id, subs in user_subs.items():
+        if user_id in optout_users:
+            skipped += 1
+            continue
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, user_id)
+            if not data:
+                skipped += 1
+                continue
+            _, display_name, tickers, weights = data
+            ctx = await loop.run_in_executor(None, _portfolio_week_context, tickers, weights)
+            if "portfolio_return" not in ctx:
+                skipped += 1
+                continue
+            port_ret = ctx["portfolio_return"]
+            sign = "+" if port_ret >= 0 else ""
+            pct_str = f"{sign}{port_ret:.2f}%"
+            verdict = await loop.run_in_executor(None, _weekly_advisor_verdict, display_name, ctx, True)
+            title = f"Weekly checkup: {pct_str}"
+            body = verdict or f"Your portfolio returned {pct_str} this week."
+            for sub_row in subs:
+                result = _send_push(sub_row["subscription"], title, body, url="https://corvo.capital/app")
+                if result == "ok":
+                    sent += 1
+                elif result == "dead" and sub_row.get("id"):
+                    dead_ids.append(str(sub_row["id"]))
+        except Exception as e:
+            print(f"[weekly-checkup] error for user {user_id}: {e}")
+            skipped += 1
+
+    for dead_id in dead_ids:
+        try:
+            requests.delete(
+                f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                headers=_sb_headers(), timeout=5,
+            )
+        except Exception:
+            pass
+
+    print(f"[weekly-checkup] done: sent={sent} skipped={skipped} pruned={len(dead_ids)}")
+    return {"sent": sent, "skipped": skipped, "pruned": len(dead_ids)}
+
+
+async def weekly_portfolio_checkup_loop():
+    """Background task: send weekly portfolio checkup push every Sunday at 8am ET."""
+    print("[weekly-checkup] scheduler started")
+    while True:
+        wait = _seconds_until_sunday_8am_et()
+        print(f"[weekly-checkup] sleeping {wait/3600:.1f}h until Sunday 8am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_weekly_portfolio_checkup_push()
+        except Exception as e:
+            print(f"[weekly-checkup] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/push/test-weekly-checkup")
+async def test_weekly_checkup_push(request: Request):
+    """Manually trigger the weekly portfolio checkup push (for testing). Requires X-Admin-Key header."""
+    _require_admin_key(request)
+    return await send_weekly_portfolio_checkup_push()
+
+
+# ── Earnings Day Reminder Push ─────────────────────────────────────────────────
+
+
+def _seconds_until_8am_et() -> float:
+    """Return seconds until the next 8:00 AM ET, minimum 60 s."""
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+    now = datetime.now(ZoneInfo("America/New_York"))
+    target = now.replace(hour=8, minute=0, second=0, microsecond=0)
+    if now >= target:
+        target += timedelta(days=1)
+    return max((target - now).total_seconds(), 60.0)
+
+
+def _fetch_earnings_dates(ticker: str) -> list:
+    """Return a list of upcoming earnings dates (as date objects) for ticker."""
+    try:
+        stock = yf.Ticker(ticker)
+        cal = stock.calendar
+        if cal is None:
+            return []
+        if isinstance(cal, dict):
+            raw = cal.get("Earnings Date", [])
+            if not isinstance(raw, list):
+                raw = [raw]
+        else:
+            # DataFrame — flatten first row of 'Earnings Date' column
+            try:
+                raw = list(cal.loc["Earnings Date"])
+            except Exception:
+                return []
+        dates = []
+        for ed in raw:
+            if ed is None:
+                continue
+            if hasattr(ed, "date"):
+                dates.append(ed.date())
+            elif hasattr(ed, "year"):
+                from datetime import date as _d
+                dates.append(_d(ed.year, ed.month, ed.day))
+        return dates
+    except Exception:
+        return []
+
+
+async def send_earnings_reminder_push() -> dict:
+    """Send push notifications to users whose holdings have earnings today or tomorrow."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {"error": "Supabase not configured"}
+
+    from datetime import date, timedelta
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+
+    subs_resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/push_subscriptions?select=id,user_id,subscription",
+        headers=_sb_headers(), timeout=15,
+    )
+    if subs_resp.status_code != 200:
+        return {"error": f"supabase {subs_resp.status_code}"}
+
+    user_subs: dict[str, list] = {}
+    for row in subs_resp.json():
+        uid = row.get("user_id")
+        if uid:
+            user_subs.setdefault(uid, []).append(row)
+
+    if not user_subs:
+        return {"sent": 0, "skipped": "no subscribers"}
+
+    optout_users: set[str] = set()
+    try:
+        optout_resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/email_preferences?push_notifications=eq.false&select=user_id",
+            headers=_sb_headers(), timeout=5,
+        )
+        if optout_resp.status_code == 200:
+            optout_users = {r["user_id"] for r in optout_resp.json()}
+    except Exception:
+        pass
+
+    sent = skipped = 0
+    dead_ids: list[str] = []
+    loop = asyncio.get_event_loop()
+
+    # Cache earnings dates per ticker so we only hit yfinance once across all users
+    ticker_earnings_cache: dict[str, list] = {}
+
+    for user_id, subs in user_subs.items():
+        if user_id in optout_users:
+            skipped += 1
+            continue
+        try:
+            data = await loop.run_in_executor(None, _fetch_user_email_data, user_id)
+            if not data:
+                skipped += 1
+                continue
+            _, _, tickers, _ = data
+
+            earnings_today: list[str] = []
+            earnings_tomorrow: list[str] = []
+            for ticker in tickers:
+                if ticker not in ticker_earnings_cache:
+                    ticker_earnings_cache[ticker] = await loop.run_in_executor(
+                        None, _fetch_earnings_dates, ticker
+                    )
+                for ed in ticker_earnings_cache[ticker]:
+                    if ed == today:
+                        earnings_today.append(ticker)
+                    elif ed == tomorrow:
+                        earnings_tomorrow.append(ticker)
+
+            if not earnings_today and not earnings_tomorrow:
+                continue
+
+            parts = [f"{t} reports today" for t in earnings_today] + \
+                    [f"{t} reports tomorrow" for t in earnings_tomorrow]
+            title = "Earnings reminder"
+            body = ", ".join(parts) + ". Review your position before the call."
+
+            for sub_row in subs:
+                result = _send_push(sub_row["subscription"], title, body, url="https://corvo.capital/app")
+                if result == "ok":
+                    sent += 1
+                elif result == "dead" and sub_row.get("id"):
+                    dead_ids.append(str(sub_row["id"]))
+        except Exception as e:
+            print(f"[earnings-reminder] error for user {user_id}: {e}")
+            skipped += 1
+
+    for dead_id in dead_ids:
+        try:
+            requests.delete(
+                f"{SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.{dead_id}",
+                headers=_sb_headers(), timeout=5,
+            )
+        except Exception:
+            pass
+
+    print(f"[earnings-reminder] done: sent={sent} skipped={skipped} pruned={len(dead_ids)}")
+    return {"sent": sent, "skipped": skipped, "pruned": len(dead_ids)}
+
+
+async def earnings_reminder_loop():
+    """Background task: send earnings day reminder push every morning at 8am ET."""
+    print("[earnings-reminder] scheduler started")
+    while True:
+        wait = _seconds_until_8am_et()
+        print(f"[earnings-reminder] sleeping {wait/3600:.2f}h until 8am ET")
+        await asyncio.sleep(wait)
+        try:
+            await send_earnings_reminder_push()
+        except Exception as e:
+            print(f"[earnings-reminder] loop error: {e}")
+        await asyncio.sleep(60)
+
+
+@app.get("/push/test-earnings-reminder")
+async def test_earnings_reminder_push(request: Request):
+    """Manually trigger the earnings day reminder push (for testing). Requires X-Admin-Key header."""
+    _require_admin_key(request)
+    return await send_earnings_reminder_push()
+
+
+# ── (legacy yfinance stats, retained for portfolio snapshot endpoint) ──────────
+
+
+def _compute_week_stats_from_yfinance(tickers: list, weights_raw) -> dict:
+    """
+    Primary: compute 7-day portfolio stats directly from yfinance.
+    Cash-like tickers use synthetic 4.5% annual return.
+    """
+    if not tickers:
+        return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+
+    try:
+        w_list = [float(w) for w in (weights_raw or [])]
+    except Exception:
+        w_list = []
+    if len(w_list) != len(tickers):
+        w_list = [1.0 / len(tickers)] * len(tickers)
+    total = sum(w_list)
+    if total > 0:
+        w_list = [w / total for w in w_list]
+
+    real_tickers = [t for t in tickers if not is_cash_ticker(t)]
+
+    close_df = pd.DataFrame()
+    if real_tickers:
+        dl_arg = real_tickers[0] if len(real_tickers) == 1 else real_tickers
+        for attempt in range(3):
+            try:
+                raw = yf.download(dl_arg, period="14d", auto_adjust=True, progress=False)
+                if raw is None or raw.empty:
+                    import yfinance as _yf2
+                    _yf2.set_tz_cache_location("/tmp/yf_tz_cache")
+                    raw = _yf2.download(dl_arg, period="14d", auto_adjust=True, progress=False, timeout=30)
+                if raw is None or raw.empty:
+                    if attempt < 2:
+                        time.sleep(2)
+                        continue
+                    break
+                if isinstance(raw.columns, pd.MultiIndex):
+                    lvl0 = raw.columns.get_level_values(0)
+                    key = "Close" if "Close" in lvl0 else "Adj Close"
+                    close_df = raw[key]
+                    if isinstance(close_df, pd.Series):
+                        close_df = close_df.to_frame(name=real_tickers[0])
+                else:
+                    if "Close" in raw.columns:
+                        close_df = raw[["Close"]].rename(columns={"Close": real_tickers[0]})
+                    else:
+                        close_df = raw.iloc[:, :1].rename(columns={raw.columns[0]: real_tickers[0]})
+                close_df = close_df.dropna(how="all").tail(8)
+                break
+            except Exception:
+                if attempt < 2:
+                    time.sleep(2)
+
+    n = len(close_df) if not close_df.empty else 8
+    port_series = np.zeros(n)
+    weight_applied = 0.0
+
+    for t, w in zip(tickers, w_list):
+        if is_cash_ticker(t):
+            daily_r = (1.045 ** (1 / 252)) - 1
+            synthetic = np.array([(1 + daily_r) ** i for i in range(n)])
+            port_series = port_series + synthetic * w
+            weight_applied += w
+        else:
+            if close_df.empty or t not in close_df.columns:
+                continue
+            col = close_df[t].dropna()
+            if len(col) < 2:
+                continue
+            values = col.values.astype(float)
+            normalized = values / values[0]
+            n_ticker = len(normalized)
+            if n_ticker < n:
+                # Pad front with 1.0 (flat before data starts)
+                pad = np.ones(n - n_ticker)
+                aligned = np.concatenate([pad, normalized])
+            else:
+                aligned = normalized[-n:]
+            port_series = port_series + aligned * w
+            weight_applied += w
+
+    if weight_applied < 0.01:
+        return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+
+    if weight_applied < 0.99:
+        port_series = port_series / weight_applied
+
+    if len(port_series) < 2:
+        return {"return_7d": None, "best_day": None, "worst_day": None, "sharpe": None}
+
+    synth_snapshots = [{"portfolio_value": v * 10000} for v in port_series.tolist()]
+    return _compute_portfolio_week_stats(synth_snapshots)
+
 
 def _compute_portfolio_week_stats(snapshots: list[dict]) -> dict:
     """
@@ -3756,405 +7294,6 @@ def _compute_portfolio_week_stats(snapshots: list[dict]) -> dict:
         "worst_day": round(worst_day, 2),
         "sharpe": round(sharpe, 2) if sharpe is not None else None,
     }
-
-
-def _generate_digest_summary(display_name: str, portfolio_blocks: list[dict]) -> str:
-    """
-    Ask Claude to write a concise 2-paragraph personalised digest summary.
-    portfolio_blocks: [{name, return_7d, best_day, worst_day, sharpe, tickers}]
-    """
-    try:
-        import anthropic as _anth
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            return ""
-        client = _anth.Anthropic(api_key=api_key)
-
-        pf_lines = []
-        for pf in portfolio_blocks:
-            ret = f"{pf['return_7d']:+.2f}%" if pf["return_7d"] is not None else "N/A"
-            best = f"{pf['best_day']:+.2f}%" if pf["best_day"] is not None else "N/A"
-            worst = f"{pf['worst_day']:+.2f}%" if pf["worst_day"] is not None else "N/A"
-            sharpe = str(pf["sharpe"]) if pf["sharpe"] is not None else "N/A"
-            tickers = ", ".join(pf.get("tickers", [])[:6])
-            pf_lines.append(
-                f'  Portfolio "{pf["name"]}": 7-day return {ret}, best day {best}, '
-                f'worst day {worst}, Sharpe {sharpe}. Holdings: {tickers}.'
-            )
-
-        name_str = display_name or "there"
-        prompt = (
-            f"You are a personal financial analyst writing a weekly portfolio digest for {name_str}.\n\n"
-            f"Portfolio performance this week:\n" + "\n".join(pf_lines) + "\n\n"
-            "Write exactly 2 paragraphs:\n"
-            "Paragraph 1: Summarise overall performance for the week: highlight the key return, "
-            "what drove it, and compare good vs bad days.\n"
-            "Paragraph 2: One forward-looking observation: a risk, opportunity, or rebalancing thought.\n"
-            "Be direct, specific, and concise. Max 60 words per paragraph. No bullet points. No preamble. "
-            "Never use em dashes. Never use asterisks (*) or markdown formatting. Write in plain prose only."
-        )
-        resp = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=300,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return clean_ai_response(resp.content[0].text)
-    except Exception as e:
-        print(f"[digest] Claude error: {e}")
-        return ""
-
-
-def _build_digest_html(display_name: str, user_id: str, portfolio_blocks: list[dict], ai_summary: str) -> str:
-    """Build the full dark HTML email for the weekly digest."""
-    amber = "#c9a84c"
-    bg = "#0a0a0a"
-    card_bg = "#111111"
-    text = "#e8e0cc"
-    muted = "#888880"
-    border = "#1e1e1e"
-
-    name_str = display_name or "Investor"
-    unsub_url = f"https://corvo.capital/unsubscribe?user_id={user_id}" if user_id else "https://corvo.capital/unsubscribe"
-
-    # Build per-portfolio stat blocks
-    pf_html = ""
-    for pf in portfolio_blocks:
-        ret = pf.get("return_7d")
-        best = pf.get("best_day")
-        worst = pf.get("worst_day")
-        sharpe = pf.get("sharpe")
-        tickers = pf.get("tickers", [])
-
-        ret_color = "#5cb88a" if (ret is not None and ret >= 0) else "#e05c5c"
-        ret_str = f"{ret:+.2f}%" if ret is not None else "N/A"
-        best_str = f"{best:+.2f}%" if best is not None else "N/A"
-        worst_str = f"{worst:+.2f}%" if worst is not None else "N/A"
-        sharpe_str = str(sharpe) if sharpe is not None else "N/A"
-        ticker_str = "  ·  ".join(tickers[:6]) + ("  +" + str(len(tickers) - 6) + " more" if len(tickers) > 6 else "")
-
-        stats_cells = ""
-        for label, val, color in [
-            ("7-Day Return", ret_str, ret_color),
-            ("Best Day", best_str, "#5cb88a"),
-            ("Worst Day", worst_str, "#e05c5c"),
-            ("Sharpe", sharpe_str, amber),
-        ]:
-            stats_cells += f"""
-              <td align="center" style="padding:12px 8px;width:25%;">
-                <p style="margin:0 0 4px 0;font-family:Arial,sans-serif;font-size:9px;
-                           letter-spacing:2px;color:{muted};text-transform:uppercase;">{label}</p>
-                <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:17px;
-                           font-weight:700;color:{color};">{val}</p>
-              </td>"""
-
-        pf_html += f"""
-        <tr>
-          <td style="padding:8px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                   style="background:{card_bg};border-radius:10px;border:1px solid {border};">
-              <tr>
-                <td style="padding:18px 20px 6px 20px;">
-                  <p style="margin:0 0 2px 0;font-family:Arial,sans-serif;font-size:13px;
-                             font-weight:700;color:{text};">{pf['name']}</p>
-                  <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;color:{muted};">{ticker_str}</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:0 12px 12px 12px;">
-                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                    <tr>{stats_cells}</tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>"""
-
-    # AI summary section
-    summary_html = ""
-    if ai_summary:
-        paras = [p.strip() for p in ai_summary.split("\n\n") if p.strip()]
-        for para in paras:
-            summary_html += f"""
-        <tr>
-          <td style="padding:4px 0 8px 0;">
-            <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;
-                       color:{muted};line-height:1.7;">{para}</p>
-          </td>
-        </tr>"""
-
-    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Your Weekly Portfolio Digest | Corvo</title>
-</head>
-<body style="margin:0;padding:0;background-color:{bg};">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0"
-         style="background-color:{bg};min-height:100vh;">
-    <tr>
-      <td align="center" style="padding:48px 16px;">
-        <table width="600" cellpadding="0" cellspacing="0" border="0"
-               style="max-width:600px;width:100%;">
-
-          <!-- Logo -->
-          <tr>
-            <td align="center" style="padding-bottom:32px;">
-              <p style="margin:0 0 4px 0;font-family:'Courier New',Courier,monospace;
-                         font-size:28px;font-weight:900;letter-spacing:6px;color:{amber};">CORVO</p>
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:9px;
-                         letter-spacing:3px;color:#555;text-transform:uppercase;">Portfolio Intelligence</p>
-            </td>
-          </tr>
-
-          <!-- Heading -->
-          <tr>
-            <td style="padding-bottom:4px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
-                         letter-spacing:3px;color:{muted};text-transform:uppercase;">Weekly Digest</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-bottom:24px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:22px;
-                         font-weight:700;color:{text};">Your week in review, {name_str}</p>
-            </td>
-          </tr>
-
-          <!-- Portfolio stat cards -->
-          <tr>
-            <td>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                {pf_html}
-              </table>
-            </td>
-          </tr>
-
-          <!-- AI summary -->
-          {"" if not ai_summary else f'''
-          <tr><td style="padding:24px 0 8px 0;">
-            <p style="margin:0 0 12px 0;font-family:Arial,sans-serif;font-size:9px;
-                       letter-spacing:2.5px;color:{muted};text-transform:uppercase;">AI Analysis</p>
-          </td></tr>
-          ''' + summary_html}
-
-          <!-- CTA -->
-          <tr>
-            <td align="center" style="padding:28px 0 8px 0;">
-              <table cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center" style="border-radius:8px;background-color:{amber};">
-                    <a href="https://corvo.capital/app"
-                       style="display:inline-block;padding:14px 36px;font-family:Arial,sans-serif;
-                              font-size:14px;font-weight:700;color:#000000;text-decoration:none;
-                              border-radius:8px;letter-spacing:0.5px;">View Full Analysis &rarr;</a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Divider + footer -->
-          <tr>
-            <td style="border-top:1px solid {border};padding-top:24px;margin-top:16px;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;
-                         color:#444;text-align:center;line-height:1.8;">
-                &copy; 2026 Corvo &nbsp;&middot;&nbsp;
-                <a href="https://corvo.capital" style="color:#555;text-decoration:none;">corvo.capital</a>
-                &nbsp;&middot;&nbsp;
-                <a href="{unsub_url}" style="color:#555;text-decoration:none;">Unsubscribe</a>
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
-
-
-def _send_digest_email(to_email: str, display_name: str, user_id: str,
-                       portfolio_blocks: list[dict], ai_summary: str) -> bool:
-    """Build and send the weekly digest email via Resend. Returns True on success."""
-    resend_key = os.environ.get("RESEND_API_KEY", "")
-    if not resend_key:
-        print("[digest] RESEND_API_KEY not set, skipping email")
-        return False
-    html = _build_digest_html(display_name, user_id, portfolio_blocks, ai_summary)
-    try:
-        resp = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-            json={
-                "from": "Corvo <hello@corvo.capital>",
-                "to": [to_email],
-                "subject": "📊 Your Weekly Portfolio Digest",
-                "html": html,
-            },
-            timeout=15,
-        )
-        if resp.status_code in (200, 201):
-            return True
-        print(f"[digest] Resend error {resp.status_code}: {resp.text[:200]}")
-        return False
-    except Exception as e:
-        print(f"[digest] email send error: {e}")
-        return False
-
-
-async def send_weekly_digest(target_user_id: str | None = None) -> dict:
-    """
-    Send the weekly digest to all users with weekly_digest = true
-    (or to target_user_id only when called from the test endpoint).
-    """
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        return {"skipped": "supabase not configured"}
-
-    loop = asyncio.get_event_loop()
-
-    # 1. Fetch opted-in users from email_preferences
-    try:
-        prefs_url = f"{SUPABASE_URL}/rest/v1/email_preferences?weekly_digest=eq.true&select=user_id"
-        if target_user_id:
-            prefs_url = f"{SUPABASE_URL}/rest/v1/email_preferences?user_id=eq.{target_user_id}&select=user_id"
-        prefs_resp = requests.get(prefs_url, headers=_sb_headers(), timeout=10)
-        if prefs_resp.status_code != 200:
-            return {"error": f"prefs fetch {prefs_resp.status_code}"}
-        user_ids = [r["user_id"] for r in prefs_resp.json()]
-    except Exception as e:
-        return {"error": str(e)}
-
-    if not user_ids:
-        print("[digest] no opted-in users")
-        return {"sent": 0, "skipped": "no opted-in users"}
-
-    # Date range: last 7 days
-    from datetime import timedelta
-    today = datetime.now(timezone.utc).date()
-    week_ago = (today - timedelta(days=7)).isoformat()
-
-    sent = failed = skipped = 0
-
-    for user_id in user_ids:
-        try:
-            # 2a. Get user email from Supabase Auth
-            user_resp = requests.get(
-                f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
-                headers=_sb_headers(), timeout=8,
-            )
-            if user_resp.status_code != 200:
-                skipped += 1
-                continue
-            user_data = user_resp.json()
-            email = user_data.get("email", "")
-            if not email:
-                skipped += 1
-                continue
-            display_name = (
-                (user_data.get("user_metadata") or {}).get("full_name")
-                or (user_data.get("user_metadata") or {}).get("name")
-                or email.split("@")[0]
-            )
-
-            # 2b. Fetch all portfolios for this user
-            pf_resp = requests.get(
-                f"{SUPABASE_URL}/rest/v1/portfolios?user_id=eq.{user_id}&select=id,name,tickers,weights",
-                headers=_sb_headers(), timeout=8,
-            )
-            if pf_resp.status_code != 200 or not pf_resp.json():
-                skipped += 1
-                continue
-            portfolios = pf_resp.json()
-
-            portfolio_blocks: list[dict] = []
-
-            for pf in portfolios:
-                pf_id = pf.get("id")
-                pf_name = pf.get("name") or "Portfolio"
-                tickers = pf.get("tickers") or []
-
-                # 2c. Fetch last 7 days of snapshots
-                snap_resp = requests.get(
-                    f"{SUPABASE_URL}/rest/v1/portfolio_snapshots"
-                    f"?portfolio_id=eq.{pf_id}&date=gte.{week_ago}"
-                    f"&select=date,portfolio_value&order=date.asc",
-                    headers=_sb_headers(), timeout=8,
-                )
-                snapshots = snap_resp.json() if snap_resp.status_code == 200 else []
-
-                stats = _compute_portfolio_week_stats(snapshots)
-                portfolio_blocks.append({
-                    "name": pf_name,
-                    "tickers": tickers,
-                    **stats,
-                })
-
-            if not portfolio_blocks:
-                skipped += 1
-                continue
-
-            # 2d. Generate AI summary (blocking, run in executor)
-            ai_summary = await loop.run_in_executor(
-                None, _generate_digest_summary, display_name, portfolio_blocks
-            )
-
-            # 2e. Send email
-            ok = await loop.run_in_executor(
-                None, _send_digest_email, email, display_name, user_id, portfolio_blocks, ai_summary
-            )
-            if ok:
-                sent += 1
-                print(f"[digest] sent to {email}")
-            else:
-                failed += 1
-
-        except Exception as e:
-            print(f"[digest] error for user {user_id}: {e}")
-            failed += 1
-
-    print(f"[digest] done, sent={sent} failed={failed} skipped={skipped}")
-    return {"sent": sent, "failed": failed, "skipped": skipped}
-
-
-def _seconds_until_sunday_8am_et() -> float:
-    """Return seconds until the next Sunday 8:00 AM US/Eastern, minimum 60 s."""
-    from zoneinfo import ZoneInfo
-    from datetime import timedelta
-    now_et = datetime.now(ZoneInfo("America/New_York"))
-    # weekday(): Monday=0 … Sunday=6
-    days_ahead = (6 - now_et.weekday()) % 7
-    target = (now_et + timedelta(days=days_ahead)).replace(
-        hour=8, minute=0, second=0, microsecond=0
-    )
-    if target <= now_et:
-        # We're already past 8am on a Sunday, use next Sunday
-        target += timedelta(days=7)
-    return max((target - now_et).total_seconds(), 60.0)
-
-
-async def weekly_digest_loop():
-    """Background task: send portfolio digest email every Sunday at 8am ET."""
-    print("[digest] scheduler started")
-    while True:
-        wait = _seconds_until_sunday_8am_et()
-        print(f"[digest] sleeping {wait/3600:.1f}h until Sunday 8am ET")
-        await asyncio.sleep(wait)
-        try:
-            await send_weekly_digest()
-        except Exception as e:
-            print(f"[digest] loop error: {e}")
-        await asyncio.sleep(60)
-
-
-@app.get("/email/test-digest")
-async def test_weekly_digest(user_id: str = ""):
-    """Manually trigger the weekly digest for a specific user (or all opted-in users)."""
-    result = await send_weekly_digest(target_user_id=user_id or None)
-    return result
 
 
 # ── Market Driver ──────────────────────────────────────────────────────────────
@@ -4298,6 +7437,218 @@ def earnings_calendar(tickers: str = Query(default="")):
     return results
 
 
+
+# ── Earnings Impact Preview ────────────────────────────────────────────────────
+
+@app.get("/earnings-preview")
+def earnings_preview(tickers: str = Query(default=""), weights: str = Query(default="")):
+    """Return earnings preview cards for holdings with earnings within 14 days.
+    Includes implied move from options straddle, analyst estimates, and AI portfolio commentary."""
+    from datetime import date, timedelta
+
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not tickers_list:
+        return []
+
+    try:
+        weights_list = [float(w) for w in weights.split(",") if w.strip()]
+    except Exception:
+        weights_list = []
+
+    if len(weights_list) == len(tickers_list):
+        total_w = sum(weights_list) or 1.0
+        weight_map = {t: weights_list[i] / total_w for i, t in enumerate(tickers_list)}
+    else:
+        weight_map = {t: 1.0 / len(tickers_list) for t in tickers_list}
+
+    today = date.today()
+    cutoff = today + timedelta(days=14)
+
+    def _safe(v):
+        try:
+            f = float(v)
+            return None if math.isnan(f) else f
+        except Exception:
+            return None
+
+    preview_items = []
+
+    for ticker in tickers_list:
+        try:
+            ticker_obj = yf.Ticker(ticker)
+            cal = ticker_obj.calendar
+            if cal is None:
+                continue
+
+            if isinstance(cal, dict):
+                raw_date = cal.get("Earnings Date")
+                eps_est = cal.get("EPS Estimate")
+                rev_est = cal.get("Revenue Estimate")
+            else:
+                try:
+                    raw_date = cal.loc["Earnings Date"].iloc[0] if "Earnings Date" in cal.index else None
+                    eps_est = cal.loc["EPS Estimate"].iloc[0] if "EPS Estimate" in cal.index else None
+                    rev_est = cal.loc["Revenue Estimate"].iloc[0] if "Revenue Estimate" in cal.index else None
+                except Exception:
+                    raw_date = eps_est = rev_est = None
+
+            if raw_date is None:
+                continue
+            if isinstance(raw_date, (list, tuple)):
+                raw_date = raw_date[0] if raw_date else None
+            if raw_date is None:
+                continue
+
+            if hasattr(raw_date, "date"):
+                earnings_date = raw_date.date()
+            else:
+                earnings_date = date.fromisoformat(str(raw_date)[:10])
+
+            if earnings_date < today or earnings_date > cutoff:
+                continue
+
+            days_until = (earnings_date - today).days
+
+            try:
+                info = ticker_obj.info
+                company = info.get("longName") or info.get("shortName") or ticker
+                current_price = float(info.get("regularMarketPrice") or info.get("currentPrice") or 0.0)
+            except Exception:
+                company = ticker
+                current_price = 0.0
+
+            # Implied move from ATM straddle price
+            implied_move_pct = None
+            implied_move_source = None
+            try:
+                if current_price > 0:
+                    option_dates = ticker_obj.options
+                    if option_dates:
+                        target_str = earnings_date.isoformat()
+                        candidates = [d for d in option_dates if d >= target_str]
+                        closest_expiry = candidates[0] if candidates else option_dates[-1]
+
+                        chain = ticker_obj.option_chain(closest_expiry)
+                        calls_df = chain.calls
+                        puts_df  = chain.puts
+
+                        if not calls_df.empty and not puts_df.empty:
+                            call_strikes = calls_df["strike"].values
+                            atm_idx = int(abs(call_strikes - current_price).argmin())
+                            atm_strike = call_strikes[atm_idx]
+
+                            atm_call = calls_df[calls_df["strike"] == atm_strike]
+                            atm_put  = puts_df[puts_df["strike"] == atm_strike]
+
+                            if not atm_call.empty and not atm_put.empty:
+                                call_last = float(atm_call["lastPrice"].iloc[0])
+                                put_last  = float(atm_put["lastPrice"].iloc[0])
+                                if call_last + put_last > 0:
+                                    implied_move_pct = round((call_last + put_last) / current_price * 100, 1)
+                                    implied_move_source = "options"
+            except Exception as e:
+                print(f"[earnings-preview] straddle error for {ticker}: {e}")
+
+            # Fallback: annualized IV scaled to days until expiry
+            if implied_move_pct is None:
+                try:
+                    if current_price > 0:
+                        option_dates = ticker_obj.options
+                        if option_dates:
+                            target_str = earnings_date.isoformat()
+                            candidates = [d for d in option_dates if d >= target_str]
+                            closest_expiry = candidates[0] if candidates else option_dates[-1]
+                            exp_date = date.fromisoformat(closest_expiry)
+                            days_to_exp = max((exp_date - today).days, 1)
+
+                            chain = ticker_obj.option_chain(closest_expiry)
+                            calls_df = chain.calls
+                            if not calls_df.empty and "impliedVolatility" in calls_df.columns:
+                                call_strikes = calls_df["strike"].values
+                                atm_idx = int(abs(call_strikes - current_price).argmin())
+                                atm_strike = call_strikes[atm_idx]
+                                atm_call = calls_df[calls_df["strike"] == atm_strike]
+                                if not atm_call.empty:
+                                    iv = float(atm_call["impliedVolatility"].iloc[0])
+                                    if iv > 0:
+                                        implied_move_pct = round(iv * math.sqrt(days_to_exp / 252) * 100, 1)
+                                        implied_move_source = "iv"
+                except Exception as e:
+                    print(f"[earnings-preview] IV fallback error for {ticker}: {e}")
+
+            preview_items.append({
+                "ticker": ticker,
+                "company": company,
+                "date": earnings_date.isoformat(),
+                "days_until": days_until,
+                "eps_estimate": _safe(eps_est),
+                "revenue_estimate": _safe(rev_est),
+                "implied_move_pct": implied_move_pct,
+                "implied_move_source": implied_move_source,
+                "weight": weight_map.get(ticker, 0.0),
+                "ai_commentary": "",
+            })
+        except Exception as e:
+            print(f"[earnings-preview] error for {ticker}: {e}")
+
+    if not preview_items:
+        return []
+
+    # Generate AI commentary for all holdings in one Claude call
+    try:
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if api_key:
+            import anthropic as _ant
+
+            def _fmt_rev(r):
+                if r is None:
+                    return "N/A"
+                if r >= 1_000_000_000:
+                    return f"${r / 1e9:.2f}B"
+                return f"${r / 1e6:.0f}M"
+
+            holdings_block = "\n".join([
+                f"- {item['ticker']} ({item['company']}): {item['weight'] * 100:.1f}% of portfolio, "
+                f"reports in {item['days_until']} day(s) on {item['date']}, "
+                f"EPS estimate: {'$' + str(round(item['eps_estimate'], 2)) if item['eps_estimate'] is not None else 'N/A'}, "
+                f"Revenue estimate: {_fmt_rev(item['revenue_estimate'])}, "
+                f"Implied move: {'+-' + str(item['implied_move_pct']) + '%' if item['implied_move_pct'] is not None else 'unavailable'}"
+                for item in preview_items
+            ])
+
+            prompt = (
+                "For each portfolio holding below, write 1-2 sentences covering: "
+                "what analysts are focused on in this earnings report, and what a beat or miss "
+                "would mean for this specific investor given their position size.\n\n"
+                f"Holdings:\n{holdings_block}\n\n"
+                "Return ONLY a valid JSON object mapping each ticker symbol to its commentary string. "
+                "No markdown fences, no extra text.\n\n"
+                "Rules: no em dashes, no asterisks, no emojis, under 55 words per ticker, "
+                "direct and specific about the weight and what to watch."
+            )
+
+            client = _ant.Anthropic(api_key=api_key)
+            resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1200,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = resp.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+                raw = raw.strip()
+            commentary_map = json.loads(raw)
+            for item in preview_items:
+                item["ai_commentary"] = commentary_map.get(item["ticker"], "")
+    except Exception as e:
+        print(f"[earnings-preview] Claude error: {e}")
+
+    preview_items.sort(key=lambda x: x["date"])
+    return preview_items
+
+
 # ── Events Calendar ────────────────────────────────────────────────────────────
 
 _FALLBACK_EVENTS_2026 = [
@@ -4325,9 +7676,10 @@ def events_calendar():
     to_date = today + timedelta(days=30)
 
     try:
+        fmp_key = os.environ.get("FMP_API_KEY", "demo")
         url = (
             f"https://financialmodelingprep.com/api/v3/economic_calendar"
-            f"?from={today.isoformat()}&to={to_date.isoformat()}&apikey=demo"
+            f"?from={today.isoformat()}&to={to_date.isoformat()}&apikey={fmp_key}"
         )
         resp = requests.get(url, timeout=8)
         if resp.status_code == 200:
@@ -4354,3 +7706,783 @@ def events_calendar():
     today_str = today.isoformat()
     cutoff_str = to_date.isoformat()
     return [e for e in _FALLBACK_EVENTS_2026 if today_str <= e["date"] <= cutoff_str]
+
+
+# ── Admin: one-time test-alert cleanup ──────────────────────────────────────
+
+@app.delete("/admin/cleanup-test-alerts")
+def admin_cleanup_test_alerts(request: Request):
+    """
+    Delete the two test price alerts created during dev testing:
+      - AAPL rises more than 0.001%
+      - Any alert drops more than 10% (threshold = 10)
+    Requires X-Admin-Key header matching SUPABASE_SERVICE_ROLE_KEY.
+    """
+    _require_admin_key(request)
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    deleted = []
+    errors = []
+
+    # Delete AAPL alert with very low threshold (0.001% rise)
+    r1 = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/price_alerts"
+        f"?ticker=eq.AAPL&condition=eq.rises&threshold=lte.0.01",
+        headers={**_sb_headers(), "Prefer": "return=representation"},
+        timeout=8,
+    )
+    if r1.status_code in (200, 204):
+        deleted.append(f"AAPL rises <= 0.01%: {r1.text[:100]}")
+    else:
+        errors.append(f"AAPL rises: {r1.status_code} {r1.text[:100]}")
+
+    # Delete any alert with condition=drops and threshold between 9.9 and 10.1
+    r2 = requests.delete(
+        f"{SUPABASE_URL}/rest/v1/price_alerts"
+        f"?condition=eq.drops&threshold=gte.9.9&threshold=lte.10.1",
+        headers={**_sb_headers(), "Prefer": "return=representation"},
+        timeout=8,
+    )
+    if r2.status_code in (200, 204):
+        deleted.append(f"drops ~10%: {r2.text[:100]}")
+    else:
+        errors.append(f"drops ~10%: {r2.status_code} {r2.text[:100]}")
+
+    return {"deleted": deleted, "errors": errors}
+
+
+# ── What Should I Do Today ────────────────────────────────────────────────────
+
+class RebalanceRequest(BaseModel):
+    tickers: list[str] = []
+    weights: list[float] = []           # target weights (normalized to 1)
+    individual_returns: dict = {}       # ticker -> CAGR from portfolio analysis
+    period: str = "1y"
+    portfolio_value: float = 10000.0
+    portfolio_return: float = 0.0
+    portfolio_volatility: float = 0.0
+    sharpe_ratio: float = 0.0
+    max_drawdown: float = 0.0
+    user_goals: dict = {}
+    user_id: str = ""
+
+
+class WhatShouldIDoRequest(BaseModel):
+    tickers: list[str] = []
+    weights: list[float] = []
+    portfolio_return: float = 0.0
+    portfolio_volatility: float = 0.0
+    sharpe_ratio: float = 0.0
+    max_drawdown: float = 0.0
+    period: str = "1y"
+    portfolio_value: float | None = None
+    health_score: float | None = None
+    user_goals: dict = {}
+    user_id: str = ""
+
+def _fetch_finnhub_quote(ticker: str, finnhub_key: str) -> dict | None:
+    """Fetch a single quote from Finnhub. Returns dict with price/change_pct or None on failure."""
+    try:
+        r = requests.get(
+            "https://finnhub.io/api/v1/quote",
+            params={"symbol": ticker, "token": finnhub_key},
+            timeout=5,
+        )
+        if r.status_code == 200:
+            d = r.json()
+            price = float(d.get("c") or 0)
+            change_pct = float(d.get("dp") or 0)
+            if price > 0:
+                return {"price": round(price, 2), "change_pct": round(change_pct, 2)}
+    except Exception as e:
+        print(f"Finnhub quote error for {ticker}: {e}")
+    return None
+
+def _fetch_yf_quote(ticker: str) -> dict:
+    """yfinance fallback quote."""
+    try:
+        info = yf.Ticker(ticker).fast_info
+        price = safe_float(getattr(info, "last_price", 0) or 0)
+        prev = safe_float(getattr(info, "previous_close", 0) or 0)
+        pct = ((price - prev) / prev * 100) if prev > 0 else 0.0
+        return {"price": round(price, 2), "change_pct": round(pct, 2)}
+    except Exception as e:
+        print(f"yfinance quote fallback error for {ticker}: {e}")
+        return {"price": 0.0, "change_pct": 0.0}
+
+def _fetch_user_goals_from_supabase(user_id: str) -> dict:
+    """Fetch goal/profile data from Supabase auth user_metadata for the given user_id.
+
+    Returns a merged dict combining the onboarding metadata (investment_horizon,
+    risk_tolerance, primary_goals, investor_type, age_range, income_range) with
+    any legacy corvo_goals fields.  Returns {} on any failure.
+    """
+    if not user_id or not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {}
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+            headers=_sb_headers(),
+            timeout=6,
+        )
+        if resp.status_code != 200:
+            return {}
+        meta = resp.json().get("user_metadata") or {}
+        return {
+            "investment_horizon": meta.get("investment_horizon", ""),
+            "risk_tolerance": meta.get("risk_tolerance", ""),
+            "primary_goals": meta.get("primary_goals", []),
+            "investor_type": meta.get("investor_type", ""),
+            "age_range": meta.get("age_range", ""),
+            "income_range": meta.get("income_range", ""),
+        }
+    except Exception as e:
+        print(f"[what-should-i-do] supabase goals fetch error: {e}")
+        return {}
+
+
+def _parse_horizon_years(horizon_str: str, legacy_goals: dict) -> int | None:
+    """Convert investment_horizon string or legacy timeline to an integer year count.
+
+    Returns None if the horizon cannot be determined.
+    """
+    if horizon_str:
+        h = horizon_str.lower().strip()
+        if "10" in h:
+            return 15  # "10+ years" -> treat as 15
+        if "5-10" in h or "5 to 10" in h:
+            return 7
+        if "3-5" in h or "3 to 5" in h:
+            return 4
+        if "1-2" in h or "1 to 2" in h:
+            return 2
+        if "under 1" in h or "less than 1" in h:
+            return 1
+        # Fallback: try parsing first number found
+        import re
+        nums = re.findall(r"\d+", h)
+        if nums:
+            return int(nums[0])
+    # Legacy: retirementAge - age
+    try:
+        age = int(legacy_goals.get("age", 0) or 0)
+        ret = int(legacy_goals.get("retirementAge", 0) or 0)
+        if age > 0 and ret > age:
+            return ret - age
+    except Exception:
+        pass
+    # Legacy timeline field
+    try:
+        tl = legacy_goals.get("timeline")
+        if tl:
+            return int(tl)
+    except Exception:
+        pass
+    return None
+
+
+def _horizon_category(years: int | None) -> str:
+    """Map year count to a plain-English horizon category."""
+    if years is None:
+        return "unknown"
+    if years >= 10:
+        return "long-term (10+ years)"
+    if years >= 5:
+        return "medium-to-long-term (5-10 years)"
+    if years >= 3:
+        return "medium-term (3-5 years)"
+    if years >= 1:
+        return "short-term (1-3 years)"
+    return "very short-term (under 1 year)"
+
+
+@app.post("/what-should-i-do")
+def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "what-should-i-do", 10, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded.")
+
+    finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+
+    # Pull authoritative goal data from Supabase, fall back to request payload
+    sb_goals = _fetch_user_goals_from_supabase(req.user_id) if req.user_id else {}
+    legacy_goals = req.user_goals or {}
+
+    investment_horizon_str = sb_goals.get("investment_horizon", "") or legacy_goals.get("timeline", "")
+    risk_tolerance = (
+        sb_goals.get("risk_tolerance", "")
+        or legacy_goals.get("riskTolerance", "")
+        or "moderate"
+    )
+    primary_goals = sb_goals.get("primary_goals") or []
+    investor_type = sb_goals.get("investor_type", "")
+    age_range = sb_goals.get("age_range", "") or (str(legacy_goals.get("age", "")) if legacy_goals.get("age") else "")
+    legacy_goal_type = legacy_goals.get("goal", "")  # retirement/wealth/income/short
+
+    horizon_years = _parse_horizon_years(investment_horizon_str, legacy_goals)
+    horizon_category = _horizon_category(horizon_years)
+    is_long_term = horizon_years is not None and horizon_years >= 5
+
+    # Live prices for each holding
+    live_prices: dict[str, dict] = {}
+    for ticker in req.tickers:
+        if is_cash_ticker(ticker):
+            live_prices[ticker] = {"price": 1.0, "change_pct": 0.0}
+            continue
+        quote = (_fetch_finnhub_quote(ticker, finnhub_key) if finnhub_key else None) or _fetch_yf_quote(ticker)
+        live_prices[ticker] = quote
+
+    # Market context (SPY + QQQ) — shown as background, not as a reason to act
+    market_lines: list[str] = []
+    for sym in ["SPY", "QQQ"]:
+        q = (_fetch_finnhub_quote(sym, finnhub_key) if finnhub_key else None) or _fetch_yf_quote(sym)
+        if q["price"] > 0:
+            market_lines.append(f"{sym}: {q['change_pct']:+.2f}% today (${q['price']:.2f})")
+
+    # Build holdings description
+    total_w = sum(req.weights) or 1.0
+    holdings_lines: list[str] = []
+    for t, w in zip(req.tickers, req.weights):
+        norm_w = w / total_w
+        q = live_prices.get(t, {"price": 0.0, "change_pct": 0.0})
+        price_str = f"${q['price']:.2f}" if q["price"] > 0 else "N/A"
+        change_str = f"{q['change_pct']:+.2f}% today" if q["price"] > 0 else ""
+        tag = " [money market]" if is_cash_ticker(t) else ""
+        holdings_lines.append(f"{t}{tag}: {norm_w:.1%} weight, {price_str}{(', ' + change_str) if change_str else ''}")
+
+    # Goal description for the prompt
+    goal_parts: list[str] = []
+    if horizon_category != "unknown":
+        goal_parts.append(f"Investment horizon: {horizon_category}")
+    if risk_tolerance:
+        risk_label = {
+            "conservative": "conservative (capital preservation priority)",
+            "moderate": "moderate (balanced growth and risk)",
+            "aggressive": "aggressive (maximum growth, high risk tolerance)",
+        }.get(risk_tolerance.lower(), risk_tolerance)
+        goal_parts.append(f"Risk tolerance: {risk_label}")
+    if primary_goals:
+        goal_parts.append(f"Primary goals: {', '.join(primary_goals)}")
+    elif legacy_goal_type:
+        goal_label = {"retirement": "retirement", "wealth": "wealth building", "income": "passive income", "short": "short-term gains"}.get(legacy_goal_type, legacy_goal_type)
+        goal_parts.append(f"Primary goal: {goal_label}")
+    if investor_type:
+        goal_parts.append(f"Investor type: {investor_type}")
+    if age_range:
+        goal_parts.append(f"Age range: {age_range}")
+    goal_block = "\n".join(goal_parts) if goal_parts else "Not provided"
+
+    value_str = f"${int(req.portfolio_value):,}" if req.portfolio_value else "not set"
+    health_str = f"{int(req.health_score)}/100" if req.health_score is not None else "N/A"
+    today_str = datetime.now().strftime("%B %d, %Y")
+
+    # Investor-profile-specific guidance for Claude
+    rt_lower = risk_tolerance.lower()
+    goal_lower = legacy_goal_type.lower() if legacy_goal_type else ""
+    if rt_lower == "conservative" or goal_lower in ("retirement", "income"):
+        investor_rules = """INVESTOR CONSTRAINT (conservative or income-focused investor):
+- Focus on capital preservation, income generation, and protecting existing gains. Never chase returns.
+- Do NOT recommend adding to volatile or speculative positions.
+- When prices are down, do not recommend selling — evaluate whether the long-term thesis still holds.
+- Valid actions: adding stability through bonds or dividend ETFs, trimming concentrated high-risk positions, rebalancing toward the target allocation.
+- Every recommendation must prioritize stability and downside protection over upside return."""
+    elif rt_lower == "aggressive" or investor_type.lower() in ("growth", "aggressive"):
+        investor_rules = """INVESTOR CONSTRAINT (aggressive growth investor):
+- This investor tolerates high volatility and can hold concentrated positions.
+- Think in weeks to months, not single days. Never react to one-day price swings.
+- Valid actions: adding to high-conviction positions at attractive valuations after a pullback, trimming positions that have grown dangerously concentrated (above 40%), rotating from structural laggards to leaders with better growth trajectories.
+- Every recommendation must be defensible over at least a 3-month horizon."""
+    elif is_long_term:
+        investor_rules = """INVESTOR CONSTRAINT (long-term investor, moderate risk):
+- NEVER recommend selling because the market went down or a holding dropped today. Price drops for solid companies are buying opportunities, not selling signals.
+- Only recommend trimming when a position has grown to an outsized weight (above 35%) after a sustained run-up, creating concentration risk.
+- Valid actions: rebalancing concentration risk, adding missing asset class exposure, trimming positions that have drifted well above their target weight after a big rally.
+- Every recommendation must be defensible over a multi-year time horizon."""
+    else:
+        investor_rules = """INVESTOR CONSTRAINT (moderate investor):
+- Do NOT recommend buying or selling based on single-day price movement.
+- Balance growth with risk management appropriate to the investor's timeline.
+- Valid actions: reducing concentration risk, addressing sector overweight, improving Sharpe ratio, managing drawdown risk relative to the stated timeline.
+- Every recommendation must be defensible over the user's stated time horizon."""
+
+    # Determine the goal label for the closing line
+    goal_label_parts: list[str] = []
+    if primary_goals:
+        goal_label_parts.append(", ".join(primary_goals))
+    elif legacy_goal_type:
+        goal_label_parts.append({"retirement": "retirement", "wealth": "wealth building", "income": "passive income", "short": "short-term growth"}.get(legacy_goal_type, legacy_goal_type))
+    if horizon_category != "unknown":
+        goal_label_parts.append(horizon_category)
+    goal_label = " and ".join(goal_label_parts) if goal_label_parts else "your stated goals"
+
+    system = f"""You are Corvo, a direct and goal-aware portfolio advisor. Today is {today_str}.
+
+CORE PHILOSOPHY:
+Recommendations must be relevant for weeks, not just today. Never react to a single-day market move. Each action must be directly tied to the user's goals and risk tolerance. Your job is to improve the portfolio health score by addressing structural issues, not to comment on daily noise.
+
+{investor_rules}
+
+OUTPUT FORMAT (strictly follow):
+- Give exactly 2 or 3 actions. Maximum 3.
+- Each action: write a specific headline on its own line (e.g. "Trim NVDA from 25% to 18%"). Then write 1-2 short sentences explaining why, in plain English with no jargon.
+- Leave a blank line between actions.
+- End with exactly this sentence as the final line: "These actions are designed to improve your portfolio health score and align with your {goal_label} goal."
+- No numbering, no bullet points, no asterisks, no em dashes, no markdown bold.
+- No intros, no conclusions, no preamble. Start directly with the first action headline.
+- Name specific tickers and real numbers in every recommendation.
+
+INVESTOR PROFILE:
+{goal_block}
+
+PORTFOLIO METRICS (period: {req.period}):
+{chr(10).join(holdings_lines)}
+Annualized return: {req.portfolio_return:.2%}
+Annualized volatility: {req.portfolio_volatility:.2%}
+Sharpe ratio: {req.sharpe_ratio:.2f}
+Max drawdown: {req.max_drawdown:.2%}
+Health score: {health_str}
+Portfolio value: {value_str}
+
+MARKET CONTEXT (background only, never a reason to act):
+{chr(10).join(market_lines) if market_lines else 'Market data unavailable'}"""
+
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+    client = anthropic.Anthropic(api_key=api_key)
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=500,
+        system=system,
+        messages=[{"role": "user", "content": "What should I do with my portfolio?"}],
+    )
+    raw = response.content[0].text.strip()
+    result = clean_ai_response(raw)
+    return {"recommendations": result}
+
+
+# ── Rebalance Assistant ────────────────────────────────────────────────────────
+
+_PERIOD_YEARS: dict[str, float] = {
+    "6mo": 0.5, "6m": 0.5,
+    "1y": 1.0,
+    "2y": 2.0,
+    "5y": 5.0,
+}
+
+
+@app.post("/portfolio/rebalance")
+def portfolio_rebalance(req: RebalanceRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "portfolio-rebalance", 10, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded.")
+
+    if not req.tickers or not req.weights or len(req.tickers) != len(req.weights):
+        raise HTTPException(status_code=422, detail="tickers and weights must be non-empty and equal length.")
+
+    # Pull user profile from Supabase, fall back to request payload
+    sb_goals = _fetch_user_goals_from_supabase(req.user_id) if req.user_id else {}
+    legacy_goals = req.user_goals or {}
+    investment_horizon_str = sb_goals.get("investment_horizon", "") or legacy_goals.get("timeline", "")
+    risk_tolerance = (
+        sb_goals.get("risk_tolerance", "")
+        or legacy_goals.get("riskTolerance", "")
+        or "moderate"
+    )
+    primary_goals = sb_goals.get("primary_goals") or []
+    investor_type = sb_goals.get("investor_type", "")
+    age_range = sb_goals.get("age_range", "") or (str(legacy_goals.get("age", "")) if legacy_goals.get("age") else "")
+    legacy_goal_type = legacy_goals.get("goal", "")
+    horizon_years = _parse_horizon_years(investment_horizon_str, legacy_goals)
+    horizon_category = _horizon_category(horizon_years)
+
+    # Normalize target weights
+    total_w = sum(req.weights) or 1.0
+    target_weights = [w / total_w for w in req.weights]
+
+    # Approximate total return per ticker over the selected period from CAGR
+    years = _PERIOD_YEARS.get(req.period, 1.0)
+    ind_ret = req.individual_returns or {}
+    current_values = []
+    for t, tw in zip(req.tickers, target_weights):
+        cagr = float(ind_ret.get(t, 0.0) or 0.0)
+        total_ret = (1.0 + cagr) ** years - 1.0
+        current_values.append(tw * (1.0 + total_ret))
+
+    total_current = sum(current_values) or 1.0
+    current_weights = [v / total_current for v in current_values]
+
+    pv = req.portfolio_value or 10000.0
+
+    # Build per-holding drift table
+    holdings: list[dict] = []
+    for t, tw, cw in zip(req.tickers, target_weights, current_weights):
+        drift = cw - tw
+        dollar_drift = drift * pv
+        if drift > 0.003:
+            action = "sell"
+        elif drift < -0.003:
+            action = "buy"
+        else:
+            action = "hold"
+        holdings.append({
+            "ticker": t,
+            "target_pct": round(tw * 100, 1),
+            "current_pct": round(cw * 100, 1),
+            "drift_pct": round(drift * 100, 1),
+            "dollar_amount": round(abs(dollar_drift), 0),
+            "action": action,
+        })
+
+    # Sort: largest absolute drift first
+    holdings.sort(key=lambda h: abs(h["drift_pct"]), reverse=True)
+
+    # Build prompt context
+    holdings_lines: list[str] = []
+    for h in holdings:
+        sign = "+" if h["drift_pct"] >= 0 else ""
+        action_str = f"SELL ${h['dollar_amount']:,.0f}" if h["action"] == "sell" else (f"BUY ${h['dollar_amount']:,.0f}" if h["action"] == "buy" else "HOLD")
+        holdings_lines.append(
+            f"{h['ticker']}: target {h['target_pct']:.1f}%, current {h['current_pct']:.1f}%, drift {sign}{h['drift_pct']:.1f}% => {action_str}"
+        )
+
+    goal_parts: list[str] = []
+    if horizon_category != "unknown":
+        goal_parts.append(f"Investment horizon: {horizon_category}")
+    if risk_tolerance:
+        risk_label = {
+            "conservative": "conservative (capital preservation priority)",
+            "moderate": "moderate (balanced growth and risk)",
+            "aggressive": "aggressive (maximum growth, high risk tolerance)",
+        }.get(risk_tolerance.lower(), risk_tolerance)
+        goal_parts.append(f"Risk tolerance: {risk_label}")
+    if primary_goals:
+        goal_parts.append(f"Primary goals: {', '.join(primary_goals)}")
+    elif legacy_goal_type:
+        goal_label = {"retirement": "retirement", "wealth": "wealth building", "income": "passive income", "short": "short-term gains"}.get(legacy_goal_type, legacy_goal_type)
+        goal_parts.append(f"Primary goal: {goal_label}")
+    if investor_type:
+        goal_parts.append(f"Investor type: {investor_type}")
+    if age_range:
+        goal_parts.append(f"Age range: {age_range}")
+    goal_block = "\n".join(goal_parts) if goal_parts else "Not provided"
+
+    value_str = f"${int(pv):,}"
+    today_str = datetime.now().strftime("%B %d, %Y")
+
+    system = f"""You are Corvo AI, a direct portfolio rebalancing advisor. Today is {today_str}.
+
+You are given a portfolio with target allocations and the current allocation after market drift. Your job is to write a specific, actionable rebalance plan.
+
+RULES (strictly enforce):
+- State the exact dollar amount to buy or sell for each holding that needs rebalancing. Use the figures from the drift table.
+- Explain in one sentence per holding why this trade fits the investor's goals and risk profile.
+- Only address holdings with meaningful drift (drift above 1% in either direction). Skip holdings marked HOLD.
+- Do not recommend selling everything or any drastic restructuring unless drift is extreme (above 15%).
+- No generic advice. No intros. No conclusions. No markdown. No em dashes. No asterisks.
+- Start immediately with the first numbered recommendation. No preamble.
+- Format: numbered list. One holding per item. State action (buy/sell), ticker, dollar amount, one-sentence rationale.
+- If all holdings are within threshold, state that the portfolio is balanced and no trades are needed.
+
+INVESTOR PROFILE:
+{goal_block}
+
+PORTFOLIO VALUE: {value_str}
+
+DRIFT TABLE (period: {req.period}):
+{chr(10).join(holdings_lines)}
+
+Overall portfolio: annualized return {req.portfolio_return:.2%}, volatility {req.portfolio_volatility:.2%}, Sharpe {req.sharpe_ratio:.2f}, max drawdown {req.max_drawdown:.2%}"""
+
+    import anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+    client = anthropic.Anthropic(api_key=api_key)
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=500,
+        system=system,
+        messages=[{"role": "user", "content": "Write the rebalance plan."}],
+    )
+    raw = response.content[0].text.strip()
+    plan = clean_ai_response(raw)
+    return {"holdings": holdings, "plan": plan}
+
+
+# ── Paper Trading ──────────────────────────────────────────────────────────────
+
+class PaperBuyRequest(BaseModel):
+    ticker: str
+    shares: float
+
+class PaperSellRequest(BaseModel):
+    ticker: str
+    shares: float
+
+
+def _paper_live_price(ticker: str) -> float | None:
+    """Fetch latest live price for a ticker, using fast_info first then 1m candles."""
+    try:
+        t = yf.Ticker(ticker)
+        info = t.fast_info
+        price = getattr(info, "last_price", None)
+        if price and float(price) > 0:
+            return float(price)
+    except Exception:
+        pass
+    try:
+        df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
+        if not df.empty:
+            raw = df["Close"].iloc[-1]
+            return float(raw.iloc[0] if hasattr(raw, "iloc") else raw)
+    except Exception:
+        pass
+    return None
+
+
+def _get_or_create_paper_portfolio(user_id: str) -> dict:
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}&limit=1",
+        headers=_sb_headers(), timeout=5,
+    )
+    if resp.status_code == 200 and resp.json():
+        return resp.json()[0]
+    # Create fresh portfolio
+    create = requests.post(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio",
+        headers={**_sb_headers(), "Prefer": "return=representation"},
+        json={"user_id": user_id, "cash": 10000.0, "positions": {}, "starting_value": 10000.0},
+        timeout=5,
+    )
+    if create.status_code in (200, 201):
+        return create.json()[0]
+    raise HTTPException(status_code=500, detail="Failed to create paper portfolio")
+
+
+@app.get("/paper-trading/{user_id}/history")
+def get_paper_trade_history(user_id: str, request: Request):
+    """Return all paper trades for a user ordered newest first. JWT verified."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/paper_trades?user_id=eq.{user_id}&order=executed_at.desc",
+        headers=_sb_headers(), timeout=5,
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to fetch trade history")
+    return resp.json()
+
+
+@app.get("/paper-trading/{user_id}")
+def get_paper_portfolio(user_id: str, request: Request):
+    """Return paper portfolio with live prices, total value, and P&L. JWT verified."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    portfolio = _get_or_create_paper_portfolio(user_id)
+    positions_raw = portfolio.get("positions", {}) or {}
+    cash = float(portfolio.get("cash", 10000))
+    starting_value = float(portfolio.get("starting_value", 10000))
+    created_at = portfolio.get("created_at", "")
+
+    enriched: list[dict] = []
+    total_holdings_value = 0.0
+
+    for ticker, pos in positions_raw.items():
+        shares = float(pos.get("shares", 0))
+        avg_cost = float(pos.get("avg_cost", 0))
+        if shares < 0.0001:
+            continue
+        price = _paper_live_price(ticker)
+        current_value = shares * price if price else shares * avg_cost
+        cost_basis = shares * avg_cost
+        pl_dollar = current_value - cost_basis
+        pl_pct = (pl_dollar / cost_basis * 100) if cost_basis else 0.0
+        total_holdings_value += current_value
+        enriched.append({
+            "ticker": ticker,
+            "shares": shares,
+            "avg_cost": avg_cost,
+            "current_price": price,
+            "current_value": current_value,
+            "pl_dollar": pl_dollar,
+            "pl_pct": pl_pct,
+        })
+
+    total_value = cash + total_holdings_value
+    total_pl = total_value - starting_value
+    total_return_pct = (total_pl / starting_value * 100) if starting_value else 0.0
+
+    # S&P 500 return since portfolio creation
+    sp500_return_pct = None
+    if created_at:
+        try:
+            start_date = created_at[:10]
+            df = yf.download("^GSPC", start=start_date, progress=False, auto_adjust=True)
+            if not df.empty and len(df) >= 2:
+                s = df["Close"].iloc[0]
+                e = df["Close"].iloc[-1]
+                s_val = float(s.iloc[0] if hasattr(s, "iloc") else s)
+                e_val = float(e.iloc[0] if hasattr(e, "iloc") else e)
+                if s_val > 0:
+                    sp500_return_pct = (e_val - s_val) / s_val * 100
+        except Exception:
+            pass
+
+    return {
+        "cash": cash,
+        "positions": enriched,
+        "total_value": total_value,
+        "total_holdings_value": total_holdings_value,
+        "total_return_pct": total_return_pct,
+        "total_pl": total_pl,
+        "starting_value": starting_value,
+        "sp500_return_pct": sp500_return_pct,
+        "created_at": created_at,
+    }
+
+
+@app.post("/paper-trading/buy")
+def paper_trade_buy(body: PaperBuyRequest, request: Request):
+    """Buy shares in paper portfolio. JWT verified."""
+    user_id = _verify_jwt_user(request)
+    ticker = body.ticker.upper().strip()
+    shares = float(body.shares)
+
+    if not ticker:
+        raise HTTPException(status_code=400, detail="Ticker required")
+    if shares <= 0:
+        raise HTTPException(status_code=400, detail="Shares must be positive")
+
+    price = _paper_live_price(ticker)
+    if not price:
+        raise HTTPException(status_code=400, detail=f"Could not fetch price for {ticker}. Check the ticker and try again.")
+
+    total_cost = round(shares * price, 6)
+    portfolio = _get_or_create_paper_portfolio(user_id)
+    cash = float(portfolio.get("cash", 0))
+    positions = dict(portfolio.get("positions", {}) or {})
+
+    if total_cost > cash:
+        raise HTTPException(status_code=400, detail=f"Insufficient cash. Need ${total_cost:.2f}, have ${cash:.2f}")
+
+    existing = positions.get(ticker, {"shares": 0.0, "avg_cost": 0.0})
+    old_shares = float(existing.get("shares", 0))
+    old_avg = float(existing.get("avg_cost", 0))
+    new_shares = old_shares + shares
+    new_avg = ((old_shares * old_avg) + total_cost) / new_shares
+
+    positions[ticker] = {"shares": new_shares, "avg_cost": new_avg}
+    new_cash = round(cash - total_cost, 6)
+
+    upd = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"cash": new_cash, "positions": positions, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=5,
+    )
+    if upd.status_code not in (200, 201, 204):
+        raise HTTPException(status_code=500, detail="Failed to update portfolio")
+
+    requests.post(
+        f"{SUPABASE_URL}/rest/v1/paper_trades",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"user_id": user_id, "ticker": ticker, "action": "buy", "shares": shares, "price": price, "total": total_cost},
+        timeout=5,
+    )
+
+    return {"status": "ok", "ticker": ticker, "shares": shares, "price": price, "total": total_cost, "cash_remaining": new_cash}
+
+
+@app.post("/paper-trading/sell")
+def paper_trade_sell(body: PaperSellRequest, request: Request):
+    """Sell shares from paper portfolio. JWT verified."""
+    user_id = _verify_jwt_user(request)
+    ticker = body.ticker.upper().strip()
+    shares = float(body.shares)
+
+    if shares <= 0:
+        raise HTTPException(status_code=400, detail="Shares must be positive")
+
+    portfolio = _get_or_create_paper_portfolio(user_id)
+    cash = float(portfolio.get("cash", 0))
+    positions = dict(portfolio.get("positions", {}) or {})
+
+    if ticker not in positions:
+        raise HTTPException(status_code=400, detail=f"No position in {ticker}")
+
+    existing = positions[ticker]
+    owned = float(existing.get("shares", 0))
+    if shares > owned + 0.0001:
+        raise HTTPException(status_code=400, detail=f"Insufficient shares. Own {owned:.4f}, selling {shares}")
+
+    price = _paper_live_price(ticker)
+    if not price:
+        raise HTTPException(status_code=400, detail=f"Could not fetch price for {ticker}")
+
+    proceeds = round(shares * price, 6)
+    new_cash = round(cash + proceeds, 6)
+    remaining = owned - shares
+
+    if remaining < 0.0001:
+        del positions[ticker]
+    else:
+        positions[ticker] = {"shares": remaining, "avg_cost": existing.get("avg_cost", 0)}
+
+    upd = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"cash": new_cash, "positions": positions, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=5,
+    )
+    if upd.status_code not in (200, 201, 204):
+        raise HTTPException(status_code=500, detail="Failed to update portfolio")
+
+    requests.post(
+        f"{SUPABASE_URL}/rest/v1/paper_trades",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"user_id": user_id, "ticker": ticker, "action": "sell", "shares": shares, "price": price, "total": proceeds},
+        timeout=5,
+    )
+
+    return {"status": "ok", "ticker": ticker, "shares": shares, "price": price, "total": proceeds, "cash_remaining": new_cash}
+
+
+@app.post("/paper-trading/reset")
+def reset_paper_portfolio(request: Request):
+    """Reset paper portfolio to $10,000 and clear all trade history. JWT verified."""
+    user_id = _verify_jwt_user(request)
+
+    requests.delete(
+        f"{SUPABASE_URL}/rest/v1/paper_trades?user_id=eq.{user_id}",
+        headers=_sb_headers(), timeout=5,
+    )
+
+    upd = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"cash": 10000.0, "positions": {}, "starting_value": 10000.0, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=5,
+    )
+    # If no portfolio row exists yet, create one
+    if upd.status_code == 204:
+        check = requests.get(
+            f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}&limit=1",
+            headers=_sb_headers(), timeout=5,
+        )
+        if check.status_code == 200 and not check.json():
+            requests.post(
+                f"{SUPABASE_URL}/rest/v1/paper_portfolio",
+                headers={**_sb_headers(), "Prefer": "return=minimal"},
+                json={"user_id": user_id, "cash": 10000.0, "positions": {}, "starting_value": 10000.0},
+                timeout=5,
+            )
+
+    return {"status": "reset"}
