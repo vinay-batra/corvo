@@ -607,6 +607,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   // ── Watchlist ───────────────────────────────────────────────────────────────
   useEffect(() => {
     try {
+      if (typeof window === "undefined") return;
       const raw = localStorage.getItem(STORAGE_KEY);
       const items: { ticker: string }[] = raw ? JSON.parse(raw) : [];
       setInWatchlist(items.some(i => i.ticker === ticker));
@@ -614,6 +615,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   }, [ticker]);
 
   const toggleWatchlist = () => {
+    if (typeof window === "undefined") return;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       const items: { ticker: string; addedAt: string }[] = raw ? JSON.parse(raw) : [];

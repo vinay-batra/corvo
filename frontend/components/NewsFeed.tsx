@@ -115,7 +115,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ flex: 1, height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden", display: "flex" }}>
-                <div style={{ width: `${bullPct}%`, background: "#5cb88a", transition: "width 0.4s ease" }} />
+                <div style={{ width: `${bullPct}%`, background: "var(--green)", transition: "width 0.4s ease" }} />
                 <div style={{ width: `${bearPct}%`, background: "var(--red)", transition: "width 0.4s ease" }} />
               </div>
               <span style={{ fontSize: 11, fontWeight: 700, color: barColor, flexShrink: 0 }}>{bullPct}% bullish</span>

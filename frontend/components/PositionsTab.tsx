@@ -254,6 +254,7 @@ export default function PositionsTab({
   });
   useEffect(() => {
     const handler = () => {
+      if (typeof window === "undefined") return;
       const s = localStorage.getItem("corvo_portfolio_value");
       if (s) setPortfolioValue(Number(s));
     };
@@ -299,7 +300,7 @@ export default function PositionsTab({
 
     // localStorage (works for logged-out users too)
     try {
-      const raw = localStorage.getItem(LOCAL_KEY);
+      const raw = typeof window !== "undefined" ? localStorage.getItem(LOCAL_KEY) : null;
       if (raw) {
         const parsed: any[] = JSON.parse(raw);
         parsed.forEach(p => {

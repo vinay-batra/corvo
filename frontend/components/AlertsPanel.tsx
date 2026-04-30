@@ -21,14 +21,14 @@ interface Alert {
 const LS_KEY = "corvo_alerts";
 
 function loadLocal(): Alert[] {
-  try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+  try { if (typeof window === "undefined") return []; const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
 }
 function saveLocal(alerts: Alert[]) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(alerts)); } catch {}
+  try { if (typeof window === "undefined") return; localStorage.setItem(LS_KEY, JSON.stringify(alerts)); } catch {}
 }
 
 export function getAlertCount(): number {
-  try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r).length : 0; } catch { return 0; }
+  try { if (typeof window === "undefined") return 0; const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r).length : 0; } catch { return 0; }
 }
 
 // ── Ticker search data ────────────────────────────────────────────────────────

@@ -93,13 +93,13 @@ function PublicAIChatInner() {
           width: 52,
           height: 52,
           borderRadius: "50%",
-          background: open ? "#a88a38" : "#c9a84c",
+          background: "var(--accent)",
           border: "none",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 4px 24px rgba(201,168,76,0.35), 0 2px 8px rgba(0,0,0,0.4)",
+          boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.35), 0 2px 8px rgba(0,0,0,0.4)",
           transition: "background 0.2s, transform 0.2s",
           transform: open ? "scale(0.95)" : "scale(1)",
           fontFamily: "Space Mono, monospace",
@@ -134,9 +134,9 @@ function PublicAIChatInner() {
             width: 340,
             maxWidth: "calc(100vw - 48px)",
             background: "var(--card-bg)",
-            border: "1px solid rgba(201,168,76,0.2)",
+            border: "1px solid rgba(var(--accent-rgb),0.2)",
             borderRadius: 16,
-            boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.06)",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--accent-rgb),0.06)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -157,15 +157,15 @@ function PublicAIChatInner() {
                 width: 28,
                 height: 28,
                 borderRadius: "50%",
-                background: "rgba(201,168,76,0.12)",
-                border: "1px solid rgba(201,168,76,0.25)",
+                background: "rgba(var(--accent-rgb),0.12)",
+                border: "1px solid rgba(var(--accent-rgb),0.25)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontFamily: "Space Mono, monospace",
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#c9a84c",
+                color: "var(--accent)",
                 letterSpacing: -0.5,
                 flexShrink: 0,
               }}
@@ -212,7 +212,7 @@ function PublicAIChatInner() {
                     borderRadius: msg.role === "user" ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
                     background:
                       msg.role === "user"
-                        ? "#c9a84c"
+                        ? "var(--accent)"
                         : "var(--bg3)",
                     border: msg.role === "assistant" ? "1px solid var(--border)" : "none",
                     fontSize: 13,
@@ -274,7 +274,7 @@ function PublicAIChatInner() {
                 outline: "none",
                 transition: "border-color 0.2s",
               }}
-              onFocus={(e) => (e.target.style.borderColor = "rgba(201,168,76,0.35)")}
+              onFocus={(e) => (e.target.style.borderColor = `rgba(var(--accent-rgb),0.35)`)}
               onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
             />
             <button
@@ -284,7 +284,7 @@ function PublicAIChatInner() {
                 width: 36,
                 height: 36,
                 borderRadius: 10,
-                background: loading || !input.trim() ? "rgba(201,168,76,0.25)" : "#c9a84c",
+                background: loading || !input.trim() ? "rgba(var(--accent-rgb),0.25)" : "var(--accent)",
                 border: "none",
                 cursor: loading || !input.trim() ? "default" : "pointer",
                 display: "flex",

@@ -111,12 +111,12 @@ export default function InstallBanner() {
       window.matchMedia("(display-mode: standalone)").matches ||
       ("standalone" in navigator && (navigator as Navigator & { standalone?: boolean }).standalone === true);
     if (isStandalone) return;
-    if (localStorage.getItem(DISMISSED_KEY)) return;
+    if (typeof window !== "undefined" && localStorage.getItem(DISMISSED_KEY)) return;
     setShow(true);
   }, []);
 
   const dismiss = () => {
-    localStorage.setItem(DISMISSED_KEY, "1");
+    if (typeof window !== "undefined") localStorage.setItem(DISMISSED_KEY, "1");
     setShow(false);
   };
 

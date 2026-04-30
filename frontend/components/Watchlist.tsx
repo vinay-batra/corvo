@@ -211,11 +211,11 @@ export default function Watchlist() {
         } else {
           // ── Logged-out: load from localStorage ────────────────────────
           let loadedLists: WatchList[] = [];
-          try { const raw = localStorage.getItem(LISTS_KEY); if (raw) loadedLists = JSON.parse(raw); } catch {}
+          try { const raw = typeof window !== "undefined" ? localStorage.getItem(LISTS_KEY) : null; if (raw) loadedLists = JSON.parse(raw); } catch {}
 
           let loadedItems: WatchItem[] = [];
           try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
             if (raw) {
               const parsed = JSON.parse(raw);
               loadedItems = parsed.map((i: any) => typeof i === "string" ? { ticker: i, addedAt: new Date().toISOString(), listId: "" } : i);
@@ -226,8 +226,8 @@ export default function Watchlist() {
             const defaultList: WatchList = { id: genId(), name: "My Watchlist", icon: "chart", tickers: [] };
             loadedLists = [defaultList];
             loadedItems = loadedItems.map(i => ({ ...i, listId: defaultList.id }));
-            try { localStorage.setItem(LISTS_KEY, JSON.stringify(loadedLists)); } catch {}
-            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedItems)); } catch {}
+            try { if (typeof window !== "undefined") localStorage.setItem(LISTS_KEY, JSON.stringify(loadedLists)); } catch {}
+            try { if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedItems)); } catch {}
           } else {
             loadedItems = loadedItems.map(i => ({ ...i, listId: i.listId || loadedLists[0].id }));
           }
@@ -272,14 +272,14 @@ export default function Watchlist() {
   const saveLists = (newLists: WatchList[]) => {
     setLists(newLists);
     if (!userId) {
-      try { localStorage.setItem(LISTS_KEY, JSON.stringify(newLists)); } catch {}
+      try { if (typeof window !== "undefined") localStorage.setItem(LISTS_KEY, JSON.stringify(newLists)); } catch {}
     }
   };
 
   const saveItems = (newItems: WatchItem[]) => {
     setItems(newItems);
     if (!userId) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems)); } catch {}
+      try { if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems)); } catch {}
     }
   };
 

@@ -96,7 +96,7 @@ export default function PortfolioHistory() {
 
       if (portfolios.length === 0) {
         try {
-          const raw = localStorage.getItem("corvo_saved_portfolios");
+          const raw = typeof window !== "undefined" ? localStorage.getItem("corvo_saved_portfolios") : null;
           const parsed = raw ? JSON.parse(raw) : [];
           portfolios = parsed;
         } catch {}
