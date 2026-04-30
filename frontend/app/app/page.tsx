@@ -2476,6 +2476,8 @@ const { dark, toggle: toggleDark }  = useTheme();
                         { label: "Plain English", text: "A composite score from 0-100 that grades your portfolio on returns, risk-adjusted performance, stability, and resilience." },
                         { label: "Example", text: "Score 78 = Good. Strong returns and Sharpe ratio, but some volatility keeping it from Excellent." },
                         { label: "What's Good", text: "75-100 is Excellent. 50-74 Good. 25-49 Fair. Below 25 needs attention. Aim for 60+ for a solid long-term portfolio." },
+                        { label: "How It's Calculated", text: "Returns (30%): annualized portfolio return scored on a -30% to +30% scale. Risk-Adjusted (30%): Sharpe ratio scored from 0 to 3. Stability (25%): portfolio volatility scored against a 60% ceiling. Resilience (15%): max drawdown from peak to trough." },
+                        { label: "Penalties", text: "Concentration: when more than 60% of the portfolio sits in one sector, Stability and Resilience sub-scores are reduced. Correlation: when average pairwise correlation exceeds 0.7, Risk-Adjusted is reduced. Risk-Adjusted is also capped at 80 with fewer than 3 distinct asset classes." },
                       ],
                     },
                     {
