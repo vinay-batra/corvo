@@ -355,11 +355,17 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
 
       // Get user id from supabase
       const { supabase } = await import("../../lib/supabase");
-      const { data: { user } } = await supabase.auth.getUser();
+      const [{ data: { user } }, { data: { session: pushSession } }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.auth.getSession(),
+      ]);
       if (user) {
         await fetch(`${VAPID_API}/push/subscribe`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(pushSession?.access_token ? { "Authorization": `Bearer ${pushSession.access_token}` } : {}),
+          },
           body: JSON.stringify({ user_id: user.id, subscription: sub.toJSON() }),
         });
       }
@@ -1301,9 +1307,13 @@ const { dark, toggle: toggleDark }  = useTheme();
               setSavedPortfolioId(match.id);
               setSavedPortfolioName(match.name || "");
               const API_SNAP = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+              const { data: { session: snapSession1 } } = await supabase.auth.getSession();
               fetch(`${API_SNAP}/portfolio/snapshot`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json",
+                  ...(snapSession1?.access_token ? { "Authorization": `Bearer ${snapSession1.access_token}` } : {}),
+                },
                 body: JSON.stringify({
                   user_id: userId,
                   portfolio_id: match.id,
@@ -1450,23 +1460,28 @@ const { dark, toggle: toggleDark }  = useTheme();
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    fetch(`${apiUrl}/portfolio/snapshot`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: userId,
-        portfolio_id: savedPortfolioId,
-        tickers: valid.map(a => a.ticker).join(","),
-        weights: valid.map(a => a.weight).join(","),
-      }),
-    }).then(r => {
-      if (r.ok) {
-        fetch(`${apiUrl}/portfolio/history?portfolio_id=${savedPortfolioId}&user_id=${userId}`)
-          .then(r => r.json())
-          .then(d => setPerfHistory(d.snapshots || []))
-          .catch(() => {});
-      }
-    }).catch(() => {});
+    supabase.auth.getSession().then(({ data: { session: snapSession2 } }) => {
+      fetch(`${apiUrl}/portfolio/snapshot`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(snapSession2?.access_token ? { "Authorization": `Bearer ${snapSession2.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          portfolio_id: savedPortfolioId,
+          tickers: valid.map(a => a.ticker).join(","),
+          weights: valid.map(a => a.weight).join(","),
+        }),
+      }).then(r => {
+        if (r.ok) {
+          fetch(`${apiUrl}/portfolio/history?portfolio_id=${savedPortfolioId}&user_id=${userId}`)
+            .then(r => r.json())
+            .then(d => setPerfHistory(d.snapshots || []))
+            .catch(() => {});
+        }
+      }).catch(() => {});
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedPortfolioId, userId, perfLoading]);
 
@@ -1479,6 +1494,8 @@ const { dark, toggle: toggleDark }  = useTheme();
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     (async () => {
       try {
+        const { data: { session: snapSession3 } } = await supabase.auth.getSession();
+        const snapToken3 = snapSession3?.access_token ?? "";
         const savedRaw = localStorage.getItem("corvo_saved_portfolios");
         const localPfs: any[] = savedRaw ? JSON.parse(savedRaw) : [];
         const { data: dbPfs } = await supabase.from("portfolios").select("id,tickers,name").eq("user_id", userId);
@@ -1493,7 +1510,10 @@ const { dark, toggle: toggleDark }  = useTheme();
           if (!valid.length) continue;
           fetch(`${apiUrl}/portfolio/snapshot`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(snapToken3 ? { "Authorization": `Bearer ${snapToken3}` } : {}),
+            },
             body: JSON.stringify({ user_id: userId, portfolio_id: pf.id, tickers: valid.map((a: any) => a.ticker).join(","), weights: valid.map((a: any) => a.weight).join(",") }),
           }).catch(() => {});
         }

@@ -10,6 +10,7 @@ import pandas as pd
 import math
 import os
 import json
+import traceback
 import requests
 from datetime import datetime, timezone
 import time
@@ -4279,6 +4280,16 @@ class SnapshotRequest(BaseModel):
 
 @app.post("/portfolio/snapshot")
 def portfolio_snapshot(req: SnapshotRequest):
+    try:
+        return _portfolio_snapshot_inner(req)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"[snapshot] unexpected error: {exc}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Snapshot error: {exc}")
+
+
+def _portfolio_snapshot_inner(req: SnapshotRequest):
     """
     Fetch current prices, compute portfolio value (base $10 000) and cumulative
     return from the first snapshot, then upsert into portfolio_snapshots for today.

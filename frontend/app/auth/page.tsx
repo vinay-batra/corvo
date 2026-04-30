@@ -60,10 +60,14 @@ function AuthForm() {
           body: JSON.stringify({ email, display_name: displayName, user_id: userId }),
         }).catch(() => {});
         const pendingReferral = localStorage.getItem("corvo_pending_referral");
+        const signupToken = signUpData.session?.access_token ?? "";
         if (pendingReferral && userId) {
           fetch(`${apiUrl}/referrals/redeem`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(signupToken ? { "Authorization": `Bearer ${signupToken}` } : {}),
+            },
             body: JSON.stringify({ referrer_code: pendingReferral, new_user_id: userId }),
           }).catch(() => {});
           localStorage.removeItem("corvo_pending_referral");
