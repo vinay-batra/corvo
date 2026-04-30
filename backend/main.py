@@ -4484,18 +4484,7 @@ def portfolio_health_score(req: HealthScoreRequest):
     if len(weights) != len(tickers):
         weights = [1.0 / max(len(tickers), 1)] * len(tickers)
 
-    # Compute numeric sub-scores (same formula as client-side HealthScore.tsx)
-    ann_ret = req.annualized_return
-    vol = req.portfolio_volatility
-    sharpe = req.sharpe_ratio
-    dd = req.max_drawdown
-    rS = min(max(((ann_ret + 0.3) / 0.6) * 100, 0), 100)
-    shS = min(max((sharpe / 3) * 100, 0), 100)
-    vS = min(max((1 - vol / 0.6) * 100, 0), 100)
-    dS = min(max((1 + dd / 0.5) * 100, 0), 100)
-    score = round(rS * 0.3 + shS * 0.3 + vS * 0.25 + dS * 0.15)
-
-    # Check in-memory cache first
+    # Check in-memory cache first (before expensive sector/correlation computation)
     cache_key = _hs_cache_key(req.user_id, tickers)
     if cache_key in _health_score_cache:
         cached, _ = _health_score_cache[cache_key]
@@ -4509,6 +4498,73 @@ def portfolio_health_score(req: HealthScoreRequest):
         _health_score_cache[cache_key] = (sb_cached, today)
         return sb_cached
 
+    # Compute base sub-scores
+    ann_ret = req.annualized_return
+    vol = req.portfolio_volatility
+    sharpe = req.sharpe_ratio
+    dd = req.max_drawdown
+    rS = min(max(((ann_ret + 0.3) / 0.6) * 100, 0), 100)
+    shS = min(max((sharpe / 3) * 100, 0), 100)
+    vS = min(max((1 - vol / 0.6) * 100, 0), 100)
+    dS = min(max((1 + dd / 0.5) * 100, 0), 100)
+
+    # Compute sector concentration from yfinance
+    sector_map: dict[str, float] = {}
+    for ticker, w in zip(tickers, weights):
+        try:
+            info = yf.Ticker(ticker).info
+            sector = info.get("sector") or "Other"
+        except Exception:
+            sector = "Other"
+        sector_map[sector] = sector_map.get(sector, 0.0) + w
+
+    max_sector_pct = max(sector_map.values()) if sector_map else 0.0
+    max_sector_name = max(sector_map, key=lambda s: sector_map[s]) if sector_map else "Unknown"
+    # Count asset classes with at least 5% weight
+    num_classes = sum(1 for w in sector_map.values() if w >= 0.05)
+
+    # Compute average pairwise correlation from 1y price history
+    avg_corr = 0.0
+    if len(tickers) >= 2:
+        try:
+            prices = get_prices(tickers, "1y")
+            if prices is not None and not prices.empty:
+                available = [t for t in tickers if t in prices.columns]
+                if len(available) >= 2:
+                    corr = prices[available].pct_change().dropna().corr()
+                    total_corr = 0.0
+                    pairs = 0
+                    for i in range(len(available)):
+                        for j in range(i + 1, len(available)):
+                            t1, t2 = available[i], available[j]
+                            if t1 in corr.index and t2 in corr.columns:
+                                total_corr += float(corr.loc[t1, t2])
+                                pairs += 1
+                    avg_corr = total_corr / pairs if pairs > 0 else 0.0
+        except Exception as e:
+            print(f"[health-score] correlation error: {e}")
+
+    # Apply sector concentration penalty to Stability and Resilience
+    # If >60% of portfolio is in one sector: -10 to -20 points (linear, max at 100%)
+    sector_penalty = 0.0
+    if max_sector_pct > 0.6:
+        sector_penalty = 10.0 + (max_sector_pct - 0.6) / 0.4 * 10.0
+        vS = max(vS - sector_penalty, 0)
+        dS = max(dS - sector_penalty, 0)
+
+    # Apply correlation penalty to Risk-Adjusted
+    # If avg pairwise correlation >0.7: -5 to -15 points (linear, max at 1.0)
+    corr_penalty = 0.0
+    if avg_corr > 0.7:
+        corr_penalty = 5.0 + (avg_corr - 0.7) / 0.3 * 10.0
+        shS = max(shS - corr_penalty, 0)
+
+    # Cap Risk-Adjusted at 80 when fewer than 3 uncorrelated asset classes
+    if num_classes < 3:
+        shS = min(shS, 80)
+
+    score = round(rS * 0.3 + shS * 0.3 + vS * 0.25 + dS * 0.15)
+
     # Build context for Claude
     import anthropic
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -4517,9 +4573,6 @@ def portfolio_health_score(req: HealthScoreRequest):
 
     client = anthropic.Anthropic(api_key=api_key)
 
-    # Identify key risk factors
-    max_weight_ticker = max(zip(tickers, weights), key=lambda x: x[1]) if tickers else ("", 0)
-    top_concentration = max_weight_ticker[1] if max_weight_ticker else 0
     ind_rets = req.individual_returns or {}
 
     holdings_lines = []
@@ -4530,6 +4583,27 @@ def portfolio_health_score(req: HealthScoreRequest):
     holdings_str = "\n".join(holdings_lines)
 
     score_label = "Excellent" if score >= 75 else "Good" if score >= 50 else "Fair" if score >= 25 else "Weak"
+
+    # Build concentration risk context for the prompt
+    risk_lines = []
+    if max_sector_pct > 0.6:
+        risk_lines.append(
+            f"  Sector concentration: {max_sector_pct:.0%} of portfolio is in {max_sector_name}. "
+            f"A drawdown in {max_sector_name} would hit all positions simultaneously. "
+            f"Penalty of -{sector_penalty:.0f} pts applied to Stability and Resilience scores."
+        )
+    if avg_corr > 0.7:
+        risk_lines.append(
+            f"  High correlation: average pairwise correlation is {avg_corr:.2f}. "
+            f"Holdings move together and provide little diversification benefit. "
+            f"Penalty of -{corr_penalty:.0f} pts applied to Risk-Adjusted score."
+        )
+    if num_classes < 3:
+        risk_lines.append(
+            f"  Limited diversification: only {num_classes} asset class(es) with meaningful weight. "
+            f"Risk-Adjusted score capped at 80."
+        )
+    concentration_str = "\n".join(risk_lines) if risk_lines else "  None detected"
 
     system_prompt = (
         "You are a plain-English financial advisor for a retail investor. "
@@ -4550,15 +4624,18 @@ Metrics:
   Max drawdown: {dd:.1%}
   Risk-free rate: {req.rf_rate:.1%}
 
-Sub-scores (0-100):
+Sub-scores (0-100, after penalties):
   Returns score: {rS:.0f}
   Risk-adjusted score: {shS:.0f}
   Stability score: {vS:.0f}
   Resilience score: {dS:.0f}
 
+Concentration and diversification risk:
+{concentration_str}
+
 Generate a JSON response with exactly this structure:
 {{
-  "headline": "<one sentence, max 18 words, naming what is driving the score up or down, referencing specific tickers or metrics>",
+  "headline": "<one sentence, max 20 words, naming the single biggest driver of the score, referencing specific tickers or risk factors>",
   "actions": [
     {{
       "action": "<specific action the investor can take today, referencing actual tickers and numbers, max 25 words>",
@@ -4572,9 +4649,10 @@ Generate a JSON response with exactly this structure:
 }}
 
 Rules:
-- Headline must name the score driver specifically (e.g. which ticker is concentrated, how high volatility is).
+- If concentration risk exists, the headline MUST mention it (e.g. "Your returns are strong but 100% tech concentration means a sector drawdown hits all four positions at once.").
+- Headline must name the score driver specifically and reference actual tickers or sectors.
 - Actions must reference actual tickers and percentages from the holdings above.
-- If the score is already Excellent (75+), highlight what is working and one way to protect gains.
+- If the score is already Excellent (75+) with no concentration risk, highlight what is working and one way to protect gains.
 - Include a third action only if there is a genuinely distinct third issue to address.
 - Output only valid JSON, no other text."""
 
