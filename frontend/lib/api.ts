@@ -1,4 +1,8 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL && process.env.NODE_ENV === "production") {
+  console.error("NEXT_PUBLIC_API_URL is not set in production");
+}
+const RESOLVED_API_URL = API_URL || "http://localhost:8000";
 
 export async function fetchPortfolio(assets: any[], period: string, benchmark = "^GSPC", userId = "", referralCode = "") {
   const total = assets.reduce((sum, a) => sum + a.weight, 0);
@@ -14,7 +18,7 @@ export async function fetchPortfolio(assets: any[], period: string, benchmark = 
     hasManual ? `manual_returns=${encodeURIComponent(manualReturns)}` : "",
   ].filter(Boolean).join("&");
   const res = await fetch(
-    `${API_URL}/portfolio?tickers=${tickers}&weights=${weights}&period=${period}&benchmark=${encodeURIComponent(benchmark)}${extras ? "&" + extras : ""}`
+    `${RESOLVED_API_URL}/portfolio?tickers=${tickers}&weights=${weights}&period=${period}&benchmark=${encodeURIComponent(benchmark)}${extras ? "&" + extras : ""}`
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -25,14 +29,14 @@ export async function fetchDrawdown(assets: any[], period: string) {
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
-  const res = await fetch(`${API_URL}/drawdown?tickers=${tickers}&weights=${weights}&period=${period}`);
+  const res = await fetch(`${RESOLVED_API_URL}/drawdown?tickers=${tickers}&weights=${weights}&period=${period}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchCorrelation(assets: any[], period: string) {
   const tickers = assets.map(a => a.ticker).join(",");
-  const res = await fetch(`${API_URL}/correlation?tickers=${tickers}&period=${period}`);
+  const res = await fetch(`${RESOLVED_API_URL}/correlation?tickers=${tickers}&period=${period}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -43,7 +47,7 @@ export async function fetchMonteCarlo(assets: any[], period: string, years: numb
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
   const res = await fetch(
-    `${API_URL}/montecarlo?tickers=${tickers}&weights=${weights}&period=${period}&simulations=8500&years=${years}`
+    `${RESOLVED_API_URL}/montecarlo?tickers=${tickers}&weights=${weights}&period=${period}&simulations=8500&years=${years}`
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -51,32 +55,32 @@ export async function fetchMonteCarlo(assets: any[], period: string, years: numb
 
 export async function fetchNews(assets: any[]) {
   const tickers = assets.map(a => a.ticker).join(",");
-  const res = await fetch(`${API_URL}/news?tickers=${tickers}`);
+  const res = await fetch(`${RESOLVED_API_URL}/news?tickers=${tickers}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchMarketBrief(force = false) {
-  const res = await fetch(`${API_URL}/market-brief${force ? "?force=true" : ""}`);
+  const res = await fetch(`${RESOLVED_API_URL}/market-brief${force ? "?force=true" : ""}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchMarketDriver() {
-  const res = await fetch(`${API_URL}/market-driver`);
+  const res = await fetch(`${RESOLVED_API_URL}/market-driver`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchEarningsCalendar(assets: any[]) {
   const tickers = assets.map((a: any) => a.ticker).join(",");
-  const res = await fetch(`${API_URL}/earnings-calendar?tickers=${tickers}`);
+  const res = await fetch(`${RESOLVED_API_URL}/earnings-calendar?tickers=${tickers}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchEventsCalendar() {
-  const res = await fetch(`${API_URL}/events-calendar`);
+  const res = await fetch(`${RESOLVED_API_URL}/events-calendar`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -86,7 +90,7 @@ export async function fetchSectors(assets: any[]) {
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
-  const res = await fetch(`${API_URL}/portfolio/sectors?tickers=${tickers}&weights=${weights}`);
+  const res = await fetch(`${RESOLVED_API_URL}/portfolio/sectors?tickers=${tickers}&weights=${weights}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -94,7 +98,7 @@ export async function fetchSectors(assets: any[]) {
 export async function importPortfolioCsv(file: File): Promise<{ tickers: string[]; weights: number[]; detected_format: string; error?: string }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_URL}/portfolio/import-csv`, { method: "POST", body: form });
+  const res = await fetch(`${RESOLVED_API_URL}/portfolio/import-csv`, { method: "POST", body: form });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -105,7 +109,7 @@ export async function fetchDividends(assets: any[], portfolioValue = 10000) {
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
   const res = await fetch(
-    `${API_URL}/portfolio/dividends?tickers=${tickers}&weights=${weights}&portfolio_value=${portfolioValue}`
+    `${RESOLVED_API_URL}/portfolio/dividends?tickers=${tickers}&weights=${weights}&portfolio_value=${portfolioValue}`
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -118,7 +122,7 @@ export async function fetchTaxLoss(assets: any[], portfolioValue = 10000) {
   const weights = normalized.map(a => a.weight).join(",");
   const purchasePrices = normalized.map(a => a.purchasePrice != null ? a.purchasePrice : "").join(",");
   const res = await fetch(
-    `${API_URL}/portfolio/tax-loss?tickers=${tickers}&weights=${weights}&purchase_prices=${purchasePrices}&portfolio_value=${portfolioValue}`
+    `${RESOLVED_API_URL}/portfolio/tax-loss?tickers=${tickers}&weights=${weights}&purchase_prices=${purchasePrices}&portfolio_value=${portfolioValue}`
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -140,7 +144,7 @@ export async function fetchCapitalGains(assets: any[], portfolioValue = 10000, l
     ltcg_rate: String(ltcgRate),
     stcg_rate: String(stcgRate),
   });
-  const res = await fetch(`${API_URL}/portfolio/capital-gains?${params}`);
+  const res = await fetch(`${RESOLVED_API_URL}/portfolio/capital-gains?${params}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -151,13 +155,13 @@ export async function fetchDividendCalendar(assets: any[], portfolioValue = 1000
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
   const params = new URLSearchParams({ tickers, weights, portfolio_value: String(portfolioValue) });
-  const res = await fetch(`${API_URL}/portfolio/dividend-calendar?${params}`);
+  const res = await fetch(`${RESOLVED_API_URL}/portfolio/dividend-calendar?${params}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function fetchAnalystTargets(ticker: string) {
-  const res = await fetch(`${API_URL}/analyst-targets/${encodeURIComponent(ticker)}`);
+  const res = await fetch(`${RESOLVED_API_URL}/analyst-targets/${encodeURIComponent(ticker)}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -166,7 +170,7 @@ export async function fetchEarningsPreview(assets: { ticker: string; weight: num
   const total = assets.reduce((s, a) => s + a.weight, 0) || 1;
   const tickers = assets.map(a => a.ticker).join(",");
   const weights = assets.map(a => a.weight / total).join(",");
-  const res = await fetch(`${API_URL}/earnings-preview?tickers=${tickers}&weights=${weights}`);
+  const res = await fetch(`${RESOLVED_API_URL}/earnings-preview?tickers=${tickers}&weights=${weights}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -191,7 +195,7 @@ export async function fetchNaturalLanguageEdit(
   command: string,
   portfolio: { ticker: string; weight: number }[]
 ): Promise<NLEditResult | { error: string }> {
-  const res = await fetch(`${API_URL}/portfolio/natural-language-edit`, {
+  const res = await fetch(`${RESOLVED_API_URL}/portfolio/natural-language-edit`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ command, portfolio }),
