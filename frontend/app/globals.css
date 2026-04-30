@@ -30,17 +30,17 @@ body {
 
 /* ── Light mode (default) ── */
 :root {
-  --bg:          #f8f6f1;
-  --bg2:         #f0ede6;
-  --bg3:         #e8e5de;
-  --border:      #d4cfc8;
-  --border2:     rgba(0,0,0,0.18);
-  --border-dim:  #d4cfc8;
-  --text:        #1a1a1a;
-  --text1:       #1a1a1a;
-  --text2:       #4a4a4a;
-  --text3:       #7a7a78;
-  --text-muted:  #7a7a78;
+  --bg:          #f5f7fa;
+  --bg2:         #eef0f5;
+  --bg3:         #e4e8ef;
+  --border:      #d0d5e0;
+  --border2:     rgba(0,0,0,0.15);
+  --border-dim:  #d0d5e0;
+  --text:        #111827;
+  --text1:       #111827;
+  --text2:       #374151;
+  --text3:       #6b7280;
+  --text-muted:  #6b7280;
   --green:       #2d7a4f;
   --red:         #c0392b;
   --accent:      #b8860b;
@@ -82,7 +82,7 @@ body {
   --text2:       #a0a8b8;
   --text3:       #5a6478;
   --text-muted:  #5a6478;
-  --green:       #e8e0cc;
+  --green:       #5cb88a;
   --red:         #e05c5c;
   --accent:      #c9a84c;
   --accent-text: #c9a84c;

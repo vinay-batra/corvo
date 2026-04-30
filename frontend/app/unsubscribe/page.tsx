@@ -3,6 +3,8 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -27,6 +29,8 @@ function UnsubscribeContent() {
   }, [userId]);
 
   return (
+    <>
+    <PublicNav />
     <main style={{
       minHeight: "100vh",
       display: "flex",
@@ -132,6 +136,8 @@ function UnsubscribeContent() {
         )}
       </div>
     </main>
+    <PublicFooter />
+    </>
   );
 }
 

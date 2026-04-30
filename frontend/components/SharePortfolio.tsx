@@ -261,7 +261,7 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
                   {assets.map(a => a.ticker).join(" + ")}
                 </h2>
                 <p style={{ fontSize: 12, color: "var(--text3)" }}>
-                  <span style={{ color: isPos ? "#5cb88a" : "#e05c5c" }}>{isPos ? "+" : ""}{ret}% return</span>
+                  <span style={{ color: isPos ? "var(--green)" : "var(--red)" }}>{isPos ? "+" : ""}{ret}% return</span>
                   {" · "}{vol}% volatility
                   {" · "}{period}
                 </p>
@@ -282,7 +282,7 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 4 }}>Return</p>
-                    <p style={{ fontSize: 20, fontWeight: 700, color: isPos ? "#5cb88a" : "#e05c5c", fontFamily: "Space Mono,monospace" }}>
+                    <p style={{ fontSize: 20, fontWeight: 700, color: isPos ? "var(--green)" : "var(--red)", fontFamily: "Space Mono,monospace" }}>
                       {isPos ? "+" : ""}{ret}%
                     </p>
                   </div>
