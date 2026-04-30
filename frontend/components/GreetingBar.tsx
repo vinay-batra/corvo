@@ -397,7 +397,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
             : validTickers.map(t => ({ ticker: t, price: null, pct: null }));
           const isFew = chips.length <= 4;
           return (
-            <div className="gb-marquee-wrap" style={{ overflow: "hidden", maxWidth: 380 }}>
+            <div className="gb-marquee-wrap" style={{ maxWidth: 380 }}>
               {isFew ? (
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
                   {chips.map(p => (
@@ -405,10 +405,12 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
                   ))}
                 </div>
               ) : (
-                <div style={{ display: "flex", gap: 6, animation: "gb-marquee 28s linear infinite", width: "max-content" }}>
-                  {[...chips, ...chips].map((p, idx) => (
-                    <MarketChip key={`${p.ticker}-${idx}`} label={p.ticker} pct={p.pct} price={p.price} />
-                  ))}
+                <div style={{ overflow: "hidden", height: 32 }}>
+                  <div style={{ display: "flex", gap: 6, animation: "gb-marquee 28s linear infinite", width: "max-content" }}>
+                    {[...chips, ...chips].map((p, idx) => (
+                      <MarketChip key={`${p.ticker}-${idx}`} label={p.ticker} pct={p.pct} price={p.price} />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

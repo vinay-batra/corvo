@@ -7980,12 +7980,14 @@ def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
 {horizon_rules}
 
 OUTPUT FORMAT (strictly follow):
-- Output exactly 2 or 3 numbered recommendations, starting with "1."
-- Each recommendation: 1 sentence stating the specific action, followed by 1 sentence stating why it fits this investor's goals and horizon.
-- Name the specific ticker(s) and real numbers (weights, percentages, ratios) in every recommendation.
-- No generic advice. No intros. No conclusions. No summaries.
-- No em dashes, no asterisks, no bullet points, no markdown.
-- Start immediately with "1." with no preamble.
+- Give exactly 2 or 3 actions. Maximum 3.
+- Each action: write the core recommendation as a plain label on its own line (e.g. "Trim AAPL from 25% to 15%"). Then write 1-2 short sentences explaining why. No jargon. Write like you are explaining to a smart 16-year-old.
+- Leave a blank line between actions.
+- End with a single line starting with "Watch:" that states one specific thing to monitor.
+- No numbering, no bullet points, no asterisks, no em dashes, no markdown bold.
+- No intros, no conclusions, no preamble. Start directly with the first action label.
+- Each sentence must be short and direct. No run-on sentences.
+- Name specific tickers and real numbers in every recommendation.
 
 INVESTOR PROFILE:
 {goal_block}
@@ -8010,7 +8012,7 @@ MARKET CONTEXT (background only, not a reason to act):
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=450,
+        max_tokens=500,
         system=system,
         messages=[{"role": "user", "content": "What should I do with my portfolio?"}],
     )
