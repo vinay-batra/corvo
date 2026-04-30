@@ -203,70 +203,125 @@ function IllusBell() {
   );
 }
 
+// ── Illustrations for new steps ───────────────────────────────────────────────
+
+function IllusPaperTrade() {
+  return (
+    <svg width="100%" height="38" viewBox="0 0 260 38" fill="none" style={{ display: "block", marginBottom: 10 }}>
+      <style>{`@keyframes ti-draw { to { stroke-dashoffset: 0; } }`}</style>
+      <path d="M50,32 C70,26 90,18 115,14 C135,10 150,6 180,4"
+        strokeWidth="2" strokeLinecap="round" fill="none" strokeDasharray="6 3"
+        style={{ stroke: "var(--accent)", strokeDashoffset: 220, animation: "ti-draw 1.2s ease 0.1s forwards" }} />
+      <line x1="42" y1="38" x2="190" y2="38" strokeWidth="1" style={{ stroke: "var(--border)" }} />
+    </svg>
+  );
+}
+
+function IllusTransactions() {
+  return (
+    <svg width="100%" height="38" viewBox="0 0 260 38" fill="none" style={{ display: "block", marginBottom: 10 }}>
+      <style>{`@keyframes ti-fade { to { opacity: 1; } }`}</style>
+      {[0, 1, 2].map((i) => (
+        <g key={i} style={{ opacity: 0, animation: `ti-fade 0.3s ease ${0.1 + i * 0.15}s both` }}>
+          <circle cx="80" cy={8 + i * 11} r="2.5"
+            style={{ fill: i === 0 ? "var(--accent)" : "var(--text3)" }} />
+          <line x1="88" y1={8 + i * 11} x2="176" y2={8 + i * 11} strokeWidth="1" strokeLinecap="round"
+            style={{ stroke: i === 0 ? "var(--accent)" : "var(--border2)" }} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function numWord(n: number): string {
+  const words = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+  return words[n] ?? String(n);
+}
+
 // ── Tour stops ────────────────────────────────────────────────────────────────
 
-const DESKTOP_STOPS: TourStop[] = [
-  {
-    id: "tour-desk-sidebar",
-    label: "Sidebar",
-    title: "Build your portfolio",
-    description: "Search any ticker, set weights, enter your portfolio value, then hit Analyze.",
-    Illus: IllusBars,
-  },
-  {
-    id: "tour-desk-analyze",
-    label: "Analyze",
-    title: "Run your analysis",
-    description: "Generates Sharpe ratio, CAGR, max drawdown, health score, and AI insights. Re-analyze anytime.",
-    Illus: IllusLine,
-  },
-  {
-    id: "tour-desk-metrics",
-    label: "Key Metrics",
-    title: "Your key metrics",
-    description: "Four cards summarize your portfolio. Tap the question mark on any card for a plain-English explanation.",
-    Illus: IllusPie,
-    placement: "bottom",
-  },
-  {
-    id: "tour-desk-chart",
-    label: "Chart",
-    title: "Performance vs benchmark",
-    description: "Compare returns against S&P 500, Nasdaq, or Dow over 6M to 5Y. Use What-If to simulate changes.",
-    Illus: IllusDualLine,
-    placement: "bottom",
-  },
-  {
-    id: "tour-desk-tabs",
-    label: "Tabs",
-    title: "Eight pages of intelligence",
-    description: "Positions, Stocks, Income and Tax, Simulations, News, Watchlist, and Learn. All in one place.",
-    Illus: IllusTabs,
-    placement: "bottom",
-  },
-  {
-    id: "tour-desk-chat",
-    label: "AI Chat",
-    title: "Your AI analyst",
-    description: "Ask anything about your portfolio. Why Sharpe is low, what to rebalance, how a new position affects risk.",
-    Illus: IllusChat,
-    placement: "top",
-  },
-  {
-    id: "tour-desk-export",
-    label: "Export",
-    title: "Export and share",
-    description: "Generate a PDF, download a CSV, or get an AI-written report. Share with an advisor or keep for your records.",
-    Illus: IllusExport,
-  },
-  {
-    id: "tour-desk-bell",
-    label: "Notifications",
-    title: "Never miss a move",
-    description: "Set price alerts on any ticker. Get notified by email or push. Weekly digest every Sunday.",
-    Illus: IllusBell,
-  },
-];
+function getDesktopStops(tabCount: number): TourStop[] {
+  return [
+    {
+      id: "tour-desk-sidebar",
+      label: "Sidebar",
+      title: "Build your portfolio",
+      description: "Search any ticker, set weights, enter your portfolio value, then hit Analyze.",
+      Illus: IllusBars,
+    },
+    {
+      id: "tour-desk-analyze",
+      label: "Analyze",
+      title: "Run your analysis",
+      description: "Generates Sharpe ratio, CAGR, max drawdown, health score, and AI insights. Re-analyze anytime.",
+      Illus: IllusLine,
+    },
+    {
+      id: "tour-desk-metrics",
+      label: "Key Metrics",
+      title: "Your key metrics",
+      description: "Four cards summarize your portfolio. Tap the question mark on any card for a plain-English explanation.",
+      Illus: IllusPie,
+      placement: "bottom",
+    },
+    {
+      id: "tour-desk-chart",
+      label: "Chart",
+      title: "Performance vs benchmark",
+      description: "Compare returns against S&P 500, Nasdaq, or Dow over 6M to 5Y. Use What-If to simulate changes.",
+      Illus: IllusDualLine,
+      placement: "bottom",
+    },
+    {
+      id: "tour-desk-tabs",
+      label: "Tabs",
+      title: `${numWord(tabCount)} pages of intelligence`,
+      description: "Positions, Stocks, Income and Tax, Simulations, Paper Trade, News, Watchlist, Transactions, and Learn. All in one place.",
+      Illus: IllusTabs,
+      placement: "bottom",
+    },
+    {
+      id: "tour-tab-paper-trade",
+      label: "Paper Trade",
+      title: "Practice without risk",
+      description: "Use Paper Trade to simulate buying and selling with $10,000 in virtual cash. See how your instincts play out before committing real money.",
+      Illus: IllusPaperTrade,
+      placement: "bottom",
+    },
+    {
+      id: "tour-tab-transactions",
+      label: "Transactions",
+      title: "Track every trade",
+      description: "Log your buys and sells, review past decisions, and track your cost basis over time.",
+      Illus: IllusTransactions,
+      placement: "bottom",
+    },
+    {
+      id: "tour-desk-chat",
+      label: "AI Chat",
+      title: "Your AI analyst",
+      description: "Ask anything about your portfolio. Why Sharpe is low, what to rebalance, how a new position affects risk.",
+      Illus: IllusChat,
+      placement: "top",
+    },
+    {
+      id: "tour-desk-export",
+      label: "Export",
+      title: "Export and share",
+      description: "Generate a PDF, download a CSV, or get an AI-written report. Share with an advisor or keep for your records.",
+      Illus: IllusExport,
+    },
+    {
+      id: "tour-desk-bell",
+      label: "Notifications",
+      title: "Never miss a move",
+      description: "Set price alerts on any ticker. Get notified by email or push. Weekly digest every Sunday.",
+      Illus: IllusBell,
+    },
+  ];
+}
 
 const MOBILE_STOPS: TourStop[] = [
   { id: "tour-mob-home",      label: "Home",    title: "Go home anytime",          description: "The house icon takes you back to the Corvo homepage. Your portfolio is always saved." },
@@ -330,9 +385,10 @@ function getTooltipPos(ring: RingPos, forcePlacement?: "bottom" | "top"): { top:
 
 interface Props {
   onComplete: () => void;
+  tabCount: number;
 }
 
-export default function DashboardTour({ onComplete }: Props) {
+export default function DashboardTour({ onComplete, tabCount }: Props) {
   const [step, setStep] = useState(0);
   const [ring, setRing] = useState<RingPos | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; placement: string } | null>(null);
@@ -350,7 +406,7 @@ export default function DashboardTour({ onComplete }: Props) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const STOPS = isMobile ? MOBILE_STOPS : DESKTOP_STOPS;
+  const STOPS = isMobile ? MOBILE_STOPS : getDesktopStops(tabCount);
   const stop = STOPS[Math.min(step, STOPS.length - 1)];
   const total = STOPS.length;
 
