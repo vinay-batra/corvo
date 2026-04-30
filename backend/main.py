@@ -103,6 +103,18 @@ def safe_float(val):
     except:
         return 0.0
 
+def safe_int(val) -> int:
+    """Convert to int, returning 0 for NaN/Inf/None."""
+    try:
+        if val is None:
+            return 0
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return 0
+        return int(f)
+    except (ValueError, TypeError):
+        return 0
+
 def safe_list(lst):
     return [safe_float(x) for x in lst]
 
@@ -3039,14 +3051,16 @@ def insider_activity_endpoint(ticker: str, request: Request):
                 timeout=8,
             )
             if resp.ok:
-                for t in resp.json().get("data", []):
+                fh_data = resp.json().get("data") or []
+                print(f"[insider] Finnhub {ticker}: OK, {len(fh_data)} raw transactions")
+                for t in fh_data:
                     code = str(t.get("transactionCode", "")).upper()
                     # P = open market purchase, S = open market sale, D = disposition (also a sell signal)
                     if code not in ("P", "S", "D"):
                         continue
                     change = t.get("change", 0) or 0
                     # "share" field is total shares after the transaction; use "change" first, fall back to "share"
-                    shares = abs(int(float(change))) if change else abs(int(float(t.get("share", 0) or 0)))
+                    shares = abs(safe_int(change)) if change else abs(safe_int(t.get("share", 0) or 0))
                     if shares == 0:
                         continue
                     price = float(t.get("transactionPrice", 0) or 0)
@@ -3061,8 +3075,9 @@ def insider_activity_endpoint(ticker: str, request: Request):
                         "filing_date": t.get("filingDate") or "",
                         "total_value": round(shares * price, 2),
                     })
+                print(f"[insider] Finnhub {ticker}: {len(processed)} qualifying transactions after filter")
             else:
-                print(f"[insider] Finnhub {ticker}: HTTP {resp.status_code}")
+                print(f"[insider] Finnhub {ticker}: HTTP {resp.status_code} — {resp.text[:200]}")
         except Exception as e:
             print(f"[insider] Finnhub error for {ticker}: {e}")
 
@@ -3238,8 +3253,8 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
                     "lastPrice":         safe_float(row.get("lastPrice")),
                     "bid":               safe_float(row.get("bid")),
                     "ask":               safe_float(row.get("ask")),
-                    "volume":            int(row.get("volume") or 0),
-                    "openInterest":      int(row.get("openInterest") or 0),
+                    "volume":            safe_int(row.get("volume")),
+                    "openInterest":      safe_int(row.get("openInterest")),
                     "impliedVolatility": round(iv * 100, 2) if iv else None,
                     "inTheMoney":        bool(row.get("inTheMoney", False)),
                     "delta":             delta,
