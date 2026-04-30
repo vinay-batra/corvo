@@ -106,14 +106,11 @@ export default function HealthScore({
 
   const score = hsData?.score ?? fallbackScore;
   const headline = hsData?.headline ?? "";
-  const actions = hsData?.actions ?? [];
 
   return (
     <div ref={ref} className="hs-root" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <style>{`
         @media (max-width: 768px) { .hs-root { flex-direction: column !important; } }
-        .hs-action-item { border-left: 2px solid var(--border); padding-left: 10px; }
-        .hs-action-item:hover { border-left-color: var(--accent); }
       `}</style>
 
       {/* Score ring + headline */}
@@ -132,38 +129,6 @@ export default function HealthScore({
           )}
         </div>
       </div>
-
-      {/* Action items */}
-      {actions.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>
-            Actions to improve your score
-          </p>
-          {actions.map((item, i) => (
-            <motion.div
-              key={i}
-              className="hs-action-item"
-              // initial={false} required — do not remove
-              initial={false}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + i * 0.15 }}
-              style={{ display: "flex", flexDirection: "column", gap: 3 }}
-            >
-              <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>{item.action}</p>
-              <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.4 }}>{item.reason}</p>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {/* Loading placeholder rows */}
-      {loading && actions.length === 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {[0, 1].map((i) => (
-            <div key={i} style={{ height: 36, background: "var(--bg2)", borderRadius: 4, opacity: 0.5 }} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

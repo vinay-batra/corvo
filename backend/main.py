@@ -7951,42 +7951,59 @@ def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
     health_str = f"{int(req.health_score)}/100" if req.health_score is not None else "N/A"
     today_str = datetime.now().strftime("%B %d, %Y")
 
-    # Horizon-specific guidance for Claude
-    if is_long_term:
-        horizon_rules = """HORIZON CONSTRAINT (strictly enforce — this user is a long-term investor):
-- Do NOT recommend buying or selling any holding based on its single-day price change.
-- Daily price movement is shown as background context only. Never cite it as a reason to act.
-- Valid recommendation topics for a long-term investor:
-  * Concentration risk: any single position above 35-40% of the portfolio
-  * Missing asset class exposure (e.g. no bonds, no international, no defensive sector)
-  * Rebalancing drift: a position that has grown or shrunk far from its target weight over time
-  * A holding whose business model, competitive position, or revenue trajectory structurally no longer fits a long-term thesis
-  * Low Sharpe ratio or high drawdown relative to what the portfolio is trying to achieve
-- Every recommendation must be defensible over the user's stated time horizon."""
-    elif horizon_years is not None and horizon_years >= 3:
-        horizon_rules = """HORIZON CONSTRAINT (medium-term investor, 3-5 years):
-- Do NOT recommend buying or selling based solely on single-day price movement.
-- Daily prices may provide supporting context, but the primary reason must be structural.
-- Valid topics: concentration risk, sector overweight, Sharpe ratio, drawdown risk relative to timeline, approaching liquidity needs.
-- Every recommendation must be defensible over the user's stated time horizon."""
+    # Investor-profile-specific guidance for Claude
+    rt_lower = risk_tolerance.lower()
+    goal_lower = legacy_goal_type.lower() if legacy_goal_type else ""
+    if rt_lower == "conservative" or goal_lower in ("retirement", "income"):
+        investor_rules = """INVESTOR CONSTRAINT (conservative or income-focused investor):
+- Focus on capital preservation, income generation, and protecting existing gains. Never chase returns.
+- Do NOT recommend adding to volatile or speculative positions.
+- When prices are down, do not recommend selling — evaluate whether the long-term thesis still holds.
+- Valid actions: adding stability through bonds or dividend ETFs, trimming concentrated high-risk positions, rebalancing toward the target allocation.
+- Every recommendation must prioritize stability and downside protection over upside return."""
+    elif rt_lower == "aggressive" or investor_type.lower() in ("growth", "aggressive"):
+        investor_rules = """INVESTOR CONSTRAINT (aggressive growth investor):
+- This investor tolerates high volatility and can hold concentrated positions.
+- Think in weeks to months, not single days. Never react to one-day price swings.
+- Valid actions: adding to high-conviction positions at attractive valuations after a pullback, trimming positions that have grown dangerously concentrated (above 40%), rotating from structural laggards to leaders with better growth trajectories.
+- Every recommendation must be defensible over at least a 3-month horizon."""
+    elif is_long_term:
+        investor_rules = """INVESTOR CONSTRAINT (long-term investor, moderate risk):
+- NEVER recommend selling because the market went down or a holding dropped today. Price drops for solid companies are buying opportunities, not selling signals.
+- Only recommend trimming when a position has grown to an outsized weight (above 35%) after a sustained run-up, creating concentration risk.
+- Valid actions: rebalancing concentration risk, adding missing asset class exposure, trimming positions that have drifted well above their target weight after a big rally.
+- Every recommendation must be defensible over a multi-year time horizon."""
     else:
-        horizon_rules = """HORIZON CONSTRAINT (short-term investor or horizon unknown):
-- Daily prices may be considered as one input, but still must not be the sole reason to act.
-- Recommendations should prioritize risk management and capital preservation relative to the short timeline.
+        investor_rules = """INVESTOR CONSTRAINT (moderate investor):
+- Do NOT recommend buying or selling based on single-day price movement.
+- Balance growth with risk management appropriate to the investor's timeline.
+- Valid actions: reducing concentration risk, addressing sector overweight, improving Sharpe ratio, managing drawdown risk relative to the stated timeline.
 - Every recommendation must be defensible over the user's stated time horizon."""
 
-    system = f"""You are Corvo AI, a direct and goal-aware portfolio advisor. Today is {today_str}.
+    # Determine the goal label for the closing line
+    goal_label_parts: list[str] = []
+    if primary_goals:
+        goal_label_parts.append(", ".join(primary_goals))
+    elif legacy_goal_type:
+        goal_label_parts.append({"retirement": "retirement", "wealth": "wealth building", "income": "passive income", "short": "short-term growth"}.get(legacy_goal_type, legacy_goal_type))
+    if horizon_category != "unknown":
+        goal_label_parts.append(horizon_category)
+    goal_label = " and ".join(goal_label_parts) if goal_label_parts else "your stated goals"
 
-{horizon_rules}
+    system = f"""You are Corvo, a direct and goal-aware portfolio advisor. Today is {today_str}.
+
+CORE PHILOSOPHY:
+Recommendations must be relevant for weeks, not just today. Never react to a single-day market move. Each action must be directly tied to the user's goals and risk tolerance. Your job is to improve the portfolio health score by addressing structural issues, not to comment on daily noise.
+
+{investor_rules}
 
 OUTPUT FORMAT (strictly follow):
 - Give exactly 2 or 3 actions. Maximum 3.
-- Each action: write the core recommendation as a plain label on its own line (e.g. "Trim AAPL from 25% to 15%"). Then write 1-2 short sentences explaining why. No jargon. Write like you are explaining to a smart 16-year-old.
+- Each action: write a specific headline on its own line (e.g. "Trim NVDA from 25% to 18%"). Then write 1-2 short sentences explaining why, in plain English with no jargon.
 - Leave a blank line between actions.
-- End with a single line starting with "Watch:" that states one specific thing to monitor.
+- End with exactly this sentence as the final line: "These actions are designed to improve your portfolio health score and align with your {goal_label} goal."
 - No numbering, no bullet points, no asterisks, no em dashes, no markdown bold.
-- No intros, no conclusions, no preamble. Start directly with the first action label.
-- Each sentence must be short and direct. No run-on sentences.
+- No intros, no conclusions, no preamble. Start directly with the first action headline.
 - Name specific tickers and real numbers in every recommendation.
 
 INVESTOR PROFILE:
@@ -8001,7 +8018,7 @@ Max drawdown: {req.max_drawdown:.2%}
 Health score: {health_str}
 Portfolio value: {value_str}
 
-MARKET CONTEXT (background only, not a reason to act):
+MARKET CONTEXT (background only, never a reason to act):
 {chr(10).join(market_lines) if market_lines else 'Market data unavailable'}"""
 
     import anthropic
