@@ -6,8 +6,9 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import UserMenu from "../../components/UserMenu";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
+import LifeEvents, { type LifeEvent } from "../../components/LifeEvents";
 
-const TOTAL = 9;
+const TOTAL = 10;
 
 const INVESTOR_TYPES = [
   { id: "beginner",      label: "Beginner investor",     desc: "New to investing" },
@@ -76,6 +77,7 @@ const STEP_TITLES = [
   "What is your risk tolerance?",
   "What is your investment horizon?",
   "How did you hear about Corvo?",
+  "Any major life events coming up?",
   "Take Corvo with you",
 ];
 
@@ -219,11 +221,13 @@ function OnboardingContent() {
   const isReplay = searchParams.get("replay") === "true";
 
   const [authLoading, setAuthLoading] = useState(true);
+  const [userId, setUserId] = useState("");
   const [step, setStep] = useState(0);
   const [animating, setAnimating] = useState(false);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [completing, setCompleting] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
+  const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>([]);
 
   const [answers, setAnswers] = useState({
     investor_type: "",
@@ -243,6 +247,7 @@ function OnboardingContent() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/auth"); return; }
+      setUserId(user.id);
 
       // Replay mode: skip ALL redirect checks unconditionally, just pre-fill answers.
       if (isReplay) {
@@ -302,7 +307,8 @@ function OnboardingContent() {
     if (step === 5) return answers.risk_tolerance !== "";
     if (step === 6) return answers.investment_horizon !== "";
     if (step === 7) return answers.referral_source !== "";
-    if (step === 8) return true;
+    if (step === 8) return true; // life events — skippable
+    if (step === 9) return true;
     return false;
   };
 
@@ -317,7 +323,7 @@ function OnboardingContent() {
 
   const handleNext = () => {
     if (animating) return;
-    if (!canProceed() && step !== 4) return;
+    if (!canProceed() && step !== 4 && step !== 8) return;
     if (step < TOTAL - 1) navigate("forward");
     else handleComplete();
   };
@@ -356,6 +362,7 @@ function OnboardingContent() {
     await supabase.from("profiles").upsert({
       id: user.id,
       onboarding_completed: true,
+      life_events: lifeEvents,
       updated_at: new Date().toISOString(),
     });
 
@@ -431,6 +438,20 @@ function OnboardingContent() {
     </div>
   );
 
+  const renderLifeEvents = () => (
+    <div>
+      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16, lineHeight: 1.55 }}>
+        Corvo uses this to give you more relevant advice.
+      </p>
+      <LifeEvents
+        mode="onboarding"
+        userId={userId}
+        initialEvents={lifeEvents}
+        onChange={setLifeEvents}
+      />
+    </div>
+  );
+
   const renderStepContent = () => {
     switch (step) {
       case 0: return renderSingleSelect("investor_type", INVESTOR_TYPES);
@@ -441,7 +462,8 @@ function OnboardingContent() {
       case 5: return renderSingleSelect("risk_tolerance", RISK_LEVELS);
       case 6: return renderSingleSelect("investment_horizon", HORIZONS);
       case 7: return renderSingleSelect("referral_source", REFERRAL_SOURCES);
-      case 8: return <InstallStep />;
+      case 8: return renderLifeEvents();
+      case 9: return <InstallStep />;
       default: return null;
     }
   };
@@ -482,6 +504,7 @@ function OnboardingContent() {
           .ob-card h2 { font-size: 18px !important; }
           .ob-card p { font-size: 12px !important; }
           .ob-select-grid { grid-template-columns: 1fr !important; }
+          .ob-life-events-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .ob-builder-scroll { max-height: min(340px, 45vh) !important; }
         }
       `}</style>
@@ -578,12 +601,12 @@ function OnboardingContent() {
             </button>
 
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              {(step === 4 || step === 8) && (
+              {(step === 4 || step === 8 || step === 9) && (
                 <button
                   onClick={handleNext}
                   style={{ fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                 >
-                  {step === 8 ? "Skip" : "Skip this step"}
+                  {step === 9 ? "Skip" : "Skip this step"}
                 </button>
               )}
               <button

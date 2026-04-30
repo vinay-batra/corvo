@@ -2035,6 +2035,46 @@ def get_referrals(user_id: str = ""):
         return {"referral_link": f"https://corvo.capital/app?ref={code}", "referral_code": code, "referrals_count": 0, "bonus_messages": 0}
 
 
+class LifeEventsRequest(BaseModel):
+    life_events: list = []
+
+
+@app.get("/user/life-events/{user_id}")
+def get_life_events(user_id: str, request: Request):
+    """Return life events for a user. JWT required."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if not SUPABASE_URL:
+        return {"life_events": []}
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}&select=life_events",
+        headers=_sb_headers(), timeout=5,
+    )
+    if resp.status_code != 200 or not resp.json():
+        return {"life_events": []}
+    return {"life_events": resp.json()[0].get("life_events") or []}
+
+
+@app.post("/user/life-events/{user_id}")
+def set_life_events(user_id: str, body: LifeEventsRequest, request: Request):
+    """Upsert life events for a user. JWT required."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if not SUPABASE_URL:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    resp = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"life_events": body.life_events, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=5,
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Failed to update life events")
+    return {"success": True}
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list = []
@@ -2044,6 +2084,7 @@ class ChatRequest(BaseModel):
     user_id: str | None = None
     page_context: str = ""
     user_context: str = ""
+    life_events: list = []
 
     def validate_message(self):
         if not self.message or not self.message.strip():
@@ -2176,6 +2217,37 @@ def chat(req: ChatRequest, request: Request):
     page_context_text = f"\n\nCURRENT PAGE: {req.page_context}" if req.page_context else ""
     user_context_block = f"\n\n{req.user_context}" if req.user_context else ""
 
+    # Build life events block
+    life_events_text = ""
+    if req.life_events:
+        _event_labels = {
+            "buying_home": "Buying a home",
+            "getting_married": "Getting married",
+            "having_baby": "Having a baby",
+            "starting_business": "Starting a business",
+            "changing_jobs": "Changing jobs",
+            "retiring_soon": "Retiring soon",
+            "paying_off_debt": "Paying off debt",
+            "building_emergency_fund": "Building an emergency fund",
+            "sending_kids_to_college": "Sending kids to college",
+        }
+        _timeline_labels = {
+            "within_1_year": "within 1 year",
+            "1_2_years": "in 1-2 years",
+            "2_5_years": "in 2-5 years",
+            "5_plus_years": "in 5+ years",
+        }
+        _event_parts = []
+        for _e in req.life_events:
+            _t = _e.get("type", "") if isinstance(_e, dict) else ""
+            if _t == "nothing_major" or not _t:
+                continue
+            _tl = _timeline_labels.get(_e.get("timeline", ""), "") if isinstance(_e, dict) else ""
+            _label = _event_labels.get(_t, _t.replace("_", " ").title())
+            _event_parts.append(f"{_label}{' ' + _tl if _tl else ''}")
+        if _event_parts:
+            life_events_text = "\n\nACTIVE LIFE EVENTS: " + "; ".join(_event_parts) + "\n(Factor these into advice naturally. Buying a home soon means flag liquidity needs. Retiring soon means flag sequence-of-returns risk. Having a baby means flag emergency fund importance. Starting a business means flag concentration and cash runway.)"
+
     system = f"""You are Corvo AI, a world-class personal portfolio advisor. You have full access to this investor's portfolio data, financial profile, saved portfolios, alerts, and targets. You also have web search capability to look up current prices, historical events, earnings, analyst ratings, news, and any market data needed to answer questions accurately.{user_context_block}
 
 CURRENT PORTFOLIO:
@@ -2184,7 +2256,7 @@ CURRENT PORTFOLIO:
 - Annualized Return (CAGR): {ret:.2%}
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f} (risk-free rate used: {rf_rate_ctx:.2%})
-- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{page_context_text}
+- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{page_context_text}
 
 HOW TO RESPOND:
 • Address the user by their first name when it is known.

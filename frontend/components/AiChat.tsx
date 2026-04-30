@@ -192,6 +192,7 @@ export default function AiChat({
 
   // Full user context string sent on every request
   const [userContextStr, setUserContextStr] = useState("");
+  const [lifeEventsRef] = useState<{ current: any[] }>({ current: [] });
 
   // Chat
   const [messages, setMessages]       = useState<Message[]>([]);
@@ -314,7 +315,7 @@ export default function AiChat({
       // Fetch all user context data in parallel for richer AI responses
       const meta = ud.user.user_metadata || {};
       const [profileRes, portfoliosRes, emailPrefsRes, alertsRes, targetsRes] = await Promise.allSettled([
-        supabase.from("profiles").select("display_name").eq("id", uid).single(),
+        supabase.from("profiles").select("display_name,life_events").eq("id", uid).single(),
         supabase.from("portfolios").select("name,tickers").eq("user_id", uid).order("updated_at", { ascending: false }),
         supabase.from("email_preferences").select("morning_briefing,week_in_review,monthly_summary,price_alerts").eq("user_id", uid).single(),
         supabase.from("price_alerts").select("ticker,type,condition,threshold").eq("user_id", uid).eq("triggered", false),
@@ -327,6 +328,12 @@ export default function AiChat({
         ud.user.user_metadata?.name ||
         ud.user.email?.split("@")[0] ||
         "";
+
+      const fetchedLifeEvents: any[] =
+        profileRes.status === "fulfilled"
+          ? (profileRes.value.data?.life_events || [])
+          : [];
+      lifeEventsRef.current = fetchedLifeEvents;
 
       const savedPortfolios: { name: string; tickers: string[] }[] =
         portfoliosRes.status === "fulfilled" ? (portfoliosRes.value.data || []) : [];
@@ -384,6 +391,33 @@ export default function AiChat({
           `${t.ticker} target $${t.target_price} (${t.direction})`
         );
         lines.push(`PRICE TARGETS: ${tgtLines.join("; ")}`);
+      }
+
+      const activeLifeEvents = fetchedLifeEvents.filter((e: any) => e.type && e.type !== "nothing_major");
+      if (activeLifeEvents.length > 0) {
+        const eventLabels: Record<string, string> = {
+          buying_home: "Buying a home",
+          getting_married: "Getting married",
+          having_baby: "Having a baby",
+          starting_business: "Starting a business",
+          changing_jobs: "Changing jobs",
+          retiring_soon: "Retiring soon",
+          paying_off_debt: "Paying off debt",
+          building_emergency_fund: "Building an emergency fund",
+          sending_kids_to_college: "Sending kids to college",
+        };
+        const timelineLabels: Record<string, string> = {
+          within_1_year: "within 1 year",
+          "1_2_years": "in 1-2 years",
+          "2_5_years": "in 2-5 years",
+          "5_plus_years": "in 5+ years",
+        };
+        const parts = activeLifeEvents.map((e: any) => {
+          const label = eventLabels[e.type] || e.type.replace(/_/g, " ");
+          const tl = timelineLabels[e.timeline] ? ` (${timelineLabels[e.timeline]})` : "";
+          return label + tl;
+        });
+        lines.push(`LIFE EVENTS: ${parts.join("; ")}`);
       }
 
       setUserContextStr(lines.join("\n"));
@@ -542,6 +576,7 @@ export default function AiChat({
           user_id: userIdRef.current,
           page_context: pageContext || "",
           user_context: userContextStr,
+          life_events: lifeEventsRef.current,
         }),
       });
 
