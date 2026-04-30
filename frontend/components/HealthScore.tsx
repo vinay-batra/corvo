@@ -87,6 +87,66 @@ function SubScoreRow({ label, score }: { label: string; score: number }) {
   );
 }
 
+function ScoreTooltip() {
+  const [open, setOpen] = useState(false);
+  return (
+    <span style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+      <button
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        style={{
+          background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px",
+          color: "var(--text3)", fontSize: 10, lineHeight: 1,
+          display: "inline-flex", alignItems: "center",
+        }}
+        aria-label="How is this score calculated?"
+      >
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="6.5" cy="6.5" r="5.75" stroke="currentColor" strokeWidth="1.2" />
+          <text x="6.5" y="10" textAnchor="middle" fill="currentColor" fontSize="8" fontFamily="Space Mono, monospace" fontWeight="700">?</text>
+        </svg>
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
+          transform: "translateX(-50%)",
+          background: "var(--card-bg)", border: "1px solid var(--border)",
+          borderRadius: 8, padding: "12px 14px", zIndex: 100,
+          width: 260, boxShadow: "0 4px 20px rgba(0,0,0,0.18)",
+          pointerEvents: "none",
+        }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "var(--text)", marginBottom: 8, letterSpacing: 0.5, textTransform: "uppercase" }}>
+            How the score is calculated
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {[
+              { label: "Returns", pct: "30%", desc: "Annualized portfolio return vs. a -30% to +30% scale" },
+              { label: "Risk-Adjusted", pct: "30%", desc: "Sharpe ratio (return per unit of risk, scored 0 to 3)" },
+              { label: "Stability", pct: "25%", desc: "Portfolio volatility (lower is better, scored vs. 60% max)" },
+              { label: "Resilience", pct: "15%", desc: "Max drawdown (how far the portfolio fell at its worst)" },
+            ].map(({ label, pct, desc }) => (
+              <div key={label} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 10, color: "var(--text2)", fontWeight: 600 }}>{label}</span>
+                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, color: "var(--accent)" }}>{pct}</span>
+                </div>
+                <span style={{ fontSize: 9, color: "var(--text3)", lineHeight: 1.4 }}>{desc}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
+            <p style={{ fontSize: 9, color: "var(--text3)", lineHeight: 1.5 }}>
+              Penalties reduce sub-scores when more than 60% of the portfolio sits in one sector (lowers Stability and Resilience) or when average pairwise correlation exceeds 0.7 (lowers Risk-Adjusted). Risk-Adjusted is capped at 80 with fewer than 3 distinct asset classes.
+            </p>
+          </div>
+        </div>
+      )}
+    </span>
+  );
+}
+
 export default function HealthScore({
   data,
   userId,
@@ -144,9 +204,10 @@ export default function HealthScore({
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         {inView && <Ring score={score} />}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, paddingTop: 4 }}>
-          <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", lineHeight: 1.1 }}>
+          <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", lineHeight: 1.1, display: "flex", alignItems: "center", gap: 2 }}>
             <span style={{ color: score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)" }}>{score}</span>
             <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)" }}> / 100</span>
+            <ScoreTooltip />
           </p>
           {loading && !headline && (
             <p style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>Analyzing your portfolio...</p>
