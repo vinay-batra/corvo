@@ -152,9 +152,9 @@ const CapitalGainsEstimator = memo(function CapitalGainsEstimator({
 
       {/* States */}
       {!hasCostBasis && !loading && (
-        <div style={{ textAlign: "center", color: "var(--text3)", fontSize: 12, padding: "32px 0" }}>
+        <p style={{ textAlign: "center", color: "var(--text3)", fontSize: 12, padding: "10px 0", margin: 0 }}>
           Enter purchase prices in the sidebar to estimate capital gains tax.
-        </div>
+        </p>
       )}
 
       {loading && (
@@ -179,9 +179,9 @@ const CapitalGainsEstimator = memo(function CapitalGainsEstimator({
       )}
 
       {data && !loading && data.holdings.length === 0 && hasCostBasis && (
-        <div style={{ textAlign: "center", color: "var(--text3)", fontSize: 12, padding: "24px 0" }}>
+        <p style={{ textAlign: "center", color: "var(--text3)", fontSize: 12, padding: "10px 0", margin: 0 }}>
           No holdings with cost basis data returned results.
-        </div>
+        </p>
       )}
 
       {data && !loading && data.holdings.length > 0 && (
