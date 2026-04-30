@@ -121,7 +121,8 @@ export default function PeerComparison({ data, userId }: { data: any; userId: st
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         setPeer(await res.json());
-      } catch {
+      } catch (err) {
+        console.error('[peer-comparison] fetch failed:', err);
         setError(true);
       } finally {
         setLoading(false);
@@ -143,6 +144,8 @@ export default function PeerComparison({ data, userId }: { data: any; userId: st
     >
       {loading ? (
         <Skeleton />
+      ) : error ? (
+        <p style={{ fontSize: 12, color: "var(--text3)", margin: 0 }}>Peer data unavailable right now.</p>
       ) : !peer ? null : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
