@@ -172,6 +172,7 @@ export default function AiChat({
   initialMessage,
   pageContext,
   currentPage,
+  extraContext,
   onClose,
 }: {
   data?: any;
@@ -180,6 +181,7 @@ export default function AiChat({
   initialMessage?: string;
   pageContext?: string;
   currentPage?: string;
+  extraContext?: string;
   onClose?: () => void;
 }) {
   // Use refs for values used inside async functions to avoid stale closures
@@ -575,7 +577,7 @@ export default function AiChat({
           market_context,
           user_id: userIdRef.current,
           page_context: pageContext || "",
-          user_context: userContextStr,
+          user_context: userContextStr + (extraContext ? "\n" + extraContext : ""),
           life_events: lifeEventsRef.current,
         }),
       });
