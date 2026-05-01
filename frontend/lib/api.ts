@@ -166,6 +166,12 @@ export async function fetchAnalystTargets(ticker: string) {
   return res.json();
 }
 
+export async function fetchEarningsTranscript(ticker: string) {
+  const res = await fetch(`${RESOLVED_API_URL}/earnings/transcript/${encodeURIComponent(ticker)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function fetchEarningsPreview(assets: { ticker: string; weight: number }[]) {
   const total = assets.reduce((s, a) => s + a.weight, 0) || 1;
   const tickers = assets.map(a => a.ticker).join(",");

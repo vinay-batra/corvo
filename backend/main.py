@@ -7822,6 +7822,297 @@ def earnings_preview(tickers: str = Query(default=""), weights: str = Query(defa
     return preview_items
 
 
+# ── Earnings Transcript (SEC EDGAR) ────────────────────────────────────────────
+
+_sec_transcript_cache: dict[str, tuple[float, str | None]] = {}
+_SEC_TRANSCRIPT_TTL = 86400.0  # 24 hours
+
+
+def _fetch_sec_transcript(ticker: str) -> str | None:
+    """Fetch most recent earnings call transcript from SEC EDGAR 8-K filings. 24hr in-memory cache."""
+    import re
+    from datetime import date, timedelta
+
+    t = ticker.upper().strip()
+    now = time.time()
+
+    if t in _sec_transcript_cache:
+        ts, val = _sec_transcript_cache[t]
+        if now - ts < _SEC_TRANSCRIPT_TTL:
+            return val
+
+    hdrs = {
+        "User-Agent": "Corvo Portfolio Analytics contact@corvo.capital",
+        "Accept-Encoding": "gzip, deflate",
+    }
+
+    def _cache(val: str | None) -> str | None:
+        _sec_transcript_cache[t] = (now, val)
+        return val
+
+    try:
+        # Step 1: Get recent 8-K filings via EDGAR company search (Atom feed)
+        atom_url = (
+            f"https://www.sec.gov/cgi-bin/browse-edgar"
+            f"?action=getcompany&company=&CIK={t}&type=8-K"
+            f"&dateb=&owner=include&count=10&search_text=&output=atom"
+        )
+        r = requests.get(atom_url, headers=hdrs, timeout=10)
+        if r.status_code != 200:
+            return _cache(None)
+
+        atom = r.text
+
+        # Extract filing index links from atom feed
+        index_links = re.findall(
+            r'href="(https://www\.sec\.gov/Archives/edgar/data/\d+/\d+/[^"]+?-index\.htm)"',
+            atom,
+        )
+
+        if not index_links:
+            # Fallback: extract CIK and use EDGAR submissions API
+            cik_match = re.search(r'/Archives/edgar/data/(\d+)/', atom)
+            if not cik_match:
+                return _cache(None)
+            cik_raw = cik_match.group(1)
+            cik_padded = cik_raw.zfill(10)
+
+            sub_url = f"https://data.sec.gov/submissions/CIK{cik_padded}.json"
+            sub_r = requests.get(sub_url, headers=hdrs, timeout=10)
+            if sub_r.status_code != 200:
+                return _cache(None)
+
+            sub = sub_r.json()
+            recent = sub.get("filings", {}).get("recent", {})
+            forms = recent.get("form", [])
+            accs = recent.get("accessionNumber", [])
+            dates = recent.get("filingDate", [])
+            cutoff = (date.today() - timedelta(days=90)).isoformat()
+
+            for form, acc, fd in zip(forms, accs, dates):
+                if form == "8-K" and fd >= cutoff:
+                    acc_clean = acc.replace("-", "")
+                    index_links.append(
+                        f"https://www.sec.gov/Archives/edgar/data/{cik_raw}/{acc_clean}/{acc}-index.htm"
+                    )
+                if len(index_links) >= 5:
+                    break
+
+        if not index_links:
+            return _cache(None)
+
+        # Step 2: Scan filing indexes for transcript or ex-99 exhibits
+        for idx_url in index_links[:5]:
+            try:
+                idx_r = requests.get(idx_url, headers=hdrs, timeout=10)
+                if idx_r.status_code != 200:
+                    continue
+                idx_html = idx_r.text
+
+                transcript_url = None
+                fallback_url = None
+
+                for row in re.split(r'<tr[^>]*>', idx_html, flags=re.IGNORECASE):
+                    row_lower = row.lower()
+                    is_transcript = any(w in row_lower for w in [
+                        "transcript", "earnings call", "conference call", "prepared remarks",
+                    ])
+                    is_ex99 = any(w in row_lower for w in [
+                        "ex-99", "ex99", "exhibit 99", "99.1", "99.2",
+                    ])
+                    if not (is_transcript or is_ex99):
+                        continue
+                    href_m = re.search(
+                        r'href="(/Archives/edgar/data/\d+/[^"]+\.(?:htm|html|txt))"',
+                        row, re.IGNORECASE,
+                    )
+                    if not href_m:
+                        continue
+                    doc_url = "https://www.sec.gov" + href_m.group(1)
+                    if is_transcript and transcript_url is None:
+                        transcript_url = doc_url
+                    elif is_ex99 and fallback_url is None:
+                        fallback_url = doc_url
+
+                target = transcript_url or fallback_url
+                if not target:
+                    continue
+
+                # Step 3: Fetch and clean the exhibit text
+                doc_r = requests.get(target, headers=hdrs, timeout=15)
+                if doc_r.status_code != 200:
+                    continue
+
+                raw = doc_r.text
+                clean = re.sub(r'<[^>]+>', ' ', raw)
+                for ent, ch in [
+                    ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"),
+                    ("&nbsp;", " "), ("&#39;", "'"), ("&quot;", '"'),
+                    ("&ldquo;", '"'), ("&rdquo;", '"'),
+                    ("&ndash;", "-"), ("&mdash;", "-"),
+                ]:
+                    clean = clean.replace(ent, ch)
+                clean = re.sub(r'\s+', ' ', clean).strip()
+
+                if len(clean) < 500:
+                    continue
+
+                return _cache(clean[:15000])
+
+            except Exception as inner_e:
+                print(f"[sec-transcript] filing parse error for {t}: {inner_e}")
+                continue
+
+        return _cache(None)
+
+    except Exception as e:
+        print(f"[sec-transcript] error for {t}: {e}")
+        return _cache(None)
+
+
+@app.get("/earnings/transcript/{ticker}")
+async def earnings_transcript(ticker: str):
+    """Fetch and summarize earnings call transcript from SEC EDGAR 8-K filings."""
+    import re as _re
+    import json as _json
+
+    t = ticker.upper().strip()
+
+    sb_hdrs = {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    # Check Supabase cache (gracefully skips if table not yet created)
+    if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        try:
+            cache_r = requests.get(
+                f"{SUPABASE_URL}/rest/v1/earnings_summaries?ticker=eq.{t}&select=*&limit=1",
+                headers=sb_hdrs, timeout=5,
+            )
+            if cache_r.status_code == 200:
+                rows = cache_r.json()
+                if rows:
+                    row = rows[0]
+                    updated = row.get("updated_at") or row.get("created_at", "")
+                    if updated:
+                        try:
+                            from datetime import datetime as _dt, timezone as _tz
+                            updated_dt = _dt.fromisoformat(updated.replace("Z", "+00:00"))
+                            age = (_dt.now(_tz.utc) - updated_dt).total_seconds()
+                            if age < 86400:
+                                return {
+                                    "ticker": t,
+                                    "has_transcript": row.get("transcript_excerpt") is not None,
+                                    "summary": row.get("summary"),
+                                    "transcript_excerpt": row.get("transcript_excerpt"),
+                                    "filing_date": row.get("filing_date"),
+                                    "has_ai_summary": row.get("summary") is not None,
+                                    "ai_pending": (
+                                        row.get("transcript_excerpt") is not None
+                                        and row.get("summary") is None
+                                    ),
+                                    "error": None,
+                                    "message": None,
+                                    "source": "cache",
+                                }
+                        except Exception:
+                            pass
+        except Exception as sb_e:
+            print(f"[earnings-transcript] Supabase check error: {sb_e}")
+
+    # Fetch transcript from SEC EDGAR (blocking I/O in thread pool)
+    loop = asyncio.get_event_loop()
+    transcript = await loop.run_in_executor(None, _fetch_sec_transcript, t)
+
+    if not transcript:
+        return {
+            "ticker": t,
+            "has_transcript": False,
+            "summary": None,
+            "transcript_excerpt": None,
+            "filing_date": None,
+            "has_ai_summary": False,
+            "ai_pending": False,
+            "error": "no_transcript",
+            "message": (
+                "No transcript available for this ticker. "
+                "SEC filings may not include call transcripts for all companies."
+            ),
+        }
+
+    # Try AI summarization if API key available
+    summary = None
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if api_key:
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=api_key)
+            ai_resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1024,
+                system=(
+                    "You are a financial analyst. Extract key information from earnings call transcripts. "
+                    "Be concise and specific. Never use em dashes. Never use asterisks. "
+                    "Return valid JSON only, no markdown fences."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Analyze this earnings call transcript for {t} and return JSON with exactly these keys:\n"
+                        '- "key_points": array of exactly 3 short strings (one sentence each)\n'
+                        '- "forward_guidance": string (3-4 sentences on next quarter outlook)\n'
+                        '- "risks": string (3-4 sentences on main risks mentioned)\n'
+                        '- "tone": object with "label" (one of: confident, cautious, mixed) '
+                        'and "reason" (1-2 sentences)\n\n'
+                        f"Transcript:\n{transcript[:12000]}"
+                    ),
+                }],
+            )
+            raw = ai_resp.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = _re.sub(r"^```[a-z]*\n?", "", raw)
+                raw = _re.sub(r"\n?```$", "", raw)
+            summary = _json.loads(raw)
+        except Exception as ai_e:
+            print(f"[earnings-transcript] AI error for {t}: {ai_e}")
+            summary = None
+
+    result = {
+        "ticker": t,
+        "has_transcript": True,
+        "summary": summary,
+        "transcript_excerpt": transcript[:2000],
+        "filing_date": None,
+        "has_ai_summary": summary is not None,
+        "ai_pending": summary is None and bool(api_key),
+        "error": None,
+        "message": None,
+    }
+
+    # Persist to Supabase (gracefully skips if table not yet created)
+    if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        try:
+            from datetime import datetime as _dt2, timezone as _tz2
+            requests.post(
+                f"{SUPABASE_URL}/rest/v1/earnings_summaries",
+                headers={**sb_hdrs, "Prefer": "resolution=merge-duplicates"},
+                json={
+                    "ticker": t,
+                    "summary": summary,
+                    "transcript_excerpt": transcript[:2000],
+                    "filing_date": None,
+                    "updated_at": _dt2.now(_tz2.utc).isoformat(),
+                },
+                timeout=5,
+            )
+        except Exception as sb_e:
+            print(f"[earnings-transcript] Supabase upsert error: {sb_e}")
+
+    return result
+
+
 # ── Events Calendar ────────────────────────────────────────────────────────────
 
 _FALLBACK_EVENTS_2026 = [
