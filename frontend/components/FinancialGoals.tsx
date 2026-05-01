@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -29,7 +29,7 @@ interface GoalFieldDef {
 interface GoalDef {
   id: string;
   label: string;
-  icon: JSX.Element;
+  icon: React.ReactElement;
   fields: GoalFieldDef[];
 }
 
