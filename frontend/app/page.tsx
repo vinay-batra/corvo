@@ -1013,11 +1013,11 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
 
 /* ─── Mobile Testimonial Carousel ─── */
 const MOBILE_TESTIMONIALS = [
-  { text: "finally an app that does everything in one place. i had robinhood for trades, google sheets for tracking, and youtube for research. corvo just replaced all three", name: "Jake M.", role: "Casual investor" },
-  { text: "the UI is actually so clean. every other portfolio app looks like it was built in 2009. this one looks like something apple would make", name: "Aisha T.", role: "Self-taught investor" },
-  { text: "i check this thing every week just to see what's new. it keeps getting better. whoever's building this actually gives a damn", name: "Chris R.", role: "Long-term investor" },
-  { text: "the morning emails are lowkey the best part. i get a quick recap of my portfolio before i even get out of bed. simple but so useful", name: "Dev P.", role: "Index fund investor" },
-  { text: "ran the monte carlo on my portfolio and it completely changed how i think about risk. didn't realize how concentrated i was until i saw it laid out", name: "Tyler W.", role: "Active trader" },
+  { text: "finally an app that does everything in one place. had robinhood, google sheets, and three different websites open at once. corvo just replaced all of them", name: "Jake M.", role: "casual investor" },
+  { text: "The UI is actually really clean. Didn't expect it to look this good for a free tool.", name: "Aisha T.", role: "self-taught investor" },
+  { text: "i check it every week just to see what's new. it keeps getting better and you can tell someone actually cares about it", name: "Chris R.", role: "long-term investor" },
+  { text: "The morning emails are the best part. Quick recap of my portfolio before I even get out of bed.", name: "Dev P.", role: "index fund investor" },
+  { text: "Ran the Monte Carlo and it completely changed how I think about my retirement timeline. Didn't realize how exposed I was.", name: "Tyler W.", role: "active trader" },
 ];
 function MobileTestimonialCarousel() {
   const [idx, setIdx] = useState(0);
@@ -2756,12 +2756,12 @@ export default function Landing() {
           </Reveal>
           {/* Desktop: consistent 3-column grid */}
           <div className="testi-desktop" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-            <TestimonialCard text="finally an app that does everything in one place. i had robinhood for trades, google sheets for tracking, and youtube for research. corvo just replaced all three" name="Jake M." role="Casual investor" delay={0} />
-            <TestimonialCard text="the UI is actually so clean. every other portfolio app looks like it was built in 2009. this one looks like something apple would make" name="Aisha T." role="Self-taught investor" delay={0.08} />
-            <TestimonialCard text="i check this thing every week just to see what's new. it keeps getting better. whoever's building this actually gives a damn" name="Chris R." role="Long-term investor" delay={0.16} />
-            <TestimonialCard text="the morning emails are lowkey the best part. i get a quick recap of my portfolio before i even get out of bed. simple but so useful" name="Dev P." role="Index fund investor" delay={0.08} />
-            <TestimonialCard text="ran the monte carlo on my portfolio and it completely changed how i think about risk. didn't realize how concentrated i was until i saw it laid out" name="Tyler W." role="Active trader" delay={0.16} />
-            <TestimonialCard text="most apps just show you charts. this one actually tells you what to do about them. that's the whole thing right there" name="Maya L." role="DIY investor" delay={0.24} />
+            <TestimonialCard text="finally an app that does everything in one place. had robinhood, google sheets, and three different websites open at once. corvo just replaced all of them" name="Jake M." role="casual investor" delay={0} />
+            <TestimonialCard text="The UI is actually really clean. Didn't expect it to look this good for a free tool." name="Aisha T." role="self-taught investor" delay={0.08} />
+            <TestimonialCard text="i check it every week just to see what's new. it keeps getting better and you can tell someone actually cares about it" name="Chris R." role="long-term investor" delay={0.16} />
+            <TestimonialCard text="The morning emails are the best part. Quick recap of my portfolio before I even get out of bed." name="Dev P." role="index fund investor" delay={0.08} />
+            <TestimonialCard text="Ran the Monte Carlo and it completely changed how I think about my retirement timeline. Didn't realize how exposed I was." name="Tyler W." role="active trader" delay={0.16} />
+            <TestimonialCard text="Other apps just show you what happened. This one actually tells you what to do about it. That's the difference." name="Maya L." role="retail investor" delay={0.24} />
           </div>
           {/* Mobile: one-at-a-time carousel with arrows + dots */}
           <div className="testi-mobile" style={{ display: "none" }}>
