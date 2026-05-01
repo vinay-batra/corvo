@@ -10,6 +10,7 @@ import { SOUND_KEY } from "../../hooks/useSoundEffects";
 import ReferralsDashboard from "@/components/ReferralsDashboard";
 import { useToast } from "../../components/Toast";
 import LifeEvents, { type LifeEvent } from "../../components/LifeEvents";
+import FinancialGoals, { type FinancialGoal } from "../../components/FinancialGoals";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -155,6 +156,7 @@ export default function SettingsPage({
   const [savingProfileQ, setSavingProfileQ]       = useState(false);
   const [profileQSaved, setProfileQSaved]         = useState(false);
   const [lifeEvents, setLifeEvents]               = useState<LifeEvent[]>([]);
+  const [financialGoals, setFinancialGoals]       = useState<FinancialGoal[]>([]);
 
   // ── Delete account ─────────────────────────────────────────────────────────
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -167,11 +169,12 @@ export default function SettingsPage({
       if (!user) { window.location.href = "/auth"; return; }
       setUser(user);
 
-      const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url,life_events").eq("id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("display_name,avatar_url,life_events,financial_goals").eq("id", user.id).single();
       if (profile) {
         setDisplayName(profile.display_name || "");
         setAvatarUrl(profile.avatar_url || null);
         setLifeEvents(Array.isArray(profile.life_events) ? profile.life_events : []);
+        setFinancialGoals(Array.isArray(profile.financial_goals) ? profile.financial_goals : []);
       }
 
       // Only select the 5 columns that are guaranteed to exist in the schema.
@@ -689,6 +692,20 @@ export default function SettingsPage({
             mode="settings"
             userId={user.id}
             initialEvents={lifeEvents}
+          />
+        )}
+      </div>
+
+      <div style={{ marginTop: 28, paddingTop: 24, borderTop: "0.5px solid var(--border)" }}>
+        <FieldLabel>Financial Goals</FieldLabel>
+        <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14, lineHeight: 1.5 }}>
+          Corvo uses your goals to give you more relevant advice.
+        </p>
+        {user && (
+          <FinancialGoals
+            mode="settings"
+            userId={user.id}
+            initialGoals={financialGoals}
           />
         )}
       </div>
