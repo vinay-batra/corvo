@@ -760,7 +760,7 @@ export default function SettingsPage({
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
+    <div style={{ minHeight: "100vh", background: "transparent", color: "var(--text)", fontFamily: "var(--font-body)" }}>
       <style>{`
         @keyframes s-spin { to { transform: rotate(360deg); } }
         @keyframes s-fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
