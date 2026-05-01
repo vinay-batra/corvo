@@ -999,10 +999,10 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
-      style={{ padding: "32px", border: "1px solid var(--border)", borderRadius: 18, background: "var(--card-bg)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}
+      style={{ position: "relative", padding: "32px", border: "1px solid var(--border)", borderRadius: 18, background: "var(--card-bg)", backdropFilter: "blur(10px)", height: "100%", display: "flex", flexDirection: "column" }}
     >
-      <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
-      <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, flex: 1 }}>{text}</p>
+      <span style={{ fontFamily: "Georgia, serif", fontSize: 52, color: "var(--accent)", opacity: 0.25, lineHeight: 1, position: "absolute", top: 16, left: 22 }}>"</span>
+      <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, flex: 1, marginTop: 24 }}>{text}</p>
       <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}>{name}</p>
         <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{role}</p>
@@ -1013,11 +1013,11 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
 
 /* ─── Mobile Testimonial Carousel ─── */
 const MOBILE_TESTIMONIALS = [
-  { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
-  { text: "I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it.", name: "Sarah K.", role: "Self-directed IRA · Former analyst" },
-  { text: "The Monte Carlo simulator is genuinely impressive. I ran 8,500 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
-  { text: "The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like.", name: "James L.", role: "Dividend Investor · 8yr experience" },
-  { text: "I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 8,500 paths and realized I was way under-diversified.", name: "Priya M.", role: "Software Engineer · Long-term investor" },
+  { text: "finally an app that does everything in one place. i had robinhood for trades, google sheets for tracking, and youtube for research. corvo just replaced all three", name: "Jake M.", role: "Casual investor" },
+  { text: "the UI is actually so clean. every other portfolio app looks like it was built in 2009. this one looks like something apple would make", name: "Aisha T.", role: "Self-taught investor" },
+  { text: "i check this thing every week just to see what's new. it keeps getting better. whoever's building this actually gives a damn", name: "Chris R.", role: "Long-term investor" },
+  { text: "the morning emails are lowkey the best part. i get a quick recap of my portfolio before i even get out of bed. simple but so useful", name: "Dev P.", role: "Index fund investor" },
+  { text: "ran the monte carlo on my portfolio and it completely changed how i think about risk. didn't realize how concentrated i was until i saw it laid out", name: "Tyler W.", role: "Active trader" },
 ];
 function MobileTestimonialCarousel() {
   const [idx, setIdx] = useState(0);
@@ -1051,9 +1051,9 @@ function MobileTestimonialCarousel() {
   const card = MOBILE_TESTIMONIALS[idx];
   return (
     <div style={{ position: "relative", width: "100%", paddingLeft: 28, paddingRight: 28 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div style={{ padding: "32px", border: "1px solid var(--border)", borderRadius: 18, background: "var(--card-bg)", backdropFilter: "blur(10px)", minHeight: 220 }}>
-        <span style={{ fontFamily: "Georgia, serif", fontSize: 48, color: "rgba(184,134,11,0.25)", lineHeight: 1, display: "block", marginBottom: 12 }}>"</span>
-        <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24 }}>{card.text}</p>
+      <div style={{ position: "relative", padding: "32px", border: "1px solid var(--border)", borderRadius: 18, background: "var(--card-bg)", backdropFilter: "blur(10px)", minHeight: 220 }}>
+        <span style={{ fontFamily: "Georgia, serif", fontSize: 52, color: "var(--accent)", opacity: 0.25, lineHeight: 1, position: "absolute", top: 16, left: 22 }}>"</span>
+        <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.9, fontWeight: 300, marginBottom: 24, marginTop: 24 }}>{card.text}</p>
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}>{card.name}</p>
           <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{card.role}</p>
@@ -1427,7 +1427,7 @@ function EmailCaptureBottom() {
           Your edge starts here
         </h2>
         <p style={{ fontSize: 15, color: "var(--text2)", marginBottom: 36, lineHeight: 1.8, fontWeight: 300, maxWidth: 500, margin: "0 auto 36px" }}>
-          Weekly portfolio digest, daily market briefs, and personalized tips. Join investors already using Corvo to stay ahead.
+          Join 847+ investors getting daily market briefs, weekly digests, and AI insights. Free.
         </p>
         {status === "done" ? (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.25)", borderRadius: 12, padding: "18px 32px" }}>
@@ -2748,30 +2748,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── INTERACTIVE DEMO CTA ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 96px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", background: "var(--card-bg)", border: "1px solid rgba(var(--accent-rgb),0.1)", borderRadius: 24, overflow: "clip", position: "relative" }}>
-          <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(var(--accent-rgb),0.018) 1px, transparent 1px),linear-gradient(90deg, rgba(var(--accent-rgb),0.018) 1px, transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", top: "-30%", right: "-10%", width: "50%", height: "150%", background: "radial-gradient(ellipse, rgba(var(--accent-rgb),0.05) 0%, transparent 60%)", pointerEvents: "none" }} />
-          <div className="demo-grid demo-inner" style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center", padding: "64px 56px" }}>
-            <div>
-              <Reveal>
-                <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Live Demo</p>
-                <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(26px,3vw,40px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.15, marginBottom: 18 }}>See it in action.<br /><span style={{ whiteSpace: "nowrap" }}>No signup needed.</span></h2>
-                <p style={{ fontSize: 15, color: "var(--text2)", lineHeight: 1.8, fontWeight: 300, marginBottom: 36 }}>Explore a live portfolio with real market data. Ask the AI anything. Run Monte Carlo. All before you create an account.</p>
-                <Link href="/app?demo=true" className="demo-btn" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "16px 40px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "var(--accent)", color: "var(--bg)", textDecoration: "none", letterSpacing: 0.2 }}>
-                  Try a live demo →
-                </Link>
-                <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 16 }}>No credit card · No account required</p>
-              </Reveal>
-            </div>
-            <Reveal delay={0.15}>
-              <DemoPreview />
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
       {/* ─── TESTIMONIALS ─── */}
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 24px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -2780,12 +2756,12 @@ export default function Landing() {
           </Reveal>
           {/* Desktop: consistent 3-column grid */}
           <div className="testi-desktop" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-            <TestimonialCard text="Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification." name="Marcus T." role="Retail Investor · 12yr experience" delay={0} />
-            <TestimonialCard text="I switched from Yahoo Finance and Robinhood to Corvo and finally feel like I actually understand my portfolio. The risk analytics alone are worth it." name="Sarah K." role="Self-directed IRA · Former analyst" delay={0.08} />
-            <TestimonialCard text="The Monte Carlo simulator is genuinely impressive. I ran 8,500 paths against my retirement timeline and completely rethought my allocation." name="David R." role="Index Fund Investor · Engineer" delay={0.16} />
-            <TestimonialCard text="The dividend tracker and tax loss harvesting features saved me hours of spreadsheet work. This is what modern investing tools should look like." name="James L." role="Dividend Investor · 8yr experience" delay={0.08} />
-            <TestimonialCard text="I was skeptical but the Monte Carlo simulation genuinely changed my retirement planning. Ran 8,500 paths and realized I was way under-diversified." name="Priya M." role="Software Engineer · Long-term investor" delay={0.16} />
-            <TestimonialCard text="The benchmark comparison showed I was underperforming SPY by 4% annually. Two rebalances later, I'm beating it. The data makes everything obvious." name="Alex W." role="DIY Investor · Index fund advocate" delay={0.24} />
+            <TestimonialCard text="finally an app that does everything in one place. i had robinhood for trades, google sheets for tracking, and youtube for research. corvo just replaced all three" name="Jake M." role="Casual investor" delay={0} />
+            <TestimonialCard text="the UI is actually so clean. every other portfolio app looks like it was built in 2009. this one looks like something apple would make" name="Aisha T." role="Self-taught investor" delay={0.08} />
+            <TestimonialCard text="i check this thing every week just to see what's new. it keeps getting better. whoever's building this actually gives a damn" name="Chris R." role="Long-term investor" delay={0.16} />
+            <TestimonialCard text="the morning emails are lowkey the best part. i get a quick recap of my portfolio before i even get out of bed. simple but so useful" name="Dev P." role="Index fund investor" delay={0.08} />
+            <TestimonialCard text="ran the monte carlo on my portfolio and it completely changed how i think about risk. didn't realize how concentrated i was until i saw it laid out" name="Tyler W." role="Active trader" delay={0.16} />
+            <TestimonialCard text="most apps just show you charts. this one actually tells you what to do about them. that's the whole thing right there" name="Maya L." role="DIY investor" delay={0.24} />
           </div>
           {/* Mobile: one-at-a-time carousel with arrows + dots */}
           <div className="testi-mobile" style={{ display: "none" }}>
