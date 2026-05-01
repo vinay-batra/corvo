@@ -1570,26 +1570,124 @@ function generatePortfolioInsight(
   sectors: Record<string, number>
 ): string {
   const validSectors = Object.entries(sectors).filter(([s]) => s !== "Other" && s !== "");
-  if (validSectors.length === 1) {
-    const pct = Math.round(validSectors[0][1] * 100);
-    return `${pct}% ${validSectors[0][0]} concentration detected. Your holdings move together - one sector downturn hits everything.`;
-  }
-  const dominant = validSectors.find(([, w]) => w >= 0.9);
-  if (dominant) {
-    return `${Math.round(dominant[1] * 100)}% ${dominant[0]} concentration detected. Your holdings move together - one sector downturn hits everything.`;
+  if (validSectors.length === 1 || validSectors.some(([, w]) => w >= 0.9)) {
+    return "High sector concentration detected. One downturn hits everything.";
   }
   if (result.sharpe > 2) {
-    return `Strong risk-adjusted returns at ${result.sharpe.toFixed(2)}x. You're being well compensated for the risk you're taking.`;
+    return "Strong risk-adjusted returns. You're being well compensated for the risk.";
   }
-  const cagrPct = result.cagr * 100;
-  if (cagrPct > 40) {
-    return `Exceptional returns, but ${cagrPct.toFixed(1)}% CAGR is hard to sustain. The full Corvo health score would flag concentration risk.`;
+  if (result.cagr * 100 > 40) {
+    return "Exceptional returns. The full health score would flag concentration risk here.";
   }
   if (result.benchmarkReturn !== null && result.cagr < result.benchmarkReturn) {
-    const diff = (result.benchmarkReturn - result.cagr) * 100;
-    return `Underperforming the S&P 500 by ${diff.toFixed(1)}%. Corvo's advisor would tell you exactly why and what to change.`;
+    return "Underperforming the S&P 500. Corvo's advisor would tell you exactly why.";
   }
-  return "Solid portfolio. The full Corvo analysis goes 10x deeper - health score, Monte Carlo, insider activity, and AI advice.";
+  return "Solid portfolio. Sign in to see your full health score, Monte Carlo, and AI advice.";
+}
+
+/* ─── Ticker row with live search dropdown ─── */
+function TickerRow({
+  row, canRemove, onTicker, onWeight, onRemove,
+}: {
+  row: PortDemoRow; canRemove: boolean;
+  onTicker: (v: string) => void; onWeight: (v: string) => void; onRemove: () => void;
+}) {
+  const [sugg, setSugg] = useState<{ ticker: string; name: string }[]>([]);
+  const [showDrop, setShowDrop] = useState(false);
+  const debRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (debRef.current) clearTimeout(debRef.current);
+    const q = row.ticker.trim();
+    if (!q) { setSugg([]); setShowDrop(false); return; }
+    debRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/search-ticker?q=${encodeURIComponent(q)}`);
+        const d = await res.json();
+        const r = Array.isArray(d.results) ? d.results.slice(0, 5) : [];
+        setSugg(r);
+        if (r.length > 0) setShowDrop(true);
+      } catch { setSugg([]); }
+    }, 300);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [row.ticker]);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setShowDrop(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const iBase: React.CSSProperties = {
+    background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 7,
+    color: "var(--text)", fontSize: 12, outline: "none",
+    transition: "border-color 0.15s", fontFamily: "Space Mono,monospace",
+  };
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 28px", gap: 6, alignItems: "center" }}>
+        <input
+          type="text" value={row.ticker} maxLength={10} placeholder="AAPL"
+          onChange={e => { onTicker(e.target.value.toUpperCase()); setShowDrop(true); }}
+          onKeyDown={e => { if (e.key === "Escape") setShowDrop(false); }}
+          style={{ ...iBase, padding: "8px 10px", letterSpacing: 0.5 }}
+          onFocus={e => { e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)"; if (sugg.length > 0) setShowDrop(true); }}
+          onBlur={e => (e.target.style.borderColor = "var(--border)")}
+        />
+        <input
+          type="number" value={row.weight} placeholder="0" min={0} max={100}
+          onChange={e => onWeight(e.target.value)}
+          style={{ ...iBase, padding: "8px 8px", width: "100%" }}
+          onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)")}
+          onBlur={e => (e.target.style.borderColor = "var(--border)")}
+        />
+        <button
+          onClick={onRemove} disabled={!canRemove}
+          style={{
+            width: 28, height: 28, borderRadius: 7, background: "none",
+            border: "1px solid var(--border)", cursor: canRemove ? "pointer" : "default",
+            color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center",
+            opacity: canRemove ? 1 : 0.3, transition: "all 0.15s", flexShrink: 0,
+          }}
+          onMouseEnter={e => { if (canRemove) { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--red)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--red)"; } }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text3)"; }}
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+        </button>
+      </div>
+      {showDrop && sugg.length > 0 && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, minWidth: 220,
+          background: "var(--card-bg)", border: "1px solid var(--border2)",
+          borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.25)", zIndex: 200, overflow: "hidden",
+        }}>
+          {sugg.map((s, i) => (
+            <button
+              key={s.ticker}
+              onMouseDown={() => { onTicker(s.ticker); setSugg([]); setShowDrop(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, width: "100%",
+                padding: "7px 10px", background: "none", border: "none",
+                borderBottom: i < sugg.length - 1 ? "1px solid var(--border)" : "none",
+                cursor: "pointer", textAlign: "left" as const,
+              }}
+              onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)")}
+              onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = "none")}
+            >
+              <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, color: "var(--accent)", minWidth: 44 }}>{s.ticker}</span>
+              <span style={{ fontSize: 10, color: "var(--text3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{s.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function InteractiveDemoWidget() {
@@ -1600,6 +1698,7 @@ function InteractiveDemoWidget() {
   const [insight, setInsight] = useState("");
   const [typedInsight, setTypedInsight] = useState("");
   const [cardsKey, setCardsKey] = useState(0);
+  const [showMC, setShowMC] = useState(false);
 
   // Typewriter
   useEffect(() => {
@@ -1610,6 +1709,14 @@ function InteractiveDemoWidget() {
   }, [insight, typedInsight, step]);
 
   const validRows = rows.filter(r => r.ticker.trim() && parseFloat(r.weight) > 0);
+  const totalWeight = rows.reduce((s, r) => s + (parseFloat(r.weight) || 0), 0);
+  const weightColor = Math.abs(totalWeight - 100) < 0.5
+    ? "var(--green)" : totalWeight < 100 ? "var(--accent)" : "var(--red)";
+
+  const autoBalance = () => {
+    const each = (100 / rows.length).toFixed(1);
+    setRows(prev => prev.map(r => ({ ...r, weight: each })));
+  };
 
   const analyze = async () => {
     if (validRows.length === 0) return;
@@ -1643,6 +1750,7 @@ function InteractiveDemoWidget() {
       setInsight(generatePortfolioInsight(portResult, sectorData));
       setTypedInsight("");
       setCardsKey(k => k + 1);
+      setShowMC(false);
       setStep("results");
     } catch {
       const elapsed = Date.now() - loadStart;
@@ -1655,27 +1763,24 @@ function InteractiveDemoWidget() {
     setStep("input");
     setRows(DEFAULT_DEMO_ROWS.map(r => ({ ...r })));
     setResult(null); setSectors({});
-    setInsight(""); setTypedInsight("");
-  };
-
-  const updateRow = (i: number, field: "ticker" | "weight", value: string) => {
-    setRows(prev => prev.map((r, idx) =>
-      idx === i ? { ...r, [field]: field === "ticker" ? value.toUpperCase() : value } : r
-    ));
+    setInsight(""); setTypedInsight(""); setShowMC(false);
   };
 
   const fmtPct = (v: number, digits = 1) => {
     const pct = v * 100;
     return `${pct >= 0 ? "+" : ""}${pct.toFixed(digits)}%`;
   };
+  const fmtMoney = (v: number) =>
+    v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(2)}M` : `$${Math.round(v).toLocaleString()}`;
 
   const vsBenchmark = result?.benchmarkReturn != null ? result.cagr - result.benchmarkReturn : null;
 
-  const inputBase: React.CSSProperties = {
-    background: "var(--bg2)", border: "1px solid var(--border)",
-    borderRadius: 7, color: "var(--text)", fontSize: 12, outline: "none",
-    transition: "border-color 0.15s", fontFamily: "Space Mono,monospace",
-  };
+  // Simplified Monte Carlo projections
+  const MC_BASE = 10000, MC_YEARS = 10;
+  const mcLow  = result ? MC_BASE * Math.pow(1 + result.cagr * 0.3, MC_YEARS) : 0;
+  const mcMed  = result ? MC_BASE * Math.pow(1 + result.cagr * 0.6, MC_YEARS) : 0;
+  const mcHigh = result ? MC_BASE * Math.pow(1 + result.cagr,       MC_YEARS) : 0;
+  const mcMax  = Math.max(mcHigh, mcMed, mcLow, MC_BASE * 1.01);
 
   return (
     <motion.div
@@ -1683,10 +1788,8 @@ function InteractiveDemoWidget() {
       initial={false}
       style={{
         animation: "fadein 0.6s cubic-bezier(0.16,1,0.3,1) 0.4s both",
-        background: "var(--card-bg)",
-        border: "1px solid var(--border)",
-        borderRadius: 20,
-        padding: "22px",
+        background: "var(--card-bg)", border: "1px solid var(--border)",
+        borderRadius: 20, padding: "22px",
         boxShadow: "0 0 80px rgba(var(--accent-rgb),0.08), 0 32px 80px rgba(0,0,0,0.3)",
       }}
     >
@@ -1694,9 +1797,7 @@ function InteractiveDemoWidget() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
         <div>
           <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3 }}>Try a quick analysis</p>
-          <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 3, lineHeight: 1.5 }}>
-            Simplified preview. The real Corvo gives you 10x more.
-          </p>
+          <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 3 }}>Simplified demo. Sign in for the full experience.</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, marginTop: 2 }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", display: "inline-block", animation: "pdot 2s infinite" }} />
@@ -1709,6 +1810,30 @@ function InteractiveDemoWidget() {
       {/* ─── Step 1: Input ─── */}
       {step === "input" && (
         <div>
+          {/* Weight tracker header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Portfolio</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                onClick={autoBalance}
+                style={{
+                  background: "none", border: "1px solid var(--border)", borderRadius: 5,
+                  fontSize: 9, color: "var(--text3)", cursor: "pointer", padding: "2px 7px",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--accent)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text3)"; }}
+              >
+                Auto-balance
+              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: weightColor, transition: "color 0.2s" }}>
+                  {totalWeight.toFixed(0)}% of 100%
+                </span>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: weightColor, display: "inline-block", transition: "background 0.2s" }} />
+              </div>
+            </div>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 28px", gap: 6, marginBottom: 6 }}>
             <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Ticker</p>
             <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Weight %</p>
@@ -1716,44 +1841,14 @@ function InteractiveDemoWidget() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
             {rows.map((row, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 72px 28px", gap: 6, alignItems: "center" }}>
-                <input
-                  type="text"
-                  value={row.ticker}
-                  onChange={e => updateRow(i, "ticker", e.target.value)}
-                  placeholder="AAPL"
-                  maxLength={10}
-                  style={{ ...inputBase, padding: "8px 10px", letterSpacing: 0.5 }}
-                  onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)")}
-                  onBlur={e => (e.target.style.borderColor = "var(--border)")}
-                />
-                <input
-                  type="number"
-                  value={row.weight}
-                  onChange={e => updateRow(i, "weight", e.target.value)}
-                  placeholder="0"
-                  min={0} max={100}
-                  style={{ ...inputBase, padding: "8px 8px", width: "100%" }}
-                  onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)")}
-                  onBlur={e => (e.target.style.borderColor = "var(--border)")}
-                />
-                <button
-                  onClick={() => setRows(prev => prev.filter((_, idx) => idx !== i))}
-                  disabled={rows.length <= 1}
-                  style={{
-                    width: 28, height: 28, borderRadius: 7, background: "none",
-                    border: "1px solid var(--border)", cursor: rows.length <= 1 ? "default" : "pointer",
-                    color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center",
-                    opacity: rows.length <= 1 ? 0.3 : 1, transition: "all 0.15s", flexShrink: 0,
-                  }}
-                  onMouseEnter={e => { if (rows.length > 1) { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--red)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--red)"; } }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text3)"; }}
-                >
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              </div>
+              <TickerRow
+                key={i}
+                row={row}
+                canRemove={rows.length > 1}
+                onTicker={v => setRows(prev => prev.map((r, idx) => idx === i ? { ...r, ticker: v } : r))}
+                onWeight={v => setRows(prev => prev.map((r, idx) => idx === i ? { ...r, weight: v } : r))}
+                onRemove={() => setRows(prev => prev.filter((_, idx) => idx !== i))}
+              />
             ))}
           </div>
           {rows.length < 5 && (
@@ -1820,6 +1915,7 @@ function InteractiveDemoWidget() {
       {/* ─── Step 3: Results ─── */}
       {step === "results" && result && (
         <div>
+          {/* 4 metric cards */}
           <div key={cardsKey} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
             {([
               { label: "Portfolio Return", value: fmtPct(result.cagr), color: result.cagr >= 0 ? "var(--green)" : "var(--red)", sub: "1Y CAGR" },
@@ -1845,7 +1941,7 @@ function InteractiveDemoWidget() {
             ))}
           </div>
 
-          {/* AI insight typewriter */}
+          {/* AI insight: amber dot + italic text */}
           <motion.div
             // initial={false} is required — do not remove
             initial={false}
@@ -1854,13 +1950,9 @@ function InteractiveDemoWidget() {
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: 0.32 }}
           >
-            <div style={{
-              background: "rgba(var(--accent-rgb),0.05)", border: "1px solid rgba(var(--accent-rgb),0.12)",
-              borderRadius: 10, padding: "10px 12px", marginBottom: 10,
-              display: "flex", alignItems: "flex-start", gap: 8,
-            }}>
-              <img src="/corvo-logo.svg" width={12} height={10} alt="" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
-              <p style={{ fontSize: 11, color: "var(--accent)", lineHeight: 1.6 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 7, marginBottom: 12 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", flexShrink: 0, marginTop: 4, display: "inline-block" }} />
+              <p style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.6, fontStyle: "italic" }}>
                 {typedInsight}
                 {typedInsight.length < insight.length && (
                   <span style={{ display: "inline-block", width: 1.5, height: 11, background: "var(--accent)", marginLeft: 1, verticalAlign: "middle", animation: "pdot 0.7s step-end infinite" }} />
@@ -1869,7 +1961,7 @@ function InteractiveDemoWidget() {
             </div>
           </motion.div>
 
-          {/* Feature banner */}
+          {/* Mini Monte Carlo collapsible */}
           <motion.div
             // initial={false} is required — do not remove
             initial={false}
@@ -1878,14 +1970,53 @@ function InteractiveDemoWidget() {
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: 0.4 }}
           >
-            <div style={{
-              background: "rgba(var(--accent-rgb),0.04)", border: "1px solid rgba(var(--accent-rgb),0.1)",
-              borderRadius: 8, padding: "9px 12px", marginBottom: 12,
-            }}>
-              <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.6 }}>
-                <span style={{ color: "var(--text2)", fontWeight: 500 }}>The real Corvo includes:</span>{" "}
-                Health Score, Monte Carlo simulation, tax loss harvesting, earnings alerts, insider activity tracking, AI chat, and more. All free.
-              </p>
+            <div style={{ border: "1px solid var(--border)", borderRadius: 10, marginBottom: 12, overflow: "hidden" }}>
+              <button
+                onClick={() => setShowMC(p => !p)}
+                style={{
+                  width: "100%", padding: "9px 12px", background: "none", border: "none",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  cursor: "pointer", transition: "background 0.15s",
+                }}
+                onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)")}
+                onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = "none")}
+              >
+                <span style={{ fontSize: 11, fontWeight: 500, color: "var(--text2)" }}>See your future</span>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transition: "transform 0.2s", transform: showMC ? "rotate(180deg)" : "rotate(0deg)", color: "var(--text3)", flexShrink: 0 }}>
+                  <path d="M2 4.5L7 9.5L12 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              {showMC && (
+                <div style={{ padding: "0 12px 12px", borderTop: "1px solid var(--border)" }}>
+                  <p style={{ fontSize: 10, color: "var(--text3)", paddingTop: 10, marginBottom: 12 }}>
+                    In 10 years, $10,000 could grow to:
+                  </p>
+                  {([
+                    { label: "Low",    value: mcLow,  color: "var(--text3)",  tag: "conservative" },
+                    { label: "Median", value: mcMed,  color: "var(--accent)", tag: "base case"    },
+                    { label: "High",   value: mcHigh, color: "var(--green)",  tag: "optimistic"   },
+                  ]).map(({ label, value, color, tag }) => (
+                    <div key={label} style={{ marginBottom: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>{label}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color }}>{fmtMoney(value)}</span>
+                          <span style={{ fontSize: 8, color: "var(--text3)" }}>{tag}</span>
+                        </div>
+                      </div>
+                      <div style={{ height: 4, background: "var(--border)", borderRadius: 2 }}>
+                        <div style={{
+                          width: `${Math.max(2, (value / mcMax) * 100).toFixed(1)}%`,
+                          height: "100%", background: color, borderRadius: 2, transition: "width 0.6s ease",
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                  <p style={{ fontSize: 9, color: "var(--text3)", marginTop: 6, lineHeight: 1.5 }}>
+                    Based on simplified projection. Full Monte Carlo runs 8,500 scenarios.
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -1921,7 +2052,7 @@ function InteractiveDemoWidget() {
               onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)")}
               onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)")}
             >
-              Get the full analysis free →
+              Get the full Corvo experience free →
             </Link>
           </motion.div>
         </div>
@@ -2594,17 +2725,6 @@ export default function Landing() {
 
       {/* TICKER */}
       <TickerTape />
-
-      {/* ─── STATS BAR ─── */}
-      <section style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ background: "var(--bg)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(var(--accent-rgb),0.08)", borderBottom: "1px solid rgba(var(--accent-rgb),0.08)" }}>
-          <div className="stats-grid" style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
-            <StatItem target={liveUserCount ?? 847} suffix="+" label="Active Users" delay={0} borderRight />
-            <StatItem target={5500} suffix="+" label="Portfolios Analyzed" delay={0.1} borderRight />
-            <StatItem target={17000} suffix="+" label="AI Insights Generated" delay={0.2} />
-          </div>
-        </div>
-      </section>
 
       {/* FEATURED IN */}
       <FeaturedInBar />
