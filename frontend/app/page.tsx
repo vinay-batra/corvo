@@ -1404,52 +1404,121 @@ function EmailPopupModal() {
 }
 
 /* ─── Bottom Email Capture (prominent) ─── */
-function EmailCaptureBottom() {
+function FinalCTASection() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+
   const submit = async () => {
     if (!email.trim() || status !== "idle") return;
     setStatus("loading");
     try {
-      const res = await fetch(`${API_URL}/notify-me`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.trim() }) });
+      const res = await fetch(`${API_URL}/notify-me`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
       if (res.ok) { setStatus("done"); } else { setStatus("error"); }
     } catch { setStatus("error"); }
   };
+
+  const HEADLINE = ["Your", "portfolio", "deserves", "better."];
+
   return (
-    <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "36px 56px" }}>
-      <FadeUp>
-      <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center", padding: "56px 48px" }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <img src="/corvo-logo.svg" width={36} height={36} alt="Corvo" style={{ opacity: 0.7 }} />
+    <section style={{
+      position: "relative", zIndex: 1,
+      background: "color-mix(in srgb, var(--accent) 6%, transparent)",
+      padding: "80px 56px",
+    }}>
+      <motion.div
+        // initial={false} is required — do not remove
+        initial={false}
+        style={{ opacity: 0 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.6, ease: ANIM_EASE }}
+      >
+        <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+            <img src="/corvo-logo.svg" width={32} height={32} alt="Corvo" style={{ opacity: 0.8 }} />
+          </div>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 20 }}>
+            Get Started
+          </p>
+          <h2 style={{
+            fontFamily: "Space Mono,monospace",
+            fontSize: "clamp(32px,4.5vw,48px)",
+            fontWeight: 700, lineHeight: 1.1, letterSpacing: -2, marginBottom: 20,
+          }}>
+            {HEADLINE.map((w, i) => (
+              <motion.span
+                // initial={false} is required — do not remove
+                initial={false}
+                key={i}
+                style={{ display: "inline-block", marginRight: "0.25em", color: "var(--text)", opacity: 0 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, ease: ANIM_EASE, delay: i * 0.06 }}
+              >
+                {w}
+              </motion.span>
+            ))}
+          </h2>
+          <p style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.8, fontWeight: 300, maxWidth: 540, margin: "0 auto 44px" }}>
+            Free forever. No credit card. No spreadsheets. Just your portfolio, with a point of view.
+          </p>
+          <div className="final-cta-actions" style={{ display: "flex", gap: 16, justifyContent: "center", alignItems: "center", flexWrap: "wrap", marginBottom: 20 }}>
+            <Link
+              href="/auth?mode=signup"
+              className="cta cta-shimmer"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "16px 40px", background: "var(--accent)", borderRadius: 12,
+                fontSize: 15, fontWeight: 700, color: "var(--bg)",
+                textDecoration: "none", whiteSpace: "nowrap" as const,
+              }}
+            >
+              Open the dashboard →
+            </Link>
+            {status === "done" ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 20px", background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.25)", borderRadius: 12 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span style={{ fontSize: 13, color: "var(--green)", fontWeight: 500 }}>{"You're on the list!"}</span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)", flexShrink: 0 }}>
+                <input
+                  type="email" value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && submit()}
+                  placeholder="your@email.com"
+                  style={{
+                    padding: "13px 16px", background: "var(--bg3)", border: "none",
+                    color: "var(--text)", fontSize: 13, outline: "none", width: 190,
+                    transition: "background 0.2s",
+                  }}
+                />
+                <button
+                  onClick={submit}
+                  disabled={status === "loading"}
+                  style={{
+                    padding: "13px 18px", background: "var(--bg2)", border: "none",
+                    borderLeft: "1px solid var(--border)", color: "var(--text2)",
+                    fontSize: 13, fontWeight: 600,
+                    cursor: status === "loading" ? "wait" : "pointer",
+                    whiteSpace: "nowrap" as const, transition: "all 0.2s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
+                >
+                  {status === "loading" ? "..." : "Get the briefing"}
+                </button>
+              </div>
+            )}
+          </div>
+          {status === "error" && <p style={{ fontSize: 12, color: "var(--red)", marginBottom: 10 }}>Something went wrong. Try again.</p>}
+          <p style={{ fontSize: 11, color: "var(--text3)" }}>Join 847+ investors. Unsubscribe anytime.</p>
         </div>
-        <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 16 }}>Stay Ahead</p>
-        <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,40px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 12, lineHeight: 1.2 }}>
-          Your edge starts here
-        </h2>
-        <p style={{ fontSize: 15, color: "var(--text2)", marginBottom: 36, lineHeight: 1.8, fontWeight: 300, maxWidth: 500, margin: "0 auto 36px" }}>
-          Join 847+ investors getting daily market briefs, weekly digests, and AI insights. Free.
-        </p>
-        {status === "done" ? (
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.25)", borderRadius: 12, padding: "18px 32px" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            <span style={{ fontSize: 15, color: "var(--green)", fontWeight: 500 }}>{"You're on the list!"}</span>
-          </div>
-        ) : (
-          <div className="email-cap-row" style={{ display: "flex", gap: 10, maxWidth: 480, margin: "0 auto" }}>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} placeholder="your@email.com"
-              style={{ flex: 1, minWidth: 0, padding: "15px 20px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
-              onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.4)")}
-              onBlur={e => (e.target.style.borderColor = "var(--border)")} />
-            <button onClick={submit} disabled={status === "loading"} className="cta-shimmer"
-              style={{ padding: "15px 28px", background: "var(--accent)", border: "none", borderRadius: 12, color: "var(--bg)", fontSize: 14, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, minHeight: 44 }}>
-              {status === "loading" ? "..." : "Subscribe Free"}
-            </button>
-          </div>
-        )}
-        {status === "error" && <p style={{ fontSize: 12, color: "var(--red)", marginTop: 12 }}>Something went wrong. Try again.</p>}
-        <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 18 }}>No spam. Unsubscribe at any time.</p>
-      </div>
-      </FadeUp>
+      </motion.div>
     </section>
   );
 }
@@ -2448,6 +2517,8 @@ export default function Landing() {
           .vs-panels>*:nth-child(3){border-radius:0 0 16px 16px!important;border-left:1px solid rgba(var(--accent-rgb),0.2)!important}
           .calc-grid{grid-template-columns:1fr!important;gap:24px!important}
           .email-cap-row{flex-direction:column!important}
+          .final-cta-actions{flex-direction:column!important;align-items:stretch!important}
+          .final-cta-actions>*{width:100%!important;justify-content:center!important}
           .demo-inner{padding:32px 20px!important;gap:32px!important}
           .featured-bar{padding:16px 20px!important}
           .social-proof{padding:16px 20px!important}
@@ -2773,7 +2844,7 @@ export default function Landing() {
       {/* ─── SECURITY / TRUST removed ─── */}
 
       {/* EMAIL CAPTURE BOTTOM (prominent, above footer) */}
-      <EmailCaptureBottom />
+      <FinalCTASection />
 
       <PublicFooter />
     </div>
