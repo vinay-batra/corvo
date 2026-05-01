@@ -6747,7 +6747,7 @@ async def send_market_close_summary_emails(target_user_id=None) -> dict:
                 f"Worst performer: {worst_ticker} ({worst_pct:+.2f}%). "
                 f"{market_note} "
                 "End with one specific forward-looking sentence about what to watch tomorrow. "
-                "Be direct and specific. No em dashes, no asterisks, no markdown."
+                "Be direct and specific. No em dashes, no asterisks, no markdown. No sign-off or closing."
             )
             summary = await loop.run_in_executor(None, _haiku_teaser, prompt, 150)
             if not summary:
