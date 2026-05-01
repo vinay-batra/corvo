@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { fetchEarningsTranscript } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -26,6 +27,29 @@ type Row = CalEntry & {
   weight: number;
   preview: PreviewExtra | null;
 };
+
+type TranscriptSummary = {
+  key_points: string[];
+  forward_guidance: string;
+  risks: string;
+  tone: { label: string; reason: string };
+};
+
+type TranscriptData = {
+  has_transcript: boolean;
+  has_ai_summary: boolean;
+  ai_pending: boolean;
+  summary: TranscriptSummary | null;
+  transcript_excerpt: string | null;
+  filing_date: string | null;
+  error: string | null;
+  message: string | null;
+};
+
+type TranscriptState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "done"; data: TranscriptData };
 
 function daysUntil(dateStr: string): number {
   const today = new Date();
@@ -64,16 +88,180 @@ function StatPill({ label, value }: { label: string; value: string }) {
   );
 }
 
+function TranscriptSection({ state }: { state: TranscriptState }) {
+  if (state.status === "idle") return null;
+
+  if (state.status === "loading") {
+    return (
+      <div style={{
+        borderTop: "0.5px solid var(--border)",
+        padding: "14px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}>
+        <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "var(--text3)", fontWeight: 600 }}>
+          Earnings Transcript
+        </div>
+        {[1, 2, 3].map(i => (
+          <div key={i} style={{
+            height: 12,
+            borderRadius: 4,
+            background: "var(--bg3)",
+            width: i === 3 ? "60%" : "100%",
+            animation: "ec-pulse 1.5s ease-in-out infinite",
+          }} />
+        ))}
+      </div>
+    );
+  }
+
+  const { data } = state;
+
+  if (!data.has_transcript) {
+    return (
+      <div style={{
+        borderTop: "0.5px solid var(--border)",
+        padding: "14px 16px",
+      }}>
+        <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "var(--text3)", fontWeight: 600, marginBottom: 6 }}>
+          Earnings Transcript
+        </div>
+        <p style={{ fontSize: 11, color: "var(--text3)", margin: 0, lineHeight: 1.6 }}>
+          {data.message || "No transcript available for this ticker. SEC filings may not include call transcripts for all companies."}
+        </p>
+      </div>
+    );
+  }
+
+  if (data.has_ai_summary && data.summary) {
+    const { summary } = data;
+    const toneColor =
+      summary.tone.label === "confident" ? "var(--green)"
+      : summary.tone.label === "cautious" ? "var(--red)"
+      : "var(--accent)";
+
+    return (
+      <div style={{
+        borderTop: "0.5px solid var(--border)",
+        padding: "14px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 14,
+      }}>
+        <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "var(--text3)", fontWeight: 600 }}>
+          Earnings Transcript Summary
+        </div>
+
+        {/* Key Points */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "var(--accent)", fontWeight: 600 }}>
+            Key Points
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
+            {summary.key_points.map((pt, i) => (
+              <li key={i} style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.55 }}>
+                {pt}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Forward Guidance */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "var(--accent)", fontWeight: 600 }}>
+            Forward Guidance
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.55, margin: 0 }}>
+            {summary.forward_guidance}
+          </p>
+        </div>
+
+        {/* Risks */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "var(--accent)", fontWeight: 600 }}>
+            Risks Mentioned
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.55, margin: 0 }}>
+            {summary.risks}
+          </p>
+        </div>
+
+        {/* Tone */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "var(--accent)", fontWeight: 600 }}>
+            Management Tone
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
+            <span style={{
+              fontFamily: "Space Mono, monospace",
+              fontSize: 10, fontWeight: 700,
+              padding: "2px 8px", borderRadius: 8,
+              background: "rgba(0,0,0,0.08)",
+              color: toneColor,
+              textTransform: "capitalize" as const,
+            }}>
+              {summary.tone.label}
+            </span>
+            <span style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.55 }}>
+              {summary.tone.reason}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Transcript found but no AI summary yet
+  return (
+    <div style={{
+      borderTop: "0.5px solid var(--border)",
+      padding: "14px 16px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 10,
+    }}>
+      <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "var(--text3)", fontWeight: 600 }}>
+        Earnings Transcript
+      </div>
+      {data.transcript_excerpt && (
+        <p style={{
+          fontSize: 11.5,
+          color: "var(--text2)",
+          lineHeight: 1.6,
+          margin: 0,
+          maxHeight: 120,
+          overflow: "hidden",
+          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+        }}>
+          {data.transcript_excerpt.slice(0, 600)}
+        </p>
+      )}
+      <p style={{ fontSize: 11, color: "var(--text3)", margin: 0, fontStyle: "italic" }}>
+        {data.ai_pending
+          ? "Full AI analysis available Monday when credits are restored."
+          : "AI summary not available for this filing."}
+      </p>
+    </div>
+  );
+}
+
 function EarningsRow({
   row,
   previewLoading,
   portfolioValue,
+  transcriptState,
+  onTranscriptLoad,
 }: {
   row: Row;
   previewLoading: boolean;
   portfolioValue: number;
+  transcriptState: TranscriptState;
+  onTranscriptLoad: (ticker: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const triggeredRef = useRef(false);
   const { days, preview } = row;
 
   const borderColor =
@@ -97,6 +285,19 @@ function EarningsRow({
   const hasExpanded = row.eps_estimate != null || row.revenue_estimate != null ||
     row.weight > 0 || preview != null || days <= 14;
 
+  const transcriptFound =
+    transcriptState.status === "done" && transcriptState.data.has_transcript;
+
+  const handleExpand = () => {
+    if (!hasExpanded) return;
+    const next = !expanded;
+    setExpanded(next);
+    if (next && !triggeredRef.current) {
+      triggeredRef.current = true;
+      onTranscriptLoad(row.ticker);
+    }
+  };
+
   return (
     <div
       style={{
@@ -111,8 +312,8 @@ function EarningsRow({
       <div
         role="button"
         tabIndex={0}
-        onClick={() => hasExpanded && setExpanded(e => !e)}
-        onKeyDown={e => { if ((e.key === "Enter" || e.key === " ") && hasExpanded) setExpanded(v => !v); }}
+        onClick={handleExpand}
+        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleExpand(); }}
         style={{
           display: "flex",
           alignItems: "flex-start",
@@ -149,6 +350,17 @@ function EarningsRow({
                 +/-{preview.implied_move_pct.toFixed(1)}%
               </span>
             )}
+            {transcriptFound && (
+              <span style={{
+                fontSize: 9, fontWeight: 700,
+                padding: "1px 6px", borderRadius: 8,
+                background: "rgba(120,120,200,0.10)", border: "0.5px solid rgba(120,120,200,0.25)",
+                color: "var(--text2)", whiteSpace: "nowrap" as const,
+                letterSpacing: 0.3,
+              }}>
+                Transcript
+              </span>
+            )}
           </div>
           <span style={{ fontSize: 11.5, color: "var(--text2)", marginTop: 2, display: "block" }}>
             {row.company}
@@ -178,7 +390,7 @@ function EarningsRow({
       <AnimatePresence initial={false}>
         {expanded && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} required -- do not remove
             initial={false}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -241,7 +453,7 @@ function EarningsRow({
                 </div>
               )}
 
-              {/* Earnings today — AI not yet available */}
+              {/* Earnings today -- AI not yet available */}
               {!previewLoading && days === 0 && !preview?.ai_commentary && (
                 <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
                   Earnings are today. Check back after market close for AI analysis.
@@ -261,6 +473,9 @@ function EarningsRow({
                 </p>
               )}
             </div>
+
+            {/* Transcript section */}
+            <TranscriptSection state={transcriptState} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -283,6 +498,38 @@ export default function EarningsCalendar({
   const [rows, setRows] = useState<Row[]>([]);
   const [previewLoading, setPreviewLoading] = useState(true);
   const [calLoading, setCalLoading] = useState(true);
+  const [transcriptMap, setTranscriptMap] = useState<Record<string, TranscriptState>>({});
+  const fetchingRef = useRef<Set<string>>(new Set());
+
+  const loadTranscript = useCallback((ticker: string) => {
+    if (fetchingRef.current.has(ticker)) return;
+    fetchingRef.current.add(ticker);
+
+    setTranscriptMap(prev => ({ ...prev, [ticker]: { status: "loading" } }));
+
+    fetchEarningsTranscript(ticker)
+      .then((data: TranscriptData) => {
+        setTranscriptMap(prev => ({ ...prev, [ticker]: { status: "done", data } }));
+      })
+      .catch(() => {
+        setTranscriptMap(prev => ({
+          ...prev,
+          [ticker]: {
+            status: "done",
+            data: {
+              has_transcript: false,
+              has_ai_summary: false,
+              ai_pending: false,
+              summary: null,
+              transcript_excerpt: null,
+              filing_date: null,
+              error: "fetch_error",
+              message: "Could not load transcript. Please try again.",
+            },
+          },
+        }));
+      });
+  }, []);
 
   const load = useCallback(() => {
     if (!assets.length) { setCalLoading(false); setPreviewLoading(false); return; }
@@ -294,7 +541,7 @@ export default function EarningsCalendar({
       assets.map(a => [a.ticker, a.weight / total])
     );
 
-    // Fetch calendar (fast) first — populates base rows
+    // Fetch calendar (fast) first -- populates base rows
     fetch(`${API_URL}/earnings-calendar?tickers=${tickers}`)
       .then(r => r.json())
       .then((cal: CalEntry[]) => {
@@ -309,7 +556,7 @@ export default function EarningsCalendar({
       .catch(() => {})
       .finally(() => setCalLoading(false));
 
-    // Fetch preview (slower, has AI) — enriches rows when ready
+    // Fetch preview (slower, has AI) -- enriches rows when ready
     fetch(`${API_URL}/earnings-preview?tickers=${tickers}&weights=${weights}`)
       .then(r => r.json())
       .then((preview: (CalEntry & PreviewExtra)[]) => {
@@ -361,12 +608,15 @@ export default function EarningsCalendar({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <style>{`@keyframes ec-pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }`}</style>
       {rows.map(row => (
         <EarningsRow
           key={row.ticker}
           row={row}
           previewLoading={previewLoading}
           portfolioValue={portfolioValue}
+          transcriptState={transcriptMap[row.ticker] ?? { status: "idle" }}
+          onTranscriptLoad={loadTranscript}
         />
       ))}
     </div>
