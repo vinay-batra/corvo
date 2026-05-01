@@ -1426,7 +1426,7 @@ function FinalCTASection() {
   return (
     <section style={{
       position: "relative", zIndex: 1,
-      background: "color-mix(in srgb, var(--accent) 6%, transparent)",
+      background: "var(--bg)",
       padding: "80px 56px",
     }}>
       <motion.div
@@ -1464,7 +1464,7 @@ function FinalCTASection() {
             ))}
           </h2>
           <p style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.8, fontWeight: 300, maxWidth: 540, margin: "0 auto 44px" }}>
-            Free forever. No credit card. No spreadsheets. Just your portfolio, with a point of view.
+            Free. No spreadsheets. Just your portfolio, with a point of view.
           </p>
           <div className="final-cta-actions" style={{ display: "flex", gap: 16, justifyContent: "center", alignItems: "center", flexWrap: "wrap", marginBottom: 20 }}>
             <Link
@@ -1510,7 +1510,7 @@ function FinalCTASection() {
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
                 >
-                  {status === "loading" ? "..." : "Get the briefing"}
+                  {status === "loading" ? "..." : "Get your briefing"}
                 </button>
               </div>
             )}
