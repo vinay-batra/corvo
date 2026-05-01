@@ -1632,10 +1632,10 @@ function TickerRow({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 28px", gap: 6, alignItems: "center" }}>
         <input
           type="text" value={row.ticker} maxLength={10} placeholder="AAPL"
-          onChange={e => { onTicker(e.target.value.toUpperCase()); setShowDrop(true); }}
+          onChange={e => { const v = e.target.value.toUpperCase(); onTicker(v); if (v.trim().length > 0) setShowDrop(true); else setShowDrop(false); }}
           onKeyDown={e => { if (e.key === "Escape") setShowDrop(false); }}
           style={{ ...iBase, padding: "8px 10px", letterSpacing: 0.5 }}
-          onFocus={e => { e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)"; if (sugg.length > 0) setShowDrop(true); }}
+          onFocus={e => { e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)"; }}
           onBlur={e => (e.target.style.borderColor = "var(--border)")}
         />
         <input
@@ -1710,8 +1710,6 @@ function InteractiveDemoWidget() {
 
   const validRows = rows.filter(r => r.ticker.trim() && parseFloat(r.weight) > 0);
   const totalWeight = rows.reduce((s, r) => s + (parseFloat(r.weight) || 0), 0);
-  const weightColor = Math.abs(totalWeight - 100) < 0.5
-    ? "var(--green)" : totalWeight < 100 ? "var(--accent)" : "var(--red)";
 
   const autoBalance = () => {
     const each = (100 / rows.length).toFixed(1);
@@ -1826,12 +1824,13 @@ function InteractiveDemoWidget() {
               >
                 Auto-balance
               </button>
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: weightColor, transition: "color 0.2s" }}>
-                  {totalWeight.toFixed(0)}% of 100%
-                </span>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: weightColor, display: "inline-block", transition: "background 0.2s" }} />
-              </div>
+              <span style={{
+                fontFamily: "Space Mono,monospace", fontSize: 11, color: "var(--text2)",
+                border: "1px solid var(--border)", borderRadius: 5,
+                padding: "2px 7px", background: "transparent",
+              }}>
+                {totalWeight.toFixed(0)} of 100%
+              </span>
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 28px", gap: 6, marginBottom: 6 }}>
