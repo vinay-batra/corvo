@@ -1543,6 +1543,407 @@ function SparklineChart({ prices, positive }: { prices: number[]; positive: bool
   );
 }
 
+/* ─── Interactive Demo Widget (Hero) ─── */
+type DemoStep = "input" | "loading" | "results";
+
+interface DemoStockData {
+  ticker: string;
+  name: string;
+  price: number;
+  changePct: number;
+  week52Low: number;
+  week52High: number;
+  peRatio: number | null;
+  marketCap: number | null;
+  analystRating: string;
+  analystBuy: number;
+  analystHold: number;
+  analystSell: number;
+}
+
+function generateDemoInsight(d: DemoStockData): string {
+  const range52 = d.week52High - d.week52Low;
+  if (range52 > 0) {
+    const pos = (d.price - d.week52Low) / range52;
+    if (pos >= 0.8) return "Trading near 52-week highs. Momentum is strong but upside may be limited near term.";
+    if (pos <= 0.2) return "Trading near 52-week lows. Could be an entry opportunity or a falling knife - check the fundamentals.";
+  }
+  if (d.peRatio && d.peRatio > 30) return `Premium valuation at ${d.peRatio.toFixed(1)}x earnings. Priced for high growth - watch for any guidance cuts.`;
+  if (d.analystRating === "Strong Buy" && d.analystBuy >= 20) return `Wall Street is broadly bullish with ${d.analystBuy} analysts rating it a buy.`;
+  return "Solid fundamentals. See the full analysis inside Corvo.";
+}
+
+function InteractiveDemoWidget() {
+  const [demoStep, setDemoStep] = useState<DemoStep>("input");
+  const [demoQuery, setDemoQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<{ ticker: string; name: string }[]>([]);
+  const [showDrop, setShowDrop] = useState(false);
+  const [demoData, setDemoData] = useState<DemoStockData | null>(null);
+  const [insight, setInsight] = useState("");
+  const [typedInsight, setTypedInsight] = useState("");
+  const [cardsKey, setCardsKey] = useState(0);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const debRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Typewriter
+  useEffect(() => {
+    if (!insight || demoStep !== "results") { setTypedInsight(""); return; }
+    if (typedInsight.length >= insight.length) return;
+    const t = setTimeout(() => setTypedInsight(insight.slice(0, typedInsight.length + 1)), 30);
+    return () => clearTimeout(t);
+  }, [insight, typedInsight, demoStep]);
+
+  // Debounced search suggestions
+  useEffect(() => {
+    if (debRef.current) clearTimeout(debRef.current);
+    if (!demoQuery || demoQuery.length < 1) { setSuggestions([]); setShowDrop(false); return; }
+    debRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/search-ticker?q=${encodeURIComponent(demoQuery)}`);
+        const d = await res.json();
+        if (Array.isArray(d.results) && d.results.length > 0) {
+          setSuggestions(d.results.slice(0, 5));
+          setShowDrop(true);
+        } else {
+          setSuggestions([]); setShowDrop(false);
+        }
+      } catch { setSuggestions([]); setShowDrop(false); }
+    }, 250);
+  }, [demoQuery]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setShowDrop(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const loadTicker = async (ticker: string, name?: string) => {
+    setShowDrop(false);
+    setDemoQuery(ticker.toUpperCase());
+    setDemoStep("loading");
+    const loadStart = Date.now();
+    try {
+      const res = await fetch(`${API_URL}/stock/${ticker.toUpperCase()}`);
+      if (!res.ok) throw new Error("not ok");
+      const d = await res.json();
+      const elapsed = Date.now() - loadStart;
+      if (elapsed < 1500) await new Promise(r => setTimeout(r, 1500 - elapsed));
+      const sd: DemoStockData = {
+        ticker: ticker.toUpperCase(),
+        name: d.name || name || ticker,
+        price: d.current_price ?? 0,
+        changePct: d.change_pct ?? 0,
+        week52Low: d.week52_low ?? 0,
+        week52High: d.week52_high ?? 0,
+        peRatio: d.pe_ratio > 0 ? d.pe_ratio : null,
+        marketCap: d.market_cap > 0 ? d.market_cap : null,
+        analystRating: d.analyst_rating || "N/A",
+        analystBuy: d.analyst_buy ?? 0,
+        analystHold: d.analyst_hold ?? 0,
+        analystSell: d.analyst_sell ?? 0,
+      };
+      setDemoData(sd);
+      setInsight(generateDemoInsight(sd));
+      setTypedInsight("");
+      setCardsKey(k => k + 1);
+      setDemoStep("results");
+    } catch {
+      const elapsed = Date.now() - loadStart;
+      if (elapsed < 1500) await new Promise(r => setTimeout(r, 1500 - elapsed));
+      setDemoStep("input");
+    }
+  };
+
+  const reset = () => {
+    setDemoStep("input"); setDemoQuery(""); setDemoData(null);
+    setInsight(""); setTypedInsight(""); setSuggestions([]);
+  };
+
+  const fmtPrice = (p: number) =>
+    p >= 1000 ? `$${p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${p.toFixed(2)}`;
+  const fmtMcap = (mc: number) =>
+    mc >= 1e12 ? `$${(mc / 1e12).toFixed(1)}T` : mc >= 1e9 ? `$${(mc / 1e9).toFixed(1)}B` : `$${(mc / 1e6).toFixed(0)}M`;
+  const ratingColor = (r: string) =>
+    r === "Strong Buy" || r === "Buy" ? "var(--green)" : r === "Hold" ? "var(--accent)" : "var(--red)";
+
+  return (
+    <motion.div
+      // initial={false} is required — do not remove
+      initial={false}
+      style={{
+        animation: "fadein 0.6s cubic-bezier(0.16,1,0.3,1) 0.4s both",
+        background: "var(--card-bg)",
+        border: "1px solid var(--border)",
+        borderRadius: 20,
+        padding: "24px",
+        boxShadow: "0 0 80px rgba(var(--accent-rgb),0.08), 0 32px 80px rgba(0,0,0,0.3)",
+      }}
+    >
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 18 }}>Try it now</p>
+
+      {/* Step 1: Input */}
+      {demoStep === "input" && (
+        <div ref={dropRef} style={{ position: "relative" }}>
+          <div style={{ position: "relative" }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", pointerEvents: "none" }}>
+              <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.4"/>
+              <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+            <input
+              type="text"
+              value={demoQuery}
+              onChange={e => setDemoQuery(e.target.value.toUpperCase())}
+              onKeyDown={e => { if (e.key === "Enter" && demoQuery.trim()) loadTicker(demoQuery.trim()); }}
+              placeholder="Enter a ticker (e.g. AAPL)"
+              style={{
+                width: "100%", padding: "11px 12px 11px 36px",
+                background: "var(--bg2)", border: "1px solid var(--border)",
+                borderRadius: 10, color: "var(--text)", fontSize: 13,
+                outline: "none", fontFamily: "Space Mono,monospace",
+                transition: "border-color 0.2s", letterSpacing: 0.5,
+              }}
+              onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)")}
+              onBlur={e => (e.target.style.borderColor = "var(--border)")}
+            />
+          </div>
+          {showDrop && suggestions.length > 0 && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
+              background: "var(--card-bg)", border: "1px solid var(--border2)",
+              borderRadius: 10, boxShadow: "0 12px 40px rgba(0,0,0,0.3)", zIndex: 100, overflow: "hidden",
+            }}>
+              {suggestions.map((s, i) => (
+                <button
+                  key={s.ticker}
+                  onMouseDown={() => loadTicker(s.ticker, s.name)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    width: "100%", padding: "9px 12px", background: "none", border: "none",
+                    borderBottom: i < suggestions.length - 1 ? "1px solid var(--border)" : "none",
+                    cursor: "pointer", textAlign: "left" as const,
+                  }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = "none")}
+                >
+                  <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: "var(--accent)", minWidth: 52 }}>{s.ticker}</span>
+                  <span style={{ fontSize: 11, color: "var(--text3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, marginLeft: 8 }}>{s.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+            {["AAPL", "NVDA", "TSLA", "SPY"].map(t => (
+              <button
+                key={t}
+                onClick={() => loadTicker(t)}
+                style={{
+                  padding: "4px 10px", background: "rgba(var(--accent-rgb),0.06)",
+                  border: "1px solid rgba(var(--accent-rgb),0.15)", borderRadius: 16,
+                  fontSize: 10, color: "var(--accent)", fontFamily: "Space Mono,monospace",
+                  cursor: "pointer", transition: "all 0.15s", letterSpacing: 0.5,
+                }}
+                onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(var(--accent-rgb),0.12)")}
+                onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(var(--accent-rgb),0.06)")}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Loading shimmer */}
+      {demoStep === "loading" && (
+        <div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+            {[0, 0.1, 0.2, 0.3].map((d, i) => (
+              <div key={i} style={{ background: "var(--bg3)", borderRadius: 10, padding: "14px" }}>
+                <div style={{ width: "55%", height: 8, background: "var(--border)", borderRadius: 4, marginBottom: 10, animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
+                <div style={{ width: "75%", height: 18, background: "var(--border)", borderRadius: 4, animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
+              </div>
+            ))}
+          </div>
+          <div style={{ height: 44, background: "var(--bg3)", borderRadius: 10, marginBottom: 12, animation: "skeletonPulse 1.4s ease-in-out 0.2s infinite" }} />
+          <div style={{ height: 36, background: "var(--bg3)", borderRadius: 10, animation: "skeletonPulse 1.4s ease-in-out 0.3s infinite", width: "40%", marginLeft: "auto" }} />
+        </div>
+      )}
+
+      {/* Step 3: Results */}
+      {demoStep === "results" && demoData && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, animation: "fadein 0.4s ease 0s both" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 8,
+                background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "Space Mono,monospace", fontSize: 7, fontWeight: 700, color: "var(--accent)",
+              }}>
+                {demoData.ticker.slice(0, 4)}
+              </div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", lineHeight: 1.2 }}>{demoData.name}</p>
+                <p style={{ fontSize: 9, color: "var(--text3)", marginTop: 1 }}>{demoData.ticker}</p>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" as const }}>
+              <p style={{ fontFamily: "Space Mono,monospace", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{fmtPrice(demoData.price)}</p>
+              <p style={{ fontSize: 9, fontFamily: "Space Mono,monospace", color: demoData.changePct >= 0 ? "var(--green)" : "var(--red)", marginTop: 1 }}>
+                {demoData.changePct >= 0 ? "+" : ""}{demoData.changePct.toFixed(2)}%
+              </p>
+            </div>
+          </div>
+
+          {/* 4 metric cards 2x2 with stagger */}
+          <div key={cardsKey} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+            {([
+              {
+                label: "Current Price",
+                content: (
+                  <>
+                    <p style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: "var(--accent)" }}>{fmtPrice(demoData.price)}</p>
+                    <p style={{ fontSize: 9, fontFamily: "Space Mono,monospace", color: demoData.changePct >= 0 ? "var(--green)" : "var(--red)", marginTop: 3 }}>
+                      {demoData.changePct >= 0 ? "+" : ""}{demoData.changePct.toFixed(2)}% today
+                    </p>
+                  </>
+                ),
+              },
+              {
+                label: "Analyst Consensus",
+                content: (
+                  <>
+                    <p style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: ratingColor(demoData.analystRating), lineHeight: 1.3 }}>{demoData.analystRating}</p>
+                    {(demoData.analystBuy + demoData.analystHold + demoData.analystSell) > 0 && (
+                      <p style={{ fontSize: 9, color: "var(--text3)", marginTop: 3 }}>
+                        {demoData.analystBuy}B &middot; {demoData.analystHold}H &middot; {demoData.analystSell}S
+                      </p>
+                    )}
+                  </>
+                ),
+              },
+              {
+                label: "52-Week Range",
+                content: demoData.week52High > 0 && demoData.week52Low > 0 ? (
+                  <>
+                    <div style={{ height: 4, background: "var(--border)", borderRadius: 2, marginBottom: 6, position: "relative" as const, overflow: "visible" as const }}>
+                      <div style={{
+                        width: `${Math.max(0, Math.min(100, ((demoData.price - demoData.week52Low) / (demoData.week52High - demoData.week52Low)) * 100))}%`,
+                        height: "100%", background: "rgba(var(--accent-rgb),0.4)", borderRadius: 2,
+                      }} />
+                      <div style={{
+                        position: "absolute" as const,
+                        left: `${Math.max(0, Math.min(100, ((demoData.price - demoData.week52Low) / (demoData.week52High - demoData.week52Low)) * 100))}%`,
+                        top: "50%", transform: "translate(-50%,-50%)",
+                        width: 8, height: 8, borderRadius: "50%",
+                        background: "var(--accent)", border: "2px solid var(--card-bg)",
+                      }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 8, fontFamily: "Space Mono,monospace", color: "var(--text3)" }}>{fmtPrice(demoData.week52Low)}</span>
+                      <span style={{ fontSize: 8, fontFamily: "Space Mono,monospace", color: "var(--text3)" }}>{fmtPrice(demoData.week52High)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 13, color: "var(--text3)" }}>N/A</p>
+                ),
+              },
+              {
+                label: demoData.peRatio ? "P/E Ratio" : "Market Cap",
+                content: demoData.peRatio ? (
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{demoData.peRatio.toFixed(1)}x</p>
+                ) : demoData.marketCap ? (
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{fmtMcap(demoData.marketCap)}</p>
+                ) : (
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: "var(--text3)" }}>N/A</p>
+                ),
+              },
+            ] as { label: string; content: React.ReactNode }[]).map(({ label, content }, i) => (
+              <motion.div
+                key={i}
+                // initial={false} is required — do not remove
+                initial={false}
+                style={{ opacity: 0 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1], delay: i * 0.08 }}
+              >
+                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                  <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 7 }}>{label}</p>
+                  {content}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* AI insight typewriter */}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false}
+            style={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.32 }}
+          >
+            <div style={{
+              background: "rgba(var(--accent-rgb),0.05)",
+              border: "1px solid rgba(var(--accent-rgb),0.12)",
+              borderRadius: 10, padding: "10px 12px", marginBottom: 12,
+              display: "flex", alignItems: "flex-start", gap: 8,
+            }}>
+              <img src="/corvo-logo.svg" width={12} height={10} alt="" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
+              <p style={{ fontSize: 11, color: "var(--accent)", lineHeight: 1.6 }}>
+                {typedInsight}
+                {typedInsight.length < insight.length && (
+                  <span style={{ display: "inline-block", width: 1.5, height: 11, background: "var(--accent)", marginLeft: 1, verticalAlign: "middle", animation: "pdot 0.7s step-end infinite" }} />
+                )}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* CTA + reset */}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false}
+            style={{ opacity: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+          >
+            <button
+              onClick={reset}
+              style={{
+                background: "none", border: "none", fontSize: 11, color: "var(--text3)",
+                cursor: "pointer", padding: 0, textDecoration: "underline", textUnderlineOffset: 3,
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = "var(--text)")}
+              onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.color = "var(--text3)")}
+            >
+              Try another ticker
+            </button>
+            <Link
+              href="/auth?mode=signup"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "8px 18px", background: "var(--accent)",
+                borderRadius: 8, fontSize: 12, fontWeight: 700, color: "var(--bg)",
+                textDecoration: "none", transition: "transform 0.15s",
+              }}
+              onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)")}
+              onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)")}
+            >
+              See full analysis →
+            </Link>
+          </motion.div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 /* ─── Portfolio Growth Calculator ─── */
 function GrowthCalculatorSection() {
   const [principal, setPrincipal] = React.useState(25000);
@@ -1913,6 +2314,10 @@ export default function Landing() {
           .hero-btns{flex-direction:column!important;align-items:center!important}
           .hero-btns>*{width:min(300px,80vw)!important;justify-content:center!important;text-align:center!important;display:flex!important;align-items:center!important}
           .hero-preview-sidebar{display:none!important}
+          .hero-split{grid-template-columns:1fr!important;gap:40px!important}
+          .hero-left{text-align:center!important}
+          .hero-stats{justify-content:center!important}
+          .hero-section{padding-top:110px!important;padding-left:20px!important;padding-right:20px!important;padding-bottom:60px!important}
           .stats-grid>*{border-right:none!important}
           .nav-user-name-mobile{display:inline!important}
           .nav-auth-desktop{display:none!important}.nav-install-desktop{display:none!important}
@@ -2121,122 +2526,82 @@ export default function Landing() {
       )}
 
       {/* HERO */}
-      <section style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "110px 24px 70px" }}>
+      <section className="hero-section" style={{ position: "relative", zIndex: 1, minHeight: "100vh", padding: "100px 56px 80px", display: "flex", alignItems: "center" }}>
         <AnimatedHeroChart />
-        <div style={{ position: "relative", zIndex: 1, animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(var(--accent-rgb),0.4)", borderRadius: 24, marginBottom: 36, background: "rgba(var(--accent-rgb),0.08)" }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
-          <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>AI-Powered Portfolio Intelligence</span>
-        </div>
+        <div className="hero-split" style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center", position: "relative", zIndex: 1 }}>
 
-        <motion.h1
-          style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4.5vw,56px)", fontWeight: 700, lineHeight: 1.06, letterSpacing: -2, marginBottom: 28, maxWidth: 840 }}
-          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
-          // initial={false} is required — do not remove
-          initial={false} animate="visible">
-          <span style={{ display: "block", color: "var(--text)" }}>
-            {["Your", "portfolio", "deserves"].map((w, i) => (
-              <motion.span
-                // initial={false} is required — do not remove
-                initial={false}
-                key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200 } } }}
-                style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
-            ))}
-          </span>
-          <span style={{ display: "block", color: "var(--accent)", position: "relative" }}>
-            {["better", "than", "a", "pie", "chart."].map((w, i) => (
-              <motion.span
-                // initial={false} is required — do not remove
-                initial={false}
-                key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
-                style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
-            ))}
-            <span style={{ position: "absolute", bottom: 2, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.35), transparent)" }} />
-          </span>
-        </motion.h1>
-
-        <motion.p
-          // initial={false} is required — do not remove
-          initial={false} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
-          style={{ fontSize: 17, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 520, marginBottom: 48 }}>
-          AI-powered analytics: Sharpe ratio, Monte Carlo, sector exposure, and more. Free.
-        </motion.p>
-
-        <motion.div
-          // initial={false} is required — do not remove
-          initial={false} animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.9, type: "spring", damping: 20, stiffness: 200 }}
-          className="hero-btns"
-          style={{ display: "flex", gap: 12, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
-          {loggedIn ? (
-            <Link href="/app" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>Go to Dashboard →</Link>
-          ) : (
-            <Link href="/auth?mode=signup" className="cta cta-shimmer" style={{ padding: "14px 38px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>Start for free →</Link>
-          )}
-        </motion.div>
-
-        {/* Dashboard preview */}
-        <div style={{ animation: "fadein 1s cubic-bezier(0.16,1,0.3,1) 0.8s both, float 7s ease-in-out 2.5s infinite", width: "min(920px,92vw)", position: "relative" }}>
-          <HeroMetricCard label="Portfolio Return" value="+41.3%" color="var(--green)" animDelay="0s" style={{ top: 40, left: "-4%", zIndex: 4 }} />
-          <HeroMetricCard label="Sharpe Ratio" value="1.92" color="var(--accent)" animDelay="1.2s" style={{ top: 40, right: "-4%", zIndex: 4 }} />
-          <HeroMetricCard label="Health Score" value="78 / 100" color="#8eb4c8" animDelay="0.6s" style={{ bottom: 80, right: "-4%", zIndex: 4 }} />
-          <div data-theme="dark" style={{ background: "var(--bg)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: 16, overflow: "clip", boxShadow: "0 48px 128px rgba(0,0,0,0.7), inset 0 1px 0 rgba(var(--accent-rgb),0.08)", display: "flex" }}>
-            <div className="hero-preview-sidebar" style={{ width: 180, background: "#080b10", borderRight: "1px solid rgba(255,255,255,0.12)", padding: "16px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
-              <div style={{ padding: "0 14px 14px", borderBottom: "1px solid rgba(255,255,255,0.1)", marginBottom: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <img src="/corvo-logo.svg" width={18} height={14} alt="Corvo" />
-                  <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "var(--text)" }}>CORVO</span>
-                </div>
-              </div>
-              {["◈  Overview", "◬  Risk", "◎  Simulate", "⊞  Compare", "◷  News", "◆  AI Chat"].map((t, i) => (
-                <div key={i} style={{ padding: "7px 14px", fontSize: 10, color: i === 0 ? "var(--accent)" : "rgba(232,224,204,0.6)", background: i === 0 ? "rgba(var(--accent-rgb),0.06)" : "transparent", borderLeft: i === 0 ? "2px solid var(--accent)" : "2px solid transparent" }}>{t}</div>
-              ))}
-              <div style={{ marginTop: "auto", padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                <div style={{ fontSize: 9, color: "rgba(232,224,204,0.5)", letterSpacing: 1 }}>AAPL · MSFT · NVDA</div>
-              </div>
+          {/* ─── LEFT: headline + subtitle + CTA + stats ─── */}
+          <div className="hero-left">
+            <div style={{ animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(var(--accent-rgb),0.4)", borderRadius: 24, marginBottom: 32, background: "rgba(var(--accent-rgb),0.08)" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
+              <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>AI-Powered Portfolio Intelligence</span>
             </div>
-            <div style={{ flex: 1, padding: "14px 16px", minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {["Overview", "Risk", "Simulate", "Compare"].map((t, i) => (
-                    <div key={i} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 9, background: i === 0 ? "rgba(255,255,255,0.14)" : "transparent", color: i === 0 ? "var(--text)" : "rgba(232,224,204,0.6)", border: i === 0 ? "1px solid rgba(255,255,255,0.2)" : "1px solid transparent" }}>{t}</div>
-                  ))}
-                </div>
-                <div style={{ fontSize: 9, color: "rgba(var(--accent-rgb),0.4)", fontFamily: "Space Mono,monospace" }}>1Y · S&amp;P 500</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 7, marginBottom: 10 }}>
-                {[{ l: "Return", v: "+18.4%", c: "var(--accent)" }, { l: "Volatility", v: "22.1%", c: "var(--text)" }, { l: "Sharpe", v: "0.66", c: "var(--text)" }, { l: "Drawdown", v: "-14.2%", c: "var(--red)" }].map((m, i) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "10px 10px 8px" }}>
-                    <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.5)", textTransform: "uppercase", marginBottom: 5 }}>{m.l}</p>
-                    <p style={{ fontFamily: "Space Mono,monospace", fontSize: 15, fontWeight: 700, color: m.c, letterSpacing: -0.5 }}>{m.v}</p>
-                  </div>
+
+            <motion.h1
+              style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4vw,52px)", fontWeight: 700, lineHeight: 1.06, letterSpacing: -2, marginBottom: 24 }}
+              variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
+              // initial={false} is required — do not remove
+              initial={false} animate="visible">
+              <span style={{ display: "block", color: "var(--text)" }}>
+                {["Your", "portfolio", "deserves"].map((w, i) => (
+                  <motion.span
+                    // initial={false} is required — do not remove
+                    initial={false}
+                    key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200 } } }}
+                    style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
                 ))}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 8, marginBottom: 10 }}>
-                <div style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 12px" }}>
-                  <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.5)", textTransform: "uppercase", marginBottom: 6 }}>Performance vs S&amp;P 500</p>
-                  <svg width="100%" height="52" viewBox="0 0 600 52" preserveAspectRatio="none">
-                    <defs><linearGradient id="grd2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--accent)" stopOpacity="0.18" /><stop offset="100%" stopColor="var(--accent)" stopOpacity="0" /></linearGradient></defs>
-                    <path d="M0,44 C60,40 120,34 180,26 C240,18 300,14 360,11 C420,8 480,12 600,4 L600,52 L0,52Z" fill="url(#grd2)" />
-                    <path d="M0,44 C60,40 120,34 180,26 C240,18 300,14 360,11 C420,8 480,12 600,4" fill="none" stroke="var(--accent)" strokeWidth="1.5" />
-                    <path d="M0,44 C80,42 160,39 240,35 C320,31 400,27 480,24 C540,22 570,25 600,20" fill="none" stroke="rgba(232,224,204,0.15)" strokeWidth="1" strokeDasharray="3 3" />
-                  </svg>
+              </span>
+              <span style={{ display: "block", color: "var(--accent)", position: "relative" }}>
+                {["better", "than", "a", "pie", "chart."].map((w, i) => (
+                  <motion.span
+                    // initial={false} is required — do not remove
+                    initial={false}
+                    key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
+                    style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
+                ))}
+                <span style={{ position: "absolute", bottom: 2, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.35), transparent)" }} />
+              </span>
+            </motion.h1>
+
+            <motion.p
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
+              style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 440, marginBottom: 36 }}>
+              AI-powered analytics: Sharpe ratio, Monte Carlo, sector exposure, and more. Free.
+            </motion.p>
+
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.9, type: "spring", damping: 20, stiffness: 200 }}
+              className="hero-btns"
+              style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {loggedIn ? (
+                <Link href="/app" className="cta cta-shimmer" style={{ padding: "14px 36px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>Go to Dashboard →</Link>
+              ) : (
+                <Link href="/auth?mode=signup" className="cta cta-shimmer" style={{ padding: "14px 36px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>Start for free →</Link>
+              )}
+            </motion.div>
+
+            {/* Stats strip */}
+            <div className="hero-stats" style={{ display: "flex", gap: 28, marginTop: 36, paddingTop: 24, borderTop: "1px solid rgba(var(--accent-rgb),0.08)", animation: "fadein 0.8s ease 1.1s both" }}>
+              {[
+                { value: `${liveUserCount ?? 847}+`, label: "Active Users" },
+                { value: "5,500+", label: "Portfolios" },
+                { value: "17K+", label: "AI Insights" },
+              ].map(({ value, label }) => (
+                <div key={label}>
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>{value}</p>
+                  <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>{label}</p>
                 </div>
-                <div style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 12px" }}>
-                  <p style={{ fontSize: 6, letterSpacing: 2, color: "rgba(232,224,204,0.5)", textTransform: "uppercase", marginBottom: 8 }}>Health Score</p>
-                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 28, fontWeight: 700, color: "var(--accent)", letterSpacing: -2, lineHeight: 1 }}>78</p>
-                  <p style={{ fontSize: 8, color: "var(--green)", letterSpacing: 1, marginTop: 3 }}>GOOD</p>
-                  <div style={{ marginTop: 8, height: 3, background: "rgba(255,255,255,0.14)", borderRadius: 2 }}>
-                    <div style={{ width: "78%", height: "100%", background: "var(--accent)", borderRadius: 2 }} />
-                  </div>
-                </div>
-              </div>
-              <div style={{ background: "rgba(var(--accent-rgb),0.05)", border: "1px solid rgba(var(--accent-rgb),0.14)", borderRadius: 8, padding: "9px 12px", display: "flex", alignItems: "flex-start", gap: 8 }}>
-                <img src="/corvo-logo.svg" width={14} height={11} alt="" style={{ marginTop: 2, opacity: 0.8 }} />
-                <p style={{ fontSize: 10, color: "rgba(232,224,204,0.85)", lineHeight: 1.55 }}>Your tech concentration is high at 67%. Consider adding BND or GLD to reduce correlation risk.</p>
-              </div>
+              ))}
             </div>
           </div>
-          <div style={{ position: "absolute", bottom: -30, left: "25%", right: "25%", height: 50, background: "radial-gradient(ellipse, rgba(var(--accent-rgb),0.18) 0%, transparent 70%)", filter: "blur(16px)" }} />
+
+          {/* ─── RIGHT: interactive demo widget ─── */}
+          <div className="hero-right" style={{ position: "relative" }}>
+            <InteractiveDemoWidget />
+          </div>
         </div>
       </section>
 
