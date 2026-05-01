@@ -2089,6 +2089,46 @@ def set_life_events(user_id: str, body: LifeEventsRequest, request: Request):
     return {"success": True}
 
 
+class FinancialGoalsRequest(BaseModel):
+    financial_goals: list = []
+
+
+@app.get("/user/financial-goals/{user_id}")
+def get_financial_goals(user_id: str, request: Request):
+    """Return financial goals for a user. JWT required."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if not SUPABASE_URL:
+        return {"financial_goals": []}
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}&select=financial_goals",
+        headers=_sb_headers(), timeout=5,
+    )
+    if resp.status_code != 200 or not resp.json():
+        return {"financial_goals": []}
+    return {"financial_goals": resp.json()[0].get("financial_goals") or []}
+
+
+@app.post("/user/financial-goals/{user_id}")
+def set_financial_goals(user_id: str, body: FinancialGoalsRequest, request: Request):
+    """Upsert financial goals for a user. JWT required."""
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if not SUPABASE_URL:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    resp = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json={"financial_goals": body.financial_goals, "updated_at": datetime.now(timezone.utc).isoformat()},
+        timeout=5,
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Failed to update financial goals")
+    return {"success": True}
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list = []
@@ -2099,6 +2139,7 @@ class ChatRequest(BaseModel):
     page_context: str = ""
     user_context: str = ""
     life_events: list = []
+    financial_goals: list = []
 
     def validate_message(self):
         if not self.message or not self.message.strip():
@@ -2262,6 +2303,42 @@ def chat(req: ChatRequest, request: Request):
         if _event_parts:
             life_events_text = "\n\nACTIVE LIFE EVENTS: " + "; ".join(_event_parts) + "\n(Factor these into advice naturally. Buying a home soon means flag liquidity needs. Retiring soon means flag sequence-of-returns risk. Having a baby means flag emergency fund importance. Starting a business means flag concentration and cash runway.)"
 
+    # Build financial goals block
+    financial_goals_text = ""
+    if req.financial_goals:
+        _goal_labels = {
+            "retire_early": "Retire early",
+            "emergency_fund": "Build emergency fund",
+            "home_down_payment": "Save for home down payment",
+            "save_for_college": "Save for college",
+            "grow_wealth": "Grow long-term wealth",
+            "passive_income": "Generate passive income",
+            "pay_off_debt": "Pay off debt while investing",
+            "major_purchase": "Save for a major purchase",
+        }
+        _goal_parts = []
+        for _g in req.financial_goals:
+            if not isinstance(_g, dict):
+                continue
+            _gid = _g.get("id", "")
+            if not _gid:
+                continue
+            _label = _goal_labels.get(_gid, _gid.replace("_", " ").title())
+            _extras = []
+            if _g.get("timeline"):
+                _extras.append(_g["timeline"].replace("_", " "))
+            if _g.get("targetAmount"):
+                _extras.append(f"target ${_g['targetAmount']}")
+            if _g.get("targetMonths"):
+                _extras.append(_g["targetMonths"].replace("_", " "))
+            if _g.get("monthlyTarget"):
+                _extras.append(f"${_g['monthlyTarget']}/mo target")
+            if _g.get("debtType"):
+                _extras.append(_g["debtType"].replace("_", " "))
+            _goal_parts.append(_label + (f" ({', '.join(_extras)})" if _extras else ""))
+        if _goal_parts:
+            financial_goals_text = "\n\nFINANCIAL GOALS: " + "; ".join(_goal_parts) + "\n(Factor these into advice: retirement goal means prioritize growth and tax efficiency; emergency fund means flag that cash reserves should come before investing more; home down payment means flag liquidity needs and keep funds accessible; college savings means consider 529 plans and time horizon; passive income goal means consider dividend stocks, REITs, and covered calls; paying off debt means weigh debt payoff rate vs expected market returns; major purchase timeline means flag liquidity and capital preservation.)"
+
     system = f"""You are Corvo AI, a world-class personal portfolio advisor. You have full access to this investor's portfolio data, financial profile, saved portfolios, alerts, and targets. You also have web search capability to look up current prices, historical events, earnings, analyst ratings, news, and any market data needed to answer questions accurately.{user_context_block}
 
 CURRENT PORTFOLIO:
@@ -2270,7 +2347,7 @@ CURRENT PORTFOLIO:
 - Annualized Return (CAGR): {ret:.2%}
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f} (risk-free rate used: {rf_rate_ctx:.2%})
-- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{page_context_text}
+- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{financial_goals_text}{page_context_text}
 
 HOW TO RESPOND:
 • Address the user by their first name when it is known.

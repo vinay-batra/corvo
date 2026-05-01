@@ -7,8 +7,9 @@ import { supabase } from "../../lib/supabase";
 import UserMenu from "../../components/UserMenu";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import LifeEvents, { type LifeEvent } from "../../components/LifeEvents";
+import FinancialGoals, { type FinancialGoal } from "../../components/FinancialGoals";
 
-const TOTAL = 10;
+const TOTAL = 11;
 
 const INVESTOR_TYPES = [
   { id: "beginner",      label: "Beginner investor",     desc: "New to investing" },
@@ -78,6 +79,7 @@ const STEP_TITLES = [
   "What is your investment horizon?",
   "How did you hear about Corvo?",
   "Any major life events coming up?",
+  "What are you investing for?",
   "Take Corvo with you",
 ];
 
@@ -228,6 +230,7 @@ function OnboardingContent() {
   const [completing, setCompleting] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
   const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>([]);
+  const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
 
   const [answers, setAnswers] = useState({
     investor_type: "",
@@ -363,6 +366,7 @@ function OnboardingContent() {
       id: user.id,
       onboarding_completed: true,
       life_events: lifeEvents,
+      financial_goals: financialGoals,
       updated_at: new Date().toISOString(),
     });
 
@@ -452,6 +456,37 @@ function OnboardingContent() {
     </div>
   );
 
+  const renderFinancialGoals = () => (
+    <div>
+      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16, lineHeight: 1.55 }}>
+        Corvo uses your goals to give you more relevant advice.
+      </p>
+      <FinancialGoals
+        mode="onboarding"
+        userId={userId}
+        initialGoals={financialGoals}
+        onChange={setFinancialGoals}
+      />
+      <button
+        onClick={handleNext}
+        style={{
+          display: "block",
+          marginTop: 16,
+          background: "none",
+          border: "none",
+          fontSize: 12,
+          color: "var(--text3)",
+          cursor: "pointer",
+          padding: 0,
+          textDecoration: "underline",
+          textUnderlineOffset: 3,
+        }}
+      >
+        Skip for now
+      </button>
+    </div>
+  );
+
   const renderStepContent = () => {
     switch (step) {
       case 0: return renderSingleSelect("investor_type", INVESTOR_TYPES);
@@ -463,7 +498,8 @@ function OnboardingContent() {
       case 6: return renderSingleSelect("investment_horizon", HORIZONS);
       case 7: return renderSingleSelect("referral_source", REFERRAL_SOURCES);
       case 8: return renderLifeEvents();
-      case 9: return <InstallStep />;
+      case 9: return renderFinancialGoals();
+      case 10: return <InstallStep />;
       default: return null;
     }
   };
@@ -505,6 +541,7 @@ function OnboardingContent() {
           .ob-card p { font-size: 12px !important; }
           .ob-select-grid { grid-template-columns: 1fr !important; }
           .ob-life-events-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .ob-goals-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .ob-builder-scroll { max-height: min(340px, 45vh) !important; }
         }
       `}</style>

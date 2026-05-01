@@ -195,6 +195,7 @@ export default function AiChat({
   // Full user context string sent on every request
   const [userContextStr, setUserContextStr] = useState("");
   const [lifeEventsRef] = useState<{ current: any[] }>({ current: [] });
+  const [financialGoalsRef] = useState<{ current: any[] }>({ current: [] });
 
   // Chat
   const [messages, setMessages]       = useState<Message[]>([]);
@@ -319,7 +320,7 @@ export default function AiChat({
       const { data: { session: ctxSession } } = await supabase.auth.getSession();
       const ctxToken = ctxSession?.access_token ?? "";
       const [profileRes, portfoliosRes, emailPrefsRes, alertsRes, targetsRes] = await Promise.allSettled([
-        supabase.from("profiles").select("display_name,life_events").eq("id", uid).single(),
+        supabase.from("profiles").select("display_name,life_events,financial_goals").eq("id", uid).single(),
         supabase.from("portfolios").select("name,tickers").eq("user_id", uid).order("updated_at", { ascending: false }),
         supabase.from("email_preferences").select("morning_briefing,week_in_review,monthly_summary,price_alerts").eq("user_id", uid).single(),
         supabase.from("price_alerts").select("ticker,type,condition,threshold").eq("user_id", uid).eq("triggered", false),
@@ -338,6 +339,12 @@ export default function AiChat({
           ? (profileRes.value.data?.life_events || [])
           : [];
       lifeEventsRef.current = fetchedLifeEvents;
+
+      const fetchedFinancialGoals: any[] =
+        profileRes.status === "fulfilled"
+          ? (profileRes.value.data?.financial_goals || [])
+          : [];
+      financialGoalsRef.current = fetchedFinancialGoals;
 
       const savedPortfolios: { name: string; tickers: string[] }[] =
         portfoliosRes.status === "fulfilled" ? (portfoliosRes.value.data || []) : [];
@@ -422,6 +429,30 @@ export default function AiChat({
           return label + tl;
         });
         lines.push(`LIFE EVENTS: ${parts.join("; ")}`);
+      }
+
+      if (fetchedFinancialGoals.length > 0) {
+        const goalLabels: Record<string, string> = {
+          retire_early: "Retire early",
+          emergency_fund: "Build emergency fund",
+          home_down_payment: "Home down payment",
+          save_for_college: "Save for college",
+          grow_wealth: "Grow long-term wealth",
+          passive_income: "Generate passive income",
+          pay_off_debt: "Pay off debt while investing",
+          major_purchase: "Major purchase",
+        };
+        const goalParts = fetchedFinancialGoals.map((g: any) => {
+          const label = goalLabels[g.id] || (g.id as string).replace(/_/g, " ");
+          const extras: string[] = [];
+          if (g.timeline) extras.push((g.timeline as string).replace(/_/g, " "));
+          if (g.targetAmount) extras.push(`target $${g.targetAmount}`);
+          if (g.targetMonths) extras.push((g.targetMonths as string).replace(/_/g, " "));
+          if (g.monthlyTarget) extras.push(`$${g.monthlyTarget}/mo target`);
+          if (g.debtType) extras.push((g.debtType as string).replace(/_/g, " "));
+          return label + (extras.length ? ` (${extras.join(", ")})` : "");
+        });
+        lines.push(`FINANCIAL GOALS: ${goalParts.join("; ")}`);
       }
 
       setUserContextStr(lines.join("\n"));
@@ -586,6 +617,7 @@ export default function AiChat({
           page_context: pageContext || "",
           user_context: userContextStr + (extraContext ? "\n" + extraContext : ""),
           life_events: lifeEventsRef.current,
+          financial_goals: financialGoalsRef.current,
         }),
       });
 
