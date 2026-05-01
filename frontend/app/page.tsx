@@ -1510,7 +1510,7 @@ function FinalCTASection() {
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
                 >
-                  {status === "loading" ? "..." : "Get your briefing"}
+                  {status === "loading" ? "..." : "Get your briefings"}
                 </button>
               </div>
             )}
@@ -2749,7 +2749,6 @@ export default function Landing() {
                     key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
                     style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
                 ))}
-                <span style={{ position: "absolute", bottom: 2, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.35), transparent)" }} />
               </span>
             </motion.h1>
 
