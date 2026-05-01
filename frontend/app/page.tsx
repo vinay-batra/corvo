@@ -1544,130 +1544,138 @@ function SparklineChart({ prices, positive }: { prices: number[]; positive: bool
 }
 
 /* ─── Interactive Demo Widget (Hero) ─── */
-type DemoStep = "input" | "loading" | "results";
+type PortDemoStep = "input" | "loading" | "results";
 
-interface DemoStockData {
+interface PortDemoRow {
   ticker: string;
-  name: string;
-  price: number;
-  changePct: number;
-  week52Low: number;
-  week52High: number;
-  peRatio: number | null;
-  marketCap: number | null;
-  analystRating: string;
-  analystBuy: number;
-  analystHold: number;
-  analystSell: number;
+  weight: string;
 }
 
-function generateDemoInsight(d: DemoStockData): string {
-  const range52 = d.week52High - d.week52Low;
-  if (range52 > 0) {
-    const pos = (d.price - d.week52Low) / range52;
-    if (pos >= 0.8) return "Trading near 52-week highs. Momentum is strong but upside may be limited near term.";
-    if (pos <= 0.2) return "Trading near 52-week lows. Could be an entry opportunity or a falling knife - check the fundamentals.";
+interface PortDemoResult {
+  cagr: number;
+  volatility: number;
+  sharpe: number;
+  benchmarkReturn: number | null;
+  tickers: string[];
+}
+
+const DEFAULT_DEMO_ROWS: PortDemoRow[] = [
+  { ticker: "AAPL", weight: "40" },
+  { ticker: "MSFT", weight: "35" },
+  { ticker: "NVDA", weight: "25" },
+];
+
+function generatePortfolioInsight(
+  result: PortDemoResult,
+  sectors: Record<string, number>
+): string {
+  const validSectors = Object.entries(sectors).filter(([s]) => s !== "Other" && s !== "");
+  if (validSectors.length === 1) {
+    const pct = Math.round(validSectors[0][1] * 100);
+    return `${pct}% ${validSectors[0][0]} concentration detected. Your holdings move together - one sector downturn hits everything.`;
   }
-  if (d.peRatio && d.peRatio > 30) return `Premium valuation at ${d.peRatio.toFixed(1)}x earnings. Priced for high growth - watch for any guidance cuts.`;
-  if (d.analystRating === "Strong Buy" && d.analystBuy >= 20) return `Wall Street is broadly bullish with ${d.analystBuy} analysts rating it a buy.`;
-  return "Solid fundamentals. See the full analysis inside Corvo.";
+  const dominant = validSectors.find(([, w]) => w >= 0.9);
+  if (dominant) {
+    return `${Math.round(dominant[1] * 100)}% ${dominant[0]} concentration detected. Your holdings move together - one sector downturn hits everything.`;
+  }
+  if (result.sharpe > 2) {
+    return `Strong risk-adjusted returns at ${result.sharpe.toFixed(2)}x. You're being well compensated for the risk you're taking.`;
+  }
+  const cagrPct = result.cagr * 100;
+  if (cagrPct > 40) {
+    return `Exceptional returns, but ${cagrPct.toFixed(1)}% CAGR is hard to sustain. The full Corvo health score would flag concentration risk.`;
+  }
+  if (result.benchmarkReturn !== null && result.cagr < result.benchmarkReturn) {
+    const diff = (result.benchmarkReturn - result.cagr) * 100;
+    return `Underperforming the S&P 500 by ${diff.toFixed(1)}%. Corvo's advisor would tell you exactly why and what to change.`;
+  }
+  return "Solid portfolio. The full Corvo analysis goes 10x deeper - health score, Monte Carlo, insider activity, and AI advice.";
 }
 
 function InteractiveDemoWidget() {
-  const [demoStep, setDemoStep] = useState<DemoStep>("input");
-  const [demoQuery, setDemoQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<{ ticker: string; name: string }[]>([]);
-  const [showDrop, setShowDrop] = useState(false);
-  const [demoData, setDemoData] = useState<DemoStockData | null>(null);
+  const [step, setStep] = useState<PortDemoStep>("input");
+  const [rows, setRows] = useState<PortDemoRow[]>(DEFAULT_DEMO_ROWS.map(r => ({ ...r })));
+  const [result, setResult] = useState<PortDemoResult | null>(null);
+  const [sectors, setSectors] = useState<Record<string, number>>({});
   const [insight, setInsight] = useState("");
   const [typedInsight, setTypedInsight] = useState("");
   const [cardsKey, setCardsKey] = useState(0);
-  const dropRef = useRef<HTMLDivElement>(null);
-  const debRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Typewriter
   useEffect(() => {
-    if (!insight || demoStep !== "results") { setTypedInsight(""); return; }
+    if (!insight || step !== "results") { setTypedInsight(""); return; }
     if (typedInsight.length >= insight.length) return;
     const t = setTimeout(() => setTypedInsight(insight.slice(0, typedInsight.length + 1)), 30);
     return () => clearTimeout(t);
-  }, [insight, typedInsight, demoStep]);
+  }, [insight, typedInsight, step]);
 
-  // Debounced search suggestions
-  useEffect(() => {
-    if (debRef.current) clearTimeout(debRef.current);
-    if (!demoQuery || demoQuery.length < 1) { setSuggestions([]); setShowDrop(false); return; }
-    debRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`${API_URL}/search-ticker?q=${encodeURIComponent(demoQuery)}`);
-        const d = await res.json();
-        if (Array.isArray(d.results) && d.results.length > 0) {
-          setSuggestions(d.results.slice(0, 5));
-          setShowDrop(true);
-        } else {
-          setSuggestions([]); setShowDrop(false);
-        }
-      } catch { setSuggestions([]); setShowDrop(false); }
-    }, 250);
-  }, [demoQuery]);
+  const validRows = rows.filter(r => r.ticker.trim() && parseFloat(r.weight) > 0);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setShowDrop(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
-
-  const loadTicker = async (ticker: string, name?: string) => {
-    setShowDrop(false);
-    setDemoQuery(ticker.toUpperCase());
-    setDemoStep("loading");
+  const analyze = async () => {
+    if (validRows.length === 0) return;
+    setStep("loading");
     const loadStart = Date.now();
+    const tickerStr = validRows.map(r => r.ticker.trim().toUpperCase()).join(",");
+    const weightStr = validRows.map(r => r.weight).join(",");
     try {
-      const res = await fetch(`${API_URL}/stock/${ticker.toUpperCase()}`);
-      if (!res.ok) throw new Error("not ok");
-      const d = await res.json();
+      const [portRes, sectorRes] = await Promise.allSettled([
+        fetch(`${API_URL}/portfolio?tickers=${encodeURIComponent(tickerStr)}&weights=${encodeURIComponent(weightStr)}&period=1y&benchmark=%5EGSPC`),
+        fetch(`${API_URL}/portfolio/sectors?tickers=${encodeURIComponent(tickerStr)}&weights=${encodeURIComponent(weightStr)}`),
+      ]);
+      if (portRes.status === "rejected" || !portRes.value.ok) throw new Error("fetch failed");
+      const portData = await portRes.value.json();
+      let sectorData: Record<string, number> = {};
+      if (sectorRes.status === "fulfilled" && sectorRes.value.ok) {
+        const sd = await sectorRes.value.json();
+        sectorData = sd.sectors || {};
+      }
       const elapsed = Date.now() - loadStart;
       if (elapsed < 1500) await new Promise(r => setTimeout(r, 1500 - elapsed));
-      const sd: DemoStockData = {
-        ticker: ticker.toUpperCase(),
-        name: d.name || name || ticker,
-        price: d.current_price ?? 0,
-        changePct: d.change_pct ?? 0,
-        week52Low: d.week52_low ?? 0,
-        week52High: d.week52_high ?? 0,
-        peRatio: d.pe_ratio > 0 ? d.pe_ratio : null,
-        marketCap: d.market_cap > 0 ? d.market_cap : null,
-        analystRating: d.analyst_rating || "N/A",
-        analystBuy: d.analyst_buy ?? 0,
-        analystHold: d.analyst_hold ?? 0,
-        analystSell: d.analyst_sell ?? 0,
+      const portResult: PortDemoResult = {
+        cagr: portData.annualized_return ?? 0,
+        volatility: portData.portfolio_volatility ?? 0,
+        sharpe: portData.sharpe_ratio ?? 0,
+        benchmarkReturn: portData.benchmark_return ?? null,
+        tickers: portData.tickers ?? [],
       };
-      setDemoData(sd);
-      setInsight(generateDemoInsight(sd));
+      setResult(portResult);
+      setSectors(sectorData);
+      setInsight(generatePortfolioInsight(portResult, sectorData));
       setTypedInsight("");
       setCardsKey(k => k + 1);
-      setDemoStep("results");
+      setStep("results");
     } catch {
       const elapsed = Date.now() - loadStart;
       if (elapsed < 1500) await new Promise(r => setTimeout(r, 1500 - elapsed));
-      setDemoStep("input");
+      setStep("input");
     }
   };
 
   const reset = () => {
-    setDemoStep("input"); setDemoQuery(""); setDemoData(null);
-    setInsight(""); setTypedInsight(""); setSuggestions([]);
+    setStep("input");
+    setRows(DEFAULT_DEMO_ROWS.map(r => ({ ...r })));
+    setResult(null); setSectors({});
+    setInsight(""); setTypedInsight("");
   };
 
-  const fmtPrice = (p: number) =>
-    p >= 1000 ? `$${p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${p.toFixed(2)}`;
-  const fmtMcap = (mc: number) =>
-    mc >= 1e12 ? `$${(mc / 1e12).toFixed(1)}T` : mc >= 1e9 ? `$${(mc / 1e9).toFixed(1)}B` : `$${(mc / 1e6).toFixed(0)}M`;
-  const ratingColor = (r: string) =>
-    r === "Strong Buy" || r === "Buy" ? "var(--green)" : r === "Hold" ? "var(--accent)" : "var(--red)";
+  const updateRow = (i: number, field: "ticker" | "weight", value: string) => {
+    setRows(prev => prev.map((r, idx) =>
+      idx === i ? { ...r, [field]: field === "ticker" ? value.toUpperCase() : value } : r
+    ));
+  };
+
+  const fmtPct = (v: number, digits = 1) => {
+    const pct = v * 100;
+    return `${pct >= 0 ? "+" : ""}${pct.toFixed(digits)}%`;
+  };
+
+  const vsBenchmark = result?.benchmarkReturn != null ? result.cagr - result.benchmarkReturn : null;
+
+  const inputBase: React.CSSProperties = {
+    background: "var(--bg2)", border: "1px solid var(--border)",
+    borderRadius: 7, color: "var(--text)", fontSize: 12, outline: "none",
+    transition: "border-color 0.15s", fontFamily: "Space Mono,monospace",
+  };
 
   return (
     <motion.div
@@ -1678,189 +1686,147 @@ function InteractiveDemoWidget() {
         background: "var(--card-bg)",
         border: "1px solid var(--border)",
         borderRadius: 20,
-        padding: "24px",
+        padding: "22px",
         boxShadow: "0 0 80px rgba(var(--accent-rgb),0.08), 0 32px 80px rgba(0,0,0,0.3)",
       }}
     >
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 18 }}>Try it now</p>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
+        <div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3 }}>Try a quick analysis</p>
+          <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 3, lineHeight: 1.5 }}>
+            Simplified preview. The real Corvo gives you 10x more.
+          </p>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, marginTop: 2 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", display: "inline-block", animation: "pdot 2s infinite" }} />
+          <span style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--green)", textTransform: "uppercase", fontFamily: "Space Mono,monospace" }}>Live Data</span>
+        </div>
+      </div>
 
-      {/* Step 1: Input */}
-      {demoStep === "input" && (
-        <div ref={dropRef} style={{ position: "relative" }}>
-          <div style={{ position: "relative" }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", pointerEvents: "none" }}>
-              <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.4"/>
-              <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-            </svg>
-            <input
-              type="text"
-              value={demoQuery}
-              onChange={e => setDemoQuery(e.target.value.toUpperCase())}
-              onKeyDown={e => { if (e.key === "Enter" && demoQuery.trim()) loadTicker(demoQuery.trim()); }}
-              placeholder="Enter a ticker (e.g. AAPL)"
-              style={{
-                width: "100%", padding: "11px 12px 11px 36px",
-                background: "var(--bg2)", border: "1px solid var(--border)",
-                borderRadius: 10, color: "var(--text)", fontSize: 13,
-                outline: "none", fontFamily: "Space Mono,monospace",
-                transition: "border-color 0.2s", letterSpacing: 0.5,
-              }}
-              onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)")}
-              onBlur={e => (e.target.style.borderColor = "var(--border)")}
-            />
+      <div style={{ height: 1, background: "var(--border)", margin: "14px 0" }} />
+
+      {/* ─── Step 1: Input ─── */}
+      {step === "input" && (
+        <div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 28px", gap: 6, marginBottom: 6 }}>
+            <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Ticker</p>
+            <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Weight %</p>
+            <span />
           </div>
-          {showDrop && suggestions.length > 0 && (
-            <div style={{
-              position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
-              background: "var(--card-bg)", border: "1px solid var(--border2)",
-              borderRadius: 10, boxShadow: "0 12px 40px rgba(0,0,0,0.3)", zIndex: 100, overflow: "hidden",
-            }}>
-              {suggestions.map((s, i) => (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+            {rows.map((row, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 72px 28px", gap: 6, alignItems: "center" }}>
+                <input
+                  type="text"
+                  value={row.ticker}
+                  onChange={e => updateRow(i, "ticker", e.target.value)}
+                  placeholder="AAPL"
+                  maxLength={10}
+                  style={{ ...inputBase, padding: "8px 10px", letterSpacing: 0.5 }}
+                  onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)")}
+                  onBlur={e => (e.target.style.borderColor = "var(--border)")}
+                />
+                <input
+                  type="number"
+                  value={row.weight}
+                  onChange={e => updateRow(i, "weight", e.target.value)}
+                  placeholder="0"
+                  min={0} max={100}
+                  style={{ ...inputBase, padding: "8px 8px", width: "100%" }}
+                  onFocus={e => (e.target.style.borderColor = "rgba(var(--accent-rgb),0.5)")}
+                  onBlur={e => (e.target.style.borderColor = "var(--border)")}
+                />
                 <button
-                  key={s.ticker}
-                  onMouseDown={() => loadTicker(s.ticker, s.name)}
+                  onClick={() => setRows(prev => prev.filter((_, idx) => idx !== i))}
+                  disabled={rows.length <= 1}
                   style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    width: "100%", padding: "9px 12px", background: "none", border: "none",
-                    borderBottom: i < suggestions.length - 1 ? "1px solid var(--border)" : "none",
-                    cursor: "pointer", textAlign: "left" as const,
+                    width: 28, height: 28, borderRadius: 7, background: "none",
+                    border: "1px solid var(--border)", cursor: rows.length <= 1 ? "default" : "pointer",
+                    color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center",
+                    opacity: rows.length <= 1 ? 0.3 : 1, transition: "all 0.15s", flexShrink: 0,
                   }}
-                  onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)")}
-                  onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = "none")}
+                  onMouseEnter={e => { if (rows.length > 1) { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--red)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--red)"; } }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text3)"; }}
                 >
-                  <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: "var(--accent)", minWidth: 52 }}>{s.ticker}</span>
-                  <span style={{ fontSize: 11, color: "var(--text3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, marginLeft: 8 }}>{s.name}</span>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                  </svg>
                 </button>
-              ))}
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-            {["AAPL", "NVDA", "TSLA", "SPY"].map(t => (
-              <button
-                key={t}
-                onClick={() => loadTicker(t)}
-                style={{
-                  padding: "4px 10px", background: "rgba(var(--accent-rgb),0.06)",
-                  border: "1px solid rgba(var(--accent-rgb),0.15)", borderRadius: 16,
-                  fontSize: 10, color: "var(--accent)", fontFamily: "Space Mono,monospace",
-                  cursor: "pointer", transition: "all 0.15s", letterSpacing: 0.5,
-                }}
-                onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(var(--accent-rgb),0.12)")}
-                onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(var(--accent-rgb),0.06)")}
-              >
-                {t}
-              </button>
+              </div>
             ))}
           </div>
+          {rows.length < 5 && (
+            <button
+              onClick={() => setRows(prev => [...prev, { ticker: "", weight: "" }])}
+              style={{
+                background: "none", border: "none", fontSize: 11, color: "var(--accent)",
+                cursor: "pointer", padding: "0 0 12px", display: "flex", alignItems: "center",
+                gap: 5, transition: "opacity 0.15s",
+              }}
+              onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.opacity = "0.7")}
+              onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.opacity = "1")}
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M5 1V9M1 5H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              Add ticker
+            </button>
+          )}
+          <button
+            onClick={analyze}
+            disabled={validRows.length === 0}
+            style={{
+              width: "100%", padding: "12px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+              border: "none", letterSpacing: 0.2, transition: "all 0.2s",
+              background: validRows.length === 0 ? "var(--bg3)" : "var(--accent)",
+              color: validRows.length === 0 ? "var(--text3)" : "var(--bg)",
+              cursor: validRows.length === 0 ? "not-allowed" : "pointer",
+            }}
+            onMouseEnter={e => { if (validRows.length > 0) (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
+          >
+            Analyze Portfolio
+          </button>
         </div>
       )}
 
-      {/* Step 2: Loading shimmer */}
-      {demoStep === "loading" && (
+      {/* ─── Step 2: Loading ─── */}
+      {step === "loading" && (
         <div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+          <button disabled style={{
+            width: "100%", padding: "12px", background: "var(--accent)", border: "none",
+            borderRadius: 10, fontSize: 13, fontWeight: 700, color: "var(--bg)",
+            cursor: "not-allowed", marginBottom: 16, display: "flex",
+            alignItems: "center", justifyContent: "center", gap: 8, opacity: 0.85,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ animation: "demospin 0.8s linear infinite" }}>
+              <circle cx="7" cy="7" r="5.5" stroke="var(--bg)" strokeWidth="1.5" strokeOpacity="0.3"/>
+              <path d="M7 1.5 A5.5 5.5 0 0 1 12.5 7" stroke="var(--bg)" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            Analyzing...
+          </button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {[0, 0.1, 0.2, 0.3].map((d, i) => (
               <div key={i} style={{ background: "var(--bg3)", borderRadius: 10, padding: "14px" }}>
                 <div style={{ width: "55%", height: 8, background: "var(--border)", borderRadius: 4, marginBottom: 10, animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
-                <div style={{ width: "75%", height: 18, background: "var(--border)", borderRadius: 4, animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
+                <div style={{ width: "75%", height: 20, background: "var(--border)", borderRadius: 4, animation: `skeletonPulse 1.4s ease-in-out ${d}s infinite` }} />
               </div>
             ))}
           </div>
-          <div style={{ height: 44, background: "var(--bg3)", borderRadius: 10, marginBottom: 12, animation: "skeletonPulse 1.4s ease-in-out 0.2s infinite" }} />
-          <div style={{ height: 36, background: "var(--bg3)", borderRadius: 10, animation: "skeletonPulse 1.4s ease-in-out 0.3s infinite", width: "40%", marginLeft: "auto" }} />
         </div>
       )}
 
-      {/* Step 3: Results */}
-      {demoStep === "results" && demoData && (
+      {/* ─── Step 3: Results ─── */}
+      {step === "results" && result && (
         <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, animation: "fadein 0.4s ease 0s both" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "Space Mono,monospace", fontSize: 7, fontWeight: 700, color: "var(--accent)",
-              }}>
-                {demoData.ticker.slice(0, 4)}
-              </div>
-              <div>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", lineHeight: 1.2 }}>{demoData.name}</p>
-                <p style={{ fontSize: 9, color: "var(--text3)", marginTop: 1 }}>{demoData.ticker}</p>
-              </div>
-            </div>
-            <div style={{ textAlign: "right" as const }}>
-              <p style={{ fontFamily: "Space Mono,monospace", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{fmtPrice(demoData.price)}</p>
-              <p style={{ fontSize: 9, fontFamily: "Space Mono,monospace", color: demoData.changePct >= 0 ? "var(--green)" : "var(--red)", marginTop: 1 }}>
-                {demoData.changePct >= 0 ? "+" : ""}{demoData.changePct.toFixed(2)}%
-              </p>
-            </div>
-          </div>
-
-          {/* 4 metric cards 2x2 with stagger */}
           <div key={cardsKey} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
             {([
-              {
-                label: "Current Price",
-                content: (
-                  <>
-                    <p style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: "var(--accent)" }}>{fmtPrice(demoData.price)}</p>
-                    <p style={{ fontSize: 9, fontFamily: "Space Mono,monospace", color: demoData.changePct >= 0 ? "var(--green)" : "var(--red)", marginTop: 3 }}>
-                      {demoData.changePct >= 0 ? "+" : ""}{demoData.changePct.toFixed(2)}% today
-                    </p>
-                  </>
-                ),
-              },
-              {
-                label: "Analyst Consensus",
-                content: (
-                  <>
-                    <p style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: ratingColor(demoData.analystRating), lineHeight: 1.3 }}>{demoData.analystRating}</p>
-                    {(demoData.analystBuy + demoData.analystHold + demoData.analystSell) > 0 && (
-                      <p style={{ fontSize: 9, color: "var(--text3)", marginTop: 3 }}>
-                        {demoData.analystBuy}B &middot; {demoData.analystHold}H &middot; {demoData.analystSell}S
-                      </p>
-                    )}
-                  </>
-                ),
-              },
-              {
-                label: "52-Week Range",
-                content: demoData.week52High > 0 && demoData.week52Low > 0 ? (
-                  <>
-                    <div style={{ height: 4, background: "var(--border)", borderRadius: 2, marginBottom: 6, position: "relative" as const, overflow: "visible" as const }}>
-                      <div style={{
-                        width: `${Math.max(0, Math.min(100, ((demoData.price - demoData.week52Low) / (demoData.week52High - demoData.week52Low)) * 100))}%`,
-                        height: "100%", background: "rgba(var(--accent-rgb),0.4)", borderRadius: 2,
-                      }} />
-                      <div style={{
-                        position: "absolute" as const,
-                        left: `${Math.max(0, Math.min(100, ((demoData.price - demoData.week52Low) / (demoData.week52High - demoData.week52Low)) * 100))}%`,
-                        top: "50%", transform: "translate(-50%,-50%)",
-                        width: 8, height: 8, borderRadius: "50%",
-                        background: "var(--accent)", border: "2px solid var(--card-bg)",
-                      }} />
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 8, fontFamily: "Space Mono,monospace", color: "var(--text3)" }}>{fmtPrice(demoData.week52Low)}</span>
-                      <span style={{ fontSize: 8, fontFamily: "Space Mono,monospace", color: "var(--text3)" }}>{fmtPrice(demoData.week52High)}</span>
-                    </div>
-                  </>
-                ) : (
-                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 13, color: "var(--text3)" }}>N/A</p>
-                ),
-              },
-              {
-                label: demoData.peRatio ? "P/E Ratio" : "Market Cap",
-                content: demoData.peRatio ? (
-                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{demoData.peRatio.toFixed(1)}x</p>
-                ) : demoData.marketCap ? (
-                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{fmtMcap(demoData.marketCap)}</p>
-                ) : (
-                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 16, fontWeight: 700, color: "var(--text3)" }}>N/A</p>
-                ),
-              },
-            ] as { label: string; content: React.ReactNode }[]).map(({ label, content }, i) => (
+              { label: "Portfolio Return", value: fmtPct(result.cagr), color: result.cagr >= 0 ? "var(--green)" : "var(--red)", sub: "1Y CAGR" },
+              { label: "Volatility", value: fmtPct(result.volatility), color: "var(--accent)", sub: "Annualized" },
+              { label: "Sharpe Ratio", value: result.sharpe.toFixed(2), color: "var(--text)", sub: result.sharpe >= 1 ? "Above average" : "Below 1.0" },
+              { label: "vs S&P 500", value: vsBenchmark != null ? fmtPct(vsBenchmark) : "N/A", color: vsBenchmark != null ? (vsBenchmark >= 0 ? "var(--green)" : "var(--red)") : "var(--text3)", sub: vsBenchmark != null ? (vsBenchmark >= 0 ? "Outperforming" : "Underperforming") : "" },
+            ]).map(({ label, value, color, sub }, i) => (
               <motion.div
                 key={i}
                 // initial={false} is required — do not remove
@@ -1868,11 +1834,12 @@ function InteractiveDemoWidget() {
                 style={{ opacity: 0 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1], delay: i * 0.08 }}
+                transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1], delay: i * 0.08 }}
               >
-                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
-                  <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 7 }}>{label}</p>
-                  {content}
+                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: "11px 13px" }}>
+                  <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 6 }}>{label}</p>
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color, letterSpacing: -0.5, lineHeight: 1 }}>{value}</p>
+                  {sub && <p style={{ fontSize: 9, color: "var(--text3)", marginTop: 4 }}>{sub}</p>}
                 </div>
               </motion.div>
             ))}
@@ -1888,9 +1855,8 @@ function InteractiveDemoWidget() {
             transition={{ duration: 0.4, delay: 0.32 }}
           >
             <div style={{
-              background: "rgba(var(--accent-rgb),0.05)",
-              border: "1px solid rgba(var(--accent-rgb),0.12)",
-              borderRadius: 10, padding: "10px 12px", marginBottom: 12,
+              background: "rgba(var(--accent-rgb),0.05)", border: "1px solid rgba(var(--accent-rgb),0.12)",
+              borderRadius: 10, padding: "10px 12px", marginBottom: 10,
               display: "flex", alignItems: "flex-start", gap: 8,
             }}>
               <img src="/corvo-logo.svg" width={12} height={10} alt="" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
@@ -1903,39 +1869,59 @@ function InteractiveDemoWidget() {
             </div>
           </motion.div>
 
+          {/* Feature banner */}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false}
+            style={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+          >
+            <div style={{
+              background: "rgba(var(--accent-rgb),0.04)", border: "1px solid rgba(var(--accent-rgb),0.1)",
+              borderRadius: 8, padding: "9px 12px", marginBottom: 12,
+            }}>
+              <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.6 }}>
+                <span style={{ color: "var(--text2)", fontWeight: 500 }}>The real Corvo includes:</span>{" "}
+                Health Score, Monte Carlo simulation, tax loss harvesting, earnings alerts, insider activity tracking, AI chat, and more. All free.
+              </p>
+            </div>
+          </motion.div>
+
           {/* CTA + reset */}
           <motion.div
             // initial={false} is required — do not remove
             initial={false}
-            style={{ opacity: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}
+            style={{ opacity: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: 0.4 }}
+            transition={{ duration: 0.4, delay: 0.48 }}
           >
             <button
               onClick={reset}
               style={{
                 background: "none", border: "none", fontSize: 11, color: "var(--text3)",
                 cursor: "pointer", padding: 0, textDecoration: "underline", textUnderlineOffset: 3,
-                transition: "color 0.15s",
+                transition: "color 0.15s", whiteSpace: "nowrap" as const,
               }}
               onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = "var(--text)")}
               onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.color = "var(--text3)")}
             >
-              Try another ticker
+              Try different tickers
             </button>
             <Link
               href="/auth?mode=signup"
               style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "8px 18px", background: "var(--accent)",
-                borderRadius: 8, fontSize: 12, fontWeight: 700, color: "var(--bg)",
-                textDecoration: "none", transition: "transform 0.15s",
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "9px 14px", background: "var(--accent)",
+                borderRadius: 8, fontSize: 11, fontWeight: 700, color: "var(--bg)",
+                textDecoration: "none", transition: "transform 0.15s", whiteSpace: "nowrap" as const,
               }}
               onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)")}
               onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)")}
             >
-              See full analysis →
+              Get the full analysis free →
             </Link>
           </motion.div>
         </div>
@@ -2288,6 +2274,7 @@ export default function Landing() {
         @keyframes skeletonPulse{0%,100%{opacity:0.4}50%{opacity:0.9}}
         @keyframes drawLoopLine{0%,3%{stroke-dashoffset:1}65%,87%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
         @keyframes xpLoop{0%,5%{width:0%}55%,82%{width:72%}92%,100%{width:0%}}
+        @keyframes demospin{to{transform:rotate(360deg)}}
         .cta{transition:all 0.25s!important}.cta:hover{background:var(--accent)!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(var(--accent-rgb),0.25)!important}
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(var(--accent-rgb),0.4)!important;color:var(--accent)!important}
         .nl:hover{color:var(--accent)!important}
