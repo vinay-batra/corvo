@@ -1533,12 +1533,12 @@ function FinalCTASection() {
       <motion.div
         // initial={false} is required — do not remove
         initial={false}
-        style={{ opacity: 0, position: "relative", zIndex: 1 }}
+        style={{ opacity: 0, position: "relative", zIndex: 1, background: "transparent" }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6, ease: ANIM_EASE }}
       >
-        <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center", background: "transparent" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
             <img src="/corvo-logo.svg" width={32} height={32} alt="Corvo" style={{ opacity: 0.8 }} />
           </div>
@@ -2442,70 +2442,72 @@ const TESTIMONIALS_3D = [
   { text: "I just ran the Monte Carlo and the other sims and it completely changed how I think about my retirement, its actually crazy. I did not realize how exposed I was.", name: "Tyler", role: "Active Trader" },
   { text: "I love how it tells me what to do with my holdings and gives me suggestions instead of just giving me metrics.", name: "Maya L.", role: "Retail Investor" },
 ];
-function TestimonialCarousel3D() {
-  const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const N = TESTIMONIALS_3D.length;
-  useEffect(() => {
-    if (paused) return;
-    const id = setInterval(() => setActive(a => (a + 1) % N), 5500);
-    return () => clearInterval(id);
-  }, [paused, N]);
-  const rel = (i: number) => {
-    let d = i - active;
-    if (d > N / 2) d -= N;
-    if (d < -N / 2) d += N;
-    return d;
+function TestimonialHorizontalCarousel() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollBy = (dir: number) => {
+    scrollRef.current?.scrollBy({ left: dir * 400, behavior: "smooth" });
   };
   return (
-    <div
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      style={{
-        position: "relative", height: 380,
-        perspective: "1600px",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        marginBottom: 56,
-      }}
-    >
-      {TESTIMONIALS_3D.map((t, i) => {
-        const d = rel(i);
-        if (Math.abs(d) > 2) return null;
-        const isCenter = d === 0;
-        const tx = d * 280;
-        const ty = isCenter ? -8 : 0;
-        const tz = isCenter ? 0 : -160;
-        const ry = d * -45;
-        const sc = isCenter ? 1 : 0.75;
-        const op = isCenter ? 1 : 0.35;
-        const z = 10 - Math.abs(d);
-        return (
-          <div
-            key={i}
-            onClick={() => !isCenter && setActive(i)}
-            style={{
-              position: "absolute",
-              width: 380, maxWidth: "85vw",
-              transform: `translateX(${tx}px) translateY(${ty}px) translateZ(${tz}px) rotateY(${ry}deg) scale(${sc})`,
-              opacity: op,
-              transition: "transform 0.6s cubic-bezier(0.16,1,0.3,1), opacity 0.6s cubic-bezier(0.16,1,0.3,1)",
-              transformStyle: "preserve-3d" as const,
-              cursor: isCenter ? "default" : "pointer",
-              zIndex: z,
-            }}
-          >
+    <div style={{ position: "relative", marginBottom: 56 }}>
+      <button
+        onClick={() => scrollBy(-1)}
+        aria-label="Scroll testimonials left"
+        className="testi-arrow"
+        style={{
+          position: "absolute", left: 0, top: "50%", transform: "translateY(-60%)",
+          width: 44, height: 44, borderRadius: "50%",
+          background: "rgba(var(--accent-rgb),0.1)",
+          border: "1px solid rgba(var(--accent-rgb),0.3)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", zIndex: 2,
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M11 14L7 9l4-5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      <button
+        onClick={() => scrollBy(1)}
+        aria-label="Scroll testimonials right"
+        className="testi-arrow"
+        style={{
+          position: "absolute", right: 0, top: "50%", transform: "translateY(-60%)",
+          width: 44, height: 44, borderRadius: "50%",
+          background: "rgba(var(--accent-rgb),0.1)",
+          border: "1px solid rgba(var(--accent-rgb),0.3)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", zIndex: 2,
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M7 4l4 5-4 5" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      <div
+        ref={scrollRef}
+        className="testi-scroll-container"
+        style={{
+          display: "flex",
+          overflowX: "auto",
+          scrollBehavior: "smooth",
+          gap: 20,
+          padding: "20px 56px 40px",
+          scrollbarWidth: "none" as const,
+        }}
+      >
+        {TESTIMONIALS_3D.map((t, i) => (
+          <ScrollReveal key={i} from="right" delay={i * 0.08} style={{ flex: "0 0 380px" }}>
             <div style={{
               position: "relative",
               padding: "36px 36px 28px",
-              border: isCenter ? "1px solid rgba(var(--accent-rgb),0.28)" : "1px solid var(--border)",
+              border: "1px solid var(--border)",
               borderRadius: 20,
               background: "var(--card-bg)",
               backdropFilter: "blur(14px)",
-              boxShadow: isCenter
-                ? "0 40px 100px rgba(0,0,0,0.45), 0 0 80px rgba(var(--accent-rgb),0.14)"
-                : "0 18px 50px rgba(0,0,0,0.3)",
+              boxShadow: "0 18px 50px rgba(0,0,0,0.12)",
               minHeight: 290,
-              display: "flex", flexDirection: "column" as const,
+              display: "flex",
+              flexDirection: "column" as const,
             }}>
               <span style={{ fontFamily: "Georgia, serif", fontSize: 64, color: "var(--accent)", opacity: 0.22, lineHeight: 1, position: "absolute", top: 14, left: 22 }}>"</span>
               <p style={{ fontSize: 15, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, marginBottom: 26, marginTop: 28, flex: 1 }}>{t.text}</p>
@@ -2514,25 +2516,7 @@ function TestimonialCarousel3D() {
                 <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{t.role}</p>
               </div>
             </div>
-          </div>
-        );
-      })}
-      <div style={{
-        position: "absolute", bottom: -8, left: "50%",
-        transform: "translateX(-50%)", display: "flex", gap: 8,
-      }}>
-        {TESTIMONIALS_3D.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setActive(i)}
-            aria-label={`Go to testimonial ${i + 1}`}
-            style={{
-              width: i === active ? 24 : 8, height: 8, borderRadius: 4,
-              background: i === active ? "var(--accent)" : "rgba(var(--accent-rgb),0.25)",
-              border: "none", cursor: "pointer", padding: 0,
-              transition: "all 0.3s ease",
-            }}
-          />
+          </ScrollReveal>
         ))}
       </div>
     </div>
@@ -2624,36 +2608,18 @@ function GsapHero({
         ease: "power2.out",
       });
 
-      // ── Headline slam-in: chars from random directions ──
+      // ── Headline slam-in: chars slide in left to right, sequential ──
       if (chars.length) {
-        const initialStates = chars.map(() => {
-          const r = Math.random();
-          // 0=left, 1=right, 2=above
-          const dir = r < 0.34 ? 0 : r < 0.68 ? 1 : 2;
-          const dx = dir === 0 ? -240 - Math.random() * 200 : dir === 1 ? 240 + Math.random() * 200 : (Math.random() - 0.5) * 80;
-          const dy = dir === 2 ? -260 - Math.random() * 160 : (Math.random() - 0.5) * 60;
-          const rot = (Math.random() - 0.5) * 36;
-          return { dx, dy, rot };
-        });
-        chars.forEach((c, i) => {
-          const s = initialStates[i];
-          gsap.set(c, {
-            x: s.dx,
-            y: s.dy,
-            rotation: s.rot,
-            opacity: 0,
-            transformOrigin: "50% 50%",
-          });
-        });
-        gsap.to(chars, {
-          x: 0,
-          y: 0,
-          rotation: 0,
-          opacity: 1,
-          duration: 0.8,
-          ease: "back.out(1.4)",
-          stagger: 0.04,
-        });
+        gsap.fromTo(chars,
+          { x: -40, opacity: 0 },
+          {
+            x: 0,
+            opacity: 1,
+            duration: 0.6,
+            ease: "power3.out",
+            stagger: 0.03,
+          }
+        );
       }
 
       // ── Subtitle + CTA + stats: fade after headline ──
@@ -3010,11 +2976,11 @@ function GsapHero({
             className="gh-headline"
             style={{
               fontFamily: "Space Mono,monospace",
-              fontSize: "clamp(36px,5.6vw,76px)",
+              fontSize: "clamp(32px,4vw,56px)",
               fontWeight: 700,
-              lineHeight: 1.04,
-              letterSpacing: -3,
-              marginBottom: 28,
+              lineHeight: 1.15,
+              letterSpacing: -1,
+              marginBottom: 20,
               position: "relative",
               zIndex: 1,
               color: "var(--text)",
@@ -3088,16 +3054,16 @@ function GsapHero({
             >
               <div
                 style={{
-                  background: "rgba(10,14,20,0.9)",
-                  border: "1px solid rgba(var(--accent-rgb),0.2)",
+                  background: "var(--card-bg)",
+                  border: "1px solid var(--border)",
                   borderRadius: 12,
                   padding: "10px 14px",
                   backdropFilter: "blur(16px)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(var(--accent-rgb),0.05)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 0 20px rgba(var(--accent-rgb),0.05)",
                   animation: `float 6s ease-in-out ${m.floatDelay} infinite`,
                 }}
               >
-                <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 4 }}>
+                <p style={{ fontSize: 7, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 4 }}>
                   {m.label}
                 </p>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 17, fontWeight: 700, color: m.color, letterSpacing: -0.5, lineHeight: 1 }}>
@@ -3106,6 +3072,13 @@ function GsapHero({
               </div>
             </div>
           ))}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+            <div style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)", borderRadius: 20, padding: "4px 12px", display: "inline-flex", alignItems: "center" }}>
+              <span style={{ fontFamily: "Space Mono, monospace", fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase" }}>
+                INTERACTIVE DEMO
+              </span>
+            </div>
+          </div>
           <InteractiveDemoWidget />
         </div>
       </div>
@@ -3337,6 +3310,8 @@ export default function Landing() {
           .hero-btns>*{width:100%!important;max-width:360px!important}
           .trust-grid{grid-template-columns:1fr!important}
         }
+        .testi-scroll-container::-webkit-scrollbar{display:none}
+        @media(max-width:768px){.testi-arrow{display:none!important}.testi-scroll-container{padding:20px 20px 40px!important}}
         .x-social-link:hover{color:var(--accent)!important}
         .mobile-desktop-banner{display:none!important}
         @media(max-width:767px){
@@ -3556,14 +3531,7 @@ export default function Landing() {
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Voices</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,3.6vw,44px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2 }}>What investors are saying</h2>
           </ScrollReveal>
-          {/* Desktop: 3D rotating carousel */}
-          <div className="testi-desktop">
-            <TestimonialCarousel3D />
-          </div>
-          {/* Mobile: one-at-a-time carousel with arrows + dots */}
-          <div className="testi-mobile" style={{ display: "none" }}>
-            <MobileTestimonialCarousel />
-          </div>
+          <TestimonialHorizontalCarousel />
         </div>
       </section>
 
