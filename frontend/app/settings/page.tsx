@@ -486,98 +486,102 @@ export default function SettingsPage({
     </div>
   );
 
-  const renderNotifications = () => (
-    <div>
-      <SectionTitle>Notifications</SectionTitle>
+  const renderNotifications = () => {
+    const rows = [
+      {
+        label: "Morning Briefing",
+        desc: "Daily portfolio and market teaser at 6am ET",
+        email: { on: morningBriefing, onChange: () => { const v = !morningBriefing; setMorningBriefing(v); void saveNotifs(v, marketCloseSummary, weekInReview, monthlySummary, priceAlerts); }},
+        push: { on: pushMorningBriefing, onChange: () => { const v = !pushMorningBriefing; setPushMorningBriefing(v); void savePushPrefs(v, pushMarketClose, pushPriceAlerts, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }},
+      },
+      {
+        label: "Market Close Summary",
+        desc: "Daily recap of holdings at 4:05pm ET",
+        email: { on: marketCloseSummary, onChange: () => { const v = !marketCloseSummary; setMarketCloseSummary(v); void saveNotifs(morningBriefing, v, weekInReview, monthlySummary, priceAlerts); }},
+        push: { on: pushMarketClose, onChange: () => { const v = !pushMarketClose; setPushMarketClose(v); void savePushPrefs(pushMorningBriefing, v, pushPriceAlerts, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }},
+      },
+      {
+        label: "Week in Review",
+        desc: "Weekly recap every Monday at 6am ET",
+        email: { on: weekInReview, onChange: () => { const v = !weekInReview; setWeekInReview(v); void saveNotifs(morningBriefing, marketCloseSummary, v, monthlySummary, priceAlerts); }},
+        push: null,
+      },
+      {
+        label: "Monthly Summary",
+        desc: "Month-end return summary on the 1st",
+        email: { on: monthlySummary, onChange: () => { const v = !monthlySummary; setMonthlySummary(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, v, priceAlerts); }},
+        push: null,
+      },
+      {
+        label: "Price Alerts",
+        desc: "Instant alert when a stock crosses your target",
+        email: { on: priceAlerts, onChange: () => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, monthlySummary, v); }},
+        push: { on: pushPriceAlerts, onChange: () => { const v = !pushPriceAlerts; setPushPriceAlerts(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, v, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }},
+      },
+      {
+        label: "Price Target Hit",
+        desc: "Alert when a stock reaches your saved target",
+        email: null,
+        push: { on: pushPriceTargets, onChange: () => { const v = !pushPriceTargets; setPushPriceTargets(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, v, pushWeeklyCheckup, pushEarningsReminders); }},
+      },
+      {
+        label: "Weekly Portfolio Checkup",
+        desc: "Monday morning push with your health score",
+        email: null,
+        push: { on: pushWeeklyCheckup, onChange: () => { const v = !pushWeeklyCheckup; setPushWeeklyCheckup(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, pushPriceTargets, v, pushEarningsReminders); }},
+      },
+      {
+        label: "Earnings Reminders",
+        desc: "Push the day before a holding reports earnings",
+        email: null,
+        push: { on: pushEarningsReminders, onChange: () => { const v = !pushEarningsReminders; setPushEarningsReminders(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, pushPriceTargets, pushWeeklyCheckup, v); }},
+      },
+    ];
 
-      {/* Email Notifications group */}
-      <div style={{ marginBottom: 36 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4, paddingBottom: 8, borderBottom: "0.5px solid var(--border)" }}>
-          Email Notifications
+    return (
+      <div>
+        <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 24, lineHeight: 1.6 }}>
+          Choose how you want to be notified. Email notifications are sent to your registered address.
+        </p>
+
+        {/* Table header */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px", gap: 8, padding: "0 0 10px", borderBottom: "1px solid var(--border)", marginBottom: 4 }}>
+          <div />
+          <div style={{ textAlign: "center", fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", fontFamily: "Space Mono, monospace" }}>Email</div>
+          <div style={{ textAlign: "center", fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", fontFamily: "Space Mono, monospace" }}>Push</div>
         </div>
-        <Row label="Morning Briefing" desc="Daily portfolio and market teaser delivered at 6am ET">
-          <Toggle on={morningBriefing} onChange={() => { const v = !morningBriefing; setMorningBriefing(v); void saveNotifs(v, marketCloseSummary, weekInReview, monthlySummary, priceAlerts); }} />
-        </Row>
-        <Row label="Market Close Summary" desc="Daily recap of your holdings at 4:05pm ET with best and worst performers">
-          <Toggle on={marketCloseSummary} onChange={() => { const v = !marketCloseSummary; setMarketCloseSummary(v); void saveNotifs(morningBriefing, v, weekInReview, monthlySummary, priceAlerts); }} />
-        </Row>
-        <Row label="Week in Review" desc="Weekly recap of your portfolio performance sent every Monday at 6am ET">
-          <Toggle on={weekInReview} onChange={() => { const v = !weekInReview; setWeekInReview(v); void saveNotifs(morningBriefing, marketCloseSummary, v, monthlySummary, priceAlerts); }} />
-        </Row>
-        <Row label="Monthly Summary" desc="Month-end portfolio return summary sent on the 1st of each month">
-          <Toggle on={monthlySummary} onChange={() => { const v = !monthlySummary; setMonthlySummary(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, v, priceAlerts); }} />
-        </Row>
-        <Row label="Price Alerts" desc="Instant email when a monitored stock crosses your alert price">
-          <Toggle on={priceAlerts} onChange={() => { const v = !priceAlerts; setPriceAlerts(v); void saveNotifs(morningBriefing, marketCloseSummary, weekInReview, monthlySummary, v); }} />
-        </Row>
-        {emailThemeSupported && (
-          <Row label="Email Theme" desc="Choose light or dark background for all Corvo emails">
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 12, color: "var(--text3)" }}>{emailTheme === "dark" ? "Dark" : "Light"}</span>
-              <Toggle on={emailTheme === "dark"} onChange={() => {
-                const next: "light" | "dark" = emailTheme === "dark" ? "light" : "dark";
-                setEmailTheme(next);
-                void saveEmailTheme(next);
-              }} />
+
+        {/* Rows */}
+        {rows.map((row, i) => (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px", gap: 8, alignItems: "center", padding: "14px 0", borderBottom: "1px solid var(--border)" }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text)", marginBottom: 2 }}>{row.label}</p>
+              <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.5 }}>{row.desc}</p>
             </div>
-          </Row>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+              {row.email ? <Toggle on={row.email.on} onChange={row.email.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}>—</span>}
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+              {row.push ? <Toggle on={row.push.on} onChange={row.push.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}>—</span>}
+            </div>
+          </div>
+        ))}
+
+        {/* Push permission banner if needed */}
+        {pushPermission === "default" && (
+          <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(var(--accent-rgb),0.06)", border: "1px solid rgba(var(--accent-rgb),0.2)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <p style={{ fontSize: 13, color: "var(--text2)" }}>Enable browser push notifications to use push toggles.</p>
+            <button onClick={requestPushPermission} style={{ padding: "7px 16px", background: "var(--accent)", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "var(--bg)", cursor: "pointer", whiteSpace: "nowrap" }}>Enable Push</button>
+          </div>
+        )}
+        {pushPermission === "denied" && (
+          <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(224,92,92,0.06)", border: "1px solid rgba(224,92,92,0.2)", borderRadius: 10 }}>
+            <p style={{ fontSize: 13, color: "var(--text2)" }}>Push notifications are blocked. Enable them in your browser settings to use push toggles.</p>
+          </div>
         )}
       </div>
-
-      {/* Push Notifications group */}
-      <div>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4, paddingBottom: 8, borderBottom: "0.5px solid var(--border)" }}>
-          Push Notifications
-        </div>
-
-        {pushPermission === "unsupported" ? (
-          <div style={{ fontSize: 12, color: "var(--text3)", padding: "12px 0", lineHeight: 1.5 }}>
-            Your browser does not support push notifications.
-          </div>
-        ) : pushPermission === "denied" ? (
-          <div style={{ margin: "12px 0", padding: "12px 14px", borderRadius: "var(--radius)", border: "0.5px solid var(--border)", background: "var(--bg3)" }}>
-            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--text)", marginBottom: 4 }}>Browser notifications are blocked</div>
-            <div style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
-              To re-enable, open your browser settings, find the Corvo site entry under Notifications, and change the permission to Allow. You may need to reload the page after.
-            </div>
-          </div>
-        ) : pushPermission === "default" ? (
-          <div style={{ margin: "12px 0 16px" }}>
-            <button
-              onClick={requestPushPermission}
-              style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, borderRadius: "var(--radius)", border: "0.5px solid var(--accent)", background: "rgba(var(--accent-rgb), 0.08)", color: "var(--accent)", cursor: "pointer", transition: "background 0.15s" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "rgba(var(--accent-rgb), 0.16)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "rgba(var(--accent-rgb), 0.08)")}
-            >
-              Enable Browser Notifications
-            </button>
-            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 7, lineHeight: 1.5 }}>
-              You can still configure your preferences below. Notifications will fire once permission is granted.
-            </div>
-          </div>
-        ) : null}
-
-        <Row label="Morning Briefing" desc="Push notification at 6am ET with your daily market brief">
-          <Toggle on={pushMorningBriefing} onChange={() => { const v = !pushMorningBriefing; setPushMorningBriefing(v); void savePushPrefs(v, pushMarketClose, pushPriceAlerts, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }} />
-        </Row>
-        <Row label="Market Close Summary" desc="Push alert at 4:05pm ET summarizing today's portfolio moves">
-          <Toggle on={pushMarketClose} onChange={() => { const v = !pushMarketClose; setPushMarketClose(v); void savePushPrefs(pushMorningBriefing, v, pushPriceAlerts, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }} />
-        </Row>
-        <Row label="Price Alerts" desc="Instant push when a stock hits your alert price">
-          <Toggle on={pushPriceAlerts} onChange={() => { const v = !pushPriceAlerts; setPushPriceAlerts(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, v, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }} />
-        </Row>
-        <Row label="Price Target Hit" desc="Push notification when a stock reaches your saved price target">
-          <Toggle on={pushPriceTargets} onChange={() => { const v = !pushPriceTargets; setPushPriceTargets(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, v, pushWeeklyCheckup, pushEarningsReminders); }} />
-        </Row>
-        <Row label="Weekly Portfolio Checkup" desc="Monday morning push summarizing your portfolio health score">
-          <Toggle on={pushWeeklyCheckup} onChange={() => { const v = !pushWeeklyCheckup; setPushWeeklyCheckup(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, pushPriceTargets, v, pushEarningsReminders); }} />
-        </Row>
-        <Row label="Earnings Reminders" desc="Push reminder the day before a holding in your portfolio reports earnings">
-          <Toggle on={pushEarningsReminders} onChange={() => { const v = !pushEarningsReminders; setPushEarningsReminders(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, pushPriceTargets, pushWeeklyCheckup, v); }} />
-        </Row>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderInvestorProfile = () => (
     <div>
