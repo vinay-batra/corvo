@@ -1953,9 +1953,9 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
 
   // Simplified Monte Carlo projections
   const MC_BASE = 10000, MC_YEARS = 10;
-  const mcLow  = result ? MC_BASE * Math.pow(1 + result.cagr * 0.3, MC_YEARS) : 0;
-  const mcMed  = result ? MC_BASE * Math.pow(1 + result.cagr * 0.6, MC_YEARS) : 0;
-  const mcHigh = result ? MC_BASE * Math.pow(1 + result.cagr,       MC_YEARS) : 0;
+  const mcLow  = result ? MC_BASE * Math.pow(1 + Math.min(result.cagr * 0.3, 0.08),  MC_YEARS) : 0;
+  const mcMed  = result ? MC_BASE * Math.pow(1 + Math.min(result.cagr * 0.7, 0.14),  MC_YEARS) : 0;
+  const mcHigh = result ? MC_BASE * Math.pow(1 + Math.min(result.cagr,       0.18),  MC_YEARS) : 0;
   const mcMax  = Math.max(mcHigh, mcMed, mcLow, MC_BASE * 1.01);
 
   return (
@@ -2103,15 +2103,15 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
             transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
           >
             {([
-              { label: "Return", value: fmtPct(result.cagr), color: result.cagr >= 0 ? "var(--green)" : "var(--red)", large: true },
-              { label: "Volatility", value: fmtPct(result.volatility), color: "var(--accent)", large: false },
-              { label: "Sharpe", value: result.sharpe.toFixed(2), color: "var(--text)", large: false },
-              { label: "vs S&P", value: vsBenchmark != null ? fmtPct(vsBenchmark) : "N/A", color: vsBenchmark != null ? (vsBenchmark >= 0 ? "var(--green)" : "var(--red)") : "var(--text3)", large: false },
-            ]).map(({ label, value, color, large }, i) => (
+              { label: "Return", value: fmtPct(result.cagr), color: result.cagr >= 0 ? "var(--green)" : "var(--red)" },
+              { label: "Volatility", value: fmtPct(result.volatility), color: "var(--accent)" },
+              { label: "Sharpe", value: result.sharpe.toFixed(2), color: "var(--text)" },
+              { label: "vs S&P", value: vsBenchmark != null ? fmtPct(vsBenchmark) : "N/A", color: vsBenchmark != null ? (vsBenchmark >= 0 ? "var(--green)" : "var(--red)") : "var(--text3)" },
+            ]).map(({ label, value, color }, i) => (
               <div
                 key={i}
                 style={{
-                  flex: large ? "1.4" : "1",
+                  flex: "1",
                   background: "var(--bg2)",
                   border: "1px solid var(--border)",
                   borderRadius: 12,
@@ -2122,7 +2122,7 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
                 <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 5, whiteSpace: "nowrap" as const }}>{label}</p>
                 <p style={{
                   fontFamily: "Space Mono,monospace",
-                  fontSize: large ? 28 : 15,
+                  fontSize: 18,
                   fontWeight: 700,
                   color,
                   letterSpacing: -0.5,
@@ -2143,26 +2143,51 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.18 }}
           >
-            <svg width="100%" height="48" viewBox="0 0 320 48" preserveAspectRatio="none" style={{ display: "block" }}>
-              <defs>
-                <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.18" />
-                  <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M0,42 C20,40 40,36 60,32 C80,28 100,30 120,24 C140,18 160,20 180,14 C200,8 220,10 240,6 C260,2 280,4 320,2"
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                opacity="0.7"
-              />
-              <path
-                d="M0,42 C20,40 40,36 60,32 C80,28 100,30 120,24 C140,18 160,20 180,14 C200,8 220,10 240,6 C260,2 280,4 320,2 L320,48 L0,48 Z"
-                fill="url(#sparkFill)"
-              />
-            </svg>
+            {(() => {
+              const startVal = 10000;
+              const endVal = result ? startVal * Math.pow(1 + result.cagr, 10) : startVal;
+              const midVal = (startVal + endVal) / 2;
+              const fmtK = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`;
+              return (
+                <svg width="100%" height="80" viewBox="0 0 320 80" preserveAspectRatio="none" style={{ display: "block" }}>
+                  <defs>
+                    <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.18" />
+                      <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {/* Grid lines */}
+                  <line x1="0" y1="20" x2="300" y2="20" stroke="rgba(201,168,76,0.08)" strokeWidth="0.5" />
+                  <line x1="0" y1="40" x2="300" y2="40" stroke="rgba(201,168,76,0.08)" strokeWidth="0.5" />
+                  <line x1="0" y1="60" x2="300" y2="60" stroke="rgba(201,168,76,0.08)" strokeWidth="0.5" />
+                  {/* Y-axis labels */}
+                  <text x="304" y="63" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">{fmtK(startVal)}</text>
+                  <text x="304" y="41" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">{fmtK(midVal)}</text>
+                  <text x="304" y="12" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">{fmtK(endVal)}</text>
+                  {/* Line */}
+                  <path
+                    d="M0,62 C20,60 40,56 60,50 C80,44 100,46 120,38 C140,30 160,32 180,22 C200,12 220,14 240,8 C260,4 280,5 300,3"
+                    fill="none"
+                    stroke="var(--accent)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    opacity="0.85"
+                  />
+                  {/* Filled area */}
+                  <path
+                    d="M0,62 C20,60 40,56 60,50 C80,44 100,46 120,38 C140,30 160,32 180,22 C200,12 220,14 240,8 C260,4 280,5 300,3 L300,70 L0,70 Z"
+                    fill="url(#sparkFill)"
+                  />
+                  {/* End dot */}
+                  <circle cx="300" cy="3" r="3" fill="var(--accent)" />
+                  {/* X-axis labels */}
+                  <text x="0" y="78" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">Now</text>
+                  <text x="88" y="78" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">3yr</text>
+                  <text x="188" y="78" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">6yr</text>
+                  <text x="288" y="78" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">10yr</text>
+                </svg>
+              );
+            })()}
           </motion.div>
 
           {/* AI insight: amber dot + italic text */}
@@ -3067,6 +3092,7 @@ function GsapHero({
 
         {/* RIGHT */}
         <div ref={demoRef} className="hero-right" style={{ position: "relative", willChange: "transform, opacity" }}>
+          <div className={demoActive ? "hero-metrics-hidden" : ""} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
           {[
             { label: "Sharpe Ratio", value: "0.66", color: "var(--accent)", style: { top: -28, left: -48 } as React.CSSProperties, floatDelay: "0s" },
             { label: "1Y Return", value: "+18.4%", color: "var(--green)", style: { top: 80, right: -64 } as React.CSSProperties, floatDelay: "1.2s" },
@@ -3081,10 +3107,7 @@ function GsapHero({
                 position: "absolute",
                 zIndex: 3,
                 willChange: "transform, opacity",
-                opacity: demoActive ? 0 : 1,
-                transform: demoActive ? "scale(0.8)" : "scale(1)",
-                transition: "opacity 0.4s ease, transform 0.4s ease",
-                pointerEvents: demoActive ? "none" : "auto",
+                pointerEvents: "auto",
                 ...m.style,
               }}
             >
@@ -3108,6 +3131,7 @@ function GsapHero({
               </div>
             </div>
           ))}
+          </div>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "0.5px solid rgba(var(--accent-rgb),0.25)", background: "rgba(var(--accent-rgb),0.06)", borderRadius: 100, padding: "4px 12px" }}>
               <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
@@ -3296,6 +3320,7 @@ export default function Landing() {
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(var(--accent-rgb),0.4)!important;color:var(--accent)!important}
         .nl:hover{color:var(--accent)!important}
         .demo-btn{animation:amberPulse 3s ease-in-out infinite}
+        .hero-metrics-hidden .hero-metric-card{opacity:0!important;transform:scale(0.85)!important;pointer-events:none!important;transition:opacity 0.4s ease,transform 0.4s ease!important}
         @media(max-width:900px){
           .hero-metric-card{display:none!important}
           .bento-grid{display:flex!important;flex-direction:column!important}
