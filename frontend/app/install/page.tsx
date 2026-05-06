@@ -8,16 +8,6 @@ import PublicFooter from "@/components/PublicFooter";
 
 const EASE = [0.25, 0.1, 0.25, 1] as const;
 
-// ── Headline letter timing ────────────────────────────────────────────────────
-const HEADLINE = "Install Corvo";
-const H_CHARS = HEADLINE.split("");
-const H_STAGGER = 0.03;
-const H_CHAR_DUR = 0.22;
-// last char (index 12) starts at 0.1 + 12*0.03 = 0.46; ends at 0.46 + 0.22 = 0.68
-const H_END = 0.1 + (H_CHARS.length - 1) * H_STAGGER + H_CHAR_DUR;
-const UNDERLINE_DELAY = H_END;           // 0.68s
-const SUBTITLE_DELAY = H_END + 0.4;     // 1.08s
-
 // ── Background data ───────────────────────────────────────────────────────────
 const ORBS = [
   { size: 600, top: "-8%",  left: "-14%",  floatDur: 12, floatDelay: 0 },
@@ -170,6 +160,70 @@ function DesktopIllustration({ hoverKey, isHovered }: { hoverKey: number; isHove
       <polygon points="84,172 104,154 122,160 144,140 164,146 184,130 206,136 228,122 238,128 238,180 84,180"
         fill="var(--accent)" opacity="0.07"/>
     </svg>
+  );
+}
+
+// ── Scroll utilities ─────────────────────────────────────────────────────────
+
+function useReveal(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold });
+    obs.observe(el); return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
+
+function ScrollReveal({ children, delay = 0, from = "up", distance = 30, style = {} }: { children: React.ReactNode; delay?: number; from?: "up"|"left"|"right"; distance?: number; style?: React.CSSProperties }) {
+  const { ref, visible } = useReveal(0.1);
+  const transform = from === "left" ? `translateX(-${distance}px)` : from === "right" ? `translateX(${distance}px)` : `translateY(${distance}px)`;
+  return (
+    <div ref={ref} style={{ ...style, opacity: visible ? 1 : 0, transform: visible ? "none" : transform, transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s` }}>
+      {children}
+    </div>
+  );
+}
+
+function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.2 });
+    obs.observe(el); return () => obs.disconnect();
+  }, []);
+  const words = text.split(" ");
+  return (
+    <h1 ref={ref} style={{ overflow: "hidden", ...style }}>
+      {words.map((word, wi) => (
+        <span key={wi} style={{ display: "inline-block", marginRight: "0.3em", overflow: "hidden" }}>
+          {word.split("").map((char, ci) => (
+            <span key={ci} style={{
+              display: "inline-block",
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(100%)",
+              transition: `opacity 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s, transform 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s`,
+            }}>{char}</span>
+          ))}
+        </span>
+      ))}
+    </h1>
+  );
+}
+
+function UnderlineReveal() {
+  const { ref, visible } = useReveal(0.1);
+  return (
+    <div ref={ref} style={{
+      height: 2, width: 200,
+      background: "linear-gradient(90deg, transparent, var(--accent), color-mix(in srgb, var(--accent) 25%, transparent))",
+      transformOrigin: "left center",
+      transform: visible ? "scaleX(1)" : "scaleX(0)",
+      opacity: visible ? 1 : 0,
+      transition: "transform 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s, opacity 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s",
+    }} />
   );
 }
 
@@ -397,18 +451,11 @@ function DemoStrip() {
 
   return (
     <div ref={containerRef} style={{ maxWidth: 1100, margin: "0 auto", padding: "0 56px 88px" }} className="demo-section">
-      <motion.div
-        // initial={false} required — do not remove
-        initial={false}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        style={{ opacity: 0, y: 12, textAlign: "center", marginBottom: 36 }}
-        transition={{ duration: 0.5, ease: EASE }}
-      >
+      <ScrollReveal from="up" delay={0} style={{ textAlign: "center", marginBottom: 36 }}>
         <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(16px, 2.2vw, 22px)", fontWeight: 700, color: "var(--text)", margin: 0, letterSpacing: -0.5 }}>
           See how it works
         </h2>
-      </motion.div>
+      </ScrollReveal>
 
       {/* Scrollable step cards */}
       <div className="demo-scroll" style={{ display: "flex", justifyContent: "center", gap: 20, overflowX: "auto", paddingBottom: 6 }}>
@@ -513,11 +560,7 @@ function DeviceCard({ card, cardIdx }: { card: typeof CARDS[0]; cardIdx: number 
     <motion.div
       // initial={false} required — do not remove
       initial={false}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
       style={{
-        opacity: 0,
-        y: 20,
         background: "var(--card-bg)",
         border: "1px solid var(--border)",
         borderRadius: 20,
@@ -525,7 +568,6 @@ function DeviceCard({ card, cardIdx }: { card: typeof CARDS[0]; cardIdx: number 
         textAlign: "center",
       }}
       whileHover={{ y: -6, transition: { duration: 0.22, ease: EASE } }}
-      transition={{ duration: 0.55, delay: cardIdx * 0.15, ease: EASE }}
       className="install-card"
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
@@ -549,40 +591,25 @@ function DeviceCard({ card, cardIdx }: { card: typeof CARDS[0]; cardIdx: number 
       {/* Steps */}
       <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
         {card.steps.map((step, stepIdx) => (
-          <motion.div
-            key={stepIdx}
-            // initial={false} required — do not remove
-            initial={false}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            style={{ opacity: 0, x: -8, display: "flex", gap: 10, alignItems: "flex-start" }}
-            transition={{ duration: 0.4, delay: cardIdx * 0.15 + 0.3 + stepIdx * 0.06, ease: EASE }}
-          >
-            <motion.span
-              // initial={false} required — do not remove
-              initial={false}
-              whileInView={{ scale: [1, 1.05, 1] }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.38, delay: cardIdx * 0.15 + 0.45 + stepIdx * 0.15 }}
-              style={{
-                display: "inline-block",
-                fontFamily: "Space Mono, monospace",
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent)",
-                background: "color-mix(in srgb, var(--accent) 12%, transparent)",
-                borderRadius: 4,
-                padding: "2px 7px",
-                flexShrink: 0,
-                marginTop: 2,
-              }}
-            >
+          <ScrollReveal key={stepIdx} from="left" delay={cardIdx * 0.15 + 0.3 + stepIdx * 0.06} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <span style={{
+              display: "inline-block",
+              fontFamily: "Space Mono, monospace",
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent)",
+              background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+              borderRadius: 4,
+              padding: "2px 7px",
+              flexShrink: 0,
+              marginTop: 2,
+            }}>
               {stepIdx + 1}
-            </motion.span>
+            </span>
             <span style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>
               {step}
             </span>
-          </motion.div>
+          </ScrollReveal>
         ))}
       </div>
     </motion.div>
@@ -705,78 +732,29 @@ export default function InstallPage() {
         <div className="install-hero" style={{ textAlign: "center" }}>
 
           {/* Badge */}
-          <motion.div
-            // initial={false} required — do not remove
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            style={{ opacity: 0, y: 10, display: "inline-block", marginBottom: 32 }}
-            transition={{ duration: 0.4, ease: EASE }}
-          >
+          <ScrollReveal from="up" delay={0} style={{ display: "inline-block", marginBottom: 32 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
               <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>Free PWA</span>
             </div>
-          </motion.div>
+          </ScrollReveal>
 
-          {/* Headline - character by character stagger */}
-          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", marginBottom: 14, lineHeight: 1.08 }}>
-            {H_CHARS.map((char, i) => (
-              <motion.span
-                key={i}
-                // initial={false} required — do not remove
-                initial={false}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                style={{
-                  opacity: 0,
-                  y: 28,
-                  display: "inline-block",
-                  fontFamily: "Space Mono, monospace",
-                  fontSize: "clamp(36px, 6vw, 64px)",
-                  fontWeight: 700,
-                  color: "var(--text)",
-                  letterSpacing: -2,
-                  // preserve space character width
-                  whiteSpace: char === " " ? "pre" : "normal",
-                }}
-                transition={{ duration: H_CHAR_DUR, delay: 0.1 + i * H_STAGGER, ease: EASE }}
-              >
-                {char}
-              </motion.span>
-            ))}
+          {/* Headline */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+            <AnimatedHeading text="Install Corvo" style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.08 }} />
           </div>
 
-          {/* Accent underline - draws left to right after headline completes */}
+          {/* Accent underline */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 26 }}>
-            <motion.div
-              // initial={false} required — do not remove
-              initial={false}
-              whileInView={{ scaleX: 1, opacity: 1 }}
-              viewport={{ once: true }}
-              style={{
-                scaleX: 0,
-                opacity: 0,
-                height: 2,
-                width: 200,
-                background: "linear-gradient(90deg, transparent, var(--accent), color-mix(in srgb, var(--accent) 25%, transparent))",
-                transformOrigin: "left center",
-              }}
-              transition={{ duration: 0.6, delay: UNDERLINE_DELAY, ease: EASE }}
-            />
+            <UnderlineReveal />
           </div>
 
-          {/* Subtitle - fades up 0.4s after headline */}
-          <motion.p
-            // initial={false} required — do not remove
-            initial={false}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            style={{ opacity: 0, y: 10, fontSize: "clamp(14px, 2vw, 17px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "0 auto", lineHeight: 1.65 }}
-            transition={{ duration: 0.5, delay: SUBTITLE_DELAY, ease: EASE }}
-          >
-            Add Corvo to your home screen for instant access and push notifications.
-          </motion.p>
+          {/* Subtitle */}
+          <ScrollReveal from="up" delay={0.3}>
+            <p style={{ fontSize: "clamp(14px, 2vw, 17px)", color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "0 auto", lineHeight: 1.65 }}>
+              Add Corvo to your home screen for instant access and push notifications.
+            </p>
+          </ScrollReveal>
 
           {/* Scroll chevron */}
           <ScrollChevron />
@@ -785,7 +763,9 @@ export default function InstallPage() {
         {/* ── Device Cards ── */}
         <div className="install-cards">
           {CARDS.map((card, cardIdx) => (
-            <DeviceCard key={card.key} card={card} cardIdx={cardIdx} />
+            <ScrollReveal key={card.key} from={cardIdx === 0 ? "left" : cardIdx === 1 ? "up" : "right"} delay={cardIdx * 0.15}>
+              <DeviceCard card={card} cardIdx={cardIdx} />
+            </ScrollReveal>
           ))}
         </div>
 
@@ -793,14 +773,7 @@ export default function InstallPage() {
         <DemoStrip />
 
         {/* ── Bottom CTA ── */}
-        <motion.div
-          // initial={false} required — do not remove
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          style={{ opacity: 0, y: 10, textAlign: "center", padding: "0 24px 88px" }}
-          transition={{ duration: 0.5, delay: 0.2, ease: EASE }}
-        >
+        <ScrollReveal from="up" delay={0.2} style={{ textAlign: "center", padding: "0 24px 88px" }}>
           <span style={{ fontSize: 14, color: "var(--text3)" }}>Already installed?{" "}</span>
           <Link
             href="/app"
@@ -814,7 +787,7 @@ export default function InstallPage() {
           >
             Open the app
           </Link>
-        </motion.div>
+        </ScrollReveal>
 
         <PublicFooter />
       </div>

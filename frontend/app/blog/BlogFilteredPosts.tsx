@@ -1,7 +1,28 @@
 "use client";
 
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useState } from "react";
+
+function useReveal(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold });
+    obs.observe(el); return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
+
+function ScrollReveal({ children, delay = 0, from = "up", distance = 30, style = {} }: { children: React.ReactNode; delay?: number; from?: "up"|"left"|"right"; distance?: number; style?: React.CSSProperties }) {
+  const { ref, visible } = useReveal(0.1);
+  const transform = from === "left" ? `translateX(-${distance}px)` : from === "right" ? `translateX(${distance}px)` : `translateY(${distance}px)`;
+  return (
+    <div ref={ref} style={{ ...style, opacity: visible ? 1 : 0, transform: visible ? "none" : transform, transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s` }}>
+      {children}
+    </div>
+  );
+}
 
 const POSTS = [
   {
@@ -119,24 +140,26 @@ export default function BlogFilteredPosts() {
           <p style={{ fontSize: 14, color: "var(--text3)", padding: "40px 0" }}>No posts in this category yet.</p>
         ) : (
           <div className="blog-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 24 }}>
-            {filtered.map((post) => (
-              <Link key={post.slug} href={`/blog/${post.slug}`} className="blog-card">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                  <span style={{ fontSize: 9, padding: "3px 10px", borderRadius: 20, background: `${post.categoryColor}18`, border: `1px solid ${post.categoryColor}30`, color: post.categoryColor, letterSpacing: 0.5, textTransform: "uppercase" as const }}>{post.category}</span>
-                  <span style={{ fontSize: 10, color: "var(--text3)" }}>{post.readTime}</span>
-                </div>
-                <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.3, marginBottom: 14 }}>{post.title}</h2>
-                <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.7, marginBottom: 24, fontWeight: 300 }}>{post.excerpt}</p>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <img src="/corvo-logo.svg" width={11} height={10} alt="" style={{ opacity: 0.8 }} />
-                    </div>
-                    <span style={{ fontSize: 11, color: "var(--text3)" }}>Corvo Team</span>
+            {filtered.map((post, i) => (
+              <ScrollReveal key={post.slug} from="up" delay={i * 0.1}>
+                <Link href={`/blog/${post.slug}`} className="blog-card" style={{ display: "block" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <span style={{ fontSize: 9, padding: "3px 10px", borderRadius: 20, background: `${post.categoryColor}18`, border: `1px solid ${post.categoryColor}30`, color: post.categoryColor, letterSpacing: 0.5, textTransform: "uppercase" as const }}>{post.category}</span>
+                    <span style={{ fontSize: 10, color: "var(--text3)" }}>{post.readTime}</span>
                   </div>
-                  <span style={{ fontSize: 11, color: "var(--text3)" }}>{post.date}</span>
-                </div>
-              </Link>
+                  <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.3, marginBottom: 14 }}>{post.title}</h2>
+                  <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.7, marginBottom: 24, fontWeight: 300 }}>{post.excerpt}</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <img src="/corvo-logo.svg" width={11} height={10} alt="" style={{ opacity: 0.8 }} />
+                      </div>
+                      <span style={{ fontSize: 11, color: "var(--text3)" }}>Corvo Team</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: "var(--text3)" }}>{post.date}</span>
+                  </div>
+                </Link>
+              </ScrollReveal>
             ))}
           </div>
         )}

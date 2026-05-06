@@ -1,33 +1,54 @@
 "use client";
 
-import { motion } from "framer-motion";
+import React, { useRef, useState, useEffect } from "react";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
-const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
+function useReveal(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold });
+    obs.observe(el); return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
 
-function FadeUp({
-  children,
-  delay = 0,
-  amount = 0,
-  style = {},
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  amount?: number;
-  style?: React.CSSProperties;
-}) {
+function ScrollReveal({ children, delay = 0, from = "up", distance = 30, style = {} }: { children: React.ReactNode; delay?: number; from?: "up"|"left"|"right"; distance?: number; style?: React.CSSProperties }) {
+  const { ref, visible } = useReveal(0.1);
+  const transform = from === "left" ? `translateX(-${distance}px)` : from === "right" ? `translateX(${distance}px)` : `translateY(${distance}px)`;
   return (
-    <motion.div
-      // initial={false} required — do not remove
-      initial={false}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount }}
-      transition={{ duration: 0.55, ease: ANIM_EASE, delay }}
-      style={{ opacity: 0, transform: "translateY(20px)", ...style }}
-    >
+    <div ref={ref} style={{ ...style, opacity: visible ? 1 : 0, transform: visible ? "none" : transform, transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s` }}>
       {children}
-    </motion.div>
+    </div>
+  );
+}
+
+function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.2 });
+    obs.observe(el); return () => obs.disconnect();
+  }, []);
+  const words = text.split(" ");
+  return (
+    <h1 ref={ref} style={{ overflow: "hidden", ...style }}>
+      {words.map((word, wi) => (
+        <span key={wi} style={{ display: "inline-block", marginRight: "0.3em", overflow: "hidden" }}>
+          {word.split("").map((char, ci) => (
+            <span key={ci} style={{
+              display: "inline-block",
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(100%)",
+              transition: `opacity 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s, transform 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s`,
+            }}>{char}</span>
+          ))}
+        </span>
+      ))}
+    </h1>
   );
 }
 
@@ -48,52 +69,43 @@ export default function AboutPage() {
       {/* Hero */}
       <div className="ab-hero" style={{ padding: "140px 56px 0", textAlign: "center" }}>
         {/* Badge */}
-        <motion.div
-          // initial={false} required — do not remove
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, ease: ANIM_EASE }}
-          style={{ opacity: 0, transform: "translateY(20px)", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, marginBottom: 24, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}
-        >
+        <ScrollReveal from="up" delay={0} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, marginBottom: 24, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
           <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>About</span>
-        </motion.div>
+        </ScrollReveal>
 
-        <FadeUp delay={0.1} style={{ margin: "0 auto 80px", maxWidth: 1040 }}>
-          <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.1 }}>
-            Most apps show you what happened. Corvo tells you what to do about it.
-          </h1>
-        </FadeUp>
+        <div style={{ margin: "0 auto 80px", maxWidth: 1040 }}>
+          <AnimatedHeading text="Most apps show you what happened. Corvo tells you what to do about it." style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.1 }} />
+        </div>
       </div>
 
-      {/* Story — paragraphs fade up on scroll, 0.1s stagger, 20% threshold */}
+      {/* Story */}
       <div className="ab-body" style={{ maxWidth: 640, margin: "0 auto", padding: "0 56px 80px", textAlign: "left" }}>
-        <FadeUp delay={0} amount={0.2}>
+        <ScrollReveal from="left" delay={0}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
             Every tool was expensive, outdated, or ugly. So I built a better one.
           </p>
-        </FadeUp>
-        <FadeUp delay={0.1} amount={0.2}>
+        </ScrollReveal>
+        <ScrollReveal from="up" delay={0.1}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
             I have always been obsessed with finance and investing. Tracking positions, running analysis, trying to actually understand what my portfolio was doing. But every tool I tried felt like it was built for someone else. The good ones cost money. The free ones were stuck in 2012. None of them felt like they were built by someone who actually cared.
           </p>
-        </FadeUp>
-        <FadeUp delay={0.2} amount={0.2}>
+        </ScrollReveal>
+        <ScrollReveal from="right" delay={0.1}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
             So I built Corvo. It started as a personal project, a way to see my portfolio the way I actually wanted to see it. Real metrics. AI that gives useful context. An interface that does not make you feel like you are filing taxes.
           </p>
-        </FadeUp>
-        <FadeUp delay={0.3} amount={0.2}>
+        </ScrollReveal>
+        <ScrollReveal from="left" delay={0.1}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300 }}>
             It is still a project. I work on it constantly. Every week there is something new, something better. Built by one person who uses it every day.
           </p>
-        </FadeUp>
+        </ScrollReveal>
       </div>
 
       {/* Founder card */}
       <div className="ab-founder" style={{ maxWidth: 640, margin: "0 auto", padding: "0 56px 96px" }}>
-        <FadeUp>
+        <ScrollReveal from="up" delay={0}>
           <div style={{ borderRadius: 14, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderLeft: "3px solid var(--accent)", padding: "28px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 0 }}>Founder</p>
             <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, lineHeight: 1.2, margin: 0 }}>
@@ -110,15 +122,7 @@ export default function AboutPage() {
                 </svg>
                 <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>United States</span>
               </div>
-              {/* "Building since" badge fades in last */}
-              <motion.div
-                // initial={false} required — do not remove
-                initial={false}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.55, ease: ANIM_EASE }}
-                style={{ opacity: 0, display: "flex", alignItems: "center", gap: 8 }}
-              >
+              <ScrollReveal from="up" delay={0.55} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <rect x="2" y="2" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.7"/>
                   <rect x="13" y="2" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.4"/>
@@ -126,7 +130,7 @@ export default function AboutPage() {
                   <rect x="13" y="13" width="9" height="9" rx="2" fill="var(--text-muted)" opacity="0.7"/>
                 </svg>
                 <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 300 }}>Building since March 2026</span>
-              </motion.div>
+              </ScrollReveal>
             </div>
             <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 16, marginTop: 4 }}>
               <a
@@ -144,7 +148,7 @@ export default function AboutPage() {
               </a>
             </div>
           </div>
-        </FadeUp>
+        </ScrollReveal>
       </div>
 
       <PublicFooter />
