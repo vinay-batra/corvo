@@ -1871,6 +1871,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
         @keyframes analyze-ring{0%{box-shadow:0 0 0 0 rgba(184,134,11,0.5)}70%{box-shadow:0 0 0 8px rgba(184,134,11,0)}100%{box-shadow:0 0 0 0 rgba(184,134,11,0)}}
         @keyframes analyzePulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4)}50%{box-shadow:0 0 0 6px rgba(201,168,76,0)}}
+        @keyframes compareButtonPulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--accent-rgb),0)}50%{box-shadow:0 0 0 6px rgba(var(--accent-rgb),0.08)}}
         @media(max-width:768px){
           .c-sidebar{display:none!important}
           .c-topbar{display:none!important}
@@ -2164,17 +2165,26 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </div>
                 ) : (
                   <div>
-                    <button
-                      onClick={() => setShowStockCompare(true)}
-                      title="Compare up to 4 stocks side by side — performance, fundamentals, and correlation"
-                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginBottom: 12, padding: "13px 0", fontSize: 14, fontWeight: 600, borderRadius: 9, border: "1px solid rgba(var(--accent-rgb),0.25)", background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)", cursor: "pointer", transition: "all 0.15s", letterSpacing: 0.2 }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.12)"; e.currentTarget.style.borderColor = "rgba(var(--accent-rgb),0.45)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.06)"; e.currentTarget.style.borderColor = "rgba(var(--accent-rgb),0.25)"; }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                      Compare Stocks
-                    </button>
                     <StocksSearch onSelect={setStockTicker} />
+                    <div style={{ display: "flex", justifyContent: "center", marginTop: 32, marginBottom: 8 }}>
+                      <button
+                        onClick={() => setShowStockCompare(true)}
+                        title="Compare up to 4 stocks side by side — performance, fundamentals, and correlation"
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 8,
+                          padding: "10px 24px", fontSize: 13, fontWeight: 600,
+                          borderRadius: 20, border: "1px solid rgba(var(--accent-rgb),0.3)",
+                          background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)",
+                          cursor: "pointer", transition: "all 0.2s",
+                          animation: "compareButtonPulse 3s ease-in-out infinite",
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.14)"; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(var(--accent-rgb),0.15)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.06)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        Compare Stocks
+                      </button>
+                    </div>
                   </div>
                 )}
               </motion.div>
