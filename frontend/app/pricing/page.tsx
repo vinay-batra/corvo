@@ -34,6 +34,33 @@ function ScrollReveal({ children, delay = 0, from = "up", distance = 30, style =
   );
 }
 
+function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.2 });
+    obs.observe(el); return () => obs.disconnect();
+  }, []);
+  const words = text.split(" ");
+  return (
+    <h1 ref={ref} style={{ overflow: "hidden", ...style }}>
+      {words.map((word, wi) => (
+        <span key={wi} style={{ display: "inline-block", marginRight: "0.3em", overflow: "hidden" }}>
+          {word.split("").map((char, ci) => (
+            <span key={ci} style={{
+              display: "inline-block",
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(100%)",
+              transition: `opacity 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s, transform 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s`,
+            }}>{char}</span>
+          ))}
+        </span>
+      ))}
+    </h1>
+  );
+}
+
 /* ─── Animated checkmark feature row ─── */
 function FeatureItem({ text, delay }: { text: string; delay: number }) {
   const { ref, visible } = useReveal(0.05);
@@ -620,17 +647,7 @@ export default function PricingPage() {
             <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>Pricing</span>
           </div>
 
-          <h1 style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "clamp(32px,5vw,60px)",
-            fontWeight: 700,
-            lineHeight: 1.1,
-            color: "var(--text)",
-            marginBottom: 20,
-            letterSpacing: -1,
-          }}>
-            Simple, transparent pricing
-          </h1>
+          <AnimatedHeading text="Simple, transparent pricing" style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px,5vw,52px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.1, marginBottom: 16 }} />
 
           <p style={{
             fontSize: "clamp(15px,2vw,18px)",
