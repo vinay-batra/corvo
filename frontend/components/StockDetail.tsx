@@ -215,7 +215,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
     const hdrCol = isCall ? GREEN : RED;
     if (!contracts.length) return <p style={{ fontSize: 11, color: "var(--text3)", padding: "16px 0" }}>No data</p>;
     return (
-      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }} onWheel={e => { const el = e.currentTarget; const atLeft = el.scrollLeft === 0; const atRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1; if ((atLeft && e.deltaX < 0) || (atRight && e.deltaX > 0) || Math.abs(e.deltaY) > Math.abs(e.deltaX)) { return; } e.stopPropagation(); }}>
+      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }} onWheel={e => { const isHorizontalScroll = Math.abs(e.deltaX) > Math.abs(e.deltaY); if (!isHorizontalScroll) return; e.stopPropagation(); }}>
         <style>{`
           .opt-th-wrap { position: relative; display: inline-flex; align-items: center; gap: 3px; cursor: default; }
           .opt-th-wrap .opt-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
@@ -816,8 +816,8 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const priceValues = histPrices.filter((v) => typeof v === "number" && v > 0);
   const priceMin = priceValues.length > 0 ? Math.min(...priceValues) : 0;
   const priceMax = priceValues.length > 0 ? Math.max(...priceValues) : 100;
-  const pricePad = (priceMax - priceMin) * 0.08;
-  const yMin = Math.max(0, priceMin - pricePad);
+  const pricePad = (priceMax - priceMin) * 0.05 || priceMax * 0.05;
+  const yMin = priceMin - pricePad;
   const yMax = priceMax + pricePad;
 
   const layout: any = {

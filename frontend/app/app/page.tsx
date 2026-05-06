@@ -2165,8 +2165,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </div>
                 ) : (
                   <div>
-                    <StocksSearch onSelect={setStockTicker} />
-                    <div style={{ display: "flex", justifyContent: "center", marginTop: 32, marginBottom: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 16, marginTop: 8 }}>
                       <button
                         onClick={() => setShowStockCompare(true)}
                         title="Compare up to 4 stocks side by side — performance, fundamentals, and correlation"
@@ -2185,6 +2184,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                         Compare Stocks
                       </button>
                     </div>
+                    <StocksSearch onSelect={setStockTicker} />
                   </div>
                 )}
               </motion.div>
