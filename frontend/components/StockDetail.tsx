@@ -813,6 +813,13 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
     : (period === "1W" || period === "1M") ? "%b %d"
     : "%b '%y";
 
+  const priceValues = histPrices.filter((v) => typeof v === "number" && v > 0);
+  const priceMin = priceValues.length > 0 ? Math.min(...priceValues) : 0;
+  const priceMax = priceValues.length > 0 ? Math.max(...priceValues) : 100;
+  const pricePad = (priceMax - priceMin) * 0.08;
+  const yMin = Math.max(0, priceMin - pricePad);
+  const yMax = priceMax + pricePad;
+
   const layout: any = {
     paper_bgcolor: "transparent", plot_bgcolor: "transparent",
     margin: { t: 8, b: 36, l: 56, r: 8 },
@@ -829,6 +836,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       gridcolor: dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.07)", linecolor: "transparent", tickcolor: "transparent",
       tickprefix: "$", domain: hasVol ? [0.28, 1] : [0, 1],
       showspikes: true, spikecolor: dark ? "rgba(201,168,76,0.3)" : "rgba(184,134,11,0.3)", spikemode: "across", spikethickness: 1,
+      range: [yMin, yMax],
     },
     ...(hasVol ? {
       yaxis2: {
