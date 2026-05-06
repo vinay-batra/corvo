@@ -1866,7 +1866,7 @@ function TickerRow({
   );
 }
 
-function InteractiveDemoWidget() {
+function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean) => void } = {}) {
   const [step, setStep] = useState<PortDemoStep>("input");
   const [rows, setRows] = useState<PortDemoRow[]>(DEFAULT_DEMO_ROWS.map(r => ({ ...r })));
   const [result, setResult] = useState<PortDemoResult | null>(null);
@@ -1894,6 +1894,7 @@ function InteractiveDemoWidget() {
 
   const analyze = async () => {
     if (validRows.length === 0) return;
+    onDemoStart?.(true);
     setStep("loading");
     const loadStart = Date.now();
     const tickerStr = validRows.map(r => r.ticker.trim().toUpperCase()).join(",");
@@ -1934,6 +1935,7 @@ function InteractiveDemoWidget() {
   };
 
   const reset = () => {
+    onDemoStart?.(false);
     setStep("input");
     setRows(DEFAULT_DEMO_ROWS.map(r => ({ ...r })));
     setResult(null); setSectors({});
@@ -2090,31 +2092,78 @@ function InteractiveDemoWidget() {
       {/* ─── Step 3: Results ─── */}
       {step === "results" && result && (
         <div>
-          {/* 4 metric cards */}
-          <div key={cardsKey} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+          {/* 4 metric pills — single horizontal row */}
+          <motion.div
+            key={cardsKey}
+            // initial={false} is required — do not remove
+            initial={false}
+            style={{ opacity: 0, display: "flex", gap: 6, marginBottom: 12 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+          >
             {([
-              { label: "Portfolio Return", value: fmtPct(result.cagr), color: result.cagr >= 0 ? "var(--green)" : "var(--red)", sub: "1Y CAGR" },
-              { label: "Volatility", value: fmtPct(result.volatility), color: "var(--accent)", sub: "Annualized" },
-              { label: "Sharpe Ratio", value: result.sharpe.toFixed(2), color: "var(--text)", sub: result.sharpe >= 1 ? "Above average" : "Below 1.0" },
-              { label: "vs S&P 500", value: vsBenchmark != null ? fmtPct(vsBenchmark) : "N/A", color: vsBenchmark != null ? (vsBenchmark >= 0 ? "var(--green)" : "var(--red)") : "var(--text3)", sub: vsBenchmark != null ? (vsBenchmark >= 0 ? "Outperforming" : "Underperforming") : "" },
-            ]).map(({ label, value, color, sub }, i) => (
-              <motion.div
+              { label: "Return", value: fmtPct(result.cagr), color: result.cagr >= 0 ? "var(--green)" : "var(--red)", large: true },
+              { label: "Volatility", value: fmtPct(result.volatility), color: "var(--accent)", large: false },
+              { label: "Sharpe", value: result.sharpe.toFixed(2), color: "var(--text)", large: false },
+              { label: "vs S&P", value: vsBenchmark != null ? fmtPct(vsBenchmark) : "N/A", color: vsBenchmark != null ? (vsBenchmark >= 0 ? "var(--green)" : "var(--red)") : "var(--text3)", large: false },
+            ]).map(({ label, value, color, large }, i) => (
+              <div
                 key={i}
-                // initial={false} is required — do not remove
-                initial={false}
-                style={{ opacity: 0 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1], delay: i * 0.08 }}
+                style={{
+                  flex: large ? "1.4" : "1",
+                  background: "var(--bg2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  padding: "12px 16px",
+                  minWidth: 0,
+                }}
               >
-                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: "11px 13px" }}>
-                  <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 6 }}>{label}</p>
-                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color, letterSpacing: -0.5, lineHeight: 1 }}>{value}</p>
-                  {sub && <p style={{ fontSize: 9, color: "var(--text3)", marginTop: 4 }}>{sub}</p>}
-                </div>
-              </motion.div>
+                <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 5, whiteSpace: "nowrap" as const }}>{label}</p>
+                <p style={{
+                  fontFamily: "Space Mono,monospace",
+                  fontSize: large ? 28 : 15,
+                  fontWeight: 700,
+                  color,
+                  letterSpacing: -0.5,
+                  lineHeight: 1,
+                }}>
+                  {value}
+                </p>
+              </div>
             ))}
-          </div>
+          </motion.div>
+
+          {/* Sparkline */}
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false}
+            style={{ opacity: 0, marginBottom: 10 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.18 }}
+          >
+            <svg width="100%" height="48" viewBox="0 0 320 48" preserveAspectRatio="none" style={{ display: "block" }}>
+              <defs>
+                <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.18" />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0,42 C20,40 40,36 60,32 C80,28 100,30 120,24 C140,18 160,20 180,14 C200,8 220,10 240,6 C260,2 280,4 320,2"
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                opacity="0.7"
+              />
+              <path
+                d="M0,42 C20,40 40,36 60,32 C80,28 100,30 120,24 C140,18 160,20 180,14 C200,8 220,10 240,6 C260,2 280,4 320,2 L320,48 L0,48 Z"
+                fill="url(#sparkFill)"
+              />
+            </svg>
+          </motion.div>
 
           {/* AI insight: amber dot + italic text */}
           <motion.div
@@ -2598,6 +2647,7 @@ function GsapHero({
   const chartStrokeRef = useRef<SVGPathElement>(null);
   const chartUnderRef = useRef<SVGPathElement>(null);
   const metricRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [demoActive, setDemoActive] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3031,6 +3081,10 @@ function GsapHero({
                 position: "absolute",
                 zIndex: 3,
                 willChange: "transform, opacity",
+                opacity: demoActive ? 0 : 1,
+                transform: demoActive ? "scale(0.8)" : "scale(1)",
+                transition: "opacity 0.4s ease, transform 0.4s ease",
+                pointerEvents: demoActive ? "none" : "auto",
                 ...m.style,
               }}
             >
@@ -3062,7 +3116,7 @@ function GsapHero({
               </span>
             </div>
           </div>
-          <InteractiveDemoWidget />
+          <InteractiveDemoWidget onDemoStart={setDemoActive} />
         </div>
       </div>
     </section>
