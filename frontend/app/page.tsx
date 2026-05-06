@@ -1875,6 +1875,7 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
   const [typedInsight, setTypedInsight] = useState("");
   const [cardsKey, setCardsKey] = useState(0);
   const [showMC, setShowMC] = useState(false);
+  const [portfolioValue, setPortfolioValue] = useState(10000);
 
   // Typewriter
   useEffect(() => {
@@ -1940,6 +1941,7 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
     setRows(DEFAULT_DEMO_ROWS.map(r => ({ ...r })));
     setResult(null); setSectors({});
     setInsight(""); setTypedInsight(""); setShowMC(false);
+    setPortfolioValue(10000);
   };
 
   const fmtPct = (v: number, digits = 1) => {
@@ -1952,11 +1954,11 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
   const vsBenchmark = result?.benchmarkReturn != null ? result.cagr - result.benchmarkReturn : null;
 
   // Simplified Monte Carlo projections
-  const MC_BASE = 10000, MC_YEARS = 10;
-  const mcLow  = result ? MC_BASE * Math.pow(1 + Math.min(result.cagr * 0.3, 0.08),  MC_YEARS) : 0;
-  const mcMed  = result ? MC_BASE * Math.pow(1 + Math.min(result.cagr * 0.7, 0.14),  MC_YEARS) : 0;
-  const mcHigh = result ? MC_BASE * Math.pow(1 + Math.min(result.cagr,       0.18),  MC_YEARS) : 0;
-  const mcMax  = Math.max(mcHigh, mcMed, mcLow, MC_BASE * 1.01);
+  const MC_YEARS = 10;
+  const mcLow  = result ? portfolioValue * Math.pow(1 + Math.min(result.cagr * 0.3, 0.08),  MC_YEARS) : 0;
+  const mcMed  = result ? portfolioValue * Math.pow(1 + Math.min(result.cagr * 0.7, 0.14),  MC_YEARS) : 0;
+  const mcHigh = result ? portfolioValue * Math.pow(1 + Math.min(result.cagr,       0.18),  MC_YEARS) : 0;
+  const mcMax  = Math.max(mcHigh, mcMed, mcLow, portfolioValue * 1.01);
 
   return (
     <motion.div
@@ -2045,6 +2047,30 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
               Add ticker
             </button>
           )}
+          {/* Portfolio Value input */}
+          <div style={{ marginBottom: 12 }}>
+            <p style={{ fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 6 }}>Portfolio Value</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 12, color: "var(--text3)", fontFamily: "Space Mono,monospace", flexShrink: 0 }}>$</span>
+              <input
+                type="number"
+                min={100}
+                max={10000000}
+                placeholder="10,000"
+                value={portfolioValue}
+                onChange={e => {
+                  const v = parseFloat(e.target.value);
+                  if (!isNaN(v) && v >= 0) setPortfolioValue(v);
+                }}
+                style={{
+                  flex: 1, background: "var(--bg2)", border: "1px solid var(--border)",
+                  borderRadius: 7, padding: "8px 10px", fontFamily: "Space Mono,monospace",
+                  fontSize: 12, color: "var(--text)", outline: "none", width: "100%",
+                }}
+              />
+            </div>
+            <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>Used for projections</p>
+          </div>
           <button
             onClick={analyze}
             disabled={validRows.length === 0}
@@ -2144,10 +2170,9 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
             transition={{ duration: 0.5, delay: 0.18 }}
           >
             {(() => {
-              const startVal = 10000;
-              const endVal = result ? startVal * Math.pow(1 + result.cagr, 10) : startVal;
+              const startVal = portfolioValue;
+              const endVal = result ? portfolioValue * Math.pow(1 + result.cagr, 3) : portfolioValue;
               const midVal = (startVal + endVal) / 2;
-              const fmtK = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v.toFixed(0)}`;
               return (
                 <svg width="100%" height="80" viewBox="0 0 320 80" preserveAspectRatio="none" style={{ display: "block" }}>
                   <defs>
@@ -2161,9 +2186,9 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
                   <line x1="0" y1="40" x2="300" y2="40" stroke="rgba(201,168,76,0.08)" strokeWidth="0.5" />
                   <line x1="0" y1="60" x2="300" y2="60" stroke="rgba(201,168,76,0.08)" strokeWidth="0.5" />
                   {/* Y-axis labels */}
-                  <text x="304" y="63" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">{fmtK(startVal)}</text>
-                  <text x="304" y="41" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">{fmtK(midVal)}</text>
-                  <text x="304" y="12" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">{fmtK(endVal)}</text>
+                  <text x="304" y="63" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">{fmtMoney(startVal)}</text>
+                  <text x="304" y="41" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">{fmtMoney(midVal)}</text>
+                  <text x="304" y="12" fontSize="7" fill="var(--text3)" fontFamily="Space Mono,monospace">{fmtMoney(endVal)}</text>
                   {/* Line */}
                   <path
                     d="M0,62 C20,60 40,56 60,50 C80,44 100,46 120,38 C140,30 160,32 180,22 C200,12 220,14 240,8 C260,4 280,5 300,3"
@@ -2238,7 +2263,7 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
               {showMC && (
                 <div style={{ padding: "0 12px 12px", borderTop: "1px solid var(--border)" }}>
                   <p style={{ fontSize: 10, color: "var(--text3)", paddingTop: 10, marginBottom: 12 }}>
-                    In 10 years, $10,000 could grow to:
+                    In {MC_YEARS} years, {fmtMoney(portfolioValue)} could grow to:
                   </p>
                   {([
                     { label: "Low",    value: mcLow,  color: "var(--text3)",  tag: "conservative" },
