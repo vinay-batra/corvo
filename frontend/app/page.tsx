@@ -2903,17 +2903,16 @@ function GsapHero({
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 8,
-              padding: "6px 16px",
-              border: "1px solid rgba(var(--accent-rgb),0.4)",
-              borderRadius: 24,
+              gap: 7,
+              padding: "4px 12px",
+              border: "0.5px solid rgba(var(--accent-rgb),0.25)",
+              borderRadius: 100,
               marginBottom: 32,
-              background: "rgba(var(--accent-rgb),0.08)",
-              backdropFilter: "blur(8px)",
+              background: "rgba(var(--accent-rgb),0.06)",
             }}
           >
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
-            <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
+            <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text2)", textTransform: "uppercase" }}>
               AI-Powered Portfolio Intelligence
             </span>
           </div>
@@ -3036,9 +3035,9 @@ function GsapHero({
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(var(--accent-rgb),0.25)", background: "rgba(var(--accent-rgb),0.06)", borderRadius: 20, padding: "5px 12px" }}>
-              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite", marginRight: 7, flexShrink: 0 }} />
-              <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, letterSpacing: 2, color: "var(--text2)", textTransform: "uppercase" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "0.5px solid rgba(var(--accent-rgb),0.25)", background: "rgba(var(--accent-rgb),0.06)", borderRadius: 100, padding: "4px 12px" }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
+              <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--text2)", textTransform: "uppercase" }}>
                 INTERACTIVE DEMO
               </span>
             </div>
