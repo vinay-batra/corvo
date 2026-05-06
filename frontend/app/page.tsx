@@ -2364,64 +2364,6 @@ function SecurityTrustSection() {
   );
 }
 
-/* ─── Magnetic Cursor (desktop only) ─── */
-function MagneticCursor() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 768px)").matches) return;
-    let mx = -100, my = -100, cx = -100, cy = -100;
-    let cs = 1, ts = 1;
-    const onMove = (e: MouseEvent) => { mx = e.clientX; my = e.clientY; };
-    const onOver = (e: MouseEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (!t || !t.closest) return;
-      const interactive = t.closest("a,button,[role='button'],input,textarea,label,select,[data-cursor-hover]") != null;
-      ts = interactive ? 2 : 1;
-    };
-    let frame = 0;
-    const tick = () => {
-      cx += (mx - cx) * 0.12;
-      cy += (my - cy) * 0.12;
-      cs += (ts - cs) * 0.18;
-      if (ref.current) {
-        ref.current.style.transform = `translate3d(${cx}px,${cy}px,0) translate(-50%,-50%) scale(${cs})`;
-      }
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    document.body.style.cursor = "none";
-    document.documentElement.style.cursor = "none";
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseover", onOver);
-    return () => {
-      cancelAnimationFrame(frame);
-      document.body.style.cursor = "";
-      document.documentElement.style.cursor = "";
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseover", onOver);
-    };
-  }, []);
-  return (
-    <div
-      ref={ref}
-      aria-hidden
-      className="magnetic-cursor"
-      style={{
-        position: "fixed", top: 0, left: 0,
-        width: 20, height: 20, borderRadius: "50%",
-        border: "1.5px solid var(--accent)",
-        background: "rgba(var(--accent-rgb),0.05)",
-        boxShadow: "0 0 24px rgba(var(--accent-rgb),0.35)",
-        pointerEvents: "none",
-        zIndex: 9998,
-        transform: "translate3d(-100px,-100px,0) translate(-50%,-50%)",
-        willChange: "transform",
-      }}
-    />
-  );
-}
-
 /* ─── 3D Testimonial Carousel ─── */
 const TESTIMONIALS_3D = [
   { text: "finally an app that does everything in one place. had robinhood, google sheets, and three different websites open at once haha. Corvo pretty much replaced all of them", name: "Jake M.", role: "Casual investor" },
@@ -2669,7 +2611,6 @@ export default function Landing() {
 
   return (
     <div ref={containerRef} className="page-fadein" style={{ height: "100vh", overflowY: "auto", overflowX: "hidden", overscrollBehavior: "none", background: "transparent", color: "var(--text)", fontFamily: "Inter,sans-serif" }}>
-      <MagneticCursor />
       <EmailPopupModal />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <style>{`
@@ -2691,9 +2632,6 @@ export default function Landing() {
         @keyframes demospin{to{transform:rotate(360deg)}}
         @keyframes orbDrift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.08)}66%{transform:translate(-40px,50px) scale(0.94)}}
         @keyframes orbDriftCenter{0%,100%{transform:translateX(-50%) translate(0,0) scale(1)}33%{transform:translateX(-50%) translate(40px,-30px) scale(1.06)}66%{transform:translateX(-50%) translate(-30px,40px) scale(0.96)}}
-        @keyframes magneticPulse{0%,100%{box-shadow:0 0 24px rgba(var(--accent-rgb),0.35)}50%{box-shadow:0 0 36px rgba(var(--accent-rgb),0.55)}}
-        .magnetic-cursor{animation:magneticPulse 2.4s ease-in-out infinite}
-        @media(hover:none),(max-width:768px){.magnetic-cursor{display:none!important}}
         .cta{transition:all 0.25s!important}.cta:hover{background:var(--accent)!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(var(--accent-rgb),0.25)!important}
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(var(--accent-rgb),0.4)!important;color:var(--accent)!important}
         .nl:hover{color:var(--accent)!important}
