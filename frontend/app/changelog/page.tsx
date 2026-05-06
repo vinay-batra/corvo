@@ -31,6 +31,33 @@ function ScrollReveal({ children, delay = 0, from = "up", distance = 30, style =
   );
 }
 
+function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.2 });
+    obs.observe(el); return () => obs.disconnect();
+  }, []);
+  const words = text.split(" ");
+  return (
+    <h1 ref={ref} style={{ overflow: "hidden", ...style }}>
+      {words.map((word, wi) => (
+        <span key={wi} style={{ display: "inline-block", marginRight: "0.3em", overflow: "hidden" }}>
+          {word.split("").map((char, ci) => (
+            <span key={ci} style={{
+              display: "inline-block",
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(100%)",
+              transition: `opacity 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s, transform 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s`,
+            }}>{char}</span>
+          ))}
+        </span>
+      ))}
+    </h1>
+  );
+}
+
 const ENTRIES = [
   {
     date: "Apr 28, 2026",
@@ -230,9 +257,9 @@ export default function ChangelogPage() {
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block" }} />
             <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>Changelog</span>
           </div>
-          <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.1, marginBottom: 16 }}>
-            What&apos;s new in Corvo
-          </h1>
+        </ScrollReveal>
+        <AnimatedHeading text="Changelog" style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(28px,5vw,52px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.1, marginBottom: 16, textAlign: "center" }} />
+        <ScrollReveal from="up" delay={0.1}>
           <p style={{ fontSize: 16, color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "0 auto" }}>
             We ship fast. Here&apos;s everything we&apos;ve built.
           </p>
