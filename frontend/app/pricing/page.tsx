@@ -24,6 +24,16 @@ function useReveal(threshold = 0.15) {
   return { ref, visible };
 }
 
+function ScrollReveal({ children, delay = 0, from = "up", distance = 30, style = {} }: { children: React.ReactNode; delay?: number; from?: "up"|"left"|"right"; distance?: number; style?: React.CSSProperties }) {
+  const { ref, visible } = useReveal(0.1);
+  const transform = from === "left" ? `translateX(-${distance}px)` : from === "right" ? `translateX(${distance}px)` : `translateY(${distance}px)`;
+  return (
+    <div ref={ref} style={{ ...style, opacity: visible ? 1 : 0, transform: visible ? "none" : transform, transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s` }}>
+      {children}
+    </div>
+  );
+}
+
 /* ─── Animated checkmark feature row ─── */
 function FeatureItem({ text, delay }: { text: string; delay: number }) {
   const { ref, visible } = useReveal(0.05);
@@ -594,7 +604,7 @@ export default function PricingPage() {
           }} />
         </div>
 
-        <div style={{ position: "relative", zIndex: 1, animation: "heroFadeIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
+        <ScrollReveal from="up" delay={0} style={{ position: "relative", zIndex: 1 }}>
           {/* Badge */}
           <div style={{
             display: "inline-flex",
@@ -631,7 +641,7 @@ export default function PricingPage() {
           }}>
             Free during beta. Pro coming soon.
           </p>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* PRICING CARDS */}

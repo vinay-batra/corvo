@@ -1,27 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
+function useReveal(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el); return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
 
-function FadeUp({ children, delay = 0, style = {} }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
+function ScrollReveal({ children, delay = 0, from = "up", distance = 30, style = {} }: { children: React.ReactNode; delay?: number; from?: "up"|"left"|"right"; distance?: number; style?: React.CSSProperties }) {
+  const { ref, visible } = useReveal(0.1);
+  const transform = from === "left" ? `translateX(-${distance}px)` : from === "right" ? `translateX(${distance}px)` : `translateY(${distance}px)`;
   return (
-    <motion.div
-      // initial={false} required — do not remove
-      initial={false}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.55, ease: ANIM_EASE, delay }}
-      style={{ opacity: 0, transform: "translateY(30px)", ...style }}
-    >
+    <div ref={ref} style={{ ...style, opacity: visible ? 1 : 0, transform: visible ? "none" : transform, transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s` }}>
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -219,7 +225,7 @@ export default function ChangelogPage() {
 
       {/* Hero */}
       <div className="cl-hero" style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
-        <FadeUp>
+        <ScrollReveal from="up" delay={0}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.4)", borderRadius: 24, marginBottom: 28, background: "rgba(201,168,76,0.08)" }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block" }} />
             <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>Changelog</span>
@@ -230,7 +236,7 @@ export default function ChangelogPage() {
           <p style={{ fontSize: 16, color: "var(--text2)", fontWeight: 300, maxWidth: 480, margin: "0 auto" }}>
             We ship fast. Here&apos;s everything we&apos;ve built.
           </p>
-        </FadeUp>
+        </ScrollReveal>
       </div>
 
       {/* Timeline */}
@@ -240,17 +246,8 @@ export default function ChangelogPage() {
           <div className="cl-vline" style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "var(--border)" }} />
 
           {ENTRIES.map((entry, i) => (
-            <motion.div
-              key={i}
-              // initial={false} required — do not remove
-              initial={false}
-              animate={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, ease: ANIM_EASE }}
-              className="cl-entry"
-              style={{ display: "flex", gap: 0, marginBottom: 48, position: "relative" }}
-            >
+            <ScrollReveal key={i} from={i % 2 === 0 ? "left" : "right"} delay={i * 0.1} style={{ marginBottom: 48, position: "relative" }}>
+              <div className="cl-entry" style={{ display: "flex", gap: 0 }}>
               {/* Date column */}
               <div className="cl-date-col" style={{ width: 140, flexShrink: 0, paddingRight: 28, textAlign: "right", paddingTop: 4 }}>
                 <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>{entry.date}</span>
@@ -276,7 +273,8 @@ export default function ChangelogPage() {
                   {entry.desc}
                 </p>
               </div>
-            </motion.div>
+              </div>
+            </ScrollReveal>
           ))}
 
         </div>
@@ -284,7 +282,7 @@ export default function ChangelogPage() {
 
       {/* Subscribe section */}
       <div className="cl-footer" style={{ borderTop: "1px solid var(--bg3)", padding: "60px 56px 96px" }}>
-        <FadeUp>
+        <ScrollReveal from="up" delay={0}>
           <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Stay in the loop</p>
             <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 32px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1, marginBottom: 10, lineHeight: 1.2 }}>
@@ -325,7 +323,7 @@ export default function ChangelogPage() {
             )}
             <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 16 }}>No spam. Unsubscribe at any time.</p>
           </div>
-        </FadeUp>
+        </ScrollReveal>
       </div>
 
       {/* Footer */}
