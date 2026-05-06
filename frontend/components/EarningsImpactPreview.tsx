@@ -257,7 +257,9 @@ export default function EarningsImpactPreview({ assets }: Props) {
     );
   }
 
-  if (!items.length) return null;
+  const thisWeekItems = items.filter(item => item.days_until >= 0 && item.days_until <= 7);
+
+  if (!thisWeekItems.length) return null;
 
   return (
     <div style={{ marginBottom: 20 }}>
@@ -288,7 +290,7 @@ export default function EarningsImpactPreview({ assets }: Props) {
             background: "rgba(201,168,76,0.12)", border: "0.5px solid rgba(201,168,76,0.3)",
             color: "var(--accent)",
           }}>
-            {items.length}
+            {thisWeekItems.length}
           </span>
         </div>
         {collapsed ? <ChevronDown size={13} color="var(--text3)" /> : <ChevronUp size={13} color="var(--text3)" />}
@@ -305,7 +307,7 @@ export default function EarningsImpactPreview({ assets }: Props) {
             style={{ overflow: "clip" }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {items.map((item) => (
+              {thisWeekItems.map((item) => (
                 <EarningsCard key={item.ticker} item={item} />
               ))}
             </div>
