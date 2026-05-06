@@ -2976,7 +2976,7 @@ function GsapHero({
             className="gh-headline"
             style={{
               fontFamily: "Space Mono,monospace",
-              fontSize: "clamp(32px,4vw,56px)",
+              fontSize: "clamp(28px,3.8vw,52px)",
               fontWeight: 700,
               lineHeight: 1.15,
               letterSpacing: -1,
@@ -3016,20 +3016,36 @@ function GsapHero({
             className="hero-stats"
             style={{ display: "flex", gap: 28, marginTop: 36, paddingTop: 24, borderTop: "1px solid rgba(var(--accent-rgb),0.08)" }}
           >
-            {[
-              { value: `${liveUserCount ?? 847}+`, label: "Active Users" },
-              { value: "5,500+", label: "Portfolios" },
-              { value: "17K+", label: "AI Insights" },
-            ].map(({ value, label }) => (
-              <div key={label}>
+            <FadeUp delay={0}>
+              <div>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>
-                  {value}
+                  <Counter target={liveUserCount ?? 847} suffix="+" />
                 </p>
                 <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>
-                  {label}
+                  Active Users
                 </p>
               </div>
-            ))}
+            </FadeUp>
+            <FadeUp delay={0.1}>
+              <div>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>
+                  <Counter target={5500} suffix="+" />
+                </p>
+                <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>
+                  Portfolios
+                </p>
+              </div>
+            </FadeUp>
+            <FadeUp delay={0.2}>
+              <div>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>
+                  <Counter target={17} suffix="K+" />
+                </p>
+                <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>
+                  AI Insights
+                </p>
+              </div>
+            </FadeUp>
           </div>
         </div>
 
@@ -3072,9 +3088,10 @@ function GsapHero({
               </div>
             </div>
           ))}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-            <div style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)", borderRadius: 20, padding: "4px 12px", display: "inline-flex", alignItems: "center" }}>
-              <span style={{ fontFamily: "Space Mono, monospace", fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(var(--accent-rgb),0.25)", borderRadius: 20, padding: "5px 12px" }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)", display: "inline-block", animation: "pdot 2s infinite", marginRight: 7, flexShrink: 0 }} />
+              <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, letterSpacing: 2, color: "var(--text2)", textTransform: "uppercase" }}>
                 INTERACTIVE DEMO
               </span>
             </div>
