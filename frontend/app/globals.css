@@ -28,10 +28,24 @@ body {
   overflow-anchor: none;
 }
 
+/* Light-mode bento card lift: cards float on the white background */
+:root .bento-card-inner,
+[data-theme="light"] .bento-card-inner {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+}
+[data-theme="dark"] .bento-card-inner {
+  box-shadow: none;
+}
+
+/* Hero warm-glow is light-mode only */
+[data-theme="dark"] .hero-light-glow {
+  display: none !important;
+}
+
 /* ── Light mode (default) ── */
 :root {
-  --bg:          #f5f7fa;
-  --bg2:         #eef0f5;
+  --bg:          #ffffff;
+  --bg2:         #f8f8f6;
   --bg3:         #e4e8ef;
   --border:      #d0d5e0;
   --border2:     rgba(0,0,0,0.15);
@@ -101,8 +115,8 @@ body {
 
 /* ── Light mode explicit overrides ── */
 [data-theme="light"] {
-  --bg:          #f5f7fa;
-  --bg2:         #eef0f5;
+  --bg:          #ffffff;
+  --bg2:         #f8f8f6;
   --bg3:         #e4e8ef;
   --border:      #d0d5e0;
   --border2:     rgba(0,0,0,0.15);

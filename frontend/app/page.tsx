@@ -113,6 +113,66 @@ function Reveal({ children, delay = 0, y = 30, style = {} }: { children: React.R
   return <FadeUp delay={delay} y={y} style={style}>{children}</FadeUp>;
 }
 
+/* ─── ScrollReveal: directional IntersectionObserver-based reveal (no whileInView) ─── */
+function ScrollReveal({
+  children,
+  from = "up",
+  distance = 30,
+  delay = 0,
+  duration = 0.6,
+  style = {},
+  className,
+}: {
+  children: React.ReactNode;
+  from?: "up" | "left" | "right";
+  distance?: number;
+  delay?: number;
+  duration?: number;
+  style?: React.CSSProperties;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setShown(true);
+      return;
+    }
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  const offset =
+    from === "left" ? `translate3d(${-distance}px,0,0)`
+    : from === "right" ? `translate3d(${distance}px,0,0)`
+    : `translate3d(0,${distance}px,0)`;
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: shown ? 1 : 0,
+        transform: shown ? "translate3d(0,0,0)" : offset,
+        transition: `opacity ${duration}s cubic-bezier(0.25,0.1,0.25,1) ${delay}s, transform ${duration}s cubic-bezier(0.25,0.1,0.25,1) ${delay}s`,
+        willChange: "opacity, transform",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ─── Mobile Desktop Banner ─── */
 function MobileDesktopBanner() {
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
@@ -183,7 +243,8 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
     const card = cardRef.current;
     if (card) {
       card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px)";
-      card.style.boxShadow = "0 0 0 rgba(0,0,0,0)";
+      // Clear inline boxShadow so the CSS rule (light-mode lift, dark-mode none) takes over
+      card.style.boxShadow = "";
     }
     if (glowRef.current) glowRef.current.style.opacity = "0";
   };
@@ -198,6 +259,7 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
       style={{ gridArea, height: "100%", position: "relative", transformStyle: "preserve-3d" as const }}
     >
       <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
+        className="bento-card-inner"
         style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "clip", position: "relative", height: "100%", transition: "transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s cubic-bezier(0.16,1,0.3,1)", willChange: "transform, box-shadow", transformStyle: "preserve-3d" as const, ...restStyle }}>
         <div ref={glowRef} aria-hidden style={{ position: "absolute", inset: 0, opacity: 0, pointerEvents: "none", transition: "opacity 0.35s ease", zIndex: 0, mixBlendMode: "screen" as const }} />
         <div style={{ position: "relative", zIndex: 1, height: "100%" }}>{children}</div>
@@ -2751,12 +2813,25 @@ function GsapHero({
         zIndex: 1,
         minHeight: "100vh",
         height: "100vh",
-        padding: "140px 56px 120px",
+        padding: "100px 56px 120px",
         display: "flex",
         alignItems: "center",
         overflow: "hidden",
       }}
     >
+      {/* Light-mode-only warm radial wash behind headline */}
+      <div
+        aria-hidden
+        className="hero-light-glow"
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(ellipse 80% 60% at 30% 50%, rgba(184,134,11,0.04) 0%, transparent 70%)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
       {/* Radial gold orbs — outer wrapper takes GSAP scrub, inner does the slow CSS drift */}
       <div
         ref={orbARef}
@@ -3236,7 +3311,7 @@ export default function Landing() {
           .hero-split{grid-template-columns:1fr!important;gap:40px!important}
           .hero-left{text-align:center!important}
           .hero-stats{justify-content:center!important}
-          .hero-section{padding-top:110px!important;padding-left:20px!important;padding-right:20px!important;padding-bottom:60px!important}
+          .hero-section{padding-top:90px!important;padding-left:20px!important;padding-right:20px!important;padding-bottom:60px!important}
           .stats-grid>*{border-right:none!important}
           .nav-user-name-mobile{display:inline!important}
           .nav-auth-desktop{display:none!important}.nav-install-desktop{display:none!important}
@@ -3458,18 +3533,18 @@ export default function Landing() {
       {/* ─── FEATURE SHOWCASE: BENTO GRID ─── */}
       <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "140px 56px 140px" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 64 }}>
+          <ScrollReveal from="up" distance={30} style={{ textAlign: "center", marginBottom: 64 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Capabilities</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(30px,4.4vw,56px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2.5, lineHeight: 1.05 }}>Everything your portfolio<br />actually needs</h2>
-          </Reveal>
+          </ScrollReveal>
           <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist exportshare" "learnxp deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
-            <BentoPortfolioCard delay={0} />
-            <BentoAIChatCard delay={0.1} />
-            <BentoWatchlistCard delay={0.15} />
-            <BentoMonteCarloCard delay={0.05} />
-            <BentoExportCard delay={0.15} />
-            <BentoLearnCard delay={0.2} />
-            <BentoDeepDivesCard delay={0.25} />
+            <ScrollReveal from="left"  distance={30} delay={0.0}  style={{ gridArea: "portfolio",   height: "100%" }}><BentoPortfolioCard  delay={0} /></ScrollReveal>
+            <ScrollReveal from="up"    distance={30} delay={0.1}  style={{ gridArea: "aichat",      height: "100%" }}><BentoAIChatCard     delay={0} /></ScrollReveal>
+            <ScrollReveal from="right" distance={30} delay={0.2}  style={{ gridArea: "watchlist",   height: "100%" }}><BentoWatchlistCard  delay={0} /></ScrollReveal>
+            <ScrollReveal from="left"  distance={30} delay={0.3}  style={{ gridArea: "montecarlo",  height: "100%" }}><BentoMonteCarloCard delay={0} /></ScrollReveal>
+            <ScrollReveal from="up"    distance={30} delay={0.4}  style={{ gridArea: "exportshare", height: "100%" }}><BentoExportCard     delay={0} /></ScrollReveal>
+            <ScrollReveal from="right" distance={30} delay={0.5}  style={{ gridArea: "learnxp",     height: "100%" }}><BentoLearnCard      delay={0} /></ScrollReveal>
+            <ScrollReveal from="left"  distance={30} delay={0.6}  style={{ gridArea: "deepdives",   height: "100%" }}><BentoDeepDivesCard  delay={0} /></ScrollReveal>
           </div>
         </div>
       </section>
@@ -3477,10 +3552,10 @@ export default function Landing() {
       {/* ─── TESTIMONIALS — 3D Carousel ─── */}
       <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "120px 56px 120px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 56 }}>
+          <ScrollReveal from="up" distance={30} style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Voices</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,3.6vw,44px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2 }}>What investors are saying</h2>
-          </Reveal>
+          </ScrollReveal>
           {/* Desktop: 3D rotating carousel */}
           <div className="testi-desktop">
             <TestimonialCarousel3D />
@@ -3495,7 +3570,9 @@ export default function Landing() {
       {/* ─── SECURITY / TRUST removed ─── */}
 
       {/* EMAIL CAPTURE BOTTOM (prominent, above footer) */}
-      <FinalCTASection />
+      <ScrollReveal from="up" distance={40}>
+        <FinalCTASection />
+      </ScrollReveal>
 
       <PublicFooter />
     </div>

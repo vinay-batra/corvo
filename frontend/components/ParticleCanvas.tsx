@@ -10,9 +10,10 @@ function getColors(isDark: boolean) {
         line: (a: number) => `rgba(201,168,76,${a})`,
       }
     : {
-        amber: "rgba(184,134,11,0.45)",
-        regular: "rgba(30,50,100,0.25)",
-        line: (a: number) => `rgba(30,50,100,${(a * 5 / 3).toFixed(3)})`,
+        // Darker gold (0x8b6914) at 0.4 opacity — visible on white background
+        amber: "rgba(139,105,20,0.4)",
+        regular: "rgba(139,105,20,0.22)",
+        line: (a: number) => `rgba(139,105,20,${(a * 1.4).toFixed(3)})`,
       };
 }
 
@@ -52,11 +53,6 @@ export default function ParticleCanvas() {
     }));
     const draw = () => {
       const isDark = isDarkRef.current;
-      if (!isDark) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        raf = requestAnimationFrame(draw);
-        return;
-      }
       const colors = getColors(isDark);
       const n = isDark ? N_DARK : N_LIGHT;
       const rScale = isDark ? 1 : 1.3;
