@@ -2444,9 +2444,38 @@ const TESTIMONIALS_3D = [
 ];
 function TestimonialHorizontalCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const CARD_WIDTH = 400; // 380px card + 20px gap
+  const items = [...TESTIMONIALS_3D, ...TESTIMONIALS_3D, ...TESTIMONIALS_3D];
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const singleWidth = CARD_WIDTH * TESTIMONIALS_3D.length;
+    el.scrollLeft = singleWidth;
+
+    const handleScroll = () => {
+      const container = scrollRef.current;
+      if (!container) return;
+      const { scrollLeft } = container;
+      if (scrollLeft < singleWidth) {
+        container.style.scrollBehavior = "auto";
+        container.scrollLeft = scrollLeft + singleWidth;
+        container.style.scrollBehavior = "smooth";
+      } else if (scrollLeft >= 2 * singleWidth) {
+        container.style.scrollBehavior = "auto";
+        container.scrollLeft = scrollLeft - singleWidth;
+        container.style.scrollBehavior = "smooth";
+      }
+    };
+
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const scrollBy = (dir: number) => {
     scrollRef.current?.scrollBy({ left: dir * 400, behavior: "smooth" });
   };
+
   return (
     <div style={{ position: "relative", marginBottom: 56 }}>
       <button
@@ -2495,8 +2524,8 @@ function TestimonialHorizontalCarousel() {
           scrollbarWidth: "none" as const,
         }}
       >
-        {TESTIMONIALS_3D.map((t, i) => (
-          <ScrollReveal key={i} from="right" delay={i * 0.08} style={{ flex: "0 0 380px" }}>
+        {items.map((t, i) => (
+          <div key={i} style={{ flex: "0 0 380px" }}>
             <div style={{
               position: "relative",
               padding: "36px 36px 28px",
@@ -2516,7 +2545,7 @@ function TestimonialHorizontalCarousel() {
                 <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{t.role}</p>
               </div>
             </div>
-          </ScrollReveal>
+          </div>
         ))}
       </div>
     </div>
@@ -2540,7 +2569,6 @@ function GsapHero({
   const ctaRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const demoRef = useRef<HTMLDivElement>(null);
-  const fadeInTextRef = useRef<HTMLDivElement>(null);
   const orbARef = useRef<HTMLDivElement>(null);
   const orbBRef = useRef<HTMLDivElement>(null);
   const chartFillRef = useRef<SVGPathElement>(null);
@@ -2551,7 +2579,6 @@ function GsapHero({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const scrollerEl = scrollerRef.current;
     const sectionEl = sectionRef.current;
     if (!sectionEl) return;
 
@@ -2705,55 +2732,6 @@ function GsapHero({
         delay: 0.5,
       });
 
-      // ── Pinned scroll-tied timeline ──
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionEl,
-          scroller: scrollerEl ?? undefined,
-          start: "top top",
-          end: "+=150%",
-          pin: true,
-          pinSpacing: true,
-          scrub: 1,
-          anticipatePin: 1,
-        },
-      });
-
-      // Headline drift up + fade (progress 0.2 → 0.5)
-      tl.to(headlineRef.current, { y: -80, opacity: 0, ease: "none" }, 0.2);
-      tl.to(badgeRef.current, { y: -40, opacity: 0, ease: "none" }, 0.2);
-      tl.to([subRef.current, ctaRef.current, statsRef.current], { y: -50, opacity: 0, ease: "none" }, 0.2);
-
-      // Demo widget scales 1 → 1.05 (0.3) then fades (0.45 → 0.6)
-      tl.to(demoRef.current, { scale: 1.05, ease: "none" }, 0.3);
-      tl.to(demoRef.current, { opacity: 0, ease: "none" }, 0.45);
-
-      // Metric cards scatter outward + accelerate (orbs/particles analog)
-      cards.forEach((card, i) => {
-        const fromLeft = i === 0 || i === 2;
-        const driftX = fromLeft ? -260 : 260;
-        const driftY = i < 2 ? -120 : 120;
-        tl.to(
-          card,
-          { x: driftX, y: driftY, opacity: 0, rotation: (Math.random() - 0.5) * 18, ease: "none" },
-          0.25
-        );
-      });
-
-      // Orbs scatter / accelerate as scroll progresses
-      tl.to(orbARef.current, { x: -260, y: -180, scale: 1.6, ease: "none" }, 0);
-      tl.to(orbBRef.current, { x: 220, y: 160, scale: 1.5, ease: "none" }, 0);
-
-      // Chart fades with the rest of the hero
-      tl.to([chartFillRef.current, chartStrokeRef.current, chartUnderRef.current], { opacity: 0, ease: "none" }, 0.4);
-
-      // New text fades in at 0.6
-      tl.fromTo(
-        fadeInTextRef.current,
-        { opacity: 0, y: 60 },
-        { opacity: 1, y: 0, ease: "none" },
-        0.6
-      );
     }, sectionRef);
 
     // Refresh once layout / fonts settle
@@ -2899,39 +2877,6 @@ function GsapHero({
           ))}
           <span style={{ fontSize: 9, fontFamily: "Space Mono, monospace", color: "rgba(var(--accent-rgb),0.45)", letterSpacing: 1 }}>Now</span>
         </div>
-      </div>
-
-      {/* New scroll-revealed text overlay (centered) */}
-      <div
-        ref={fadeInTextRef}
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "0 32px",
-          textAlign: "center",
-          opacity: 0,
-          pointerEvents: "none",
-          zIndex: 4,
-        }}
-      >
-        <p
-          style={{
-            fontFamily: "Space Mono, monospace",
-            fontSize: "clamp(28px,4.6vw,64px)",
-            fontWeight: 700,
-            color: "var(--text)",
-            letterSpacing: -2,
-            lineHeight: 1.1,
-            maxWidth: 1100,
-            textShadow: "0 0 60px rgba(var(--accent-rgb),0.25)",
-          }}
-        >
-          AI-powered analytics. <span style={{ color: "var(--accent)" }}>Real-time insights.</span> Free.
-        </p>
       </div>
 
       {/* Hero content */}
