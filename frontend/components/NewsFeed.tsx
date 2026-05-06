@@ -10,6 +10,16 @@ interface Props {
   assets?: { ticker: string; weight?: number }[];
 }
 
+function cleanSummary(s: string): string {
+  const cutoffs = ["Most Read from", "Most read from", "Read more:", "Subscribe to", "Sign up for", "©", "For more:", "Click here", "Follow us"];
+  let result = s;
+  for (const c of cutoffs) {
+    const idx = result.indexOf(c);
+    if (idx > 80) result = result.slice(0, idx).trim();
+  }
+  return result;
+}
+
 export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: Props) {
   const allTickers: string[] = tickersProp?.length
     ? tickersProp
@@ -204,7 +214,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
                     </p>
                     {article.summary && (
                       <p style={{ fontSize: 11.5, color: "var(--text2)", lineHeight: 1.55, marginBottom: 5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                        {article.summary}
+                        {cleanSummary(article.summary)}
                       </p>
                     )}
                     <div style={{ display: "flex", gap: 10, fontSize: 10, color: "var(--text3)", alignItems: "center", flexWrap: "wrap" }}>
