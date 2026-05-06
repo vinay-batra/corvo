@@ -1634,7 +1634,7 @@ function FeaturedInBar() {
     {
       name: "Hacker News",
       icon: (
-        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+        <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
           <circle cx="20" cy="20" r="19" fill="rgba(var(--accent-rgb),0.08)" stroke="rgba(var(--accent-rgb),0.2)" strokeWidth="1"/>
           <path d="M12 12l8 12 8-12" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.85"/>
           <line x1="20" y1="24" x2="20" y2="30" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" opacity="0.85"/>
@@ -1644,7 +1644,7 @@ function FeaturedInBar() {
     {
       name: "Reddit",
       icon: (
-        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+        <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
           <circle cx="20" cy="20" r="19" fill="rgba(var(--accent-rgb),0.08)" stroke="rgba(var(--accent-rgb),0.2)" strokeWidth="1"/>
           <circle cx="20" cy="21" r="7" stroke="var(--accent)" strokeWidth="1.8" opacity="0.85"/>
           <circle cx="14.5" cy="19.5" r="1.8" fill="var(--accent)" opacity="0.85"/>
@@ -1658,7 +1658,7 @@ function FeaturedInBar() {
     {
       name: "LinkedIn",
       icon: (
-        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+        <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
           <circle cx="20" cy="20" r="19" fill="rgba(var(--accent-rgb),0.08)" stroke="rgba(var(--accent-rgb),0.2)" strokeWidth="1"/>
           <rect x="11" y="17" width="4" height="12" rx="1" fill="var(--accent)" opacity="0.85"/>
           <circle cx="13" cy="13" r="2.2" fill="var(--accent)" opacity="0.85"/>
@@ -1671,7 +1671,7 @@ function FeaturedInBar() {
   return (
     <FadeUp className="featured-bar" style={{ position: "relative", zIndex: 1, padding: "18px 56px", borderBottom: "1px solid rgba(var(--accent-rgb),0.07)" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", flexShrink: 0 }}>As Seen On</span>
+        <span style={{ fontSize: 11, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", flexShrink: 0 }}>As Seen On</span>
         <div style={{ width: 1, height: 20, background: "rgba(var(--accent-rgb),0.1)", flexShrink: 0 }} />
         {platforms.map((p, i) => (
           <motion.div
@@ -1680,10 +1680,10 @@ function FeaturedInBar() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: ANIM_EASE, delay: 0.1 + i * 0.08 }}
-            style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px" }}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 18px" }}
           >
             {p.icon}
-            <span style={{ fontSize: 12, color: "var(--text2)", fontWeight: 500, letterSpacing: 0.2 }}>{p.name}</span>
+            <span style={{ fontSize: 14, color: "var(--text2)", fontWeight: 500, letterSpacing: 0.2 }}>{p.name}</span>
           </motion.div>
         ))}
       </div>
@@ -2758,11 +2758,11 @@ function GsapHero({
       style={{
         position: "relative",
         zIndex: 1,
-        minHeight: "auto",
+        minHeight: "100vh",
         padding: "100px 56px 120px",
         display: "flex",
         alignItems: "center",
-        overflow: "visible",
+        overflow: "hidden",
       }}
     >
       {/* Light-mode-only warm radial wash behind headline */}
