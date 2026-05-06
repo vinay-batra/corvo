@@ -1426,7 +1426,7 @@ function FinalCTASection() {
   return (
     <section style={{
       position: "relative", zIndex: 1,
-      background: "var(--bg)",
+      background: "transparent",
       padding: "80px 56px",
     }}>
       <motion.div
