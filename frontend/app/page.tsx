@@ -2445,6 +2445,44 @@ const TESTIMONIALS_3D = [
   { text: "I just ran the Monte Carlo and the other sims and it completely changed how I think about my retirement, its actually crazy. I did not realize how exposed I was.", name: "Tyler", role: "Active Trader" },
   { text: "I love how it tells me what to do with my holdings and gives me suggestions instead of just giving me metrics.", name: "Maya L.", role: "Retail Investor" },
 ];
+function HorizontalTestiCard({ t, i }: { t: { text: string; name: string; role: string }; i: number }) {
+  const { ref, visible } = useReveal(0.15);
+  const base = i % 6;
+  const initialTransform = (base === 0 || base === 3)
+    ? "translateX(-30px)"
+    : (base === 2 || base === 5)
+    ? "translateX(30px)"
+    : "translateY(30px)";
+  const delay = (base === 0 || base === 3) ? "0.1s" : (base === 1 || base === 4) ? "0.2s" : "0.3s";
+  return (
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? "none" : initialTransform,
+      transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}`,
+    }}>
+      <div style={{
+        position: "relative",
+        padding: "36px 36px 28px",
+        border: "1px solid var(--border)",
+        borderRadius: 20,
+        background: "var(--card-bg)",
+        backdropFilter: "blur(14px)",
+        boxShadow: "0 18px 50px rgba(0,0,0,0.12)",
+        minHeight: 290,
+        display: "flex",
+        flexDirection: "column" as const,
+      }}>
+        <span style={{ fontFamily: "Georgia, serif", fontSize: 64, color: "var(--accent)", opacity: 0.22, lineHeight: 1, position: "absolute", top: 14, left: 22 }}>"</span>
+        <p style={{ fontSize: 15, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, marginBottom: 26, marginTop: 28, flex: 1 }}>{t.text}</p>
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}>{t.name}</p>
+          <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{t.role}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TestimonialHorizontalCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const CARD_WIDTH = 400; // 380px card + 20px gap
@@ -2529,25 +2567,7 @@ function TestimonialHorizontalCarousel() {
       >
         {items.map((t, i) => (
           <div key={i} style={{ flex: "0 0 380px" }}>
-            <div style={{
-              position: "relative",
-              padding: "36px 36px 28px",
-              border: "1px solid var(--border)",
-              borderRadius: 20,
-              background: "var(--card-bg)",
-              backdropFilter: "blur(14px)",
-              boxShadow: "0 18px 50px rgba(0,0,0,0.12)",
-              minHeight: 290,
-              display: "flex",
-              flexDirection: "column" as const,
-            }}>
-              <span style={{ fontFamily: "Georgia, serif", fontSize: 64, color: "var(--accent)", opacity: 0.22, lineHeight: 1, position: "absolute", top: 14, left: 22 }}>"</span>
-              <p style={{ fontSize: 15, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, marginBottom: 26, marginTop: 28, flex: 1 }}>{t.text}</p>
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}>{t.name}</p>
-                <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{t.role}</p>
-              </div>
-            </div>
+            <HorizontalTestiCard t={t} i={i} />
           </div>
         ))}
       </div>
@@ -3488,13 +3508,15 @@ export default function Landing() {
       </section>
 
       {/* ─── TESTIMONIALS — 3D Carousel ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "120px 56px 120px" }}>
+      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "120px 56px 120px", background: "transparent" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <ScrollReveal from="up" distance={30} style={{ textAlign: "center", marginBottom: 56 }}>
+          <FadeUp delay={0} y={30} style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Voices</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,3.6vw,44px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2 }}>What investors are saying</h2>
-          </ScrollReveal>
-          <TestimonialHorizontalCarousel />
+          </FadeUp>
+          <FadeUp delay={0.15} y={40}>
+            <TestimonialHorizontalCarousel />
+          </FadeUp>
         </div>
       </section>
 
