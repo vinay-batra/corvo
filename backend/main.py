@@ -2986,8 +2986,8 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
     ticker = ticker.upper().strip()
-    period_map_h = {"1D": ("1d", "5m"), "1W": ("5d", "30m"), "1M": ("1mo", "1d"),
-                    "3M": ("3mo", "1d"), "1Y": ("1y", "1wk"), "5Y": ("5y", "1mo")}
+    period_map_h = {"1D": ("1d", "5m"), "1W": ("5d", "15m"), "1M": ("1mo", "1d"),
+                    "3M": ("3mo", "1d"), "1Y": ("1y", "1d"), "5Y": ("5y", "1wk")}
     p, interval = period_map_h.get(period.upper(), ("1y", "1wk"))
     try:
         t = yf.Ticker(ticker)
