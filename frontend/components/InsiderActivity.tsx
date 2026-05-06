@@ -252,16 +252,7 @@ export default function InsiderActivity({ ticker }: { ticker: string }) {
           <p style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>SEC Form 4 Filings</p>
           <span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 4 }}>open market only</span>
         </div>
-        <div style={{ overflowX: "auto", overscrollBehavior: "contain" }} onWheel={e => {
-          e.stopPropagation();
-          const el = e.currentTarget;
-          if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-            const pageScroller = document.querySelector('[data-main-scroll]') as HTMLElement || document.documentElement;
-            pageScroller.scrollTop += e.deltaY;
-          } else {
-            el.scrollLeft += e.deltaX;
-          }
-        }}>
+        <div style={{ overflowX: "auto", overscrollBehavior: "contain" }} onWheel={e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); const scroller = document.querySelector(".main-scroll-area") as HTMLElement; if (scroller) scroller.scrollTop += e.deltaY; } }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 460 }}>
             <thead>
               <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
