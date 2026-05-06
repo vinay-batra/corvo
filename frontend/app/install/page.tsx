@@ -566,6 +566,7 @@ function DeviceCard({ card, cardIdx }: { card: typeof CARDS[0]; cardIdx: number 
         borderRadius: 20,
         padding: "32px 24px",
         textAlign: "center",
+        height: "100%",
       }}
       whileHover={{ y: -6, transition: { duration: 0.22, ease: EASE } }}
       className="install-card"
@@ -668,7 +669,7 @@ export default function InstallPage() {
 
         /* ── Layout ── */
         .install-hero { padding: 140px 56px 48px; }
-        .install-cards { max-width: 1100px; margin: 0 auto; padding: 0 56px 72px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .install-cards { max-width: 1100px; margin: 0 auto; padding: 0 56px 72px; display: flex; align-items: stretch; gap: 20px; }
         .install-card { border-color: var(--border); transition: border-color 0.25s ease; }
         .install-card:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent) !important; }
         .demo-scroll { scrollbar-width: none; }
@@ -763,7 +764,7 @@ export default function InstallPage() {
         {/* ── Device Cards ── */}
         <div className="install-cards">
           {CARDS.map((card, cardIdx) => (
-            <ScrollReveal key={card.key} from={cardIdx === 0 ? "left" : cardIdx === 1 ? "up" : "right"} delay={cardIdx * 0.15}>
+            <ScrollReveal key={card.key} from={cardIdx === 0 ? "left" : cardIdx === 1 ? "up" : "right"} delay={cardIdx * 0.15} style={{ flex: 1, height: "100%" }}>
               <DeviceCard card={card} cardIdx={cardIdx} />
             </ScrollReveal>
           ))}
