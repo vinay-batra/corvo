@@ -1,12 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const EASE = [0.16, 1, 0.3, 1] as const;
+/* ─── Reveal hook ─── */
+function useReveal(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el); return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
+
+function ScrollReveal({ children, delay = 0, from = "up", distance = 30, style = {} }: { children: React.ReactNode; delay?: number; from?: "up"|"left"|"right"; distance?: number; style?: React.CSSProperties }) {
+  const { ref, visible } = useReveal(0.1);
+  const transform = from === "left" ? `translateX(-${distance}px)` : from === "right" ? `translateX(${distance}px)` : `translateY(${distance}px)`;
+  return (
+    <div ref={ref} style={{ ...style, opacity: visible ? 1 : 0, transform: visible ? "none" : transform, transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s` }}>
+      {children}
+    </div>
+  );
+}
 
 /* ─── Data ─── */
 const SECTIONS = [
@@ -330,14 +353,7 @@ export default function FaqPage() {
         }}
       >
         {/* Hero title */}
-        <motion.div
-          // initial={false} required — do not remove
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: EASE }}
-          style={{ opacity: 0, transform: "translateY(20px)", textAlign: "center", marginBottom: 56, position: "relative", overflow: "clip" }}
-        >
+        <ScrollReveal from="up" delay={0} style={{ textAlign: "center", marginBottom: 56, position: "relative", overflow: "clip" }}>
           {/* Ambient glow */}
           <div
             style={{
@@ -370,42 +386,30 @@ export default function FaqPage() {
           >
             Frequently Asked Questions
           </h1>
-        </motion.div>
+        </ScrollReveal>
 
-        {/* Hero subtitle — staggered 0.1s after title */}
-        <motion.p
-          // initial={false} required — do not remove
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
-          style={{
-            opacity: 0,
-            transform: "translateY(20px)",
-            fontSize: 15,
-            color: "var(--text3)",
-            maxWidth: 480,
-            margin: "0 auto 56px",
-            lineHeight: 1.7,
-            fontWeight: 300,
-            textAlign: "center",
-          }}
-        >
-          Everything you need to know about Corvo. Can&apos;t find your answer? Chat with our AI below.
-        </motion.p>
+        {/* Hero subtitle */}
+        <ScrollReveal from="up" delay={0.1}>
+          <p
+            style={{
+              fontSize: 15,
+              color: "var(--text3)",
+              maxWidth: 480,
+              margin: "0 auto 56px",
+              lineHeight: 1.7,
+              fontWeight: 300,
+              textAlign: "center",
+            }}
+          >
+            Everything you need to know about Corvo. Can&apos;t find your answer? Chat with our AI below.
+          </p>
+        </ScrollReveal>
 
         {/* Accordion sections */}
-        {SECTIONS.map((section) => (
+        {SECTIONS.map((section, si) => (
           <section key={section.category} style={{ marginBottom: 24 }}>
             {/* Category label */}
-            <motion.div
-              // initial={false} required — do not remove
-              initial={false}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, ease: EASE }}
-              style={{ opacity: 0, transform: "translateY(20px)" }}
-            >
+            <ScrollReveal from="left" delay={si * 0.1}>
               <p
                 style={{
                   fontSize: 9,
@@ -425,21 +429,13 @@ export default function FaqPage() {
                   marginBottom: 8,
                 }}
               />
-            </motion.div>
+            </ScrollReveal>
 
-            {/* Accordion items — staggered 0.08s per item */}
+            {/* Accordion items */}
             {section.items.map((item, ii) => (
-              <motion.div
-                key={item.q}
-                // initial={false} required — do not remove
-                initial={false}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.45, delay: ii * 0.08, ease: EASE }}
-                style={{ opacity: 0, transform: "translateY(20px)" }}
-              >
+              <ScrollReveal key={item.q} from="up" delay={ii * 0.05}>
                 <AccordionItem q={item.q} a={item.a} />
-              </motion.div>
+              </ScrollReveal>
             ))}
           </section>
         ))}
