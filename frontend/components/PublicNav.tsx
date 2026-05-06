@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "../lib/supabase";
@@ -28,6 +28,8 @@ function useTheme() {
 export default function PublicNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const prevScrollY = useRef(0);
+  const [hidden, setHidden] = useState(false);
   const pathname = usePathname();
   const { dark, toggle } = useTheme();
   const { canInstall, install } = usePWAInstall();
@@ -38,6 +40,22 @@ export default function PublicNav() {
       setLoggedIn(!!session?.user);
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY < 10) {
+        setHidden(false);
+      } else if (currentY > prevScrollY.current + 8) {
+        setHidden(true);
+      } else if (currentY < prevScrollY.current - 4) {
+        setHidden(false);
+      }
+      prevScrollY.current = currentY;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const active = (path: string) => pathname === path || pathname?.startsWith(path + "/");
@@ -59,7 +77,7 @@ export default function PublicNav() {
           .pnav-mobile-link { min-height: 44px !important; display: flex !important; align-items: center !important; }
         }
       `}</style>
-      <nav className="pnav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navBg, backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
+      <nav className="pnav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navBg, backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", transform: hidden ? "translateY(-100%)" : "translateY(0)", transition: "transform 0.3s cubic-bezier(0.16,1,0.3,1), background 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
         {/* Logo */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
           <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
