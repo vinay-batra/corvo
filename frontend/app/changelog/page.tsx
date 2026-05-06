@@ -60,6 +60,20 @@ function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSS
 
 const ENTRIES = [
   {
+    date: "May 6, 2026",
+    version: "v0.22",
+    title: "Landing Page Redesign, Animated Public Pages & Notification Settings",
+    desc: "Full landing page overhaul with Three.js particle canvas, GSAP hero animations, 3D bento cards with mouse-tracking tilt, horizontal infinite testimonial carousel, and animated stats countup. All public pages (FAQ, Changelog, Pricing, Install, Blog, About) now have scroll-driven entrance animations with the character-by-character heading animation. Notification settings redesigned as a two-column email/push grid. Install page platform cards unified to equal height.",
+    tags: ["Design", "Animations", "UX"],
+  },
+  {
+    date: "May 1, 2026",
+    version: "v0.21",
+    title: "Paper Trading, Peer Comparison & Life Events",
+    desc: "Paper trading simulator with live search, price charts, key stats, sparklines, and full trade history. Peer comparison card on the dashboard benchmarks your portfolio against 847+ users. Life events onboarding step and settings integration feeds context into AI chat. Financial goals onboarding step added. Earnings call transcript summaries via SEC EDGAR integration.",
+    tags: ["Paper Trading", "Social", "AI"],
+  },
+  {
     date: "Apr 28, 2026",
     version: "v0.21",
     title: "Capital Gains Estimator, Dividend Calendar & /install Page",
@@ -235,12 +249,9 @@ export default function ChangelogPage() {
         .nl:hover { color: var(--text); }
         .tag { padding: 3px 10px; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.4); border-radius: 20px; font-size: 10px; color: var(--accent); letter-spacing: 0.5px; }
         @media(max-width:768px) {
-          .cl-timeline { padding-left: 0 !important; }
-          .cl-entry { padding-left: 0 !important; display: block !important; }
-          .cl-date-col { display: none !important; }
-          .cl-dot { display: none !important; }
-          .cl-vline { display: none !important; }
-          .cl-entry-content { padding-left: 0 !important; }
+          .cl-center-line { display: none !important; }
+          .cl-alt-entry { display: block !important; }
+          .cl-alt-left, .cl-alt-right { text-align: left !important; }
           .cl-hero { padding: 100px 20px 48px !important; }
           .cl-body { padding: 0 20px 80px !important; }
           .cl-footer { padding: 60px 20px 80px !important; }
@@ -268,41 +279,48 @@ export default function ChangelogPage() {
 
       {/* Timeline */}
       <div className="cl-body" style={{ maxWidth: 860, margin: "0 auto", padding: "0 56px 0" }}>
-        <div className="cl-timeline" style={{ position: "relative", paddingLeft: 0 }}>
-          {/* Vertical line */}
-          <div className="cl-vline" style={{ position: "absolute", left: 140, top: 0, bottom: 0, width: 1, background: "var(--border)" }} />
+        <div style={{ position: "relative" }}>
+          {/* Center vertical line */}
+          <div className="cl-center-line" style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 2, background: "linear-gradient(to bottom, rgba(var(--accent-rgb),0.6), rgba(var(--accent-rgb),0.1))", transform: "translateX(-50%)" }} />
 
-          {ENTRIES.map((entry, i) => (
-            <ScrollReveal key={i} from={i % 2 === 0 ? "left" : "right"} delay={i * 0.1} style={{ marginBottom: 48, position: "relative" }}>
-              <div className="cl-entry" style={{ display: "flex", gap: 0 }}>
-              {/* Date column */}
-              <div className="cl-date-col" style={{ width: 140, flexShrink: 0, paddingRight: 28, textAlign: "right", paddingTop: 4 }}>
-                <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>{entry.date}</span>
-              </div>
-
-              {/* Dot */}
-              <div className="cl-dot" style={{ position: "absolute", left: 134, top: 6, width: 13, height: 13, borderRadius: "50%", background: "var(--card-bg)", border: "2px solid #c9a84c", zIndex: 2 }} />
-
-              {/* Content */}
-              <div className="cl-entry-content" style={{ paddingLeft: 36, flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "#c9a84c", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.4)", padding: "3px 10px", borderRadius: 20 }}>
-                    {entry.version}
-                  </span>
-                  {entry.tags.map(tag => (
-                    <span key={tag} className="tag">{tag}</span>
-                  ))}
+          {ENTRIES.map((entry, i) => {
+            const isLeft = i % 2 === 0;
+            const card = (
+              <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 16, padding: "24px 28px", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", textAlign: isLeft ? "right" : "left" }}>
+                <span style={{ display: "inline-block", fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.2)", borderRadius: 6, padding: "2px 8px", marginBottom: 8 }}>{entry.version}</span>
+                <p style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace", marginBottom: 6 }}>{entry.date}</p>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3, marginBottom: 8, lineHeight: 1.35 }}>{entry.title}</h3>
+                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.75, marginBottom: 14 }}>{entry.desc}</p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: isLeft ? "flex-end" : "flex-start" }}>
+                  {entry.tags.map(tag => <span key={tag} className="tag">{tag}</span>)}
                 </div>
-                <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", marginBottom: 8, lineHeight: 1.35 }}>
-                  {entry.title}
-                </h3>
-                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.75, fontWeight: 300 }}>
-                  {entry.desc}
-                </p>
               </div>
+            );
+            const dot = (
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <div style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--accent)", border: "3px solid var(--bg)", boxShadow: "0 0 0 4px rgba(var(--accent-rgb),0.15)", marginTop: 20, position: "relative", zIndex: 2 }} />
               </div>
-            </ScrollReveal>
-          ))}
+            );
+            return (
+              <ScrollReveal key={i} from={isLeft ? "left" : "right"} delay={i * 0.05}>
+                <div className="cl-alt-entry" style={{ display: "grid", gridTemplateColumns: "1fr 48px 1fr", alignItems: "start", marginBottom: 56 }}>
+                  {isLeft ? (
+                    <>
+                      <div className="cl-alt-left" style={{ paddingRight: 24 }}>{card}</div>
+                      {dot}
+                      <div />
+                    </>
+                  ) : (
+                    <>
+                      <div />
+                      {dot}
+                      <div className="cl-alt-right" style={{ paddingLeft: 24 }}>{card}</div>
+                    </>
+                  )}
+                </div>
+              </ScrollReveal>
+            );
+          })}
 
         </div>
       </div>
