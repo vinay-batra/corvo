@@ -215,7 +215,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
     const hdrCol = isCall ? GREEN : RED;
     if (!contracts.length) return <p style={{ fontSize: 11, color: "var(--text3)", padding: "16px 0" }}>No data</p>;
     return (
-      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }}>
+      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }} onWheel={e => { const el = e.currentTarget; const atLeft = el.scrollLeft === 0; const atRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1; if ((atLeft && e.deltaX < 0) || (atRight && e.deltaX > 0) || Math.abs(e.deltaY) > Math.abs(e.deltaX)) { return; } e.stopPropagation(); }}>
         <style>{`
           .opt-th-wrap { position: relative; display: inline-flex; align-items: center; gap: 3px; cursor: default; }
           .opt-th-wrap .opt-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
@@ -598,6 +598,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const [livePrice, setLivePrice]     = useState<number | null>(null);
   const [priceFlash, setPriceFlash]   = useState<"up" | "down" | null>(null);
   const [analystConsensus, setAnalystConsensus] = useState<AnalystConsensus | null>(null);
+  const [earningSummary, setEarningSummary] = useState<string | null>(null);
   const prevPriceRef  = useRef<number | null>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dark, setDark] = useState(true);
@@ -722,7 +723,9 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const loadHistory = useCallback(async (p: Period) => {
     setHistLoading(true);
     try {
-      const r = await fetch(`${API_URL}/stock/${ticker}/history?period=${p}`);
+      const intervalMap: Record<string, string> = { "1D": "5m", "1W": "30m", "1M": "1d", "3M": "1d", "1Y": "1d", "5Y": "1wk" };
+      const interval = intervalMap[p] || "1d";
+      const r = await fetch(`${API_URL}/stock/${ticker}/history?period=${p}&interval=${interval}`);
       const d = await r.json();
       setHistDates(d.dates || []);
       setHistPrices(d.prices || []);
@@ -742,6 +745,14 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
     fetch(`${API_URL}/analyst-targets/${ticker}`)
       .then(r => r.json())
       .then(d => { if (d && !d.detail) setAnalystConsensus(d); })
+      .catch(() => {});
+  }, [ticker]);
+
+  useEffect(() => {
+    setEarningSummary(null);
+    fetch(`${API_URL}/earnings-summary/${ticker}`)
+      .then(r => r.json())
+      .then(d => { if (d?.summary) setEarningSummary(d.summary); })
       .catch(() => {});
   }, [ticker]);
 
@@ -1212,6 +1223,15 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       <Card title="Recent News">
         <NewsSection ticker={info.ticker} />
       </Card>
+
+      {/* ── Earnings Summary ─────────────────────────────────────────────────── */}
+      {earningSummary && (
+        <Card title="Earnings Summary">
+          <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 10, padding: 16, fontSize: 13, color: "var(--text2)", lineHeight: 1.75 }}>
+            {earningSummary}
+          </div>
+        </Card>
+      )}
 
       </>}
     </motion.div>

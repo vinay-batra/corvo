@@ -415,7 +415,7 @@ export default function StockCompare() {
           </div>
         )}
 
-        {!comparing && (
+        {tickers.length < 4 && (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{ position: "relative", flex: 1, zIndex: 50 }}>
               <input

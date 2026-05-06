@@ -283,7 +283,7 @@ function EarningsRow({
     : null;
 
   const hasExpanded = row.eps_estimate != null || row.revenue_estimate != null ||
-    row.weight > 0 || preview != null || days <= 14;
+    row.weight > 0 || preview != null || days <= 7;
 
   const transcriptFound =
     transcriptState.status === "done" && transcriptState.data.has_transcript;
@@ -424,7 +424,7 @@ function EarningsRow({
               </div>
 
               {/* Loading state */}
-              {previewLoading && days <= 14 && (
+              {previewLoading && days <= 7 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{
                     width: 12, height: 12, borderRadius: "50%",
@@ -461,15 +461,15 @@ function EarningsRow({
               )}
 
               {/* No preview for non-today upcoming */}
-              {!previewLoading && days > 0 && days <= 14 && !preview && (
+              {!previewLoading && days > 0 && days <= 7 && !preview && (
                 <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
                   AI analysis not available for this ticker.
                 </p>
               )}
 
-              {days > 14 && (
+              {days > 7 && (
                 <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
-                  AI analysis and implied move available within 14 days of earnings.
+                  AI analysis and implied move available within 7 days of earnings.
                 </p>
               )}
             </div>

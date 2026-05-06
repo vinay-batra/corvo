@@ -2164,16 +2164,17 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </div>
                 ) : (
                   <div>
-                    <StocksSearch onSelect={setStockTicker} />
                     <button
                       onClick={() => setShowStockCompare(true)}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginTop: 12, padding: "11px 0", fontSize: 13, fontWeight: 600, borderRadius: 9, border: "0.5px solid var(--border2)", background: "var(--bg2)", color: "var(--text2)", cursor: "pointer", transition: "all 0.15s", letterSpacing: 0.2 }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.background = "rgba(201,168,76,0.07)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.color = "var(--text2)"; e.currentTarget.style.background = "var(--bg2)"; }}
+                      title="Compare up to 4 stocks side by side — performance, fundamentals, and correlation"
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginBottom: 12, padding: "13px 0", fontSize: 14, fontWeight: 600, borderRadius: 9, border: "1px solid rgba(var(--accent-rgb),0.25)", background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)", cursor: "pointer", transition: "all 0.15s", letterSpacing: 0.2 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.12)"; e.currentTarget.style.borderColor = "rgba(var(--accent-rgb),0.45)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.06)"; e.currentTarget.style.borderColor = "rgba(var(--accent-rgb),0.25)"; }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                       Compare Stocks
                     </button>
+                    <StocksSearch onSelect={setStockTicker} />
                   </div>
                 )}
               </motion.div>

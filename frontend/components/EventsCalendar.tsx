@@ -145,20 +145,6 @@ export default function EventsCalendar() {
               )}
             </div>
 
-            <div style={{
-              padding: "3px 7px",
-              borderRadius: 20,
-              background: "rgba(224,92,92,0.08)",
-              border: "0.5px solid rgba(224,92,92,0.3)",
-              fontSize: 9,
-              fontWeight: 700,
-              color: "var(--red)",
-              letterSpacing: 0.5,
-              textTransform: "uppercase",
-              flexShrink: 0,
-            }}>
-              High
-            </div>
           </div>
         );
       })}
