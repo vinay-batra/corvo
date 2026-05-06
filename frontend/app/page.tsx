@@ -30,19 +30,22 @@ function useReveal(threshold = 0.15) {
 }
 
 /* ─── Counter ─── */
-function Counter({ target, suffix = "", duration = 2000 }: { target: number; suffix?: string; duration?: number }) {
+function Counter({ target, suffix = "", duration = 2000, delay = 0 }: { target: number; suffix?: string; duration?: number; delay?: number }) {
   const [count, setCount] = useState(0);
   const { ref, visible } = useReveal(0.5);
   useEffect(() => {
     if (!visible) return;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min((now - start) / duration, 1);
-      setCount(Math.floor(target * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [visible, target, duration]);
+    const timeout = setTimeout(() => {
+      const start = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min((now - start) / duration, 1);
+        setCount(Math.floor(target * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [visible, target, duration, delay]);
   return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
 }
 
@@ -1219,15 +1222,15 @@ function TickerTape() {
   }, []);
   const doubled = [...items, ...items];
   return (
-    <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(var(--accent-rgb),0.07)", borderBottom: "1px solid rgba(var(--accent-rgb),0.07)", padding: "9px 0", overflow: "clip", background: "var(--bg)" }}>
-      <div style={{ display: "flex", gap: 48, animation: "ticker 30s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
+    <div style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(var(--accent-rgb),0.12)", borderBottom: "1px solid rgba(var(--accent-rgb),0.12)", padding: "13px 0", overflow: "clip", background: "var(--bg)" }}>
+      <div style={{ display: "flex", gap: 64, animation: "ticker 30s linear infinite", whiteSpace: "nowrap", width: "max-content", willChange: "transform" }}>
         {doubled.map((item, i) => {
           const up = item.change_pct >= 0;
           return (
-            <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11, fontFamily: "Space Mono,monospace" }}>
+            <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontFamily: "Space Mono,monospace" }}>
               <span style={{ color: "var(--accent)", letterSpacing: 1 }}>{item.ticker}</span>
-              <span style={{ color: "var(--text3)", letterSpacing: 0.5 }}>{item.price != null ? (item.price < 100 ? `$${item.price.toFixed(2)}` : `$${item.price.toLocaleString()}`) : "-"}</span>
-              <span style={{ color: up ? "var(--green)" : "var(--red)", fontWeight: 600 }}>{up ? "+" : ""}{item.change_pct != null ? item.change_pct.toFixed(2) : "-"}%</span>
+              <span style={{ color: "var(--text3)", letterSpacing: 0.5, fontWeight: 500 }}>{item.price != null ? (item.price < 100 ? `$${item.price.toFixed(2)}` : `$${item.price.toLocaleString()}`) : "-"}</span>
+              <span style={{ color: up ? "var(--green)" : "var(--red)", fontWeight: 500 }}>{up ? "+" : ""}{item.change_pct != null ? item.change_pct.toFixed(2) : "-"}%</span>
             </span>
           );
         })}
@@ -2755,12 +2758,11 @@ function GsapHero({
       style={{
         position: "relative",
         zIndex: 1,
-        minHeight: "100vh",
-        height: "100vh",
+        minHeight: "auto",
         padding: "100px 56px 120px",
         display: "flex",
         alignItems: "center",
-        overflow: "hidden",
+        overflow: "visible",
       }}
     >
       {/* Light-mode-only warm radial wash behind headline */}
@@ -2964,7 +2966,7 @@ function GsapHero({
             <FadeUp delay={0}>
               <div>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>
-                  <Counter target={liveUserCount ?? 847} suffix="+" />
+                  <Counter target={liveUserCount ?? 847} suffix="+" delay={1050} />
                 </p>
                 <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>
                   Active Users
@@ -2974,7 +2976,7 @@ function GsapHero({
             <FadeUp delay={0.1}>
               <div>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>
-                  <Counter target={5500} suffix="+" />
+                  <Counter target={5500} suffix="+" delay={1150} />
                 </p>
                 <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>
                   Portfolios
@@ -2984,7 +2986,7 @@ function GsapHero({
             <FadeUp delay={0.2}>
               <div>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>
-                  <Counter target={17} suffix="K+" />
+                  <Counter target={17} suffix="K+" delay={1250} />
                 </p>
                 <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>
                   AI Insights
@@ -3034,8 +3036,8 @@ function GsapHero({
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(var(--accent-rgb),0.25)", borderRadius: 20, padding: "5px 12px" }}>
-              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)", display: "inline-block", animation: "pdot 2s infinite", marginRight: 7, flexShrink: 0 }} />
+            <div style={{ display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(var(--accent-rgb),0.25)", background: "rgba(var(--accent-rgb),0.06)", borderRadius: 20, padding: "5px 12px" }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite", marginRight: 7, flexShrink: 0 }} />
               <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, letterSpacing: 2, color: "var(--text2)", textTransform: "uppercase" }}>
                 INTERACTIVE DEMO
               </span>
