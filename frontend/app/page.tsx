@@ -7,13 +7,6 @@ import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import PublicFooter from "../components/PublicFooter";
 import { usePWAInstall } from "../hooks/usePWAInstall";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SplitText } from "gsap/SplitText";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger, SplitText);
-}
 
 /* ─── Reveal hook ─── */
 function useReveal(threshold = 0.15) {
@@ -2477,567 +2470,6 @@ function TestimonialCarousel3D() {
   );
 }
 
-/* ─── GSAP-driven Pinned Hero ─── */
-function GsapHero({
-  loggedIn,
-  liveUserCount,
-  scrollerRef,
-}: {
-  loggedIn: boolean;
-  liveUserCount: number | null;
-  scrollerRef: React.RefObject<HTMLDivElement | null>;
-}) {
-  const sectionRef = useRef<HTMLElement>(null);
-  const headlineRef = useRef<HTMLHeadingElement>(null);
-  const badgeRef = useRef<HTMLDivElement>(null);
-  const subRef = useRef<HTMLParagraphElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
-  const demoRef = useRef<HTMLDivElement>(null);
-  const fadeInTextRef = useRef<HTMLDivElement>(null);
-  const orbARef = useRef<HTMLDivElement>(null);
-  const orbBRef = useRef<HTMLDivElement>(null);
-  const chartFillRef = useRef<SVGPathElement>(null);
-  const chartStrokeRef = useRef<SVGPathElement>(null);
-  const chartUnderRef = useRef<SVGPathElement>(null);
-  const metricRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const scrollerEl = scrollerRef.current;
-    const sectionEl = sectionRef.current;
-    if (!sectionEl) return;
-
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
-    let split: SplitText | null = null;
-
-    const ctx = gsap.context(() => {
-      const headlineEl = headlineRef.current;
-      if (headlineEl) {
-        split = new SplitText(headlineEl, {
-          type: "chars,words",
-          charsClass: "gh-char",
-          wordsClass: "gh-word",
-        });
-      }
-      const chars = split?.chars ?? [];
-
-      // ── Mobile fallback: simple fade-in, no pin, no slam-in ──
-      if (isMobile) {
-        if (chars.length) {
-          gsap.from(chars, {
-            opacity: 0,
-            y: 14,
-            stagger: 0.012,
-            duration: 0.55,
-            ease: "power2.out",
-          });
-        }
-        gsap.from(
-          [
-            badgeRef.current,
-            subRef.current,
-            ctaRef.current,
-            statsRef.current,
-            demoRef.current,
-          ].filter(Boolean),
-          {
-            opacity: 0,
-            y: 20,
-            stagger: 0.1,
-            duration: 0.6,
-            ease: "power2.out",
-            delay: 0.25,
-          }
-        );
-        return;
-      }
-
-      // ── Desktop: badge + intro fades ──
-      gsap.from(badgeRef.current, {
-        opacity: 0,
-        y: -10,
-        duration: 0.6,
-        ease: "power2.out",
-      });
-
-      // ── Headline slam-in: chars from random directions ──
-      if (chars.length) {
-        const initialStates = chars.map(() => {
-          const r = Math.random();
-          // 0=left, 1=right, 2=above
-          const dir = r < 0.34 ? 0 : r < 0.68 ? 1 : 2;
-          const dx = dir === 0 ? -240 - Math.random() * 200 : dir === 1 ? 240 + Math.random() * 200 : (Math.random() - 0.5) * 80;
-          const dy = dir === 2 ? -260 - Math.random() * 160 : (Math.random() - 0.5) * 60;
-          const rot = (Math.random() - 0.5) * 36;
-          return { dx, dy, rot };
-        });
-        chars.forEach((c, i) => {
-          const s = initialStates[i];
-          gsap.set(c, {
-            x: s.dx,
-            y: s.dy,
-            rotation: s.rot,
-            opacity: 0,
-            transformOrigin: "50% 50%",
-          });
-        });
-        gsap.to(chars, {
-          x: 0,
-          y: 0,
-          rotation: 0,
-          opacity: 1,
-          duration: 0.8,
-          ease: "back.out(1.4)",
-          stagger: 0.04,
-        });
-      }
-
-      // ── Subtitle + CTA + stats: fade after headline ──
-      gsap.from(subRef.current, {
-        opacity: 0,
-        y: 24,
-        duration: 0.7,
-        ease: "power2.out",
-        delay: 0.7,
-      });
-      gsap.from(ctaRef.current, {
-        opacity: 0,
-        y: 24,
-        duration: 0.7,
-        ease: "power2.out",
-        delay: 0.9,
-      });
-      gsap.from(statsRef.current, {
-        opacity: 0,
-        y: 14,
-        duration: 0.6,
-        ease: "power2.out",
-        delay: 1.05,
-      });
-
-      // ── Floating metric cards: 2 from left, 2 from right, staggered ──
-      const cards = metricRefs.current.filter(Boolean) as HTMLDivElement[];
-      // index 0 (top-left) + 2 (bottom-left) come from left
-      // index 1 (top-right) + 3 (bottom-right) come from right
-      const leftCards = [cards[0], cards[2]].filter(Boolean);
-      const rightCards = [cards[1], cards[3]].filter(Boolean);
-      gsap.fromTo(
-        leftCards,
-        { x: -360, opacity: 0 },
-        {
-          x: 0,
-          opacity: 1,
-          duration: 1.0,
-          ease: "power3.out",
-          stagger: 0.15,
-          delay: 0.6,
-        }
-      );
-      gsap.fromTo(
-        rightCards,
-        { x: 360, opacity: 0 },
-        {
-          x: 0,
-          opacity: 1,
-          duration: 1.0,
-          ease: "power3.out",
-          stagger: 0.15,
-          delay: 0.75,
-        }
-      );
-
-      // ── Animated hero chart: stroke draw on load (after headline) ──
-      const drawChartPath = (path: SVGPathElement | null) => {
-        if (!path) return;
-        let len = 2900;
-        try {
-          const measured = path.getTotalLength();
-          if (measured && Number.isFinite(measured)) len = measured;
-        } catch {}
-        gsap.set(path, { strokeDasharray: len, strokeDashoffset: len });
-        gsap.to(path, {
-          strokeDashoffset: 0,
-          duration: 2.5,
-          ease: "power2.out",
-          delay: 0.8,
-        });
-      };
-      drawChartPath(chartUnderRef.current);
-      drawChartPath(chartStrokeRef.current);
-
-      // Demo widget intro
-      gsap.from(demoRef.current, {
-        opacity: 0,
-        y: 40,
-        scale: 0.96,
-        duration: 1.0,
-        ease: "power3.out",
-        delay: 0.5,
-      });
-
-      // ── Pinned scroll-tied timeline ──
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionEl,
-          scroller: scrollerEl ?? undefined,
-          start: "top top",
-          end: "+=150%",
-          pin: true,
-          pinSpacing: true,
-          scrub: 1,
-          anticipatePin: 1,
-        },
-      });
-
-      // Headline drift up + fade (progress 0.2 → 0.5)
-      tl.to(headlineRef.current, { y: -80, opacity: 0, ease: "none" }, 0.2);
-      tl.to(badgeRef.current, { y: -40, opacity: 0, ease: "none" }, 0.2);
-      tl.to([subRef.current, ctaRef.current, statsRef.current], { y: -50, opacity: 0, ease: "none" }, 0.2);
-
-      // Demo widget scales 1 → 1.05 (0.3) then fades (0.45 → 0.6)
-      tl.to(demoRef.current, { scale: 1.05, ease: "none" }, 0.3);
-      tl.to(demoRef.current, { opacity: 0, ease: "none" }, 0.45);
-
-      // Metric cards scatter outward + accelerate (orbs/particles analog)
-      cards.forEach((card, i) => {
-        const fromLeft = i === 0 || i === 2;
-        const driftX = fromLeft ? -260 : 260;
-        const driftY = i < 2 ? -120 : 120;
-        tl.to(
-          card,
-          { x: driftX, y: driftY, opacity: 0, rotation: (Math.random() - 0.5) * 18, ease: "none" },
-          0.25
-        );
-      });
-
-      // Orbs scatter / accelerate as scroll progresses
-      tl.to(orbARef.current, { x: -260, y: -180, scale: 1.6, ease: "none" }, 0);
-      tl.to(orbBRef.current, { x: 220, y: 160, scale: 1.5, ease: "none" }, 0);
-
-      // Chart fades with the rest of the hero
-      tl.to([chartFillRef.current, chartStrokeRef.current, chartUnderRef.current], { opacity: 0, ease: "none" }, 0.4);
-
-      // New text fades in at 0.6
-      tl.fromTo(
-        fadeInTextRef.current,
-        { opacity: 0, y: 60 },
-        { opacity: 1, y: 0, ease: "none" },
-        0.6
-      );
-    }, sectionRef);
-
-    // Refresh once layout / fonts settle
-    const refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 120);
-
-    return () => {
-      window.clearTimeout(refreshTimer);
-      ctx.revert();
-      if (split) {
-        try {
-          split.revert();
-        } catch {}
-      }
-    };
-  }, [scrollerRef]);
-
-  return (
-    <section
-      ref={sectionRef}
-      className="hero-section gsap-hero"
-      style={{
-        position: "relative",
-        zIndex: 1,
-        minHeight: "100vh",
-        height: "100vh",
-        padding: "140px 56px 120px",
-        display: "flex",
-        alignItems: "center",
-        overflow: "hidden",
-      }}
-    >
-      {/* Radial gold orbs — outer wrapper takes GSAP scrub, inner does the slow CSS drift */}
-      <div
-        ref={orbARef}
-        aria-hidden
-        style={{
-          position: "absolute",
-          top: "18%",
-          left: "6%",
-          width: 760,
-          height: 760,
-          pointerEvents: "none",
-          willChange: "transform",
-          zIndex: 0,
-        }}
-      >
-        <div
-          className="gh-orb-inner gh-orb-a"
-          style={{
-            width: "100%",
-            height: "100%",
-            background:
-              "radial-gradient(circle, rgba(var(--accent-rgb),0.06) 0%, rgba(var(--accent-rgb),0.03) 35%, transparent 65%)",
-            filter: "blur(28px)",
-          }}
-        />
-      </div>
-      <div
-        ref={orbBRef}
-        aria-hidden
-        style={{
-          position: "absolute",
-          bottom: "8%",
-          right: "4%",
-          width: 600,
-          height: 600,
-          pointerEvents: "none",
-          willChange: "transform",
-          zIndex: 0,
-        }}
-      >
-        <div
-          className="gh-orb-inner gh-orb-b"
-          style={{
-            width: "100%",
-            height: "100%",
-            background:
-              "radial-gradient(circle, rgba(var(--accent-rgb),0.06) 0%, transparent 60%)",
-            filter: "blur(40px)",
-          }}
-        />
-      </div>
-
-      {/* Animated chart — bottom of hero, refs for GSAP draw */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 280,
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      >
-        <svg style={{ width: "100%", height: "100%" }} viewBox="0 0 1200 280" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="ghHeroChartFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.07" />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path
-            ref={chartFillRef}
-            d="M0,248 C100,236 220,212 340,186 C460,160 560,132 680,104 C780,80 880,86 960,64 C1040,44 1110,28 1200,14 L1200,280 L0,280Z"
-            fill="url(#ghHeroChartFill)"
-          />
-          <path
-            ref={chartUnderRef}
-            d="M0,248 C100,236 220,212 340,186 C460,160 560,132 680,104 C780,80 880,86 960,64 C1040,44 1110,28 1200,14"
-            fill="none"
-            stroke="rgba(var(--accent-rgb),0.14)"
-            strokeWidth={12}
-            strokeLinecap="round"
-          />
-          <path
-            ref={chartStrokeRef}
-            d="M0,248 C100,236 220,212 340,186 C460,160 560,132 680,104 C780,80 880,86 960,64 C1040,44 1110,28 1200,14"
-            fill="none"
-            stroke="var(--accent)"
-            strokeWidth={2}
-            opacity={0.6}
-          />
-        </svg>
-        <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, display: "flex", justifyContent: "space-between", padding: "0 4px" }}>
-          {["Jan", "Mar", "Jun", "Sep"].map((l) => (
-            <span key={l} style={{ fontSize: 9, fontFamily: "Space Mono, monospace", color: "rgba(232,224,204,0.18)", letterSpacing: 1 }}>
-              {l}
-            </span>
-          ))}
-          <span style={{ fontSize: 9, fontFamily: "Space Mono, monospace", color: "rgba(var(--accent-rgb),0.45)", letterSpacing: 1 }}>Now</span>
-        </div>
-      </div>
-
-      {/* New scroll-revealed text overlay (centered) */}
-      <div
-        ref={fadeInTextRef}
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "0 32px",
-          textAlign: "center",
-          opacity: 0,
-          pointerEvents: "none",
-          zIndex: 4,
-        }}
-      >
-        <p
-          style={{
-            fontFamily: "Space Mono, monospace",
-            fontSize: "clamp(28px,4.6vw,64px)",
-            fontWeight: 700,
-            color: "var(--text)",
-            letterSpacing: -2,
-            lineHeight: 1.1,
-            maxWidth: 1100,
-            textShadow: "0 0 60px rgba(var(--accent-rgb),0.25)",
-          }}
-        >
-          AI-powered analytics. <span style={{ color: "var(--accent)" }}>Real-time insights.</span> Free.
-        </p>
-      </div>
-
-      {/* Hero content */}
-      <div
-        className="hero-split"
-        style={{
-          maxWidth: 1240,
-          margin: "0 auto",
-          width: "100%",
-          display: "grid",
-          gridTemplateColumns: "1.05fr 1fr",
-          gap: 80,
-          alignItems: "center",
-          position: "relative",
-          zIndex: 2,
-        }}
-      >
-        {/* LEFT */}
-        <div className="hero-left" style={{ position: "relative" }}>
-          <div
-            ref={badgeRef}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 16px",
-              border: "1px solid rgba(var(--accent-rgb),0.4)",
-              borderRadius: 24,
-              marginBottom: 32,
-              background: "rgba(var(--accent-rgb),0.08)",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
-            <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>
-              AI-Powered Portfolio Intelligence
-            </span>
-          </div>
-
-          <h1
-            ref={headlineRef}
-            className="gh-headline"
-            style={{
-              fontFamily: "Space Mono,monospace",
-              fontSize: "clamp(36px,5.6vw,76px)",
-              fontWeight: 700,
-              lineHeight: 1.04,
-              letterSpacing: -3,
-              marginBottom: 28,
-              position: "relative",
-              zIndex: 1,
-              color: "var(--text)",
-            }}
-          >
-            Your portfolio deserves{" "}
-            <span style={{ color: "var(--accent)", textShadow: "0 0 60px rgba(var(--accent-rgb),0.35)" }}>
-              better than a pie chart.
-            </span>
-          </h1>
-
-          <p
-            ref={subRef}
-            style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 440, marginBottom: 36 }}
-          >
-            AI-powered analytics: Sharpe ratio, Monte Carlo, sector exposure, and more. Free.
-          </p>
-
-          <div ref={ctaRef} className="hero-btns" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {loggedIn ? (
-              <Link href="/app" className="cta cta-shimmer" style={{ padding: "14px 36px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>
-                Go to Dashboard →
-              </Link>
-            ) : (
-              <Link href="/auth?mode=signup" className="cta cta-shimmer" style={{ padding: "14px 36px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>
-                Start for free →
-              </Link>
-            )}
-          </div>
-
-          <div
-            ref={statsRef}
-            className="hero-stats"
-            style={{ display: "flex", gap: 28, marginTop: 36, paddingTop: 24, borderTop: "1px solid rgba(var(--accent-rgb),0.08)" }}
-          >
-            {[
-              { value: `${liveUserCount ?? 847}+`, label: "Active Users" },
-              { value: "5,500+", label: "Portfolios" },
-              { value: "17K+", label: "AI Insights" },
-            ].map(({ value, label }) => (
-              <div key={label}>
-                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>
-                  {value}
-                </p>
-                <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>
-                  {label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* RIGHT */}
-        <div ref={demoRef} className="hero-right" style={{ position: "relative", willChange: "transform, opacity" }}>
-          {[
-            { label: "Sharpe Ratio", value: "0.66", color: "var(--accent)", style: { top: -28, left: -48 } as React.CSSProperties, floatDelay: "0s" },
-            { label: "1Y Return", value: "+18.4%", color: "var(--green)", style: { top: 80, right: -64 } as React.CSSProperties, floatDelay: "1.2s" },
-            { label: "Health", value: "84/100", color: "var(--green)", style: { bottom: 100, left: -72 } as React.CSSProperties, floatDelay: "2.4s" },
-            { label: "Volatility", value: "12.1%", color: "var(--text)", style: { bottom: -22, right: -36 } as React.CSSProperties, floatDelay: "3s" },
-          ].map((m, i) => (
-            <div
-              key={m.label}
-              ref={(el) => { metricRefs.current[i] = el; }}
-              className="hero-metric-card gh-metric-wrap"
-              style={{
-                position: "absolute",
-                zIndex: 3,
-                willChange: "transform, opacity",
-                ...m.style,
-              }}
-            >
-              <div
-                style={{
-                  background: "rgba(10,14,20,0.9)",
-                  border: "1px solid rgba(var(--accent-rgb),0.2)",
-                  borderRadius: 12,
-                  padding: "10px 14px",
-                  backdropFilter: "blur(16px)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(var(--accent-rgb),0.05)",
-                  animation: `float 6s ease-in-out ${m.floatDelay} infinite`,
-                }}
-              >
-                <p style={{ fontSize: 7, letterSpacing: 1.5, color: "rgba(232,224,204,0.35)", textTransform: "uppercase", marginBottom: 4 }}>
-                  {m.label}
-                </p>
-                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 17, fontWeight: 700, color: m.color, letterSpacing: -0.5, lineHeight: 1 }}>
-                  {m.value}
-                </p>
-              </div>
-            </div>
-          ))}
-          <InteractiveDemoWidget />
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ─── Main Landing ─── */
 export default function Landing() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -3200,13 +2632,6 @@ export default function Landing() {
         @keyframes demospin{to{transform:rotate(360deg)}}
         @keyframes orbDrift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.08)}66%{transform:translate(-40px,50px) scale(0.94)}}
         @keyframes orbDriftCenter{0%,100%{transform:translateX(-50%) translate(0,0) scale(1)}33%{transform:translateX(-50%) translate(40px,-30px) scale(1.06)}66%{transform:translateX(-50%) translate(-30px,40px) scale(0.96)}}
-        @keyframes orbDriftA{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(48px,-32px) scale(1.06)}66%{transform:translate(-36px,40px) scale(0.96)}}
-        @keyframes orbDriftB{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-44px,28px) scale(1.05)}66%{transform:translate(36px,-30px) scale(0.95)}}
-        .gh-orb-inner{will-change:transform}
-        .gh-orb-inner.gh-orb-a{animation:orbDriftA 18s ease-in-out infinite}
-        .gh-orb-inner.gh-orb-b{animation:orbDriftB 22s ease-in-out 4s infinite reverse}
-        .gh-headline .gh-char,.gh-headline .gh-word{display:inline-block;will-change:transform,opacity}
-        .gh-headline{transform-style:preserve-3d}
         .cta{transition:all 0.25s!important}.cta:hover{background:var(--accent)!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(var(--accent-rgb),0.25)!important}
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(var(--accent-rgb),0.4)!important;color:var(--accent)!important}
         .nl:hover{color:var(--accent)!important}
@@ -3446,8 +2871,130 @@ export default function Landing() {
         </div>
       )}
 
-      {/* HERO — pinned, GSAP-driven */}
-      <GsapHero loggedIn={loggedIn} liveUserCount={liveUserCount} scrollerRef={containerRef} />
+      {/* HERO */}
+      <section className="hero-section" style={{ position: "relative", zIndex: 1, minHeight: "100vh", padding: "140px 56px 120px", display: "flex", alignItems: "center", overflow: "hidden" }}>
+        {/* Radial gold glow — sits behind headline, subtle, drifts */}
+        <div aria-hidden style={{
+          position: "absolute", top: "20%", left: "8%", width: 720, height: 720,
+          background: "radial-gradient(circle, rgba(var(--accent-rgb),0.18) 0%, rgba(var(--accent-rgb),0.05) 30%, transparent 65%)",
+          filter: "blur(24px)",
+          pointerEvents: "none",
+          animation: "orbDrift 18s ease-in-out infinite",
+          zIndex: 0,
+        }} />
+        <div aria-hidden style={{
+          position: "absolute", bottom: "10%", right: "5%", width: 540, height: 540,
+          background: "radial-gradient(circle, rgba(var(--accent-rgb),0.12) 0%, transparent 60%)",
+          filter: "blur(40px)",
+          pointerEvents: "none",
+          animation: "orbDrift 22s ease-in-out 4s infinite reverse",
+          zIndex: 0,
+        }} />
+        <AnimatedHeroChart />
+        <div className="hero-split" style={{ maxWidth: 1240, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 80, alignItems: "center", position: "relative", zIndex: 2 }}>
+
+          {/* ─── LEFT: headline + subtitle + CTA + stats ─── */}
+          <div className="hero-left" style={{ position: "relative" }}>
+            <div style={{ animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(var(--accent-rgb),0.4)", borderRadius: 24, marginBottom: 32, background: "rgba(var(--accent-rgb),0.08)", backdropFilter: "blur(8px)" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
+              <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>AI-Powered Portfolio Intelligence</span>
+            </div>
+
+            <motion.h1
+              style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(36px,5.6vw,76px)", fontWeight: 700, lineHeight: 1.04, letterSpacing: -3, marginBottom: 28, position: "relative", zIndex: 1 }}
+              variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
+              // initial={false} is required — do not remove
+              initial={false} animate="visible">
+              <span style={{ display: "block", color: "var(--text)" }}>
+                {["Your", "portfolio", "deserves"].map((w, i) => (
+                  <motion.span
+                    // initial={false} is required — do not remove
+                    initial={false}
+                    key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200 } } }}
+                    style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
+                ))}
+              </span>
+              <span style={{ display: "block", color: "var(--accent)", position: "relative", textShadow: "0 0 60px rgba(var(--accent-rgb),0.35)" }}>
+                {["better", "than", "a", "pie", "chart."].map((w, i) => (
+                  <motion.span
+                    // initial={false} is required — do not remove
+                    initial={false}
+                    key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 18, stiffness: 200, delay: 0.16 } } }}
+                    style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
+                ))}
+              </span>
+            </motion.h1>
+
+            <motion.p
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
+              style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 440, marginBottom: 36 }}>
+              AI-powered analytics: Sharpe ratio, Monte Carlo, sector exposure, and more. Free.
+            </motion.p>
+
+            <motion.div
+              // initial={false} is required — do not remove
+              initial={false} animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.9, type: "spring", damping: 20, stiffness: 200 }}
+              className="hero-btns"
+              style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {loggedIn ? (
+                <Link href="/app" className="cta cta-shimmer" style={{ padding: "14px 36px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>Go to Dashboard →</Link>
+              ) : (
+                <Link href="/auth?mode=signup" className="cta cta-shimmer" style={{ padding: "14px 36px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--accent)", color: "var(--bg)", textDecoration: "none" }}>Start for free →</Link>
+              )}
+            </motion.div>
+
+            {/* Stats strip */}
+            <div className="hero-stats" style={{ display: "flex", gap: 28, marginTop: 36, paddingTop: 24, borderTop: "1px solid rgba(var(--accent-rgb),0.08)", animation: "fadein 0.8s ease 1.1s both" }}>
+              {[
+                { value: `${liveUserCount ?? 847}+`, label: "Active Users" },
+                { value: "5,500+", label: "Portfolios" },
+                { value: "17K+", label: "AI Insights" },
+              ].map(({ value, label }) => (
+                <div key={label}>
+                  <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>{value}</p>
+                  <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ─── RIGHT: interactive demo widget with floating metrics ─── */}
+          <div className="hero-right" style={{ position: "relative" }}>
+            {/* Floating metric cards — desktop only, drift around demo */}
+            <HeroMetricCard
+              label="Sharpe Ratio"
+              value="1.42"
+              color="var(--accent)"
+              animDelay="0s"
+              style={{ top: -28, left: -48 }}
+            />
+            <HeroMetricCard
+              label="1Y Return"
+              value="+18.4%"
+              color="var(--green)"
+              animDelay="1.2s"
+              style={{ top: 80, right: -64 }}
+            />
+            <HeroMetricCard
+              label="Health"
+              value="84/100"
+              color="var(--green)"
+              animDelay="2.4s"
+              style={{ bottom: 100, left: -72 }}
+            />
+            <HeroMetricCard
+              label="Volatility"
+              value="12.1%"
+              color="var(--text)"
+              animDelay="3s"
+              style={{ bottom: -22, right: -36 }}
+            />
+            <InteractiveDemoWidget />
+          </div>
+        </div>
+      </section>
 
       {/* TICKER */}
       <TickerTape />
