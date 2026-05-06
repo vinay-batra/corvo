@@ -215,7 +215,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
     const hdrCol = isCall ? GREEN : RED;
     if (!contracts.length) return <p style={{ fontSize: 11, color: "var(--text3)", padding: "16px 0" }}>No data</p>;
     return (
-      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }} onWheel={e => { const isHorizontalScroll = Math.abs(e.deltaX) > Math.abs(e.deltaY); if (!isHorizontalScroll) return; e.stopPropagation(); }}>
+      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }} onWheel={e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); const scroller = document.querySelector(".main-scroll-area") as HTMLElement; if (scroller) scroller.scrollTop += e.deltaY; } }}>
         <style>{`
           .opt-th-wrap { position: relative; display: inline-flex; align-items: center; gap: 3px; cursor: default; }
           .opt-th-wrap .opt-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
@@ -816,9 +816,6 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const priceValues = histPrices.filter((v) => typeof v === "number" && v > 0);
   const priceMin = priceValues.length > 0 ? Math.min(...priceValues) : 0;
   const priceMax = priceValues.length > 0 ? Math.max(...priceValues) : 100;
-  const pricePad = (priceMax - priceMin) * 0.05 || priceMax * 0.05;
-  const yMin = priceMin - pricePad;
-  const yMax = priceMax + pricePad;
 
   const layout: any = {
     paper_bgcolor: "transparent", plot_bgcolor: "transparent",
@@ -836,7 +833,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       gridcolor: dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.07)", linecolor: "transparent", tickcolor: "transparent",
       tickprefix: "$", domain: hasVol ? [0.28, 1] : [0, 1],
       showspikes: true, spikecolor: dark ? "rgba(201,168,76,0.3)" : "rgba(184,134,11,0.3)", spikemode: "across", spikethickness: 1,
-      range: [yMin, yMax],
+      range: [priceMin * 0.97, priceMax * 1.03],
     },
     ...(hasVol ? {
       yaxis2: {
