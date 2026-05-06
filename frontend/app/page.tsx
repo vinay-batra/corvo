@@ -154,21 +154,31 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
   );
 }
 
-/* ─── Bento Card base ─── */
+/* ─── Bento Card base — 3D mouse tilt with gold glow ─── */
 function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
     const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    const rotX = ((y - rect.height / 2) / (rect.height / 2)) * -7;
-    const rotY = ((x - rect.width / 2) / (rect.width / 2)) * 7;
-    card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+    const rotX = ((y - rect.height / 2) / (rect.height / 2)) * -16;
+    const rotY = ((x - rect.width / 2) / (rect.width / 2)) * 16;
+    card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(10px)`;
+    card.style.boxShadow = "0 20px 60px rgba(var(--accent-rgb),0.15), 0 0 40px rgba(var(--accent-rgb),0.08)";
+    if (glowRef.current) {
+      glowRef.current.style.opacity = "1";
+      glowRef.current.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(var(--accent-rgb),0.18), transparent 55%)`;
+    }
   };
   const handleMouseLeave = () => {
     const card = cardRef.current;
-    if (card) card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg)";
+    if (card) {
+      card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px)";
+      card.style.boxShadow = "0 0 0 rgba(0,0,0,0)";
+    }
+    if (glowRef.current) glowRef.current.style.opacity = "0";
   };
   const { gridArea, ...restStyle } = style as any;
   return (
@@ -178,11 +188,12 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
-      style={{ gridArea, height: "100%", position: "relative" }}
+      style={{ gridArea, height: "100%", position: "relative", transformStyle: "preserve-3d" as const }}
     >
       <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
-        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "clip", position: "relative", height: "100%", transition: "transform 0.2s ease, box-shadow 0.3s ease", willChange: "transform", ...restStyle }}>
-        {children}
+        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "clip", position: "relative", height: "100%", transition: "transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s cubic-bezier(0.16,1,0.3,1)", willChange: "transform, box-shadow", transformStyle: "preserve-3d" as const, ...restStyle }}>
+        <div ref={glowRef} aria-hidden style={{ position: "absolute", inset: 0, opacity: 0, pointerEvents: "none", transition: "opacity 0.35s ease", zIndex: 0, mixBlendMode: "screen" as const }} />
+        <div style={{ position: "relative", zIndex: 1, height: "100%" }}>{children}</div>
       </div>
     </motion.div>
   );
@@ -1426,18 +1437,39 @@ function FinalCTASection() {
   return (
     <section style={{
       position: "relative", zIndex: 1,
-      background: "var(--bg)",
-      padding: "80px 56px",
+      background: "transparent",
+      padding: "140px 56px 160px",
+      overflow: "hidden",
     }}>
+      {/* Drifting radial orb — closing cinematic moment */}
+      <div aria-hidden style={{
+        position: "absolute", top: "10%", left: "50%",
+        width: 880, height: 880,
+        transform: "translateX(-50%)",
+        background: "radial-gradient(circle, rgba(var(--accent-rgb),0.20) 0%, rgba(var(--accent-rgb),0.07) 25%, transparent 60%)",
+        filter: "blur(40px)",
+        animation: "orbDriftCenter 14s ease-in-out infinite",
+        pointerEvents: "none",
+        zIndex: 0,
+      }} />
+      <div aria-hidden style={{
+        position: "absolute", bottom: "-10%", left: "10%",
+        width: 480, height: 480,
+        background: "radial-gradient(circle, rgba(var(--accent-rgb),0.10) 0%, transparent 60%)",
+        filter: "blur(60px)",
+        animation: "orbDrift 20s ease-in-out 2s infinite",
+        pointerEvents: "none",
+        zIndex: 0,
+      }} />
       <motion.div
         // initial={false} is required — do not remove
         initial={false}
-        style={{ opacity: 0 }}
+        style={{ opacity: 0, position: "relative", zIndex: 1 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6, ease: ANIM_EASE }}
       >
-        <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
             <img src="/corvo-logo.svg" width={32} height={32} alt="Corvo" style={{ opacity: 0.8 }} />
           </div>
@@ -1446,8 +1478,9 @@ function FinalCTASection() {
           </p>
           <h2 style={{
             fontFamily: "Space Mono,monospace",
-            fontSize: "clamp(32px,4.5vw,48px)",
-            fontWeight: 700, lineHeight: 1.1, letterSpacing: -2, marginBottom: 20,
+            fontSize: "clamp(38px,5vw,68px)",
+            fontWeight: 700, lineHeight: 1.05, letterSpacing: -3, marginBottom: 24,
+            textShadow: "0 0 80px rgba(var(--accent-rgb),0.18)",
           }}>
             {HEADLINE.map((w, i) => (
               <motion.span
@@ -2331,9 +2364,176 @@ function SecurityTrustSection() {
   );
 }
 
+/* ─── Magnetic Cursor (desktop only) ─── */
+function MagneticCursor() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(max-width: 768px)").matches) return;
+    let mx = -100, my = -100, cx = -100, cy = -100;
+    let cs = 1, ts = 1;
+    const onMove = (e: MouseEvent) => { mx = e.clientX; my = e.clientY; };
+    const onOver = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t || !t.closest) return;
+      const interactive = t.closest("a,button,[role='button'],input,textarea,label,select,[data-cursor-hover]") != null;
+      ts = interactive ? 2 : 1;
+    };
+    let frame = 0;
+    const tick = () => {
+      cx += (mx - cx) * 0.12;
+      cy += (my - cy) * 0.12;
+      cs += (ts - cs) * 0.18;
+      if (ref.current) {
+        ref.current.style.transform = `translate3d(${cx}px,${cy}px,0) translate(-50%,-50%) scale(${cs})`;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    document.body.style.cursor = "none";
+    document.documentElement.style.cursor = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseover", onOver);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.body.style.cursor = "";
+      document.documentElement.style.cursor = "";
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseover", onOver);
+    };
+  }, []);
+  return (
+    <div
+      ref={ref}
+      aria-hidden
+      className="magnetic-cursor"
+      style={{
+        position: "fixed", top: 0, left: 0,
+        width: 20, height: 20, borderRadius: "50%",
+        border: "1.5px solid var(--accent)",
+        background: "rgba(var(--accent-rgb),0.05)",
+        boxShadow: "0 0 24px rgba(var(--accent-rgb),0.35)",
+        pointerEvents: "none",
+        zIndex: 9998,
+        transform: "translate3d(-100px,-100px,0) translate(-50%,-50%)",
+        willChange: "transform",
+      }}
+    />
+  );
+}
+
+/* ─── 3D Testimonial Carousel ─── */
+const TESTIMONIALS_3D = [
+  { text: "finally an app that does everything in one place. had robinhood, google sheets, and three different websites open at once haha. Corvo pretty much replaced all of them", name: "Jake M.", role: "Casual investor" },
+  { text: "The UI is actually really clean. Didn't expect it to look this good for a free tool.", name: "Aisha :)", role: "Self-taught Investor" },
+  { text: "i check it every week just to see what's new. it keeps getting better and you can tell these guys actually care about it", name: "Chris R.", role: "Long-term Investor" },
+  { text: "I really like the morning emails, quick recap of my portfolio before I even do anything.", name: "Dev M. Patel", role: "Casual investor" },
+  { text: "I just ran the Monte Carlo and the other sims and it completely changed how I think about my retirement, its actually crazy. I did not realize how exposed I was.", name: "Tyler", role: "Active Trader" },
+  { text: "I love how it tells me what to do with my holdings and gives me suggestions instead of just giving me metrics.", name: "Maya L.", role: "Retail Investor" },
+];
+function TestimonialCarousel3D() {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const N = TESTIMONIALS_3D.length;
+  useEffect(() => {
+    if (paused) return;
+    const id = setInterval(() => setActive(a => (a + 1) % N), 5500);
+    return () => clearInterval(id);
+  }, [paused, N]);
+  const rel = (i: number) => {
+    let d = i - active;
+    if (d > N / 2) d -= N;
+    if (d < -N / 2) d += N;
+    return d;
+  };
+  return (
+    <div
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      style={{
+        position: "relative", height: 380,
+        perspective: "1600px",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        marginBottom: 56,
+      }}
+    >
+      {TESTIMONIALS_3D.map((t, i) => {
+        const d = rel(i);
+        if (Math.abs(d) > 2) return null;
+        const isCenter = d === 0;
+        const tx = d * 280;
+        const ty = isCenter ? -8 : 0;
+        const tz = isCenter ? 0 : -160;
+        const ry = d * -45;
+        const sc = isCenter ? 1 : 0.75;
+        const op = isCenter ? 1 : 0.35;
+        const z = 10 - Math.abs(d);
+        return (
+          <div
+            key={i}
+            onClick={() => !isCenter && setActive(i)}
+            style={{
+              position: "absolute",
+              width: 380, maxWidth: "85vw",
+              transform: `translateX(${tx}px) translateY(${ty}px) translateZ(${tz}px) rotateY(${ry}deg) scale(${sc})`,
+              opacity: op,
+              transition: "transform 0.6s cubic-bezier(0.16,1,0.3,1), opacity 0.6s cubic-bezier(0.16,1,0.3,1)",
+              transformStyle: "preserve-3d" as const,
+              cursor: isCenter ? "default" : "pointer",
+              zIndex: z,
+            }}
+          >
+            <div style={{
+              position: "relative",
+              padding: "36px 36px 28px",
+              border: isCenter ? "1px solid rgba(var(--accent-rgb),0.28)" : "1px solid var(--border)",
+              borderRadius: 20,
+              background: "var(--card-bg)",
+              backdropFilter: "blur(14px)",
+              boxShadow: isCenter
+                ? "0 40px 100px rgba(0,0,0,0.45), 0 0 80px rgba(var(--accent-rgb),0.14)"
+                : "0 18px 50px rgba(0,0,0,0.3)",
+              minHeight: 290,
+              display: "flex", flexDirection: "column" as const,
+            }}>
+              <span style={{ fontFamily: "Georgia, serif", fontSize: 64, color: "var(--accent)", opacity: 0.22, lineHeight: 1, position: "absolute", top: 14, left: 22 }}>"</span>
+              <p style={{ fontSize: 15, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, marginBottom: 26, marginTop: 28, flex: 1 }}>{t.text}</p>
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}>{t.name}</p>
+                <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 3 }}>{t.role}</p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      <div style={{
+        position: "absolute", bottom: -8, left: "50%",
+        transform: "translateX(-50%)", display: "flex", gap: 8,
+      }}>
+        {TESTIMONIALS_3D.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(i)}
+            aria-label={`Go to testimonial ${i + 1}`}
+            style={{
+              width: i === active ? 24 : 8, height: 8, borderRadius: 4,
+              background: i === active ? "var(--accent)" : "rgba(var(--accent-rgb),0.25)",
+              border: "none", cursor: "pointer", padding: 0,
+              transition: "all 0.3s ease",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main Landing ─── */
 export default function Landing() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const lastScrollY = useRef(0);
+  const navHidden = useRef(false);
   const [navSolid, setNavSolid] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [dark, setDark] = useState(false);
@@ -2362,7 +2562,19 @@ export default function Landing() {
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const onScroll = () => setNavSolid(el.scrollTop > 60);
+    const onScroll = () => {
+      const y = el.scrollTop;
+      setNavSolid(y > 60);
+      const delta = y - lastScrollY.current;
+      if (delta > 4 && y > 100 && !navHidden.current) {
+        navHidden.current = true;
+        if (navRef.current) navRef.current.style.transform = "translateY(-100%)";
+      } else if (delta < -4 && navHidden.current) {
+        navHidden.current = false;
+        if (navRef.current) navRef.current.style.transform = "translateY(0)";
+      }
+      lastScrollY.current = y;
+    };
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
@@ -2457,6 +2669,7 @@ export default function Landing() {
 
   return (
     <div ref={containerRef} className="page-fadein" style={{ height: "100vh", overflowY: "auto", overflowX: "hidden", overscrollBehavior: "none", background: "transparent", color: "var(--text)", fontFamily: "Inter,sans-serif" }}>
+      <MagneticCursor />
       <EmailPopupModal />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <style>{`
@@ -2476,6 +2689,11 @@ export default function Landing() {
         @keyframes drawLoopLine{0%,3%{stroke-dashoffset:1}65%,87%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
         @keyframes xpLoop{0%,5%{width:0%}55%,82%{width:72%}92%,100%{width:0%}}
         @keyframes demospin{to{transform:rotate(360deg)}}
+        @keyframes orbDrift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.08)}66%{transform:translate(-40px,50px) scale(0.94)}}
+        @keyframes orbDriftCenter{0%,100%{transform:translateX(-50%) translate(0,0) scale(1)}33%{transform:translateX(-50%) translate(40px,-30px) scale(1.06)}66%{transform:translateX(-50%) translate(-30px,40px) scale(0.96)}}
+        @keyframes magneticPulse{0%,100%{box-shadow:0 0 24px rgba(var(--accent-rgb),0.35)}50%{box-shadow:0 0 36px rgba(var(--accent-rgb),0.55)}}
+        .magnetic-cursor{animation:magneticPulse 2.4s ease-in-out infinite}
+        @media(hover:none),(max-width:768px){.magnetic-cursor{display:none!important}}
         .cta{transition:all 0.25s!important}.cta:hover{background:var(--accent)!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(var(--accent-rgb),0.25)!important}
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(var(--accent-rgb),0.4)!important;color:var(--accent)!important}
         .nl:hover{color:var(--accent)!important}
@@ -2546,7 +2764,7 @@ export default function Landing() {
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(var(--accent-rgb),0.025) 1px, transparent 1px),linear-gradient(90deg, rgba(var(--accent-rgb),0.025) 1px, transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none" }} />
       </div>
       {/* NAV */}
-      <nav className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "var(--bg)" : "color-mix(in srgb, var(--bg) 60%, transparent)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", transition: "background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1)" }}>
+      <nav ref={navRef} className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "color-mix(in srgb, var(--bg) 88%, transparent)" : "transparent", backdropFilter: navSolid ? "blur(24px) saturate(140%)" : "blur(0px)", borderBottom: navSolid ? "1px solid var(--border)" : "1px solid transparent", transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1), background 0.4s cubic-bezier(0.16,1,0.3,1), backdrop-filter 0.4s, border-color 0.4s cubic-bezier(0.16,1,0.3,1)", willChange: "transform" }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
@@ -2716,19 +2934,36 @@ export default function Landing() {
       )}
 
       {/* HERO */}
-      <section className="hero-section" style={{ position: "relative", zIndex: 1, minHeight: "100vh", padding: "100px 56px 80px", display: "flex", alignItems: "center" }}>
+      <section className="hero-section" style={{ position: "relative", zIndex: 1, minHeight: "100vh", padding: "140px 56px 120px", display: "flex", alignItems: "center", overflow: "hidden" }}>
+        {/* Radial gold glow — sits behind headline, subtle, drifts */}
+        <div aria-hidden style={{
+          position: "absolute", top: "20%", left: "8%", width: 720, height: 720,
+          background: "radial-gradient(circle, rgba(var(--accent-rgb),0.18) 0%, rgba(var(--accent-rgb),0.05) 30%, transparent 65%)",
+          filter: "blur(24px)",
+          pointerEvents: "none",
+          animation: "orbDrift 18s ease-in-out infinite",
+          zIndex: 0,
+        }} />
+        <div aria-hidden style={{
+          position: "absolute", bottom: "10%", right: "5%", width: 540, height: 540,
+          background: "radial-gradient(circle, rgba(var(--accent-rgb),0.12) 0%, transparent 60%)",
+          filter: "blur(40px)",
+          pointerEvents: "none",
+          animation: "orbDrift 22s ease-in-out 4s infinite reverse",
+          zIndex: 0,
+        }} />
         <AnimatedHeroChart />
-        <div className="hero-split" style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center", position: "relative", zIndex: 1 }}>
+        <div className="hero-split" style={{ maxWidth: 1240, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 80, alignItems: "center", position: "relative", zIndex: 2 }}>
 
           {/* ─── LEFT: headline + subtitle + CTA + stats ─── */}
-          <div className="hero-left">
-            <div style={{ animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(var(--accent-rgb),0.4)", borderRadius: 24, marginBottom: 32, background: "rgba(var(--accent-rgb),0.08)" }}>
+          <div className="hero-left" style={{ position: "relative" }}>
+            <div style={{ animation: "fadein 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s both", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(var(--accent-rgb),0.4)", borderRadius: 24, marginBottom: 32, background: "rgba(var(--accent-rgb),0.08)", backdropFilter: "blur(8px)" }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
               <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>AI-Powered Portfolio Intelligence</span>
             </div>
 
             <motion.h1
-              style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4vw,52px)", fontWeight: 700, lineHeight: 1.06, letterSpacing: -2, marginBottom: 24 }}
+              style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(36px,5.6vw,76px)", fontWeight: 700, lineHeight: 1.04, letterSpacing: -3, marginBottom: 28, position: "relative", zIndex: 1 }}
               variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
               // initial={false} is required — do not remove
               initial={false} animate="visible">
@@ -2741,7 +2976,7 @@ export default function Landing() {
                     style={{ display: "inline-block", marginRight: "0.25em" }}>{w}</motion.span>
                 ))}
               </span>
-              <span style={{ display: "block", color: "var(--accent)", position: "relative" }}>
+              <span style={{ display: "block", color: "var(--accent)", position: "relative", textShadow: "0 0 60px rgba(var(--accent-rgb),0.35)" }}>
                 {["better", "than", "a", "pie", "chart."].map((w, i) => (
                   <motion.span
                     // initial={false} is required — do not remove
@@ -2787,8 +3022,37 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* ─── RIGHT: interactive demo widget ─── */}
+          {/* ─── RIGHT: interactive demo widget with floating metrics ─── */}
           <div className="hero-right" style={{ position: "relative" }}>
+            {/* Floating metric cards — desktop only, drift around demo */}
+            <HeroMetricCard
+              label="Sharpe Ratio"
+              value="1.42"
+              color="var(--accent)"
+              animDelay="0s"
+              style={{ top: -28, left: -48 }}
+            />
+            <HeroMetricCard
+              label="1Y Return"
+              value="+18.4%"
+              color="var(--green)"
+              animDelay="1.2s"
+              style={{ top: 80, right: -64 }}
+            />
+            <HeroMetricCard
+              label="Health"
+              value="84/100"
+              color="var(--green)"
+              animDelay="2.4s"
+              style={{ bottom: 100, left: -72 }}
+            />
+            <HeroMetricCard
+              label="Volatility"
+              value="12.1%"
+              color="var(--text)"
+              animDelay="3s"
+              style={{ bottom: -22, right: -36 }}
+            />
             <InteractiveDemoWidget />
           </div>
         </div>
@@ -2801,10 +3065,11 @@ export default function Landing() {
       <FeaturedInBar />
 
       {/* ─── FEATURE SHOWCASE: BENTO GRID ─── */}
-      <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "64px 56px 96px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,4vw,44px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2, lineHeight: 1.1 }}>Everything your portfolio<br />actually needs</h2>
+      <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "140px 56px 140px" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 64 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Capabilities</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(30px,4.4vw,56px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2.5, lineHeight: 1.05 }}>Everything your portfolio<br />actually needs</h2>
           </Reveal>
           <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist exportshare" "learnxp deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
             <BentoPortfolioCard delay={0} />
@@ -2818,20 +3083,16 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "0 56px 24px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <Reveal style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>What investors are saying</h2>
+      {/* ─── TESTIMONIALS — 3D Carousel ─── */}
+      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "120px 56px 120px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 56 }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Voices</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,3.6vw,44px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2 }}>What investors are saying</h2>
           </Reveal>
-          {/* Desktop: consistent 3-column grid */}
-          <div className="testi-desktop" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-            <TestimonialCard text="finally an app that does everything in one place. had robinhood, google sheets, and three different websites open at once haha. Corvo pretty much replaced all of them" name="Jake M." role="Casual investor" delay={0} />
-            <TestimonialCard text="The UI is actually really clean. Didn't expect it to look this good for a free tool." name="Aisha :)" role="Self-taught Investor" delay={0.08} />
-            <TestimonialCard text="i check it every week just to see what's new. it keeps getting better and you can tell these guys actually care about it" name="Chris R." role="Long-term Investor" delay={0.16} />
-            <TestimonialCard text="I really like the morning emails, quick recap of my portfolio before I even do anything." name="Dev M. Patel" role="Casual investor" delay={0.08} />
-            <TestimonialCard text="I just ran the Monte Carlo and the other sims and it completely changed how I think about my retirement, its actually crazy. I did not realize how exposed I was." name="Tyler" role="Active Trader" delay={0.16} />
-            <TestimonialCard text="I love how it tells me what to do with my holdings and gives me suggestions instead of just giving me metrics." name="Maya L." role="Retail Investor" delay={0.24} />
+          {/* Desktop: 3D rotating carousel */}
+          <div className="testi-desktop">
+            <TestimonialCarousel3D />
           </div>
           {/* Mobile: one-at-a-time carousel with arrows + dots */}
           <div className="testi-mobile" style={{ display: "none" }}>
