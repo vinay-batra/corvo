@@ -897,6 +897,22 @@ const CardHeader = function CardHeader({ title }: { title: string }) {
   );
 };
 
+function DashReveal({ children, from = "up", delay = 0, style = {} }: { children: React.ReactNode; from?: "up" | "left" | "right"; delay?: number; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.1, rootMargin: "-40px 0px" });
+    obs.observe(el); return () => obs.disconnect();
+  }, []);
+  const transform = from === "left" ? "translateX(-40px)" : from === "right" ? "translateX(40px)" : "translateY(30px)";
+  return (
+    <div ref={ref} style={{ ...style, opacity: visible ? 1 : 0, transform: visible ? "none" : transform, transition: `opacity 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}s` }}>
+      {children}
+    </div>
+  );
+}
+
 export default function AppPage() {
   const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number; purchaseDate?: string }[]>([]);
   const [portfolioStale, setPortfolioStale] = useState(false);
@@ -991,10 +1007,24 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [hasSavedPortfolios, setHasSavedPortfolios] = useState(false);
   const contentRef = useRef<HTMLElement | null>(null);
+  const [loadedAt, setLoadedAt] = useState<number>(0);
+  const [animatingIn, setAnimatingIn] = useState(false);
+  const [revealTick, setRevealTick] = useState(0);
 const { dark, toggle: toggleDark }  = useTheme();
   const { currency, rate, setCurrency } = useCurrency();
   const { canInstall, install: installPWA } = usePWAInstall();
   const S = useS();
+
+  // Tick every 100ms after data loads to drive the initial load stagger
+  useEffect(() => {
+    if (loadedAt === 0) return;
+    const id = setInterval(() => setRevealTick(t => t + 1), 100);
+    const done = setTimeout(() => clearInterval(id), 600);
+    return () => { clearInterval(id); clearTimeout(done); };
+  }, [loadedAt]);
+
+  // revealTick is read here so React re-evaluates loadedVis on every tick
+  const loadedVis = (ms: number) => loadedAt > 0 && revealTick >= 0 && Date.now() - loadedAt > ms;
 
   // Warn before tab close/refresh if unsaved assets exist
   useEffect(() => {
@@ -1196,6 +1226,9 @@ const { dark, toggle: toggleDark }  = useTheme();
                   console.log("[auto-load] fetchPortfolio result:", result ? { keys: Object.keys(result), error: result.error } : result);
                   if (result && !result.error) {
                     setData(result);
+                    setLoadedAt(Date.now());
+                    setAnimatingIn(true);
+                    setTimeout(() => setAnimatingIn(false), 50);
                     setActiveTab("overview");
                     setPortfolioStale(false);
                     lastAnalyzedAssetsRef.current = autoAssets
@@ -1277,6 +1310,9 @@ const { dark, toggle: toggleDark }  = useTheme();
       }
       if (result.skipped_tickers?.length) setSkippedTickers(result.skipped_tickers);
       setData(result);
+      setLoadedAt(Date.now());
+      setAnimatingIn(true);
+      setTimeout(() => setAnimatingIn(false), 50);
       setActiveTab("overview");
       setAnalyzeComplete(true);
       // Record the portfolio state that produced these results so we can detect drift
@@ -2265,17 +2301,26 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </motion.div>
                 )}
 
+                {/* Feature 3: fade+slide when results first arrive */}
+                <div style={{ opacity: animatingIn ? 0 : 1, transform: animatingIn ? "translateY(20px)" : "none", transition: animatingIn ? "none" : "opacity 0.5s ease, transform 0.5s ease" }}>
+
                 {/* Greeting + portfolio pulse + quick actions */}
-                <GreetingBar
-                  displayName={navProfile.displayName}
-                  portfolioData={data}
-                  assets={assets}
-                  perfHistory={perfHistory}
-                  portfolioValue={portfolioInputValue}
-                />
-<div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
+                <div style={{ opacity: loadedVis(0) ? 1 : 0, transform: loadedVis(0) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                  <DashReveal from="up" delay={0}>
+                    <GreetingBar
+                      displayName={navProfile.displayName}
+                      portfolioData={data}
+                      assets={assets}
+                      perfHistory={perfHistory}
+                      portfolioValue={portfolioInputValue}
+                    />
+                    <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
+                  </DashReveal>
+                </div>
 
                 {/* What Should I Do Today */}
+                <div style={{ opacity: loadedVis(100) ? 1 : 0, transform: loadedVis(100) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <DashReveal from="left" delay={0.05}>
                 <div style={{ marginBottom: 20 }}>
                   <div
                     onClick={handleWhatShouldIDo}
@@ -2405,8 +2450,12 @@ const { dark, toggle: toggleDark }  = useTheme();
                     )}
                   </AnimatePresence>
                 </div>
+                </DashReveal>
+                </div>
 
-
+                {/* Metric cards */}
+                <div style={{ opacity: loadedVis(200) ? 1 : 0, transform: loadedVis(200) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <DashReveal from="up" delay={0.1}>
                 <motion.div
                   id="tour-desk-metrics"
                   key="stats-row"
@@ -2425,6 +2474,12 @@ const { dark, toggle: toggleDark }  = useTheme();
                     portfolioValue={portfolioInputValue}
                   />
                 </motion.div>
+                </DashReveal>
+                </div>
+
+                {/* Performance chart */}
+                <div style={{ opacity: loadedVis(300) ? 1 : 0, transform: loadedVis(300) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <DashReveal from="up" delay={0.15}>
                 <motion.div id="tour-desk-chart" key="perf-card" initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
                   <Card>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
@@ -2460,6 +2515,11 @@ const { dark, toggle: toggleDark }  = useTheme();
                     />
                   </Card>
                 </motion.div>
+                </DashReveal>
+                </div>
+
+                {/* Everything below — Feature 2: delay 400ms */}
+                <div style={{ opacity: loadedVis(400) ? 1 : 0, transform: loadedVis(400) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <motion.div
                   key="bottom-grid"
                   className="c-bgrid"
@@ -2470,6 +2530,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   {[
                     {
                       title: "Health Score",
+                      from: "left" as const, delayS: 0.1,
                       content: <HealthScore data={data} userId={userId} apiUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"} />,
                       sections: [
                         { label: "Plain English", text: "A composite score from 0-100 that grades your portfolio on returns, risk-adjusted performance, stability, and resilience." },
@@ -2481,6 +2542,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     },
                     {
                       title: "AI Insights",
+                      from: "right" as const, delayS: 0.1,
                       content: <AiInsights data={data} assets={assets} onAskAi={() => setChatOpen(true)} />,
                       sections: [
                         { label: "Plain English", text: "AI-generated observations about your portfolio's risk, diversification, and performance characteristics." },
@@ -2490,6 +2552,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     },
                     {
                       title: `vs ${benchLabel}`,
+                      from: "left" as const, delayS: 0.05,
                       content: <BenchmarkComparison data={data} />,
                       sections: [
                         { label: "Plain English", text: `Compares your portfolio's return against ${benchLabel} over the same period.` },
@@ -2499,6 +2562,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     },
                     {
                       title: "HOW YOU COMPARE",
+                      from: "right" as const, delayS: 0.05,
                       content: <PeerComparison data={data} userId={userId} />,
                       sections: [
                         { label: "Plain English", text: "Anonymous comparison of your portfolio metrics against all Corvo users." },
@@ -2506,44 +2570,53 @@ const { dark, toggle: toggleDark }  = useTheme();
                         { label: "What's Good", text: "Top 25% is strong for any metric. Aim to beat the median on CAGR and Sharpe while staying below it on volatility and drawdown." },
                       ],
                     },
-                  ].map(({ title, content, sections }) => (
+                  ].map(({ title, content, sections, from, delayS }: { title: string; content: React.ReactNode; sections: { label: string; text: string }[]; from: "left" | "right"; delayS: number }) => (
                     <motion.div key={title} initial={false} style={{ display: "flex", flexDirection: "column" }}>
-                      <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
+                      <DashReveal from={from} delay={delayS} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                        <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
+                      </DashReveal>
                     </motion.div>
                   ))}
                 </motion.div>
                 <div className="c-alloc-row" style={{ display: "flex", gap: 16, marginTop: 12 }}>
                   <motion.div key="allocation-card" initial={false} style={{ flex: 3 }}>
-                    <Card style={{ marginBottom: 0, height: "100%" }}><TooltipCardHeader title="Allocation" sections={[
-                      { label: "Plain English", text: "Shows how your total portfolio value is split across your holdings, expressed as a percentage of the whole. Each bar segment represents one position's share of the portfolio." },
-                      { label: "Example", text: "If you hold AAPL at 40%, MSFT at 35%, and GOOGL at 25%, those three segments together fill the full bar and add up to 100%." },
-                      { label: "What's Good", text: "No single position dominating more than 25-30% reduces concentration risk. A well-diversified portfolio spreads weight across 5+ holdings without any one outsized bet." },
-                    ]} /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
+                    <DashReveal from="left" delay={0.1} style={{ height: "100%" }}>
+                      <Card style={{ marginBottom: 0, height: "100%" }}><TooltipCardHeader title="Allocation" sections={[
+                        { label: "Plain English", text: "Shows how your total portfolio value is split across your holdings, expressed as a percentage of the whole. Each bar segment represents one position's share of the portfolio." },
+                        { label: "Example", text: "If you hold AAPL at 40%, MSFT at 35%, and GOOGL at 25%, those three segments together fill the full bar and add up to 100%." },
+                        { label: "What's Good", text: "No single position dominating more than 25-30% reduces concentration risk. A well-diversified portfolio spreads weight across 5+ holdings without any one outsized bet." },
+                      ]} /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
+                    </DashReveal>
                   </motion.div>
                   <motion.div key="sector-card" initial={false} style={{ flex: 2 }}>
-                    <Card style={{ marginBottom: 0, height: "100%" }}><TooltipCardHeader title="Sector Exposure" sections={[
-                      { label: "Plain English", text: "Shows how your portfolio weight is distributed across market sectors, aggregated from each holding's sector classification." },
-                      { label: "Example", text: "If AAPL and MSFT together make up 70% of your portfolio, Technology will show 70% exposure." },
-                      { label: "What's Good", text: "A diversified portfolio spreads across 4+ sectors. Heavy concentration in one sector amplifies both gains and losses." },
-                    ]} /><SectorExposureChart assets={assets} /></Card>
+                    <DashReveal from="right" delay={0.1} style={{ height: "100%" }}>
+                      <Card style={{ marginBottom: 0, height: "100%" }}><TooltipCardHeader title="Sector Exposure" sections={[
+                        { label: "Plain English", text: "Shows how your portfolio weight is distributed across market sectors, aggregated from each holding's sector classification." },
+                        { label: "Example", text: "If AAPL and MSFT together make up 70% of your portfolio, Technology will show 70% exposure." },
+                        { label: "What's Good", text: "A diversified portfolio spreads across 4+ sectors. Heavy concentration in one sector amplifies both gains and losses." },
+                      ]} /><SectorExposureChart assets={assets} /></Card>
+                    </DashReveal>
                   </motion.div>
                 </div>
                 {/* Insider Activity summary */}
                 {assets.length > 0 && (
-                  <div style={{ marginTop: 12 }}>
-                    <Card style={{ marginBottom: 0 }}>
-                      <TooltipCardHeader
-                        title="Insider Activity"
-                        sections={[
-                          { label: "Plain English", text: "Shows recent SEC Form 4 filings for your holdings. These are open market purchases and sales by company executives, directors, and major shareholders." },
-                          { label: "Why it matters", text: "Insider buying with personal money is one of the strongest bullish signals available. Executives have the most information about their company's prospects. Selling is less informative since it has many non-bearish explanations." },
-                          { label: "What to watch", text: "Focus on C-suite purchases (CEO, CFO, COO). Large buys after a price decline are particularly significant. Isolated small sales by a single executive are usually noise." },
-                        ]}
-                      />
-                      <InsiderActivitySummary assets={assets} />
-                    </Card>
-                  </div>
+                  <DashReveal from="up" delay={0.1}>
+                    <div style={{ marginTop: 12 }}>
+                      <Card style={{ marginBottom: 0 }}>
+                        <TooltipCardHeader
+                          title="Insider Activity"
+                          sections={[
+                            { label: "Plain English", text: "Shows recent SEC Form 4 filings for your holdings. These are open market purchases and sales by company executives, directors, and major shareholders." },
+                            { label: "Why it matters", text: "Insider buying with personal money is one of the strongest bullish signals available. Executives have the most information about their company's prospects. Selling is less informative since it has many non-bearish explanations." },
+                            { label: "What to watch", text: "Focus on C-suite purchases (CEO, CFO, COO). Large buys after a price decline are particularly significant. Isolated small sales by a single executive are usually noise." },
+                          ]}
+                        />
+                        <InsiderActivitySummary assets={assets} />
+                      </Card>
+                    </div>
+                  </DashReveal>
                 )}
+                </div> {/* end: everything below (Feature 2 delay 400ms) */}
 
                 {data && !isPortfolioSaved && (
                   <motion.div
@@ -2564,6 +2637,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     </button>
                   </motion.div>
                 )}
+                </div> {/* end: Feature 3 animatingIn wrapper */}
               </motion.div>
             ) : activeTab === "simulate" ? (
               <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }} style={{ overscrollBehavior: "none" }}>
