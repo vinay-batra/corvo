@@ -4,7 +4,7 @@ import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
-  title: "The Best Free Bloomberg Alternative in 2026 | Corvo Blog",
+  title: "The Best Free Bloomberg Alternative in 2026",
   description: "Bloomberg Terminal costs $24,000 per year. Corvo delivers the analytics retail investors actually need for free. Here is what you are missing, and what you are not.",
   keywords: ["bloomberg alternative free", "bloomberg terminal alternative", "free portfolio analytics", "corvo vs bloomberg"],
   openGraph: {

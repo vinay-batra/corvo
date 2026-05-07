@@ -4,7 +4,7 @@ import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
-  title: "What is Monte Carlo Simulation and Why Should Investors Care? | Corvo Blog",
+  title: "What is Monte Carlo Simulation and Why Should Investors Care?",
   description: "Monte Carlo simulation runs 8,500 scenarios of your portfolio's future to show you the real distribution of retirement outcomes. Here is how it works and what to do with the results.",
   keywords: ["monte carlo simulation investing", "monte carlo portfolio", "retirement simulation", "portfolio simulation", "monte carlo retirement planning"],
   openGraph: {

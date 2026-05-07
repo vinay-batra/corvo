@@ -3,7 +3,7 @@ import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
-  title: "How Corvo Calculates Your Sharpe Ratio | Corvo Blog",
+  title: "How Corvo Calculates Your Sharpe Ratio",
   description: "We use a live risk-free rate pulled from the 3-month T-bill, not a hardcoded number. Here is exactly how the math works.",
   keywords: ["sharpe ratio calculation", "risk-free rate", "T-bill yield", "portfolio analytics", "corvo sharpe"],
   openGraph: {

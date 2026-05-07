@@ -3,7 +3,7 @@ import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
-  title: "Why Your Portfolio Feels Wrong Even When the Numbers Look Right | Corvo Blog",
+  title: "Why Your Portfolio Feels Wrong Even When the Numbers Look Right",
   description: "Market volatility messes with your perception. Here is how to read your portfolio data without letting short-term noise drive long-term decisions.",
   keywords: ["portfolio volatility", "max drawdown", "sharpe ratio", "benchmark comparison", "investing psychology"],
   openGraph: {

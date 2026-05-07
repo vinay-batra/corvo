@@ -4,7 +4,7 @@ import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
-  title: "The Complete Guide to Portfolio Diversification in 2026 | Corvo Blog",
+  title: "The Complete Guide to Portfolio Diversification in 2026",
   description: "Most investors think they are diversified. Most are wrong. True diversification is about correlation, not the number of holdings. Learn how to measure and improve it.",
   keywords: ["portfolio diversification guide", "how to diversify portfolio", "portfolio correlation", "sector diversification", "diversification strategy"],
   openGraph: {

@@ -3,10 +3,10 @@ import BlogFilteredPosts from "./BlogFilteredPosts";
 import BlogHero from "./BlogHero";
 
 export const metadata: Metadata = {
-  title: "Blog — Corvo",
+  title: "Blog",
   description: "Investing insights, product updates, and financial education.",
   openGraph: {
-    title: "Blog — Corvo",
+    title: "Blog - Corvo",
     description: "Investing insights, product updates, and financial education.",
     url: "https://corvo.capital/blog",
     siteName: "Corvo",

@@ -3,7 +3,7 @@ import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
-  title: "Building a Portfolio Analyzer: What We Learned | Corvo Blog",
+  title: "Building a Portfolio Analyzer: What We Learned",
   description: "From a personal frustration project to a tool used by thousands. Here is what building Corvo taught us about retail investing tools.",
   keywords: ["corvo product", "portfolio analyzer", "retail investing tools", "building corvo", "fintech"],
   openGraph: {
