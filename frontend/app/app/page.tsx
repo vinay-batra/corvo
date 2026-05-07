@@ -676,7 +676,6 @@ function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => vo
         </div>
       ) : !q ? (
         <div style={{ position: "relative", zIndex: 1 }}>
-          {middleContent}
           {/* Animated stat cards grid */}
           <div>
             <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Live Market</p>
@@ -715,6 +714,7 @@ function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => vo
               })}
             </div>
           </div>
+          {middleContent}
         </div>
       ) : null}
     </div>
@@ -2164,7 +2164,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <StocksSearch
                       onSelect={setStockTicker}
                       middleContent={
-                        <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                           <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>Compare</p>
                           <button
                             onClick={() => setShowStockCompare(true)}
