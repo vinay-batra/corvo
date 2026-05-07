@@ -7615,7 +7615,7 @@ def earnings_calendar(tickers: str = Query(default="")):
 
 @app.get("/earnings-preview")
 def earnings_preview(tickers: str = Query(default=""), weights: str = Query(default="")):
-    """Return earnings preview cards for holdings with earnings within 14 days.
+    """Return earnings preview cards for holdings with earnings within 60 days.
     Includes implied move from options straddle, analyst estimates, and AI portfolio commentary."""
     from datetime import date, timedelta
 
@@ -7635,7 +7635,7 @@ def earnings_preview(tickers: str = Query(default=""), weights: str = Query(defa
         weight_map = {t: 1.0 / len(tickers_list) for t in tickers_list}
 
     today = date.today()
-    cutoff = today + timedelta(days=14)
+    cutoff = today + timedelta(days=60)
 
     def _safe(v):
         try:

@@ -283,7 +283,7 @@ function EarningsRow({
     : null;
 
   const hasExpanded = row.eps_estimate != null || row.revenue_estimate != null ||
-    row.weight > 0 || preview != null || days <= 14;
+    row.weight > 0 || preview != null || days <= 60;
 
   const transcriptFound =
     transcriptState.status === "done" && transcriptState.data.has_transcript;
@@ -404,8 +404,10 @@ function EarningsRow({
               flexDirection: "column",
               gap: 14,
             }}>
-              {/* Stat pills */}
+              {/* Stat pills -- always shown when expanded */}
               <div style={{ display: "flex", gap: 20, flexWrap: "wrap" as const }}>
+                <StatPill label="Earnings Date" value={fmtDate(row.date)} />
+                <StatPill label="Days Until" value={days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days} days`} />
                 {exposure != null && (
                   <StatPill label="Your exposure" value={fmtDollars(exposure)} />
                 )}
@@ -424,7 +426,7 @@ function EarningsRow({
               </div>
 
               {/* Loading state */}
-              {previewLoading && days <= 14 && (
+              {previewLoading && days <= 60 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{
                     width: 12, height: 12, borderRadius: "50%",
@@ -460,16 +462,23 @@ function EarningsRow({
                 </p>
               )}
 
-              {/* No preview for non-today upcoming */}
+              {/* No preview -- near term, something went wrong */}
               {!previewLoading && days > 0 && days <= 14 && !preview && (
                 <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
                   AI analysis not available for this ticker.
                 </p>
               )}
 
-              {days > 14 && (
+              {/* No preview -- further out, expected */}
+              {!previewLoading && preview === null && days > 14 && days <= 60 && (
                 <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
-                  AI analysis and implied move available within 14 days of earnings.
+                  Options-implied move and AI analysis load closer to earnings date.
+                </p>
+              )}
+
+              {days > 60 && (
+                <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
+                  AI analysis and implied move available within 60 days of earnings.
                 </p>
               )}
             </div>
