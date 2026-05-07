@@ -136,8 +136,6 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
   const [error, setError]         = useState<string | null>(null);
   const [selDate, setSelDate]     = useState<string>("");
   const [dateLoading, setDateLoading] = useState(false);
-  const [tooltip, setTooltip]     = useState(false);
-
   // Initial load
   useEffect(() => {
     setLoading(true); setError(null);
@@ -215,18 +213,8 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
     const hdrCol = isCall ? GREEN : RED;
     if (!contracts.length) return <p style={{ fontSize: 11, color: "var(--text3)", padding: "16px 0" }}>No data</p>;
     return (
-      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }} onWheel={e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); const scroller = document.querySelector(".main-scroll-area") as HTMLElement; if (scroller) scroller.scrollTop += e.deltaY; } }}>
+      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }} onWheel={e => { e.stopPropagation(); }}>
         <style>{`
-          .opt-th-wrap { position: relative; display: inline-flex; align-items: center; gap: 3px; cursor: default; }
-          .opt-th-wrap .opt-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
-            width: 200px; padding: 7px 10px; background: var(--card-bg); border: 0.5px solid var(--border2);
-            border-radius: 8px; font-size: 10px; color: var(--text2); line-height: 1.5; z-index: 200;
-            pointer-events: none; box-shadow: 0 6px 20px rgba(0,0,0,0.35); text-transform: none;
-            letter-spacing: 0; font-weight: 400; text-align: left; white-space: normal; }
-          .opt-th-wrap:hover .opt-tip { display: block; }
-          .opt-th-ques { width: 11px; height: 11px; border-radius: 50%; background: var(--bg3); border: 0.5px solid var(--border2);
-            color: var(--text3); font-size: 7px; display: inline-flex; align-items: center; justify-content: center;
-            line-height: 1; flex-shrink: 0; }
           :root { --itm-call-bg: rgba(76,175,125,0.07); --itm-call-bdr: rgba(76,175,125,0.2);
                   --itm-put-bg: rgba(224,92,92,0.07);   --itm-put-bdr: rgba(224,92,92,0.2);
                   --itm-atm-bg: rgba(201,168,76,0.09); }
@@ -239,10 +227,9 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
             <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
               {tableHeader.map((h, i) => (
                 <th key={h} style={{ padding: "6px 8px", textAlign: i === 0 ? "left" : "right", fontSize: 8, letterSpacing: 1.5, color: i === 0 ? hdrCol : "var(--text3)", textTransform: "uppercase", fontWeight: 600, width: colW[i], whiteSpace: "nowrap" }}>
-                  <span className="opt-th-wrap">
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
                     {h}
-                    <span className="opt-th-ques">?</span>
-                    <span className="opt-tip">{COL_TOOLTIPS[h]}</span>
+                    {COL_TOOLTIPS[h] && <InfoModal title={h} sections={[{ label: "Plain English", text: COL_TOOLTIPS[h] }]} />}
                   </span>
                 </th>
               ))}
@@ -290,7 +277,10 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "12px 14px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Expiry</span>
+            <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}>
+              Expiry
+              <InfoModal title="Expiry Date" sections={[{ label: "Plain English", text: "The date on which the option contract expires. After this date the option has no value. Options closer to expiry lose time value faster." }]} />
+            </span>
             <div style={{ position: "relative" }}>
               <select
                 value={selDate}
@@ -308,19 +298,31 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
           {dateLoading && <div style={{ width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" }}>Underlying</span>
+          <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}>
+            Underlying
+            <InfoModal title="Underlying Price" sections={[{ label: "Plain English", text: "The current market price of the stock that the options are based on. Strike prices above this (calls) or below this (puts) are out of the money." }]} />
+          </span>
           <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: "var(--accent)" }}>${livePrice.toFixed(2)}</span>
         </div>
       </div>
 
       {/* Legend */}
       <div style={{ display: "flex", gap: 16, paddingLeft: 2 }}>
-        {[["ATM", AMBER, "At the money"], ["ITM", GREEN, "In the money (calls)"], ["ITM", RED, "In the money (puts)"]].map(([label, color, title], i) => (
-          <div key={i} title={title as string} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "default" }}>
-            <div style={{ width: 8, height: 8, borderRadius: 2, background: color as string, opacity: 0.8 }} />
-            <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>{label as string}</span>
-          </div>
-        ))}
+        <div style={{ display: "flex", alignItems: "center", gap: 5, cursor: "default" }}>
+          <div style={{ width: 8, height: 8, borderRadius: 2, background: AMBER, opacity: 0.8 }} />
+          <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>ATM</span>
+          <InfoModal title="At the Money (ATM)" sections={[{ label: "Plain English", text: "The strike price closest to the current stock price. ATM options have the highest time value and are most sensitive to changes in implied volatility." }]} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, cursor: "default" }}>
+          <div style={{ width: 8, height: 8, borderRadius: 2, background: GREEN, opacity: 0.8 }} />
+          <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>ITM</span>
+          <InfoModal title="In the Money - Calls" sections={[{ label: "Plain English", text: "A call option is in the money when the stock price is above the strike price. ITM calls have intrinsic value on top of time value." }]} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, cursor: "default" }}>
+          <div style={{ width: 8, height: 8, borderRadius: 2, background: RED, opacity: 0.8 }} />
+          <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>ITM</span>
+          <InfoModal title="In the Money - Puts" sections={[{ label: "Plain English", text: "A put option is in the money when the stock price is below the strike price. ITM puts have intrinsic value on top of time value." }]} />
+        </div>
       </div>
 
       {/* Tables */}
@@ -348,18 +350,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <div style={{ width: 2, height: 12, background: AMBER, borderRadius: 1, flexShrink: 0 }} />
           <p style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>Max Pain</p>
-          <div style={{ position: "relative", display: "inline-block", marginLeft: 4 }}>
-            <button
-              onMouseEnter={() => setTooltip(true)}
-              onMouseLeave={() => setTooltip(false)}
-              style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--bg3)", border: "0.5px solid var(--border2)", color: "var(--text3)", fontSize: 9, cursor: "default", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
-            >?</button>
-            {tooltip && (
-              <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", width: 220, padding: "8px 12px", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 8, fontSize: 11, color: "var(--text2)", lineHeight: 1.5, zIndex: 100, pointerEvents: "none", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
-                The price at which option sellers (market makers) lose the least. Often acts as a gravitational pull on the underlying price as expiry approaches.
-              </div>
-            )}
-          </div>
+          <InfoModal title="Max Pain" sections={[{ label: "Plain English", text: "The price at which option sellers (market makers) lose the least. Often acts as a gravitational pull on the underlying price as expiry approaches." }]} />
         </div>
         {maxPain != null ? (
           <div style={{ display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
@@ -912,6 +903,8 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
         @keyframes sdPulse { 0%,100% { opacity: 0.4 } 50% { opacity: 0.9 } }
+        .sd-table-wrap { overflow-x: auto; }
+        .sd-table-wrap:hover { cursor: default; }
         @keyframes livePulse {
           0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(76,175,125,0.5) }
           60%      { opacity: 0.6; box-shadow: 0 0 0 5px rgba(76,175,125,0) }
