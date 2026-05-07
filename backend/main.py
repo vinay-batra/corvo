@@ -2835,8 +2835,18 @@ def stock_detail(ticker: str, request: Request):
         analyst_rating = rating_map.get(rec, "N/A")
 
         # Price + change
-        current_price = si("currentPrice") or si("regularMarketPrice") or 0.0
-        prev_close    = si("previousClose") or si("regularMarketPreviousClose") or current_price
+        current_price = (
+            si("currentPrice") or
+            si("regularMarketPrice") or
+            si("navPrice") or
+            safe_float(getattr(t.fast_info, 'last_price', None) or 0) or 0.0
+        )
+        prev_close = (
+            si("previousClose") or
+            si("regularMarketPreviousClose") or
+            safe_float(getattr(t.fast_info, 'previous_close', None) or 0) or
+            current_price
+        )
         change        = current_price - prev_close
         change_pct    = (change / prev_close * 100) if prev_close else 0.0
 
