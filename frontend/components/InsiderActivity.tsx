@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import InfoModal from "./InfoModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const GREEN = "#4caf7d";
@@ -216,21 +217,30 @@ export default function InsiderActivity({ ticker }: { ticker: string }) {
       {/* Summary stats */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
         <div style={{ border: "0.5px solid rgba(76,175,125,0.25)", borderRadius: 10, padding: "12px 14px", background: "rgba(76,175,125,0.04)" }}>
-          <div style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>Open Mkt Buys</div>
+          <div style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+            Open Mkt Buys
+            <InfoModal title="Open Market Buys" sections={[{ label: "Plain English", text: "Number of times an insider purchased shares directly on the open market using their own money. This is typically a bullish signal indicating insider confidence in the company." }]} />
+          </div>
           <div style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: GREEN }}>{buyCount}</div>
           <div style={{ fontFamily: "Space Mono, monospace", fontSize: 11, color: GREEN, opacity: 0.8, marginTop: 2 }}>
             {totalBuyValue > 0 ? fmtMoney(totalBuyValue) : "-"}
           </div>
         </div>
         <div style={{ border: "0.5px solid rgba(224,92,92,0.25)", borderRadius: 10, padding: "12px 14px", background: "rgba(224,92,92,0.04)" }}>
-          <div style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>Open Mkt Sells</div>
+          <div style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+            Open Mkt Sells
+            <InfoModal title="Open Market Sells" sections={[{ label: "Plain English", text: "Number of times an insider sold shares on the open market. Common and often driven by personal financial planning rather than negative views on the company." }]} />
+          </div>
           <div style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: RED }}>{sellCount}</div>
           <div style={{ fontFamily: "Space Mono, monospace", fontSize: 11, color: RED, opacity: 0.8, marginTop: 2 }}>
             {totalSellValue > 0 ? fmtMoney(totalSellValue) : "-"}
           </div>
         </div>
         <div style={{ border: "0.5px solid var(--border)", borderRadius: 10, padding: "12px 14px", background: "var(--card-bg)" }}>
-          <div style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>Signal</div>
+          <div style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+            Signal
+            <InfoModal title="Insider Signal" sections={[{ label: "Plain English", text: "Whether insiders are net buyers or net sellers overall. Net Buy signals executives believe the stock is undervalued. Net Sell is not always bearish -- insiders often sell for diversification or liquidity needs." }]} />
+          </div>
           <div style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: signalColor }}>{signalLabel}</div>
           <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>{txns.length} transactions</div>
         </div>
@@ -252,20 +262,23 @@ export default function InsiderActivity({ ticker }: { ticker: string }) {
           <p style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>SEC Form 4 Filings</p>
           <span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 4 }}>open market only</span>
         </div>
-        <div style={{ overflowX: "auto", overscrollBehavior: "contain" }} onWheel={e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); const scroller = document.querySelector(".main-scroll-area") as HTMLElement; if (scroller) scroller.scrollTop += e.deltaY; } }}>
+        <div style={{ overflowX: "auto", overscrollBehavior: "contain" }} onWheel={e => { e.stopPropagation(); }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 460 }}>
             <thead>
               <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
                 {[
-                  { label: "Type",        align: "center" },
-                  { label: "Insider",     align: "left" },
-                  { label: "Shares",      align: "right" },
-                  { label: "Price",       align: "right" },
-                  { label: "Total Value", align: "right" },
-                  { label: "Date",        align: "right" },
-                ].map(({ label, align }) => (
+                  { label: "Type",        align: "center", tooltip: "Whether this was a purchase or sale on the open market. Only open market transactions are shown -- option exercises and gifts are excluded." },
+                  { label: "Insider",     align: "left",   tooltip: "The executive, director, or major shareholder who made the transaction. C-suite purchases carry more weight than a single director's small buy." },
+                  { label: "Shares",      align: "right",  tooltip: "Number of shares bought or sold in this transaction." },
+                  { label: "Price",       align: "right",  tooltip: "The price per share at which the transaction was executed on the open market." },
+                  { label: "Total Value", align: "right",  tooltip: "Total dollar value of the transaction, calculated as shares times price." },
+                  { label: "Date",        align: "right",  tooltip: "The date the transaction was executed. Insiders must file a Form 4 with the SEC within 2 business days." },
+                ].map(({ label, align, tooltip }) => (
                   <th key={label} style={{ padding: "8px 12px", textAlign: align as any, fontSize: 8, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", fontWeight: 600, whiteSpace: "nowrap" }}>
-                    {label}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                      {label}
+                      <InfoModal title={label} sections={[{ label: "Plain English", text: tooltip }]} />
+                    </span>
                   </th>
                 ))}
               </tr>
