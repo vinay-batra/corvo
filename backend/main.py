@@ -6612,14 +6612,55 @@ async def send_week_in_review_emails(target_user_id=None) -> dict:
             if not verdict:
                 verdict = f"Your portfolio returned {pct_str} last week."
 
+            verdict_label = _weekly_verdict_label(port_ret)
+            badge_color = _verdict_badge_color(verdict_label)
+            badge_html = (
+                f'<span style="display:inline-block;padding:3px 10px;border-radius:4px;'
+                f'background:{badge_color};color:#fff;font-size:11px;font-weight:700;'
+                f'letter-spacing:1px;text-transform:uppercase;">{verdict_label}</span>'
+            )
+
+            best_ticker = ctx.get("best_ticker")
+            best_return = ctx.get("best_ticker_return", 0.0)
+            worst_ticker = ctx.get("worst_ticker")
+            worst_return = ctx.get("worst_ticker_return", 0.0)
+            gainer_str = (
+                f"{best_ticker} +{best_return:.1f}%" if best_ticker else "N/A"
+            )
+            loser_str = (
+                f"{worst_ticker} {worst_return:.1f}%" if worst_ticker else "N/A"
+            )
+            movers_line = (
+                f"Top gainer: <strong>{gainer_str}</strong> &nbsp;&middot;&nbsp; "
+                f"Biggest drag: <strong>{loser_str}</strong>"
+            )
+
+            hs_current, hs_prev = await loop.run_in_executor(
+                None, _fetch_cached_health_score_pair, uid, tickers
+            )
+            if hs_current is not None and hs_prev is not None:
+                hs_diff = hs_current - hs_prev
+                hs_sign = "+" if hs_diff >= 0 else ""
+                hs_line = f"Health score: <strong>{hs_current}/100</strong> ({hs_sign}{hs_diff} from last week)"
+            elif hs_current is not None:
+                hs_line = f"Health score: <strong>{hs_current}/100</strong>"
+            else:
+                hs_line = None
+
             mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
+            email_body_lines = [
+                badge_html,
+                f"Last week: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">{pct_str}</strong>",
+                movers_line,
+            ]
+            if hs_line:
+                email_body_lines.append(hs_line)
+            email_body_lines.append(verdict)
+
             html = _email_html(
                 heading=f"Your week in review, {display_name}",
                 label="Week in Review",
-                body_lines=[
-                    f"Last week: <strong style=\"font-family:'Courier New',Courier,monospace;color:{mono_color};\">{pct_str}</strong>",
-                    verdict,
-                ],
+                body_lines=email_body_lines,
                 cta_text="See your full week",
                 cta_url="https://corvo.capital/app",
                 user_id=uid,
@@ -6995,6 +7036,7 @@ def _portfolio_week_context(tickers: list, weights: list) -> dict:
                 ctx["spy_return"] = round((float(spy_col.iloc[-1]) - float(spy_col.iloc[0])) / float(spy_col.iloc[0]) * 100, 2)
 
         contributions = []
+        ticker_returns: dict[str, float] = {}
         port_ret = 0.0
         for i, ticker in enumerate(tickers):
             if i >= len(weights) or ticker not in close.columns:
@@ -7003,6 +7045,7 @@ def _portfolio_week_context(tickers: list, weights: list) -> dict:
             if len(col) < 2:
                 continue
             r = (float(col.iloc[-1]) - float(col.iloc[0])) / float(col.iloc[0]) * 100
+            ticker_returns[ticker] = r
             contribution = weights[i] * r
             port_ret += contribution
             contributions.append((ticker, contribution, weights[i]))
@@ -7014,6 +7057,14 @@ def _portfolio_week_context(tickers: list, weights: list) -> dict:
             ctx["top_contribution"] = round(top[1], 2)
             ctx["top_weight_pct"] = round(top[2] * 100, 1)
 
+        if ticker_returns:
+            best = max(ticker_returns, key=ticker_returns.__getitem__)
+            worst = min(ticker_returns, key=ticker_returns.__getitem__)
+            ctx["best_ticker"] = best
+            ctx["best_ticker_return"] = round(ticker_returns[best], 2)
+            ctx["worst_ticker"] = worst
+            ctx["worst_ticker_return"] = round(ticker_returns[worst], 2)
+
         sorted_by_weight = sorted(zip(tickers, weights), key=lambda x: x[1], reverse=True)
         ctx["largest_holding"] = sorted_by_weight[0][0]
         ctx["largest_weight_pct"] = round(sorted_by_weight[0][1] * 100, 1)
@@ -7023,6 +7074,59 @@ def _portfolio_week_context(tickers: list, weights: list) -> dict:
     except Exception as e:
         print(f"[week-ctx] error: {e}")
     return ctx
+
+
+def _weekly_verdict_label(port_ret: float) -> str:
+    if port_ret > 2:
+        return "Strong week"
+    elif port_ret >= 0:
+        return "Steady week"
+    elif port_ret >= -2:
+        return "Slight dip"
+    else:
+        return "Tough week"
+
+
+def _verdict_badge_color(verdict: str) -> str:
+    return {
+        "Strong week": "#1a7a2e",
+        "Steady week": "#c9a84c",
+        "Slight dip": "#c97a1a",
+        "Tough week": "#c91a1a",
+    }.get(verdict, "#c9a84c")
+
+
+def _weekly_one_line_insight(ctx: dict) -> str:
+    best_ticker = ctx.get("best_ticker")
+    best_return = ctx.get("best_ticker_return", 0.0)
+    worst_ticker = ctx.get("worst_ticker")
+    worst_return = ctx.get("worst_ticker_return", 0.0)
+    if best_ticker and best_return > 5:
+        return f"{best_ticker} led gains at +{best_return:.1f}%"
+    if worst_ticker and worst_return < -5:
+        return f"Watch {worst_ticker}, down {abs(worst_return):.1f}% this week"
+    return "Portfolio tracking steadily. Check your dashboard for details."
+
+
+def _fetch_cached_health_score_pair(user_id: str, tickers: list) -> tuple:
+    """Returns (current_score, prev_score) from Supabase health_score_cache, or (None, None)."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
+        return None, None
+    try:
+        tkr_hash = "|".join(sorted(t.upper() for t in tickers))
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/health_score_cache"
+            f"?user_id=eq.{user_id}&tickers_hash=eq.{tkr_hash}&select=score,date&order=date.desc&limit=2",
+            headers=_sb_headers(), timeout=5,
+        )
+        if resp.status_code == 200:
+            rows = resp.json()
+            current = int(rows[0]["score"]) if rows else None
+            prev = int(rows[1]["score"]) if len(rows) > 1 else None
+            return current, prev
+    except Exception as e:
+        print(f"[weekly] health score fetch error: {e}")
+    return None, None
 
 
 def _weekly_advisor_verdict(display_name: str, ctx: dict, condensed: bool = False) -> str:
@@ -7150,9 +7254,14 @@ async def send_weekly_portfolio_checkup_push() -> dict:
             port_ret = ctx["portfolio_return"]
             sign = "+" if port_ret >= 0 else ""
             pct_str = f"{sign}{port_ret:.2f}%"
-            verdict = await loop.run_in_executor(None, _weekly_advisor_verdict, display_name, ctx, True)
-            title = f"Weekly checkup: {pct_str}"
-            body = verdict or f"Your portfolio returned {pct_str} this week."
+            verdict_label = _weekly_verdict_label(port_ret)
+            insight = _weekly_one_line_insight(ctx)
+            hs_current, _ = await loop.run_in_executor(
+                None, _fetch_cached_health_score_pair, user_id, tickers
+            )
+            hs_str = f"{hs_current}/100" if hs_current is not None else "N/A"
+            title = f"{verdict_label} for your portfolio"
+            body = f"{pct_str} this week · Health score: {hs_str} · {insight}"
             for sub_row in subs:
                 result = _send_push(sub_row["subscription"], title, body, url="https://corvo.capital/app")
                 if result == "ok":
