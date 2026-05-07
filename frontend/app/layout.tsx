@@ -7,7 +7,7 @@ import PostHogProvider from "@/components/PosthogProvider";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallBanner from "@/components/InstallBanner";
 import { ToastProvider } from "@/components/Toast";
-import ParticleCanvas from "@/components/ParticleCanvas";
+import ConditionalParticleCanvas from "@/components/ConditionalParticleCanvas";
 import PublicAIChatLoader from "@/components/PublicAIChatLoader";
 import FeedbackButton from "@/components/FeedbackButton";
 
@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#c9a84c" />
       </head>
       <body style={{ margin: 0 }}>
-        <ParticleCanvas />
+        <ConditionalParticleCanvas />
         <Suspense>
           <PostHogProvider>
             <ToastProvider>
