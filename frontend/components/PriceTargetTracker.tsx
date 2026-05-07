@@ -77,9 +77,10 @@ export default function PriceTargetTracker({ assets }: { assets: { ticker: strin
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      if (!token) return;
+      const uid = session?.user?.id;
+      if (!token || !uid) return;
 
-      const res = await fetch(`${API_URL}/price-targets`, {
+      const res = await fetch(`${API_URL}/price-targets/${uid}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (!res.ok) {
