@@ -71,12 +71,22 @@ export default function PriceTargetTracker({ assets }: { assets: { ticker: strin
   const [editPrice, setEditPrice] = useState("");
   const [editDirection, setEditDirection] = useState<"above" | "below">("above");
 
-  const loadTargets = useCallback(async (uid: string) => {
+  const loadTargets = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/price-targets/${uid}`);
-      if (!res.ok) throw new Error("Failed to load targets");
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(`${API_URL}/price-targets`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        console.error("Price targets error:", res.status, await res.text());
+        setError("Failed to load targets");
+        return;
+      }
       const data = await res.json();
       setTargets(data);
     } catch (e: any) {
@@ -89,7 +99,7 @@ export default function PriceTargetTracker({ assets }: { assets: { ticker: strin
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return;
       setUserId(data.user.id);
-      loadTargets(data.user.id);
+      loadTargets();
     });
   }, [loadTargets]);
 
@@ -108,7 +118,7 @@ export default function PriceTargetTracker({ assets }: { assets: { ticker: strin
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "Failed to create"); }
       setNewTicker(""); setNewPrice(""); setNewDirection("above");
-      await loadTargets(userId);
+      await loadTargets();
     } catch (e: any) {
       setFormError(e.message || "Failed to create target");
     }
