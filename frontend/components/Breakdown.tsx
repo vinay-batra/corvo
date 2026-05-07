@@ -1,5 +1,95 @@
 "use client";
 import { motion } from "framer-motion";
+import { useState, useCallback } from "react";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const w = 64, h = 24;
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * h}`).join(" ");
+  const positive = data[data.length - 1] >= data[0];
+  const lineColor = positive ? "#5cb88a" : "#e05c5c";
+  return (
+    <svg width={w} height={h} style={{ overflow: "visible", flexShrink: 0 }}>
+      <polyline points={pts} fill="none" stroke={lineColor} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function HoldingRow({ a, i, normalized, maxPct, equalWeight, portfolioValue }: any) {
+  const [sparkline, setSparkline] = useState<number[] | null>(null);
+  const [hovered, setHovered] = useState(false);
+
+  const fetchSparkline = useCallback(async () => {
+    if (sparkline !== null) return;
+    try {
+      const r = await fetch(`${API_URL}/watchlist-data?tickers=${a.ticker}`);
+      if (!r.ok) return;
+      const d = await r.json();
+      const s = d?.results?.[0]?.sparkline;
+      if (s?.length) setSparkline(s);
+    } catch {}
+  }, [a.ticker, sparkline]);
+
+  return (
+    <motion.div
+      key={a.ticker}
+      initial={false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 + i * 0.07 }}
+      onHoverStart={() => { setHovered(true); fetchSparkline(); }}
+      onHoverEnd={() => setHovered(false)}
+      style={{
+        display: "grid",
+        gridTemplateColumns: portfolioValue
+          ? "16px 52px 44px 1fr 60px"
+          : "16px 52px 44px 1fr",
+        alignItems: "center",
+        gap: "0 10px",
+        height: 32,
+        padding: "0 6px",
+        borderRadius: 6,
+        cursor: "default",
+        transition: "background 0.15s",
+        borderBottom: i < normalized.length - 1 ? "0.5px solid var(--border-dim)" : undefined,
+        position: "relative",
+      }}
+      whileHover={{ backgroundColor: "var(--bg3)" }}
+    >
+      <div style={{ width: 8, height: 8, borderRadius: "50%", background: a.color, flexShrink: 0 }} />
+      <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: a.color, letterSpacing: 0.5 }}>{a.ticker}</span>
+      <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "var(--text3)", textAlign: "right" }}>{(a.pct * 100).toFixed(1)}%</span>
+
+      {/* Bar OR sparkline depending on hover */}
+      <div style={{ position: "relative", height: "100%", display: "flex", alignItems: "center" }}>
+        <div style={{ height: 4, borderRadius: 2, background: "var(--track)", overflow: "hidden", width: "100%",
+          opacity: hovered && sparkline ? 0 : 1, transition: "opacity 0.2s" }}>
+          <motion.div
+            // initial={false} is required — do not remove
+            initial={false}
+            animate={{ width: equalWeight ? `${a.pct * 100}%` : `${(a.pct / maxPct) * 100}%` }}
+            transition={{ duration: 0.9, delay: 0.4 + i * 0.08, ease: "easeOut" }}
+            style={{ height: "100%", background: a.color, borderRadius: 2 }}
+          />
+        </div>
+        {hovered && sparkline && (
+          <div style={{ position: "absolute", right: 0, opacity: 1, transition: "opacity 0.2s" }}>
+            <MiniSparkline data={sparkline} color={a.color} />
+          </div>
+        )}
+      </div>
+
+      {portfolioValue && (
+        <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "var(--text2)", textAlign: "right" }}>
+          {formatDollar(portfolioValue * a.pct)}
+        </span>
+      )}
+    </motion.div>
+  );
+}
 
 // Distinct color palette: visible against dark background
 const COLORS = [
@@ -52,58 +142,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
       {/* Table-style legend */}
       <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
         {normalized.map((a, i) => (
-          <motion.div
-            key={a.ticker}
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 + i * 0.07 }}
-            style={{
-              display: "grid",
-              gridTemplateColumns: portfolioValue
-                ? "16px 52px 44px 1fr 60px"
-                : "16px 52px 44px 1fr",
-              alignItems: "center",
-              gap: "0 10px",
-              height: 32,
-              padding: "0 6px",
-              borderRadius: 6,
-              cursor: "default",
-              transition: "background 0.15s",
-              borderBottom: i < normalized.length - 1 ? "0.5px solid var(--border-dim)" : undefined,
-            }}
-            whileHover={{ backgroundColor: "var(--bg3)" }}
-          >
-            {/* Color dot */}
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: a.color, flexShrink: 0 }} />
-
-            {/* Ticker */}
-            <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: a.color, letterSpacing: 0.5 }}>
-              {a.ticker}
-            </span>
-
-            {/* Percentage */}
-            <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "var(--text3)", textAlign: "right" }}>
-              {(a.pct * 100).toFixed(1)}%
-            </span>
-
-            {/* Mini bar */}
-            <div style={{ height: 4, borderRadius: 2, background: "var(--track)", overflow: "hidden" }}>
-              <motion.div
-                // initial={false} is required — do not remove
-                initial={false}
-                animate={{ width: equalWeight ? `${a.pct * 100}%` : `${(a.pct / maxPct) * 100}%` }}
-                transition={{ duration: 0.9, delay: 0.4 + i * 0.08, ease: "easeOut" }}
-                style={{ height: "100%", background: a.color, borderRadius: 2 }}
-              />
-            </div>
-
-            {/* Dollar value */}
-            {portfolioValue && (
-              <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "var(--text3)", textAlign: "right" }}>
-                {formatDollar(a.pct * portfolioValue)}
-              </span>
-            )}
-          </motion.div>
+          <HoldingRow key={a.ticker} a={a} i={i} normalized={normalized} maxPct={maxPct} equalWeight={equalWeight} portfolioValue={portfolioValue} />
         ))}
       </div>
     </motion.div>

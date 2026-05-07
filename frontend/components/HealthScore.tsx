@@ -7,18 +7,47 @@ function Ring({ score, size = 115 }: { score: number; size?: number }) {
   const r = (size - 12) / 2, circ = 2 * Math.PI * r, offset = circ - (score / 100) * circ;
   const label = score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Fair" : "Weak";
   const ringColor = score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)";
+  const glowColor = score >= 75 ? "rgba(76,175,125,0.35)" : score >= 50 ? "rgba(184,134,11,0.35)" : "rgba(224,92,92,0.35)";
   const fontSize = Math.round(size * 0.25);
+  const gradId = `ring-grad-${score}`;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-      <div style={{ position: "relative", width: size, height: size }}>
-        <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+      <style>{`
+        @keyframes hs-breathe {
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px ${glowColor}); }
+          50% { transform: scale(1.025); filter: drop-shadow(0 0 10px ${glowColor}); }
+        }
+        .hs-ring-wrap { animation: hs-breathe 3.5s ease-in-out infinite; animation-delay: 1.2s; }
+      `}</style>
+      <div className="hs-ring-wrap" style={{ position: "relative", width: size, height: size }}>
+        <svg width={size} height={size} style={{ transform: "rotate(-90deg)", overflow: "visible" }}>
+          <defs>
+            <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor={ringColor} stopOpacity="0.4" />
+              <stop offset="85%" stopColor={ringColor} stopOpacity="1" />
+              <stop offset="100%" stopColor="#fff" stopOpacity="0.9" />
+            </linearGradient>
+          </defs>
+          {/* Track */}
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track)" strokeWidth={6} />
+          {/* Filled arc */}
           <motion.circle
-            cx={size / 2} cy={size / 2} r={r} fill="none" stroke={ringColor} strokeWidth={6}
+            cx={size / 2} cy={size / 2} r={r} fill="none"
+            stroke={`url(#${gradId})`} strokeWidth={6}
             strokeLinecap="round" strokeDasharray={circ}
             // initial={false} required — do not remove
             initial={false} animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }}
+          />
+          {/* Trailing glow dot at arc tip */}
+          <motion.circle
+            cx={size / 2} cy={6}
+            r={4} fill={ringColor}
+            // initial={false} required — do not remove
+            initial={false}
+            animate={{ opacity: [0, 1, 0.6], scale: [0.5, 1.2, 1] }}
+            transition={{ delay: 0.9, duration: 0.5 }}
+            style={{ filter: `blur(1px) drop-shadow(0 0 4px ${ringColor})`, transformOrigin: `${size/2}px ${size/2}px`, transform: `rotate(${(score / 100) * 360 - 90}deg) translateY(${-(r)}px)` }}
           />
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>

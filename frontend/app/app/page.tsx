@@ -2088,6 +2088,17 @@ const { dark, toggle: toggleDark }  = useTheme();
           />
         </header>
 
+        {/* Ambient portfolio glow — barely perceptible, shifts green/red based on period return */}
+        {data && (
+          <div aria-hidden style={{
+            position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
+            background: (data.portfolio_return ?? 0) >= 0
+              ? "radial-gradient(ellipse 60% 40% at 65% 40%, rgba(76,175,125,0.045) 0%, transparent 70%)"
+              : "radial-gradient(ellipse 60% 40% at 65% 40%, rgba(224,92,92,0.04) 0%, transparent 70%)",
+            transition: "background 2s ease",
+          }} />
+        )}
+
         {/* Content */}
         <main ref={contentRef} className="c-content" style={S.content}>
           {/* Setup banner (shown when user skipped onboarding) */}
