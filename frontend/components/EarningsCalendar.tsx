@@ -260,7 +260,7 @@ function EarningsRow({
   transcriptState: TranscriptState;
   onTranscriptLoad: (ticker: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const triggeredRef = useRef(false);
   const { days, preview } = row;
 
@@ -360,6 +360,11 @@ function EarningsRow({
                 Transcript
               </span>
             )}
+            {!expanded && preview?.ai_commentary && (
+              <span style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                {preview.ai_commentary.slice(0, 60)}...
+              </span>
+            )}
           </div>
           <span style={{ fontSize: 11.5, color: "var(--text2)", marginTop: 2, display: "block" }}>
             {row.company}
@@ -374,13 +379,11 @@ function EarningsRow({
             </div>
           </div>
           {hasExpanded && (
-            <svg
-              width="12" height="12" viewBox="0 0 24 24" fill="none"
-              stroke="var(--text3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-              style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.18s ease", flexShrink: 0 }}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--bg3)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.18s ease" }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
           )}
         </div>
       </div>
