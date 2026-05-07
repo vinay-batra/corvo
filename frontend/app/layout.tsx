@@ -12,7 +12,7 @@ import PublicAIChatLoader from "@/components/PublicAIChatLoader";
 import FeedbackButton from "@/components/FeedbackButton";
 
 export const metadata: Metadata = {
-  title: { default: "Corvo: Free Portfolio Analytics & AI Investing Tools", template: "%s | Corvo" },
+  title: { default: "Corvo: Free Portfolio Analytics & AI Investing Tools", template: "%s - Corvo" },
   description: "Corvo is a free AI-powered portfolio analytics platform. Get Sharpe ratio, Monte Carlo simulation, health scores, and AI insights for your stock portfolio. No subscription required.",
   keywords: ["portfolio analytics", "free portfolio tracker", "sharpe ratio calculator", "monte carlo simulation", "AI investing tools", "portfolio diversification", "tax loss harvesting", "dividend tracker", "stock portfolio analyzer", "retail investor tools", "bloomberg alternative", "corvo capital"],
   authors: [{ name: "Corvo", url: "https://corvo.capital" }],

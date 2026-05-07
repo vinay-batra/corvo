@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Changelog — Corvo",
+  title: "Changelog",
   description: "See everything we've shipped. We move fast.",
 };
 

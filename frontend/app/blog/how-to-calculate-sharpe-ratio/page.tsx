@@ -4,7 +4,7 @@ import BlogPost from "../BlogPost";
 import type { TocItem, RelatedPost } from "../BlogPost";
 
 export const metadata: Metadata = {
-  title: "How to Calculate Sharpe Ratio for Your Portfolio (And Why It Matters) | Corvo Blog",
+  title: "How to Calculate Sharpe Ratio for Your Portfolio (And Why It Matters)",
   description: "The Sharpe ratio is the single most useful number for understanding if your returns are worth the risk you are taking. Learn the formula, what good looks like, and real examples.",
   keywords: ["how to calculate sharpe ratio portfolio", "sharpe ratio formula", "sharpe ratio explained", "risk adjusted return"],
   openGraph: {
