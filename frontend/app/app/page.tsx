@@ -563,7 +563,7 @@ function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }
 
 interface WatchlistStockData { ticker: string; name?: string; price: number | null; change: number | null; change_pct: number | null; sparkline: number[]; }
 
-function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
+function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => void; middleContent?: React.ReactNode }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
   const [busy, setBusy] = useState(false);
@@ -676,6 +676,7 @@ function StocksSearch({ onSelect }: { onSelect: (t: string) => void }) {
         </div>
       ) : !q ? (
         <div style={{ position: "relative", zIndex: 1 }}>
+          {middleContent}
           {/* Animated stat cards grid */}
           <div>
             <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Live Market</p>
@@ -2160,19 +2161,23 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </div>
                 ) : (
                   <div>
-                    <StocksSearch onSelect={setStockTicker} />
-                    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>Compare</p>
-                      <button
-                        onClick={() => setShowStockCompare(true)}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", fontSize: 13, fontWeight: 600, borderRadius: 20, border: "1px solid rgba(var(--accent-rgb),0.3)", background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)", cursor: "pointer", transition: "all 0.2s" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.14)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.06)"; }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                        Compare Stocks
-                      </button>
-                    </div>
+                    <StocksSearch
+                      onSelect={setStockTicker}
+                      middleContent={
+                        <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                          <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>Compare</p>
+                          <button
+                            onClick={() => setShowStockCompare(true)}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", fontSize: 13, fontWeight: 600, borderRadius: 20, border: "1px solid rgba(var(--accent-rgb),0.3)", background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)", cursor: "pointer", transition: "all 0.2s" }}
+                            onMouseEnter={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.14)"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.06)"; }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                            Compare Stocks
+                          </button>
+                        </div>
+                      }
+                    />
                   </div>
                 )}
               </motion.div>
@@ -2624,7 +2629,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             ) : activeTab === "learn" ? (
               <motion.div key="learn" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <LearnPage />
-                <div style={{ marginTop: 32 }}>
+                <div style={{ marginTop: 32, marginBottom: 80 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                     <div>
                       <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", marginBottom: 4, fontFamily: "Space Mono, monospace" }}>Simulator</p>
