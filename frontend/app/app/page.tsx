@@ -2283,12 +2283,12 @@ const { dark, toggle: toggleDark }  = useTheme();
                     tabIndex={0}
                     onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleWhatShouldIDo(); }}
                     style={{
-                      width: "100%", borderRadius: 12, cursor: "pointer",
+                      width: "100%", maxWidth: 860, borderRadius: 12, cursor: "pointer",
                       border: "0.5px solid rgba(201,168,76,0.45)",
                       borderLeft: "3px solid var(--accent)",
                       background: "linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 100%)",
                       padding: "20px", transition: "all 0.18s",
-                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+                      display: "flex", alignItems: "center", gap: 16,
                       boxSizing: "border-box",
                     }}
                     onMouseEnter={e => {
@@ -2300,7 +2300,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,76,0.45)";
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1 }}>
                       <div style={{
                         width: 46, height: 46, borderRadius: 10, flexShrink: 0,
                         background: "rgba(201,168,76,0.15)", border: "0.5px solid rgba(201,168,76,0.3)",

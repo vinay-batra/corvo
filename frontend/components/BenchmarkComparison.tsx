@@ -90,6 +90,11 @@ export default function BenchmarkComparison({ data }: { data: any }) {
           </div>
         </div>
       </div>
+      <p style={{ fontSize: 12, color: "var(--text3)", fontStyle: "italic", marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", lineHeight: 1.5 }}>
+        {isBeating
+          ? `Outperforming the market by ${(diff * 100).toFixed(1)}% this year`
+          : `The ${benchLabel} has outpaced your portfolio by ${(Math.abs(diff) * 100).toFixed(1)}% this year`}
+      </p>
     </motion.div>
   );
 }

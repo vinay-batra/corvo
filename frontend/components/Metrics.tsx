@@ -4,6 +4,34 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
 const C = { amber: "var(--accent)", red: "var(--red)" };
+
+const TrendArrow = ({ up, color }: { up: boolean; color: string }) => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    {up ? <><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></> : <><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></>}
+  </svg>
+);
+
+function getTrendArrow(label: string, value: number): { up: boolean; color: string } | null {
+  if (label.startsWith("CAGR")) {
+    return value >= 0 ? { up: true, color: "#4caf7d" } : { up: false, color: "var(--red)" };
+  }
+  if (label === "Volatility") {
+    if (value < 0.15) return { up: false, color: "#4caf7d" };
+    if (value <= 0.25) return { up: false, color: "#b8860b" };
+    return { up: true, color: "var(--red)" };
+  }
+  if (label === "Sharpe Ratio") {
+    if (value > 1.0) return { up: true, color: "#4caf7d" };
+    if (value >= 0.5) return { up: true, color: "#b8860b" };
+    return { up: false, color: "var(--red)" };
+  }
+  if (label === "Max Drawdown") {
+    if (value > -0.10) return { up: false, color: "#4caf7d" };
+    if (value >= -0.20) return { up: false, color: "#b8860b" };
+    return { up: true, color: "var(--red)" };
+  }
+  return null;
+}
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function Num({ value, fmt }: { value: number; fmt: (v: number) => string }) {
@@ -148,9 +176,12 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
           className="mc-card"
           style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"18px 16px 14px",borderTop:`2px solid ${color}`,position:"relative",overflow:"hidden"}}>
           <div style={{position:"absolute",top:0,right:0,width:80,height:80,background:`radial-gradient(circle at top right, ${color}18, transparent 70%)`,pointerEvents:"none",borderRadius:"0 12px 0 0"}} />
-          <p className="mc-value" style={{fontFamily:"Space Mono,monospace",fontSize:34,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,marginBottom:pnlDollars!=null?4:10}}>
-            <Num value={value} fmt={fmt}/>
-          </p>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:pnlDollars!=null?4:10}}>
+            <p className="mc-value" style={{fontFamily:"Space Mono,monospace",fontSize:34,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,margin:0}}>
+              <Num value={value} fmt={fmt}/>
+            </p>
+            {(() => { const t = getTrendArrow(label, value); return t ? <TrendArrow up={t.up} color={t.color} /> : null; })()}
+          </div>
           {pnlDollars!=null&&(
             <p className="mc-pnl-sub" style={{fontFamily:"Space Mono,monospace",fontSize:13,fontWeight:600,color,marginBottom:8,lineHeight:1}}>
               {pnlDollars>=0?"+":"-"}${Math.abs(pnlDollars).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}

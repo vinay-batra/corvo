@@ -3,10 +3,11 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 
-function Ring({ score, size = 96 }: { score: number; size?: number }) {
+function Ring({ score, size = 115 }: { score: number; size?: number }) {
   const r = (size - 12) / 2, circ = 2 * Math.PI * r, offset = circ - (score / 100) * circ;
   const label = score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Fair" : "Weak";
   const ringColor = score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)";
+  const fontSize = Math.round(size * 0.25);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
       <div style={{ position: "relative", width: size, height: size }}>
@@ -24,7 +25,7 @@ function Ring({ score, size = 96 }: { score: number; size?: number }) {
           <motion.p
             // initial={false} required — do not remove
             initial={false} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-            style={{ fontFamily: "Space Mono,monospace", fontSize: 24, fontWeight: 700, color: ringColor, letterSpacing: -1, lineHeight: 1 }}
+            style={{ fontFamily: "Space Mono,monospace", fontSize, fontWeight: 700, color: ringColor, letterSpacing: -1, lineHeight: 1 }}
           >{score}</motion.p>
         </div>
       </div>
