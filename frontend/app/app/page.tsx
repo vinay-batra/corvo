@@ -2321,17 +2321,18 @@ const { dark, toggle: toggleDark }  = useTheme();
                     style={{
                       width: "100%", borderRadius: 12, cursor: "pointer",
                       border: "0.5px solid rgba(201,168,76,0.45)",
-                      background: wsidOpen ? "rgba(201,168,76,0.11)" : "rgba(201,168,76,0.07)",
-                      padding: "20px 24px", transition: "all 0.18s",
+                      borderLeft: "3px solid var(--accent)",
+                      background: "linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 100%)",
+                      padding: "20px", transition: "all 0.18s",
                       display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
                       boxSizing: "border-box",
                     }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.14)";
+                      (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(201,168,76,0.02) 100%)";
                       (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,76,0.6)";
                     }}
                     onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.background = wsidOpen ? "rgba(201,168,76,0.11)" : "rgba(201,168,76,0.07)";
+                      (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 100%)";
                       (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,76,0.45)";
                     }}
                   >
@@ -2348,12 +2349,12 @@ const { dark, toggle: toggleDark }  = useTheme();
                           What should I do today?
                         </div>
                         <div style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.4 }}>
-                          Get 2-3 specific actions based on your portfolio and goals
+                          AI-powered action items based on your portfolio
                         </div>
                       </div>
                     </div>
                     <div style={{
-                      padding: "8px 18px", fontSize: 12, fontWeight: 600, borderRadius: 7,
+                      padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 10,
                       background: "var(--accent)", color: "var(--bg)", flexShrink: 0,
                       display: "flex", alignItems: "center", gap: 6, pointerEvents: "none",
                     }}>
@@ -2364,7 +2365,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                           </svg>
                           Analyzing...
                         </>
-                      ) : wsidOpen && wsidResult ? "Close" : "Get Actions"}
+                      ) : wsidOpen && wsidResult ? "Close" : "Get Actions →"}
                     </div>
                   </div>
                   <AnimatePresence initial={false}>
@@ -2379,26 +2380,40 @@ const { dark, toggle: toggleDark }  = useTheme();
                       >
                         <div style={{
                           background: "var(--card-bg)", border: "0.5px solid var(--border2)",
+                          borderLeft: "3px solid var(--accent)",
                           borderRadius: 12, padding: "20px 24px",
                         }}>
                           {wsidError ? (
                             <div style={{ fontSize: 12, color: "var(--red)" }}>{wsidError}</div>
                           ) : wsidResult ? (
                             <div>
-                              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 12 }}>
-                                Today's Actions
-                              </div>
-                              <ol style={{ margin: 0, padding: "0 0 0 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-                                {wsidResult.split(/\n/).filter(l => l.trim()).map((line, i) => {
-                                  const text = line.replace(/^\d+\.\s*/, "").trim();
-                                  if (!text) return null;
-                                  return (
-                                    <li key={i} style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.55 }}>
-                                      {text}
-                                    </li>
-                                  );
-                                })}
-                              </ol>
+                              {(() => {
+                                const actionLines = wsidResult.split(/\n/).map(l => l.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
+                                return (
+                                  <div style={{ display: "flex", flexDirection: "column" }}>
+                                    {actionLines.map((text, i) => (
+                                      <div key={i}>
+                                        <div style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "12px 0" }}>
+                                          <div style={{
+                                            width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                                            background: "rgba(201,168,76,0.18)", border: "1px solid rgba(201,168,76,0.4)",
+                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                            fontSize: 11, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)",
+                                          }}>
+                                            {i + 1}
+                                          </div>
+                                          <div style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
+                                            {text}
+                                          </div>
+                                        </div>
+                                        {i < actionLines.length - 1 && (
+                                          <div style={{ height: 1, background: "var(--border)", opacity: 0.5 }} />
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
                               <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
                                 <button
                                   onClick={e => { e.stopPropagation(); setWsidResult(null); handleWhatShouldIDo(); }}
