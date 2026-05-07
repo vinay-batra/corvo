@@ -3523,8 +3523,8 @@ def market_summary(tickers: str = Query(default="")):
     earnings_data: dict[str, int] = {}
     today_date = datetime.now(timezone.utc).date()
     for sym in (user_tickers or [])[:6]:
-        if is_cash_ticker(sym):
-            continue
+        if is_cash_ticker(sym) or sym in ETF_SECTORS:
+            continue  # ETFs have no earnings dates — skip to avoid 404s
         try:
             cal = yf.Ticker(sym).calendar
             date_str = None
@@ -3552,7 +3552,8 @@ def market_summary(tickers: str = Query(default="")):
                 except ValueError:
                     pass
         except Exception as e:
-            print(f"market-summary earnings error for {sym}: {e}")
+            if "404" not in str(e) and "Not Found" not in str(e) and "no fundamentals" not in str(e).lower():
+                print(f"market-summary earnings error for {sym}: {e}")
 
     # AI generation — four distinct sections
     market_text = holdings_text = context_text = outlook_text = ""
