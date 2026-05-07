@@ -73,25 +73,19 @@ const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
   { id: "positions",  label: "Positions",  Icon: CandlestickChart, href: null },
   { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
-  { id: "risk",       label: "Income & Tax", Icon: ShieldAlert,      href: null },
   { id: "simulate",    label: "Simulations", Icon: FlaskConical,  href: null },
-  { id: "paper_trade", label: "Paper Trade", Icon: TrendingUp,    href: null },
   { id: "news",        label: "News",        Icon: Newspaper,     href: null },
   { id: "watchlist",     label: "Watchlist",    Icon: Eye,           href: null },
-  { id: "transactions",  label: "Transactions", Icon: ClipboardList, href: null },
-  { id: "learn",         label: "Learn",        Icon: BookOpen,      href: "/learn" },
+  { id: "learn",         label: "Learn",        Icon: BookOpen,      href: null },
 ] as const;
 
 const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
   overview:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
   positions: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
   stocks:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
-  risk:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
   simulate:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
-  paper_trade: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
   news:        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>,
   watchlist:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-  transactions: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>,
   learn:        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
 };
 
@@ -2042,8 +2036,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </>
               );
               if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{content}</Link>;
-              const tourId = tab.id === "paper_trade" ? "tour-tab-paper-trade" : tab.id === "transactions" ? "tour-tab-transactions" : undefined;
-              return <button key={tab.id} id={tourId} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
+              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
             })}
           </div>
 
@@ -2201,6 +2194,31 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <span style={S.cardTitle}>Price Targets</span>
                   </div>
                   <PriceTargetTracker assets={assets} />
+                </div>
+
+                <div style={{ marginTop: 24 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <div style={S.cardAccent} />
+                    <span style={S.cardTitle}>Income & Tax</span>
+                  </div>
+                  <TaxLossHarvester assets={assets} />
+                  <div style={{ marginTop: 16 }}>
+                    <CapitalGainsEstimator assets={assets} />
+                  </div>
+                  <div style={{ marginTop: 16 }}>
+                    <DividendCalendar assets={assets} />
+                  </div>
+                  <div style={{ marginTop: 16 }}>
+                    <DividendTracker assets={assets} />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 24 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <div style={S.cardAccent} />
+                    <span style={S.cardTitle}>Transactions</span>
+                  </div>
+                  <TransactionsTab />
                 </div>
               </motion.div>
             ) : activeTab === "news" && data ? (
@@ -2568,39 +2586,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </motion.div>
                 )}
               </motion.div>
-            ) : activeTab === "risk" ? (
-              <motion.div key="risk" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                {/* Row 1: Dividend Income (left) + Dividend Calendar (right) */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                  <motion.div key="div-income-card" initial={false}>
-                    <Card style={{ marginBottom: 0 }}>
-                      <TooltipCardHeader title="Dividend Income" sections={[{label:"Plain English",text:"Shows the estimated annual dividend income from your holdings based on current yields and your portfolio size."},{label:"Example",text:"If JNJ has a 3% yield and makes up 30% of your portfolio, you'd earn roughly 0.9% of your total value from it annually."},{label:"What's Good",text:"Tickers highlighted in amber have an ex-dividend date within 30 days. You must own the stock before that date to receive the dividend."}]} />
-                      <DividendTracker assets={assets} />
-                    </Card>
-                  </motion.div>
-                  <motion.div key="div-cal-card" initial={false}>
-                    <Card style={{ marginBottom: 0 }}>
-                      <TooltipCardHeader title="Dividend Calendar" sections={[{label:"Plain English",text:"Shows upcoming ex-dividend dates and payment dates for your holdings over the next 90 days, along with projected income based on your portfolio size."},{label:"Ex-date vs Pay date",text:"The ex-dividend date is the cutoff. You must own shares before this date to receive the dividend. The pay date is when the cash actually hits your account."},{label:"What's Good",text:"Holdings highlighted in amber have an ex-dividend date within 7 days. Act before that date to qualify for the upcoming payment."}]} />
-                      <DividendCalendar assets={assets} portfolioValue={portfolioInputValue} />
-                    </Card>
-                  </motion.div>
-                </div>
-                {/* Row 2: Capital Gains (left) + Tax Loss Harvesting (right) */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <motion.div key="cge-card" initial={false}>
-                    <Card style={{ marginBottom: 0 }}>
-                      <TooltipCardHeader title="Capital Gains Estimator" sections={[{label:"Plain English",text:"Estimates your federal capital gains tax liability if you were to sell each holding today. Short-term gains (held under 1 year) are taxed as ordinary income. Long-term gains qualify for preferential 0%, 15%, or 20% rates."},{label:"How to use",text:"Enter purchase prices and purchase dates in the sidebar. Select your LTCG tax bracket to see your personalized estimate."},{label:"What's Good",text:"Holdings held over 1 year qualify for lower long-term rates. If you're close to the 1-year mark, waiting to sell can meaningfully reduce your tax bill."}]} />
-                      <CapitalGainsEstimator assets={assets} portfolioValue={portfolioInputValue} />
-                    </Card>
-                  </motion.div>
-                  <motion.div key="tlh-card" initial={false}>
-                    <Card style={{ marginBottom: 0 }}>
-                      <TooltipCardHeader title="Tax Loss Harvesting" sections={[{label:"Plain English",text:"Identifies holdings trading below your purchase price that could be sold to realize a tax loss, then replaced with a similar investment to maintain market exposure."},{label:"Example",text:"If you bought NVDA at $150 and it's now $120, you can sell it for a $30/share loss to offset capital gains, then buy a sector ETF like SOXX to stay exposed to semiconductors."},{label:"What's Good",text:"The IRS wash-sale rule disallows the loss if you repurchase the same or substantially identical security within 30 days. Suggested replacements are deliberately different securities in the same sector."},{label:"How to use",text:"Enter your purchase prices for each ticker in the sidebar. Only tickers with a purchase price and a current unrealized loss will appear here."}]} />
-                      <TaxLossHarvester assets={assets} portfolioValue={portfolioInputValue} />
-                    </Card>
-                  </motion.div>
-                </div>
-              </motion.div>
             ) : activeTab === "simulate" ? (
               <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }} style={{ overscrollBehavior: "none" }}>
                 <Card key="mc-card"><TooltipCardHeader title="Monte Carlo Simulation" sections={[
@@ -2635,13 +2620,15 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <CorrelationHeatmap assets={assets} period={period} />
                 </Card>
               </motion.div>
-            ) : activeTab === "paper_trade" ? (
-              <motion.div key="paper_trade" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                {userId ? <PaperTrading userId={userId} onContextChange={setPaperCtx} /> : null}
-              </motion.div>
-            ) : activeTab === "transactions" ? (
-              <motion.div key="transactions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <TransactionsTab />
+            ) : activeTab === "learn" ? (
+              <motion.div key="learn" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                <div style={{ marginTop: 24 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <div style={S.cardAccent} />
+                    <span style={S.cardTitle}>Paper Trade</span>
+                  </div>
+                  <PaperTrading userId={userId ?? ""} onContextChange={setPaperCtx} />
+                </div>
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -2658,17 +2645,15 @@ const { dark, toggle: toggleDark }  = useTheme();
           goals={goals}
           initialMessage={chatInitialMessage}
           currentPage={{
-            overview:     "portfolio dashboard (overview tab)",
-            positions:    "portfolio dashboard (positions tab)",
-            risk:         "portfolio dashboard (income and tax tab)",
-            news:         "portfolio dashboard (news tab)",
-            watchlist:    "portfolio dashboard (watchlist tab)",
-            simulate:     "portfolio dashboard (Monte Carlo simulations tab)",
-            paper_trade:  "portfolio dashboard (paper trading tab)",
-            transactions: "portfolio dashboard (transactions tab)",
-            stocks:       "portfolio dashboard (stock detail overlay)",
+            overview:  "portfolio dashboard (overview tab)",
+            positions: "portfolio dashboard (positions tab)",
+            news:      "portfolio dashboard (news tab)",
+            watchlist: "portfolio dashboard (watchlist tab)",
+            simulate:  "portfolio dashboard (Monte Carlo simulations tab)",
+            learn:     "portfolio dashboard (learn tab — paper trading)",
+            stocks:    "portfolio dashboard (stock detail overlay)",
           }[activeTab] || `portfolio dashboard (${activeTab} tab)`}
-          extraContext={activeTab === "paper_trade" && paperCtx ? paperCtx : undefined}
+          extraContext={activeTab === "learn" && paperCtx ? paperCtx : undefined}
           onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
         />
       )}
