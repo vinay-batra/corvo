@@ -399,8 +399,10 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
       {/* DIVIDER */}
       <div className="gb-divider" style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
-      {/* RIGHT — unified auto-scrolling ticker marquee */}
-      <div className="gb-right" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+      {/* RIGHT — static index pills + auto-scrolling holdings marquee */}
+      <div className="gb-right" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+
+        {/* Static index + portfolio chips */}
         {indexPrices.spy === null ? (
           <div style={{ display: "flex", gap: 6 }}>
             {[88, 76, 60, 96].map((w, i) => (
@@ -413,38 +415,44 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
             ))}
           </div>
         ) : (
-          (() => {
-            const indexChips: { label: string; pct: number | null; dollar?: number | null; price?: number | null }[] = [
-              { label: "S&P 500",   pct: indexPrices.spy },
-              { label: "Nasdaq",    pct: indexPrices.qqq },
-              { label: "Dow",       pct: indexPrices.dia },
-              ...(portfolioToday ? [{ label: "Portfolio", pct: portfolioToday.pct, dollar: portfolioToday.dollar }] : []),
-            ];
-            const holdingChips: { label: string; pct: number | null; dollar?: number | null; price?: number | null }[] = holdingPrices.length > 0
-              ? holdingPrices.map(h => ({ label: h.ticker, pct: h.changePct, price: h.price }))
-              : assets.filter(a => a.ticker && a.weight > 0).map(a => ({ label: a.ticker, pct: null, price: null }));
-            const baseChips = [...indexChips, ...holdingChips];
-            const doubled = [...baseChips, ...baseChips];
-            return (
-              <div className="gb-marquee-wrap" style={{ position: "relative", overflow: "hidden", maxWidth: 380 }}>
-                {/* Left fade edge */}
-                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 32, background: "linear-gradient(to right, var(--bg2), transparent)", zIndex: 1, pointerEvents: "none" }} />
-                {/* Right fade edge */}
-                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 32, background: "linear-gradient(to left, var(--bg2), transparent)", zIndex: 1, pointerEvents: "none" }} />
-                <div
-                  ref={chipsScrollRef}
-                  style={{ display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap", scrollbarWidth: "none" as any }}
-                  onMouseEnter={() => { chipsPausedRef.current = true; }}
-                  onMouseLeave={() => { chipsPausedRef.current = false; }}
-                >
-                  {doubled.map((chip, i) => (
-                    <MarketChip key={i} label={chip.label} pct={chip.pct} dollar={chip.dollar} price={chip.price} />
-                  ))}
-                </div>
-              </div>
-            );
-          })()
+          <div style={{ display: "flex", gap: 6 }}>
+            <MarketChip label="S&P 500"  pct={indexPrices.spy} />
+            <MarketChip label="Nasdaq"   pct={indexPrices.qqq} />
+            <MarketChip label="Dow"      pct={indexPrices.dia} />
+            {portfolioToday && (
+              <MarketChip label="Portfolio" pct={portfolioToday.pct} dollar={portfolioToday.dollar} />
+            )}
+          </div>
         )}
+
+        {/* Auto-scrolling holdings marquee */}
+        {(() => {
+          const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
+          if (!validTickers.length) return null;
+          const baseChips: { label: string; pct: number | null; price?: number | null }[] = holdingPrices.length > 0
+            ? holdingPrices.map(h => ({ label: h.ticker, pct: h.changePct, price: h.price }))
+            : validTickers.map(t => ({ label: t, pct: null, price: null }));
+          const doubled = [...baseChips, ...baseChips];
+          return (
+            <div className="gb-marquee-wrap" style={{ position: "relative", overflow: "hidden", maxWidth: 380 }}>
+              {/* Left fade edge */}
+              <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 28, background: "linear-gradient(to right, var(--bg2), transparent)", zIndex: 1, pointerEvents: "none" }} />
+              {/* Right fade edge */}
+              <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 28, background: "linear-gradient(to left, var(--bg2), transparent)", zIndex: 1, pointerEvents: "none" }} />
+              <div
+                ref={chipsScrollRef}
+                style={{ display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap", scrollbarWidth: "none" as any }}
+                onMouseEnter={() => { chipsPausedRef.current = true; }}
+                onMouseLeave={() => { chipsPausedRef.current = false; }}
+              >
+                {doubled.map((chip, i) => (
+                  <MarketChip key={i} label={chip.label} pct={chip.pct} price={chip.price} />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
       </div>
     </div>
   );
