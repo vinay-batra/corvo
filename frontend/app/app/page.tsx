@@ -1796,41 +1796,6 @@ const { dark, toggle: toggleDark }  = useTheme();
         })()}
       </div>
 
-      {/* Period */}
-      <div style={S.section}>
-        <div style={S.label}>Period</div>
-        <div style={{ display: "flex", gap: 4 }}>
-          {PERIODS.map(p => (
-            <button key={p} onClick={() => setPeriod(p)} style={{ flex: 1, padding: "5px 0", fontSize: 11, fontFamily: "var(--font-mono)", background: period === p ? "var(--text)" : "transparent", border: "0.5px solid var(--border)", borderRadius: 6, color: period === p ? "var(--bg)" : "var(--text2)", cursor: "pointer", transition: "all 0.15s" }}>
-              {PERIOD_LABELS[p]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Benchmark */}
-      <div style={{ ...S.section, position: "relative" }}>
-        <div style={S.label}>Benchmark</div>
-        <button onClick={() => setBenchOpen(o => !o)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 12, color: "var(--text)" }}>
-          <span>{benchLabel}</span><span style={{ color: "var(--text3)", fontSize: 9 }}>▾</span>
-        </button>
-        <AnimatePresence initial={false}>
-          {benchOpen && (
-            <motion.div
-              // initial={false} is required — do not remove
-              initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              style={{ position: "absolute", bottom: "100%", left: 14, right: 14, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 50, marginBottom: 4, boxShadow: "var(--shadow)" }}>
-              {BENCHMARKS.map(b => (
-                <button key={b.ticker} onClick={() => { setBenchmark(b.ticker); setBenchOpen(false); }}
-                  style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: b.ticker === benchmark ? "var(--bg3)" : "transparent", border: "none", color: "var(--text)", fontSize: 12, cursor: "pointer" }}>
-                  {b.label}
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
       {/* Saved portfolios */}
       <div style={{ ...S.section, borderBottom: "none" }}>
         <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
