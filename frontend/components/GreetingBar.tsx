@@ -184,15 +184,29 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
   const chipsScrollRef = useRef<HTMLDivElement>(null);
   const chipsPausedRef = useRef(false);
   const chipsManualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks where we last set scrollLeft so we can distinguish manual scrolls from programmatic ones
+  const chipsExpectedScrollRef = useRef(0);
 
   useEffect(() => {
     let rafId: number;
     const step = () => {
       const el = chipsScrollRef.current;
-      if (el && !chipsPausedRef.current && el.scrollWidth > el.clientWidth) {
-        el.scrollLeft += 0.5;
-        if (el.scrollLeft >= el.scrollWidth / 2) {
-          el.scrollLeft -= el.scrollWidth / 2;
+      if (el && el.scrollWidth > el.clientWidth) {
+        const halfWidth = el.scrollWidth / 2;
+        const actual = el.scrollLeft;
+        const expected = chipsExpectedScrollRef.current;
+
+        // If actual differs from expected by more than 1.5px, the user manually scrolled
+        if (Math.abs(actual - expected) > 1.5) {
+          chipsPausedRef.current = true;
+          chipsExpectedScrollRef.current = actual;
+          if (chipsManualTimerRef.current) clearTimeout(chipsManualTimerRef.current);
+          chipsManualTimerRef.current = setTimeout(() => { chipsPausedRef.current = false; }, 2000);
+        } else if (!chipsPausedRef.current) {
+          let next = actual + 0.5;
+          if (next >= halfWidth) next -= halfWidth;
+          el.scrollLeft = next;
+          chipsExpectedScrollRef.current = next;
         }
       }
       rafId = requestAnimationFrame(step);
@@ -422,11 +436,6 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
                   style={{ display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap", scrollbarWidth: "none" as any }}
                   onMouseEnter={() => { chipsPausedRef.current = true; }}
                   onMouseLeave={() => { chipsPausedRef.current = false; }}
-                  onScroll={() => {
-                    chipsPausedRef.current = true;
-                    if (chipsManualTimerRef.current) clearTimeout(chipsManualTimerRef.current);
-                    chipsManualTimerRef.current = setTimeout(() => { chipsPausedRef.current = false; }, 2000);
-                  }}
                 >
                   {doubled.map((chip, i) => (
                     <MarketChip key={i} label={chip.label} pct={chip.pct} dollar={chip.dollar} price={chip.price} />
