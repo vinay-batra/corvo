@@ -2832,7 +2832,12 @@ def stock_detail(ticker: str, request: Request):
     ticker = ticker.upper().strip()
     try:
         t = yf.Ticker(ticker)
-        info = t.info or {}
+        try:
+            info = t.info or {}
+        except Exception:
+            info = {}
+        if not isinstance(info, dict):
+            info = {}
 
         def si(key, fallback=None):
             v = info.get(key, fallback)
@@ -2846,17 +2851,18 @@ def stock_detail(ticker: str, request: Request):
         }
         analyst_rating = rating_map.get(rec, "N/A")
 
-        # Price + change
+        # Price + change — fast_info is authoritative fallback for ETFs where info is empty
+        _fi = t.fast_info
         current_price = (
             si("currentPrice") or
             si("regularMarketPrice") or
             si("navPrice") or
-            safe_float(getattr(t.fast_info, 'last_price', None) or 0) or 0.0
+            safe_float(getattr(_fi, 'last_price', None) or 0) or 0.0
         )
         prev_close = (
             si("previousClose") or
             si("regularMarketPreviousClose") or
-            safe_float(getattr(t.fast_info, 'previous_close', None) or 0) or
+            safe_float(getattr(_fi, 'previous_close', None) or 0) or
             current_price
         )
         change        = current_price - prev_close
@@ -3216,7 +3222,9 @@ def insider_activity_endpoint(ticker: str, request: Request):
                         "total_value": round(abs(value), 2),
                     })
         except Exception as e:
-            print(f"[insider] yfinance fallback error for {ticker}: {e}")
+            # ETFs and indices have no insider transactions — 404 is expected, don't log
+            if "404" not in str(e) and "Not Found" not in str(e) and "no fundamentals" not in str(e).lower():
+                print(f"[insider] yfinance fallback error for {ticker}: {e}")
 
     processed.sort(key=lambda x: x["date"], reverse=True)
     processed = processed[:30]
@@ -3287,8 +3295,8 @@ def _finnhub_options(ticker: str, key: str, date: "str | None", current_price: f
                     "lastPrice":         safe_float(o.get("lastPrice")),
                     "bid":               safe_float(o.get("bid")),
                     "ask":               safe_float(o.get("ask")),
-                    "volume":            int(o.get("volume") or 0),
-                    "openInterest":      int(o.get("openInterest") or 0),
+                    "volume":            safe_int(o.get("volume")),
+                    "openInterest":      safe_int(o.get("openInterest")),
                     "impliedVolatility": iv_pct,
                     "inTheMoney":        intrinsic > 0 if price else False,
                     "delta":             delta,
@@ -3424,9 +3432,9 @@ def market_summary(tickers: str = Query(default="")):
         index_data = {}
         for sym in ["SPY", "QQQ", "DIA", "^VIX"]:
             try:
-                info = yf.Ticker(sym).info or {}
-                price = safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0)
-                prev_close = safe_float(info.get("previousClose") or info.get("regularMarketPreviousClose") or 0)
+                fi = yf.Ticker(sym).fast_info
+                price = safe_float(getattr(fi, 'last_price', None) or 0)
+                prev_close = safe_float(getattr(fi, 'previous_close', None) or 0)
                 pct = ((price - prev_close) / prev_close * 100) if price > 0 and prev_close > 0 else 0.0
                 index_data[sym] = {"price": round(price, 2), "pct": round(pct, 4)}
             except Exception as e:
@@ -3706,15 +3714,22 @@ def watchlist_data(tickers: str, request: Request):
     for ticker in ticker_list:
         try:
             t = yf.Ticker(ticker)
-            info = t.info or {}
-            current_price = safe_float(info.get("currentPrice") or info.get("regularMarketPrice") or 0)
-            prev_close = safe_float(info.get("previousClose") or info.get("regularMarketPreviousClose") or current_price)
+            # Use fast_info for prices — avoids Yahoo Finance crumb/auth failures
+            fi = t.fast_info
+            current_price = safe_float(getattr(fi, 'last_price', None) or 0)
+            prev_close = safe_float(getattr(fi, 'previous_close', None) or current_price)
             change = current_price - prev_close
             change_pct = (change / prev_close * 100) if prev_close else 0.0
-            name = info.get("longName") or info.get("shortName") or ticker
-            sector = info.get("sector") or "Other"
+            # name/sector from info — isolated so a 404 for ETFs doesn't kill price data
+            name = ticker
+            sector = "Other"
+            try:
+                info = t.info or {}
+                name = info.get("longName") or info.get("shortName") or ticker
+                sector = info.get("sector") or "Other"
+            except Exception:
+                pass
 
-            # 7-day sparkline (daily closes)
             hist = t.history(period="7d", interval="1d")
             sparkline = [safe_float(row["Close"]) for _, row in hist.iterrows()] if not hist.empty else []
 
@@ -4501,8 +4516,9 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
         timeout=10,
     )
     if upsert_resp.status_code not in (200, 201, 204):
-        print(f"[snapshot] upsert failed: {upsert_resp.status_code} {upsert_resp.text[:200]}")
-        raise HTTPException(status_code=500, detail="Failed to save portfolio snapshot")
+        err_body = upsert_resp.text[:500]
+        print(f"[snapshot] upsert failed: {upsert_resp.status_code} — {err_body}")
+        raise HTTPException(status_code=500, detail=f"Failed to save portfolio snapshot: {upsert_resp.status_code} {err_body}")
 
     return {
         "ok": True,
@@ -9126,7 +9142,8 @@ def get_paper_portfolio(user_id: str, request: Request):
     if created_at:
         try:
             start_date = created_at[:10]
-            df = yf.download("^GSPC", start=start_date, progress=False, auto_adjust=True)
+            # SPY is more reliable than ^GSPC for historical data fetches
+            df = yf.download("SPY", start=start_date, progress=False, auto_adjust=True)
             if not df.empty and len(df) >= 2:
                 s = df["Close"].iloc[0]
                 e = df["Close"].iloc[-1]
