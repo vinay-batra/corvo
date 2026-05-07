@@ -2358,7 +2358,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                           What should I do today?
                         </div>
                         <div style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.4 }}>
-                          AI-powered action items based on your portfolio, goals, markets, and more
+                          AI-powered action items based on your portfolio, goals, markets, and more.
                         </div>
                       </div>
                     </div>
