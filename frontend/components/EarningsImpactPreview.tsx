@@ -167,17 +167,26 @@ function EarningsCard({ item }: { item: EarningsItem }) {
                 {item.revenue_estimate != null && (
                   <StatPill label="Revenue Est." value={fmtRev(item.revenue_estimate)} />
                 )}
-                {item.implied_move_pct != null && (
+                {item.implied_move_pct != null ? (
                   <StatPill
                     label={item.implied_move_source === "options" ? "Implied move (straddle)" : "Implied move (IV)"}
                     value={`+/-${item.implied_move_pct.toFixed(1)}%`}
                   />
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <span style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "var(--text3)", fontWeight: 600 }}>
+                      Implied Move
+                    </span>
+                    <span style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>
+                      loads closer to date
+                    </span>
+                  </div>
                 )}
                 <StatPill label="Portfolio weight" value={`${(item.weight * 100).toFixed(1)}%`} />
               </div>
 
-              {/* AI commentary */}
-              {item.ai_commentary && (
+              {/* AI commentary / what to watch */}
+              {item.ai_commentary ? (
                 <div style={{
                   padding: "10px 12px",
                   background: "rgba(201,168,76,0.06)",
@@ -185,18 +194,19 @@ function EarningsCard({ item }: { item: EarningsItem }) {
                   borderRadius: 8,
                 }}>
                   <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600, marginBottom: 6 }}>
-                    Corvo preview
+                    What to watch
                   </div>
                   <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>
                     {item.ai_commentary}
                   </p>
                 </div>
-              )}
-
-              {/* Today fallback */}
-              {!item.ai_commentary && item.days_until === 0 && (
+              ) : item.days_until === 0 ? (
                 <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
                   Earnings are today. Check back after market close for AI analysis.
+                </p>
+              ) : (
+                <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
+                  AI analysis loads closer to earnings date.
                 </p>
               )}
             </div>
@@ -257,7 +267,7 @@ export default function EarningsImpactPreview({ assets }: Props) {
     );
   }
 
-  const thisWeekItems = items.filter(item => item.days_until >= 0 && item.days_until <= 7);
+  const thisWeekItems = items.filter(item => item.days_until >= 0 && item.days_until <= 60);
 
   if (!thisWeekItems.length) return null;
 
@@ -281,7 +291,7 @@ export default function EarningsImpactPreview({ assets }: Props) {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 3, height: 14, borderRadius: 2, background: "var(--accent)", flexShrink: 0 }} />
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: "var(--text)", textTransform: "uppercase" }}>
-            Earnings This Week
+            Upcoming Earnings
           </span>
           <span style={{
             fontFamily: "Space Mono, monospace",
