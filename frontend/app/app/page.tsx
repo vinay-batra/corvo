@@ -1337,6 +1337,8 @@ const { dark, toggle: toggleDark }  = useTheme();
               setSavedPortfolioName(match.name || "");
               const API_SNAP = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
               const { data: { session: snapSession1 } } = await supabase.auth.getSession();
+              const snapTickers1 = valid.map(a => a.ticker).filter(Boolean);
+              if (!userId || !match.id || !snapTickers1.length) return;
               fetch(`${API_SNAP}/portfolio/snapshot`, {
                 method: "POST",
                 headers: {
@@ -1346,7 +1348,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 body: JSON.stringify({
                   user_id: userId,
                   portfolio_id: match.id,
-                  tickers: valid.map(a => a.ticker).join(","),
+                  tickers: snapTickers1.join(","),
                   weights: valid.map(a => a.weight).join(","),
                 }),
               }).catch(() => {});
@@ -1527,7 +1529,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         const snapToken3 = snapSession3?.access_token ?? "";
         const savedRaw = localStorage.getItem("corvo_saved_portfolios");
         const localPfs: any[] = savedRaw ? JSON.parse(savedRaw) : [];
-        const { data: dbPfs } = await supabase.from("portfolios").select("id,tickers,name").eq("user_id", userId);
+        const { data: dbPfs } = await supabase.from("portfolios").select("id,tickers,name,assets").eq("user_id", userId);
         const allPfs = [...(dbPfs || []).map((p: any) => ({ id: p.id, assets: p.assets || [] })), ...localPfs.map((p: any) => ({ id: p.id, assets: p.assets || [] }))];
         const uniqueIds = new Set<string>();
         for (const pf of allPfs) {
@@ -1537,13 +1539,15 @@ const { dark, toggle: toggleDark }  = useTheme();
           if (hist && hist.length > 0) continue;
           const valid = pf.assets.filter((a: any) => a.ticker && a.weight > 0);
           if (!valid.length) continue;
+          const snapTickers = valid.map((a: any) => a.ticker).filter(Boolean);
+          if (!userId || !pf.id || !snapTickers.length) continue;
           fetch(`${apiUrl}/portfolio/snapshot`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               ...(snapToken3 ? { "Authorization": `Bearer ${snapToken3}` } : {}),
             },
-            body: JSON.stringify({ user_id: userId, portfolio_id: pf.id, tickers: valid.map((a: any) => a.ticker).join(","), weights: valid.map((a: any) => a.weight).join(",") }),
+            body: JSON.stringify({ user_id: userId, portfolio_id: pf.id, tickers: snapTickers.join(","), weights: valid.map((a: any) => a.weight).join(",") }),
           }).catch(() => {});
         }
       } catch {}
