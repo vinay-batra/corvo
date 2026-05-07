@@ -2145,89 +2145,100 @@ const { dark, toggle: toggleDark }  = useTheme();
                 {stockTicker ? (
                   <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} onSelectTicker={t => setStockTicker(t)} />
                 ) : showStockCompare ? (
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                      <button
-                        onClick={() => setShowStockCompare(false)}
-                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                        Back to Stocks
-                      </button>
-                      <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Compare Stocks</span>
+                  <DashReveal from="up" delay={0}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                        <button
+                          onClick={() => setShowStockCompare(false)}
+                          style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                          Back to Stocks
+                        </button>
+                        <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Compare Stocks</span>
+                      </div>
+                      <StockCompare />
                     </div>
-                    <StockCompare />
-                  </div>
+                  </DashReveal>
                 ) : (
-                  <div>
-                    <StocksSearch
-                      onSelect={setStockTicker}
-                      middleContent={
-                        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                          <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>Compare</p>
-                          <button
-                            onClick={() => setShowStockCompare(true)}
-                            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", fontSize: 13, fontWeight: 600, borderRadius: 20, border: "1px solid rgba(var(--accent-rgb),0.3)", background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)", cursor: "pointer", transition: "all 0.2s" }}
-                            onMouseEnter={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.14)"; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.06)"; }}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                            Compare Stocks
-                          </button>
-                        </div>
-                      }
-                    />
-                  </div>
+                  <DashReveal from="up" delay={0}>
+                    <div>
+                      <StocksSearch
+                        onSelect={setStockTicker}
+                        middleContent={
+                          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                            <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>Compare</p>
+                            <button
+                              onClick={() => setShowStockCompare(true)}
+                              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", fontSize: 13, fontWeight: 600, borderRadius: 20, border: "1px solid rgba(var(--accent-rgb),0.3)", background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)", cursor: "pointer", transition: "all 0.2s" }}
+                              onMouseEnter={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.14)"; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb),0.06)"; }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                              Compare Stocks
+                            </button>
+                          </div>
+                        }
+                      />
+                    </div>
+                  </DashReveal>
                 )}
               </motion.div>
             ) : activeTab === "positions" ? (
               <motion.div key="positions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <div style={S.cardAccent} />
-                    <span style={S.cardTitle}>All Positions</span>
+                <DashReveal from="up" delay={0}>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <div style={S.cardAccent} />
+                      <span style={S.cardTitle}>All Positions</span>
+                    </div>
+                    <p style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>All saved portfolios · click any row to open stock detail</p>
                   </div>
-                  <p style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>All saved portfolios · click any row to open stock detail</p>
-                </div>
-                <PositionsTab
-                  onSelectTicker={t => { setStockTicker(t); setActiveTab("stocks"); }}
-                />
+                  <PositionsTab
+                    onSelectTicker={t => { setStockTicker(t); setActiveTab("stocks"); }}
+                  />
+                </DashReveal>
                 {/* Price Target Tracker */}
-                <div style={{ marginTop: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                    <div style={S.cardAccent} />
-                    <span style={S.cardTitle}>Price Targets</span>
+                <DashReveal from="left" delay={0.1}>
+                  <div style={{ marginTop: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <div style={S.cardAccent} />
+                      <span style={S.cardTitle}>Price Targets</span>
+                    </div>
+                    <PriceTargetTracker assets={assets} />
                   </div>
-                  <PriceTargetTracker assets={assets} />
-                </div>
-
-                <div style={{ marginTop: 24 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                    <div style={S.cardAccent} />
-                    <span style={S.cardTitle}>Income & Tax</span>
+                </DashReveal>
+                <DashReveal from="right" delay={0.15}>
+                  <div style={{ marginTop: 24 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <div style={S.cardAccent} />
+                      <span style={S.cardTitle}>Income & Tax</span>
+                    </div>
+                    <TaxLossHarvester assets={assets} />
+                    <div style={{ marginTop: 16 }}>
+                      <CapitalGainsEstimator assets={assets} />
+                    </div>
+                    <div style={{ marginTop: 16 }}>
+                      <DividendCalendar assets={assets} />
+                    </div>
+                    <div style={{ marginTop: 16 }}>
+                      <DividendTracker assets={assets} />
+                    </div>
                   </div>
-                  <TaxLossHarvester assets={assets} />
-                  <div style={{ marginTop: 16 }}>
-                    <CapitalGainsEstimator assets={assets} />
+                </DashReveal>
+                <DashReveal from="up" delay={0.2}>
+                  <div style={{ marginTop: 24 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <div style={S.cardAccent} />
+                      <span style={S.cardTitle}>Transactions</span>
+                    </div>
+                    <TransactionsTab />
                   </div>
-                  <div style={{ marginTop: 16 }}>
-                    <DividendCalendar assets={assets} />
-                  </div>
-                  <div style={{ marginTop: 16 }}>
-                    <DividendTracker assets={assets} />
-                  </div>
-                </div>
-
-                <div style={{ marginTop: 24 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                    <div style={S.cardAccent} />
-                    <span style={S.cardTitle}>Transactions</span>
-                  </div>
-                  <TransactionsTab />
-                </div>
+                </DashReveal>
               </motion.div>
             ) : activeTab === "news" && data ? (
               <motion.div key="news" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                <DashReveal from="up" delay={0}>
                 <Card>
                   {/* News sub-tabs */}
                   <div style={{ display: "flex", gap: 4, marginBottom: 16, flexWrap: "wrap" }}>
@@ -2269,10 +2280,13 @@ const { dark, toggle: toggleDark }  = useTheme();
                     </>
                   )}
                 </Card>
+                </DashReveal>
               </motion.div>
             ) : activeTab === "watchlist" ? (
               <motion.div key="watchlist" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <Watchlist />
+                <DashReveal from="up" delay={0}>
+                  <Watchlist />
+                </DashReveal>
               </motion.div>
             ) : !data && !loading && !initializing ? (
               <motion.div key="empty" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
@@ -2641,57 +2655,69 @@ const { dark, toggle: toggleDark }  = useTheme();
               </motion.div>
             ) : activeTab === "simulate" ? (
               <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }} style={{ overscrollBehavior: "none" }}>
-                <Card key="mc-card"><TooltipCardHeader title="Monte Carlo Simulation" sections={[
-                  { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
-                  { label: "Horizon control", text: "Select 1 to 30 years. Shorter horizons are more precise; longer horizons show the compounding range but with wider uncertainty." },
-                ]} /><MonteCarloChart key="mc-chart" assets={assets} period={period} portfolioValue={portfolioInputValue} /></Card>
-                <Card key="retire-card" style={{ marginTop: 16 }}>
-                  <TooltipCardHeader title="What if I Retire in X Years?" sections={[
-                    { label: "What it shows", text: "Runs 8,500 Monte Carlo scenarios projecting your portfolio to retirement. The confidence interval and histogram show the full distribution of outcomes in today's dollars." },
-                    { label: "How it works", text: "Uses your current holdings, historical volatility, and long-term expected returns. Advanced settings let you model contributions, inflation, fees, and tax drag." },
-                    { label: "Interpreting results", text: "Results are inflation-adjusted by default. The median is the most likely single outcome. The confidence interval captures the realistic range across most scenarios." },
-                  ]} />
-                  <RetirementSimulator key="retire-sim"
-                    assets={assets}
-                    portfolioValue={portfolioInputValue}
-                  />
-                </Card>
-                <Card key="drawdown-card" style={{ marginTop: 16 }}>
-                  <TooltipCardHeader title="Drawdown Chart" sections={[
-                    { label: "Plain English", text: "Shows how far your portfolio has fallen from its peak at each point in time. A drawdown of -20% means the portfolio was 20% below its previous high." },
-                    { label: "Why it matters", text: "Max drawdown is the worst peak-to-trough decline ever. It measures how much pain you would have had to endure to stay invested. A smaller max drawdown means a smoother ride." },
-                    { label: "What's Good", text: "A max drawdown under 20% is generally considered well-managed. Above 40% means the portfolio experienced severe stress. Compare your drawdown to SPY to understand if you are taking more or less risk than the market." },
-                  ]} />
-                  <DrawdownChart assets={assets} period={period} />
-                </Card>
-                <Card key="correlation-card" style={{ marginTop: 16 }}>
-                  <TooltipCardHeader title="Correlation Heatmap" sections={[
-                    { label: "Plain English", text: "Shows how closely each pair of holdings moves together. A value of +1.0 means they move in perfect sync. A value of -1.0 means they move in opposite directions." },
-                    { label: "Why it matters", text: "High correlation (above 0.7) between two holdings means they provide little diversification benefit. If one falls, the other likely falls too." },
-                    { label: "What's Good", text: "A well-diversified portfolio has many pairs below 0.5. Holdings near 0 or negative are natural hedges for each other." },
-                  ]} />
-                  <CorrelationHeatmap assets={assets} period={period} />
-                </Card>
+                <DashReveal from="up" delay={0}>
+                  <Card key="mc-card"><TooltipCardHeader title="Monte Carlo Simulation" sections={[
+                    { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
+                    { label: "Horizon control", text: "Select 1 to 30 years. Shorter horizons are more precise; longer horizons show the compounding range but with wider uncertainty." },
+                  ]} /><MonteCarloChart key="mc-chart" assets={assets} period={period} portfolioValue={portfolioInputValue} /></Card>
+                </DashReveal>
+                <DashReveal from="up" delay={0.1}>
+                  <Card key="retire-card" style={{ marginTop: 16 }}>
+                    <TooltipCardHeader title="What if I Retire in X Years?" sections={[
+                      { label: "What it shows", text: "Runs 8,500 Monte Carlo scenarios projecting your portfolio to retirement. The confidence interval and histogram show the full distribution of outcomes in today's dollars." },
+                      { label: "How it works", text: "Uses your current holdings, historical volatility, and long-term expected returns. Advanced settings let you model contributions, inflation, fees, and tax drag." },
+                      { label: "Interpreting results", text: "Results are inflation-adjusted by default. The median is the most likely single outcome. The confidence interval captures the realistic range across most scenarios." },
+                    ]} />
+                    <RetirementSimulator key="retire-sim"
+                      assets={assets}
+                      portfolioValue={portfolioInputValue}
+                    />
+                  </Card>
+                </DashReveal>
+                <DashReveal from="left" delay={0.15}>
+                  <Card key="drawdown-card" style={{ marginTop: 16 }}>
+                    <TooltipCardHeader title="Drawdown Chart" sections={[
+                      { label: "Plain English", text: "Shows how far your portfolio has fallen from its peak at each point in time. A drawdown of -20% means the portfolio was 20% below its previous high." },
+                      { label: "Why it matters", text: "Max drawdown is the worst peak-to-trough decline ever. It measures how much pain you would have had to endure to stay invested. A smaller max drawdown means a smoother ride." },
+                      { label: "What's Good", text: "A max drawdown under 20% is generally considered well-managed. Above 40% means the portfolio experienced severe stress. Compare your drawdown to SPY to understand if you are taking more or less risk than the market." },
+                    ]} />
+                    <DrawdownChart assets={assets} period={period} />
+                  </Card>
+                </DashReveal>
+                <DashReveal from="right" delay={0.15}>
+                  <Card key="correlation-card" style={{ marginTop: 16 }}>
+                    <TooltipCardHeader title="Correlation Heatmap" sections={[
+                      { label: "Plain English", text: "Shows how closely each pair of holdings moves together. A value of +1.0 means they move in perfect sync. A value of -1.0 means they move in opposite directions." },
+                      { label: "Why it matters", text: "High correlation (above 0.7) between two holdings means they provide little diversification benefit. If one falls, the other likely falls too." },
+                      { label: "What's Good", text: "A well-diversified portfolio has many pairs below 0.5. Holdings near 0 or negative are natural hedges for each other." },
+                    ]} />
+                    <CorrelationHeatmap assets={assets} period={period} />
+                  </Card>
+                </DashReveal>
               </motion.div>
             ) : activeTab === "learn" ? (
               <motion.div key="learn" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <LearnPage />
-                <div style={{ marginTop: 32, marginBottom: 80 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                    <div>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", marginBottom: 4, fontFamily: "Space Mono, monospace" }}>Simulator</p>
-                      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3 }}>Paper Trading</h3>
-                      <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>Practice trading with $10,000 in virtual cash. No real money.</p>
+                <DashReveal from="up" delay={0}>
+                  <LearnPage />
+                </DashReveal>
+                <DashReveal from="up" delay={0.1}>
+                  <div style={{ marginTop: 32, marginBottom: 80 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <div>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", marginBottom: 4, fontFamily: "Space Mono, monospace" }}>Simulator</p>
+                        <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3 }}>Paper Trading</h3>
+                        <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>Practice trading with $10,000 in virtual cash. No real money.</p>
+                      </div>
+                      <button
+                        onClick={() => setShowPaperTrade(v => !v)}
+                        style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, borderRadius: 10, border: "none", background: showPaperTrade ? "var(--bg3)" : "var(--accent)", color: showPaperTrade ? "var(--text2)" : "var(--bg)", cursor: "pointer", flexShrink: 0 }}
+                      >
+                        {showPaperTrade ? "Close" : "Start Trading →"}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setShowPaperTrade(v => !v)}
-                      style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, borderRadius: 10, border: "none", background: showPaperTrade ? "var(--bg3)" : "var(--accent)", color: showPaperTrade ? "var(--text2)" : "var(--bg)", cursor: "pointer", flexShrink: 0 }}
-                    >
-                      {showPaperTrade ? "Close" : "Start Trading →"}
-                    </button>
+                    {showPaperTrade && userId && <PaperTrading userId={userId} onContextChange={setPaperCtx} />}
                   </div>
-                  {showPaperTrade && userId && <PaperTrading userId={userId} onContextChange={setPaperCtx} />}
-                </div>
+                </DashReveal>
               </motion.div>
             ) : null}
           </AnimatePresence>
