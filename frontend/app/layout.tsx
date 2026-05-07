@@ -13,7 +13,7 @@ import FeedbackButton from "@/components/FeedbackButton";
 
 export const metadata: Metadata = {
   title: { default: "Corvo: Free Portfolio Analytics & AI Investing Tools", template: "%s | Corvo" },
-  description: "Free institutional-grade portfolio analytics for retail investors. Sharpe ratio, Monte Carlo simulation, AI portfolio chat, tax loss harvesting, dividend tracking and more. No subscription required.",
+  description: "Corvo is a free AI-powered portfolio analytics platform. Get Sharpe ratio, Monte Carlo simulation, health scores, and AI insights for your stock portfolio. No subscription required.",
   keywords: ["portfolio analytics", "free portfolio tracker", "sharpe ratio calculator", "monte carlo simulation", "AI investing tools", "portfolio diversification", "tax loss harvesting", "dividend tracker", "stock portfolio analyzer", "retail investor tools", "bloomberg alternative", "corvo capital"],
   authors: [{ name: "Corvo", url: "https://corvo.capital" }],
   creator: "Corvo",
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }, { url: "/icon-192.png", sizes: "192x192" }],
   },
   openGraph: {
-    title: "Corvo: Free Portfolio Analytics & AI Investing Tools",
-    description: "Free institutional-grade portfolio analytics for retail investors. Sharpe ratio, Monte Carlo simulation, AI portfolio chat, tax loss harvesting and more. No subscription required.",
+    title: "Corvo — Free AI Portfolio Analytics",
+    description: "Institutional-grade portfolio analytics for retail investors. Free.",
     url: "https://corvo.capital",
     siteName: "Corvo",
     images: [{ url: "https://corvo.capital/og-image.png", width: 1200, height: 630, alt: "Corvo Portfolio Analytics Dashboard" }],
@@ -56,6 +56,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#c9a84c" />
       </head>
       <body style={{ margin: 0 }}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "Corvo",
+          "url": "https://corvo.capital",
+          "description": "Free AI-powered portfolio analytics platform",
+          "applicationCategory": "FinanceApplication",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "featureList": ["Portfolio Analysis", "Monte Carlo Simulation", "AI Chat", "Health Score", "Tax Loss Harvesting"]
+        }) }} />
         <ConditionalParticleCanvas />
         <Suspense>
           <PostHogProvider>
