@@ -67,6 +67,12 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Daily challenges with timed scoring
 - Global leaderboard updated in real time
 - Arcade with financial mini-games
+- Paper trading simulator (collapsible section inside Learn tab)
+
+### Navigation Structure (as of v0.23)
+- Dashboard tabs: Overview, Stocks, Positions (includes Income & Tax and Transactions), Risk, Monte Carlo, News, Learn (includes Paper Trade), AI Chat
+- Income & Tax and Transactions are sections within the Positions tab -- not standalone tabs
+- Paper Trade is a collapsible section inside the Learn tab
 
 ---
 
@@ -75,12 +81,14 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 14, TypeScript, Framer Motion, Recharts, Plotly |
+| Animations | GSAP (ScrollTrigger, SplitText), Three.js |
 | Backend | FastAPI (Python), deployed on Railway |
 | Database | Supabase (PostgreSQL) with Row-Level Security |
 | Auth | Supabase Auth with Cloudflare Turnstile CAPTCHA |
 | AI | Anthropic Claude (claude-sonnet-4-6) with streaming and web search |
 | Market Data | yfinance, Finnhub |
 | Email | Resend |
+| Error Monitoring | Sentry (client and server) |
 | Frontend Hosting | Vercel |
 | API Hosting | Railway |
 
@@ -152,6 +160,31 @@ ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 `FINNHUB_API_KEY`, `RESEND_API_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are required for the email system (morning briefing, week in review, monthly summary) and price alerts to function in production.
+
+---
+
+## Key Backend Endpoints
+
+| Route | Description |
+|---|---|
+| `GET /portfolio` | Main analysis: Sharpe, CAGR, VaR, correlation, sector, etc. |
+| `GET /options/{ticker}?date=` | Options chain, 15-min cache |
+| `GET /stock/{ticker}` | Fundamentals and analyst ratings |
+| `GET /news?tickers=` | News with Finnhub fallback |
+| `POST /chat` | Claude-powered AI chat, rate-limited, streaming |
+| `GET /market-brief` | Cached AI market summary (5-min TTL) |
+| `GET /earnings-calendar` | Upcoming earnings (60-day window) |
+| `GET /events-calendar` | Macro events calendar |
+| `GET /portfolio/tax-loss-alert/{user_id}` | Tax loss harvesting detection and alerts |
+| `GET /earnings-preview` | AI analysis of upcoming earnings impact on holdings |
+
+---
+
+## Deployment Notes
+
+- **Frontend**: push to `main` -- Vercel auto-deploys
+- **Backend**: always run `railway up` from the repo root (`~/Downloads/portfolio_v2`) -- Railway GitHub integration is unreliable, deploy manually
+- Railway runs from the repo root with `cd backend && uvicorn main:app ...` -- never run `railway up` from inside `/backend`
 
 ---
 

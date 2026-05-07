@@ -60,6 +60,13 @@ function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSS
 
 const ENTRIES = [
   {
+    date: "May 7, 2026",
+    version: "v0.23",
+    title: "Dashboard Animations, Stock Chart Overhaul & SEO",
+    desc: "Dashboard rebuilt with scroll-driven entrance animations, countup metrics, trend indicator arrows, and promoted AI action card. Stock charts now use daily intervals for 1Y (252 data points) and weekly for 5Y with Y-axis hugging actual price range. Landing page upgraded with Three.js particle canvas, GSAP character animations, 3D bento cards, and infinite testimonial carousel. All public pages (FAQ, Changelog, Pricing, Install, Blog, About) now animate on scroll with character-by-character headings. Navigation consolidated: Income & Tax and Transactions merged into Positions tab, Paper Trade moved into Learn. Notification settings redesigned as a two-column email/push grid. ETF price data fixed with fast_info fallback. Tax loss harvesting alert endpoint added. Weekly portfolio checkup upgraded to verdict format. Full SEO overhaul with JSON-LD structured data, OG tags, and per-page metadata. Sentry error monitoring configured.",
+    tags: ["Dashboard", "Charts", "Animations", "SEO", "Fixes"],
+  },
+  {
     date: "May 6, 2026",
     version: "v0.22",
     title: "Landing Page Redesign, Animated Public Pages & Notification Settings",
