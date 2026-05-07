@@ -64,7 +64,6 @@ import { InsiderActivitySummary } from "../../components/InsiderActivity";
 import StockCompare from "../../components/StockCompare";
 import CorrelationHeatmap from "../../components/CorrelationHeatmap";
 import DrawdownChart from "../../components/DrawdownChart";
-import EarningsImpactPreview from "../../components/EarningsImpactPreview";
 import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
 import PaperTrading from "../../components/PaperTrading";
@@ -2261,14 +2260,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <>
                       <TooltipCardHeader title="Earnings Calendar" sections={[{ label: "How it works", text: "Upcoming earnings dates for your holdings within the next 60 days. Click any row to see your portfolio weight, analyst estimates, options-implied expected move, and an AI note on what a beat or miss would mean for your position. Red border means earnings within 7 days." }]} />
                       <EarningsCalendar assets={assets} portfolioValue={portfolioInputValue} />
-                      <div style={{ marginTop: 16 }}>
-                        <TooltipCardHeader title="Earnings Impact Preview" sections={[
-                          { label: "Plain English", text: "For each holding with upcoming earnings, shows the options-implied expected move and an AI assessment of whether a beat or miss would meaningfully impact your portfolio given your current weighting." },
-                          { label: "How it works", text: "The expected move is derived from at-the-money options pricing. It represents the market's estimate of the stock's price swing through the earnings event." },
-                          { label: "What to watch", text: "A large expected move on a position with high portfolio weight means earnings season is a significant risk event for you specifically." },
-                        ]} />
-                        <EarningsImpactPreview assets={assets} />
-                      </div>
                     </>
                   )}
                   {newsSubTab === "events" && (
