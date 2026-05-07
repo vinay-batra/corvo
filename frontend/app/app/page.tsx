@@ -1529,8 +1529,14 @@ const { dark, toggle: toggleDark }  = useTheme();
         const snapToken3 = snapSession3?.access_token ?? "";
         const savedRaw = localStorage.getItem("corvo_saved_portfolios");
         const localPfs: any[] = savedRaw ? JSON.parse(savedRaw) : [];
-        const { data: dbPfs } = await supabase.from("portfolios").select("id,tickers,name,assets").eq("user_id", userId);
-        const allPfs = [...(dbPfs || []).map((p: any) => ({ id: p.id, assets: p.assets || [] })), ...localPfs.map((p: any) => ({ id: p.id, assets: p.assets || [] }))];
+        const { data: dbPfs } = await supabase.from("portfolios").select("id,tickers,weights,name").eq("user_id", userId);
+        const allPfs = [
+          ...(dbPfs || []).map((p: any) => ({
+            id: p.id,
+            assets: (p.tickers || []).map((t: string, i: number) => ({ ticker: t, weight: (p.weights || [])[i] ?? 0 })),
+          })),
+          ...localPfs.map((p: any) => ({ id: p.id, assets: p.assets || [] })),
+        ];
         const uniqueIds = new Set<string>();
         for (const pf of allPfs) {
           if (!pf.id || uniqueIds.has(pf.id) || !pf.assets?.length) continue;
