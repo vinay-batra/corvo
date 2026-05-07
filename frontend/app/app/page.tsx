@@ -858,10 +858,7 @@ function getNLSuggestions(assets: { ticker: string; weight: number }[]): string[
   const INTL = new Set(["VEU","VXUS","EFA","EEM","VWO","IEFA","IXUS","SCHF"]);
   if (!byPct.some(a => INTL.has(a.ticker))) suggestions.push("Add international exposure");
 
-  const BONDS = new Set(["BND","AGG","TLT","IEF","SHY","LQD","VBTLX","SGOV","BIL"]);
-  if (!byPct.some(a => BONDS.has(a.ticker))) suggestions.push("Make it more conservative");
-
-  return suggestions.slice(0, 4);
+  return suggestions.slice(0, 3);
 }
 
 // Card and CardHeader are module-level so React never remounts their children
@@ -1664,10 +1661,12 @@ const { dark, toggle: toggleDark }  = useTheme();
       {/* Natural language editor */}
       <div style={{ padding: "10px 14px 12px", borderBottom: "0.5px solid var(--border)", background: "linear-gradient(180deg, rgba(201,168,76,0.04) 0%, transparent 100%)" }}>
         <div style={{ borderRadius: 10, border: "0.5px solid rgba(201,168,76,0.22)", background: "rgba(201,168,76,0.04)", padding: "10px 11px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", fontWeight: 700 }}>Edit with AI</span>
+            <span style={{ fontSize: 11, color: "var(--text)", fontWeight: 600 }}>Edit Portfolio with AI</span>
+            <InfoModal title="Edit Portfolio with AI" sections={[{ label: "What it does", text: "Type a plain-English command and AI will instantly restructure your portfolio weights. No manual editing needed." }, { label: "Examples", text: "\"Sell half my NVDA\" · \"Rebalance to equal weight\" · \"Make it more conservative\" · \"Add international exposure\"" }]} />
           </div>
+          <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 8 }}>Type a command to instantly restructure your holdings</div>
           {(() => {
             const runNLCommand = async (cmd: string) => {
               if (!cmd.trim() || !assets.length || nlLoading) return;
@@ -1699,7 +1698,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     value={nlCommand}
                     onChange={e => { setNlCommand(e.target.value); setNlError(null); }}
                     onKeyDown={e => { if (e.key === "Enter") runNLCommand(nlCommand); }}
-                    placeholder={assets.length ? "e.g. sell half my NVDA and put it in QQQ" : "Add holdings first"}
+                    placeholder={assets.length ? "Type a command..." : "Add holdings first"}
                     disabled={nlLoading || !assets.length}
                     style={{ width: "100%", padding: "9px 34px 9px 11px", fontSize: 11.5, background: "var(--bg)", border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 8, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5, transition: "border-color 0.15s" }}
                     onFocus={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; }}
@@ -1723,7 +1722,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>
                 )}
                 {chips.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
                     {chips.map(chip => (
                       <button
                         key={chip}
