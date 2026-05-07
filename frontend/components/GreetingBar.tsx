@@ -298,8 +298,8 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
           {summaryLoading ? (
             <p style={{ fontSize: 12, color: "var(--text2)", margin: "6px 0 0", fontWeight: 300 }}>Market data loading...</p>
           ) : market?.market ? (
-            <p style={{ fontSize: 12, color: "var(--text3)", margin: "6px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", fontWeight: 300, lineHeight: 1.5 }}>
-              {market.market.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() ?? market.market.split(" ").slice(0, 15).join(" ")}
+            <p style={{ fontSize: 12, color: "var(--text3)", margin: "6px 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as any, overflow: "hidden", fontWeight: 300, lineHeight: 1.5 }}>
+              {market.market}
             </p>
           ) : null}
         </motion.div>
@@ -378,7 +378,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
             ))}
           </div>
         ) : (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as any }}>
             <MarketChip label="S&P 500"   pct={indexPrices.spy} />
             <MarketChip label="Nasdaq"    pct={indexPrices.qqq} />
             <MarketChip label="Dow"       pct={indexPrices.dia} />
@@ -392,27 +392,17 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
         {(() => {
           const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
           if (!validTickers.length) return null;
-          const chips = holdingPrices.length > 0
+          const allChips = holdingPrices.length > 0
             ? holdingPrices.map(h => ({ ticker: h.ticker, price: h.price, pct: h.changePct }))
             : validTickers.map(t => ({ ticker: t, price: null, pct: null }));
-          const isFew = chips.length <= 4;
+          const chips = allChips.slice(0, 4);
           return (
             <div className="gb-marquee-wrap" style={{ maxWidth: 380 }}>
-              {isFew ? (
-                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                  {chips.map(p => (
-                    <MarketChip key={p.ticker} label={p.ticker} pct={p.pct} price={p.price} />
-                  ))}
-                </div>
-              ) : (
-                <div style={{ overflow: "hidden", height: 32 }}>
-                  <div style={{ display: "flex", gap: 6, animation: "gb-marquee 28s linear infinite", width: "max-content" }}>
-                    {[...chips, ...chips].map((p, idx) => (
-                      <MarketChip key={`${p.ticker}-${idx}`} label={p.ticker} pct={p.pct} price={p.price} />
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div style={{ display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as any }}>
+                {chips.map(p => (
+                  <MarketChip key={p.ticker} label={p.ticker} pct={p.pct} price={p.price} />
+                ))}
+              </div>
             </div>
           );
         })()}
