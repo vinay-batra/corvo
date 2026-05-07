@@ -68,6 +68,7 @@ import EarningsImpactPreview from "../../components/EarningsImpactPreview";
 import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
 import PaperTrading from "../../components/PaperTrading";
+import LearnPage from "../learn/page";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -944,6 +945,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [nlPending, setNlPending] = useState<NLEditResult | null>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [paperCtx, setPaperCtx] = useState("");
+  const [showPaperTrade, setShowPaperTrade] = useState(false);
   const [showStockCompare, setShowStockCompare] = useState(false);
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
@@ -2621,12 +2623,21 @@ const { dark, toggle: toggleDark }  = useTheme();
               </motion.div>
             ) : activeTab === "learn" ? (
               <motion.div key="learn" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
-                <div style={{ marginTop: 24 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                    <div style={S.cardAccent} />
-                    <span style={S.cardTitle}>Paper Trade</span>
+                <LearnPage />
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={S.cardAccent} />
+                      <span style={S.cardTitle}>Paper Trading</span>
+                    </div>
+                    <button
+                      onClick={() => setShowPaperTrade(v => !v)}
+                      style={{ padding: "6px 16px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.3)", background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)", cursor: "pointer" }}
+                    >
+                      {showPaperTrade ? "Close" : "Open Paper Trade →"}
+                    </button>
                   </div>
-                  <PaperTrading userId={userId ?? ""} onContextChange={setPaperCtx} />
+                  {showPaperTrade && userId && <PaperTrading userId={userId} onContextChange={setPaperCtx} />}
                 </div>
               </motion.div>
             ) : null}
