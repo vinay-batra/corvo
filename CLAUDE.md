@@ -139,6 +139,10 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 - `market_close_summary` column exists in the `email_preferences` Supabase table — do not re-add it in migrations
 - Both feedback and AI chat buttons render from `app/layout.tsx` globally — do not add them to individual pages or they will appear twice
 - Market hours countdown always shows time until next open or close — "After Hours", "Closed", and weekend states must include a live countdown, not a static label
+- GSAP is installed (`gsap` package) — ScrollTrigger and SplitText are available; use them for landing page and public page animations
+- `ParticleCanvas` component lives in `app/page.tsx` using Three.js, `position: fixed`, `z-index: 0` — do not move or re-implement it
+- Tabs removed from dashboard: Income & Tax, Transactions, Paper Trade — these are now sections inside the Positions and Learn tabs respectively
+- Period and Benchmark selectors removed from sidebar — they are only available inside the chart controls area
 
 ## Mobile Rules
 
@@ -174,10 +178,29 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.21
+- Version: v0.23
+
+## What Was Built
+
+### v0.23 (May 7, 2026)
+- Landing page: Three.js particle canvas, GSAP hero animations, 3D bento cards with mouse tilt, horizontal infinite testimonial carousel, animated stats countup, hide-on-scroll nav, scroll animations on all public pages
+- Dashboard: trend arrows on metric cards, DashReveal scroll animations, countup animations on load, "What should I do today?" card promoted, ticker chips auto-scroll marquee, morning brief 2-line clamp
+- Stock charts: Y-axis now hugs data range (`range: [min*0.97, max*1.03]`), daily intervals for 1Y (252 points), weekly for 5Y (260 points)
+- Notifications settings: redesigned as two-column email/push grid
+- Changelog page: center alternating timeline redesign
+- Public pages: AnimatedHeading character-by-character animation on all headers (FAQ, Changelog, Pricing, Install, Blog, About)
+- PublicNav: hide-on-scroll-down, show-on-scroll-up behavior
+- Backend: ETF price fallback using `fast_info.last_price`, ETF sector mapping, tax loss harvesting alert endpoint, weekly checkup verdict format upgrade
+- SEO: JSON-LD structured data, OG tags, per-page metadata, Twitter cards
+- Sentry: client and server config files added
+- Paper trading moved to Learn tab as collapsible section
+- Income & Tax and Transactions merged into Positions tab
+- Compare Stocks button repositioned in Stocks tab
+
+---
 
 ## Deployment
 
 - **Frontend**: push to `main` — Vercel auto-deploys
-- **Backend**: push to `main` — Railway auto-deploys from `startCommand` in `railway.toml` (`cd backend && uvicorn main:app ...`)
-- **Railway path caveat**: Railway's working directory is the repo root, so the start command explicitly `cd backend`. If you ever see 404s on all routes, the file Railway is running is not `backend/main.py`.
+- **Backend**: always deploy manually with `railway up` from `~/Downloads/portfolio_v2` repo root — Railway GitHub integration is broken, do not rely on it
+- **Railway path caveat**: Railway's working directory is the repo root, so the start command explicitly `cd backend`. If you ever see 404s on all routes, the file Railway is running is not `backend/main.py`. Always run `railway up` from the repo root, never from inside `/backend`.
