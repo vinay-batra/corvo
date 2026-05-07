@@ -180,6 +180,29 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
   const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
   const assetsRef = useRef(assets);
   useEffect(() => { assetsRef.current = assets; }, [assets]);
+
+  const chipsScrollRef = useRef<HTMLDivElement>(null);
+  const chipsPausedRef = useRef(false);
+  const chipsManualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let rafId: number;
+    const step = () => {
+      const el = chipsScrollRef.current;
+      if (el && !chipsPausedRef.current && el.scrollWidth > el.clientWidth) {
+        el.scrollLeft += 0.5;
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft -= el.scrollWidth / 2;
+        }
+      }
+      rafId = requestAnimationFrame(step);
+    };
+    rafId = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (chipsManualTimerRef.current) clearTimeout(chipsManualTimerRef.current);
+    };
+  }, []);
   useEffect(() => {
     const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
     if (!validTickers.length) { setHoldingPrices([]); return; }
@@ -362,10 +385,8 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
       {/* DIVIDER */}
       <div className="gb-divider" style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
 
-      {/* RIGHT — market chips + holdings scroll */}
-      <div className="gb-right" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-
-        {/* Index + portfolio chips — unified row */}
+      {/* RIGHT — unified auto-scrolling ticker marquee */}
+      <div className="gb-right" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
         {indexPrices.spy === null ? (
           <div style={{ display: "flex", gap: 6 }}>
             {[88, 76, 60, 96].map((w, i) => (
@@ -378,35 +399,43 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
             ))}
           </div>
         ) : (
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as any }}>
-            <MarketChip label="S&P 500"   pct={indexPrices.spy} />
-            <MarketChip label="Nasdaq"    pct={indexPrices.qqq} />
-            <MarketChip label="Dow"       pct={indexPrices.dia} />
-            {portfolioToday && (
-              <MarketChip label="Portfolio" pct={portfolioToday.pct} dollar={portfolioToday.dollar} />
-            )}
-          </div>
-        )}
-
-        {/* Holdings ticker scroll */}
-        {(() => {
-          const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
-          if (!validTickers.length) return null;
-          const allChips = holdingPrices.length > 0
-            ? holdingPrices.map(h => ({ ticker: h.ticker, price: h.price, pct: h.changePct }))
-            : validTickers.map(t => ({ ticker: t, price: null, pct: null }));
-          const chips = allChips.slice(0, 4);
-          return (
-            <div className="gb-marquee-wrap" style={{ maxWidth: 380 }}>
-              <div style={{ display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as any }}>
-                {chips.map(p => (
-                  <MarketChip key={p.ticker} label={p.ticker} pct={p.pct} price={p.price} />
-                ))}
+          (() => {
+            const indexChips: { label: string; pct: number | null; dollar?: number | null; price?: number | null }[] = [
+              { label: "S&P 500",   pct: indexPrices.spy },
+              { label: "Nasdaq",    pct: indexPrices.qqq },
+              { label: "Dow",       pct: indexPrices.dia },
+              ...(portfolioToday ? [{ label: "Portfolio", pct: portfolioToday.pct, dollar: portfolioToday.dollar }] : []),
+            ];
+            const holdingChips: { label: string; pct: number | null; dollar?: number | null; price?: number | null }[] = holdingPrices.length > 0
+              ? holdingPrices.map(h => ({ label: h.ticker, pct: h.changePct, price: h.price }))
+              : assets.filter(a => a.ticker && a.weight > 0).map(a => ({ label: a.ticker, pct: null, price: null }));
+            const baseChips = [...indexChips, ...holdingChips];
+            const doubled = [...baseChips, ...baseChips];
+            return (
+              <div className="gb-marquee-wrap" style={{ position: "relative", overflow: "hidden", maxWidth: 380 }}>
+                {/* Left fade edge */}
+                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 32, background: "linear-gradient(to right, var(--bg2), transparent)", zIndex: 1, pointerEvents: "none" }} />
+                {/* Right fade edge */}
+                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 32, background: "linear-gradient(to left, var(--bg2), transparent)", zIndex: 1, pointerEvents: "none" }} />
+                <div
+                  ref={chipsScrollRef}
+                  style={{ display: "flex", gap: 6, overflowX: "auto", flexWrap: "nowrap", scrollbarWidth: "none" as any }}
+                  onMouseEnter={() => { chipsPausedRef.current = true; }}
+                  onMouseLeave={() => { chipsPausedRef.current = false; }}
+                  onScroll={() => {
+                    chipsPausedRef.current = true;
+                    if (chipsManualTimerRef.current) clearTimeout(chipsManualTimerRef.current);
+                    chipsManualTimerRef.current = setTimeout(() => { chipsPausedRef.current = false; }, 2000);
+                  }}
+                >
+                  {doubled.map((chip, i) => (
+                    <MarketChip key={i} label={chip.label} pct={chip.pct} dollar={chip.dollar} price={chip.price} />
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })()}
-
+            );
+          })()
+        )}
       </div>
     </div>
   );

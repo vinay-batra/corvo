@@ -2283,7 +2283,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     tabIndex={0}
                     onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleWhatShouldIDo(); }}
                     style={{
-                      width: "100%", maxWidth: 860, borderRadius: 12, cursor: "pointer",
+                      width: "100%", borderRadius: 12, cursor: "pointer",
                       border: "0.5px solid rgba(201,168,76,0.45)",
                       borderLeft: "3px solid var(--accent)",
                       background: "linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 100%)",
@@ -2313,7 +2313,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                           What should I do today?
                         </div>
                         <div style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.4 }}>
-                          AI-powered action items based on your portfolio
+                          AI-powered action items based on your portfolio, goals, markets, and more
                         </div>
                       </div>
                     </div>
