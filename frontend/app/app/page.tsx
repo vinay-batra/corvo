@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, memo } from "react";
+import React, { useState, useEffect, useRef, useMemo, memo } from "react";
 import { posthog } from "@/lib/posthog";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -207,6 +207,62 @@ function Spinner() {
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 300, gap: 14 }}>
       <div style={{ width: 24, height: 24, border: "1.5px solid var(--border2)", borderTopColor: "var(--text)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <p style={{ fontSize: 11, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Analyzing...</p>
+    </div>
+  );
+}
+
+const ANALYSIS_STEPS = [
+  { label: "Fetching live prices", ms: 0 },
+  { label: "Calculating risk metrics", ms: 700 },
+  { label: "Running Monte Carlo simulation", ms: 1400 },
+  { label: "Scoring portfolio health", ms: 2200 },
+  { label: "Generating AI insights", ms: 3000 },
+];
+
+function AnalysisSteps() {
+  const [step, setStep] = React.useState(0);
+  React.useEffect(() => {
+    const timers = ANALYSIS_STEPS.slice(1).map((s, i) =>
+      setTimeout(() => setStep(i + 1), s.ms)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, []);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 32 }}>
+      {/* Animated orb */}
+      <div style={{ position: "relative", width: 56, height: 56 }}>
+        <style>{`
+          @keyframes orb-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          @keyframes orb-pulse { 0%,100% { opacity:0.3; transform:scale(0.85); } 50% { opacity:0.7; transform:scale(1.1); } }
+          .orb-ring { position:absolute; inset:0; border-radius:50%; border:1.5px solid transparent; animation:orb-spin 1.4s linear infinite; }
+          .orb-core { position:absolute; inset:8px; border-radius:50%; background:radial-gradient(circle, rgba(201,168,76,0.5) 0%, transparent 70%); animation:orb-pulse 1.8s ease-in-out infinite; }
+        `}</style>
+        <div className="orb-ring" style={{ borderTopColor: "var(--accent)", borderRightColor: "rgba(201,168,76,0.2)", borderBottomColor: "transparent", borderLeftColor: "rgba(201,168,76,0.2)" }} />
+        <div className="orb-ring" style={{ inset: 6, animationDuration: "2.2s", animationDirection: "reverse", borderTopColor: "rgba(201,168,76,0.4)", borderRightColor: "transparent", borderBottomColor: "rgba(201,168,76,0.4)", borderLeftColor: "transparent" }} />
+        <div className="orb-core" />
+      </div>
+      {/* Steps */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 280 }}>
+        {ANALYSIS_STEPS.map((s, i) => {
+          const done = i < step, active = i === step;
+          return (
+            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10, opacity: done || active ? 1 : 0.25, transition: "opacity 0.4s ease" }}>
+              <div style={{ width: 16, height: 16, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                background: done ? "rgba(92,184,138,0.15)" : active ? "rgba(201,168,76,0.15)" : "var(--bg3)",
+                border: `1px solid ${done ? "#5cb88a" : active ? "var(--accent)" : "var(--border)"}`,
+                transition: "all 0.3s ease",
+              }}>
+                {done ? (
+                  <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                ) : active ? (
+                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", animation: "orb-pulse 1s ease-in-out infinite" }} />
+                ) : null}
+              </div>
+              <span style={{ fontSize: 12, color: done ? "var(--text2)" : active ? "var(--text)" : "var(--text3)", fontWeight: active ? 500 : 400, transition: "color 0.3s ease" }}>{s.label}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -923,6 +979,13 @@ export default function AppPage() {
   const [loading, setLoading]             = useState(false);
   const [analyzeComplete, setAnalyzeComplete] = useState(false);
   const [activeTab, setActiveTab]         = useState("overview");
+  const [tabDir, setTabDir]               = useState(0); // -1 = left, 1 = right
+  const TAB_IDS = TABS.map(t => t.id);
+  const setTabWithDir = (id: string) => {
+    const from = TAB_IDS.indexOf(activeTab), to = TAB_IDS.indexOf(id);
+    setTabDir(to > from ? 1 : -1);
+    setActiveTab(id);
+  };
   const [goals, setGoals]                 = useState<any>(null);
   const [showGoals, setShowGoals]         = useState(false);
   const [showTour, setShowTour]           = useState(false);
@@ -2027,7 +2090,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               const isActive = activeTab === tab.id;
               const ts: React.CSSProperties = { padding: "0 11px", height: 40, fontSize: 12, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "color 0.15s" };
               if (tab.href) return <Link key={tab.id} href={tab.href} style={ts} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{tab.label}</Link>;
-              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={ts}>{tab.label}</button>;
+              return <button key={tab.id} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={ts}>{tab.label}</button>;
             })}
           </div>
         </div>
@@ -2063,7 +2126,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </>
               );
               if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{content}</Link>;
-              return <button key={tab.id} onClick={() => { sound.whoosh(); setActiveTab(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
+              return <button key={tab.id} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
             })}
           </div>
 
@@ -2177,7 +2240,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           </AnimatePresence>
           <AnimatePresence initial={false} mode="wait">
             {activeTab === "stocks" ? (
-              <motion.div key="stocks" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="stocks" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
                 {stockTicker ? (
                   <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} onSelectTicker={t => setStockTicker(t)} />
                 ) : showStockCompare ? (
@@ -2221,7 +2284,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 )}
               </motion.div>
             ) : activeTab === "positions" ? (
-              <motion.div key="positions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="positions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
                 <DashReveal from="up" delay={0}>
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -2273,7 +2336,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </DashReveal>
               </motion.div>
             ) : activeTab === "news" && data ? (
-              <motion.div key="news" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="news" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
                 <DashReveal from="up" delay={0}>
                 <Card>
                   {/* News sub-tabs */}
@@ -2319,19 +2382,21 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </DashReveal>
               </motion.div>
             ) : activeTab === "watchlist" ? (
-              <motion.div key="watchlist" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="watchlist" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
                 <DashReveal from="up" delay={0}>
                   <Watchlist />
                 </DashReveal>
               </motion.div>
             ) : !data && !loading && !initializing ? (
-              <motion.div key="empty" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="empty" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
                 <Empty />
               </motion.div>
             ) : (loading || initializing) && !data ? (
-              <motion.div key="loading" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}><OverviewSkeleton /></motion.div>
+              <motion.div key="loading" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+                <AnalysisSteps />
+              </motion.div>
             ) : activeTab === "overview" ? (
-              <motion.div key="overview" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="overview" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
                 {/* Stale-portfolio banner */}
                 {portfolioStale && (
                   <motion.div
@@ -2728,7 +2793,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div> {/* end: Feature 3 animatingIn wrapper */}
               </motion.div>
             ) : activeTab === "simulate" ? (
-              <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }} style={{ overscrollBehavior: "none" }}>
+              <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ overscrollBehavior: "none" }}>
                 <DashReveal from="up" delay={0}>
                   <Card key="mc-card"><TooltipCardHeader title="Monte Carlo Simulation" sections={[
                     { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
@@ -2770,7 +2835,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </DashReveal>
               </motion.div>
             ) : activeTab === "learn" ? (
-              <motion.div key="learn" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+              <motion.div key="learn" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
                 <DashReveal from="up" delay={0}>
                   <LearnPage />
                 </DashReveal>
@@ -2849,7 +2914,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       {/* Mobile bottom navigation */}
       <MobileBottomNav
         activeTab={activeTab}
-        onTabChange={id => { setActiveTab(id); sound.whoosh(); }}
+        onTabChange={id => { setTabWithDir(id); sound.whoosh(); }}
         onProfile={() => setShowProfile(true)}
         onAiChat={() => { setChatInitialMessage(undefined); setChatOpen(v => !v); sound.whoosh(); }}
       />
@@ -2944,7 +3009,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         tabs={TABS}
-        onTab={id => { setActiveTab(id); sound.whoosh(); }}
+        onTab={id => { setTabWithDir(id); sound.whoosh(); }}
         onStockSearch={t => { setStockTicker(t); setActiveTab("stocks"); }}
         onAnalyze={handleAnalyze}
         onToggleDark={toggleDark}
