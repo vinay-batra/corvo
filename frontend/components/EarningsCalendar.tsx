@@ -265,13 +265,13 @@ function EarningsRow({
   const { days, preview } = row;
 
   const borderColor =
-    days <= 7 ? "rgba(224,92,92,0.45)"
-    : days <= 14 ? "rgba(184,134,11,0.4)"
+    days <= 60 ? "rgba(224,92,92,0.45)"
+    : days <= 60 ? "rgba(184,134,11,0.4)"
     : "var(--border)";
 
   const urgencyColor =
-    days <= 7 ? "var(--red)"
-    : days <= 14 ? "var(--accent)"
+    days <= 60 ? "var(--red)"
+    : days <= 60 ? "var(--accent)"
     : "var(--text3)";
 
   const exposure = portfolioValue > 0 && row.weight > 0
@@ -282,8 +282,7 @@ function EarningsRow({
     ? exposure * (preview.implied_move_pct / 100)
     : null;
 
-  const hasExpanded = row.eps_estimate != null || row.revenue_estimate != null ||
-    row.weight > 0 || preview != null || days <= 60;
+  const hasExpanded = true;
 
   const transcriptFound =
     transcriptState.status === "done" && transcriptState.data.has_transcript;
@@ -320,7 +319,7 @@ function EarningsRow({
           justifyContent: "space-between",
           gap: 12,
           padding: "14px 16px",
-          cursor: hasExpanded ? "pointer" : "default",
+          cursor: "pointer",
         }}
       >
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -408,6 +407,9 @@ function EarningsRow({
               <div style={{ display: "flex", gap: 20, flexWrap: "wrap" as const }}>
                 <StatPill label="Earnings Date" value={fmtDate(row.date)} />
                 <StatPill label="Days Until" value={days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days} days`} />
+                {row.weight > 0 && (
+                  <StatPill label="Portfolio Weight" value={`${(row.weight * 100).toFixed(1)}%`} />
+                )}
                 {exposure != null && (
                   <StatPill label="Your exposure" value={fmtDollars(exposure)} />
                 )}
@@ -462,17 +464,10 @@ function EarningsRow({
                 </p>
               )}
 
-              {/* No preview -- near term, something went wrong */}
-              {!previewLoading && days > 0 && days <= 14 && !preview && (
+              {/* No preview yet */}
+              {!previewLoading && days > 0 && !preview && (
                 <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
-                  AI analysis not available for this ticker.
-                </p>
-              )}
-
-              {/* No preview -- further out, expected */}
-              {!previewLoading && preview === null && days > 14 && days <= 60 && (
-                <p style={{ fontSize: 11, color: "var(--text3)", margin: 0 }}>
-                  Options-implied move and AI analysis load closer to earnings date.
+                  Click to expand for options-implied move and AI commentary as earnings approach.
                 </p>
               )}
 
