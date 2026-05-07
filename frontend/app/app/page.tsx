@@ -2549,15 +2549,18 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <motion.div
                     // initial={false} is required — do not remove
                     initial={false}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 0" }}>
-                    <span style={{ fontSize: 12, color: "var(--text3)" }}>Want to compare this later?</span>
+                    style={{ marginTop: 24, padding: "16px 20px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", margin: 0 }}>Save this portfolio</p>
+                      <p style={{ fontSize: 11, color: "var(--text3)", margin: "2px 0 0" }}>Come back to this analysis anytime</p>
+                    </div>
                     <button
                       onClick={() => {
                         const el = document.querySelector("[data-save-trigger]") as HTMLElement | null;
                         if (el) el.click();
                       }}
-                      style={{ fontSize: 12, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
-                      Save this portfolio →
+                      style={{ padding: "8px 18px", background: "var(--accent)", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "var(--bg)", cursor: "pointer" }}>
+                      Save →
                     </button>
                   </motion.div>
                 )}

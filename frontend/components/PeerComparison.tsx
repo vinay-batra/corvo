@@ -14,7 +14,7 @@ interface PeerData {
   peer_count: number;
 }
 
-function PercentileBadge({ pct }: { pct: number | null }) {
+function PercentileBadge({ pct, invertPct }: { pct: number | null; invertPct?: boolean }) {
   if (pct === null) {
     return (
       <span style={{
@@ -30,12 +30,13 @@ function PercentileBadge({ pct }: { pct: number | null }) {
       }}>Early user</span>
     );
   }
-  const isTop = pct >= 75;
-  const isBottom = pct <= 25;
+  const effectivePct = invertPct ? 100 - pct : pct;
+  const isTop = effectivePct >= 75;
+  const isBottom = effectivePct <= 25;
   const color = isTop ? "var(--green)" : isBottom ? "var(--red)" : "var(--accent)";
   const bg = isTop ? "rgba(76,175,125,0.10)" : isBottom ? "rgba(224,92,92,0.10)" : "rgba(184,134,11,0.10)";
-  const topDisplay = Math.max(100 - pct, 10);
-  const bottomDisplay = Math.max(pct, 10);
+  const topDisplay = Math.max(100 - effectivePct, 10);
+  const bottomDisplay = Math.max(effectivePct, 10);
   const label = isTop ? `Top ${topDisplay}%` : isBottom ? `Bottom ${bottomDisplay}%` : "Average";
   return (
     <span style={{
@@ -58,16 +59,25 @@ function MetricRow({
   peerVal,
   pct,
   format,
+  lowerIsBetter,
+  invertPct,
 }: {
   label: string;
   userVal: number;
   peerVal: number;
   pct: number | null;
   format: (n: number) => string;
+  lowerIsBetter?: boolean;
+  invertPct?: boolean;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-      <span style={{ fontSize: 11, color: "var(--text3)", minWidth: 90 }}>{label}</span>
+      <span style={{ fontSize: 11, color: "var(--text3)", minWidth: 90 }}>
+        {label}
+        {lowerIsBetter && (
+          <span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 4, fontStyle: "italic" }}>(lower is better)</span>
+        )}
+      </span>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, justifyContent: "flex-end" }}>
         <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
           {format(userVal)}
@@ -76,7 +86,7 @@ function MetricRow({
         <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, color: "var(--text2)" }}>
           {format(peerVal)}
         </span>
-        <PercentileBadge pct={pct} />
+        <PercentileBadge pct={pct} invertPct={invertPct} />
       </div>
     </div>
   );
@@ -186,6 +196,8 @@ export default function PeerComparison({ data, userId }: { data: any; userId: st
               peerVal={peer!.peer_median!.max_drawdown}
               pct={peer!.percentiles?.max_drawdown ?? null}
               format={fmtPct}
+              lowerIsBetter
+              invertPct
             />
           </div>
 

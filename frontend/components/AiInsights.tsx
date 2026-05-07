@@ -81,8 +81,12 @@ export default function AiInsights({ data, assets, onAskAi }: { data:any; assets
           initial={false} animate={{opacity:1}} transition={{delay:0.3}}
           style={{marginTop:6,padding:"10px 12px",background:"rgba(184,134,11,0.04)",border:"1px solid rgba(184,134,11,0.12)",borderRadius:8}}>
           <p style={{fontSize:8,letterSpacing:2,color:C.amber,textTransform:"uppercase",marginBottom:6}}>Rebalancing</p>
+          <div style={{padding:"10px 12px",background:"rgba(184,134,11,0.08)",border:"1px solid rgba(184,134,11,0.2)",borderRadius:8,marginBottom:8,display:"flex",alignItems:"flex-start",gap:8}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>
+            <p style={{fontSize:12,color:"var(--text)",fontWeight:500,margin:0,lineHeight:1.5}}>{rebalanceSuggestions[0]}</p>
+          </div>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            {rebalanceSuggestions.map((s,i)=>(
+            {rebalanceSuggestions.slice(1).map((s,i)=>(
               <div key={i} style={{display:"flex",gap:6,alignItems:"flex-start"}}>
                 <span style={{color:C.amber,fontSize:9,marginTop:2,flexShrink:0}}>▸</span>
                 <p style={{fontSize:11,color:"var(--text2)",lineHeight:1.5}}>{s}</p>

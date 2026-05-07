@@ -1154,6 +1154,19 @@ If the command cannot be executed, return: {{"error": "brief reason"}}"""
     }
 
 
+ETF_SECTORS: dict[str, str] = {
+    "VIG": "Financials", "SCHD": "Financials", "QQQ": "Technology",
+    "SPY": "Diversified", "VTI": "Diversified", "VOO": "Diversified",
+    "BND": "Fixed Income", "GLD": "Commodities", "VNQ": "Real Estate",
+    "XLK": "Technology", "XLF": "Financials", "XLE": "Energy",
+    "XLV": "Healthcare", "XLU": "Utilities", "XLP": "Consumer Staples",
+    "IWM": "Diversified", "DIA": "Diversified", "TLT": "Fixed Income",
+    "AGG": "Fixed Income", "LQD": "Fixed Income", "SHY": "Fixed Income",
+    "IEMG": "Diversified", "EEM": "Diversified", "EFA": "Diversified",
+    "ARKK": "Technology", "XLI": "Industrials", "XLB": "Materials",
+    "XLC": "Communication Services", "XLRE": "Real Estate",
+}
+
 _sectors_cache: dict[str, tuple[dict, float]] = {}
 
 @app.get("/portfolio/sectors")
@@ -1189,9 +1202,9 @@ def portfolio_sectors(tickers: str = "AAPL", weights: str = "", request: Request
     for ticker, weight in zip(ticker_list, normalized_weights):
         try:
             info = yf.Ticker(ticker).info
-            sector = info.get("sector") or "Other"
+            sector = info.get("sector") or ETF_SECTORS.get(ticker, "Other")
         except Exception:
-            sector = "Other"
+            sector = ETF_SECTORS.get(ticker, "Other")
         sector_map[sector] = sector_map.get(sector, 0.0) + weight
 
     result = {"sectors": sector_map}
@@ -4600,9 +4613,9 @@ def portfolio_health_score(req: HealthScoreRequest):
     for ticker, w in zip(tickers, weights):
         try:
             info = yf.Ticker(ticker).info
-            sector = info.get("sector") or "Other"
+            sector = info.get("sector") or ETF_SECTORS.get(ticker, "Other")
         except Exception:
-            sector = "Other"
+            sector = ETF_SECTORS.get(ticker, "Other")
         sector_map[sector] = sector_map.get(sector, 0.0) + w
 
     max_sector_pct = max(sector_map.values()) if sector_map else 0.0
