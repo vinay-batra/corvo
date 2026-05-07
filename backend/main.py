@@ -5273,6 +5273,102 @@ def portfolio_tax_loss(
     }
 
 
+def check_tax_loss_opportunities(
+    tickers: list,
+    weights: list,
+    purchase_prices: list,
+    portfolio_value: float = 0.0,
+    min_loss_pct: float = 10.0,
+    min_harvestable_dollars: float = 200.0,
+) -> dict | None:
+    """
+    Scan holdings for tax loss harvesting opportunities without calling the AI.
+    When portfolio_value > 0: qualifies on abs(loss_dollars) >= min_harvestable_dollars.
+    When portfolio_value == 0: qualifies on abs(loss_pct) >= min_loss_pct.
+    Returns top opportunity dict or None.
+    """
+    if not tickers:
+        return None
+    total_w = sum(weights) or 1.0
+    norm_weights = [w / total_w for w in weights]
+    portfolio_tickers = set(tickers)
+    losses = []
+    total_harvestable = 0.0
+
+    for ticker, weight, pp in zip(tickers, norm_weights, purchase_prices):
+        if pp is None or pp <= 0:
+            continue
+        current = _get_current_price(ticker)
+        if current is None:
+            continue
+        loss_pct = (current - pp) / pp * 100.0
+        if loss_pct >= 0:
+            continue
+        alloc_value = portfolio_value * weight if portfolio_value > 0 else 0.0
+        loss_dollars = alloc_value * (loss_pct / 100.0) if portfolio_value > 0 else 0.0
+        total_harvestable += loss_dollars
+        sector = _get_sector(ticker)
+        replacement = _pick_replacement(ticker, sector, portfolio_tickers)
+        losses.append({
+            "ticker": ticker,
+            "loss_pct": round(loss_pct, 2),
+            "loss_dollars": round(loss_dollars, 2),
+            "current_price": round(current, 2),
+            "purchase_price": round(pp, 2),
+            "suggested_replacement": replacement,
+            "sector": sector,
+        })
+
+    if not losses:
+        return None
+
+    losses.sort(key=lambda x: x["loss_pct"])  # most negative first
+
+    if portfolio_value > 0:
+        qualifying = [l for l in losses if abs(l["loss_dollars"]) >= min_harvestable_dollars]
+    else:
+        qualifying = [l for l in losses if abs(l["loss_pct"]) >= min_loss_pct]
+
+    if not qualifying:
+        return None
+
+    return {
+        "top_opportunity": qualifying[0],
+        "all_opportunities": qualifying,
+        "total_harvestable_loss": round(total_harvestable, 2),
+    }
+
+
+@app.get("/portfolio/tax-loss-alert/{user_id}")
+async def portfolio_tax_loss_alert(user_id: str, portfolio_value: float = 0.0):
+    """
+    Check whether the user's saved portfolio has tax loss harvesting opportunities.
+    Returns has_opportunity plus the top opportunity so the frontend can show a badge/alert.
+    Pass portfolio_value (dollars) for accurate dollar-amount thresholds; omit to use pct-based (>=10% loss).
+    """
+    loop = asyncio.get_event_loop()
+    data = await loop.run_in_executor(None, _fetch_user_portfolio_with_cost_basis, user_id)
+    if not data:
+        return {"has_opportunity": False, "reason": "no_portfolio"}
+    _, _, tlh_tickers, tlh_weights, tlh_prices = data
+    if not any(p for p in tlh_prices if p):
+        return {"has_opportunity": False, "reason": "no_cost_basis"}
+    result = check_tax_loss_opportunities(
+        tlh_tickers, tlh_weights, tlh_prices,
+        portfolio_value=portfolio_value,
+        min_loss_pct=10.0,
+        min_harvestable_dollars=200.0,
+    )
+    if not result:
+        return {"has_opportunity": False, "reason": "no_significant_loss"}
+    return {
+        "has_opportunity": True,
+        "top_opportunity": result["top_opportunity"],
+        "all_opportunities": result["all_opportunities"],
+        "total_harvestable_loss": result["total_harvestable_loss"],
+    }
+
+
 # ── Capital Gains Estimator ───────────────────────────────────────────────────
 
 @app.get("/portfolio/capital-gains")
@@ -6352,6 +6448,63 @@ def _fetch_user_email_data(user_id: str):
         return None
 
 
+def _fetch_user_portfolio_with_cost_basis(user_id: str):
+    """
+    Like _fetch_user_email_data but also extracts purchase prices from the portfolios.assets JSONB column.
+    Returns (email, display_name, tickers, weights, purchase_prices) or None.
+    purchase_prices is a list of float|None values aligned to tickers.
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return None
+    try:
+        ur = requests.get(
+            f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+            headers=_sb_headers(), timeout=8,
+        )
+        if ur.status_code != 200:
+            return None
+        ud = ur.json()
+        email = ud.get("email", "")
+        if not email:
+            return None
+        meta = ud.get("user_metadata") or {}
+        display_name = meta.get("full_name") or meta.get("name") or email.split("@")[0]
+        pr = requests.get(
+            f"{SUPABASE_URL}/rest/v1/portfolios?user_id=eq.{user_id}&select=tickers,weights,assets&limit=1",
+            headers=_sb_headers(), timeout=8,
+        )
+        if pr.status_code != 200 or not pr.json():
+            return None
+        pf = pr.json()[0]
+        tickers = pf.get("tickers") or []
+        weights_raw = pf.get("weights") or []
+        assets_raw = pf.get("assets") or []
+        if not tickers:
+            return None
+        weights = [float(w) for w in weights_raw[:len(tickers)]]
+        total = sum(weights)
+        if total <= 0:
+            weights = [1.0 / len(tickers)] * len(tickers)
+        else:
+            weights = [w / total for w in weights]
+        # Extract purchase prices from assets JSONB (frontend stores key: purchasePrice)
+        asset_map: dict = {}
+        if isinstance(assets_raw, list):
+            for a in assets_raw:
+                if isinstance(a, dict) and a.get("ticker"):
+                    raw_pp = a.get("purchasePrice")
+                    try:
+                        val = float(raw_pp) if raw_pp is not None else None
+                        asset_map[a["ticker"].upper()] = val if val and val > 0 else None
+                    except (TypeError, ValueError):
+                        asset_map[a["ticker"].upper()] = None
+        purchase_prices = [asset_map.get(t.upper()) for t in tickers]
+        return email, display_name, tickers, weights, purchase_prices
+    except Exception as e:
+        print(f"[tlh-alert] error fetching portfolio with cost basis for {user_id}: {e}")
+        return None
+
+
 def _fetch_email_theme(user_id: str) -> str:
     """Return the user's email_theme preference ('light' or 'dark'), defaulting to 'light'."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
@@ -7268,6 +7421,27 @@ async def send_weekly_portfolio_checkup_push() -> dict:
                     sent += 1
                 elif result == "dead" and sub_row.get("id"):
                     dead_ids.append(str(sub_row["id"]))
+            # Tax loss harvesting check — send a separate push if a meaningful opportunity exists
+            try:
+                tlh_data = await loop.run_in_executor(None, _fetch_user_portfolio_with_cost_basis, user_id)
+                if tlh_data:
+                    _, _, tlh_tickers, tlh_weights, tlh_prices = tlh_data
+                    tlh_result = check_tax_loss_opportunities(
+                        tlh_tickers, tlh_weights, tlh_prices,
+                        portfolio_value=0.0,
+                        min_loss_pct=10.0,
+                    )
+                    if tlh_result:
+                        top = tlh_result["top_opportunity"]
+                        tlh_title = "Tax Loss Opportunity Detected"
+                        tlh_body = (
+                            f"{top['ticker']} is down {abs(top['loss_pct']):.1f}% from your purchase price. "
+                            "Selling could let you harvest tax losses to offset other gains."
+                        )
+                        for sub_row in subs:
+                            _send_push(sub_row["subscription"], tlh_title, tlh_body, url="https://corvo.capital/app")
+            except Exception as tlh_err:
+                print(f"[weekly-checkup] tax loss check error for {user_id}: {tlh_err}")
         except Exception as e:
             print(f"[weekly-checkup] error for user {user_id}: {e}")
             skipped += 1
@@ -7304,6 +7478,38 @@ async def test_weekly_checkup_push(request: Request):
     """Manually trigger the weekly portfolio checkup push (for testing). Requires X-Admin-Key header."""
     _require_admin_key(request)
     return await send_weekly_portfolio_checkup_push()
+
+
+@app.get("/push/test-tax-loss-push")
+async def test_tax_loss_push(user_id: str = "", request: Request = None):
+    """
+    Manually trigger a tax loss harvesting push for a specific user (for testing).
+    Requires X-Admin-Key header.
+    """
+    _require_admin_key(request)
+    if not user_id:
+        return {"error": "user_id required"}
+    loop = asyncio.get_event_loop()
+    tlh_data = await loop.run_in_executor(None, _fetch_user_portfolio_with_cost_basis, user_id)
+    if not tlh_data:
+        return {"error": "no portfolio found or no cost basis"}
+    _, _, tlh_tickers, tlh_weights, tlh_prices = tlh_data
+    tlh_result = check_tax_loss_opportunities(tlh_tickers, tlh_weights, tlh_prices, portfolio_value=0.0, min_loss_pct=10.0)
+    if not tlh_result:
+        return {"result": "no qualifying opportunities (no holding down >= 10%)"}
+    subs_resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.{user_id}&select=id,subscription",
+        headers=_sb_headers(), timeout=10,
+    )
+    subs = subs_resp.json() if subs_resp.status_code == 200 else []
+    top = tlh_result["top_opportunity"]
+    tlh_title = "Tax Loss Opportunity Detected"
+    tlh_body = (
+        f"{top['ticker']} is down {abs(top['loss_pct']):.1f}% from your purchase price. "
+        "Selling could let you harvest tax losses to offset other gains."
+    )
+    results = [_send_push(s["subscription"], tlh_title, tlh_body, url="https://corvo.capital/app") for s in subs]
+    return {"opportunity": tlh_result, "push_results": results}
 
 
 # ── Earnings Day Reminder Push ─────────────────────────────────────────────────
