@@ -213,7 +213,7 @@ function OptionsChain({ ticker, currentPrice }: { ticker: string; currentPrice: 
     const hdrCol = isCall ? GREEN : RED;
     if (!contracts.length) return <p style={{ fontSize: 11, color: "var(--text3)", padding: "16px 0" }}>No data</p>;
     return (
-      <div style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }} onWheel={e => { e.stopPropagation(); }}>
+      <div data-scroll-x="true" style={{ overflowX: "auto", overscrollBehavior: "none", WebkitOverflowScrolling: "touch" as any }}>
         <style>{`
           :root { --itm-call-bg: rgba(76,175,125,0.07); --itm-call-bdr: rgba(76,175,125,0.2);
                   --itm-put-bg: rgba(224,92,92,0.07);   --itm-put-bdr: rgba(224,92,92,0.2);
@@ -747,6 +747,19 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       .catch(() => {});
   }, [ticker]);
 
+  useEffect(() => {
+    const handler = (e: WheelEvent) => {
+      const target = e.target as HTMLElement;
+      const scrollable = target.closest('[data-scroll-x]') as HTMLElement;
+      if (!scrollable) return;
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      scrollable.scrollLeft += e.deltaX;
+    };
+    document.addEventListener('wheel', handler, { passive: false });
+    return () => document.removeEventListener('wheel', handler);
+  }, []);
+
   // ── Derived ─────────────────────────────────────────────────────────────────
   const currentPrice = livePrice ?? info?.current_price ?? 0;
   const positive     = (info?.change_pct ?? 0) >= 0;
@@ -905,6 +918,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
         @keyframes sdPulse { 0%,100% { opacity: 0.4 } 50% { opacity: 0.9 } }
         .sd-table-wrap { overflow-x: auto; }
         .sd-table-wrap:hover { cursor: default; }
+        .sd-scroll-wrap { overflow-x: auto; pointer-events: auto; }
         @keyframes livePulse {
           0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(76,175,125,0.5) }
           60%      { opacity: 0.6; box-shadow: 0 0 0 5px rgba(76,175,125,0) }
