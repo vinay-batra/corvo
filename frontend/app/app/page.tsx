@@ -1019,7 +1019,7 @@ const { dark, toggle: toggleDark }  = useTheme();
   useEffect(() => {
     if (loadedAt === 0) return;
     const id = setInterval(() => setRevealTick(t => t + 1), 100);
-    const done = setTimeout(() => clearInterval(id), 600);
+    const done = setTimeout(() => clearInterval(id), 1200);
     return () => { clearInterval(id); clearTimeout(done); };
   }, [loadedAt]);
 
@@ -2319,7 +2319,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>
 
                 {/* What Should I Do Today */}
-                <div style={{ opacity: loadedVis(100) ? 1 : 0, transform: loadedVis(100) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <div style={{ opacity: loadedVis(250) ? 1 : 0, transform: loadedVis(250) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="left" delay={0.05}>
                 <div style={{ marginBottom: 20 }}>
                   <div
@@ -2454,7 +2454,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>
 
                 {/* Metric cards */}
-                <div style={{ opacity: loadedVis(200) ? 1 : 0, transform: loadedVis(200) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <div style={{ opacity: loadedVis(500) ? 1 : 0, transform: loadedVis(500) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="up" delay={0.1}>
                 <motion.div
                   id="tour-desk-metrics"
@@ -2478,7 +2478,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>
 
                 {/* Performance chart */}
-                <div style={{ opacity: loadedVis(300) ? 1 : 0, transform: loadedVis(300) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <div style={{ opacity: loadedVis(750) ? 1 : 0, transform: loadedVis(750) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="up" delay={0.15}>
                 <motion.div id="tour-desk-chart" key="perf-card" initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
                   <Card>
@@ -2519,7 +2519,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>
 
                 {/* Everything below — Feature 2: delay 400ms */}
-                <div style={{ opacity: loadedVis(400) ? 1 : 0, transform: loadedVis(400) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <div style={{ opacity: loadedVis(1000) ? 1 : 0, transform: loadedVis(1000) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <motion.div
                   key="bottom-grid"
                   className="c-bgrid"
