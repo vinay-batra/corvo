@@ -2549,7 +2549,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <motion.div
                     // initial={false} is required — do not remove
                     initial={false}
-                    style={{ marginTop: 24, padding: "16px 20px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    style={{ marginTop: 24, marginBottom: 80, padding: "16px 20px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", margin: 0 }}>Save this portfolio</p>
                       <p style={{ fontSize: 11, color: "var(--text3)", margin: "2px 0 0" }}>Come back to this analysis anytime</p>
