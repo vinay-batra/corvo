@@ -2161,7 +2161,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 ) : (
                   <div>
                     <StocksSearch onSelect={setStockTicker} />
-                    <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                       <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", margin: 0 }}>Compare</p>
                       <button
                         onClick={() => setShowStockCompare(true)}
@@ -2624,17 +2624,18 @@ const { dark, toggle: toggleDark }  = useTheme();
             ) : activeTab === "learn" ? (
               <motion.div key="learn" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
                 <LearnPage />
-                <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={S.cardAccent} />
-                      <span style={S.cardTitle}>Paper Trading</span>
+                <div style={{ marginTop: 32 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", marginBottom: 4, fontFamily: "Space Mono, monospace" }}>Simulator</p>
+                      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3 }}>Paper Trading</h3>
+                      <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>Practice trading with $10,000 in virtual cash. No real money.</p>
                     </div>
                     <button
                       onClick={() => setShowPaperTrade(v => !v)}
-                      style={{ padding: "6px 16px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.3)", background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)", cursor: "pointer" }}
+                      style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, borderRadius: 10, border: "none", background: showPaperTrade ? "var(--bg3)" : "var(--accent)", color: showPaperTrade ? "var(--text2)" : "var(--bg)", cursor: "pointer", flexShrink: 0 }}
                     >
-                      {showPaperTrade ? "Close" : "Open Paper Trade →"}
+                      {showPaperTrade ? "Close" : "Start Trading →"}
                     </button>
                   </div>
                   {showPaperTrade && userId && <PaperTrading userId={userId} onContextChange={setPaperCtx} />}

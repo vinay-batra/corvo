@@ -170,6 +170,13 @@ function Sparkline({ values }: { values: number[] }) {
   );
 }
 
+const CARD: React.CSSProperties = {
+  background: "var(--card-bg)",
+  border: "1px solid var(--border)",
+  borderRadius: 12,
+  padding: 20,
+};
+
 export default function PaperTrading({
   userId,
   onContextChange,
@@ -428,7 +435,6 @@ export default function PaperTrading({
     ? computeSparklineValues(trades, portfolio.total_value) : [];
 
   const hasHoldings = (portfolio?.positions?.length ?? 0) > 0;
-  const showEmptyState = !selectedTicker && !hasHoldings;
 
   const buyDisabled = buyLoading || !selectedTicker || !stockData || !buyShares || parseFloat(buyShares) <= 0;
   const sellDisabled = sellLoading || !sellShares || parseFloat(sellShares) <= 0;
@@ -440,9 +446,10 @@ export default function PaperTrading({
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .pt-grid {
           display: grid;
-          grid-template-columns: 30% 45% 25%;
-          gap: 16px;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
           align-items: start;
+          max-width: 100%;
         }
         @media (max-width: 768px) {
           .pt-grid { grid-template-columns: 1fr; }
@@ -450,14 +457,14 @@ export default function PaperTrading({
         .pt-search-result:hover { background: var(--bg3) !important; }
         .pt-period-btn:hover { background: var(--bg3) !important; color: var(--text) !important; }
         .pt-table-row:hover { background: var(--bg2) !important; }
-        .pt-trade-row:hover { background: var(--bg2) !important; }
         .pt-trade-btn:hover { border-color: var(--accent) !important; color: var(--accent) !important; }
+        .pt-history-row:hover { background: var(--bg2) !important; }
       `}</style>
 
       <div className="pt-grid">
 
-        {/* ── LEFT COLUMN ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* ── LEFT COLUMN: Search + Buy/Sell ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* Search */}
           <div ref={searchRef} style={{ position: "relative" }}>
@@ -465,7 +472,7 @@ export default function PaperTrading({
               <svg
                 width="14" height="14" viewBox="0 0 24 24" fill="none"
                 stroke="var(--text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+                style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
               >
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -489,13 +496,13 @@ export default function PaperTrading({
                 style={{
                   width: "100%", boxSizing: "border-box",
                   background: "var(--bg2)", border: "1px solid var(--border)",
-                  borderRadius: 8, padding: "9px 34px 9px 32px",
+                  borderRadius: 8, padding: "10px 36px 10px 34px",
                   fontSize: 13, color: "var(--text)", outline: "none", fontFamily: "inherit",
                 }}
               />
               {searchLoading && (
                 <div style={{
-                  position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
                   width: 12, height: 12, border: "1.5px solid var(--border2)",
                   borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.7s linear infinite",
                 }} />
@@ -513,7 +520,7 @@ export default function PaperTrading({
                   style={{
                     position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
                     background: "var(--card-bg)", border: "1px solid var(--border)",
-                    borderRadius: 8, zIndex: 200, overflow: "hidden",
+                    borderRadius: 10, zIndex: 200, overflow: "hidden",
                     boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
                   }}
                 >
@@ -551,7 +558,7 @@ export default function PaperTrading({
             </AnimatePresence>
           </div>
 
-          {/* Mini stock card */}
+          {/* Stock mini card */}
           <AnimatePresence initial={false}>
             {selectedTicker && (
               <motion.div
@@ -560,7 +567,7 @@ export default function PaperTrading({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}
+                style={CARD}
               >
                 {stockLoading ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -581,7 +588,7 @@ export default function PaperTrading({
                         {stockData.change_pct >= 0 ? "+" : ""}{fmt(stockData.change_pct)}%
                       </span>
                     </div>
-                    <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {stockData.name}
                     </div>
 
@@ -592,7 +599,7 @@ export default function PaperTrading({
                         (stockData.week52_high - stockData.week52_low) * 100
                       ));
                       return (
-                        <div style={{ marginBottom: 12 }}>
+                        <div style={{ marginBottom: 14 }}>
                           <div style={{ height: 4, background: "var(--bg3)", borderRadius: 2, position: "relative", marginBottom: 5 }}>
                             <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: "var(--accent)", borderRadius: 2 }} />
                           </div>
@@ -604,16 +611,17 @@ export default function PaperTrading({
                       );
                     })()}
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                       {[
                         { label: "P/E", value: stockData.pe_ratio > 0 ? fmt(stockData.pe_ratio) : "N/A", color: undefined },
                         { label: "1D Change", value: `${stockData.change >= 0 ? "+" : ""}$${fmt(Math.abs(stockData.change))}`, color: stockData.change >= 0 ? "var(--green)" : "var(--red)" },
+                        { label: "Market Cap", value: fmtLarge(stockData.market_cap), color: undefined },
                       ].map(item => (
-                        <div key={item.label} style={{ background: "var(--bg2)", borderRadius: 6, padding: "8px 10px" }}>
+                        <div key={item.label} style={{ background: "var(--bg2)", borderRadius: 8, padding: "8px 10px" }}>
                           <div style={{ fontSize: 9, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>
                             {item.label}
                           </div>
-                          <div style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 600, color: item.color ?? "var(--text)" }}>
+                          <div style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 600, color: item.color ?? "var(--text)" }}>
                             {item.value}
                           </div>
                         </div>
@@ -625,9 +633,87 @@ export default function PaperTrading({
             )}
           </AnimatePresence>
 
+          {/* Stock price chart */}
+          <AnimatePresence initial={false}>
+            {selectedTicker && (
+              <motion.div
+                // initial={false} required -- do not remove
+                initial={false}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}
+              >
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+                    {selectedTicker}
+                  </span>
+                  <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                    {CHART_PERIODS.map(p => (
+                      <button
+                        key={p}
+                        className="pt-period-btn"
+                        onClick={() => onChartPeriodChange(p)}
+                        style={{
+                          padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
+                          border: "none", cursor: "pointer",
+                          background: chartPeriod === p ? "var(--accent)" : "transparent",
+                          color: chartPeriod === p ? "var(--bg)" : "var(--text3)",
+                        }}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ minHeight: 200 }}>
+                  {chartLoading ? (
+                    <div style={{ padding: 16 }}><Skeleton height={184} /></div>
+                  ) : chartData && chartData.prices.length > 0 ? (
+                    <Plot
+                      data={[{
+                        x: chartData.dates,
+                        y: chartData.prices,
+                        type: "scatter",
+                        mode: "lines",
+                        line: { color: chartLineColor, width: 2 },
+                        fill: "tozeroy",
+                        fillcolor: chartFillColor,
+                        hovertemplate: "$%{y:,.2f}<extra></extra>",
+                      }]}
+                      layout={{
+                        paper_bgcolor: "transparent",
+                        plot_bgcolor: "transparent",
+                        margin: { t: 8, b: 36, l: 52, r: 12 },
+                        height: 200,
+                        font: { color: fc, family: "Space Mono, monospace", size: 9 },
+                        xaxis: { gridcolor: gc, linecolor: lc, tickcolor: "transparent", showgrid: false },
+                        yaxis: { gridcolor: gc, linecolor: lc, tickcolor: "transparent", tickprefix: "$", tickformat: ",.2f" },
+                        hoverlabel: {
+                          bgcolor: dark ? "#0d1117" : "#fff",
+                          bordercolor: chartLineColor,
+                          font: { color: dark ? "#e8e0cc" : "#111", family: "Space Mono, monospace", size: 11 },
+                        },
+                        showlegend: false,
+                      }}
+                      config={{ displayModeBar: false, responsive: true }}
+                      style={{ width: "100%" }}
+                      useResizeHandler
+                    />
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200, fontSize: 12, color: "var(--text3)" }}>
+                      No chart data available
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Buy panel */}
-          <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <div style={CARD}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text)", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
               Buy{selectedTicker ? ` ${selectedTicker}` : ""}
             </div>
 
@@ -645,7 +731,7 @@ export default function PaperTrading({
                   style={{
                     width: "100%", boxSizing: "border-box",
                     background: "var(--bg2)", border: "1px solid var(--border)",
-                    borderRadius: 6, padding: "8px 10px",
+                    borderRadius: 8, padding: "9px 12px",
                     fontSize: 13, fontFamily: "Space Mono, monospace",
                     color: "var(--text)", outline: "none",
                     opacity: !selectedTicker ? 0.45 : 1,
@@ -653,7 +739,7 @@ export default function PaperTrading({
                 />
               </div>
 
-              <div style={{ background: "var(--bg2)", borderRadius: 6, padding: "8px 10px", fontSize: 11, minHeight: 34 }}>
+              <div style={{ background: "var(--bg2)", borderRadius: 8, padding: "9px 12px", fontSize: 11, minHeight: 36 }}>
                 {stockLoading ? (
                   <Skeleton width={100} height={13} />
                 ) : estimatedCost != null ? (
@@ -682,9 +768,9 @@ export default function PaperTrading({
                 onClick={executeBuy}
                 disabled={buyDisabled}
                 style={{
-                  width: "100%", padding: "10px 0",
-                  background: "var(--accent)", border: "none", borderRadius: 6,
-                  fontSize: 13, fontWeight: 600, color: "var(--bg)",
+                  width: "100%", padding: "12px 0",
+                  background: "var(--accent)", border: "none", borderRadius: 8,
+                  fontSize: 14, fontWeight: 700, color: "var(--bg)",
                   cursor: buyDisabled ? "not-allowed" : "pointer",
                   opacity: buyDisabled ? 0.45 : 1,
                   transition: "opacity 0.15s",
@@ -704,13 +790,13 @@ export default function PaperTrading({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}
+                style={CARD}
               >
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text)", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Sell {selectedTicker}
                 </div>
 
-                <div style={{ background: "var(--bg2)", borderRadius: 6, padding: "10px 12px", marginBottom: 10 }}>
+                <div style={{ background: "var(--bg2)", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     {[
                       { label: "Shares", value: fmt(selectedPosition.shares, 4), color: undefined },
@@ -744,7 +830,7 @@ export default function PaperTrading({
                     step="any"
                     style={{
                       flex: 1, background: "var(--bg2)", border: "1px solid var(--border)",
-                      borderRadius: 6, padding: "8px 10px",
+                      borderRadius: 8, padding: "9px 12px",
                       fontSize: 13, fontFamily: "Space Mono, monospace",
                       color: "var(--text)", outline: "none",
                     }}
@@ -752,7 +838,7 @@ export default function PaperTrading({
                   <button
                     onClick={() => setSellShares(String(selectedPosition.shares))}
                     style={{
-                      padding: "8px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                      padding: "9px 14px", borderRadius: 8, fontSize: 11, fontWeight: 600,
                       background: "var(--bg3)", border: "1px solid var(--border)",
                       color: "var(--text2)", cursor: "pointer", whiteSpace: "nowrap",
                     }}
@@ -767,8 +853,8 @@ export default function PaperTrading({
                   onClick={executeSell}
                   disabled={sellDisabled}
                   style={{
-                    width: "100%", padding: "10px 0",
-                    background: "var(--red)", border: "none", borderRadius: 6,
+                    width: "100%", padding: "12px 0",
+                    background: "var(--red)", border: "none", borderRadius: 8,
                     fontSize: 13, fontWeight: 600, color: "#fff",
                     cursor: sellDisabled ? "not-allowed" : "pointer",
                     opacity: sellDisabled ? 0.45 : 1,
@@ -782,180 +868,99 @@ export default function PaperTrading({
           </AnimatePresence>
         </div>
 
-        {/* ── CENTER COLUMN ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* ── RIGHT COLUMN: Stats + Chart + History ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {selectedTicker ? (
-            <>
-              {/* Price chart */}
-              <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-                <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
-                      {selectedTicker}
-                    </span>
-                    {stockData && !stockLoading && (
-                      <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {stockData.name}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                    {CHART_PERIODS.map(p => (
-                      <button
-                        key={p}
-                        className="pt-period-btn"
-                        onClick={() => onChartPeriodChange(p)}
-                        style={{
-                          padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
-                          border: "none", cursor: "pointer",
-                          background: chartPeriod === p ? "var(--accent)" : "transparent",
-                          color: chartPeriod === p ? "var(--bg)" : "var(--text3)",
-                        }}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          {/* Portfolio stats */}
+          <div style={CARD}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", marginBottom: 16, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Portfolio
+            </div>
 
-                <div style={{ minHeight: 240 }}>
-                  {chartLoading ? (
-                    <div style={{ padding: 16 }}><Skeleton height={224} /></div>
-                  ) : chartData && chartData.prices.length > 0 ? (
-                    <Plot
-                      data={[{
-                        x: chartData.dates,
-                        y: chartData.prices,
-                        type: "scatter",
-                        mode: "lines",
-                        line: { color: chartLineColor, width: 2 },
-                        fill: "tozeroy",
-                        fillcolor: chartFillColor,
-                        hovertemplate: "$%{y:,.2f}<extra></extra>",
-                      }]}
-                      layout={{
-                        paper_bgcolor: "transparent",
-                        plot_bgcolor: "transparent",
-                        margin: { t: 8, b: 36, l: 52, r: 12 },
-                        height: 240,
-                        font: { color: fc, family: "Space Mono, monospace", size: 9 },
-                        xaxis: { gridcolor: gc, linecolor: lc, tickcolor: "transparent", showgrid: false },
-                        yaxis: { gridcolor: gc, linecolor: lc, tickcolor: "transparent", tickprefix: "$", tickformat: ",.2f" },
-                        hoverlabel: {
-                          bgcolor: dark ? "#0d1117" : "#fff",
-                          bordercolor: chartLineColor,
-                          font: { color: dark ? "#e8e0cc" : "#111", family: "Space Mono, monospace", size: 11 },
-                        },
-                        showlegend: false,
-                      }}
-                      config={{ displayModeBar: false, responsive: true }}
-                      style={{ width: "100%" }}
-                      useResizeHandler
-                    />
-                  ) : (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 240, fontSize: 12, color: "var(--text3)" }}>
-                      No chart data available
+            {loading ? (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} style={{ background: "var(--bg2)", borderRadius: 8, padding: "12px 14px" }}>
+                    <Skeleton width={60} height={9} />
+                    <div style={{ marginTop: 6 }}><Skeleton width={80} height={18} /></div>
+                  </div>
+                ))}
+              </div>
+            ) : portfolio ? (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {[
+                  { label: "Total Value", value: `$${fmt(portfolio.total_value)}`, size: 16, bold: true, color: undefined },
+                  { label: "Cash", value: `$${fmt(portfolio.cash)}`, size: 14, bold: false, color: undefined },
+                  { label: "Invested", value: `$${fmt(portfolio.total_holdings_value)}`, size: 14, bold: false, color: undefined },
+                  {
+                    label: "Return",
+                    value: `${portfolio.total_return_pct >= 0 ? "+" : ""}${fmt(portfolio.total_return_pct)}%`,
+                    size: 15, bold: true,
+                    color: portfolio.total_return_pct >= 0 ? "var(--green)" : "var(--red)",
+                  },
+                ].map(item => (
+                  <div key={item.label} style={{ background: "var(--bg2)", borderRadius: 8, padding: "12px 14px" }}>
+                    <div style={{ fontSize: 9, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                      {item.label}
                     </div>
-                  )}
-                </div>
+                    <div style={{ fontFamily: "Space Mono, monospace", fontSize: item.size, fontWeight: item.bold ? 700 : 600, color: item.color ?? "var(--text)" }}>
+                      {item.value}
+                    </div>
+                  </div>
+                ))}
               </div>
+            ) : null}
 
-              {/* Key stats */}
-              <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-                <div style={{ padding: "10px 14px", borderBottom: "0.5px solid var(--border)" }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                    Key Stats
-                  </span>
-                </div>
-                {stockLoading ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} style={{ padding: "10px 14px" }}>
-                        <Skeleton width={50} height={9} />
-                        <div style={{ marginTop: 5 }}><Skeleton width={70} height={13} /></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : stockData ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
-                    {[
-                      { label: "Market Cap", value: fmtLarge(stockData.market_cap) },
-                      { label: "P/E Ratio", value: stockData.pe_ratio > 0 ? fmt(stockData.pe_ratio) : "N/A" },
-                      { label: "EPS", value: stockData.eps ? `$${fmt(stockData.eps)}` : "N/A" },
-                      {
-                        label: "Volume",
-                        value: stockData.volume > 0
-                          ? stockData.volume >= 1e6 ? `${(stockData.volume / 1e6).toFixed(1)}M` : stockData.volume.toLocaleString()
-                          : "N/A",
-                      },
-                      { label: "52W High", value: `$${fmt(stockData.week52_high)}` },
-                      { label: "52W Low", value: `$${fmt(stockData.week52_low)}` },
-                    ].map(stat => (
-                      <div key={stat.label} style={{ padding: "10px 14px", borderBottom: "0.5px solid var(--border)", borderRight: "0.5px solid var(--border)" }}>
-                        <div style={{ fontSize: 9, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
-                          {stat.label}
-                        </div>
-                        <div style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
-                          {stat.value}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
+            {portfolio?.sp500_return_pct != null && (
+              <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "0.5px solid var(--border)" }}>
+                <span style={{ fontSize: 10, color: "var(--text3)" }}>vs S&P 500</span>
+                <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 600, color: (portfolio.total_return_pct - portfolio.sp500_return_pct) >= 0 ? "var(--green)" : "var(--red)" }}>
+                  {(portfolio.total_return_pct - portfolio.sp500_return_pct) >= 0 ? "+" : ""}
+                  {fmt(portfolio.total_return_pct - portfolio.sp500_return_pct)}%
+                </span>
               </div>
-            </>
-          ) : showEmptyState ? (
-            /* Empty state */
-            <div style={{
-              background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8,
-              padding: "64px 32px", textAlign: "center", display: "flex", flexDirection: "column",
-              alignItems: "center", gap: 16,
-            }}>
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--border2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>
-                  Start trading with virtual cash
-                </div>
-                <div style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.65 }}>
-                  Search for a stock on the left to begin.{" "}
-                  {loading ? null : (
-                    <>
-                      You have{" "}
-                      <span style={{ fontFamily: "Space Mono, monospace", color: "var(--accent)", fontWeight: 700 }}>
-                        ${fmt(portfolio?.cash ?? 10000)}
-                      </span>{" "}
-                      in virtual cash.
-                    </>
-                  )}
-                </div>
+            )}
+          </div>
+
+          {/* Sparkline */}
+          {tradesLoaded && portfolio && sparkValues.length >= 2 && (
+            <div style={CARD}>
+              <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Portfolio Value
+              </div>
+              <Sparkline values={sparkValues} />
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 9, fontFamily: "Space Mono, monospace", color: "var(--text3)" }}>
+                <span>Start: $10,000</span>
+                <span style={{ color: portfolio.total_return_pct >= 0 ? "var(--green)" : "var(--red)" }}>
+                  Now: ${fmt(portfolio.total_value)}
+                </span>
               </div>
             </div>
-          ) : (
-            /* Holdings table */
-            <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          )}
+
+          {/* Holdings table */}
+          {hasHoldings && (
+            <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>Holdings</span>
                 {!loading && portfolio && (
-                  <span style={{ fontSize: 10, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>
+                  <span style={{ fontSize: 9, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>
                     {portfolio.positions.length} position{portfolio.positions.length !== 1 ? "s" : ""}
                   </span>
                 )}
               </div>
 
               {loading ? (
-                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                  {[1, 2, 3].map(i => <Skeleton key={i} height={44} />)}
+                <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[1, 2, 3].map(i => <Skeleton key={i} height={40} />)}
                 </div>
               ) : (
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                        {["Ticker", "Shares", "Avg Cost", "Price", "Value", "P&L ($)", "P&L (%)", ""].map(h => (
-                          <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: 9, color: "var(--text3)", fontWeight: 500, whiteSpace: "nowrap", letterSpacing: 0.4, textTransform: "uppercase" }}>
+                        {["Ticker", "Shares", "Avg Cost", "Value", "P&L", ""].map(h => (
+                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, color: "var(--text3)", fontWeight: 500, whiteSpace: "nowrap", letterSpacing: 0.4, textTransform: "uppercase" }}>
                             {h}
                           </th>
                         ))}
@@ -964,28 +969,22 @@ export default function PaperTrading({
                     <tbody>
                       {portfolio?.positions.map(pos => (
                         <tr key={pos.ticker} className="pt-table-row" style={{ borderBottom: "0.5px solid var(--border)" }}>
-                          <td style={{ padding: "10px 10px", fontFamily: "Space Mono, monospace", fontWeight: 700, color: "var(--text)" }}>
+                          <td style={{ padding: "10px 12px", fontFamily: "Space Mono, monospace", fontWeight: 700, color: "var(--text)" }}>
                             {pos.ticker}
                           </td>
-                          <td style={{ padding: "10px 10px", fontFamily: "Space Mono, monospace", color: "var(--text2)" }}>
+                          <td style={{ padding: "10px 12px", fontFamily: "Space Mono, monospace", color: "var(--text2)" }}>
                             {fmt(pos.shares, 4)}
                           </td>
-                          <td style={{ padding: "10px 10px", fontFamily: "Space Mono, monospace", color: "var(--text2)" }}>
+                          <td style={{ padding: "10px 12px", fontFamily: "Space Mono, monospace", color: "var(--text2)" }}>
                             ${fmt(pos.avg_cost)}
                           </td>
-                          <td style={{ padding: "10px 10px", fontFamily: "Space Mono, monospace", color: "var(--text2)" }}>
-                            {pos.current_price != null ? `$${fmt(pos.current_price)}` : "--"}
-                          </td>
-                          <td style={{ padding: "10px 10px", fontFamily: "Space Mono, monospace", color: "var(--text)" }}>
+                          <td style={{ padding: "10px 12px", fontFamily: "Space Mono, monospace", color: "var(--text)" }}>
                             ${fmt(pos.current_value)}
                           </td>
-                          <td style={{ padding: "10px 10px", fontFamily: "Space Mono, monospace", color: pos.pl_dollar >= 0 ? "var(--green)" : "var(--red)" }}>
-                            {pos.pl_dollar >= 0 ? "+" : ""}${fmt(Math.abs(pos.pl_dollar))}
-                          </td>
-                          <td style={{ padding: "10px 10px", fontFamily: "Space Mono, monospace", color: pos.pl_pct >= 0 ? "var(--green)" : "var(--red)" }}>
+                          <td style={{ padding: "10px 12px", fontFamily: "Space Mono, monospace", color: pos.pl_pct >= 0 ? "var(--green)" : "var(--red)" }}>
                             {pos.pl_pct >= 0 ? "+" : ""}{fmt(pos.pl_pct)}%
                           </td>
-                          <td style={{ padding: "10px 10px" }}>
+                          <td style={{ padding: "10px 12px" }}>
                             <button
                               className="pt-trade-btn"
                               onClick={() => selectTicker(pos.ticker)}
@@ -1006,76 +1005,11 @@ export default function PaperTrading({
               )}
             </div>
           )}
-        </div>
 
-        {/* ── RIGHT COLUMN ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-
-          {/* Portfolio summary */}
-          <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Portfolio
-            </div>
-
-            {loading ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 8, borderBottom: "0.5px solid var(--border)" }}>
-                    <Skeleton width={70} height={10} />
-                    <Skeleton width={55} height={13} />
-                  </div>
-                ))}
-              </div>
-            ) : portfolio ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                {[
-                  { label: "Total Value", value: `$${fmt(portfolio.total_value)}`, size: 18, bold: true, color: undefined },
-                  { label: "Cash Available", value: `$${fmt(portfolio.cash)}`, size: 13, bold: false, color: undefined },
-                  { label: "Invested", value: `$${fmt(portfolio.total_holdings_value)}`, size: 13, bold: false, color: undefined },
-                  {
-                    label: "Total Return",
-                    value: `${portfolio.total_return_pct >= 0 ? "+" : ""}${fmt(portfolio.total_return_pct)}%`,
-                    size: 15, bold: true,
-                    color: portfolio.total_return_pct >= 0 ? "var(--green)" : "var(--red)",
-                  },
-                  ...(portfolio.sp500_return_pct != null ? [{
-                    label: "vs S&P 500",
-                    value: `${(portfolio.total_return_pct - portfolio.sp500_return_pct) >= 0 ? "+" : ""}${fmt(portfolio.total_return_pct - portfolio.sp500_return_pct)}%`,
-                    size: 12, bold: false,
-                    color: (portfolio.total_return_pct - portfolio.sp500_return_pct) >= 0 ? "var(--green)" : "var(--red)",
-                  }] : []),
-                ].map(item => (
-                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "0.5px solid var(--border)" }}>
-                    <span style={{ fontSize: 11, color: "var(--text3)" }}>{item.label}</span>
-                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: item.size, fontWeight: item.bold ? 700 : 600, color: item.color ?? "var(--text)" }}>
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
-          {/* Sparkline */}
-          {tradesLoaded && portfolio && sparkValues.length >= 2 && (
-            <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
-              <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Value Over Time
-              </div>
-              <Sparkline values={sparkValues} />
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 9, fontFamily: "Space Mono, monospace", color: "var(--text3)" }}>
-                <span>Start: $10,000</span>
-                <span style={{ color: portfolio.total_return_pct >= 0 ? "var(--green)" : "var(--red)" }}>
-                  Now: ${fmt(portfolio.total_value)}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Trade History */}
-          <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-            <div style={{ padding: "10px 14px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>Trade History</span>
+          {/* Trade history */}
+          <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>Trade History</span>
               {trades.length > 0 && (
                 <span style={{ fontSize: 9, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>
                   {trades.length}
@@ -1083,63 +1017,69 @@ export default function PaperTrading({
               )}
             </div>
 
-            <div style={{ maxHeight: 300, overflowY: "auto", overscrollBehavior: "contain" }}>
-              {!tradesLoaded ? (
-                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                  {[1, 2, 3].map(i => <Skeleton key={i} height={48} />)}
-                </div>
-              ) : trades.length === 0 ? (
-                <div style={{ padding: "24px 14px", fontSize: 11, color: "var(--text3)", textAlign: "center" }}>
-                  No trades yet
-                </div>
-              ) : (
-                <div>
-                  {trades.map(t => (
-                    <div
-                      key={t.id}
-                      className="pt-trade-row"
-                      style={{ padding: "10px 14px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "flex-start", gap: 8 }}
-                    >
-                      <div style={{
-                        marginTop: 2, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase",
-                        padding: "2px 6px", borderRadius: 3, flexShrink: 0,
-                        background: t.action === "buy" ? "rgba(76,175,125,0.12)" : "rgba(224,92,92,0.12)",
-                        color: t.action === "buy" ? "var(--green)" : "var(--red)",
-                      }}>
-                        {t.action}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, color: "var(--text)" }}>
-                            {t.ticker}
+            {!tradesLoaded ? (
+              <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                {[1, 2, 3].map(i => <Skeleton key={i} height={40} />)}
+              </div>
+            ) : trades.length === 0 ? (
+              <div style={{ padding: "28px 20px", fontSize: 11, color: "var(--text3)", textAlign: "center" }}>
+                No trades yet
+              </div>
+            ) : (
+              <div style={{ maxHeight: 300, overflowY: "auto", overflowX: "auto", overscrollBehavior: "contain" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                      {["Ticker", "Action", "Shares", "Price", "Total", "Date"].map(h => (
+                        <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, color: "var(--text3)", fontWeight: 500, letterSpacing: 0.4, textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trades.map(t => (
+                      <tr key={t.id} className="pt-history-row" style={{ borderBottom: "0.5px solid var(--border)" }}>
+                        <td style={{ padding: "9px 12px", fontFamily: "Space Mono, monospace", fontWeight: 700, color: "var(--text)", whiteSpace: "nowrap" }}>
+                          {t.ticker}
+                        </td>
+                        <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>
+                          <span style={{
+                            fontSize: 9, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase",
+                            padding: "2px 6px", borderRadius: 3,
+                            background: t.action === "buy" ? "rgba(76,175,125,0.12)" : "rgba(224,92,92,0.12)",
+                            color: t.action === "buy" ? "var(--green)" : "var(--red)",
+                          }}>
+                            {t.action}
                           </span>
-                          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 600, color: "var(--text)" }}>
-                            ${fmt(t.total)}
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
-                          <span style={{ fontSize: 10, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>
-                            {fmt(t.shares, 4)} sh @ ${fmt(t.price)}
-                          </span>
-                          <span style={{ fontSize: 9, color: "var(--text3)" }}>
-                            {fmtDate(t.executed_at)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                        </td>
+                        <td style={{ padding: "9px 12px", fontFamily: "Space Mono, monospace", color: "var(--text2)", whiteSpace: "nowrap" }}>
+                          {fmt(t.shares, 4)}
+                        </td>
+                        <td style={{ padding: "9px 12px", fontFamily: "Space Mono, monospace", color: "var(--text2)", whiteSpace: "nowrap" }}>
+                          ${fmt(t.price)}
+                        </td>
+                        <td style={{ padding: "9px 12px", fontFamily: "Space Mono, monospace", fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" }}>
+                          ${fmt(t.total)}
+                        </td>
+                        <td style={{ padding: "9px 12px", fontSize: 10, color: "var(--text3)", whiteSpace: "nowrap" }}>
+                          {fmtDate(t.executed_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Reset */}
           <button
             onClick={() => setShowResetModal(true)}
             style={{
-              width: "100%", padding: "8px 0",
+              width: "100%", padding: "9px 0",
               background: "transparent", border: "1px solid var(--border)",
-              borderRadius: 6, fontSize: 11, color: "var(--text3)",
+              borderRadius: 8, fontSize: 11, color: "var(--text3)",
               cursor: "pointer", transition: "color 0.15s, border-color 0.15s",
             }}
             onMouseEnter={e => { e.currentTarget.style.color = "var(--red)"; e.currentTarget.style.borderColor = "var(--red)"; }}
@@ -1189,7 +1129,7 @@ export default function PaperTrading({
                 <button
                   onClick={() => setShowResetModal(false)}
                   style={{
-                    padding: "8px 16px", borderRadius: 6, fontSize: 13,
+                    padding: "8px 16px", borderRadius: 8, fontSize: 13,
                     background: "transparent", border: "1px solid var(--border)",
                     color: "var(--text2)", cursor: "pointer",
                   }}
@@ -1200,7 +1140,7 @@ export default function PaperTrading({
                   onClick={executeReset}
                   disabled={resetLoading}
                   style={{
-                    padding: "8px 16px", borderRadius: 6, fontSize: 13,
+                    padding: "8px 16px", borderRadius: 8, fontSize: 13,
                     background: "var(--red)", border: "none",
                     color: "#fff", cursor: resetLoading ? "not-allowed" : "pointer",
                     opacity: resetLoading ? 0.6 : 1,
