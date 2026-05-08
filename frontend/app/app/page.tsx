@@ -229,8 +229,9 @@ function AnalysisSteps({ externalStep }: { externalStep?: number }) {
     return () => timers.forEach(clearTimeout);
   }, []);
   const displayStep = externalStep !== undefined ? Math.max(step, externalStep) : step;
+  const allDone = displayStep >= ANALYSIS_STEPS.length;
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 60, gap: 32 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 160px)", gap: 32 }}>
       <style>{`
         @keyframes orb-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes orb-pulse { 0%,100% { opacity:0.3; transform:scale(0.85); } 50% { opacity:0.7; transform:scale(1.1); } }
@@ -265,6 +266,11 @@ function AnalysisSteps({ externalStep }: { externalStep?: number }) {
           );
         })}
       </div>
+      {allDone && (
+        <p style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 1, animation: "orb-pulse 1.8s ease-in-out infinite" }}>
+          Finalizing results...
+        </p>
+      )}
     </div>
   );
 }
