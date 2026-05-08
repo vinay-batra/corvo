@@ -213,10 +213,10 @@ function Spinner() {
 
 const ANALYSIS_STEPS = [
   { label: "Fetching live prices", ms: 0 },
-  { label: "Calculating risk metrics", ms: 600 },
-  { label: "Running Monte Carlo simulation", ms: 1200 },
-  { label: "Scoring portfolio health", ms: 1900 },
-  { label: "Generating AI insights", ms: 2600 },
+  { label: "Calculating risk metrics", ms: 350 },
+  { label: "Running Monte Carlo simulation", ms: 700 },
+  { label: "Scoring portfolio health", ms: 1050 },
+  { label: "Generating AI insights", ms: 1400 },
 ];
 
 function AnalysisSteps({ externalStep }: { externalStep?: number }) {
@@ -230,37 +230,37 @@ function AnalysisSteps({ externalStep }: { externalStep?: number }) {
   // Use externalStep if it's ahead (results arrived early — flash remaining steps)
   const displayStep = externalStep !== undefined ? Math.max(step, externalStep) : step;
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 32 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 36 }}>
       {/* Animated orb */}
-      <div style={{ position: "relative", width: 56, height: 56 }}>
+      <div style={{ position: "relative", width: 68, height: 68 }}>
         <style>{`
           @keyframes orb-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
           @keyframes orb-pulse { 0%,100% { opacity:0.3; transform:scale(0.85); } 50% { opacity:0.7; transform:scale(1.1); } }
-          .orb-ring { position:absolute; inset:0; border-radius:50%; border:1.5px solid transparent; animation:orb-spin 1.4s linear infinite; }
-          .orb-core { position:absolute; inset:8px; border-radius:50%; background:radial-gradient(circle, rgba(201,168,76,0.5) 0%, transparent 70%); animation:orb-pulse 1.8s ease-in-out infinite; }
+          .orb-ring { position:absolute; inset:0; border-radius:50%; border:2px solid transparent; animation:orb-spin 1.2s linear infinite; }
+          .orb-core { position:absolute; inset:10px; border-radius:50%; background:radial-gradient(circle, rgba(201,168,76,0.5) 0%, transparent 70%); animation:orb-pulse 1.6s ease-in-out infinite; }
         `}</style>
         <div className="orb-ring" style={{ borderTopColor: "var(--accent)", borderRightColor: "rgba(201,168,76,0.2)", borderBottomColor: "transparent", borderLeftColor: "rgba(201,168,76,0.2)" }} />
-        <div className="orb-ring" style={{ inset: 6, animationDuration: "2.2s", animationDirection: "reverse", borderTopColor: "rgba(201,168,76,0.4)", borderRightColor: "transparent", borderBottomColor: "rgba(201,168,76,0.4)", borderLeftColor: "transparent" }} />
+        <div className="orb-ring" style={{ inset: 7, animationDuration: "2s", animationDirection: "reverse", borderTopColor: "rgba(201,168,76,0.4)", borderRightColor: "transparent", borderBottomColor: "rgba(201,168,76,0.4)", borderLeftColor: "transparent" }} />
         <div className="orb-core" />
       </div>
       {/* Steps */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 280 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 300 }}>
         {ANALYSIS_STEPS.map((s, i) => {
           const done = i < displayStep, active = i === displayStep;
           return (
-            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10, opacity: done || active ? 1 : 0.25, transition: "opacity 0.4s ease" }}>
-              <div style={{ width: 16, height: 16, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 12, opacity: done || active ? 1 : 0.2, transition: "opacity 0.2s ease" }}>
+              <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                 background: done ? "rgba(92,184,138,0.15)" : active ? "rgba(201,168,76,0.15)" : "var(--bg3)",
-                border: `1px solid ${done ? "#5cb88a" : active ? "var(--accent)" : "var(--border)"}`,
-                transition: "all 0.3s ease",
+                border: `1.5px solid ${done ? "#5cb88a" : active ? "var(--accent)" : "var(--border)"}`,
+                transition: "all 0.2s ease",
               }}>
                 {done ? (
-                  <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 ) : active ? (
-                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", animation: "orb-pulse 1s ease-in-out infinite" }} />
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", animation: "orb-pulse 0.8s ease-in-out infinite" }} />
                 ) : null}
               </div>
-              <span style={{ fontSize: 12, color: done ? "var(--text2)" : active ? "var(--text)" : "var(--text3)", fontWeight: active ? 500 : 400, transition: "color 0.3s ease" }}>{s.label}</span>
+              <span style={{ fontSize: 13, color: done ? "var(--text2)" : active ? "var(--text)" : "var(--text3)", fontWeight: active ? 500 : 400, transition: "color 0.2s ease" }}>{s.label}</span>
             </div>
           );
         })}
