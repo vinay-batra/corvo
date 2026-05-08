@@ -52,6 +52,8 @@ function groupByDate(convs: Conversation[]): { label: string; items: Conversatio
   return Object.entries(map).map(([label, items]) => ({ label, items }));
 }
 
+const ROAST_PROMPT = "Roast my portfolio. Be brutally honest — no softening, no disclaimers, no \"that said\" pivots. Tell me exactly what's wrong with my holdings, my allocation, and my strategy. If something is smart, say so briefly. If something is dumb, destroy it.";
+
 const SUGGESTION_SETS: string[][] = [
   [
     "What stocks pair well with my current holdings?",
@@ -990,6 +992,17 @@ export default function AiChat({
                     : "Analyze risks, get rebalancing advice, and more."}
                 </p>
               </div>
+
+              {/* Roast button */}
+              <button
+                onClick={() => send(ROAST_PROMPT)}
+                style={{ width: "100%", marginBottom: 8, padding: "10px 14px", background: "rgba(224,92,92,0.07)", border: "0.5px solid rgba(224,92,92,0.35)", borderRadius: 9, color: "#e05c5c", fontSize: 12, fontWeight: 600, cursor: "pointer", textAlign: "left", transition: "all .15s", display: "flex", alignItems: "center", gap: 8 }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,92,92,0.13)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(224,92,92,0.07)"; }}
+              >
+                <span style={{ fontSize: 15 }}>🔥</span>
+                Roast my portfolio — no filters
+              </button>
 
               {/* Suggestions: 2x2 grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 6 }}>
