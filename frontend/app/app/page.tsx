@@ -66,7 +66,6 @@ import CorrelationHeatmap from "../../components/CorrelationHeatmap";
 import DrawdownChart from "../../components/DrawdownChart";
 import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
-import PortfolioHeartbeat from "../../components/PortfolioHeartbeat";
 import PaperTrading from "../../components/PaperTrading";
 import LearnPage from "../learn/page";
 
@@ -2578,25 +2577,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </DashReveal>
                 </div>
 
-                {/* Roast My Portfolio button */}
-                {data && (
-                  <div style={{ marginBottom: 16 }}>
-                    <button
-                      onClick={() => {
-                        setChatInitialMessage("Roast my portfolio. Be brutally honest — no softening, no disclaimers, no \"that said\" pivots. Tell me exactly what's wrong with my holdings, my allocation, and my strategy. If something is smart, say so briefly. If something is dumb, destroy it.");
-                        setChatOpen(true);
-                      }}
-                      style={{ width: "100%", padding: "11px 16px", background: "rgba(224,92,92,0.06)", border: "0.5px solid rgba(224,92,92,0.25)", borderRadius: 10, color: "#e05c5c", fontSize: 12, fontWeight: 600, cursor: "pointer", textAlign: "left", transition: "all .15s", display: "flex", alignItems: "center", gap: 10 }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,92,92,0.12)"; e.currentTarget.style.borderColor = "rgba(224,92,92,0.45)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(224,92,92,0.06)"; e.currentTarget.style.borderColor = "rgba(224,92,92,0.25)"; }}
-                    >
-                      <span style={{ fontSize: 16 }}>🔥</span>
-                      <span>Roast my portfolio</span>
-                      <span style={{ marginLeft: "auto", fontSize: 10, color: "rgba(224,92,92,0.6)", fontWeight: 400 }}>brutally honest AI feedback</span>
-                    </button>
-                  </div>
-                )}
-
                 {/* Tax Loss Harvesting Alert Badge */}
                 {tlhAlert && (
                   <div style={{ marginBottom: 16 }}>
@@ -3063,14 +3043,6 @@ const { dark, toggle: toggleDark }  = useTheme();
         currentData={data}
         onApply={(a) => { setAssets(a); setWhatIfOpen(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
       />
-
-      {/* Portfolio heartbeat — persistent EKG line at bottom of screen */}
-      {data && (
-        <PortfolioHeartbeat
-          volatility={data.portfolio_volatility ?? 0.15}
-          portfolioReturn={data.portfolio_return ?? 0}
-        />
-      )}
 
       {/* Push notification prompt */}
       <AnimatePresence initial={false}>
