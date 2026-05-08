@@ -213,47 +213,47 @@ function Spinner() {
 }
 
 const ANALYSIS_STEPS = [
-  { label: "Fetching live prices", ms: 0 },
-  { label: "Calculating risk metrics", ms: 350 },
-  { label: "Running Monte Carlo simulation", ms: 700 },
-  { label: "Scoring portfolio health", ms: 1050 },
-  { label: "Generating AI insights", ms: 1400 },
+  "Fetching live prices",
+  "Calculating risk metrics",
+  "Running Monte Carlo simulation",
+  "Scoring portfolio health",
+  "Generating AI insights",
 ];
 
 function AnalysisSteps({ externalStep }: { externalStep?: number }) {
   const [step, setStep] = React.useState(0);
   React.useEffect(() => {
-    const timers = ANALYSIS_STEPS.slice(1).map((s, i) =>
-      setTimeout(() => setStep(i + 1), s.ms)
+    // All 5 steps fire in ~1s — purely cosmetic and fast
+    const timers = ANALYSIS_STEPS.slice(1).map((_, i) =>
+      setTimeout(() => setStep(i + 1), (i + 1) * 220)
     );
     return () => timers.forEach(clearTimeout);
   }, []);
-  // Use externalStep if it's ahead (results arrived early — flash remaining steps)
   const displayStep = externalStep !== undefined ? Math.max(step, externalStep) : step;
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 36 }}>
-      {/* Animated orb */}
-      <div style={{ position: "relative", width: 68, height: 68 }}>
-        <style>{`
-          @keyframes orb-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-          @keyframes orb-pulse { 0%,100% { opacity:0.3; transform:scale(0.85); } 50% { opacity:0.7; transform:scale(1.1); } }
-          .orb-ring { position:absolute; inset:0; border-radius:50%; border:2px solid transparent; animation:orb-spin 1.2s linear infinite; }
-          .orb-core { position:absolute; inset:10px; border-radius:50%; background:radial-gradient(circle, rgba(201,168,76,0.5) 0%, transparent 70%); animation:orb-pulse 1.6s ease-in-out infinite; }
-        `}</style>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 60, gap: 32 }}>
+      <style>{`
+        @keyframes orb-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes orb-pulse { 0%,100% { opacity:0.3; transform:scale(0.85); } 50% { opacity:0.7; transform:scale(1.1); } }
+        .orb-ring { position:absolute; inset:0; border-radius:50%; border:2px solid transparent; animation:orb-spin 1.2s linear infinite; }
+        .orb-core { position:absolute; inset:10px; border-radius:50%; background:radial-gradient(circle, rgba(201,168,76,0.5) 0%, transparent 70%); animation:orb-pulse 1.6s ease-in-out infinite; }
+      `}</style>
+      {/* Orb centered above steps */}
+      <div style={{ position: "relative", width: 68, height: 68, flexShrink: 0 }}>
         <div className="orb-ring" style={{ borderTopColor: "var(--accent)", borderRightColor: "rgba(201,168,76,0.2)", borderBottomColor: "transparent", borderLeftColor: "rgba(201,168,76,0.2)" }} />
         <div className="orb-ring" style={{ inset: 7, animationDuration: "2s", animationDirection: "reverse", borderTopColor: "rgba(201,168,76,0.4)", borderRightColor: "transparent", borderBottomColor: "rgba(201,168,76,0.4)", borderLeftColor: "transparent" }} />
         <div className="orb-core" />
       </div>
-      {/* Steps */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 300 }}>
-        {ANALYSIS_STEPS.map((s, i) => {
+      {/* Steps — fixed width so they're always centered */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 13, width: 300 }}>
+        {ANALYSIS_STEPS.map((label, i) => {
           const done = i < displayStep, active = i === displayStep;
           return (
-            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 12, opacity: done || active ? 1 : 0.2, transition: "opacity 0.2s ease" }}>
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, opacity: done || active ? 1 : 0.2, transition: "opacity 0.15s ease" }}>
               <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                 background: done ? "rgba(92,184,138,0.15)" : active ? "rgba(201,168,76,0.15)" : "var(--bg3)",
                 border: `1.5px solid ${done ? "#5cb88a" : active ? "var(--accent)" : "var(--border)"}`,
-                transition: "all 0.2s ease",
+                transition: "all 0.15s ease",
               }}>
                 {done ? (
                   <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -261,7 +261,7 @@ function AnalysisSteps({ externalStep }: { externalStep?: number }) {
                   <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", animation: "orb-pulse 0.8s ease-in-out infinite" }} />
                 ) : null}
               </div>
-              <span style={{ fontSize: 13, color: done ? "var(--text2)" : active ? "var(--text)" : "var(--text3)", fontWeight: active ? 500 : 400, transition: "color 0.2s ease" }}>{s.label}</span>
+              <span style={{ fontSize: 13, color: done ? "var(--text2)" : active ? "var(--text)" : "var(--text3)", fontWeight: active ? 500 : 400, transition: "color 0.15s ease" }}>{label}</span>
             </div>
           );
         })}
