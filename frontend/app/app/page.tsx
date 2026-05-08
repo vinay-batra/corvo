@@ -1541,7 +1541,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         for (const pf of allPfs) {
           if (!pf.id || uniqueIds.has(pf.id) || !pf.assets?.length) continue;
           uniqueIds.add(pf.id);
-          const { data: hist } = await supabase.from("portfolio_snapshots").select("date").eq("portfolio_id", pf.id).gte("date", today).limit(1);
+          const { data: hist } = await supabase.from("portfolio_snapshots").select("date").eq("portfolio_id", pf.id).eq("user_id", userId).gte("date", today).limit(1);
           if (hist && hist.length > 0) continue;
           const valid = pf.assets.filter((a: any) => a.ticker && a.weight > 0);
           if (!valid.length) continue;
