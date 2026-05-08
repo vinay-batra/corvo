@@ -980,9 +980,9 @@ export default function AppPage() {
   const [analyzeComplete, setAnalyzeComplete] = useState(false);
   const [activeTab, setActiveTab]         = useState("overview");
   const [tabDir, setTabDir]               = useState(0); // -1 = left, 1 = right
-  const TAB_IDS = TABS.map(t => t.id);
+  const TAB_IDS = TABS.map(t => t.id) as string[];
   const setTabWithDir = (id: string) => {
-    const from = TAB_IDS.indexOf(activeTab), to = TAB_IDS.indexOf(id);
+    const from = TAB_IDS.indexOf(activeTab as string), to = TAB_IDS.indexOf(id);
     setTabDir(to > from ? 1 : -1);
     setActiveTab(id);
   };
