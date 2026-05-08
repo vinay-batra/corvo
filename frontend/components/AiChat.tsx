@@ -52,7 +52,7 @@ function groupByDate(convs: Conversation[]): { label: string; items: Conversatio
   return Object.entries(map).map(([label, items]) => ({ label, items }));
 }
 
-const ROAST_PROMPT = "Roast my portfolio. Be brutally honest — no softening, no disclaimers, no \"that said\" pivots. Tell me exactly what's wrong with my holdings, my allocation, and my strategy. If something is smart, say so briefly. If something is dumb, destroy it.";
+const ROAST_PROMPT = "Roast my portfolio.";
 
 const SUGGESTION_SETS: string[][] = [
   [
