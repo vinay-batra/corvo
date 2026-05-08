@@ -5653,7 +5653,11 @@ def portfolio_dividend_calendar(
                 pay_date_str = (ex_div_date + timedelta(days=28)).isoformat()
 
             allocated_value = portfolio_value * weight
-            dividend_yield = safe_float(info.get("dividendYield")) or 0.0  # raw decimal from yfinance (e.g. 0.0086 for 0.86%)
+            dividend_yield = safe_float(info.get("dividendYield")) or 0.0
+            # yfinance inconsistently returns dividendYield as decimal (0.0268) or percentage (2.68)
+            # Normalize: any yield > 0.5 is already a percentage — divide by 100
+            if dividend_yield > 0.5:
+                dividend_yield = dividend_yield / 100
             div_yield_pct = round(dividend_yield * 100, 2)
             projected_income = allocated_value * dividend_yield / freq_count if dividend_yield else allocated_value * dividend_per_payment / (safe_float(info.get("regularMarketPrice")) or safe_float(info.get("currentPrice")) or 1.0) if dividend_per_payment else 0.0
 
