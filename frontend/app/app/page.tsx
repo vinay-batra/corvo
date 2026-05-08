@@ -952,6 +952,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
+  const [tlhAlert, setTlhAlert] = useState<{ ticker: string; loss_pct: number; total_harvestable_loss: number } | null>(null);
   const [nlCommand, setNlCommand] = useState("");
   const [nlLoading, setNlLoading] = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
@@ -1315,6 +1316,20 @@ const { dark, toggle: toggleDark }  = useTheme();
       setTimeout(() => setAnimatingIn(false), 50);
       setActiveTab("overview");
       setAnalyzeComplete(true);
+      // Fire-and-forget: check for tax loss harvesting opportunities
+      if (userId) {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        fetch(`${API_URL}/portfolio/tax-loss-alert/${userId}?portfolio_value=${result.portfolio_value || 0}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => {
+            if (d?.has_opportunity && d.top_opportunity) {
+              setTlhAlert({ ticker: d.top_opportunity.ticker, loss_pct: d.top_opportunity.loss_pct, total_harvestable_loss: d.total_harvestable_loss });
+            } else {
+              setTlhAlert(null);
+            }
+          })
+          .catch(() => {});
+      }
       // Record the portfolio state that produced these results so we can detect drift
       lastAnalyzedAssetsRef.current = valid
         .map(a => `${a.ticker}:${a.weight.toFixed(4)}`)
@@ -2476,6 +2491,44 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>
                 </DashReveal>
                 </div>
+
+                {/* Tax Loss Harvesting Alert Badge */}
+                {tlhAlert && (
+                  <div style={{ marginBottom: 16 }}>
+                    <DashReveal from="left" delay={0}>
+                      <div
+                        onClick={() => setActiveTab("positions")}
+                        role="button"
+                        style={{
+                          display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
+                          padding: "12px 16px", borderRadius: 10,
+                          border: "0.5px solid rgba(224,92,92,0.35)",
+                          borderLeft: "3px solid var(--red, #e05c5c)",
+                          background: "rgba(224,92,92,0.06)",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(224,92,92,0.1)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "rgba(224,92,92,0.06)")}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e05c5c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e05c5c" }}>
+                            Tax loss harvesting opportunity
+                          </span>
+                          <span style={{ fontSize: 11, color: "var(--text2)", marginLeft: 8 }}>
+                            {tlhAlert.ticker} is down {Math.abs(tlhAlert.loss_pct).toFixed(1)}% — harvest ${Math.abs(tlhAlert.total_harvestable_loss).toLocaleString("en-US", { maximumFractionDigits: 0 })} in losses
+                          </span>
+                        </div>
+                        <span style={{ fontSize: 10, color: "var(--text3)", whiteSpace: "nowrap" }}>View in Positions →</span>
+                        <button
+                          onClick={e => { e.stopPropagation(); setTlhAlert(null); }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: "0 2px", fontSize: 14, lineHeight: 1 }}
+                          aria-label="Dismiss"
+                        >x</button>
+                      </div>
+                    </DashReveal>
+                  </div>
+                )}
 
                 {/* Metric cards */}
                 <div style={{ opacity: loadedVis(500) ? 1 : 0, transform: loadedVis(500) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
