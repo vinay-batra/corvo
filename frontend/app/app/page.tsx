@@ -1376,9 +1376,9 @@ const { dark, toggle: toggleDark }  = useTheme();
         localStorage.removeItem("corvo_pending_referral");
       }
       if (result.skipped_tickers?.length) setSkippedTickers(result.skipped_tickers);
-      // Flash remaining steps to completion before revealing results
-      setAnalysisStep(ANALYSIS_STEPS.length - 1);
-      await new Promise(r => setTimeout(r, 350));
+      // Flash all steps to done before revealing results
+      setAnalysisStep(ANALYSIS_STEPS.length);
+      await new Promise(r => setTimeout(r, 400));
       setData(result);
       setLoadedAt(Date.now());
       setAnimatingIn(true);
