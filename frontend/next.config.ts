@@ -11,7 +11,7 @@ const cspHeader = [
   "img-src 'self' data: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   `connect-src 'self' https://*.supabase.co ${apiUrl} https://app.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.ingest.sentry.io https://vitals.vercel-insights.com https://*.vercel-insights.com`,
-  "frame-src 'none'",
+  "frame-src 'none' https://vercel.live",
   "object-src 'none'",
   "base-uri 'self'",
 ].join("; ");
