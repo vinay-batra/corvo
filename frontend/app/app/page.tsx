@@ -1287,11 +1287,14 @@ const { dark, toggle: toggleDark }  = useTheme();
                 setSavedPortfolioId(latest.id);
                 setSavedPortfolioName(latest.name || "");
                 setLoading(true);
+                setAnalysisStep(0);
                 console.log("[auto-load] calling fetchPortfolio...");
                 try {
                   const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "");
                   console.log("[auto-load] fetchPortfolio result:", result ? { keys: Object.keys(result), error: result.error } : result);
                   if (result && !result.error) {
+                    setAnalysisStep(ANALYSIS_STEPS.length);
+                    await new Promise(r => setTimeout(r, 400));
                     setData(result);
                     setLoadedAt(Date.now());
                     setAnimatingIn(true);
