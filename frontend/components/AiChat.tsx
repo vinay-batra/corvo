@@ -996,11 +996,11 @@ export default function AiChat({
               {/* Roast button */}
               <button
                 onClick={() => send(ROAST_PROMPT)}
-                style={{ width: "100%", marginBottom: 8, padding: "10px 14px", background: "rgba(224,92,92,0.07)", border: "0.5px solid rgba(224,92,92,0.35)", borderRadius: 9, color: "#e05c5c", fontSize: 12, fontWeight: 600, cursor: "pointer", textAlign: "left", transition: "all .15s", display: "flex", alignItems: "center", gap: 8 }}
+                style={{ width: "100%", marginBottom: 8, padding: "10px 14px", background: "rgba(224,92,92,0.07)", border: "0.5px solid rgba(224,92,92,0.3)", borderRadius: 9, color: "#e05c5c", fontSize: 12, fontWeight: 600, cursor: "pointer", textAlign: "left", transition: "all .15s", display: "flex", alignItems: "center", gap: 8 }}
                 onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,92,92,0.13)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "rgba(224,92,92,0.07)"; }}
               >
-                <span style={{ fontSize: 15 }}>🔥</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e05c5c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 Roast my portfolio — no filters
               </button>
 
