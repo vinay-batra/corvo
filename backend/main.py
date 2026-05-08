@@ -4502,24 +4502,38 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
                 cumulative_return = (raw_value / base_raw) - 1.0
                 portfolio_value = 10000.0 * (1.0 + cumulative_return)
 
-    # ── Upsert (merge on portfolio_id + date unique constraint) ──────────────
-    upsert_resp = requests.post(
-        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots?on_conflict=portfolio_id,date",
-        headers={**_sb_headers(), "Prefer": "resolution=merge-duplicates"},
-        json={
+    # ── Upsert: try PATCH first (update today's row), then POST (insert) ─────
+    payload = {
+        "raw_value": raw_value,
+        "portfolio_value": round(portfolio_value, 4),
+        "cumulative_return": round(cumulative_return, 6),
+    }
+    patch_resp = requests.patch(
+        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots?portfolio_id=eq.{req.portfolio_id}&date=eq.{today}",
+        headers={**_sb_headers(), "Prefer": "return=minimal"},
+        json=payload,
+        timeout=10,
+    )
+    if patch_resp.status_code in (200, 204):
+        pass  # updated existing row
+    else:
+        # No existing row — insert fresh
+        insert_payload = {
             "user_id": req.user_id,
             "portfolio_id": req.portfolio_id,
             "date": today,
-            "raw_value": raw_value,
-            "portfolio_value": round(portfolio_value, 4),
-            "cumulative_return": round(cumulative_return, 6),
-        },
-        timeout=10,
-    )
-    if upsert_resp.status_code not in (200, 201, 204):
-        err_body = upsert_resp.text[:500]
-        print(f"[snapshot] upsert failed: {upsert_resp.status_code} — {err_body}")
-        raise HTTPException(status_code=500, detail=f"Failed to save portfolio snapshot: {upsert_resp.status_code} {err_body}")
+            **payload,
+        }
+        insert_resp = requests.post(
+            f"{SUPABASE_URL}/rest/v1/portfolio_snapshots",
+            headers={**_sb_headers(), "Prefer": "return=minimal"},
+            json=insert_payload,
+            timeout=10,
+        )
+        if insert_resp.status_code not in (200, 201, 204):
+            err_body = insert_resp.text[:500]
+            print(f"[snapshot] insert failed: {insert_resp.status_code} — {err_body}")
+            raise HTTPException(status_code=500, detail=f"Snapshot insert failed: {insert_resp.status_code} {err_body}")
 
     return {
         "ok": True,
