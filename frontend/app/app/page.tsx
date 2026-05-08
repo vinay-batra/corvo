@@ -213,13 +213,13 @@ function Spinner() {
 
 const ANALYSIS_STEPS = [
   { label: "Fetching live prices", ms: 0 },
-  { label: "Calculating risk metrics", ms: 700 },
-  { label: "Running Monte Carlo simulation", ms: 1400 },
-  { label: "Scoring portfolio health", ms: 2200 },
-  { label: "Generating AI insights", ms: 3000 },
+  { label: "Calculating risk metrics", ms: 600 },
+  { label: "Running Monte Carlo simulation", ms: 1200 },
+  { label: "Scoring portfolio health", ms: 1900 },
+  { label: "Generating AI insights", ms: 2600 },
 ];
 
-function AnalysisSteps() {
+function AnalysisSteps({ externalStep }: { externalStep?: number }) {
   const [step, setStep] = React.useState(0);
   React.useEffect(() => {
     const timers = ANALYSIS_STEPS.slice(1).map((s, i) =>
@@ -227,6 +227,8 @@ function AnalysisSteps() {
     );
     return () => timers.forEach(clearTimeout);
   }, []);
+  // Use externalStep if it's ahead (results arrived early — flash remaining steps)
+  const displayStep = externalStep !== undefined ? Math.max(step, externalStep) : step;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 32 }}>
       {/* Animated orb */}
@@ -244,7 +246,7 @@ function AnalysisSteps() {
       {/* Steps */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 280 }}>
         {ANALYSIS_STEPS.map((s, i) => {
-          const done = i < step, active = i === step;
+          const done = i < displayStep, active = i === displayStep;
           return (
             <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10, opacity: done || active ? 1 : 0.25, transition: "opacity 0.4s ease" }}>
               <div style={{ width: 16, height: 16, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
@@ -980,6 +982,7 @@ export default function AppPage() {
   const [analyzeComplete, setAnalyzeComplete] = useState(false);
   const [activeTab, setActiveTab]         = useState("overview");
   const [tabDir, setTabDir]               = useState(0); // -1 = left, 1 = right
+  const [analysisStep, setAnalysisStep]   = useState(0);
   const TAB_IDS = TABS.map(t => t.id) as string[];
   const setTabWithDir = (id: string) => {
     const from = TAB_IDS.indexOf(activeTab as string), to = TAB_IDS.indexOf(id);
@@ -1355,7 +1358,7 @@ const { dark, toggle: toggleDark }  = useTheme();
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
     setLoading(true); setData(null); setErrorMsg(null); setSkippedTickers([]); setAnalyzeComplete(false);
-    setWsidResult(null); setWsidOpen(false);
+    setWsidResult(null); setWsidOpen(false); setAnalysisStep(0);
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
       const pendingRef = referralCodeRef.current;
@@ -1373,6 +1376,9 @@ const { dark, toggle: toggleDark }  = useTheme();
         localStorage.removeItem("corvo_pending_referral");
       }
       if (result.skipped_tickers?.length) setSkippedTickers(result.skipped_tickers);
+      // Flash remaining steps to completion before revealing results
+      setAnalysisStep(ANALYSIS_STEPS.length - 1);
+      await new Promise(r => setTimeout(r, 350));
       setData(result);
       setLoadedAt(Date.now());
       setAnimatingIn(true);
@@ -2393,7 +2399,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               </motion.div>
             ) : (loading || initializing) && !data ? (
               <motion.div key="loading" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
-                <AnalysisSteps />
+                <AnalysisSteps externalStep={analysisStep} />
               </motion.div>
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
