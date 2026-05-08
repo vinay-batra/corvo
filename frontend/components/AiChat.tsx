@@ -613,7 +613,7 @@ export default function AiChat({
           history: messages,
           portfolio_context: portfolioContext,
           market_context,
-          user_id: userIdRef.current,
+          user_id: chatToken ? userIdRef.current : null,
           page_context: pageContext || "",
           user_context: userContextStr + (extraContext ? "\n" + extraContext : ""),
           life_events: lifeEventsRef.current,

@@ -1590,7 +1590,7 @@ function FinalCTASection() {
                 <span style={{ fontSize: 13, color: "var(--green)", fontWeight: 500 }}>{"You're on the list!"}</span>
               </div>
             ) : (
-              <div style={{ display: "flex", borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)", flexShrink: 0 }}>
+              <div className="email-cap-row" style={{ display: "flex", borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)", flexShrink: 0 }}>
                 <input
                   type="email" value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -3382,9 +3382,14 @@ export default function Landing() {
           .vs-panels>*:nth-child(2)>div:first-child,.vs-panels>*:nth-child(2)>div:last-child{width:auto!important;flex:1!important;height:1px!important}
           .vs-panels>*:nth-child(3){border-radius:0 0 16px 16px!important;border-left:1px solid rgba(var(--accent-rgb),0.2)!important}
           .calc-grid{grid-template-columns:1fr!important;gap:24px!important}
-          .email-cap-row{flex-direction:column!important}
+          .email-cap-row{flex-direction:column!important;width:100%!important;border-radius:12px!important;overflow:hidden!important}
+          .email-cap-row input{width:100%!important;border-radius:0!important}
+          .email-cap-row button{width:100%!important;border-left:none!important;border-top:1px solid var(--border)!important;border-radius:0!important}
           .final-cta-actions{flex-direction:column!important;align-items:stretch!important}
           .final-cta-actions>*{width:100%!important;justify-content:center!important}
+          .testimonials-section{padding:80px 24px 80px!important}
+          .testimonials-desktop{display:none!important}
+          .testimonials-mobile{display:block!important}
           .demo-inner{padding:32px 20px!important;gap:32px!important}
           .featured-bar{padding:16px 20px!important}
           .social-proof{padding:16px 20px!important}
@@ -3398,6 +3403,12 @@ export default function Landing() {
           .trust-grid{grid-template-columns:1fr!important}
         }
         .testi-scroll-container::-webkit-scrollbar{display:none}
+        .testimonials-mobile{display:none}
+        .testimonials-desktop{display:block}
+        @media(max-width:768px){
+          .testimonials-desktop{display:none!important}
+          .testimonials-mobile{display:block!important}
+        }
         @media(max-width:768px){.testi-arrow{display:none!important}.testi-scroll-container{padding:20px 20px 40px!important}}
         .x-social-link:hover{color:var(--accent)!important}
         .mobile-desktop-banner{display:none!important}
@@ -3611,15 +3622,16 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS — 3D Carousel ─── */}
-      <section className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "120px 56px 120px", background: "transparent" }}>
+      {/* ─── TESTIMONIALS — 3D Carousel (desktop) / Card Carousel (mobile) ─── */}
+      <section className="sec-pad testimonials-section" style={{ position: "relative", zIndex: 1, padding: "120px 56px 120px", background: "transparent" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <FadeUp delay={0} y={30} style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Voices</p>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,3.6vw,44px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2 }}>What investors are saying</h2>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,3.6vw,44px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2 }}>What investors are saying</h2>
           </FadeUp>
           <FadeUp delay={0.15} y={40}>
-            <TestimonialHorizontalCarousel />
+            <div className="testimonials-desktop"><TestimonialHorizontalCarousel /></div>
+            <div className="testimonials-mobile"><MobileTestimonialCarousel /></div>
           </FadeUp>
         </div>
       </section>
