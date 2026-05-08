@@ -604,24 +604,28 @@ export default function AiChat({
 
       const { data: { session: chatSession } } = await supabase.auth.getSession();
       const chatToken = chatSession?.access_token ?? "";
-      const res = await fetch(`${API_URL}/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(chatToken ? { "Authorization": `Bearer ${chatToken}` } : {}),
-        },
-        body: JSON.stringify({
-          message: msg,
-          history: messages,
-          portfolio_context: portfolioContext,
-          market_context,
-          user_id: chatToken ? userIdRef.current : null,
-          page_context: pageContext || "",
-          user_context: userContextStr + (extraContext ? "\n" + extraContext : ""),
-          life_events: lifeEventsRef.current,
-          financial_goals: financialGoalsRef.current,
-        }),
+      const chatBody = JSON.stringify({
+        message: msg,
+        history: messages,
+        portfolio_context: portfolioContext,
+        market_context,
+        user_id: chatToken ? userIdRef.current : null,
+        page_context: pageContext || "",
+        user_context: userContextStr + (extraContext ? "\n" + extraContext : ""),
+        life_events: lifeEventsRef.current,
+        financial_goals: financialGoalsRef.current,
       });
+      const chatHeaders = {
+        "Content-Type": "application/json",
+        ...(chatToken ? { "Authorization": `Bearer ${chatToken}` } : {}),
+      };
+
+      let res = await fetch(`${API_URL}/chat`, { method: "POST", headers: chatHeaders, body: chatBody });
+      // Auto-retry once on server errors (catches Railway cold starts)
+      if (!res.ok && res.status !== 429 && res.status !== 401) {
+        await new Promise(r => setTimeout(r, 1500));
+        res = await fetch(`${API_URL}/chat`, { method: "POST", headers: chatHeaders, body: chatBody });
+      }
 
       if (res.status === 429) {
         setLimitReached(true);
