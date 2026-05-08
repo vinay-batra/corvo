@@ -222,55 +222,55 @@ const ANALYSIS_STEPS = [
 function AnalysisSteps({ externalStep }: { externalStep?: number }) {
   const [step, setStep] = React.useState(0);
   React.useEffect(() => {
-    // All 5 steps fire in ~1s — purely cosmetic and fast
     const timers = ANALYSIS_STEPS.slice(1).map((_, i) =>
       setTimeout(() => setStep(i + 1), (i + 1) * 220)
     );
     return () => timers.forEach(clearTimeout);
   }, []);
   const displayStep = externalStep !== undefined ? Math.max(step, externalStep) : step;
+  // After first 4 steps done, switch to "thinking" phase for the AI step
+  const earlyDone = displayStep >= ANALYSIS_STEPS.length - 1;
   const allDone = displayStep >= ANALYSIS_STEPS.length;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "calc(100vh - 160px)", gap: 32 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
       <style>{`
-        @keyframes orb-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes orb-pulse { 0%,100% { opacity:0.3; transform:scale(0.85); } 50% { opacity:0.7; transform:scale(1.1); } }
-        .orb-ring { position:absolute; inset:0; border-radius:50%; border:2px solid transparent; animation:orb-spin 1.2s linear infinite; }
-        .orb-core { position:absolute; inset:10px; border-radius:50%; background:radial-gradient(circle, rgba(201,168,76,0.5) 0%, transparent 70%); animation:orb-pulse 1.6s ease-in-out infinite; }
+        @keyframes step-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes step-pulse { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
+        @keyframes step-dot { 0%,80%,100%{transform:scale(0)}40%{transform:scale(1)} }
       `}</style>
-      {/* Orb centered above steps */}
-      <div style={{ position: "relative", width: 68, height: 68, flexShrink: 0 }}>
-        <div className="orb-ring" style={{ borderTopColor: "var(--accent)", borderRightColor: "rgba(201,168,76,0.2)", borderBottomColor: "transparent", borderLeftColor: "rgba(201,168,76,0.2)" }} />
-        <div className="orb-ring" style={{ inset: 7, animationDuration: "2s", animationDirection: "reverse", borderTopColor: "rgba(201,168,76,0.4)", borderRightColor: "transparent", borderBottomColor: "rgba(201,168,76,0.4)", borderLeftColor: "transparent" }} />
-        <div className="orb-core" />
-      </div>
-      {/* Steps — fixed width so they're always centered */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 13, width: 300 }}>
-        {ANALYSIS_STEPS.map((label, i) => {
+      <div style={{ display: "flex", flexDirection: "column", gap: 0, width: 280 }}>
+        {/* Steps 1-4 */}
+        {ANALYSIS_STEPS.slice(0, -1).map((label, i) => {
           const done = i < displayStep, active = i === displayStep;
           return (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, opacity: done || active ? 1 : 0.2, transition: "opacity 0.15s ease" }}>
-              <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                background: done ? "rgba(92,184,138,0.15)" : active ? "rgba(201,168,76,0.15)" : "var(--bg3)",
-                border: `1.5px solid ${done ? "#5cb88a" : active ? "var(--accent)" : "var(--border)"}`,
-                transition: "all 0.15s ease",
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "7px 0", opacity: done || active ? 1 : 0.18, transition: "opacity 0.15s ease", borderBottom: "0.5px solid var(--border)", borderColor: "rgba(255,255,255,0.05)" }}>
+              <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                background: done ? "rgba(92,184,138,0.12)" : "transparent",
+                border: `1px solid ${done ? "#5cb88a" : "var(--border)"}`,
+                transition: "all 0.2s",
               }}>
-                {done ? (
-                  <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                ) : active ? (
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", animation: "orb-pulse 0.8s ease-in-out infinite" }} />
-                ) : null}
+                {done && <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
               </div>
-              <span style={{ fontSize: 13, color: done ? "var(--text2)" : active ? "var(--text)" : "var(--text3)", fontWeight: active ? 500 : 400, transition: "color 0.15s ease" }}>{label}</span>
+              <span style={{ fontSize: 12, color: done ? "var(--text3)" : "var(--text3)", transition: "color 0.15s" }}>{label}</span>
             </div>
           );
         })}
+
+        {/* Step 5 — AI insights — stays active until results arrive */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", marginTop: 2 }}>
+          <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${allDone ? "#5cb88a" : "var(--accent)"}`, background: allDone ? "rgba(92,184,138,0.12)" : "rgba(201,168,76,0.1)", transition: "all 0.3s" }}>
+            {allDone
+              ? <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              : <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+                  {[0,1,2].map(j => <div key={j} style={{ width: 2.5, height: 2.5, borderRadius: "50%", background: "var(--accent)", animation: `step-dot 1.2s ease-in-out infinite`, animationDelay: `${j * 0.2}s` }} />)}
+                </div>
+            }
+          </div>
+          <span style={{ fontSize: 12, color: "var(--text)", fontWeight: 500 }}>Generating AI insights</span>
+          {!allDone && <svg style={{ marginLeft: "auto", animation: "step-spin 1s linear infinite", opacity: 0.4 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.2"/><path d="M21 12a9 9 0 00-9-9"/></svg>}
+        </div>
       </div>
-      {allDone && (
-        <p style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 1, animation: "orb-pulse 1.8s ease-in-out infinite" }}>
-          Finalizing results...
-        </p>
-      )}
     </div>
   );
 }
