@@ -6,7 +6,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-7a78d.
 const cspHeader = [
   "default-src 'self'",
   // unsafe-inline required for theme detection inline script in layout.tsx; unsafe-eval intentionally omitted
-  "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com",
+  "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://vercel.live https://*.vercel.live",
   "style-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://fonts.googleapis.com",
   "img-src 'self' data: https:",
   "font-src 'self' data: https://fonts.gstatic.com",

@@ -4504,7 +4504,7 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
 
     # ── Upsert (merge on portfolio_id + date unique constraint) ──────────────
     upsert_resp = requests.post(
-        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots",
+        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots?on_conflict=portfolio_id,date",
         headers={**_sb_headers(), "Prefer": "resolution=merge-duplicates"},
         json={
             "user_id": req.user_id,
