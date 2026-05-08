@@ -1,4 +1,4 @@
 [deploy]
-startCommand = "PYTHONUNBUFFERED=1 bash -c 'cd $([ -d backend ] && echo backend || echo .) && uvicorn main:app --host 0.0.0.0 --port $PORT'"
+startCommand = "PYTHONUNBUFFERED=1 bash -c 'cd $([ -f main.py ] && echo . || ([ -d backend ] && echo backend || echo .)) && uvicorn main:app --host 0.0.0.0 --port $PORT'"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

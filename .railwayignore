@@ -1,0 +1,9 @@
+frontend/
+backend/venv
+venv
+backend/__pycache__
+**/__pycache__
+*.pyc
+.git
+frontend/.next
+backend/backend
