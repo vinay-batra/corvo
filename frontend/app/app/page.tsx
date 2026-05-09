@@ -1006,6 +1006,7 @@ export default function AppPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [goals, setGoals]                 = useState<any>(null);
+  const [learnResetKey, setLearnResetKey] = useState(0);
   const [showGoals, setShowGoals]         = useState(false);
   const [showTour, setShowTour]           = useState(false);
   const [showSetupBanner, setShowSetupBanner] = useState(false);
@@ -2143,7 +2144,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               const isActive = activeTab === tab.id;
               const ts: React.CSSProperties = { padding: "0 11px", height: 40, fontSize: 12, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "color 0.15s" };
               if (tab.href) return <Link key={tab.id} href={tab.href} style={ts} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{tab.label}</Link>;
-              return <button key={tab.id} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={ts}>{tab.label}</button>;
+              return <button key={tab.id} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); if (tab.id === "learn" && activeTab === "learn") setLearnResetKey(k => k + 1); }} style={ts}>{tab.label}</button>;
             })}
           </div>
         </div>
@@ -2179,7 +2180,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </>
               );
               if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{content}</Link>;
-              return <button key={tab.id} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
+              return <button key={tab.id} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); if (tab.id === "learn" && activeTab === "learn") setLearnResetKey(k => k + 1); }} style={tabStyle}>{content}</button>;
             })}
           </div>
 
@@ -2883,7 +2884,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             ) : activeTab === "learn" ? (
               <motion.div key="learn" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
                 <DashReveal from="up" delay={0}>
-                  <LearnPage />
+                  <LearnPage resetKey={learnResetKey} />
                 </DashReveal>
                 <DashReveal from="up" delay={0.1}>
                   <div style={{ marginTop: 32, marginBottom: 80 }}>
