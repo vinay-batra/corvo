@@ -85,9 +85,11 @@ interface Props {
   assets: { ticker: string; weight: number }[];
   perfHistory?: PerfSnapshot[];
   portfolioValue?: number;
+  hideBriefing?: boolean;
+  hideTickers?: boolean;
 }
 
-export default function GreetingBar({ displayName, assets, portfolioValue }: Props) {
+export default function GreetingBar({ displayName, assets, portfolioValue, hideBriefing, hideTickers }: Props) {
   const greeting = getGreeting();
 
   const [resolvedName, setResolvedName] = useState(displayName || "");
@@ -309,7 +311,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
           </div>
         </div>
 
-        <div ref={briefingRef} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+        {!hideBriefing && <div ref={briefingRef} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
           <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>{getBriefingTitle()}</span>
           <button
             onClick={toggleBriefing}
@@ -394,7 +396,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
             <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>Market data unavailable</p>
           )}
         </motion.div>
-      </div>
+      </div>}
 
       {/* DIVIDER */}
       <div className="gb-divider" style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
@@ -426,7 +428,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
         )}
 
         {/* Auto-scrolling holdings marquee */}
-        {(() => {
+        {!hideTickers && (() => {
           const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
           if (!validTickers.length) return null;
           const baseChips: { label: string; pct: number | null; price?: number | null }[] = holdingPrices.length > 0
@@ -454,6 +456,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue }: Pro
         })()}
 
       </div>
+
     </div>
   );
 }
