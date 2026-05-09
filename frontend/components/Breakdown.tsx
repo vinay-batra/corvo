@@ -4,6 +4,22 @@ import { useState, useCallback } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Broad funds that shouldn't be mapped to stock sectors
+const FUND_LABELS: Record<string, string> = {
+  VTI: "US Total Market", VXUS: "International", BND: "US Bonds", BNDX: "Intl Bonds",
+  VT: "Global Market", ITOT: "US Total Market", AGG: "US Bonds", SCHB: "US Total Market",
+  SCHF: "International", SCHI: "Intl Bonds", IEMG: "Emerging Markets", EFA: "International",
+  EEM: "Emerging Markets", IVV: "US Large Cap", VOO: "US Large Cap", SPY: "US Large Cap",
+  QQQ: "US Tech", DIA: "US Large Cap", IWM: "US Small Cap", GLD: "Gold", SLV: "Silver",
+  TLT: "Long-Term Bonds", LQD: "Corp Bonds",
+};
+function getFundLabel(ticker: string): string | null {
+  if (FUND_LABELS[ticker]) return FUND_LABELS[ticker];
+  // 5-letter tickers ending in X are mutual funds
+  if (ticker.length === 5 && ticker.endsWith("X")) return "Mutual Fund";
+  return null;
+}
+
 function MiniSparkline({ data, color }: { data: number[]; color: string }) {
   if (!data || data.length < 2) return null;
   const min = Math.min(...data), max = Math.max(...data);

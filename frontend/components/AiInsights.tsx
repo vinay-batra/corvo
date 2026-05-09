@@ -14,7 +14,9 @@ function sanitize(text: string): string {
     .trim();
 }
 
-export default function AiInsights({ data, assets, onAskAi }: { data:any; assets:any[]; onAskAi:()=>void }) {
+const PERIOD_LABELS: Record<string, string> = { "6mo": "6M", "1y": "1Y", "2y": "2Y", "5y": "5Y" };
+
+export default function AiInsights({ data, assets, period, onAskAi }: { data:any; assets:any[]; period?:string; onAskAi:()=>void }) {
   const [hovered, setHovered] = useState<number|null>(null);
   const maxWeight = assets.length > 0 ? Math.max(...assets.map(a => a.weight)) : 0;
   const topAssets = assets.filter(a => Math.abs(a.weight - maxWeight) < 0.001);

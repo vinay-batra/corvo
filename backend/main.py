@@ -1155,16 +1155,33 @@ If the command cannot be executed, return: {{"error": "brief reason"}}"""
 
 
 ETF_SECTORS: dict[str, str] = {
-    "VIG": "Financials", "SCHD": "Financials", "QQQ": "Technology",
-    "SPY": "Diversified", "VTI": "Diversified", "VOO": "Diversified",
-    "BND": "Fixed Income", "GLD": "Commodities", "VNQ": "Real Estate",
+    # Dividend ETFs
+    "VIG": "Dividend Growth", "SCHD": "Dividend Growth", "VYM": "Dividend Growth",
+    # US Market
+    "QQQ": "US Tech Index", "SPY": "US Large Cap", "VTI": "US Total Market",
+    "VOO": "US Large Cap", "IVV": "US Large Cap", "ITOT": "US Total Market",
+    "SCHB": "US Total Market", "SCHX": "US Large Cap", "SCHA": "US Small Cap",
+    "IWM": "US Small Cap", "DIA": "US Large Cap",
+    # International
+    "VXUS": "International", "VT": "Global Market", "EFA": "International",
+    "EEM": "Emerging Markets", "IEMG": "Emerging Markets", "SCHF": "International",
+    "SCHI": "Intl Bonds",
+    # Bonds
+    "BND": "US Bonds", "BNDX": "Intl Bonds", "AGG": "US Bonds",
+    "TLT": "Long-Term Bonds", "LQD": "Corp Bonds", "SHY": "Short-Term Bonds",
+    "HYG": "High Yield Bonds",
+    # Mutual funds (5-letter X-ending)
+    "VTSAX": "US Total Market", "VBTLX": "US Bonds", "VTIAX": "International",
+    "VFIAX": "US Large Cap", "VFWAX": "International", "VLCAX": "US Large Cap",
+    "VWENX": "Balanced", "VWELX": "Balanced", "VWITX": "Muni Bonds",
+    "VWINX": "Conservative Allocation",
+    # Alternatives
+    "GLD": "Gold", "SLV": "Silver", "VNQ": "Real Estate", "XLRE": "Real Estate",
+    # Sector ETFs
     "XLK": "Technology", "XLF": "Financials", "XLE": "Energy",
     "XLV": "Healthcare", "XLU": "Utilities", "XLP": "Consumer Staples",
-    "IWM": "Diversified", "DIA": "Diversified", "TLT": "Fixed Income",
-    "AGG": "Fixed Income", "LQD": "Fixed Income", "SHY": "Fixed Income",
-    "IEMG": "Diversified", "EEM": "Diversified", "EFA": "Diversified",
-    "ARKK": "Technology", "XLI": "Industrials", "XLB": "Materials",
-    "XLC": "Communication Services", "XLRE": "Real Estate",
+    "XLI": "Industrials", "XLB": "Materials", "XLC": "Communication Services",
+    "ARKK": "Disruptive Tech",
 }
 
 _sectors_cache: dict[str, tuple[dict, float]] = {}
@@ -1201,10 +1218,16 @@ def portfolio_sectors(tickers: str = "AAPL", weights: str = "", request: Request
     sector_map: dict[str, float] = {}
     for ticker, weight in zip(ticker_list, normalized_weights):
         try:
-            info = yf.Ticker(ticker).info
-            sector = info.get("sector") or ETF_SECTORS.get(ticker, "Other")
+            # Check known ETF/fund map first to avoid unnecessary API calls
+            if ticker in ETF_SECTORS:
+                sector = ETF_SECTORS[ticker]
+            elif len(ticker) == 5 and ticker.endswith("X"):
+                sector = "Mutual Fund"  # catch-all for unknown mutual funds
+            else:
+                info = yf.Ticker(ticker).info or {}
+                sector = info.get("sector") or ETF_SECTORS.get(ticker, "Other")
         except Exception:
-            sector = ETF_SECTORS.get(ticker, "Other")
+            sector = ETF_SECTORS.get(ticker, "Mutual Fund" if (len(ticker) == 5 and ticker.endswith("X")) else "Other")
         sector_map[sector] = sector_map.get(sector, 0.0) + weight
 
     result = {"sectors": sector_map}
@@ -4717,14 +4740,23 @@ def portfolio_health_score(req: HealthScoreRequest):
 
     score_label = "Excellent" if score >= 75 else "Good" if score >= 50 else "Fair" if score >= 25 else "Weak"
 
+    # Mutual funds and broad ETFs — don't flag as single-stock risk
+    MUTUAL_FUNDS = {t for t in tickers if (len(t) == 5 and t.endswith("X")) or t in {
+        "VTI","VXUS","BND","BNDX","VT","ITOT","AGG","SCHB","SCHA","SCHX","SCHF","SCHI",
+        "IEMG","EFA","EEM","IVV","VOO","SPY","QQQ","DIA","IWM","GLD","SLV","TLT","LQD",
+    }}
+    non_fund_tickers = [t for t in tickers if t not in MUTUAL_FUNDS]
+
     # Build concentration risk context for the prompt
     risk_lines = []
     if max_sector_pct > 0.6:
-        risk_lines.append(
-            f"  Sector concentration: {max_sector_pct:.0%} of portfolio is in {max_sector_name}. "
-            f"A drawdown in {max_sector_name} would hit all positions simultaneously. "
-            f"Penalty of -{sector_penalty:.0f} pts applied to Stability and Resilience scores."
-        )
+        # Only flag sector concentration if it's driven by individual stocks, not broad funds
+        if len(non_fund_tickers) > 0:
+            risk_lines.append(
+                f"  Sector concentration: {max_sector_pct:.0%} of portfolio is in {max_sector_name}. "
+                f"A drawdown in {max_sector_name} would hit all positions simultaneously. "
+                f"Penalty of -{sector_penalty:.0f} pts applied to Stability and Resilience scores."
+            )
     if avg_corr > 0.7:
         risk_lines.append(
             f"  High correlation: average pairwise correlation is {avg_corr:.2f}. "
@@ -4782,7 +4814,9 @@ Generate a JSON response with exactly this structure:
 }}
 
 Rules:
-- If concentration risk exists, the headline MUST mention it (e.g. "Your returns are strong but 100% tech concentration means a sector drawdown hits all four positions at once.").
+- If concentration risk exists AND it is driven by individual stocks (not mutual funds or broad ETFs like VTI, VXUS, VTSAX), the headline MUST mention it.
+- For mutual funds and broad ETFs (5-letter tickers ending in X, or known index funds like VTI/VXUS/BND), do NOT flag concentration as single-stock risk. Instead use language like "consider whether this allocation matches your target asset allocation."
+- For fund-heavy portfolios, label holdings by asset class (US Total Market, International, Bond, etc.) rather than stock sectors.
 - Headline must name the score driver specifically and reference actual tickers or sectors.
 - Actions must reference actual tickers and percentages from the holdings above.
 - If the score is already Excellent (75+) with no concentration risk, highlight what is working and one way to protect gains.

@@ -363,9 +363,11 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     setCsvError("");
   };
 
-  const total = assets.reduce((s,a)=>s+a.weight,0);
+  const total = Math.round(assets.reduce((s,a)=>s+a.weight,0)*10000)/10000;
+  const totalPct = Math.round(total*1000)/10;
   const balanced = Math.abs(total-1)<0.01;
   const overweight = total > 1.005;
+  const overBy = Math.round((totalPct-100)*10)/10;
 
   return (
     <div>
@@ -413,7 +415,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               fontFamily:"Space Mono,monospace",
               transition:"all 0.15s", flexShrink:0,
             }}>
-            {Math.min(100, Math.round(total * 100))}% / 100%
+            {overweight ? `${overBy}% over limit` : `${totalPct}% / 100%`}
           </span>
         </div>
       </div>
@@ -451,8 +453,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                       blurT.current[i]=setTimeout(()=>{
                         setActive(p=>p===i?null:p);
                         setResults(p=>({...p,[i]:[]}));
-                        const isKnown = COMMON_TICKERS.some(t=>t.ticker===typed) || (results[i]||[]).some(r=>r.ticker===typed);
-                        if (isKnown && typed !== a.ticker) {
+                        // Accept any non-empty typed ticker — don't require dropdown selection
+                        if (typed && typed !== a.ticker) {
                           const n=[...assets]; n[i]={...n[i],ticker:typed}; update(n);
                         }
                       },200);

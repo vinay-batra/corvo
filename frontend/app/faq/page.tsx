@@ -248,13 +248,38 @@ function FAQAIChat() {
     setMessages(next);
     setLoading(true);
     try {
+      const history = next.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({
+          message: text,
+          history,
+          portfolio_context: {},
+          page_context: "faq page",
+          user_context: "",
+        }),
       });
-      const data = await res.json();
-      setMessages([...next, { role: "assistant", content: data.content }]);
+      if (!res.ok || !res.body) throw new Error("Request failed");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "", content = "";
+      setMessages([...next, { role: "assistant", content: "" }]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const d = JSON.parse(line.slice(6));
+            if (d.chunk) { content += d.chunk; setMessages([...next, { role: "assistant", content }]); }
+          } catch {}
+        }
+      }
+      if (!content) setMessages([...next, { role: "assistant", content: "Something went wrong. Please try again." }]);
     } catch {
       setMessages([...next, { role: "assistant", content: "Something went wrong. Please try again." }]);
     } finally {

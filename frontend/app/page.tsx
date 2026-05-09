@@ -228,25 +228,30 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
 function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number>(0);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = cardRef.current;
-    if (!card) return;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    const rotX = ((y - rect.height / 2) / (rect.height / 2)) * -16;
-    const rotY = ((x - rect.width / 2) / (rect.width / 2)) * 16;
-    card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(10px)`;
-    card.style.boxShadow = "0 20px 60px rgba(var(--accent-rgb),0.15), 0 0 40px rgba(var(--accent-rgb),0.08)";
-    if (glowRef.current) {
-      glowRef.current.style.opacity = "1";
-      glowRef.current.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(var(--accent-rgb),0.18), transparent 55%)`;
-    }
+    const cx = e.clientX, cy = e.clientY;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      const card = cardRef.current;
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      const x = cx - rect.left, y = cy - rect.top;
+      const rotX = ((y - rect.height / 2) / (rect.height / 2)) * -8;
+      const rotY = ((x - rect.width / 2) / (rect.width / 2)) * 8;
+      card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(6px)`;
+      card.style.boxShadow = "0 20px 60px rgba(var(--accent-rgb),0.15), 0 0 40px rgba(var(--accent-rgb),0.08)";
+      if (glowRef.current) {
+        glowRef.current.style.opacity = "1";
+        glowRef.current.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(var(--accent-rgb),0.18), transparent 55%)`;
+      }
+    });
   };
   const handleMouseLeave = () => {
+    cancelAnimationFrame(rafRef.current);
     const card = cardRef.current;
     if (card) {
       card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px)";
-      // Clear inline boxShadow so the CSS rule (light-mode lift, dark-mode none) takes over
       card.style.boxShadow = "";
     }
     if (glowRef.current) glowRef.current.style.opacity = "0";
@@ -263,7 +268,7 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
     >
       <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
         className="bento-card-inner"
-        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "clip", position: "relative", height: "100%", transition: "transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s cubic-bezier(0.16,1,0.3,1)", willChange: "transform, box-shadow", transformStyle: "preserve-3d" as const, ...restStyle }}>
+        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "clip", position: "relative", height: "100%", transition: "transform 0.15s ease-out, box-shadow 0.15s ease-out", willChange: "transform", transformStyle: "preserve-3d" as const, ...restStyle }}>
         <div ref={glowRef} aria-hidden style={{ position: "absolute", inset: 0, opacity: 0, pointerEvents: "none", transition: "opacity 0.35s ease", zIndex: 0, mixBlendMode: "screen" as const }} />
         <div style={{ position: "relative", zIndex: 1, height: "100%" }}>{children}</div>
       </div>
