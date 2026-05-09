@@ -328,7 +328,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
         </div>
 
         <motion.div
-          initial={false} /* initial={false} required -- do not remove */
+          initial={false}
           animate={{ height: briefingCollapsed ? "auto" : 0, opacity: briefingCollapsed ? 1 : 0 }}
           transition={{ duration: 0.32, ease: "easeOut" }}
           style={{ overflow: "hidden" }}
@@ -343,7 +343,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
         </motion.div>
 
         <motion.div
-          initial={false} /* initial={false} required -- do not remove */
+          initial={false}
           animate={{ height: briefingCollapsed ? 0 : "auto", opacity: briefingCollapsed ? 0 : 1 }}
           transition={{ duration: 0.32, ease: "easeOut" }}
           style={{ overflow: "hidden" }}
