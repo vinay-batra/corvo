@@ -204,8 +204,8 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 - **Frontend**: push to `main` — Vercel auto-deploys
 - **Backend deploy**: always use this exact sequence:
   ```
-  mkdir -p /tmp/corvo-deploy && cp ~/Downloads/portfolio_v2/backend/main.py /tmp/corvo-deploy/ && cp ~/Downloads/portfolio_v2/backend/requirements.txt /tmp/corvo-deploy/ && cp ~/Downloads/portfolio_v2/Procfile /tmp/corvo-deploy/ && cd ~/Downloads/portfolio_v2 && railway up --detach --path-as-root /tmp/corvo-deploy
+  mkdir -p /tmp/corvo-deploy2/backend && cp ~/Downloads/portfolio_v2/backend/main.py /tmp/corvo-deploy2/backend/ && cp ~/Downloads/portfolio_v2/backend/requirements.txt /tmp/corvo-deploy2/backend/ && cd ~/Downloads/portfolio_v2 && railway up --detach --path-as-root /tmp/corvo-deploy2
   ```
+- Railway project has `Root Directory = backend` in settings — upload must have a `backend/` subfolder
 - Railway GitHub integration is BROKEN — always deploy manually
-- Plain `railway up` times out (.git is 146MB), `--path-as-root backend` ran wrong main.py (stale nested backend/backend/ now deleted)
-- Procfile: `web: uvicorn main:app --host 0.0.0.0 --port $PORT` (main.py at root of deploy dir)
+- Plain `railway up` times out (.git is 146MB)
