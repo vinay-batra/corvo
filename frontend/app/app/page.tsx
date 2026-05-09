@@ -119,7 +119,6 @@ function BenchmarkDropdown({ localBenchmark, benchmarks, onSelect }: { localBenc
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            // initial={false} is required — do not remove
             initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 130, boxShadow: "var(--shadow)" }}>
             {benchmarks.map(b => (
@@ -283,14 +282,12 @@ function Empty() {
   ];
   return (
     <motion.div
-      // initial={false} is required — do not remove
       initial={false}
       animate={{ opacity: 1 }}
       style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "calc(100vh - 96px)", gap: 0, textAlign: "center", padding: "0 32px" }}>
 
       {/* Header */}
       <motion.div
-        // initial={false} is required — do not remove
         initial={false} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 48 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
           <div style={{ width: 64, height: 64, borderRadius: 18, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -439,7 +436,6 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
       initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
       style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 800, width: "min(380px, calc(100vw - 32px)", background: "var(--card-bg)", border: "0.5px solid rgba(184,134,11,0.3)", borderRadius: 14, padding: "16px 18px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", display: "flex", gap: 14, alignItems: "flex-start" }}>
       <span style={{ flexShrink: 0, display: "flex", alignItems: "center", color: "var(--accent)", paddingTop: 2 }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
@@ -2042,12 +2038,10 @@ const { dark, toggle: toggleDark }  = useTheme();
         {sidebarOpen && (
           <>
             <motion.div
-              // initial={false} is required — do not remove
               initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
               style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200 }} />
             <motion.div
-              // initial={false} is required — do not remove
               initial={false} animate={{ x: 0 }} exit={{ x: -260 }} transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="c-mob-drawer"
               style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: "var(--bg2)", borderRight: "0.5px solid var(--border)", zIndex: 201, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -2208,7 +2202,6 @@ const { dark, toggle: toggleDark }  = useTheme();
           <AnimatePresence initial={false}>
             {showSetupBanner && (
               <motion.div
-                // initial={false} is required — do not remove
                 initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 className="c-banner"
                 style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -2238,7 +2231,6 @@ const { dark, toggle: toggleDark }  = useTheme();
           <AnimatePresence initial={false}>
             {skippedTickers.length > 0 && (
               <motion.div
-                // initial={false} is required — do not remove
                 initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 className="c-banner"
                 style={{ border: "0.5px solid rgba(184,134,11,0.25)", borderRadius: 10, padding: "11px 16px", background: "rgba(184,134,11,0.05)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -2260,7 +2252,6 @@ const { dark, toggle: toggleDark }  = useTheme();
           <AnimatePresence initial={false}>
             {errorMsg && (
               <motion.div
-                // initial={false} is required — do not remove
                 initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 className="c-banner"
                 style={{ border: "0.5px solid rgba(224,92,92,0.4)", borderRadius: 10, padding: "12px 16px", background: "rgba(224,92,92,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -2544,7 +2535,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <AnimatePresence initial={false}>
                     {wsidOpen && !wsidLoading && (
                       <motion.div
-                        // initial={false} is required — do not remove
                         initial={false}
                         animate={{ opacity: 1, height: "auto", marginTop: 8 }}
                         exit={{ opacity: 0, height: 0, marginTop: 0 }}
@@ -2842,7 +2832,6 @@ const { dark, toggle: toggleDark }  = useTheme();
 
                 {data && !isPortfolioSaved && (
                   <motion.div
-                    // initial={false} is required — do not remove
                     initial={false}
                     style={{ marginTop: 24, marginBottom: 80, padding: "16px 20px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div>
@@ -2957,7 +2946,6 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       {/* Floating AI Chat button */}
       <motion.button
-        // initial={false} is required — do not remove
         initial={false}
         id="tour-desk-chat"
         onClick={() => { setChatInitialMessage(undefined); setChatOpen(v => !v); }}
@@ -3029,7 +3017,6 @@ const { dark, toggle: toggleDark }  = useTheme();
       <AnimatePresence initial={false}>
         {showSettings && (
           <motion.div
-            // initial={false} is required — do not remove
             initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 280 }}
             style={{ position: "fixed", inset: 0, zIndex: 490, background: "var(--bg)", overflowY: "auto", overscrollBehavior: "none" }}>
@@ -3148,7 +3135,6 @@ const { dark, toggle: toggleDark }  = useTheme();
       <AnimatePresence initial={false}>
         {nlPending && (
           <motion.div
-            // initial={false} required — do not remove
             initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -3156,7 +3142,6 @@ const { dark, toggle: toggleDark }  = useTheme();
             onClick={() => setNlPending(null)}
           >
             <motion.div
-              // initial={false} required — do not remove
               initial={false}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}

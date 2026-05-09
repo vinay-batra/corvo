@@ -60,7 +60,6 @@ export default function FeedbackButton() {
     <>
       {/* Fixed button: stacked above AI chat */}
       <motion.button
-        // initial={false} is required — do not remove
         initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
@@ -93,12 +92,10 @@ export default function FeedbackButton() {
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            // initial={false} is required — do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
             onClick={e => { if (e.target === e.currentTarget) handleClose(); }}>
             <motion.div
-              // initial={false} is required — do not remove
               initial={false} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 10 }}
               transition={{ duration: 0.18 }}
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}
@@ -121,7 +118,6 @@ export default function FeedbackButton() {
               <div style={{ padding: "18px 20px 20px" }}>
                 {submitted ? (
                   <motion.div
-                    // initial={false} is required — do not remove
                     initial={false} animate={{ opacity: 1, y: 0 }}
                     style={{ textAlign: "center", padding: "20px 0" }}>
                     <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(92,184,138,0.12)", border: "1px solid rgba(92,184,138,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
