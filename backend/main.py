@@ -2983,7 +2983,7 @@ def stock_detail(ticker: str, request: Request):
             "current_price": round(current_price, 4),
             "change": round(change, 4),
             "change_pct": round(change_pct, 4),
-            "market_cap": si("marketCap", 0),
+            "market_cap": si("marketCap", 0) or si("totalAssets", 0),
             "pe_ratio": _round(si("trailingPE", 0), 2),
             "forward_pe": _round(si("forwardPE", 0), 2),
             "eps": eps_current,

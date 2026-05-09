@@ -84,11 +84,7 @@ export default function FeedbackButton() {
         }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.background = "var(--bg3)"; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; }}>
-        {/* Flag icon */}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-          <line x1="4" y1="22" x2="4" y2="15" />
-        </svg>
+        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: "var(--text2)", letterSpacing: 0.5 }}>?</span>
       </motion.button>
 
       {/* Modal */}

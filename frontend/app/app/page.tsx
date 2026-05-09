@@ -1025,6 +1025,21 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
   const [tlhAlert, setTlhAlert] = useState<{ ticker: string; loss_pct: number; total_harvestable_loss: number } | null>(null);
+  const DASH_CARDS = ["health", "insights", "allocation", "correlation"] as const;
+  type DashCard = typeof DASH_CARDS[number];
+  const DASH_CARD_LABELS: Record<DashCard, string> = { health: "Health Score", insights: "AI Insights", allocation: "Allocation", correlation: "Correlation" };
+  const [hiddenCards, setHiddenCards] = useState<Set<DashCard>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("corvo_hidden_cards") || "[]") as DashCard[]); } catch { return new Set(); }
+  });
+  const [showDashEditor, setShowDashEditor] = useState(false);
+  const toggleCard = (card: DashCard) => {
+    setHiddenCards(prev => {
+      const next = new Set(prev);
+      next.has(card) ? next.delete(card) : next.add(card);
+      localStorage.setItem("corvo_hidden_cards", JSON.stringify([...next]));
+      return next;
+    });
+  };
   const [nlCommand, setNlCommand] = useState("");
   const [nlLoading, setNlLoading] = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
@@ -2687,6 +2702,15 @@ const { dark, toggle: toggleDark }  = useTheme();
 
                 {/* Everything below — Feature 2: delay 400ms */}
                 <div style={{ opacity: loadedVis(1000) ? 1 : 0, transform: loadedVis(1000) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                {/* Dashboard editor button */}
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                  <button onClick={() => setShowDashEditor(true)} style={{ fontSize: 10, color: "var(--text3)", background: "none", border: "0.5px solid var(--border)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
+                    Customize dashboard
+                  </button>
+                </div>
+
                 <motion.div
                   key="bottom-grid"
                   className="c-bgrid"
@@ -2737,16 +2761,20 @@ const { dark, toggle: toggleDark }  = useTheme();
                         { label: "What's Good", text: "Top 25% is strong for any metric. Aim to beat the median on CAGR and Sharpe while staying below it on volatility and drawdown." },
                       ],
                     },
-                  ].map(({ title, content, sections, from, delayS }: { title: string; content: React.ReactNode; sections: { label: string; text: string }[]; from: "left" | "right"; delayS: number }) => (
-                    <motion.div key={title} initial={false} style={{ display: "flex", flexDirection: "column" }}>
-                      <DashReveal from={from} delay={delayS} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                        <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
-                      </DashReveal>
-                    </motion.div>
-                  ))}
+                  ].map(({ title, content, sections, from, delayS }: { title: string; content: React.ReactNode; sections: { label: string; text: string }[]; from: "left" | "right"; delayS: number }) => {
+                    const cardKey = title === "Health Score" ? "health" : title === "AI Insights" ? "insights" : null;
+                    if (cardKey && hiddenCards.has(cardKey as DashCard)) return null;
+                    return (
+                      <motion.div key={title} initial={false} style={{ display: "flex", flexDirection: "column" }}>
+                        <DashReveal from={from} delay={delayS} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                          <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
+                        </DashReveal>
+                      </motion.div>
+                    );
+                  })}
                 </motion.div>
                 <div className="c-alloc-row" style={{ display: "flex", gap: 16, marginTop: 12 }}>
-                  <motion.div key="allocation-card" initial={false} style={{ flex: 3 }}>
+                  <motion.div key="allocation-card" initial={false} style={{ flex: 3, display: hiddenCards.has("allocation") ? "none" : undefined }}>
                     <DashReveal from="left" delay={0.1} style={{ height: "100%" }}>
                       <Card style={{ marginBottom: 0, height: "100%" }}><TooltipCardHeader title="Allocation" sections={[
                         { label: "Plain English", text: "Shows how your total portfolio value is split across your holdings, expressed as a percentage of the whole. Each bar segment represents one position's share of the portfolio." },
@@ -2922,7 +2950,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         onMouseEnter={e => { if (!chatOpen) e.currentTarget.style.background = "#d4b05a"; }}
         onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.background = "var(--accent)"; }}
       >
-        <MessageSquare size={20} color={chatOpen ? "var(--text2)" : "var(--bg)"} />
+        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: chatOpen ? "var(--text2)" : "var(--bg)", letterSpacing: 0.5 }}>AI</span>
       </motion.button>
 
       {/* Mobile bottom navigation */}
@@ -3048,6 +3076,41 @@ const { dark, toggle: toggleDark }  = useTheme();
         currentData={data}
         onApply={(a) => { setAssets(a); setWhatIfOpen(false); setTimeout(() => handleAnalyzeRef.current(), 50); }}
       />
+
+      {/* Dashboard editor modal */}
+      <AnimatePresence initial={false}>
+        {showDashEditor && (
+          <motion.div initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowDashEditor(false)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <motion.div initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+              onClick={e => e.stopPropagation()}
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: "24px", maxWidth: 380, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <div>
+                  <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 4 }}>Dashboard</p>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", margin: 0 }}>Customize cards</h3>
+                </div>
+                <button onClick={() => setShowDashEditor(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {DASH_CARDS.map(card => (
+                  <div key={card} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg3)", borderRadius: 10, border: "0.5px solid var(--border)" }}>
+                    <span style={{ fontSize: 13, color: "var(--text)" }}>{DASH_CARD_LABELS[card]}</span>
+                    <button onClick={() => toggleCard(card)}
+                      style={{ position: "relative", width: 36, height: 20, borderRadius: 10, border: "none", cursor: "pointer", padding: 0, background: hiddenCards.has(card) ? "var(--border)" : "#5cb88a", transition: "background 0.2s", flexShrink: 0 }}>
+                      <span style={{ position: "absolute", top: 2, left: hiddenCards.has(card) ? 2 : 18, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,.3)" }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 14, textAlign: "center" }}>Changes save automatically</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Push notification prompt */}
       <AnimatePresence initial={false}>
