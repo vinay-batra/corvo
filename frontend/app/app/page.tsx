@@ -1546,6 +1546,15 @@ const { dark, toggle: toggleDark }  = useTheme();
     }
   }, [assets, data, period, benchmark]);
 
+  // Auto re-analyze when period changes so the chart updates immediately without a manual click
+  const prevPeriodRef2 = useRef(period);
+  useEffect(() => {
+    if (period === prevPeriodRef2.current) return;
+    prevPeriodRef2.current = period;
+    if (data) handleAnalyzeRef.current();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period]);
+
   // ── Detect saved portfolio from assets (pre-analysis) ───────────────────────
   useEffect(() => {
     if (!assets.length) { setSavedPortfolioId(null); setSavedPortfolioName(""); return; }
@@ -2506,11 +2515,18 @@ const { dark, toggle: toggleDark }  = useTheme();
                         </div>
                       </div>
                     </div>
-                    <div style={{
-                      padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 10,
-                      background: "var(--accent)", color: "var(--bg)", flexShrink: 0,
-                      display: "flex", alignItems: "center", gap: 6, pointerEvents: "none",
-                    }}>
+                    <div
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (wsidOpen && wsidResult) { setWsidResult(null); handleWhatShouldIDo(); }
+                      }}
+                      style={{
+                        padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 10,
+                        background: "var(--accent)", color: "var(--bg)", flexShrink: 0,
+                        display: "flex", alignItems: "center", gap: 6,
+                        cursor: wsidOpen && wsidResult ? "pointer" : "default",
+                        pointerEvents: wsidLoading ? "none" : "auto",
+                      }}>
                       {wsidLoading ? (
                         <>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
@@ -2518,7 +2534,14 @@ const { dark, toggle: toggleDark }  = useTheme();
                           </svg>
                           Analyzing...
                         </>
-                      ) : wsidOpen && wsidResult ? "Close" : "Get Actions →"}
+                      ) : wsidOpen && wsidResult ? (
+                        <>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                          </svg>
+                          Refresh
+                        </>
+                      ) : "Get Actions →"}
                     </div>
                   </div>
                   <AnimatePresence initial={false}>
@@ -2541,39 +2564,54 @@ const { dark, toggle: toggleDark }  = useTheme();
                           ) : wsidResult ? (
                             <div>
                               {(() => {
-                                const actionLines = wsidResult.split(/\n/).map(l => l.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
+                                // Split into blank-line-separated blocks. Last block starting with "These actions" is the closing summary.
+                                const blocks = wsidResult.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+                                const summaryPattern = /^these actions/i;
+                                const summaryBlock = blocks.find(b => summaryPattern.test(b));
+                                const actionBlocks = blocks.filter(b => !summaryPattern.test(b));
                                 return (
                                   <div style={{ display: "flex", flexDirection: "column" }}>
-                                    {actionLines.map((text, i) => (
-                                      <div key={i}>
-                                        <div style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "12px 0" }}>
-                                          <div style={{
-                                            width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                                            background: "rgba(201,168,76,0.18)", border: "1px solid rgba(201,168,76,0.4)",
-                                            display: "flex", alignItems: "center", justifyContent: "center",
-                                            fontSize: 11, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)",
-                                          }}>
-                                            {i + 1}
+                                    {actionBlocks.map((block, i) => {
+                                      const lines = block.split(/\n/).map(l => l.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
+                                      const headline = lines[0];
+                                      const explanation = lines.slice(1).join(" ");
+                                      return (
+                                        <div key={i}>
+                                          <div style={{ padding: "14px 0" }}>
+                                            <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: explanation ? 8 : 0 }}>
+                                              <div style={{
+                                                width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                                                background: "rgba(201,168,76,0.18)", border: "1px solid rgba(201,168,76,0.4)",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                fontSize: 11, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)",
+                                              }}>
+                                                {i + 1}
+                                              </div>
+                                              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", lineHeight: 1.5 }}>
+                                                {headline}
+                                              </div>
+                                            </div>
+                                            {explanation && (
+                                              <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, paddingLeft: 38 }}>
+                                                {explanation}
+                                              </div>
+                                            )}
                                           </div>
-                                          <div style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
-                                            {text}
-                                          </div>
+                                          {i < actionBlocks.length - 1 && (
+                                            <div style={{ height: 1, background: "var(--border)", opacity: 0.5 }} />
+                                          )}
                                         </div>
-                                        {i < actionLines.length - 1 && (
-                                          <div style={{ height: 1, background: "var(--border)", opacity: 0.5 }} />
-                                        )}
+                                      );
+                                    })}
+                                    {summaryBlock && (
+                                      <div style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.6, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+                                        {summaryBlock}
                                       </div>
-                                    ))}
+                                    )}
                                   </div>
                                 );
                               })()}
                               <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
-                                <button
-                                  onClick={e => { e.stopPropagation(); setWsidResult(null); handleWhatShouldIDo(); }}
-                                  style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                                >
-                                  Refresh
-                                </button>
                                 <button
                                   onClick={e => {
                                     e.stopPropagation();
