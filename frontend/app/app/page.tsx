@@ -58,7 +58,6 @@ import DashboardTour from "../../components/DashboardTour";
 import { type SavedPortfolioLine } from "../../components/PerformanceChart";
 import EarningsCalendar from "../../components/EarningsCalendar";
 import EventsCalendar from "../../components/EventsCalendar";
-import PriceTargetTracker from "../../components/PriceTargetTracker";
 import { InsiderActivitySummary } from "../../components/InsiderActivity";
 import StockCompare from "../../components/StockCompare";
 import CorrelationHeatmap from "../../components/CorrelationHeatmap";
@@ -2349,16 +2348,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <PositionsTab
                     onSelectTicker={t => { setStockTicker(t); setTabWithDir("stocks"); }}
                   />
-                </DashReveal>
-                {/* Price Target Tracker */}
-                <DashReveal from="left" delay={0.1}>
-                  <div style={{ marginTop: 20 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                      <div style={S.cardAccent} />
-                      <span style={S.cardTitle}>Price Targets</span>
-                    </div>
-                    <PriceTargetTracker assets={assets} />
-                  </div>
                 </DashReveal>
                 <DashReveal from="right" delay={0.15}>
                   <div style={{ marginTop: 24 }}>

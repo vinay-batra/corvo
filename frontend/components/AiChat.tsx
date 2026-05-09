@@ -399,13 +399,6 @@ export default function AiChat({
         lines.push(`ACTIVE PRICE ALERTS: ${alertLines.join("; ")}`);
       }
 
-      if (targets.length) {
-        const tgtLines = targets.slice(0, 10).map((t: any) =>
-          `${t.ticker} target $${t.target_price} (${t.direction})`
-        );
-        lines.push(`PRICE TARGETS: ${tgtLines.join("; ")}`);
-      }
-
       const activeLifeEvents = fetchedLifeEvents.filter((e: any) => e.type && e.type !== "nothing_major");
       if (activeLifeEvents.length > 0) {
         const eventLabels: Record<string, string> = {
