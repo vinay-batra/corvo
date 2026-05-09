@@ -261,19 +261,21 @@ export default function StockCompare() {
 
   // Fetch benchmark history
   useEffect(() => {
+    if (!benchmark) { setBenchHistory([]); return; }
     if (!comparing || tickers.length < 2) return;
     if (period === "Custom" && (!customStart || !customEnd)) return;
     const benchTicker = BENCH_PROXY[benchmark] ?? benchmark;
     const histParams = period === "Custom" && customStart && customEnd
       ? `start=${customStart}&end=${customEnd}`
       : `period=${PERIOD_API[period] ?? "1y"}`;
+    setBenchHistory([]); // clear stale data immediately so old benchmark doesn't linger
     setBenchLoading(true);
     fetch(`${API_URL}/stock/${encodeURIComponent(benchTicker)}/history?${histParams}`)
       .then(r => r.json())
       .then(d => {
         const history: { t: string; p: number }[] =
           d.history || (d.dates || []).map((t: string, i: number) => ({ t, p: (d.prices || [])[i] ?? 0 }));
-        setBenchHistory(history);
+        setBenchHistory(history.filter(h => h.p > 0)); // strip zero-price points that would break base calc
       })
       .catch(() => setBenchHistory([]))
       .finally(() => setBenchLoading(false));
@@ -318,8 +320,8 @@ export default function StockCompare() {
     .filter(Boolean);
 
   const benchLabel = BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark;
-  const benchBase  = benchHistory.length > 1 ? benchHistory[0].p : 0;
-  const benchTrace = benchHistory.length > 1 && benchmark && benchBase ? (
+  const benchBase  = benchHistory.find(h => h.p > 0)?.p ?? 0;
+  const benchTrace = benchHistory.length > 1 && benchmark && benchBase > 0 ? (
     viewMode === "pct"
       ? {
           x: benchHistory.map(h => h.t),
@@ -431,14 +433,13 @@ export default function StockCompare() {
               <AnimatePresence initial={false}>
                 {dropdownOpen && searchResults.length > 0 && (
                   <motion.div
-                    // initial={false} is required — do not remove
                     initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, zIndex: 100, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                    style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, zIndex: 100, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
                     {searchResults.map((r, idx) => (
                       <div key={idx}
                         onMouseDown={e => { e.preventDefault(); if (blurTimer.current) clearTimeout(blurTimer.current); selectResult(r); }}
-                        style={{ padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: idx < searchResults.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none", transition: "background 0.1s" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(201,168,76,0.06)")}
+                        style={{ padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", borderBottom: idx < searchResults.length - 1 ? "0.5px solid var(--border)" : "none", transition: "background 0.1s" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
                         onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                         <div>
                           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: AMBER, fontWeight: 700 }}>{r.ticker}</div>
