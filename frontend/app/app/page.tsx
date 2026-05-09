@@ -23,7 +23,6 @@ import PerformanceChart from "../../components/PerformanceChart";
 import HealthScore from "../../components/HealthScore";
 import AiInsights from "../../components/AiInsights";
 import BenchmarkComparison from "../../components/BenchmarkComparison";
-import PeerComparison from "../../components/PeerComparison";
 import Breakdown from "../../components/Breakdown";
 import AiChat from "../../components/AiChat";
 import SavedPortfolios from "../../components/SavedPortfolios";
@@ -1021,15 +1020,20 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
   const [tlhAlert, setTlhAlert] = useState<{ ticker: string; loss_pct: number; total_harvestable_loss: number } | null>(null);
-  const DASH_CARDS = ["tickers", "briefing", "wsid", "health", "insights", "allocation"] as const;
+  const DASH_CARDS = ["tickers", "briefing", "wsid", "metrics", "performance", "health", "insights", "benchmark", "allocation", "sector", "insider"] as const;
   type DashCard = typeof DASH_CARDS[number];
   const DASH_CARD_LABELS: Record<DashCard, string> = {
     tickers: "Live Ticker Strip",
     briefing: "Morning Briefing",
     wsid: "What Should I Do Today",
+    metrics: "Key Metrics",
+    performance: "Performance Chart",
     health: "Health Score",
     insights: "AI Insights",
+    benchmark: "vs Benchmark",
     allocation: "Allocation",
+    sector: "Sector Exposure",
+    insider: "Insider Activity",
   };
   const [hiddenCards, setHiddenCards] = useState<Set<DashCard>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem("corvo_hidden_cards") || "[]") as DashCard[]); } catch { return new Set(); }
@@ -2650,7 +2654,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 )}
 
                 {/* Metric cards */}
-                <div style={{ opacity: loadedVis(500) ? 1 : 0, transform: loadedVis(500) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                {!hiddenCards.has("metrics") && <div style={{ opacity: loadedVis(500) ? 1 : 0, transform: loadedVis(500) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="up" delay={0.1}>
                 <motion.div
                   id="tour-desk-metrics"
@@ -2671,10 +2675,10 @@ const { dark, toggle: toggleDark }  = useTheme();
                   />
                 </motion.div>
                 </DashReveal>
-                </div>
+                </div>}
 
                 {/* Performance chart */}
-                <div style={{ opacity: loadedVis(750) ? 1 : 0, transform: loadedVis(750) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                {!hiddenCards.has("performance") && <div style={{ opacity: loadedVis(750) ? 1 : 0, transform: loadedVis(750) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="up" delay={0.15}>
                 <motion.div id="tour-desk-chart" key="perf-card" initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
                   <Card>
@@ -2716,7 +2720,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </Card>
                 </motion.div>
                 </DashReveal>
-                </div>
+                </div>}
 
                 {/* Everything below — Feature 2: delay 400ms */}
                 <div style={{ opacity: loadedVis(1000) ? 1 : 0, transform: loadedVis(1000) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
@@ -2761,18 +2765,8 @@ const { dark, toggle: toggleDark }  = useTheme();
                         { label: "What's Good", text: "Consistently beating your benchmark by 2-5pp is exceptional. Even matching it while taking less risk is a win." },
                       ],
                     },
-                    {
-                      title: "HOW YOU COMPARE",
-                      from: "right" as const, delayS: 0.05,
-                      content: <PeerComparison data={data} userId={userId} />,
-                      sections: [
-                        { label: "Plain English", text: "Anonymous comparison of your portfolio metrics against all Corvo users." },
-                        { label: "Example", text: "If your Sharpe ratio is in the top 20%, your badge shows Top 20%." },
-                        { label: "What's Good", text: "Top 25% is strong for any metric. Aim to beat the median on CAGR and Sharpe while staying below it on volatility and drawdown." },
-                      ],
-                    },
                   ].map(({ title, content, sections, from, delayS }: { title: string; content: React.ReactNode; sections: { label: string; text: string }[]; from: "left" | "right"; delayS: number }) => {
-                    const cardKey = title === "Health Score" ? "health" : title === "AI Insights" ? "insights" : null;
+                    const cardKey = title === "Health Score" ? "health" : title === "AI Insights" ? "insights" : title.startsWith("vs ") ? "benchmark" : null;
                     if (cardKey && hiddenCards.has(cardKey as DashCard)) return null;
                     return (
                       <motion.div key={title} initial={false} style={{ display: "flex", flexDirection: "column" }}>
@@ -2793,7 +2787,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       ]} /><Breakdown assets={assets} portfolioValue={portfolioInputValue} /></Card>
                     </DashReveal>
                   </motion.div>
-                  <motion.div key="sector-card" initial={false} style={{ flex: 2 }}>
+                  {!hiddenCards.has("sector") && <motion.div key="sector-card" initial={false} style={{ flex: 2 }}>
                     <DashReveal from="right" delay={0.1} style={{ height: "100%" }}>
                       <Card style={{ marginBottom: 0, height: "100%" }}><TooltipCardHeader title="Sector Exposure" sections={[
                         { label: "Plain English", text: "Shows how your portfolio weight is distributed across market sectors, aggregated from each holding's sector classification." },
@@ -2801,10 +2795,10 @@ const { dark, toggle: toggleDark }  = useTheme();
                         { label: "What's Good", text: "A diversified portfolio spreads across 4+ sectors. Heavy concentration in one sector amplifies both gains and losses." },
                       ]} /><SectorExposureChart assets={assets} /></Card>
                     </DashReveal>
-                  </motion.div>
+                  </motion.div>}
                 </div>
                 {/* Insider Activity summary */}
-                {assets.length > 0 && (
+                {assets.length > 0 && !hiddenCards.has("insider") && (
                   <DashReveal from="up" delay={0.1}>
                     <div style={{ marginTop: 12 }}>
                       <Card style={{ marginBottom: 0 }}>
