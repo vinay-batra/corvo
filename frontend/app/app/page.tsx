@@ -1400,10 +1400,10 @@ const { dark, toggle: toggleDark }  = useTheme();
     })();
   }, []);
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (keepData = false) => {
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
-    setLoading(true); setData(null); setErrorMsg(null); setSkippedTickers([]); setAnalyzeComplete(false);
+    setLoading(true); if (!keepData) setData(null); setErrorMsg(null); setSkippedTickers([]); setAnalyzeComplete(false);
     setWsidResult(null); setWsidOpen(false); setAnalysisStep(0);
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
@@ -1573,7 +1573,7 @@ const { dark, toggle: toggleDark }  = useTheme();
   useEffect(() => {
     if (period === prevPeriodRef2.current) return;
     prevPeriodRef2.current = period;
-    if (data) handleAnalyzeRef.current();
+    if (data) handleAnalyzeRef.current(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
@@ -2681,7 +2681,8 @@ const { dark, toggle: toggleDark }  = useTheme();
                 {!hiddenCards.has("performance") && <div style={{ opacity: loadedVis(750) ? 1 : 0, transform: loadedVis(750) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="up" delay={0.15}>
                 <motion.div id="tour-desk-chart" key="perf-card" initial={false} whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} transition={{ duration: 0.15 }}>
-                  <Card>
+                  <Card style={{ position: "relative", overflow: "hidden" }}>
+                    {loading && data && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, var(--accent), transparent)", animation: "analyzeSweep 1.2s ease-in-out infinite", zIndex: 2 }} />}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                       <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
                       <div className="c-perf-controls" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

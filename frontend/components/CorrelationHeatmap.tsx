@@ -14,6 +14,7 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showSpinner, setShowSpinner] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [dark, setDark] = useState(true);
@@ -34,6 +35,11 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [assets, period, retryCount]);
+  useEffect(() => {
+    if (!loading) { setShowSpinner(false); return; }
+    const t = setTimeout(() => setShowSpinner(true), 1000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   if (assets.length < 2) {
     return (
@@ -60,12 +66,13 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
       style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "22px 24px", position: "relative", overflow: "hidden" }}
     >
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, var(--purple), transparent)", opacity: 0.5 }} />
+      {showSpinner && data && <div style={{ position: "absolute", top: 14, right: 16, width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: "#a78bfa", borderRadius: "50%", animation: "spin 0.8s linear infinite", zIndex: 2 }} />}
       <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>Correlation <InfoModal title="Correlation" sections={[{ label: "Plain English", text: "Shows how closely pairs of holdings move together. Values range from -1 (perfectly opposite) to +1 (move in lockstep). 0 means no statistical relationship." }, { label: "Example", text: "NVDA and AMD might show 0.85 correlation -- when one rises, the other usually does too. BND (bonds) vs NVDA might be -0.2, offering true diversification." }, { label: "What's Good?", text: "Lower correlations between holdings mean better diversification. A portfolio where everything is highly correlated (above 0.8) offers little protection in a broad selloff." }]} /></p>
 
-      {loading ? (
+      <style>{`@keyframes corrPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
+      {loading && !data ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "6px 0" }}>
           <div style={{ height: 200, borderRadius: 6, background: "rgba(255,255,255,0.06)", animation: "corrPulse 1.5s ease-in-out infinite" }} />
-          <style>{`@keyframes corrPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
         </div>
       ) : fetchError ? (
         <ErrorState
