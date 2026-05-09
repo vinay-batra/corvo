@@ -291,6 +291,14 @@ function getDesktopStops(tabCount: number): TourStop[] {
       placement: "top",
     },
     {
+      id: "tour-desk-customize",
+      label: "Customize",
+      title: "Make it yours",
+      description: "Use the grid button down here to customize your dashboard. Show or hide cards, reorder sections, and set up the layout that works for you.",
+      Illus: IllusBars,
+      placement: "top",
+    },
+    {
       id: "tour-desk-export",
       label: "Share",
       title: "Share your portfolio",
