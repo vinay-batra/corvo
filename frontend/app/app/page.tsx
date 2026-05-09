@@ -1025,9 +1025,16 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
   const [tlhAlert, setTlhAlert] = useState<{ ticker: string; loss_pct: number; total_harvestable_loss: number } | null>(null);
-  const DASH_CARDS = ["health", "insights", "allocation", "correlation"] as const;
+  const DASH_CARDS = ["tickers", "briefing", "wsid", "health", "insights", "allocation"] as const;
   type DashCard = typeof DASH_CARDS[number];
-  const DASH_CARD_LABELS: Record<DashCard, string> = { health: "Health Score", insights: "AI Insights", allocation: "Allocation", correlation: "Correlation" };
+  const DASH_CARD_LABELS: Record<DashCard, string> = {
+    tickers: "Live Ticker Strip",
+    briefing: "Morning Briefing",
+    wsid: "What Should I Do Today",
+    health: "Health Score",
+    insights: "AI Insights",
+    allocation: "Allocation",
+  };
   const [hiddenCards, setHiddenCards] = useState<Set<DashCard>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem("corvo_hidden_cards") || "[]") as DashCard[]); } catch { return new Set(); }
   });
@@ -1912,11 +1919,6 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       {/* Analyze button */}
       <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
-        {portfolioStale && (
-          <div style={{ marginBottom: 8, padding: "7px 11px", borderRadius: 7, border: "0.5px solid rgba(184,134,11,0.35)", background: "rgba(184,134,11,0.07)", fontSize: 11, color: "var(--text2)", lineHeight: 1.5 }}>
-            Settings changed. Click {hasSavedPortfolios ? "New Analysis" : "Analyze"} to update results.
-          </div>
-        )}
         {(() => {
           const validA = assets.filter(a => a.ticker && a.weight > 0);
           const totalW = validA.reduce((s, a) => s + a.weight, 0);
@@ -2435,27 +2437,20 @@ const { dark, toggle: toggleDark }  = useTheme();
               </motion.div>
             ) : activeTab === "overview" ? (
               <motion.div key="overview" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
-                {/* Stale-portfolio banner */}
-                {portfolioStale && (
-                  <motion.div
-                    // initial={false} is required — do not remove
-                    initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
-                    className="c-banner"
-                    style={{ border: "0.5px solid rgba(184,134,11,0.35)", borderRadius: 10, padding: "10px 16px", background: "rgba(184,134,11,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, zIndex: 10, position: "relative" }}>
-                    <span className="c-banner-text" style={{ fontSize: 12, color: "var(--text2)" }}>
-                      Assets have changed. Re-analyze to update results.
-                    </span>
-                    <button
-                      onClick={handleAnalyze}
-                      className="c-banner-actions"
-                      style={{ padding: "6px 14px", fontSize: 11, fontWeight: 600, borderRadius: 6, background: "var(--accent)", border: "none", color: "var(--bg)", cursor: "pointer", flexShrink: 0 }}>
-                      Reanalyze
-                    </button>
-                  </motion.div>
-                )}
 
                 {/* Feature 3: fade+slide when results first arrive */}
                 <div style={{ opacity: animatingIn ? 0 : 1, transform: animatingIn ? "translateY(20px)" : "none", transition: animatingIn ? "none" : "opacity 0.5s ease, transform 0.5s ease" }}>
+
+                {/* Dashboard customizer button — top right of overview */}
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                  <button onClick={() => setShowDashEditor(true)}
+                    style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text3)", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", transition: "all 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; e.currentTarget.style.background = "var(--bg2)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg3)"; }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    Customize
+                  </button>
+                </div>
 
                 {/* Greeting + portfolio pulse + quick actions */}
                 <div style={{ opacity: loadedVis(0) ? 1 : 0, transform: loadedVis(0) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
@@ -2466,13 +2461,15 @@ const { dark, toggle: toggleDark }  = useTheme();
                       assets={assets}
                       perfHistory={perfHistory}
                       portfolioValue={portfolioInputValue}
+                      hideBriefing={hiddenCards.has("briefing")}
+                      hideTickers={hiddenCards.has("tickers")}
                     />
                     <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
                   </DashReveal>
                 </div>
 
                 {/* What Should I Do Today */}
-                <div style={{ opacity: loadedVis(250) ? 1 : 0, transform: loadedVis(250) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                {!hiddenCards.has("wsid") && <div style={{ opacity: loadedVis(250) ? 1 : 0, transform: loadedVis(250) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="left" delay={0.05}>
                 <div style={{ marginBottom: 20 }}>
                   <div
@@ -2633,7 +2630,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </AnimatePresence>
                 </div>
                 </DashReveal>
-                </div>
+                </div>}
 
                 {/* Tax Loss Harvesting Alert Badge */}
                 {tlhAlert && (
@@ -2740,14 +2737,6 @@ const { dark, toggle: toggleDark }  = useTheme();
 
                 {/* Everything below — Feature 2: delay 400ms */}
                 <div style={{ opacity: loadedVis(1000) ? 1 : 0, transform: loadedVis(1000) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
-                {/* Dashboard editor button */}
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                  <button onClick={() => setShowDashEditor(true)} style={{ fontSize: 10, color: "var(--text3)", background: "none", border: "0.5px solid var(--border)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
-                    onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
-                    Customize dashboard
-                  </button>
-                </div>
 
                 <motion.div
                   key="bottom-grid"
