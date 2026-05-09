@@ -1401,8 +1401,9 @@ const ARCADE_GAMES = [
 
 const COMPLETED_KEY = "corvo_completed_lessons";
 
-export default function LearnPage() {
+export default function LearnPage({ resetKey }: { resetKey?: number } = {}) {
   const [activeSection, setActiveSection] = useState<"home" | "game" | "lesson" | "ai-practice" | "challenge">("home");
+  useEffect(() => { if (resetKey !== undefined) setActiveSection("home"); }, [resetKey]);
   const [activeGame, setActiveGame]           = useState<string | null>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [activeLesson, setActiveLesson]       = useState<Lesson | null>(null);
   const [activePracticeLesson, setActivePracticeLesson] = useState<Lesson | null>(null);
