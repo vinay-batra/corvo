@@ -519,12 +519,6 @@ export default function SettingsPage({
         push: { on: pushPriceAlerts, onChange: () => { const v = !pushPriceAlerts; setPushPriceAlerts(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, v, pushPriceTargets, pushWeeklyCheckup, pushEarningsReminders); }},
       },
       {
-        label: "Price Target Hit",
-        desc: "Alert when a stock reaches your saved target",
-        email: null,
-        push: { on: pushPriceTargets, onChange: () => { const v = !pushPriceTargets; setPushPriceTargets(v); void savePushPrefs(pushMorningBriefing, pushMarketClose, pushPriceAlerts, v, pushWeeklyCheckup, pushEarningsReminders); }},
-      },
-      {
         label: "Weekly Portfolio Checkup",
         desc: "Monday morning push with your health score",
         email: null,
