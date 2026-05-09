@@ -32,7 +32,6 @@ const FEATURES: [string, boolean, boolean][] = [
   ["Benchmark Comparison (S&P 500 etc.)", true,  false],
   ["Custom Price & % Alerts",             true,  true],
   ["Sector Exposure Analysis",            true,  false],
-  ["Dividend Tracker",                    true,  true],
   ["Tax Loss Harvesting",                 true,  true],
   ["Learn & Earn Gamification",           true,  false],
   ["Screenshot Import",                   true,  false],

@@ -28,10 +28,8 @@ import AiChat from "../../components/AiChat";
 import SavedPortfolios from "../../components/SavedPortfolios";
 import UserMenu from "../../components/UserMenu";
 import SectorExposureChart from "../../components/SectorExposureChart";
-import DividendTracker from "../../components/DividendTracker";
 import TaxLossHarvester from "../../components/TaxLossHarvester";
 import CapitalGainsEstimator from "../../components/CapitalGainsEstimator";
-import DividendCalendar from "../../components/DividendCalendar";
 import MonteCarloChart from "../../components/MonteCarloChart";
 import NewsFeed from "../../components/NewsFeed";
 import ExportPDF from "../../components/ExportPDF";
@@ -2359,12 +2357,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <div style={{ marginTop: 16 }}>
                       <CapitalGainsEstimator assets={assets} />
                     </div>
-                    <div style={{ marginTop: 16 }}>
-                      <DividendCalendar assets={assets} />
-                    </div>
-                    <div style={{ marginTop: 16 }}>
-                      <DividendTracker assets={assets} />
-                    </div>
+
                   </div>
                 </DashReveal>
                 <DashReveal from="up" delay={0.2}>
