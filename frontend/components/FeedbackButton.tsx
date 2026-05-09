@@ -84,7 +84,9 @@ export default function FeedbackButton() {
         }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.background = "var(--bg3)"; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; }}>
-        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: "var(--text2)", letterSpacing: 0.5 }}>?</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ color: "var(--text2)" }}>
+          <path d="M4 3h16a1 1 0 0 1 .73 1.68l-4.73 5.32 4.73 5.32A1 1 0 0 1 20 17H5v4a1 1 0 0 1-2 0V4a1 1 0 0 1 1-1z"/>
+        </svg>
       </motion.button>
 
       {/* Modal */}

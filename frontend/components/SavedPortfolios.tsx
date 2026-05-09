@@ -206,9 +206,9 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
                 <p style={{ fontSize: 11, color: C.cream2, marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</p>
                 <p style={{ fontSize: 11, color: C.cream3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.assets.map((a: Asset) => a.ticker).join(", ")}</p>
               </div>
-              <button onClick={e => { e.stopPropagation(); setDeleteConfirm(p.id); }} style={{ background: "none", border: "none", color: "rgba(224,92,92,0.3)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+              <button onClick={e => { e.stopPropagation(); setDeleteConfirm(p.id); }} style={{ background: "none", border: "none", color: "rgba(224,92,92,0.7)", cursor: "pointer", fontSize: 11, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
                 onMouseEnter={e => e.currentTarget.style.color = "var(--red)"}
-                onMouseLeave={e => e.currentTarget.style.color = "rgba(224,92,92,0.3)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                onMouseLeave={e => e.currentTarget.style.color = "rgba(224,92,92,0.7)"}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </motion.div>
           ))}
         </div>
