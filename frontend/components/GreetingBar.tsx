@@ -311,7 +311,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
           </div>
         </div>
 
-        {!hideBriefing && <div ref={briefingRef} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+        {!hideBriefing && (<><div ref={briefingRef} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
           <span style={{ fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>{getBriefingTitle()}</span>
           <button
             onClick={toggleBriefing}
@@ -394,7 +394,8 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
             <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>Market data unavailable</p>
           )}
         </motion.div>
-      </div>}
+        </>)}
+      </div>
 
       {/* DIVIDER */}
       <div className="gb-divider" style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 28px", flexShrink: 0 }} />
