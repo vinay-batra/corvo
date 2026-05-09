@@ -2432,17 +2432,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                 {/* Feature 3: fade+slide when results first arrive */}
                 <div style={{ opacity: animatingIn ? 0 : 1, transform: animatingIn ? "translateY(20px)" : "none", transition: animatingIn ? "none" : "opacity 0.5s ease, transform 0.5s ease" }}>
 
-                {/* Dashboard customizer button — top right of overview */}
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-                  <button onClick={() => setShowDashEditor(true)}
-                    style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text3)", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", transition: "all 0.15s" }}
-                    onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; e.currentTarget.style.background = "var(--bg2)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg3)"; }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                    Customize
-                  </button>
-                </div>
-
                 {/* Greeting + portfolio pulse + quick actions */}
                 <div style={{ opacity: loadedVis(0) ? 1 : 0, transform: loadedVis(0) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                   <DashReveal from="up" delay={0}>
@@ -2967,6 +2956,35 @@ const { dark, toggle: toggleDark }  = useTheme();
       >
         <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: chatOpen ? "var(--text2)" : "var(--bg)", letterSpacing: 0.5 }}>AI</span>
       </motion.button>
+
+      {/* Floating Customize button — dashboard only */}
+      {activeTab === "overview" && (
+        <motion.button
+          initial={false}
+          id="tour-desk-customize"
+          onClick={() => setShowDashEditor(true)}
+          title="Customize dashboard"
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.6, type: "spring", damping: 20 }}
+          style={{
+            position: "fixed", bottom: 24, right: 152, zIndex: 1000,
+            width: 44, height: 44, borderRadius: "50%",
+            background: "var(--bg2)",
+            border: "0.5px solid var(--border)",
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+            transition: "border-color 0.15s, background 0.15s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.background = "var(--bg3)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text3)" }}>
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </motion.button>
+      )}
 
       {/* Mobile bottom navigation */}
       <MobileBottomNav
