@@ -590,6 +590,9 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const [priceFlash, setPriceFlash]   = useState<"up" | "down" | null>(null);
   const [analystConsensus, setAnalystConsensus] = useState<AnalystConsensus | null>(null);
   const [earningSummary, setEarningSummary] = useState<string | null>(null);
+  const [clickedDate, setClickedDate] = useState<string | null>(null);
+  const [dateExplanation, setDateExplanation] = useState<string | null>(null);
+  const [dateExplaining, setDateExplaining] = useState(false);
   const prevPriceRef  = useRef<number | null>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dark, setDark] = useState(true);
@@ -1111,7 +1114,64 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
                 layout={layout}
                 config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
                 style={{ width: "100%", height: 248 }}
+                onClick={(e: any) => {
+                  const pt = e?.points?.[0];
+                  if (!pt) return;
+                  const d = pt.x ? String(pt.x).split(" ")[0] : null;
+                  if (d) { setClickedDate(d); setDateExplanation(null); }
+                }}
               />
+              {/* What happened on this date */}
+              {clickedDate && (
+                <div style={{ margin: "8px 0 4px", padding: "10px 14px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 11, color: "var(--text3)", margin: "0 0 4px" }}>
+                      <span style={{ color: "var(--accent)", fontFamily: "Space Mono,monospace" }}>{clickedDate}</span>
+                    </p>
+                    {dateExplaining && <p style={{ fontSize: 12, color: "var(--text3)", margin: 0 }}>Looking up what happened...</p>}
+                    {dateExplanation && <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6, margin: 0 }}>{dateExplanation}</p>}
+                    {!dateExplaining && !dateExplanation && (
+                      <button
+                        onClick={async () => {
+                          setDateExplaining(true);
+                          try {
+                            const res = await fetch(`${API_URL}/chat`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                message: `What happened in the markets on ${clickedDate} that caused ${ticker} to move? Be specific — name the actual event, news, or catalyst. 2-3 sentences max.`,
+                                history: [],
+                                portfolio_context: {},
+                                page_context: "stock chart",
+                                user_context: "",
+                              }),
+                            });
+                            if (!res.ok || !res.body) throw new Error();
+                            const reader = res.body.getReader();
+                            const decoder = new TextDecoder();
+                            let buf = "", text = "";
+                            while (true) {
+                              const { done, value } = await reader.read();
+                              if (done) break;
+                              buf += decoder.decode(value, { stream: true });
+                              const lines = buf.split("\n"); buf = lines.pop() ?? "";
+                              for (const line of lines) {
+                                if (!line.startsWith("data: ")) continue;
+                                try { const d = JSON.parse(line.slice(6)); if (d.chunk) { text += d.chunk; setDateExplanation(text); } } catch {}
+                              }
+                            }
+                          } catch { setDateExplanation("Could not load explanation. Try again."); }
+                          setDateExplaining(false);
+                        }}
+                        style={{ fontSize: 12, fontWeight: 600, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                      >
+                        What happened on this date? →
+                      </button>
+                    )}
+                  </div>
+                  <button onClick={() => { setClickedDate(null); setDateExplanation(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 14, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}>×</button>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         ) : (
