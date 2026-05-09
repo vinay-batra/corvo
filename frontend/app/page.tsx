@@ -224,36 +224,24 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
   );
 }
 
-/* ─── Bento Card base — 3D mouse tilt with gold glow ─── */
+/* ─── Bento Card base — gold glow on hover, no 3D tilt ─── */
 function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
-  const cardRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const cx = e.clientX, cy = e.clientY;
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
-      const card = cardRef.current;
-      if (!card) return;
-      const rect = card.getBoundingClientRect();
+      if (!glowRef.current) return;
+      const rect = glowRef.current.closest(".bento-card-inner")?.getBoundingClientRect();
+      if (!rect) return;
       const x = cx - rect.left, y = cy - rect.top;
-      const rotX = ((y - rect.height / 2) / (rect.height / 2)) * -8;
-      const rotY = ((x - rect.width / 2) / (rect.width / 2)) * 8;
-      card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(6px)`;
-      card.style.boxShadow = "0 20px 60px rgba(var(--accent-rgb),0.15), 0 0 40px rgba(var(--accent-rgb),0.08)";
-      if (glowRef.current) {
-        glowRef.current.style.opacity = "1";
-        glowRef.current.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(var(--accent-rgb),0.18), transparent 55%)`;
-      }
+      glowRef.current.style.opacity = "1";
+      glowRef.current.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(var(--accent-rgb),0.18), transparent 55%)`;
     });
   };
   const handleMouseLeave = () => {
     cancelAnimationFrame(rafRef.current);
-    const card = cardRef.current;
-    if (card) {
-      card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px)";
-      card.style.boxShadow = "";
-    }
     if (glowRef.current) glowRef.current.style.opacity = "0";
   };
   const { gridArea, ...restStyle } = style as any;
@@ -264,11 +252,11 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
-      style={{ gridArea, height: "100%", position: "relative", transformStyle: "preserve-3d" as const }}
+      style={{ gridArea, height: "100%", position: "relative" }}
     >
-      <div ref={cardRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
+      <div onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
         className="bento-card-inner"
-        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "clip", position: "relative", height: "100%", transition: "transform 0.15s ease-out, box-shadow 0.15s ease-out", willChange: "transform", transformStyle: "preserve-3d" as const, ...restStyle }}>
+        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "clip", position: "relative", height: "100%", ...restStyle }}>
         <div ref={glowRef} aria-hidden style={{ position: "absolute", inset: 0, opacity: 0, pointerEvents: "none", transition: "opacity 0.35s ease", zIndex: 0, mixBlendMode: "screen" as const }} />
         <div style={{ position: "relative", zIndex: 1, height: "100%" }}>{children}</div>
       </div>
@@ -3439,7 +3427,6 @@ export default function Landing() {
         {/* Desktop nav links */}
         <div className="nav-links" style={{ display: "flex", gap: 2, alignItems: "center", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
           <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", letterSpacing: 0.3, transition: "color 0.2s", fontFamily: "Inter,sans-serif" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Features</button>
-          <Link href="/app?demo=true" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Demo</Link>
           <Link href="/install" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Install</Link>
           <Link href="/pricing" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Pricing</Link>
           <Link href="/changelog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
@@ -3571,7 +3558,6 @@ export default function Landing() {
       {mobileMenuOpen && (
         <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 99, background: "var(--bg)", borderBottom: "1px solid var(--border)", backdropFilter: "blur(20px)", padding: "16px 24px 24px", display: "flex", flexDirection: "column" as const, gap: 0 }}>
           <button onClick={() => { document.getElementById("features")?.scrollIntoView({ behavior: "smooth" }); setMobileMenuOpen(false); }} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", background: "none", border: "none", borderBottom: "0.5px solid var(--border)", cursor: "pointer", textAlign: "left" as const, fontFamily: "Inter,sans-serif" }}>Features</button>
-          <Link href="/app?demo=true" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Demo</Link>
           <Link href="/install" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Install</Link>
           <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Pricing</Link>
           <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>

@@ -4,7 +4,6 @@ import React from "react";
 
 const PRODUCT_LINKS = [
   { label: "Features", href: "/#features" },
-  { label: "Demo", href: "/app?demo=true" },
   { label: "Install", href: "/install" },
   { label: "Pricing", href: "/pricing" },
   { label: "Changelog", href: "/changelog" },
