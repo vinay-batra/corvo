@@ -6,9 +6,6 @@ import { useState, useEffect, useRef } from "react";
 const C = { amber: "var(--accent)", red: "var(--red)" };
 
 function getTrendArrow(_label: string, _value: number): null {
-  return null; // trend arrows removed — no context without historical comparison
-    return { up: true, color: "var(--red)" };
-  }
   return null;
 }
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
