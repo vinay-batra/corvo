@@ -264,7 +264,7 @@ function FAQAIChat() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "", content = "";
-      setMessages([...next, { role: "assistant", content: "" }]);
+      // Don't pre-add empty bubble — show dots until first chunk arrives
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -275,7 +275,7 @@ function FAQAIChat() {
           if (!line.startsWith("data: ")) continue;
           try {
             const d = JSON.parse(line.slice(6));
-            if (d.chunk) { content += d.chunk; setMessages([...next, { role: "assistant", content }]); }
+            if (d.chunk) { content += d.chunk; setMessages([...next, { role: "assistant", content }]); setLoading(false); }
           } catch {}
         }
       }

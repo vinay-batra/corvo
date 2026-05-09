@@ -112,13 +112,11 @@ function PublicAIChatInner() {
         onMouseLeave={(e) => (e.currentTarget.style.transform = open ? "scale(0.95)" : "scale(1)")}
       >
         {open ? (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a0e14" strokeWidth="2.5">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0e14" strokeWidth="2.5" strokeLinecap="round">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0e14" strokeWidth="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, color: "#0a0e14", letterSpacing: 0.5 }}>AI</span>
         )}
       </button>
 
