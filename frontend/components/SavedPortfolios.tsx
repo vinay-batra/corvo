@@ -177,7 +177,6 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
       <AnimatePresence initial={false}>
         {showSave && (
           <motion.div
-            // initial={false} is required — do not remove
             initial={false} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden", marginBottom: 8 }}>
             <div style={{ display: "flex", gap: 5 }}>
               <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && save()}
@@ -218,12 +217,10 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
       <AnimatePresence initial={false}>
         {deleteConfirm && (
           <motion.div
-            // initial={false} is required — do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
             onClick={() => setDeleteConfirm(null)}>
             <motion.div
-              // initial={false} is required — do not remove
               initial={false} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               onClick={e => e.stopPropagation()}
               style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 14, padding: "24px 28px", maxWidth: 340, width: "90%", boxShadow: "var(--shadow)" }}>
