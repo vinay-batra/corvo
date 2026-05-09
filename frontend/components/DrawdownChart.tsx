@@ -12,6 +12,7 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showSpinner, setShowSpinner] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [dark, setDark] = useState(true);
@@ -32,6 +33,11 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [assets, period, retryCount]);
+  useEffect(() => {
+    if (!loading) { setShowSpinner(false); return; }
+    const t = setTimeout(() => setShowSpinner(true), 1000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   return (
     <motion.div
@@ -49,6 +55,7 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
       }}
     >
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, var(--red), transparent)", opacity: 0.5 }} />
+      {showSpinner && data && <div style={{ position: "absolute", top: 14, right: 16, width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: "var(--red)", borderRadius: "50%", animation: "spin 0.8s linear infinite", zIndex: 2 }} />}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Drawdown Chart</p>
         {data && Array.isArray(data.drawdown) && data.drawdown.length > 0 && (
@@ -58,11 +65,11 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
         )}
       </div>
 
-      {loading ? (
+      <style>{`@keyframes ddPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
+      {loading && !data ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "6px 0" }}>
           <div style={{ height: 180, borderRadius: 6, background: "rgba(255,255,255,0.06)", animation: "ddPulse 1.5s ease-in-out infinite" }} />
           <div style={{ height: 11, width: "30%", borderRadius: 4, background: "rgba(255,255,255,0.06)", animation: "ddPulse 1.5s ease-in-out infinite" }} />
-          <style>{`@keyframes ddPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
         </div>
       ) : fetchError ? (
         <ErrorState

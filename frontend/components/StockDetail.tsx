@@ -582,6 +582,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const [histLows, setHistLows]       = useState<number[]>([]);
   const [histVolumes, setHistVolumes] = useState<number[]>([]);
   const [histLoading, setHistLoading] = useState(false);
+  const [showHistSpinner, setShowHistSpinner] = useState(false);
   const [activeTab, setActiveTab]     = useState<"overview" | "options" | "insider">("overview");
   const [inWatchlist, setInWatchlist] = useState(false);
   const [watchUserId, setWatchUserId] = useState<string | null>(null);
@@ -732,6 +733,11 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   }, [ticker]);
 
   useEffect(() => { loadHistory(period); }, [period, loadHistory]);
+  useEffect(() => {
+    if (!histLoading) { setShowHistSpinner(false); return; }
+    const t = setTimeout(() => setShowHistSpinner(true), 1000);
+    return () => clearTimeout(t);
+  }, [histLoading]);
 
   // ── Analyst consensus fetch ─────────────────────────────────────────────────
   useEffect(() => {
@@ -1095,8 +1101,15 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       </div>
 
       {/* ── Price chart ─────────────────────────────────────────────────────── */}
-      <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "8px 12px 4px", background: "var(--card-bg)", marginBottom: 10, minHeight: 272 }}>
-        {histLoading ? (
+      <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, padding: "8px 12px 4px", background: "var(--card-bg)", marginBottom: 10, minHeight: 272, position: "relative" }}>
+        {/* Spinner overlay: only after 1s of loading, only when we already have data to show */}
+        {showHistSpinner && histPrices.length > 0 && (
+          <div style={{ position: "absolute", top: 8, right: 12, zIndex: 10 }}>
+            <div style={{ width: 14, height: 14, border: "1.5px solid var(--border2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          </div>
+        )}
+        {/* No data yet: centered spinner */}
+        {histLoading && histPrices.length === 0 ? (
           <div style={{ height: 248, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ width: 18, height: 18, border: "1.5px solid var(--border2)", borderTopColor: AMBER, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
           </div>
@@ -1105,7 +1118,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
             <motion.div
               key={`${chartType}-${period}`}
               initial={false}
-              animate={{ opacity: 1 }}
+              animate={{ opacity: histLoading ? 0.55 : 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
             >
