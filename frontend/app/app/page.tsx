@@ -1897,9 +1897,8 @@ const { dark, toggle: toggleDark }  = useTheme();
           const validA = assets.filter(a => a.ticker && a.weight > 0);
           const totalW = validA.reduce((s, a) => s + a.weight, 0);
           // Allow fraction weights (sum ≈ 1) or integer weights (sum ≈ 100) gracefully
-          const isBalanced = validA.length === 0 ||
-            Math.abs(totalW - 1) < 0.015 ||
-            Math.abs(totalW - 100) < 1.5;
+          const isOver = totalW > 1.015 || totalW > 101.5;
+          const isBalanced = validA.length === 0 || !isOver;
           const hasHoldings = validA.length > 0;
           const canAnalyze = !loading && hasHoldings && isBalanced;
           return (
@@ -2711,7 +2710,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     {
                       title: "AI Insights",
                       from: "right" as const, delayS: 0.1,
-                      content: <AiInsights data={data} assets={assets} onAskAi={() => setChatOpen(true)} />,
+                      content: <AiInsights data={data} assets={assets} period={period} onAskAi={() => setChatOpen(true)} />,
                       sections: [
                         { label: "Plain English", text: "AI-generated observations about your portfolio's risk, diversification, and performance characteristics." },
                         { label: "Example", text: "The AI might flag that 3 of your 4 holdings are in the same sector, increasing concentration risk." },

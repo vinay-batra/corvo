@@ -312,6 +312,7 @@ function OnboardingContent() {
     if (step === 7) return answers.referral_source !== "";
     if (step === 8) return true; // life events — skippable
     if (step === 9) return true;
+    if (step === 10) return true; // install step — always skippable
     return false;
   };
 
@@ -506,7 +507,7 @@ function OnboardingContent() {
 
   const progress = ((step + 1) / TOTAL) * 100;
   const isLast = step === TOTAL - 1;
-  const canGoNext = canProceed() || step === 4;
+  const canGoNext = canProceed();
 
   if (authLoading) {
     return (
@@ -638,12 +639,12 @@ function OnboardingContent() {
             </button>
 
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              {(step === 4 || step === 8 || step === 9) && (
+              {(step === 4 || step === 8 || step === 9 || step === 10) && (
                 <button
                   onClick={handleNext}
                   style={{ fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                 >
-                  {step === 9 ? "Skip" : "Skip this step"}
+                  {step === 9 || step === 10 ? "Skip" : "Skip this step"}
                 </button>
               )}
               <button
