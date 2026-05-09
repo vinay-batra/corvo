@@ -86,7 +86,6 @@ export default function PublicNav() {
         {/* Center links */}
         <div className="pnav-links" style={{ display: "flex", gap: 2, alignItems: "center", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
           <a href="/#features" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Features</a>
-          <Link href="/app?demo=true" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Demo</Link>
           <Link href="/install" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/install") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Install</Link>
           <Link href="/pricing" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/pricing") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Pricing</Link>
           <Link href="/changelog" className="pnav-link" style={{ padding: "7px 14px", fontSize: 12, color: active("/changelog") ? "var(--accent)" : "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
@@ -139,7 +138,6 @@ export default function PublicNav() {
       {mobileOpen && (
         <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 99, background: drawerBg, borderBottom: "1px solid var(--border)", backdropFilter: "blur(20px)", padding: "16px 24px 24px", display: "flex", flexDirection: "column" as const, gap: 0 }}>
           <a href="/#features" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Features</a>
-          <Link href="/app?demo=true" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Demo</Link>
           <Link href="/install" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Install</Link>
           <Link href="/pricing" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Pricing</Link>
           <Link href="/changelog" onClick={() => setMobileOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>
