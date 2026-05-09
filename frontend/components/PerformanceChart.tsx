@@ -29,6 +29,7 @@ interface Props {
   customDateRange?: { start: string; end: string } | null;
   onCustomDateChange?: (range: { start: string; end: string } | null) => void;
   benchmarkOverride?: { ticker: string; cumulative: number[] };
+  onExplainDrawdown?: (date: string) => void;
 }
 
 // Compute the date at which the max drawdown trough occurs
@@ -70,7 +71,7 @@ function filterByDateRange(
   return filtered;
 }
 
-const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange, benchmarkOverride }: Props) {
+const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange, benchmarkOverride, onExplainDrawdown }: Props) {
   const [dark, setDark] = useState(true);
   const [showCustomPicker, setShowCustomPicker] = useState(!!customDateRange);
   const [localStart, setLocalStart] = useState(customDateRange?.start || "");
@@ -253,16 +254,19 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
           initial={false}
           style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap", padding: "10px 12px", background: "rgba(184,134,11,0.04)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 8 }}>
           <span style={{ fontSize: 10, color: legendFg, flexShrink: 0 }}>From</span>
-          <input type="date" value={localStart} onChange={e => setLocalStart(e.target.value)}
+          <input type="date" value={localStart} onChange={e => {
+            const v = e.target.value;
+            setLocalStart(v);
+            if (v && localEnd && v <= localEnd) onCustomDateChange?.({ start: v, end: localEnd });
+          }}
             style={{ padding: "4px 8px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text)", outline: "none", cursor: "pointer" }} />
           <span style={{ fontSize: 10, color: legendFg, flexShrink: 0 }}>to</span>
-          <input type="date" value={localEnd} onChange={e => setLocalEnd(e.target.value)}
+          <input type="date" value={localEnd} onChange={e => {
+            const v = e.target.value;
+            setLocalEnd(v);
+            if (localStart && v && localStart <= v) onCustomDateChange?.({ start: localStart, end: v });
+          }}
             style={{ padding: "4px 8px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text)", outline: "none", cursor: "pointer" }} />
-          <button onClick={handleApplyCustomRange}
-            disabled={!localStart || !localEnd || localStart > localEnd}
-            style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "var(--accent)", border: "none", borderRadius: 6, color: "#0a0e14", cursor: (!localStart || !localEnd || localStart > localEnd) ? "not-allowed" : "pointer", opacity: (!localStart || !localEnd || localStart > localEnd) ? 0.5 : 1 }}>
-            Apply
-          </button>
           {customDateRange && (
             <button onClick={handleClearCustomRange}
               style={{ padding: "4px 10px", fontSize: 11, background: "transparent", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text3)", cursor: "pointer" }}>
@@ -316,6 +320,16 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
           <span style={{ fontSize: 9, color: "var(--red)", opacity: 0.7 }}>
             Max drawdown: {ddDate}
           </span>
+          {onExplainDrawdown && (
+            <button
+              onClick={() => onExplainDrawdown(ddDate)}
+              style={{ fontSize: 9, color: "var(--accent)", background: "none", border: "0.5px solid rgba(184,134,11,0.3)", borderRadius: 4, padding: "1px 6px", cursor: "pointer", transition: "border-color 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.3)"; }}
+            >
+              Why?
+            </button>
+          )}
         </div>
       )}
     </motion.div>

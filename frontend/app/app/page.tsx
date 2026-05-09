@@ -2708,6 +2708,10 @@ const { dark, toggle: toggleDark }  = useTheme();
                       customDateRange={customDateRange}
                       onCustomDateChange={setCustomDateRange}
                       benchmarkOverride={localBenchmarkSeries ?? undefined}
+                      onExplainDrawdown={(date) => {
+                        setChatInitialMessage(`My portfolio hit its max drawdown around ${date}. What happened in the markets on or around that date that caused this decline? Walk me through what drove it and what it means for my portfolio.`);
+                        setChatOpen(true);
+                      }}
                     />
                   </Card>
                 </motion.div>
