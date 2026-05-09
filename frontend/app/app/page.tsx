@@ -981,15 +981,33 @@ export default function AppPage() {
   const [data, setData]                   = useState<any>(null);
   const [loading, setLoading]             = useState(false);
   const [analyzeComplete, setAnalyzeComplete] = useState(false);
-  const [activeTab, setActiveTab]         = useState("overview");
+  const TAB_IDS = TABS.map(t => t.id) as string[];
+  const initialTab = (() => {
+    if (typeof window === "undefined") return "overview";
+    const hash = window.location.hash.slice(1);
+    return TAB_IDS.includes(hash) ? hash : "overview";
+  })();
+  const [activeTab, setActiveTab]         = useState(initialTab);
   const [tabDir, setTabDir]               = useState(0); // -1 = left, 1 = right
   const [analysisStep, setAnalysisStep]   = useState(0);
-  const TAB_IDS = TABS.map(t => t.id) as string[];
-  const setTabWithDir = (id: string) => {
-    const from = TAB_IDS.indexOf(activeTab as string), to = TAB_IDS.indexOf(id);
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  const setTabWithDir = (id: string, pushHistory = true) => {
+    const from = TAB_IDS.indexOf(activeTabRef.current), to = TAB_IDS.indexOf(id);
     setTabDir(to > from ? 1 : -1);
     setActiveTab(id);
+    if (pushHistory) window.history.pushState({ tab: id }, "", `/app#${id}`);
   };
+  // Browser back/forward: restore tab from history state
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const tab = (e.state?.tab) || window.location.hash.slice(1) || "overview";
+      if (TAB_IDS.includes(tab)) setTabWithDir(tab, false);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [goals, setGoals]                 = useState<any>(null);
   const [showGoals, setShowGoals]         = useState(false);
   const [showTour, setShowTour]           = useState(false);
@@ -1232,7 +1250,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       setLoading(true);
       setData(null);
       fetchPortfolio(demoAssets, "1y", "^GSPC")
-        .then((result: any) => { setData(result); setActiveTab("overview"); })
+        .then((result: any) => { setData(result); setTabWithDir("overview"); })
         .catch(() => { setErrorMsg("Demo failed to load. Please try again."); })
         .finally(() => setLoading(false));
     }
@@ -1327,7 +1345,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     setLoadedAt(Date.now());
                     setAnimatingIn(true);
                     setTimeout(() => setAnimatingIn(false), 50);
-                    setActiveTab("overview");
+                    setTabWithDir("overview");
                     setPortfolioStale(false);
                     lastAnalyzedAssetsRef.current = autoAssets
                       .map((a: any) => `${a.ticker}:${a.weight.toFixed(4)}`)
@@ -1414,7 +1432,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       setLoadedAt(Date.now());
       setAnimatingIn(true);
       setTimeout(() => setAnimatingIn(false), 50);
-      setActiveTab("overview");
+      setTabWithDir("overview");
       setAnalyzeComplete(true);
       // Fire-and-forget: check for tax loss harvesting opportunities
       if (userId) {
@@ -2329,7 +2347,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <p style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>All saved portfolios · click any row to open stock detail</p>
                   </div>
                   <PositionsTab
-                    onSelectTicker={t => { setStockTicker(t); setActiveTab("stocks"); }}
+                    onSelectTicker={t => { setStockTicker(t); setTabWithDir("stocks"); }}
                   />
                 </DashReveal>
                 {/* Price Target Tracker */}
@@ -2620,7 +2638,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <div style={{ marginBottom: 16 }}>
                     <DashReveal from="left" delay={0}>
                       <div
-                        onClick={() => setActiveTab("positions")}
+                        onClick={() => setTabWithDir("positions")}
                         role="button"
                         style={{
                           display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
@@ -3082,7 +3100,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         onClose={() => setPaletteOpen(false)}
         tabs={TABS}
         onTab={id => { setTabWithDir(id); sound.whoosh(); }}
-        onStockSearch={t => { setStockTicker(t); setActiveTab("stocks"); }}
+        onStockSearch={t => { setStockTicker(t); setTabWithDir("stocks"); }}
         onAnalyze={handleAnalyze}
         onToggleDark={toggleDark}
         dark={dark}
