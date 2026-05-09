@@ -219,78 +219,6 @@ function LevelBadge({ xp }: { xp: number }) {
   );
 }
 
-function LearnHeader({ xp, streak, displayName, avatarUrl, loading }: { xp: number; streak: number; displayName: string; avatarUrl: string | null; loading?: boolean }) {
-  const lvl = getLevel(xp); const nxt = getNextLevel(xp); const pct = getProgressPct(xp);
-  return (
-    <div style={{ background: "var(--bg2)", borderBottom: "0.5px solid var(--border)" }}>
-      <nav style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", borderBottom: "0.5px solid var(--border)" }}>
-        <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <img src="/corvo-logo.svg" width={24} height={20} alt="Corvo" />
-          <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
-        </Link>
-        <span style={{ fontSize: 9, letterSpacing: 2.5, color: AMBER, textTransform: "uppercase" }}>Learn & Practice</span>
-        <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500, color: "var(--text2)", textDecoration: "none", padding: "6px 12px", borderRadius: 8, border: "0.5px solid var(--border)", background: "var(--bg3)", transition: "all 0.15s" }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
-        </Link>
-      </nav>
-
-      <div className="c-learn-header" style={{ maxWidth: 1200, margin: "0 auto", padding: "14px 28px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        {loading ? (
-          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)", flexShrink: 0 }} />
-        ) : avatarUrl ? (
-          <img src={avatarUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "0.5px solid var(--border2)", flexShrink: 0 }} />
-        ) : (
-          <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${AMBER}22`, border: `0.5px solid ${AMBER}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: AMBER, flexShrink: 0 }}>
-            {(displayName || "?")[0]?.toUpperCase()}
-          </div>
-        )}
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {loading ? (
-            <>
-              <div style={{ height: 14, width: 160, borderRadius: 4, background: "rgba(255,255,255,0.06)", marginBottom: 8 }} />
-              <div style={{ height: 7, background: "var(--track)", borderRadius: 4, overflow: "hidden" }}>
-                <div style={{ width: "0%", height: "100%", background: "rgba(255,255,255,0.06)", borderRadius: 4 }} />
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <LevelBadge xp={xp} />
-                <span style={{ fontSize: 11, color: "var(--text2)" }}>
-                  {xp} XP{nxt ? <span style={{ color: "var(--text3)" }}> · {nxt.min - xp} to {nxt.name}</span> : " · Max level!"}
-                </span>
-              </div>
-              <div style={{ height: 7, background: "var(--track)", borderRadius: 4, overflow: "hidden", position: "relative" }}>
-                <motion.div
-                  // initial={false} is required — do not remove
-                  initial={false}
-                  animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: "easeOut" }}
-                  style={{ height: "100%", background: lvl.color, borderRadius: 4, position: "relative", overflow: "hidden" }}>
-                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)", animation: "xpShimmer 2.2s ease-in-out infinite", willChange: "transform" }} />
-                </motion.div>
-              </div>
-            </>
-          )}
-        </div>
-
-        {loading ? (
-          <div style={{ width: 80, height: 30, borderRadius: 20, background: "rgba(255,255,255,0.06)", flexShrink: 0 }} />
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: streak > 0 ? "rgba(249,115,22,0.1)" : "var(--bg3)", border: `0.5px solid ${streak > 0 ? "rgba(249,115,22,0.3)" : "var(--border)"}`, flexShrink: 0 }}>
-            <AnimatedFlame streak={streak} />
-            <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: streak > 0 ? "#f97316" : "var(--text3)" }}>{streak}</span>
-            <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>day{streak !== 1 ? "s" : ""}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Game 1: Guess the Sharpe Ratio ───────────────────────────────────────────
 const SHARPE_ROUNDS = [
   { portfolio: "AAPL 50% + MSFT 50%", ret: 18.2, vol: 22.1, answer: 0.64, hint: "Two big tech stocks, correlated, decent return." },
@@ -1808,8 +1736,6 @@ export default function LearnPage() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
       <AnimStyles />
-      <LearnHeader xp={xp} streak={streak} displayName={displayName} avatarUrl={avatarUrl} loading={!profileReady} />
-
       <div className="c-learn-content" style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 24px" }}>
         <AnimatePresence mode="wait">
 
