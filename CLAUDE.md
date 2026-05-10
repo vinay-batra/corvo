@@ -14,9 +14,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Elevated AiInsights: pill tags, full analyst sentences, bolder rebalancing section, bigger Ask AI CTA
 
 **Up next (in priority order):**
-1. Action CTAs on every AI insight — each insight needs a concrete next step
-2. Homepage/onboarding rewrite around "your portfolio's guardian" positioning
-3. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
+1. Homepage/onboarding rewrite around "your portfolio's guardian" positioning
+2. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
+3. Action CTAs wired directly into AI insights and WSID results
 
 **Recent completions (May 10):**
 - Daily Brief card: CSS Grid layout, always-visible, portfolio today live
