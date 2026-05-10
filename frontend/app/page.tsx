@@ -1497,7 +1497,7 @@ function FinalCTASection() {
     } catch { setStatus("error"); }
   };
 
-  const HEADLINE = ["Your", "portfolio", "deserves", "better."];
+  const HEADLINE = ["Let", "Corvo", "watch", "your", "back."];
 
   return (
     <section style={{
@@ -1561,8 +1561,8 @@ function FinalCTASection() {
               </motion.span>
             ))}
           </h2>
-          <p style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.8, fontWeight: 300, maxWidth: 540, margin: "0 auto 44px" }}>
-            Free. No spreadsheets. Just your portfolio, with a point of view.
+          <p style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.8, fontWeight: 300, maxWidth: 560, margin: "0 auto 44px" }}>
+            Free. Always watching. The AI advisor that monitors your holdings, flags real risks, and tells you what to do.
           </p>
           <div className="final-cta-actions" style={{ display: "flex", gap: 16, justifyContent: "center", alignItems: "center", flexWrap: "wrap", marginBottom: 20 }}>
             <Link
@@ -3045,17 +3045,17 @@ function GsapHero({
               color: "var(--text)",
             }}
           >
-            Your portfolio deserves{" "}
+            The advisor{" "}
             <span style={{ color: "var(--accent)", textShadow: "0 0 60px rgba(var(--accent-rgb),0.35)" }}>
-              better than a pie chart.
+              watching over your portfolio.
             </span>
           </h1>
 
           <p
             ref={subRef}
-            style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 440, marginBottom: 36 }}
+            style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 460, marginBottom: 36 }}
           >
-            AI-powered analytics: Sharpe ratio, Monte Carlo, sector exposure, and more. Free.
+            Corvo monitors every holding daily, flags the real risks, and tells you exactly what to do. Free.
           </p>
 
           <div ref={ctaRef} className="hero-btns" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -3098,10 +3098,10 @@ function GsapHero({
             <FadeUp delay={0.2}>
               <div>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 20, fontWeight: 700, color: "var(--accent)", letterSpacing: -0.5, lineHeight: 1 }}>
-                  <Counter target={17} suffix="K+" delay={1250} />
+                  <Counter target={12} suffix="K+" delay={1250} />
                 </p>
                 <p style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>
-                  AI Insights
+                  Risks Flagged
                 </p>
               </div>
             </FadeUp>
@@ -3111,6 +3111,35 @@ function GsapHero({
         {/* RIGHT */}
         <div ref={demoRef} className="hero-right" style={{ position: "relative", willChange: "transform, opacity" }}>
           <div className={demoActive ? "hero-metrics-hidden" : ""} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+
+          {/* Floating "watching" alert chip — guardian theme */}
+          <div className="hero-metric-card" style={{
+            position: "absolute", top: 240, left: "50%", transform: "translateX(-50%)",
+            zIndex: 4,
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "7px 13px 7px 11px",
+            background: "var(--card-bg)",
+            border: "1px solid rgba(224,92,92,0.35)",
+            borderRadius: 100,
+            backdropFilter: "blur(16px)",
+            boxShadow: "0 6px 22px rgba(224,92,92,0.18), 0 0 0 0.5px rgba(224,92,92,0.15)",
+            animation: "float 6s ease-in-out 1.8s infinite",
+            pointerEvents: "auto",
+            whiteSpace: "nowrap",
+          }}>
+            <span style={{ position: "relative", display: "inline-flex", width: 7, height: 7 }}>
+              <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#e05c5c", animation: "pdot 1.4s ease-in-out infinite" }} />
+              <span style={{ position: "absolute", inset: -3, borderRadius: "50%", background: "rgba(224,92,92,0.35)", animation: "pdot 1.4s ease-in-out infinite" }} />
+            </span>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: "#e05c5c", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
+              Risk flagged
+            </span>
+            <span style={{ width: 1, height: 10, background: "rgba(224,92,92,0.25)" }} />
+            <span style={{ fontSize: 10, fontFamily: "Space Mono,monospace", color: "var(--text2)", fontWeight: 600 }}>
+              Tech &gt; 60%
+            </span>
+          </div>
+
           {[
             { label: "Sharpe Ratio", value: "0.66", color: "var(--accent)", style: { top: -28, left: -48 } as React.CSSProperties, floatDelay: "0s" },
             { label: "1Y Return", value: "+18.4%", color: "var(--green)", style: { top: 80, right: -64 } as React.CSSProperties, floatDelay: "1.2s" },
@@ -3594,8 +3623,8 @@ export default function Landing() {
       <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "140px 56px 140px" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <ScrollReveal from="up" distance={30} style={{ textAlign: "center", marginBottom: 64 }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Capabilities</p>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(30px,4.4vw,56px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2.5, lineHeight: 1.05 }}>Everything your portfolio<br />actually needs</h2>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Always watching</p>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(30px,4.4vw,56px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2.5, lineHeight: 1.05 }}>What Corvo watches<br />for you</h2>
           </ScrollReveal>
           <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist exportshare" "learnxp deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
             <ScrollReveal from="left"  distance={30} delay={0.0}  style={{ gridArea: "portfolio",   height: "100%" }}><BentoPortfolioCard  delay={0} /></ScrollReveal>
