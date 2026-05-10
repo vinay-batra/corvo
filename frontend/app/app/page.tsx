@@ -2514,37 +2514,40 @@ const { dark, toggle: toggleDark }  = useTheme();
                     tabIndex={0}
                     onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleWhatShouldIDo(); }}
                     style={{
-                      width: "100%", borderRadius: 12, cursor: "pointer",
-                      border: "0.5px solid rgba(201,168,76,0.45)",
+                      width: "100%", borderRadius: 14, cursor: "pointer",
+                      border: "0.5px solid rgba(201,168,76,0.35)",
                       borderLeft: "3px solid var(--accent)",
-                      background: "linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 100%)",
-                      padding: "20px", transition: "all 0.18s",
-                      display: "flex", alignItems: "center", gap: 16,
+                      background: "linear-gradient(120deg, rgba(201,168,76,0.08) 0%, rgba(201,168,76,0.02) 60%, transparent 100%)",
+                      padding: "22px 24px", transition: "all 0.18s",
+                      display: "flex", alignItems: "center", gap: 20,
                       boxSizing: "border-box",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
                     }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(201,168,76,0.02) 100%)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,76,0.6)";
+                      (e.currentTarget as HTMLElement).style.background = "linear-gradient(120deg, rgba(201,168,76,0.14) 0%, rgba(201,168,76,0.04) 60%, transparent 100%)";
+                      (e.currentTarget as HTMLElement).style.borderLeftColor = "var(--accent)";
+                      (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(201,168,76,0.1)";
                     }}
                     onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 100%)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,76,0.45)";
+                      (e.currentTarget as HTMLElement).style.background = "linear-gradient(120deg, rgba(201,168,76,0.08) 0%, rgba(201,168,76,0.02) 60%, transparent 100%)";
+                      (e.currentTarget as HTMLElement).style.borderLeftColor = "var(--accent)";
+                      (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)";
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 18, flex: 1, minWidth: 0 }}>
                       <div style={{
-                        width: 46, height: 46, borderRadius: 10, flexShrink: 0,
-                        background: "rgba(201,168,76,0.15)", border: "0.5px solid rgba(201,168,76,0.3)",
+                        width: 52, height: 52, borderRadius: 12, flexShrink: 0,
+                        background: "rgba(201,168,76,0.12)", border: "0.5px solid rgba(201,168,76,0.3)",
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}>
-                        <Sparkles size={22} color="var(--accent)" />
+                        <Sparkles size={24} color="var(--accent)" />
                       </div>
-                      <div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--accent)", marginBottom: 3, letterSpacing: -0.2 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", marginBottom: 4, letterSpacing: -0.3, lineHeight: 1.2 }}>
                           What should I do today?
                         </div>
                         <div style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.4 }}>
-                          AI-powered action items based on your portfolio, goals, markets, and more.
+                          Get a personalized action plan — rebalancing moves, risk alerts, and market signals specific to your portfolio.
                         </div>
                       </div>
                     </div>
@@ -2554,11 +2557,13 @@ const { dark, toggle: toggleDark }  = useTheme();
                         if (wsidOpen && wsidResult) { setWsidResult(null); handleWhatShouldIDo(); }
                       }}
                       style={{
-                        padding: "10px 20px", fontSize: 13, fontWeight: 700, borderRadius: 10,
+                        padding: "12px 24px", fontSize: 13, fontWeight: 700, borderRadius: 10,
                         background: "var(--accent)", color: "var(--bg)", flexShrink: 0,
                         display: "flex", alignItems: "center", gap: 6,
                         cursor: wsidOpen && wsidResult ? "pointer" : "default",
                         pointerEvents: wsidLoading ? "none" : "auto",
+                        letterSpacing: 0.2, whiteSpace: "nowrap" as const,
+                        transition: "opacity 0.15s",
                       }}>
                       {wsidLoading ? (
                         <>

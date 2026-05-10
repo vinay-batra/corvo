@@ -122,18 +122,24 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
   }, 0) : 0;
   const unrealizedPnlPct = hasPnlData && portfolioValue! > 0 ? unrealizedPnlDollars / portfolioValue! : 0;
 
+  const getCAGRCtx  = (v: number) => v > 0.25 ? "Exceptional growth" : v > 0.15 ? "Strong performance" : v > 0.10 ? "Beating market avg" : v > 0 ? "Positive returns" : v > -0.10 ? "Slight decline" : "Significant decline";
+  const getVolCtx   = (v: number) => v < 0.08 ? "Very low risk" : v < 0.15 ? "Low volatility" : v < 0.25 ? "Moderate risk" : v < 0.35 ? "Elevated risk" : "High volatility";
+  const getSharpeCtx= (v: number) => v > 2.5 ? "World-class" : v > 2.0 ? "Exceptional" : v > 1.5 ? "Very strong" : v > 1.0 ? "Above average" : v > 0 ? "Below average" : "Poor efficiency";
+  const getDDCtx    = (v: number) => v > -0.05 ? "Extremely resilient" : v > -0.10 ? "Very resilient" : v > -0.20 ? "Manageable" : v > -0.30 ? "Notable drawdown" : "Severe drawdown";
+  const getPnLCtx   = (v: number) => v > 0.10 ? "Strong gain" : v > 0 ? "Profitable" : v > -0.10 ? "Slight loss" : "Underwater";
+
   const items = [
-    { label: `CAGR (${periodLabel})`, value: portReturn, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: portReturn<0, neutral: false, bar: null },
-    { label: "Volatility",              value: portVol,    fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: false,        neutral: true,  bar: portVol/0.6 },
-    { label: "Sharpe Ratio",            value: sharpe,     fmt: (v:number) => v.toFixed(2),                           neg: sharpe<0,     neutral: false, bar: Math.min(Math.max(sharpe/3,0),1) },
-    { label: "Max Drawdown",            value: portDD,     fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: true,         neutral: false, bar: null },
-    ...(hasPnlData ? [{ label: "Unrealized P&L", value: unrealizedPnlPct, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: unrealizedPnlPct<0, neutral: false, bar: null, pnlDollars: unrealizedPnlDollars }] : []),
-  ] as Array<{ label: string; value: number; fmt: (v: number) => string; neg: boolean; neutral: boolean; bar: number | null; pnlDollars?: number }>;
+    { label: `CAGR (${periodLabel})`, ctx: getCAGRCtx(portReturn),  value: portReturn, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: portReturn<0, neutral: false, bar: null },
+    { label: "Volatility",            ctx: getVolCtx(portVol),       value: portVol,    fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: false,        neutral: true,  bar: portVol/0.6 },
+    { label: "Sharpe Ratio",          ctx: getSharpeCtx(sharpe),     value: sharpe,     fmt: (v:number) => v.toFixed(2),                           neg: sharpe<0,     neutral: false, bar: Math.min(Math.max(sharpe/3,0),1) },
+    { label: "Max Drawdown",          ctx: getDDCtx(portDD),         value: portDD,     fmt: (v:number) => `${(v*100).toFixed(2)}%`,               neg: true,         neutral: false, bar: null },
+    ...(hasPnlData ? [{ label: "Unrealized P&L", ctx: getPnLCtx(unrealizedPnlPct), value: unrealizedPnlPct, fmt: (v:number) => `${v>=0?"+":""}${(v*100).toFixed(2)}%`, neg: unrealizedPnlPct<0, neutral: false, bar: null, pnlDollars: unrealizedPnlDollars }] : []),
+  ] as Array<{ label: string; ctx: string; value: number; fmt: (v: number) => string; neg: boolean; neutral: boolean; bar: number | null; pnlDollars?: number }>;
   void rate; void sparklineValues;
   return (
     <>
       <style>{`
-        .mc-value{font-size:34px;font-weight:700}
+        .mc-value{font-size:38px;font-weight:700}
         @media(max-width:768px){
           .mc-card{padding:12px!important}
           .mc-value{font-size:22px!important;font-weight:700!important;letter-spacing:-0.8px!important;margin-bottom:6px!important}
@@ -147,25 +153,24 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
           .mc-info-btn{width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;flex-shrink:0!important;padding:0!important}
         }
       `}</style>
-      {items.map(({label,value,fmt,neg,neutral,bar,pnlDollars},i) => {
+      {items.map(({label,ctx,value,fmt,neg,neutral,bar,pnlDollars},i) => {
         const color = neutral ? C.amber : neg ? C.red : "#4caf7d";
         return (
         <motion.div key={i} initial={false} transition={{delay:i*0.07}}
           className="mc-card"
           style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"22px 20px 18px",borderTop:`2px solid ${color}`,position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:0,right:0,width:80,height:80,background:`radial-gradient(circle at top right, ${color}18, transparent 70%)`,pointerEvents:"none",borderRadius:"0 12px 0 0"}} />
-          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:pnlDollars!=null?4:10}}>
-            <p className="mc-value" style={{fontFamily:"Space Mono,monospace",fontSize:34,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,margin:0}}>
-              <Num value={value} fmt={fmt}/>
-            </p>
-          </div>
+          <div style={{position:"absolute",top:0,right:0,width:100,height:100,background:`radial-gradient(circle at top right, ${color}14, transparent 70%)`,pointerEvents:"none",borderRadius:"0 12px 0 0"}} />
+          <p className="mc-value" style={{fontFamily:"Space Mono,monospace",fontSize:38,fontWeight:700,letterSpacing:-2,color,lineHeight:1,margin:"0 0 6px"}}>
+            <Num value={value} fmt={fmt}/>
+          </p>
           {pnlDollars!=null&&(
-            <p className="mc-pnl-sub" style={{fontFamily:"Space Mono,monospace",fontSize:13,fontWeight:600,color,marginBottom:8,lineHeight:1}}>
+            <p className="mc-pnl-sub" style={{fontFamily:"Space Mono,monospace",fontSize:13,fontWeight:600,color,marginBottom:4,lineHeight:1}}>
               {pnlDollars>=0?"+":"-"}${Math.abs(pnlDollars).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
             </p>
           )}
+          <p style={{fontSize:11,fontWeight:600,color,marginBottom:10,letterSpacing:0.2,opacity:0.85}}>{ctx}</p>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <p className="mc-label" style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase"}}>
+            <p className="mc-label" style={{fontSize:9,letterSpacing:1.8,color:"var(--text3)",textTransform:"uppercase"}}>
               {label}{i===0&&currency!=="USD"?<span style={{marginLeft:4,color:C.amber,letterSpacing:1}}> · {currency}</span>:null}
             </p>
             <button onClick={()=>openMetricModal(i)} className="mc-info-btn" style={{width:16,height:16,minWidth:16,minHeight:16,borderRadius:"50%",background:"var(--bg3)",border:"0.5px solid var(--border)",color:"var(--text3)",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0}}
