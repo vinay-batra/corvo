@@ -161,7 +161,7 @@ function useTheme() {
 
 function useS() {
   return {
-    app:        { display: "flex", height: "100vh", background: "var(--bg)", fontFamily: "var(--font-body)" } as React.CSSProperties,
+    app:        { display: "flex", height: "100vh", width: "100%", overflow: "hidden", background: "var(--bg)", fontFamily: "var(--font-body)" } as React.CSSProperties,
     sidebarTop: { height: 52, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 16px", borderBottom: "0.5px solid var(--border)" },
     logo:       { fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" },
     logoSub:    { fontSize: 11, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
@@ -174,7 +174,7 @@ function useS() {
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
     cardAccent: { width: 3, height: 14, background: "var(--accent)", borderRadius: 1 },
     cardTitle:  { fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
-    metricsGrid:{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 12 },
+    metricsGrid:{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 12 },
     bottomGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
   };
 }
@@ -2041,6 +2041,17 @@ const { dark, toggle: toggleDark }  = useTheme();
           .c-mob-drawer{display:none!important}
           .c-mob-bottom-nav{display:none!important}
         }
+        @media(min-width:769px) and (max-width:1100px){
+          .c-sidebar{width:clamp(200px,22vw,280px)!important}
+          .c-metrics{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+          .c-bgrid{grid-template-columns:1fr!important}
+          .c-risk-grid{grid-template-columns:1fr!important}
+          .c-risk-2col{grid-template-columns:1fr!important}
+          .stocks-grid{grid-template-columns:repeat(2,1fr)!important}
+          .c-perf-controls{flex-wrap:wrap!important;gap:6px!important}
+          .c-alloc-row{flex-direction:column!important}
+          .c-alloc-row>*{flex:none!important;width:100%!important}
+        }
         .c-mob-tabs{scrollbar-width:none;overscroll-behavior-x:contain;overscroll-behavior-y:none}
         .c-mob-tabs::-webkit-scrollbar{display:none}
       `}</style>
@@ -2049,7 +2060,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       <div
         id="tour-desk-sidebar"
         className="c-sidebar"
-        style={{ width: 340, flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
+        style={{ width: "clamp(200px, 22vw, 340px)", flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
         {SidebarInner()}
       </div>
 
@@ -2661,7 +2672,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   id="tour-desk-metrics"
                   key="stats-row"
                   className="c-metrics"
-                  style={{ ...S.metricsGrid, gridTemplateColumns: assets.some(a => (a.purchasePrice ?? 0) > 0) && (portfolioInputValue ?? 0) > 0 ? "repeat(5,1fr)" : "repeat(4,1fr)" }}
+                  style={{ ...S.metricsGrid, gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}
                   initial={false}
                   animate="visible"
                   variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
