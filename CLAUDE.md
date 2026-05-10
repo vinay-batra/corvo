@@ -18,7 +18,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
 3. Action CTAs wired directly into AI insights and WSID results
 
-**Recent completions (May 10):**
+**Recent completions (May 10, continued):**
+- Metric grid: auto-fill -> auto-fit (cards now fill full row)
+- Daily Brief: chevron collapse/expand, persists to localStorage
+- Health Score: removed duplicate score/grade text, added CTA button that fires AI chat with health score prompt
+
+**Recent completions (May 10, earlier):**
 - Daily Brief card: CSS Grid layout, always-visible, portfolio today live
 - AI Insights: pill tags, analyst sentences, bolder rebalancing
 - Removed: Corvo insight banner, AI nudge banner, showBasicsNudge modal, dead state
