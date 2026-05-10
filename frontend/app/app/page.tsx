@@ -172,7 +172,7 @@ function useS() {
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
     cardAccent: { width: 3, height: 14, background: "var(--accent)", borderRadius: 1 },
     cardTitle:  { fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
-    metricsGrid:{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 16 },
+    metricsGrid:{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 },
     bottomGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
   };
 }
@@ -2759,7 +2759,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     {
                       title: "Health Score",
                       from: "left" as const, delayS: 0.1,
-                      content: <HealthScore data={data} userId={userId} apiUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"} />,
+                      content: <HealthScore data={data} userId={userId} apiUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"} onAskAi={() => { setChatInitialMessage("Walk me through my health score — what's driving each sub-score and what specific changes would push it higher?"); setChatOpen(true); }} />,
                       sections: [
                         { label: "Plain English", text: "A composite score from 0-100 that grades your portfolio on returns, risk-adjusted performance, stability, and resilience." },
                         { label: "Example", text: "Score 78 = Good. Strong returns and Sharpe ratio, but some volatility keeping it from Excellent." },

@@ -125,6 +125,16 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
   const firstName = resolvedName.trim().split(" ")[0] || null;
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem("corvo_brief_collapsed") === "1"; } catch { return false; }
+  });
+  const toggleCollapsed = () => setCollapsed(c => {
+    const next = !c;
+    try { localStorage.setItem("corvo_brief_collapsed", next ? "1" : "0"); } catch {}
+    return next;
+  });
+
   const [mkt, setMkt] = useState(() => computeMarketStatus());
   useEffect(() => { const id = setInterval(() => setMkt(computeMarketStatus()), 60000); return () => clearInterval(id); }, []);
 
@@ -264,6 +274,18 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
             <span style={{ fontSize: 8, letterSpacing: 2.5, textTransform: "uppercase", color: "var(--accent)", fontWeight: 700 }}>{getBriefLabel()}</span>
             <div style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--border2)", flexShrink: 0 }} />
             <span style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 0.1 }}>{dateStr}</span>
+            <button
+              onClick={toggleCollapsed}
+              title={collapsed ? "Expand brief" : "Collapse brief"}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center", color: "var(--text3)", transition: "color 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transition: "transform 0.25s ease", transform: collapsed ? "rotate(180deg)" : "rotate(0deg)" }}>
+                <polyline points="18 15 12 9 6 15" />
+              </svg>
+            </button>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: "var(--bg3)", border: "0.5px solid var(--border)", flexShrink: 0 }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: mkt.dot, boxShadow: mkt.isOpen ? "0 0 7px rgba(76,175,125,0.65)" : mkt.isPre ? "0 0 7px rgba(201,168,76,0.5)" : "none" }} />
@@ -272,12 +294,13 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
           </div>
         </div>
 
-        {/* ── Greeting: full width above grid ── */}
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--text)", margin: "0 0 20px", letterSpacing: -0.5, lineHeight: 1.2 }}>
+        {/* ── Greeting: always visible ── */}
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--text)", margin: `0 0 ${collapsed ? 0 : 20}px`, letterSpacing: -0.5, lineHeight: 1.2, transition: "margin 0.25s ease" }}>
           {getGreeting()}{firstName ? `, ${firstName}` : ""}.
         </h1>
 
-        {/* ── Two-column content grid ── */}
+        {/* ── Two-column content grid — collapses ── */}
+        <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 2000, transition: "max-height 0.35s ease", opacity: collapsed ? 0 : 1, transitionProperty: "max-height, opacity", transitionDuration: "0.35s, 0.2s" }}>
         <div className="gb-grid">
 
           {/* LEFT — brief sections */}
@@ -378,6 +401,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
 
           </div>
         </div>
+        </div>{/* end collapse wrapper */}
       </div>
     </div>
   );
