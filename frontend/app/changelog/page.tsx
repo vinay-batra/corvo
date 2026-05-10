@@ -60,6 +60,13 @@ function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSS
 
 const ENTRIES = [
   {
+    date: "May 10, 2026",
+    version: "v0.24",
+    title: "Corvo Insight Card, Dashboard Polish & Feature Refinement",
+    desc: "Proactive Corvo insight card added above the metrics grid — derives a specific observation from your live portfolio data (no API call) and links directly into AI chat. Dashboard customizer expanded to all cards and moved to a floating button. Visual polish across the board: health score breathing ring, holding sparklines on hover, ambient portfolio glow, and direction-aware slide transitions between tabs. Performance chart now has $ value and dividends toggles. Drawdown chart adds a Why? button. Period buttons trigger automatic re-analysis instead of showing a stale banner. AI chat gets roast mode with a dedicated icon and stricter no-disclaimer rules. Browser back/forward now navigates between tabs. Removed: paper trading, options chain, tax loss harvesting alert banner, Price Targets card, Projected Income card, How You Compare card.",
+    tags: ["Dashboard", "AI", "Charts", "Polish", "Removals"],
+  },
+  {
     date: "May 7, 2026",
     version: "v0.23",
     title: "Dashboard Animations, Stock Chart Overhaul & SEO",

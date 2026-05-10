@@ -113,9 +113,7 @@ Key routes already implemented:
 
 ### StockDetail tab system
 
-`StockDetail.tsx` has its own internal tab switcher between "Overview" and "Options Chain". The `OptionsChain` component (inside the same file, lines ~120-380) fetches from `GET /options/{ticker}`, renders calls/puts tables with ITM highlighting, delta column, per-column tooltips, and a Max Pain section. This is complete — do not rebuild it.
-
-The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yfinance. Black-Scholes delta is always computed via `_bs_delta` (uses `_norm_cdf` / `math.erf`, no scipy needed).
+`StockDetail.tsx` has its own internal tab switcher between "Overview" and "Insider Activity". The Options Chain tab was removed in v0.24 — do not re-add it.
 
 ---
 
@@ -141,8 +139,10 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 - Market hours countdown always shows time until next open or close — "After Hours", "Closed", and weekend states must include a live countdown, not a static label
 - GSAP is installed (`gsap` package) — ScrollTrigger and SplitText are available; use them for landing page and public page animations
 - `ParticleCanvas` component lives in `app/page.tsx` using Three.js, `position: fixed`, `z-index: 0` — do not move or re-implement it
-- Tabs removed from dashboard: Income & Tax, Transactions, Paper Trade — these are now sections inside the Positions and Learn tabs respectively
-- Period and Benchmark selectors removed from sidebar — they are only available inside the chart controls area
+- Income & Tax and Transactions are sections inside the Positions tab — not standalone tabs
+- Paper Trade is removed from the app entirely (removed from Learn tab in v0.24) — do not re-add it
+- Options Chain is removed from StockDetail entirely (removed in v0.24) — StockDetail has Overview + Insider Activity tabs only
+- Period and Benchmark selectors are only in chart controls — not in sidebar
 
 ## Mobile Rules
 
@@ -178,9 +178,22 @@ The backend tries Finnhub first (`/api/v1/stock/option-chain`), falls back to yf
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.23
+- Version: v0.24
 
 ## What Was Built
+
+### v0.24 (May 10, 2026)
+- Dashboard: proactive Corvo insight card above metrics — derives specific 2-sentence observation from live portfolio data (no API call), links to AI chat
+- Dashboard customizer: expanded to all cards (tickers, morning brief, WSID); moved to floating button next to AI/feedback
+- UI polish: health score breathing ring, holding sparklines on hover, ambient portfolio glow behind dashboard
+- Tab transitions: direction-aware slide animations when switching tabs
+- Analysis flow: animated step sequence during portfolio analysis with orb, flash-to-done on fast loads
+- Charts: $ value toggle on performance chart, dividends toggle on performance chart, drawdown "Why?" button, auto-apply custom date range, auto re-analyze on period button click
+- AI chat: roast mode added with SVG icon; stricter no-disclaimer instructions; auto-retry once on Railway cold starts
+- Navigation: browser back/forward navigates between dashboard tabs; XP bar and level badge restored to Learn tab
+- Investing basics nudge banner for new users; mutual fund detection AI nudge banner
+- Removed: paper trading (entire feature), options chain from StockDetail, TLH proactive alert banner, Price Targets card, Projected Income/Dividend card, "How You Compare" card, correlation from dashboard overview, trend arrows from metric cards, Demo links from all navs, landing page grid section
+- Backend: dividend yield decimal normalization fix, portfolio_snapshots RLS user_id filter, ETF calendar 404 fallbacks, yfinance crumb/NaN crash fixes
 
 ### v0.23 (May 7, 2026)
 - Landing page: Three.js particle canvas, GSAP hero animations, 3D bento cards with mouse tilt, horizontal infinite testimonial carousel, animated stats countup, hide-on-scroll nav, scroll animations on all public pages
