@@ -2065,7 +2065,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           .c-risk-2col{grid-template-columns:1fr!important}
           .c-content{padding:12px 10px!important;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
-          #tour-desk-chat{display:flex!important;bottom:20px!important;right:14px!important;width:44px!important;height:44px!important}
+          #tour-desk-chat{display:flex!important;bottom:24px!important;right:24px!important;width:48px!important;height:48px!important}
           .c-alloc-row{flex-direction:column!important}
           .c-alloc-row>*{flex:none!important;width:100%!important}
           .c-mob-bar #usermenu-btn>span{display:none!important}
@@ -2961,7 +2961,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         transition={{ delay: 0.5, type: "spring", damping: 20 }}
         style={{
           position: "fixed", bottom: 24, right: 24, zIndex: 1000,
-          width: 52, height: 52, borderRadius: "50%",
+          width: 48, height: 48, borderRadius: "50%",
           background: chatOpen ? "var(--bg3)" : "var(--accent)",
           border: chatOpen ? "1px solid var(--border2)" : "none",
           cursor: "pointer",
@@ -2985,8 +2985,8 @@ const { dark, toggle: toggleDark }  = useTheme();
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.6, type: "spring", damping: 20 }}
           style={{
-            position: "fixed", bottom: 24, right: 152, zIndex: 1000,
-            width: 44, height: 44, borderRadius: "50%",
+            position: "fixed", bottom: 24, right: 144, zIndex: 1000,
+            width: 48, height: 48, borderRadius: "50%",
             background: "var(--bg2)",
             border: "0.5px solid var(--border)",
             cursor: "pointer",

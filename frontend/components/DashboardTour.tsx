@@ -242,86 +242,86 @@ function numWord(n: number): string {
 
 // ── Tour stops ────────────────────────────────────────────────────────────────
 
-function getDesktopStops(tabCount: number): TourStop[] {
+function getDesktopStops(_tabCount: number): TourStop[] {
   return [
     {
       id: "tour-desk-sidebar",
-      label: "Sidebar",
+      label: "Portfolio",
       title: "Build your portfolio",
-      description: "Search any ticker, set weights, enter your portfolio value, then hit Analyze.",
+      description: "Type any ticker and set its weight. Add your total portfolio value and hit New Analysis. Corvo fetches live prices and runs every calculation instantly.",
       Illus: IllusBars,
     },
     {
       id: "tour-desk-analyze",
-      label: "Analyze",
-      title: "Run your analysis",
-      description: "Generates Sharpe ratio, CAGR, max drawdown, health score, and AI insights. Re-analyze anytime.",
+      label: "Daily Brief",
+      title: "Your morning briefing",
+      description: "Every time you open the dashboard Corvo shows a personalized brief — what the market did, what drove it, how your specific holdings were affected, and what to watch next. Tap the chevron in the top right of the card to collapse it.",
       Illus: IllusLine,
     },
     {
       id: "tour-desk-metrics",
-      label: "Key Metrics",
-      title: "Your key metrics",
-      description: "Four cards summarize your portfolio. Tap the question mark on any card for a plain-English explanation.",
+      label: "Metrics",
+      title: "Your key numbers",
+      description: "Four cards show your CAGR, volatility, Sharpe ratio, and max drawdown — each with a plain-English label so you instantly know if the number is good or bad. Tap the ? for a full explanation with examples.",
       Illus: IllusPie,
       placement: "bottom",
     },
     {
       id: "tour-desk-chart",
-      label: "Chart",
+      label: "Performance",
       title: "Performance vs benchmark",
-      description: "Compare returns against S&P 500, Nasdaq, or Dow over 6M to 5Y. Use What-If to simulate changes.",
+      description: "See how your portfolio has performed against the S&P 500, Nasdaq, or Dow over 6M, 1Y, 2Y, or 5Y. Use the What-If button to simulate any portfolio change before committing.",
       Illus: IllusDualLine,
       placement: "bottom",
     },
     {
       id: "tour-desk-tabs",
       label: "Tabs",
-      title: "Everything in one place",
-      description: "Dashboard, Positions, Stocks, Simulations, News, Watchlist, and Learn. Paper Trade and Transactions live inside their tabs.",
+      title: "Five tabs, everything you need",
+      description: "Dashboard for your overview. Positions for holdings breakdown, tax info, and transactions. Stocks for deep research on any ticker. Simulations for Monte Carlo and drawdown analysis. News for headlines filtered to your exact holdings.",
       Illus: IllusTabs,
       placement: "bottom",
     },
     {
       id: "tour-desk-chat",
       label: "AI Chat",
-      title: "Your AI analyst",
-      description: "Hit the AI button to ask anything. Roast my portfolio, explain my Sharpe ratio, what to rebalance — it knows your full portfolio.",
+      title: "Three buttons, bottom right",
+      description: "The gold AI button opens your personal analyst — ask anything about your portfolio, request a roast, or explore what-if scenarios. The flag button sends feedback directly to the Corvo team. The grid button lets you customize which cards show on your dashboard.",
       Illus: IllusChat,
       placement: "top",
     },
     {
       id: "tour-desk-customize",
       label: "Customize",
-      title: "Make it yours",
-      description: "Use the grid button down here to customize your dashboard. Show or hide cards, reorder sections, and set up the layout that works for you.",
+      title: "Hide what you don't need",
+      description: "Use the grid icon to show or hide any dashboard card. Your layout is saved — so if you close Corvo and come back, everything is exactly how you left it.",
       Illus: IllusBars,
       placement: "top",
     },
     {
-      id: "tour-desk-export",
-      label: "Share",
-      title: "Share your portfolio",
-      description: "Export a CSV, download a portfolio card, or share directly to X. One click from the Share button in the top bar.",
-      Illus: IllusExport,
-    },
-    {
       id: "tour-desk-bell",
       label: "Alerts",
-      title: "Never miss a move",
-      description: "Set price alerts on any ticker. Get notified by email or push. Morning briefings and weekly digest included.",
+      title: "Price alerts and notifications",
+      description: "The bell icon in the top bar lets you set price alerts on any ticker. You'll get a push notification or email when the threshold is hit. Morning briefings and weekly portfolio digests are available in Settings.",
       Illus: IllusBell,
+    },
+    {
+      id: "tour-desk-export",
+      label: "Export",
+      title: "Share and export",
+      description: "Use the Share button in the top bar to export a CSV of your portfolio, download a shareable portfolio card image, or copy a link. All your saved portfolios are in the sidebar under Saved.",
+      Illus: IllusExport,
     },
   ];
 }
 
 const MOBILE_STOPS: TourStop[] = [
-  { id: "tour-mob-home",      label: "Home",    title: "Go home anytime",          description: "The house icon takes you back to the Corvo homepage. Your portfolio is always saved." },
-  { id: "tour-mob-hamburger", label: "Sidebar", title: "Your portfolio lives here", description: "Tap the menu to open the sidebar. Add tickers, set weights, then hit Analyze." },
-  { id: "tour-mob-tabs",      label: "Tabs",    title: "Scroll to explore",        description: "Swipe the tab bar to see all pages: Dashboard, Positions, Stocks, Simulations, News, Watchlist, and Learn." },
-  { id: "tour-mob-bell",      label: "Alerts",  title: "Stay on top of moves",     description: "Set price alerts and portfolio notifications. Email or push when thresholds are hit." },
-  { id: "tour-desk-chat",     label: "AI Chat", title: "Ask AI anything",          description: "Tap the chat button to open AI Chat. Ask about Sharpe, rebalancing ideas, or any metric." },
-  { id: "tour-mob-profile",   label: "Account", title: "Your account",             description: "Tap your avatar to access Settings, Account, Referrals, and Sign Out." },
+  { id: "tour-mob-home",      label: "Home",    title: "Go home anytime",          description: "The Corvo logo takes you back to the homepage. Your portfolio is always saved in the sidebar." },
+  { id: "tour-mob-hamburger", label: "Sidebar", title: "Your portfolio lives here", description: "Tap the menu to open the sidebar. Add tickers, set weights, enter your portfolio value, then hit New Analysis." },
+  { id: "tour-mob-tabs",      label: "Tabs",    title: "Five tabs, everything you need", description: "Swipe to see Dashboard, Positions, Stocks, Simulations, and News. Each tab has a different view of your portfolio." },
+  { id: "tour-mob-bell",      label: "Alerts",  title: "Price alerts",             description: "Set price alerts on any ticker. Get a push notification or email when the threshold is hit. Morning briefings available in Settings." },
+  { id: "tour-desk-chat",     label: "AI Chat", title: "Three buttons, bottom right", description: "Gold AI button: your personal analyst — ask anything. Flag button: send feedback to the team. Grid button: customize which dashboard cards show." },
+  { id: "tour-mob-profile",   label: "Account", title: "Your account",             description: "Tap your avatar to access Settings, Notifications, Referrals, and Sign Out." },
 ];
 
 interface RingPos { top: number; left: number; width: number; height: number; }

@@ -70,9 +70,9 @@ export default function FeedbackButton() {
         style={{
           position: "fixed",
           bottom: 24,
-          right: 88,
+          right: 84,
           zIndex: 1000,
-          width: 44, height: 44,
+          width: 48, height: 48,
           background: "var(--bg2)",
           border: "0.5px solid var(--border)",
           borderRadius: "50%",
