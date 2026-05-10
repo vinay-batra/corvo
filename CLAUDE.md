@@ -9,12 +9,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Session: May 10, 2026**
 - Removed Watchlist and Learn tabs from nav (code preserved in page.tsx — add back to TABS to restore)
-- Rebuilt GreetingBar as premium Daily Brief card (two-column, always-visible brief, 30px portfolio today number)
+- Rebuilt GreetingBar as premium Daily Brief card — CSS Grid layout (1fr 1px 230px), greeting full-width above grid, Portfolio Today hides when market closed + value ~0
 - Fixed TS build error: removed `tab.id === "learn"` comparisons after TABS narrowing
+- Elevated AiInsights: pill tags, full analyst sentences, bolder rebalancing section, bigger Ask AI CTA
 
 **Up next (in priority order):**
-1. Action CTAs on every AI insight — each insight needs a concrete next step the user can take
-2. Health score visible everywhere, not just one card
+1. Continue dashboard polish — look at the live site and identify remaining weak spots
+2. Action CTAs on every AI insight — each insight needs a concrete next step
 3. Homepage/onboarding rewrite around "your portfolio's guardian" positioning
 4. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
 
