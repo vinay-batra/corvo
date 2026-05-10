@@ -4,6 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Current Focus
+<!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
+
+**Session: May 10, 2026**
+- Removed Watchlist and Learn tabs from nav (code preserved in page.tsx — add back to TABS to restore)
+- Rebuilt GreetingBar as premium Daily Brief card (two-column, always-visible brief, 30px portfolio today number)
+- Fixed TS build error: removed `tab.id === "learn"` comparisons after TABS narrowing
+
+**Up next (in priority order):**
+1. Action CTAs on every AI insight — each insight needs a concrete next step the user can take
+2. Health score visible everywhere, not just one card
+3. Homepage/onboarding rewrite around "your portfolio's guardian" positioning
+4. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
+
+---
+
 ## PRODUCT PHILOSOPHY
 
 **Corvo is an advisor, not a tool.**
