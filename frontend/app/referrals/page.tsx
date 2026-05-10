@@ -18,7 +18,18 @@ type ReferralData = {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 14, paddingBottom: 8, borderBottom: "0.5px solid var(--border)" }}>{title}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+        <div style={{ width: 4, height: 22, background: "var(--accent)", borderRadius: 2, flexShrink: 0 }} />
+        <h2 style={{
+          fontFamily: "Space Mono, monospace",
+          fontSize: 22, fontWeight: 700,
+          color: "var(--text)",
+          letterSpacing: -0.6, lineHeight: 1.15,
+          margin: 0,
+        }}>
+          {title}
+        </h2>
+      </div>
       {children}
     </div>
   );
