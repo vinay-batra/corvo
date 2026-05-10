@@ -1947,7 +1947,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             <>
               <motion.button
                 id="tour-desk-analyze"
-                onClick={canAnalyze ? handleAnalyze : undefined}
+                onClick={canAnalyze ? () => handleAnalyze() : undefined}
                 disabled={!canAnalyze}
                 initial={false}
                 animate={analyzeComplete ? { scale: [1, 1.05, 1] } : { scale: 1 }}
@@ -2277,7 +2277,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 style={{ border: "0.5px solid rgba(224,92,92,0.4)", borderRadius: 10, padding: "12px 16px", background: "rgba(224,92,92,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <span className="c-banner-text" style={{ fontSize: 13, color: "#e05c5c" }}>{errorMsg}</span>
                 <div className="c-banner-actions" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <button onClick={handleAnalyze}
+                  <button onClick={() => handleAnalyze()}
                     style={{ padding: "5px 12px", fontSize: 11, borderRadius: 6, border: "0.5px solid rgba(224,92,92,0.4)", background: "transparent", color: "#e05c5c", cursor: "pointer" }}>
                     Try again
                   </button>
