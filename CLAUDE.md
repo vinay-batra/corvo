@@ -18,6 +18,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
 3. Action CTAs wired directly into AI insights and WSID results
 
+**Sidebar redesign (May 10):** AI editor collapsed by default (··· toggle row). Presets/Screenshot/CSV → ··· overflow menu. window.confirm removed → inline 2-click remove confirm. Holdings header shows count badge + weight %.
+
 **Button layout (bottom right, all 48x48px, 12px gaps):**
 - AI (gold): right 24
 - Feedback (flag): right 84
