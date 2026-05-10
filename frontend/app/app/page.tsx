@@ -214,6 +214,7 @@ function SectionHeader({ eyebrow, title, delay = 0 }: { eyebrow: string; title: 
   return (
     <div
       ref={ref}
+      className="c-section-header"
       style={{
         marginTop: 32, marginBottom: 18,
         opacity: visible ? 1 : 0,
@@ -221,14 +222,14 @@ function SectionHeader({ eyebrow, title, delay = 0 }: { eyebrow: string; title: 
         transition: `opacity 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
       }}
     >
-      <div style={{
+      <div className="c-section-eyebrow" style={{
         fontSize: 10, letterSpacing: "0.22em", color: "var(--accent)",
         textTransform: "uppercase", fontFamily: "var(--font-mono)",
         fontWeight: 700, marginBottom: 6,
       }}>
         {eyebrow}
       </div>
-      <div style={{
+      <div className="c-section-title" style={{
         fontFamily: "Space Mono, monospace",
         fontSize: 22, fontWeight: 700,
         color: "var(--text)",
@@ -2120,6 +2121,10 @@ const { dark, toggle: toggleDark }  = useTheme();
           .c-banner-actions{flex-shrink:0!important}
           .c-perf-controls{flex-wrap:wrap!important;gap:6px!important}
           .c-perf-controls>*{flex-shrink:0!important}
+          .c-section-header{margin-top:24px!important;margin-bottom:12px!important}
+          .c-section-title{font-size:18px!important;letter-spacing:-0.6px!important}
+          .c-section-eyebrow{font-size:9px!important;letter-spacing:0.18em!important}
+          .c-customizer-grid{grid-template-columns:1fr!important}
         }
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
@@ -3259,7 +3264,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "var(--font-mono)", marginBottom: 10 }}>
                     {group.label}
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <div className="c-customizer-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     {group.cards.map(card => {
                       const on = !hiddenCards.has(card);
                       return (
