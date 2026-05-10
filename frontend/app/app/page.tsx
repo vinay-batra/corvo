@@ -2042,7 +2042,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           .c-mob-bottom-nav{display:none!important}
         }
         @media(min-width:769px) and (max-width:1100px){
-          .c-sidebar{width:clamp(200px,22vw,280px)!important}
+          .c-sidebar{width:clamp(260px,22vw,300px)!important}
           .c-metrics{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
           .c-bgrid{grid-template-columns:1fr!important}
           .c-risk-grid{grid-template-columns:1fr!important}
@@ -2060,7 +2060,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       <div
         id="tour-desk-sidebar"
         className="c-sidebar"
-        style={{ width: "clamp(200px, 22vw, 340px)", flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
+        style={{ width: "clamp(260px, 22vw, 340px)", flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
         {SidebarInner()}
       </div>
 

@@ -288,6 +288,12 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
           .gb-right{align-items:flex-start!important;width:100%!important}
           .gb-marquee-wrap{width:100%!important}
         }
+        @media(min-width:769px) and (max-width:1100px){
+          .gb-root{flex-direction:column!important;gap:10px!important;padding:10px 16px!important}
+          .gb-divider{display:none!important}
+          .gb-right{align-items:flex-start!important;width:100%!important;flex-direction:row!important;flex-wrap:wrap!important;gap:8px!important}
+          .gb-marquee-wrap{max-width:100%!important}
+        }
       `}</style>
 
       {/* LEFT — greeting, date, market status, briefing */}
