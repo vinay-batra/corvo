@@ -49,6 +49,22 @@ App UI overhaul is complete — all 5 phases shipped.
 - Final CTA headline → "Let Corvo watch your back." with refreshed subhead
 - "Guardian" used sparingly in copy — the concept comes through via "watching," "monitors," "advisor"
 
+**AI quality pass (May 10):** sharpened Corvo voice across 3 prompts in backend/main.py
+- Chat (POST /chat, line ~2384): identity reframed to "the AI advisor watching over this investor's portfolio". Added explicit 3-beat structure rule for recommendations. Banned more hedging filler.
+- Daily Signal (line ~9015): identity reframed. Rationale now must flow through Corvo's 3 beats (what you see / why it matters / setup for action).
+- AI Insights / Health Score (line ~4793): demands a position. No more hedged plain-English.
+- **Note: backend needs a Railway deploy for these to take effect.**
+
+**Empty/error states (May 10):**
+- EmptyState.tsx: gold-tinted SVG icon container (52x52, 14px radius), 15px Space Mono title, gold-accent CTA. Now accepts ReactNode for icon (was string-only).
+- ErrorState.tsx: red-tinted icon container, primary message + optional reason line, gold "Try again" button. Default copy explains Railway cold starts.
+- globals.css updated for both classes.
+
+**Mobile polish (May 10):**
+- SectionHeader: added c-section-header / c-section-title / c-section-eyebrow classes. Mobile rule (<=768px) shrinks headline 22→18px, tightens eyebrow letter-spacing, reduces top margin 32→24. Applies to every dashboard, Positions, Simulations, Stocks region header.
+- Dashboard customizer: 2-col grid collapses to 1-col on mobile (was cramped at 320-375px).
+- Homepage hero risk chip inherits .hero-metric-card so it gets hidden on mobile alongside the other floating cards.
+
 **Phase 6 — marketing + profile pages (May 10):**
 - Install/Changelog/FAQ hero badges: added pulsing gold dot to match the existing Pricing badge animation
 - Changelog badge copy: "Changelog" → "What's new"; FAQ badge: "FAQ" → "Help"
