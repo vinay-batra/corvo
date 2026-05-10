@@ -64,9 +64,18 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", margin: "0 0 20px", letterSpacing: "-0.3px" }}>
-      {children}
-    </h2>
+    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+      <div style={{ width: 4, height: 22, background: "var(--accent)", borderRadius: 2, flexShrink: 0 }} />
+      <h2 style={{
+        fontFamily: "Space Mono, monospace",
+        fontSize: 22, fontWeight: 700,
+        color: "var(--text)",
+        letterSpacing: -0.6, lineHeight: 1.15,
+        margin: 0,
+      }}>
+        {children}
+      </h2>
+    </div>
   );
 }
 

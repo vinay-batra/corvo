@@ -735,7 +735,7 @@ export default function InstallPage() {
           {/* Badge */}
           <ScrollReveal from="up" delay={0} style={{ display: "inline-block", marginBottom: 32 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
               <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>Free PWA</span>
             </div>
           </ScrollReveal>

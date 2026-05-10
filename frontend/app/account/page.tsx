@@ -99,7 +99,7 @@ export default function AccountPage() {
             </div>
           )}
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, marginBottom: 4 }}>{displayName}</h1>
+            <h1 style={{ fontFamily: "Space Mono, monospace", fontSize: 24, fontWeight: 700, color: "var(--text)", letterSpacing: -0.8, marginBottom: 5, lineHeight: 1.15 }}>{displayName}</h1>
             <p style={{ fontSize: 13, color: "var(--text3)" }}>{user?.email}</p>
           </div>
         </div>
@@ -142,7 +142,12 @@ export default function AccountPage() {
 
         {/* Quick links */}
         <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, marginBottom: 32 }}>
-          <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 4 }}>Quick Links</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+            <div style={{ width: 4, height: 22, background: "var(--accent)", borderRadius: 2, flexShrink: 0 }} />
+            <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.15, margin: 0 }}>
+              Quick Links
+            </h2>
+          </div>
           <Link href="/app" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "rgba(184,134,11,0.06)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(184,134,11,0.35)")}
             onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(184,134,11,0.15)")}>
