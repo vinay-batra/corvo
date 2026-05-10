@@ -62,7 +62,6 @@ import CorrelationHeatmap from "../../components/CorrelationHeatmap";
 import DrawdownChart from "../../components/DrawdownChart";
 import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
-import PaperTrading from "../../components/PaperTrading";
 import LearnPage from "../learn/page";
 
 const TABS = [
@@ -969,6 +968,51 @@ function DashReveal({ children, from = "up", delay = 0, style = {} }: { children
   );
 }
 
+function generateCorvoInsight(data: any, assets: { ticker: string; weight: number }[]): { headline: string; detail: string; chatPrompt: string } | null {
+  if (!data || !assets.length) return null;
+  const cagr = data.annualized_return ?? data.portfolio_return ?? 0;
+  const sharpe = data.sharpe_ratio ?? 0;
+  const maxDD = data.max_drawdown ?? 0;
+  const total = assets.reduce((s, a) => s + a.weight, 0) || 1;
+  const sorted = [...assets].sort((a, b) => b.weight - a.weight);
+  const top = sorted[0];
+  const topPct = top ? Math.round((top.weight / total) * 100) : 0;
+  const concentrated = topPct >= 35;
+  const badReturn = cagr < -0.02;
+  const goodReturn = cagr >= 0.10;
+  const highSharpe = sharpe >= 1.5;
+  const bigDrawdown = maxDD <= -0.15;
+
+  let headline = "";
+  let detail = "";
+  let chatPrompt = "";
+
+  if (badReturn) {
+    headline = `Your portfolio is down ${(Math.abs(cagr) * 100).toFixed(1)}% annualized.`;
+    detail = `${concentrated ? `${top.ticker} at ${topPct}% is likely your biggest drag. ` : ""}Ask me what is pulling returns down and whether to hold or cut.`;
+    chatPrompt = "My portfolio is down. Walk me through what is hurting my returns most and what I should consider doing.";
+  } else if (goodReturn && concentrated) {
+    headline = `Up ${(cagr * 100).toFixed(1)}% annualized, but ${topPct}% is riding on ${top.ticker}.`;
+    detail = `Strong returns, but one bad quarter in ${top.ticker} hits your whole portfolio. If it drops 20%, you lose roughly ${(topPct * 0.2).toFixed(0)}% overall. Ask me if you should trim.`;
+    chatPrompt = `My portfolio is up ${(cagr * 100).toFixed(1)}% annualized but ${top.ticker} is ${topPct}% of my holdings. Should I trim it and what should I rotate into?`;
+  } else if (goodReturn && highSharpe) {
+    headline = `${(cagr * 100).toFixed(1)}% return with a Sharpe of ${sharpe.toFixed(2)} - strong risk-adjusted performance.`;
+    detail = `You are getting paid well for every unit of risk you are taking. Ask me where your biggest remaining exposure is.`;
+    chatPrompt = "My portfolio has strong risk-adjusted returns. Where is my biggest remaining risk and what should I watch out for?";
+  } else if (bigDrawdown) {
+    headline = `Your worst drawdown was ${(Math.abs(maxDD) * 100).toFixed(1)}% from peak to trough.`;
+    detail = `That kind of drop is hard to sit through. Ask me what caused it and how to reduce the chance of it happening again.`;
+    chatPrompt = `My portfolio had a max drawdown of ${(Math.abs(maxDD) * 100).toFixed(1)}%. What caused that and how can I reduce drawdown risk?`;
+  } else if (goodReturn) {
+    headline = `Your portfolio returned ${(cagr * 100).toFixed(1)}% annualized.`;
+    detail = `${sharpe >= 1 ? "And you are taking reasonable risk to get there." : ""}${concentrated ? ` Keep an eye on ${top.ticker} at ${topPct}% - concentrated bets amplify both wins and losses.` : " Looks solid overall."} Ask me what to watch next.`;
+    chatPrompt = `My portfolio returned ${(cagr * 100).toFixed(1)}% annualized. What should I be watching out for and what would you change?`;
+  } else {
+    return null;
+  }
+  return { headline, detail, chatPrompt };
+}
+
 export default function AppPage() {
   const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number; purchaseDate?: string }[]>([]);
   const [portfolioStale, setPortfolioStale] = useState(false);
@@ -1039,7 +1083,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
-  const [tlhAlert, setTlhAlert] = useState<{ ticker: string; loss_pct: number; total_harvestable_loss: number } | null>(null);
   const DASH_CARDS = ["tickers", "briefing", "wsid", "metrics", "performance", "health", "insights", "benchmark", "allocation", "sector", "insider"] as const;
   type DashCard = typeof DASH_CARDS[number];
   const DASH_CARD_LABELS: Record<DashCard, string> = {
@@ -1072,8 +1115,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
   const [nlPending, setNlPending] = useState<NLEditResult | null>(null);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
-  const [paperCtx, setPaperCtx] = useState("");
-  const [showPaperTrade, setShowPaperTrade] = useState(false);
   const [showStockCompare, setShowStockCompare] = useState(false);
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   const [showDashboardTour, setShowDashboardTour] = useState(false);
@@ -1451,20 +1492,6 @@ const { dark, toggle: toggleDark }  = useTheme();
       setTimeout(() => setAnimatingIn(false), 50);
       setTabWithDir("overview");
       setAnalyzeComplete(true);
-      // Fire-and-forget: check for tax loss harvesting opportunities
-      if (userId) {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        fetch(`${API_URL}/portfolio/tax-loss-alert/${userId}?portfolio_value=${result.portfolio_value || 0}`)
-          .then(r => r.ok ? r.json() : null)
-          .then(d => {
-            if (d?.has_opportunity && d.top_opportunity) {
-              setTlhAlert({ ticker: d.top_opportunity.ticker, loss_pct: d.top_opportunity.loss_pct, total_harvestable_loss: d.total_harvestable_loss });
-            } else {
-              setTlhAlert(null);
-            }
-          })
-          .catch(() => {});
-      }
       // Record the portfolio state that produced these results so we can detect drift
       lastAnalyzedAssetsRef.current = valid
         .map(a => `${a.ticker}:${a.weight.toFixed(4)}`)
@@ -2646,43 +2673,29 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </DashReveal>
                 </div>}
 
-                {/* Tax Loss Harvesting Alert Badge */}
-                {tlhAlert && (
-                  <div style={{ marginBottom: 16 }}>
-                    <DashReveal from="left" delay={0}>
-                      <div
-                        onClick={() => setTabWithDir("positions")}
-                        role="button"
-                        style={{
-                          display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
-                          padding: "12px 16px", borderRadius: 10,
-                          border: "0.5px solid rgba(224,92,92,0.35)",
-                          borderLeft: "3px solid var(--red, #e05c5c)",
-                          background: "rgba(224,92,92,0.06)",
-                          transition: "background 0.15s",
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(224,92,92,0.1)")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "rgba(224,92,92,0.06)")}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e05c5c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        <div style={{ flex: 1 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e05c5c" }}>
-                            Tax loss harvesting opportunity
-                          </span>
-                          <span style={{ fontSize: 11, color: "var(--text2)", marginLeft: 8 }}>
-                            {tlhAlert.ticker} is down {Math.abs(tlhAlert.loss_pct).toFixed(1)}% — harvest ${Math.abs(tlhAlert.total_harvestable_loss).toLocaleString("en-US", { maximumFractionDigits: 0 })} in losses
-                          </span>
-                        </div>
-                        <span style={{ fontSize: 10, color: "var(--text3)", whiteSpace: "nowrap" }}>View in Positions →</span>
-                        <button
-                          onClick={e => { e.stopPropagation(); setTlhAlert(null); }}
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: "0 2px", fontSize: 14, lineHeight: 1 }}
-                          aria-label="Dismiss"
-                        >x</button>
+                {/* Corvo auto-insight */}
+                {data && (() => {
+                  const insight = generateCorvoInsight(data, assets);
+                  if (!insight) return null;
+                  return (
+                    <div style={{ marginBottom: 14, padding: "14px 16px", background: "rgba(201,168,76,0.06)", border: "0.5px solid rgba(201,168,76,0.22)", borderLeft: "2px solid var(--accent)", borderRadius: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <img src="/corvo-logo.svg" width={13} height={13} alt="" />
+                        <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", fontWeight: 700, fontFamily: "var(--font-mono)" }}>Corvo</span>
                       </div>
-                    </DashReveal>
-                  </div>
-                )}
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 5, lineHeight: 1.4 }}>{insight.headline}</p>
+                      <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, marginBottom: 10 }}>{insight.detail}</p>
+                      <button
+                        onClick={() => { setChatInitialMessage(insight.chatPrompt); setChatOpen(true); }}
+                        style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "0.5px solid rgba(201,168,76,0.3)", borderRadius: 6, padding: "4px 12px", cursor: "pointer", transition: "border-color 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }}
+                      >
+                        Ask AI to explain
+                      </button>
+                    </div>
+                  );
+                })()}
 
                 {/* Metric cards */}
                 {!hiddenCards.has("metrics") && <div style={{ opacity: loadedVis(500) ? 1 : 0, transform: loadedVis(500) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
@@ -2938,24 +2951,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                 <DashReveal from="up" delay={0}>
                   <LearnPage resetKey={learnResetKey} />
                 </DashReveal>
-                <DashReveal from="up" delay={0.1}>
-                  <div style={{ marginTop: 32, marginBottom: 80 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                      <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", marginBottom: 4, fontFamily: "Space Mono, monospace" }}>Simulator</p>
-                        <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3 }}>Paper Trading</h3>
-                        <p style={{ fontSize: 13, color: "var(--text2)", marginTop: 4 }}>Practice trading with $10,000 in virtual cash. No real money.</p>
-                      </div>
-                      <button
-                        onClick={() => setShowPaperTrade(v => !v)}
-                        style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, borderRadius: 10, border: "none", background: showPaperTrade ? "var(--bg3)" : "var(--accent)", color: showPaperTrade ? "var(--text2)" : "var(--bg)", cursor: "pointer", flexShrink: 0 }}
-                      >
-                        {showPaperTrade ? "Close" : "Start Trading →"}
-                      </button>
-                    </div>
-                    {showPaperTrade && userId && <PaperTrading userId={userId} onContextChange={setPaperCtx} />}
-                  </div>
-                </DashReveal>
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -2977,13 +2972,10 @@ const { dark, toggle: toggleDark }  = useTheme();
             news:      "portfolio dashboard (news tab)",
             watchlist: "portfolio dashboard (watchlist tab)",
             simulate:  "portfolio dashboard (Monte Carlo simulations tab)",
-            learn:     "portfolio dashboard (learn tab — paper trading)",
+            learn:     "portfolio dashboard (learn tab)",
             stocks:    "portfolio dashboard (stock detail overlay)",
           }[activeTab] || `portfolio dashboard (${activeTab} tab)`}
-          extraContext={[
-            activeTab === "learn" && paperCtx ? paperCtx : "",
-            !reinvestDividends ? "Note: This user does NOT reinvest dividends. The CAGR shown is price return only, excluding dividend income. Factor this into any return or income advice." : "",
-          ].filter(Boolean).join("\n\n") || undefined}
+          extraContext={!reinvestDividends ? "Note: This user does NOT reinvest dividends. The CAGR shown is price return only, excluding dividend income. Factor this into any return or income advice." : undefined}
           onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
         />
       )}
