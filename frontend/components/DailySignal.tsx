@@ -455,7 +455,7 @@ export default function DailySignal({ data, assets, portfolioValue, userId, onAs
                   ? "rgba(201,168,76,0.08)" : "rgba(224,92,92,0.08)",
                 border: `0.5px solid ${signal.confidence === "High" ? "rgba(76,175,125,0.25)" : signal.confidence === "Medium" ? "rgba(201,168,76,0.25)" : "rgba(224,92,92,0.25)"}`,
                 color: signal.confidence === "High" ? "#4caf7d" : signal.confidence === "Medium" ? "var(--accent)" : "#e05c5c",
-                cursor: "default", background: "none",
+                cursor: "default",
               }}
             >
               <span style={{
