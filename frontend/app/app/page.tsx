@@ -64,6 +64,7 @@ import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
 import LearnPage from "../learn/page";
 import DailySignal from "../../components/DailySignal";
+import GoalTracker from "../../components/GoalTracker";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -2746,6 +2747,17 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </motion.div>
                 </DashReveal>
                 </div>}
+
+                {/* Goal Tracker */}
+                {data && (
+                  <DashReveal from="up" delay={0.08}>
+                    <GoalTracker
+                      data={data}
+                      portfolioValue={portfolioInputValue}
+                      onAskAi={(msg) => { setChatInitialMessage(msg); setChatOpen(true); }}
+                    />
+                  </DashReveal>
+                )}
 
                 {/* Everything below — Feature 2: delay 400ms */}
                 <div style={{ opacity: loadedVis(1000) ? 1 : 0, transform: loadedVis(1000) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
