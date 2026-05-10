@@ -172,18 +172,25 @@ export default function HealthScore({
       `}</style>
 
       {/* Score ring + headline */}
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        {inView && <Ring score={score} />}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, paddingTop: 4 }}>
-          <p style={{ fontFamily: "Space Mono,monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", lineHeight: 1.1, display: "flex", alignItems: "center", gap: 2 }}>
-            <span style={{ color: score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)" }}>{score}</span>
-            <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)" }}> / 100</span>
-          </p>
+      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+        {inView && <Ring score={score} size={130} />}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, paddingTop: 6 }}>
+          <div>
+            <p style={{ fontFamily: "Space Mono,monospace", fontSize: 32, fontWeight: 700, color: score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)", lineHeight: 1, margin: "0 0 2px", letterSpacing: -1.5 }}>
+              {score}<span style={{ fontSize: 14, fontWeight: 400, color: "var(--text3)", letterSpacing: 0, marginLeft: 2 }}>/100</span>
+            </p>
+            <p style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)", fontWeight: 700, margin: 0 }}>
+              {score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Fair" : "Needs Work"}
+            </p>
+          </div>
           {loading && !headline && (
-            <p style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>Analyzing your portfolio...</p>
+            <p style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic", margin: 0 }}>Analyzing your portfolio...</p>
           )}
           {headline && (
-            <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.5 }}>{headline}</p>
+            <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.6, margin: 0 }}>{headline}</p>
+          )}
+          {!headline && !loading && score >= 75 && (
+            <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.6, margin: 0 }}>Your portfolio is in excellent shape. Strong returns and risk efficiency with no major red flags.</p>
           )}
         </div>
       </div>
