@@ -26,7 +26,7 @@ VAPID_CLAIMS_EMAIL   = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:alerts@corvo
 RAILWAY_BASE_URL     = os.environ.get("RAILWAY_BASE_URL", "https://web-production-7a78d.up.railway.app")
 
 # Startup env check: visible in Railway logs
-print(f"[startup] RESEND_API_KEY: {'SET (' + os.environ.get('RESEND_API_KEY', '')[:6] + '...)' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
+print(f"[startup] RESEND_API_KEY: {'SET' if os.environ.get('RESEND_API_KEY') else 'NOT SET'}")
 print(f"[startup] RESEND_FROM_EMAIL: {os.environ.get('RESEND_FROM_EMAIL', 'NOT SET')}")
 print(f"[startup] SUPABASE_URL: {'SET' if SUPABASE_URL else 'NOT SET'}")
 print(f"[startup] FINNHUB_API_KEY: {'SET' if os.environ.get('FINNHUB_API_KEY') else 'NOT SET'}")
@@ -272,9 +272,10 @@ def delete_user(request: Request):
         timeout=10,
     )
     if delete_resp.status_code not in (200, 204):
+        print(f"[user-delete] Supabase error: {delete_resp.status_code} {delete_resp.text}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to delete account: {delete_resp.text}",
+            detail="Failed to delete account. Please contact support.",
         )
 
     return {"ok": True}
@@ -4204,10 +4205,14 @@ def delete_price_target(target_id: str, user_id: str):
 
 
 @app.delete("/price-alerts/{alert_id}")
-def delete_price_alert(alert_id: str, user_id: str):
-    """Delete a price alert, verifying ownership by user_id."""
+def delete_price_alert(alert_id: str, user_id: str, request: Request):
+    """Delete a price alert, verifying JWT-authenticated user owns it."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=500, detail="Supabase not configured")
+    # JWT-verify the caller and reject if their token does not match the user_id
+    verified_user_id = _verify_jwt_user(request)
+    if verified_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     resp = requests.delete(
         f"{SUPABASE_URL}/rest/v1/price_alerts?id=eq.{alert_id}&user_id=eq.{user_id}",
         headers={**_sb_headers(), "Prefer": "return=minimal"},
@@ -5430,12 +5435,20 @@ def check_tax_loss_opportunities(
 
 
 @app.get("/portfolio/tax-loss-alert/{user_id}")
-async def portfolio_tax_loss_alert(user_id: str, portfolio_value: float = 0.0):
+async def portfolio_tax_loss_alert(user_id: str, request: Request, portfolio_value: float = 0.0):
     """
     Check whether the user's saved portfolio has tax loss harvesting opportunities.
     Returns has_opportunity plus the top opportunity so the frontend can show a badge/alert.
     Pass portfolio_value (dollars) for accurate dollar-amount thresholds; omit to use pct-based (>=10% loss).
     """
+    # JWT-verify the caller and reject if their token does not match the path user_id
+    verified_user_id = _verify_jwt_user(request)
+    if verified_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    # Rate limit — this endpoint runs async Supabase fetches and yfinance lookups
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "tax-loss-alert", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded.")
     loop = asyncio.get_event_loop()
     data = await loop.run_in_executor(None, _fetch_user_portfolio_with_cost_basis, user_id)
     if not data:
