@@ -152,7 +152,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
         return (
         <motion.div key={i} initial={false} transition={{delay:i*0.07}}
           className="mc-card"
-          style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"18px 16px 14px",borderTop:`2px solid ${color}`,position:"relative",overflow:"hidden"}}>
+          style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:12,padding:"22px 20px 18px",borderTop:`2px solid ${color}`,position:"relative",overflow:"hidden"}}>
           <div style={{position:"absolute",top:0,right:0,width:80,height:80,background:`radial-gradient(circle at top right, ${color}18, transparent 70%)`,pointerEvents:"none",borderRadius:"0 12px 0 0"}} />
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:pnlDollars!=null?4:10}}>
             <p className="mc-value" style={{fontFamily:"Space Mono,monospace",fontSize:34,fontWeight:700,letterSpacing:-1.5,color,lineHeight:1,margin:0}}>
