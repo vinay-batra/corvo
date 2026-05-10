@@ -415,37 +415,67 @@ input::placeholder { color: var(--text3); }
 /* ── Empty & error states ── */
 .empty-state {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 40px 20px; gap: 10px; text-align: center;
+  justify-content: center; padding: 44px 24px; gap: 14px; text-align: center;
   animation: slideUp 0.3s ease;
 }
-.empty-state-icon { font-size: 26px; opacity: 0.4; }
-.empty-state-title { font-size: 13px; font-weight: 600; color: var(--text2); }
-.empty-state-msg   { font-size: 12px; color: var(--text3); line-height: 1.6; max-width: 260px; }
-.empty-state-cta {
-  margin-top: 4px; padding: 7px 18px;
-  font-size: 11px; font-weight: 600; font-family: var(--font-body); letter-spacing: 0.5px;
-  border-radius: var(--radius); border: 0.5px solid var(--border2);
-  background: var(--bg3); color: var(--text2); cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.1s;
+.empty-state-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(201,168,76,0.08);
+  border: 0.5px solid rgba(201,168,76,0.22);
+  color: var(--accent);
+  font-size: 22px; font-weight: 300; line-height: 1;
+  margin-bottom: 4px;
 }
-.empty-state-cta:hover  { background: var(--bg2); color: var(--text); }
+.empty-state-title {
+  font-family: "Space Mono", monospace;
+  font-size: 15px; font-weight: 700; color: var(--text);
+  letter-spacing: -0.3px; margin: 0;
+}
+.empty-state-msg {
+  font-size: 12.5px; color: var(--text3); line-height: 1.65;
+  max-width: 280px; margin: 0;
+}
+.empty-state-cta {
+  margin-top: 6px; padding: 9px 20px;
+  font-size: 12px; font-weight: 600; font-family: var(--font-body); letter-spacing: 0.3px;
+  border-radius: var(--radius);
+  border: 0.5px solid rgba(201,168,76,0.3);
+  background: rgba(201,168,76,0.06);
+  color: var(--accent); cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.1s;
+}
+.empty-state-cta:hover  { background: rgba(201,168,76,0.14); border-color: var(--accent); }
 .empty-state-cta:active { transform: scale(0.97); }
 
 .error-state {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 32px 20px; gap: 8px; text-align: center;
+  justify-content: center; padding: 36px 24px; gap: 12px; text-align: center;
   animation: slideUp 0.3s ease;
 }
-.error-state-icon { font-size: 20px; color: rgba(224,92,92,0.7); }
-.error-state-msg  { font-size: 12px; color: var(--text3); line-height: 1.55; max-width: 250px; }
-.retry-btn {
-  margin-top: 6px; padding: 7px 18px;
-  font-size: 11px; font-weight: 600; font-family: var(--font-body); letter-spacing: 0.5px;
-  border-radius: var(--radius); border: 0.5px solid var(--border2);
-  background: var(--bg3); color: var(--text2); cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.1s;
+.error-state-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(224,92,92,0.08);
+  border: 0.5px solid rgba(224,92,92,0.22);
+  color: #e05c5c;
+  margin-bottom: 2px;
 }
-.retry-btn:hover  { background: var(--bg2); color: var(--text); }
+.error-state-msg {
+  font-size: 13px; color: var(--text2); line-height: 1.65;
+  max-width: 280px; margin: 0;
+  font-weight: 500;
+}
+.retry-btn {
+  margin-top: 6px; padding: 9px 20px;
+  font-size: 12px; font-weight: 600; font-family: var(--font-body); letter-spacing: 0.3px;
+  border-radius: var(--radius);
+  border: 0.5px solid rgba(201,168,76,0.3);
+  background: rgba(201,168,76,0.06);
+  color: var(--accent); cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.1s;
+}
+.retry-btn:hover  { background: rgba(201,168,76,0.14); border-color: var(--accent); }
 .retry-btn:active { transform: scale(0.97); }
 
 /* ── CTA shimmer sweep (amber primary buttons) ── */
