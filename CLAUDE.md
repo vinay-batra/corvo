@@ -49,6 +49,13 @@ App UI overhaul is complete — all 5 phases shipped.
 - Final CTA headline → "Let Corvo watch your back." with refreshed subhead
 - "Guardian" used sparingly in copy — the concept comes through via "watching," "monitors," "advisor"
 
+**Phase 6 — marketing + profile pages (May 10):**
+- Install/Changelog/FAQ hero badges: added pulsing gold dot to match the existing Pricing badge animation
+- Changelog badge copy: "Changelog" → "What's new"; FAQ badge: "FAQ" → "Help"
+- Settings page: SectionTitle component rebuilt with gold accent stripe + Space Mono headline (drives all 5 sections — Profile, Preferences, Investor Profile, Referrals, Account)
+- Referrals page: Section component rebuilt with same pattern
+- Account page: display name now Space Mono, Quick Links upgraded to proper SectionTitle
+
 **Up next (in priority order):**
 1. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
 2. Plaid integration — auto-sync brokerage (apply at plaid.com while building)
