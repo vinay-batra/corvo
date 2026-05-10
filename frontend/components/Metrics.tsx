@@ -103,10 +103,12 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
   };
   const PERIOD_LABELS: Record<string,string> = { "6mo":"6M","1y":"1Y","2y":"2Y","5y":"5Y" };
   const periodLabel = PERIOD_LABELS[period] || period.toUpperCase();
-  const portReturn = data.portfolio_return ?? 0;
+  // Use annualized_return (CAGR) for both CAGR card and Sharpe fallback — portfolio_return is total cumulative which diverges from CAGR on 2Y+ periods
+  const portReturn = data.annualized_return ?? data.portfolio_return ?? 0;
   const portVol    = data.portfolio_volatility ?? 0;
   const portDD     = data.max_drawdown ?? 0;
-  const sharpe = portVol > 0 ? (portReturn - 0.04) / portVol : 0;
+  // Always prefer the backend's precomputed sharpe_ratio (uses live T-bill rate and CAGR)
+  const sharpe     = data.sharpe_ratio ?? (portVol > 0 ? (portReturn - 0.043) / portVol : 0);
 
   // Unrealized P&L: sum over assets with purchasePrice where currentPrice is available
   const pnlAssets = (assets || []).filter(a => a.purchasePrice != null && a.purchasePrice > 0 && currentPrices[a.ticker] != null);

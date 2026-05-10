@@ -268,10 +268,12 @@ export default function AiChat({
     tickers: liveTickers,
     weights: liveWeights,
     // Analysis metrics from last run (may lag behind current holdings, clearly labelled)
-    portfolio_return:     data?.portfolio_return,
+    portfolio_return:     data?.annualized_return ?? data?.portfolio_return,
+    annualized_return:    data?.annualized_return,
     portfolio_volatility: data?.portfolio_volatility,
     max_drawdown:         data?.max_drawdown,
     sharpe_ratio:         data?.sharpe_ratio,
+    rf_rate:              data?.rf_rate,
     period:               data?.period,
     health_score:         data?.health_score,
     benchmark_return:     data?.benchmark_return,
