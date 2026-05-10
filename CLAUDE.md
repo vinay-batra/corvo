@@ -14,10 +14,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Elevated AiInsights: pill tags, full analyst sentences, bolder rebalancing section, bigger Ask AI CTA
 
 **Up next (in priority order):**
-1. Keep iterating on dashboard polish based on screenshots
-2. Action CTAs on every AI insight — each insight needs a concrete next step
-3. Homepage/onboarding rewrite around "your portfolio's guardian" positioning
-4. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
+1. Action CTAs on every AI insight — each insight needs a concrete next step
+2. Homepage/onboarding rewrite around "your portfolio's guardian" positioning
+3. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
+
+**Recent completions (May 10):**
+- Daily Brief card: CSS Grid layout, always-visible, portfolio today live
+- AI Insights: pill tags, analyst sentences, bolder rebalancing
+- Removed: Corvo insight banner, AI nudge banner, showBasicsNudge modal, dead state
+- VS S&P card: now full width (grid-column: 1/-1)
+- Metric cards: bigger padding and grid min-width
+- Save portfolio banner: redesigned with icon + accent border
+- Holdings: LIVE pulsing dot when market open
+- CORS confirmed locked; no XSS vectors in AI content rendering
 
 ---
 
