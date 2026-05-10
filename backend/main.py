@@ -8957,6 +8957,141 @@ MARKET CONTEXT (background only, never a reason to act):
     return {"recommendations": result}
 
 
+# ── Daily Signal ──────────────────────────────────────────────────────────────
+
+_daily_signal_cache: dict = {}
+
+class DailySignalRequest(BaseModel):
+    tickers: list[str] = []
+    weights: list[float] = []
+    portfolio_value: float = 10000
+    annualized_return: float = 0.0
+    portfolio_volatility: float = 0.0
+    sharpe_ratio: float = 0.0
+    max_drawdown: float = 0.0
+    health_score: float = 0.0
+    period: str = "1y"
+    user_id: str = ""
+
+
+@app.post("/portfolio/daily-signal")
+def generate_daily_signal(req: DailySignalRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    if check_rate_limit(ip, "daily-signal", 20, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded.")
+
+    if not req.tickers or not req.weights:
+        raise HTTPException(status_code=400, detail="No portfolio provided.")
+
+    sorted_pairs = sorted(zip(req.tickers, req.weights))
+    portfolio_key = ":".join(f"{t},{w:.4f}" for t, w in sorted_pairs)
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    cache_key = f"{today_str}:{portfolio_key}"
+
+    if cache_key in _daily_signal_cache:
+        return _daily_signal_cache[cache_key]
+
+    total_w = sum(req.weights) or 1.0
+    holdings_lines = [f"  {t}: {(w/total_w):.1%}" for t, w in zip(req.tickers, req.weights)]
+    n = len(req.tickers)
+    max_weight = max(w / total_w for w in req.weights) if req.weights else 0
+    top_ticker = req.tickers[req.weights.index(max(req.weights))] if req.tickers else ""
+
+    issues = []
+    if max_weight > 0.35:
+        issues.append(f"concentration_risk: {top_ticker} at {max_weight:.0%} is dangerously overweight for a {n}-stock portfolio")
+    if req.sharpe_ratio < 0.8 and req.annualized_return > 0:
+        issues.append(f"poor_efficiency: Sharpe of {req.sharpe_ratio:.2f} means poor return per unit of risk taken")
+    if req.max_drawdown < -0.20:
+        issues.append(f"high_drawdown: max drawdown of {req.max_drawdown:.1%} signals excessive volatility exposure")
+    if req.health_score < 60:
+        issues.append(f"low_health: health score of {req.health_score:.0f}/100 needs structural improvement")
+    if n <= 2:
+        issues.append(f"under_diversified: only {n} holding(s) creates dangerous single-name concentration")
+    if req.annualized_return < 0.04:
+        issues.append(f"underperformance: {req.annualized_return:.1%} CAGR is below risk-free rate — justify why you hold this vs cash")
+    issues_str = "\n".join(f"  - {x}" for x in issues) if issues else "  - Portfolio is reasonably healthy; focus on the single highest-impact marginal improvement"
+
+    prompt_system = f"""You are Corvo, a direct and analytical AI financial advisor. Today is {today_str}.
+
+Your task: analyze this portfolio and generate ONE specific, actionable recommendation for today. Not a list — one signal.
+
+RULES:
+- Be brutally specific. Say "Trim VIG from 35% to 25%" not "consider reducing VIG".
+- Reference the actual portfolio numbers in your rationale.
+- Estimate the expected impact on at least two measurable metrics.
+- Write 3 execution steps a non-expert can follow in their brokerage today.
+- No em dashes. No asterisks. No markdown. No disclaimers. No generic language.
+- Return ONLY valid JSON. Do not add any text before or after the JSON object.
+
+PORTFOLIO:
+{chr(10).join(holdings_lines)}
+
+METRICS:
+  Annualized return: {req.annualized_return:.2%}
+  Volatility: {req.portfolio_volatility:.2%}
+  Sharpe ratio: {req.sharpe_ratio:.2f}
+  Max drawdown: {req.max_drawdown:.2%}
+  Health score: {req.health_score:.0f}/100
+  Portfolio value: ${req.portfolio_value:,.0f}
+  Holdings: {n}
+
+PRIMARY ISSUES:
+{issues_str}
+
+Return this exact JSON structure:
+{{
+  "category": "Risk Alert" | "Rebalance" | "Tax Opportunity" | "Earnings Watch" | "Benchmark Lag" | "Protect Gains" | "Diversify" | "Strong Hold",
+  "headline": "one specific action sentence, max 60 characters",
+  "rationale": "Sentence 1: what the specific problem is, with exact numbers from this portfolio. Sentence 2: why acting on this now improves outcomes.",
+  "impact": {{
+    "primary": "primary metric that improves with specifics, e.g. Health score: +6 points",
+    "secondary": "second measurable outcome, e.g. Concentration: High to Moderate",
+    "freed_capital": "dollar amount if selling (e.g. $1,200), otherwise null"
+  }},
+  "confidence": "High" | "Medium" | "Low",
+  "confidence_reason": "one sentence explaining why this confidence level",
+  "action_steps": [
+    "Step 1 with specific numbers and brokerage action",
+    "Step 2 covering what to do with proceeds or related action",
+    "Step 3 on how to verify the improvement in Corvo"
+  ],
+  "urgency": "Today" | "This Week" | "This Month"
+}}"""
+
+    import anthropic as _anthropic
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+    client = _anthropic.Anthropic(api_key=api_key)
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=800,
+            system=prompt_system,
+            messages=[{"role": "user", "content": "Generate the daily signal."}],
+        )
+        raw = response.content[0].text.strip()
+        if "```" in raw:
+            for part in raw.split("```"):
+                part = part.strip().lstrip("json").strip()
+                if part.startswith("{"):
+                    raw = part
+                    break
+        signal = json.loads(raw)
+        signal["generated_at"] = today_str
+        if len(_daily_signal_cache) >= 500:
+            oldest = next(iter(_daily_signal_cache))
+            del _daily_signal_cache[oldest]
+        _daily_signal_cache[cache_key] = signal
+        return signal
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=502, detail="Signal generation returned invalid JSON.")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Signal generation failed: {str(e)}")
+
+
 # ── Rebalance Assistant ────────────────────────────────────────────────────────
 
 _PERIOD_YEARS: dict[str, float] = {

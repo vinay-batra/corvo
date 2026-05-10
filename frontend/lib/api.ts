@@ -258,3 +258,47 @@ export async function paperReset(token: string) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
+
+// ── Daily Signal ──────────────────────────────────────────────────────────────
+
+export interface DailySignalImpact {
+  primary: string;
+  secondary: string;
+  freed_capital: string | null;
+}
+
+export interface DailySignal {
+  category: "Risk Alert" | "Rebalance" | "Tax Opportunity" | "Earnings Watch" | "Benchmark Lag" | "Protect Gains" | "Diversify" | "Strong Hold";
+  headline: string;
+  rationale: string;
+  impact: DailySignalImpact;
+  confidence: "High" | "Medium" | "Low";
+  confidence_reason: string;
+  action_steps: string[];
+  urgency: "Today" | "This Week" | "This Month";
+  generated_at: string;
+}
+
+export async function fetchDailySignal(params: {
+  tickers: string[];
+  weights: number[];
+  portfolio_value: number;
+  annualized_return: number;
+  portfolio_volatility: number;
+  sharpe_ratio: number;
+  max_drawdown: number;
+  health_score: number;
+  period?: string;
+  user_id?: string;
+}): Promise<DailySignal> {
+  const res = await fetch(`${RESOLVED_API_URL}/portfolio/daily-signal`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
