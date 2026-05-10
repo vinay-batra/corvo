@@ -172,7 +172,7 @@ function useS() {
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
     cardAccent: { width: 3, height: 14, background: "var(--accent)", borderRadius: 1 },
     cardTitle:  { fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" as const },
-    metricsGrid:{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 12 },
+    metricsGrid:{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 16 },
     bottomGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
   };
 }
@@ -2671,29 +2671,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </DashReveal>
                 </div>}
 
-                {/* Corvo auto-insight */}
-                {data && (() => {
-                  const insight = generateCorvoInsight(data, assets);
-                  if (!insight) return null;
-                  return (
-                    <div style={{ marginBottom: 14, padding: "14px 16px", background: "rgba(201,168,76,0.06)", border: "0.5px solid rgba(201,168,76,0.22)", borderLeft: "2px solid var(--accent)", borderRadius: 10 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <img src="/corvo-logo.svg" width={13} height={13} alt="" />
-                        <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", fontWeight: 700, fontFamily: "var(--font-mono)" }}>Corvo</span>
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 5, lineHeight: 1.4 }}>{insight.headline}</p>
-                      <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, marginBottom: 10 }}>{insight.detail}</p>
-                      <button
-                        onClick={() => { setChatInitialMessage(insight.chatPrompt); setChatOpen(true); }}
-                        style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "0.5px solid rgba(201,168,76,0.3)", borderRadius: 6, padding: "4px 12px", cursor: "pointer", transition: "border-color 0.15s" }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }}
-                      >
-                        Ask AI to explain
-                      </button>
-                    </div>
-                  );
-                })()}
 
                 {/* Metric cards */}
                 {!hiddenCards.has("metrics") && <div style={{ opacity: loadedVis(500) ? 1 : 0, transform: loadedVis(500) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
@@ -2702,7 +2679,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   id="tour-desk-metrics"
                   key="stats-row"
                   className="c-metrics"
-                  style={{ ...S.metricsGrid, gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}
+                  style={{ ...S.metricsGrid }}
                   initial={false}
                   animate="visible"
                   variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
@@ -2719,26 +2696,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </DashReveal>
                 </div>}
 
-                {/* AI nudge — shown once per session after analysis */}
-                {data && !aiNudgeDismissed && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", background: "rgba(201,168,76,0.06)", border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 8, borderLeft: "2px solid var(--accent)", marginBottom: 4 }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    <span style={{ fontSize: 11, color: "var(--text2)", flex: 1 }}>Have a question about your results? Ask Corvo AI — it knows your full portfolio.</span>
-                    <button
-                      onClick={() => { setChatInitialMessage(undefined); setChatOpen(true); setAiNudgeDismissed(true); sessionStorage.setItem("corvo_ai_nudge_dismissed", "1"); }}
-                      style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "0.5px solid rgba(201,168,76,0.35)", borderRadius: 5, padding: "3px 10px", cursor: "pointer", whiteSpace: "nowrap", fontWeight: 600, transition: "all 0.15s" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.12)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
-                    >Ask now</button>
-                    <button
-                      onClick={() => { setAiNudgeDismissed(true); sessionStorage.setItem("corvo_ai_nudge_dismissed", "1"); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 14, lineHeight: 1, padding: "0 2px", display: "flex", alignItems: "center" }}
-                      aria-label="Dismiss"
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-                )}
 
                 {/* Performance chart */}
                 {!hiddenCards.has("performance") && <div style={{ opacity: loadedVis(750) ? 1 : 0, transform: loadedVis(750) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
