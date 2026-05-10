@@ -3035,11 +3035,11 @@ function GsapHero({
             className="gh-headline"
             style={{
               fontFamily: "Space Mono,monospace",
-              fontSize: "clamp(28px,3.8vw,52px)",
+              fontSize: "clamp(32px,4.4vw,60px)",
               fontWeight: 700,
-              lineHeight: 1.15,
-              letterSpacing: -1,
-              marginBottom: 20,
+              lineHeight: 1.12,
+              letterSpacing: -1.5,
+              marginBottom: 22,
               position: "relative",
               zIndex: 1,
               color: "var(--text)",
@@ -3053,7 +3053,7 @@ function GsapHero({
 
           <p
             ref={subRef}
-            style={{ fontSize: 16, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, maxWidth: 460, marginBottom: 36 }}
+            style={{ fontSize: 17, color: "var(--text2)", lineHeight: 1.8, fontWeight: 300, maxWidth: 490, marginBottom: 38 }}
           >
             Corvo monitors every holding daily, flags the real risks, and tells you exactly what to do. Free.
           </p>
@@ -3112,43 +3112,43 @@ function GsapHero({
         <div ref={demoRef} className="hero-right" style={{ position: "relative", willChange: "transform, opacity" }}>
           <div className={demoActive ? "hero-metrics-hidden" : ""} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
 
-          {/* Floating "watching" alert chip — guardian theme */}
-          <div className="hero-metric-card" style={{
-            position: "absolute", top: 240, left: "50%", transform: "translateX(-50%)",
+          {/* Floating "watching" alert chip — sits where Sharpe Ratio used to live */}
+          <div className="hero-metric-card gh-metric-wrap" ref={(el) => { metricRefs.current[0] = el; }} style={{
+            position: "absolute", top: -32, left: -56,
             zIndex: 4,
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "7px 13px 7px 11px",
+            display: "inline-flex", alignItems: "center", gap: 9,
+            padding: "9px 16px 9px 14px",
             background: "var(--card-bg)",
-            border: "1px solid rgba(224,92,92,0.35)",
+            border: "1px solid rgba(224,92,92,0.4)",
             borderRadius: 100,
             backdropFilter: "blur(16px)",
-            boxShadow: "0 6px 22px rgba(224,92,92,0.18), 0 0 0 0.5px rgba(224,92,92,0.15)",
-            animation: "float 6s ease-in-out 1.8s infinite",
+            boxShadow: "0 10px 32px rgba(224,92,92,0.22), 0 0 0 0.5px rgba(224,92,92,0.18)",
+            animation: "float 6s ease-in-out 0s infinite",
             pointerEvents: "auto",
             whiteSpace: "nowrap",
+            willChange: "transform, opacity",
           }}>
-            <span style={{ position: "relative", display: "inline-flex", width: 7, height: 7 }}>
+            <span style={{ position: "relative", display: "inline-flex", width: 8, height: 8 }}>
               <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#e05c5c", animation: "pdot 1.4s ease-in-out infinite" }} />
-              <span style={{ position: "absolute", inset: -3, borderRadius: "50%", background: "rgba(224,92,92,0.35)", animation: "pdot 1.4s ease-in-out infinite" }} />
+              <span style={{ position: "absolute", inset: -4, borderRadius: "50%", background: "rgba(224,92,92,0.35)", animation: "pdot 1.4s ease-in-out infinite" }} />
             </span>
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.6, color: "#e05c5c", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.6, color: "#e05c5c", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
               Risk flagged
             </span>
-            <span style={{ width: 1, height: 10, background: "rgba(224,92,92,0.25)" }} />
-            <span style={{ fontSize: 10, fontFamily: "Space Mono,monospace", color: "var(--text2)", fontWeight: 600 }}>
+            <span style={{ width: 1, height: 12, background: "rgba(224,92,92,0.25)" }} />
+            <span style={{ fontSize: 11, fontFamily: "Space Mono,monospace", color: "var(--text2)", fontWeight: 700 }}>
               Tech &gt; 60%
             </span>
           </div>
 
           {[
-            { label: "Sharpe Ratio", value: "0.66", color: "var(--accent)", style: { top: -28, left: -48 } as React.CSSProperties, floatDelay: "0s" },
             { label: "1Y Return", value: "+18.4%", color: "var(--green)", style: { top: 80, right: -64 } as React.CSSProperties, floatDelay: "1.2s" },
             { label: "Health", value: "84/100", color: "var(--green)", style: { bottom: 100, left: -72 } as React.CSSProperties, floatDelay: "2.4s" },
             { label: "Volatility", value: "12.1%", color: "var(--text)", style: { bottom: -22, right: -36 } as React.CSSProperties, floatDelay: "3s" },
           ].map((m, i) => (
             <div
               key={m.label}
-              ref={(el) => { metricRefs.current[i] = el; }}
+              ref={(el) => { metricRefs.current[i + 1] = el; }}
               className="hero-metric-card gh-metric-wrap"
               style={{
                 position: "absolute",
@@ -3162,17 +3162,17 @@ function GsapHero({
                 style={{
                   background: "var(--card-bg)",
                   border: "1px solid var(--border)",
-                  borderRadius: 12,
-                  padding: "10px 14px",
+                  borderRadius: 14,
+                  padding: "13px 18px",
                   backdropFilter: "blur(16px)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 0 20px rgba(var(--accent-rgb),0.05)",
+                  boxShadow: "0 10px 36px rgba(0,0,0,0.2), 0 0 24px rgba(var(--accent-rgb),0.05)",
                   animation: `float 6s ease-in-out ${m.floatDelay} infinite`,
                 }}
               >
-                <p style={{ fontSize: 7, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 4 }}>
+                <p style={{ fontSize: 8, letterSpacing: 1.6, color: "var(--text3)", textTransform: "uppercase", marginBottom: 5 }}>
                   {m.label}
                 </p>
-                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 17, fontWeight: 700, color: m.color, letterSpacing: -0.5, lineHeight: 1 }}>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 21, fontWeight: 700, color: m.color, letterSpacing: -0.5, lineHeight: 1 }}>
                   {m.value}
                 </p>
               </div>
