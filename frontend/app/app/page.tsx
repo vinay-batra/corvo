@@ -70,8 +70,7 @@ const TABS = [
   { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
   { id: "simulate",    label: "Simulations", Icon: FlaskConical,  href: null },
   { id: "news",        label: "News",        Icon: Newspaper,     href: null },
-  { id: "watchlist",     label: "Watchlist",    Icon: Eye,           href: null },
-  { id: "learn",         label: "Learn",        Icon: BookOpen,      href: null },
+  // watchlist and learn tabs hidden — code preserved, add back to TABS to restore
 ] as const;
 
 const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
@@ -3102,7 +3101,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <button
-                  onClick={() => { setShowBasicsNudge(false); setTabWithDir("learn"); setLearnResetKey(k => k + 1); }}
+                  onClick={() => { setShowBasicsNudge(false); }}
                   style={{ flex: 1, padding: "8px", background: "var(--accent)", border: "none", borderRadius: 8, color: "var(--bg)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-mono)", letterSpacing: 0.5, transition: "opacity 0.15s" }}
                   onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
                   onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
