@@ -204,6 +204,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const [names, setNames] = useState<Record<string,string>>({});
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [presetConfirm, setPresetConfirm] = useState<typeof BUILDER_PRESETS[0]|null>(null);
+  const [showUtilMenu, setShowUtilMenu] = useState(false);
+  const utilMenuRef = useRef<HTMLDivElement>(null);
+  const [pendingRemove, setPendingRemove] = useState<number | null>(null);
 
   // Portfolio Value - persisted to localStorage
   const [portfolioValue, setPortfolioValueState] = useState<string>("10000");
@@ -241,6 +244,13 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!showUtilMenu) return;
+    const handler = (e: MouseEvent) => { if (utilMenuRef.current && !utilMenuRef.current.contains(e.target as Node)) setShowUtilMenu(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showUtilMenu]);
 
   const [expandedSecondary, setExpandedSecondary] = useState<Set<number>>(new Set());
   const toggleSecondary = (i: number) => setExpandedSecondary(p => { const s = new Set(p); s.has(i) ? s.delete(i) : s.add(i); return s; });
@@ -397,41 +407,60 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         borderBottom:`0.5px solid var(--border)`,
         backdropFilter:"blur(8px)", WebkitBackdropFilter:"blur(8px)",
       }}>
-        {/* Row 1: Presets / Screenshot / CSV */}
-        <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-          <button
-            onClick={()=>setShowPresetsModal(true)}
-            style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
-            Presets
-          </button>
-          <button onClick={()=>fileRef.current?.click()} disabled={importLoading}
-            style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.2)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
-            {importLoading?"...":"Screenshot"}
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
-          <button onClick={()=>{setShowCsvModal(true);setCsvPreview(null);setCsvError("");}}
-            style={{padding:"5px 12px",fontSize:10,background:"rgba(201,168,76,0.07)",border:`1px solid rgba(201,168,76,0.25)`,borderRadius:5,cursor:"pointer",color:C.amber,letterSpacing:0.3}}>
-            CSV
-          </button>
-        </div>
-        {/* Row 2: ASSETS label + weight totals */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:9,letterSpacing:3,color:C.cream3,textTransform:"uppercase"}}>Assets</span>
-          <span
-            onClick={!balanced && !overweight ? equalize : undefined}
-            title={!balanced && !overweight ? "Click to equalize weights" : ""}
-            style={{
-              fontSize:11, padding:"2px 7px",
-              border:`1px solid ${overweight ? "rgba(224,92,92,0.5)" : !balanced ? "rgba(201,168,76,0.35)" : C.border}`,
-              borderRadius:4,
-              cursor: balanced ? "default" : !overweight ? "pointer" : "default",
-              color: overweight ? "var(--red)" : !balanced ? C.amber : C.cream3,
-              background: overweight ? "rgba(224,92,92,0.06)" : "transparent",
-              fontFamily:"Space Mono,monospace",
-              transition:"all 0.15s", flexShrink:0,
-            }}>
-            {overweight ? `${overBy}% over limit` : `${totalPct}% / 100%`}
-          </span>
+        {/* Hidden file input for screenshot import */}
+        <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
+
+        {/* Single header row: Holdings label + count · weight status · ··· menu */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:7}}>
+            <span style={{fontSize:9,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase",fontWeight:600}}>Holdings</span>
+            {assets.filter(a=>a.ticker&&a.weight>0).length > 0 && (
+              <span style={{fontSize:9,fontFamily:"Space Mono,monospace",color:C.cream3,background:"var(--bg3)",border:`0.5px solid var(--border)`,borderRadius:4,padding:"1px 5px"}}>
+                {assets.filter(a=>a.ticker&&a.weight>0).length}
+              </span>
+            )}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span
+              onClick={!balanced && !overweight ? equalize : undefined}
+              title={!balanced && !overweight ? "Click to equalize" : ""}
+              style={{
+                fontSize:10,padding:"2px 7px",
+                border:`0.5px solid ${overweight?"rgba(224,92,92,0.5)":!balanced?"rgba(201,168,76,0.35)":C.border}`,
+                borderRadius:4, cursor:balanced?"default":!overweight?"pointer":"default",
+                color:overweight?"var(--red)":!balanced?C.amber:C.cream3,
+                background:overweight?"rgba(224,92,92,0.06)":"transparent",
+                fontFamily:"Space Mono,monospace", transition:"all 0.15s", flexShrink:0,
+              }}>
+              {overweight ? `${overBy}% over` : `${totalPct}%`}
+            </span>
+            {/* ··· overflow menu */}
+            <div ref={utilMenuRef} style={{position:"relative"}}>
+              <button
+                onClick={()=>setShowUtilMenu(!showUtilMenu)}
+                style={{background:"none",border:"0.5px solid var(--border)",borderRadius:6,cursor:"pointer",color:C.cream3,padding:"3px 8px",fontSize:14,lineHeight:1,display:"flex",alignItems:"center",transition:"all 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(201,168,76,0.4)";e.currentTarget.style.color=C.amber;}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color=C.cream3;}}
+                title="Options"
+              >···</button>
+              {showUtilMenu && (
+                <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:"var(--card-bg)",border:"0.5px solid var(--border2)",borderRadius:10,zIndex:200,minWidth:170,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",overflow:"hidden"}}>
+                  {[
+                    { label:"Load preset portfolio", action:()=>{ setShowPresetsModal(true); setShowUtilMenu(false); } },
+                    { label:importLoading?"Importing...":"Import from screenshot", action:()=>{ if(!importLoading){ fileRef.current?.click(); setShowUtilMenu(false); } } },
+                    { label:"Import from CSV", action:()=>{ setShowCsvModal(true); setCsvPreview(null); setCsvError(""); setShowUtilMenu(false); } },
+                    ...(!balanced && assets.length > 0 ? [{ label:"Equalize weights", action:()=>{ equalize(); setShowUtilMenu(false); } }] : []),
+                  ].map(({ label, action }) => (
+                    <button key={label} onClick={action} style={{display:"block",width:"100%",textAlign:"left",padding:"10px 14px",fontSize:12,color:"var(--text2)",background:"none",border:"none",cursor:"pointer",transition:"background 0.1s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.background="var(--bg3)";}}
+                      onMouseLeave={e=>{e.currentTarget.style.background="none";}}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -526,13 +555,21 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   </svg>
                 </button>
 
-                {/* Remove */}
-                <button onClick={(e)=>{ e.stopPropagation(); if(window.confirm(`Remove ${assets[i].ticker} from your portfolio?`)) remove(i); }}
-                  style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center",flexShrink:0}}
-                  onMouseEnter={e=>e.currentTarget.style.color="var(--red)"}
-                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
+                {/* Remove — inline confirm on first click */}
+                {pendingRemove === i ? (
+                  <button onClick={e=>{ e.stopPropagation(); remove(i); setPendingRemove(null); }}
+                    style={{background:"rgba(224,92,92,0.1)",border:"0.5px solid rgba(224,92,92,0.4)",borderRadius:4,cursor:"pointer",color:"var(--red)",padding:"1px 6px",fontSize:9,fontWeight:600,flexShrink:0,whiteSpace:"nowrap",letterSpacing:0.3}}
+                    onBlur={()=>setPendingRemove(null)}>
+                    Remove?
+                  </button>
+                ) : (
+                  <button onClick={e=>{ e.stopPropagation(); setPendingRemove(i); setTimeout(()=>setPendingRemove(p=>p===i?null:p),2500); }}
+                    style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center",flexShrink:0,transition:"color 0.12s"}}
+                    onMouseEnter={e=>e.currentTarget.style.color="var(--red)"}
+                    onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                )}
               </div>
 
               {/* Company name */}

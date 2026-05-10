@@ -1110,6 +1110,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [nlLoading, setNlLoading] = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
   const [nlPending, setNlPending] = useState<NLEditResult | null>(null);
+  const [aiEditorOpen, setAiEditorOpen] = useState(false);
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showStockCompare, setShowStockCompare] = useState(false);
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
@@ -1885,88 +1886,75 @@ const { dark, toggle: toggleDark }  = useTheme();
         </Link>
       </div>
 
-      {/* Natural language editor */}
-      <div style={{ padding: "10px 14px 12px", borderBottom: "0.5px solid var(--border)", background: "linear-gradient(180deg, rgba(201,168,76,0.04) 0%, transparent 100%)" }}>
-        <div style={{ borderRadius: 10, border: "0.5px solid rgba(201,168,76,0.22)", background: "rgba(201,168,76,0.04)", padding: "10px 11px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span style={{ fontSize: 11, color: "var(--text)", fontWeight: 600 }}>Edit Portfolio with AI</span>
-            <InfoModal title="Edit Portfolio with AI" sections={[{ label: "What it does", text: "Type a plain-English command and AI will instantly restructure your portfolio weights. No manual editing needed." }, { label: "Examples", text: "\"Sell half my NVDA\" · \"Rebalance to equal weight\" · \"Make it more conservative\" · \"Add international exposure\"" }]} />
-          </div>
-          <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 8 }}>Type a command to instantly restructure your holdings</div>
-          {(() => {
-            const runNLCommand = async (cmd: string) => {
-              if (!cmd.trim() || !assets.length || nlLoading) return;
-              setNlCommand(cmd);
-              setNlLoading(true);
-              setNlError(null);
-              setNlPending(null);
-              try {
-                const result = await fetchNaturalLanguageEdit(cmd.trim(), assets);
-                if ("error" in result) {
-                  setNlError(result.error);
-                } else {
-                  setNlPending(result);
-                }
-              } catch {
-                setNlError("Request failed. Check your connection and try again.");
-              } finally {
-                setNlLoading(false);
-              }
-            };
-            const chips = nlCommand === "" ? getNLSuggestions(assets) : [];
-            return (
-              <>
-                <div style={{ position: "relative" }}>
-                  <input
-                    id="nl-command"
-                    name="nlCommand"
-                    type="text"
-                    value={nlCommand}
-                    onChange={e => { setNlCommand(e.target.value); setNlError(null); }}
-                    onKeyDown={e => { if (e.key === "Enter") runNLCommand(nlCommand); }}
-                    placeholder={assets.length ? "Type a command..." : "Add holdings first"}
-                    disabled={nlLoading || !assets.length}
-                    style={{ width: "100%", padding: "9px 34px 9px 11px", fontSize: 11.5, background: "var(--bg)", border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 8, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5, transition: "border-color 0.15s" }}
-                    onFocus={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; }}
-                    onBlur={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.2)"; }}
-                  />
-                  {nlLoading ? (
-                    <div style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", pointerEvents: "none" }}>
-                      <div style={{ width: 14, height: 14, marginLeft: 8, border: "2px solid rgba(201,168,76,0.18)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.75s linear infinite" }} />
-                    </div>
-                  ) : nlCommand.trim() && assets.length ? (
-                    <button
-                      onClick={() => runNLCommand(nlCommand)}
-                      style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--accent)", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}
-                      aria-label="Run command"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    </button>
-                  ) : null}
-                </div>
-                {nlError && (
-                  <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>
-                )}
-                {chips.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                    {chips.map(chip => (
-                      <button
-                        key={chip}
-                        onClick={() => runNLCommand(chip)}
-                        style={{ padding: "3px 9px", fontSize: 10, fontFamily: "var(--font-body)", background: "rgba(201,168,76,0.07)", border: "0.5px solid rgba(201,168,76,0.18)", borderRadius: 12, color: "var(--text3)", cursor: "pointer", lineHeight: 1.5, letterSpacing: 0.2, transition: "all 0.12s", whiteSpace: "nowrap" }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.color = "var(--accent)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.18)"; e.currentTarget.style.color = "var(--text3)"; }}
-                      >
-                        {chip}
-                      </button>
-                    ))}
+      {/* AI Editor — collapsed by default, expand on demand */}
+      <div style={{ borderBottom: "0.5px solid var(--border)" }}>
+        <button
+          onClick={() => setAiEditorOpen(o => !o)}
+          style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: aiEditorOpen ? "rgba(201,168,76,0.05)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
+          onMouseEnter={e => { if (!aiEditorOpen) e.currentTarget.style.background = "rgba(201,168,76,0.03)"; }}
+          onMouseLeave={e => { if (!aiEditorOpen) e.currentTarget.style.background = "transparent"; }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span style={{ fontSize: 11, color: aiEditorOpen ? "var(--accent)" : "var(--text3)", fontWeight: 600, flex: 1, textAlign: "left", letterSpacing: 0.2 }}>Edit with AI</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transition: "transform 0.2s", transform: aiEditorOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        {aiEditorOpen && (
+          <div style={{ padding: "0 14px 12px" }}>
+            {(() => {
+              const runNLCommand = async (cmd: string) => {
+                if (!cmd.trim() || !assets.length || nlLoading) return;
+                setNlCommand(cmd); setNlLoading(true); setNlError(null); setNlPending(null);
+                try {
+                  const result = await fetchNaturalLanguageEdit(cmd.trim(), assets);
+                  if ("error" in result) setNlError(result.error);
+                  else setNlPending(result);
+                } catch { setNlError("Request failed. Check your connection and try again."); }
+                finally { setNlLoading(false); }
+              };
+              const chips = nlCommand === "" ? getNLSuggestions(assets) : [];
+              return (
+                <>
+                  <div style={{ position: "relative", marginBottom: nlError || chips.length ? 0 : 0 }}>
+                    <input
+                      id="nl-command" name="nlCommand" type="text"
+                      value={nlCommand}
+                      onChange={e => { setNlCommand(e.target.value); setNlError(null); }}
+                      onKeyDown={e => { if (e.key === "Enter") runNLCommand(nlCommand); }}
+                      placeholder={assets.length ? "e.g. Rebalance to equal weight" : "Add holdings first"}
+                      disabled={nlLoading || !assets.length}
+                      style={{ width: "100%", padding: "9px 34px 9px 11px", fontSize: 12, background: "var(--bg)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 8, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5, transition: "border-color 0.15s" }}
+                      onFocus={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.6)"; }}
+                      onBlur={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.25)"; }}
+                    />
+                    {nlLoading
+                      ? <div style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, border: "1.5px solid rgba(201,168,76,0.18)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.75s linear infinite" }} />
+                      : nlCommand.trim() && assets.length
+                        ? <button onClick={() => runNLCommand(nlCommand)} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--accent)", display: "flex", alignItems: "center" }} aria-label="Run">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                          </button>
+                        : null}
                   </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
+                  {nlError && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>}
+                  {chips.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                      {chips.map(chip => (
+                        <button key={chip} onClick={() => runNLCommand(chip)}
+                          style={{ padding: "3px 9px", fontSize: 10, background: "rgba(201,168,76,0.07)", border: "0.5px solid rgba(201,168,76,0.18)", borderRadius: 12, color: "var(--text3)", cursor: "pointer", lineHeight: 1.5, transition: "all 0.12s", whiteSpace: "nowrap" }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.color = "var(--accent)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.18)"; e.currentTarget.style.color = "var(--text3)"; }}>
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Builder */}
