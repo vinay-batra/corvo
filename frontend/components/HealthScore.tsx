@@ -122,10 +122,12 @@ export default function HealthScore({
   data,
   userId,
   apiUrl,
+  onAskAi,
 }: {
   data: any;
   userId?: string | null;
   apiUrl?: string;
+  onAskAi?: () => void;
 }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
@@ -173,33 +175,48 @@ export default function HealthScore({
 
       {/* Score ring + headline */}
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-        {inView && <Ring score={score} size={130} />}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, paddingTop: 6 }}>
-          <div>
-            <p style={{ fontFamily: "Space Mono,monospace", fontSize: 32, fontWeight: 700, color: score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)", lineHeight: 1, margin: "0 0 2px", letterSpacing: -1.5 }}>
-              {score}<span style={{ fontSize: 14, fontWeight: 400, color: "var(--text3)", letterSpacing: 0, marginLeft: 2 }}>/100</span>
-            </p>
-            <p style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)", fontWeight: 700, margin: 0 }}>
-              {score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Fair" : "Needs Work"}
-            </p>
-          </div>
+        {inView && <Ring score={score} size={120} />}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
           {loading && !headline && (
             <p style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic", margin: 0 }}>Analyzing your portfolio...</p>
           )}
-          {headline && (
-            <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.6, margin: 0 }}>{headline}</p>
-          )}
-          {!headline && !loading && score >= 75 && (
-            <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.6, margin: 0 }}>Your portfolio is in excellent shape. Strong returns and risk efficiency with no major red flags.</p>
+          {(headline || (!loading && score >= 0)) && (
+            <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>
+              {headline || (score >= 75
+                ? "Strong returns and efficient risk management across all four dimensions."
+                : score >= 50
+                ? "Solid foundation with room to improve risk-adjusted performance."
+                : "Your portfolio needs attention — consider reducing concentration and improving diversification.")}
+            </p>
           )}
         </div>
       </div>
 
       {/* Sub-score breakdown */}
-      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 14, display: "flex", flexDirection: "column", gap: 9 }}>
         {subScores.map((s) => (
           <SubScoreRow key={s.label} label={s.label} score={s.score} />
         ))}
+      </div>
+
+      {/* Bottom CTA */}
+      <div style={{ borderTop: "0.5px solid var(--border)", paddingTop: 14, marginTop: 2 }}>
+        <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.55, margin: "0 0 10px" }}>
+          Ask Corvo AI what's driving each sub-score and what specific changes would push your score higher.
+        </p>
+        <button
+          onClick={() => onAskAi?.()}
+          style={{
+            width: "100%", padding: "9px", borderRadius: 8,
+            background: "rgba(76,175,125,0.08)", border: "0.5px solid rgba(76,175,125,0.25)",
+            color: "#4caf7d", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            letterSpacing: 0.2, transition: "all 0.15s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(76,175,125,0.14)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(76,175,125,0.08)"; }}
+        >
+          How do I improve my score?
+        </button>
       </div>
     </div>
   );
