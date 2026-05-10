@@ -60,6 +60,14 @@ App UI overhaul is complete — all 5 phases shipped.
 - ErrorState.tsx: red-tinted icon container, primary message + optional reason line, gold "Try again" button. Default copy explains Railway cold starts.
 - globals.css updated for both classes.
 
+**Security sweep (May 10):**
+- IDOR fixed: GET /portfolio/tax-loss-alert/{user_id} now JWT-verifies caller matches path param (was wide open); also added 30/hr rate limit
+- IDOR fixed: DELETE /price-alerts/{alert_id} now JWT-verifies caller (was trusting self-reported user_id query param)
+- Secret logging fixed: startup log no longer leaks RESEND_API_KEY first-6-chars to Railway logs
+- Error leakage fixed: /user DELETE no longer returns raw Supabase error body to client; logs server-side instead
+- Frontend: stripped 14 verbose console.log statements from dashboard auto-load flow (were leaking user IDs, portfolio data, query results to browser console)
+- **Note: backend needs a Railway deploy for these to take effect.**
+
 **Mobile polish (May 10):**
 - SectionHeader: added c-section-header / c-section-title / c-section-eyebrow classes. Mobile rule (<=768px) shrinks headline 22→18px, tightens eyebrow letter-spacing, reduces top margin 32→24. Applies to every dashboard, Positions, Simulations, Stocks region header.
 - Dashboard customizer: 2-col grid collapses to 1-col on mobile (was cramped at 320-375px).
