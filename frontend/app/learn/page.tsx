@@ -1738,6 +1738,59 @@ export default function LearnPage({ resetKey }: { resetKey?: number } = {}) {
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)" }}>
       <AnimStyles />
       <div className="c-learn-content" style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 24px" }}>
+
+        {/* ── XP Bar ── */}
+        {(() => {
+          const lvl = getLevel(xp); const nxt = getNextLevel(xp); const pct = getProgressPct(xp);
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28, padding: "14px 18px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 14, flexWrap: "wrap" }}>
+              {!profileReady ? (
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--bg2)", flexShrink: 0 }} />
+              ) : avatarUrl ? (
+                <img src={avatarUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "0.5px solid var(--border2)", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${AMBER}22`, border: `0.5px solid ${AMBER}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: AMBER, flexShrink: 0 }}>
+                  {(displayName || "?")[0]?.toUpperCase()}
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 160 }}>
+                {!profileReady ? (
+                  <>
+                    <div style={{ height: 13, width: 140, borderRadius: 4, background: "var(--bg2)", marginBottom: 8 }} />
+                    <div style={{ height: 7, background: "var(--bg2)", borderRadius: 4 }} />
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <LevelBadge xp={xp} />
+                      <span style={{ fontSize: 11, color: "var(--text2)", fontFamily: "Space Mono, monospace" }}>
+                        {xp} XP{nxt ? <span style={{ color: "var(--text3)" }}> · {nxt.min - xp} to {nxt.name}</span> : " · Max level!"}
+                      </span>
+                    </div>
+                    <div style={{ height: 7, background: "var(--bg3)", borderRadius: 4, overflow: "hidden", position: "relative" }}>
+                      <motion.div
+                        initial={false}
+                        animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: "easeOut" }}
+                        style={{ height: "100%", background: lvl.color, borderRadius: 4, position: "relative", overflow: "hidden" }}>
+                        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)", animation: "xpShimmer 2.2s ease-in-out infinite", willChange: "transform" }} />
+                      </motion.div>
+                    </div>
+                  </>
+                )}
+              </div>
+              {!profileReady ? (
+                <div style={{ width: 72, height: 30, borderRadius: 20, background: "var(--bg2)", flexShrink: 0 }} />
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: streak > 0 ? "rgba(249,115,22,0.1)" : "var(--bg3)", border: `0.5px solid ${streak > 0 ? "rgba(249,115,22,0.3)" : "var(--border)"}`, flexShrink: 0 }}>
+                  <AnimatedFlame streak={streak} />
+                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, color: streak > 0 ? "#f97316" : "var(--text3)" }}>{streak}</span>
+                  <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: 0.5 }}>day{streak !== 1 ? "s" : ""}</span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         <AnimatePresence mode="wait">
 
           {/* ── Home ── */}
