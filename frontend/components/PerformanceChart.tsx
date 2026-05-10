@@ -30,6 +30,7 @@ interface Props {
   onCustomDateChange?: (range: { start: string; end: string } | null) => void;
   benchmarkOverride?: { ticker: string; cumulative: number[] };
   onExplainDrawdown?: (date: string) => void;
+  portfolioValue?: number;
 }
 
 // Compute the date at which the max drawdown trough occurs
@@ -71,11 +72,12 @@ function filterByDateRange(
   return filtered;
 }
 
-const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange, benchmarkOverride, onExplainDrawdown }: Props) {
+const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", savedLines = [], onSavedLinesChange, customDateRange, onCustomDateChange, benchmarkOverride, onExplainDrawdown, portfolioValue }: Props) {
   const [dark, setDark] = useState(true);
   const [showCustomPicker, setShowCustomPicker] = useState(!!customDateRange);
   const [localStart, setLocalStart] = useState(customDateRange?.start || "");
   const [localEnd, setLocalEnd] = useState(customDateRange?.end || "");
+  const [showDollars, setShowDollars] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -127,17 +129,24 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
     onSavedLinesChange(savedLines.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
   };
 
+  // Dollar mode: convert cumulative decimal returns to absolute dollar values
+  const canShowDollars = showDollars && portfolioValue != null && portfolioValue > 0;
+  const plotPortfolioY = canShowDollars ? portfolioY.map(v => portfolioValue! * (1 + v)) : portfolioY;
+  const plotBenchmarkY = canShowDollars ? benchmarkY.map(v => portfolioValue! * (1 + v)) : benchmarkY;
+
   // Build Plotly traces
   const traces: any[] = [
     {
-      x: chartDates, y: portfolioY, type: "scatter", mode: "lines", name: "Portfolio",
+      x: chartDates, y: plotPortfolioY, type: "scatter", mode: "lines", name: "Portfolio",
       line: { color: amber, width: 2 },
       fill: "tozeroy", fillcolor: dark ? "rgba(201,168,76,0.05)" : "rgba(184,134,11,0.06)",
+      yhoverformat: canShowDollars ? "$,.0f" : ".1%",
     },
     {
-      x: chartDates, y: benchmarkY, type: "scatter", mode: "lines", name: benchLabel,
+      x: chartDates, y: plotBenchmarkY, type: "scatter", mode: "lines", name: benchLabel,
       line: { color: fc, width: 1.5, dash: "dot" },
       fill: "tozeroy", fillcolor: "rgba(0,0,0,0.02)",
+      yhoverformat: canShowDollars ? "$,.0f" : ".1%",
     },
     // Saved portfolio lines
     ...savedLines
@@ -152,11 +161,13 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
             : l.cumulative;
           if (!ys.length) return ys;
           const base = ys[0];
-          return ys.map(v => v - base);
+          const rebased = ys.map(v => v - base);
+          return canShowDollars ? rebased.map(v => portfolioValue! * (1 + v)) : rebased;
         })(),
         type: "scatter", mode: "lines", name: l.name,
         line: { color: l.color, width: 1.5, dash: "dashdot" },
         opacity: 0.75,
+        yhoverformat: canShowDollars ? "$,.0f" : ".1%",
       })),
   ];
 
@@ -230,6 +241,23 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
             <span style={{ width: 14, height: 2, background: fc, display: "inline-block", borderRadius: 1 }} />
             {benchLabel}
           </span>
+          {/* $ / % view toggle — only when portfolio value is known */}
+          {portfolioValue != null && portfolioValue > 0 && (
+            <div style={{ display: "flex", borderRadius: 5, overflow: "hidden", border: "0.5px solid var(--border)" }}>
+              {(["%" , "$"] as const).map(mode => (
+                <button key={mode}
+                  onClick={() => setShowDollars(mode === "$")}
+                  style={{
+                    padding: "2px 8px", fontSize: 9, cursor: "pointer", border: "none",
+                    background: (mode === "$") === showDollars ? "var(--accent)" : "transparent",
+                    color: (mode === "$") === showDollars ? "var(--bg)" : legendFg,
+                    fontFamily: "var(--font-mono)", fontWeight: 700, transition: "all 0.15s",
+                  }}>
+                  {mode}
+                </button>
+              ))}
+            </div>
+          )}
           {/* Custom date range toggle */}
           {onCustomDateChange && (
             <button
@@ -294,12 +322,13 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
             } : {}),
           },
           yaxis: {
-            gridcolor: gc, linecolor: lc, tickcolor: "transparent", tickformat: ".0%",
+            gridcolor: gc, linecolor: lc, tickcolor: "transparent",
+            tickformat: canShowDollars ? "$,.0f" : ".0%",
             ...(isMobile ? {
               autorange: true,
               // dtick in decimal units (data is decimal: 0.15 = 15%)
               // user-requested intervals: 6M→5%, 1Y→10%, 2Y→10%, 5Y→20%
-              dtick: period === "5y" ? 0.20 : period === "6mo" ? 0.05 : 0.10,
+              dtick: canShowDollars ? undefined : (period === "5y" ? 0.20 : period === "6mo" ? 0.05 : 0.10),
             } : {}),
           },
           showlegend: false,

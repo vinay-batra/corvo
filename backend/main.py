@@ -1607,9 +1607,10 @@ def generate_report(req: ReportRequest, request: Request):
 
         tickers = ctx.get("tickers", [])
         weights = ctx.get("weights", [])
-        ret = ctx.get("portfolio_return", 0)
+        ret = ctx.get("annualized_return") or ctx.get("portfolio_return", 0)
         vol = ctx.get("portfolio_volatility", 0)
-        sharpe = ctx.get("sharpe_ratio", (ret - 0.04) / max(vol, 0.001))
+        rf = ctx.get("rf_rate", 0.043)
+        sharpe = ctx.get("sharpe_ratio") or (safe_float((ret - rf) / vol) if vol > 0 else 0.0)
         dd = ctx.get("max_drawdown", 0)
         period = ctx.get("period", "1y")
         ind_returns = ctx.get("individual_returns", {})
@@ -2224,9 +2225,10 @@ def chat(req: ChatRequest, request: Request):
     goals = req.user_goals or ctx.get("goals") or {}
     tickers = ctx.get("tickers", [])
     weights = ctx.get("weights", [])
-    ret = ctx.get("portfolio_return", 0)
+    ret = ctx.get("annualized_return") or ctx.get("portfolio_return", 0)
     vol = ctx.get("portfolio_volatility", 0)
-    sharpe = ctx.get("sharpe_ratio") or (ret - 0.04) / max(vol, 0.001)
+    rf = ctx.get("rf_rate", 0.043)
+    sharpe = ctx.get("sharpe_ratio") or (safe_float((ret - rf) / vol) if vol > 0 else 0.0)
     dd = ctx.get("max_drawdown", 0)
     period = ctx.get("period", "1y")
     benchmark_return = ctx.get("benchmark_return")
@@ -2894,7 +2896,7 @@ def stock_detail(ticker: str, request: Request):
         change        = current_price - prev_close
         change_pct    = (change / prev_close * 100) if prev_close else 0.0
 
-        # 1D chart data (2 days to guarantee today's points)
+        # 1D chart data — mutual funds have no intraday data, fall back to daily
         hist_1d = t.history(period="1d", interval="5m")
         chart_1d: list = []
         if not hist_1d.empty:
@@ -2902,6 +2904,17 @@ def stock_detail(ticker: str, request: Request):
                 {"t": str(ts), "p": safe_float(row["Close"])}
                 for ts, row in hist_1d.iterrows()
             ]
+        else:
+            # Fallback for mutual funds and assets that don't support intraday
+            try:
+                hist_daily = t.history(period="5d", interval="1d")
+                if not hist_daily.empty:
+                    chart_1d = [
+                        {"t": str(ts), "p": safe_float(row["Close"])}
+                        for ts, row in hist_daily.tail(2).iterrows()
+                    ]
+            except Exception:
+                pass
 
         def _round(v, digits):
             return round(v, digits) if v is not None else None
@@ -3046,6 +3059,9 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
     try:
         t = yf.Ticker(ticker)
         hist = t.history(period=p, interval=interval)
+        # Mutual funds have no intraday data — fall back to daily for 1D/1W views
+        if hist.empty and interval in ("5m", "15m"):
+            hist = t.history(period=p, interval="1d")
         if hist.empty:
             return {"dates": [], "prices": [], "opens": [], "highs": [], "lows": [], "volumes": []}
         vols = []

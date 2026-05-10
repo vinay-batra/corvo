@@ -1031,6 +1031,10 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>(undefined);
+  const [aiNudgeDismissed, setAiNudgeDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("corvo_ai_nudge_dismissed") === "1";
+  });
   const [wsidOpen, setWsidOpen] = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
@@ -2689,6 +2693,27 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </DashReveal>
                 </div>}
 
+                {/* AI nudge — shown once per session after analysis */}
+                {data && !aiNudgeDismissed && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", background: "rgba(201,168,76,0.06)", border: "0.5px solid rgba(201,168,76,0.2)", borderRadius: 8, borderLeft: "2px solid var(--accent)", marginBottom: 4 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span style={{ fontSize: 11, color: "var(--text2)", flex: 1 }}>Have a question about your results? Ask Corvo AI — it knows your full portfolio.</span>
+                    <button
+                      onClick={() => { setChatInitialMessage(undefined); setChatOpen(true); setAiNudgeDismissed(true); sessionStorage.setItem("corvo_ai_nudge_dismissed", "1"); }}
+                      style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "0.5px solid rgba(201,168,76,0.35)", borderRadius: 5, padding: "3px 10px", cursor: "pointer", whiteSpace: "nowrap", fontWeight: 600, transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.12)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
+                    >Ask now</button>
+                    <button
+                      onClick={() => { setAiNudgeDismissed(true); sessionStorage.setItem("corvo_ai_nudge_dismissed", "1"); }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 14, lineHeight: 1, padding: "0 2px", display: "flex", alignItems: "center" }}
+                      aria-label="Dismiss"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                )}
+
                 {/* Performance chart */}
                 {!hiddenCards.has("performance") && <div style={{ opacity: loadedVis(750) ? 1 : 0, transform: loadedVis(750) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="up" delay={0.15}>
@@ -2725,6 +2750,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       customDateRange={customDateRange}
                       onCustomDateChange={setCustomDateRange}
                       benchmarkOverride={localBenchmarkSeries ?? undefined}
+                      portfolioValue={portfolioInputValue || undefined}
                       onExplainDrawdown={(date) => {
                         setChatInitialMessage(`My portfolio hit its max drawdown around ${date}. What happened in the markets on or around that date that caused this decline? Walk me through what drove it and what it means for my portfolio.`);
                         setChatOpen(true);
