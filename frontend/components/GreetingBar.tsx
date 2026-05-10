@@ -225,6 +225,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
     <div className="gb-root" style={{ marginBottom: 24 }}>
       <style>{`
         @keyframes gb-pulse { 0%,100%{opacity:0.35} 50%{opacity:0.8} }
+        @keyframes gb-live-pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(76,175,125,0.5)} 50%{opacity:0.8;box-shadow:0 0 0 4px rgba(76,175,125,0)} }
         .gb-root { --chip-pos:#4caf7d; --chip-neg:var(--red); }
 
         /* Two-column content grid — collapses on small viewports */
@@ -354,7 +355,15 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
             {/* Holdings marquee */}
             {!hideTickers && validHoldingTickers.length > 0 && (
               <div>
-                <span style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: "var(--text3)", fontWeight: 600, display: "block", marginBottom: 8 }}>Holdings</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: "var(--text3)", fontWeight: 600 }}>Holdings</span>
+                  {mkt.isOpen && (
+                    <>
+                      <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4caf7d", animation: "gb-live-pulse 2s ease-in-out infinite", flexShrink: 0 }} />
+                      <span style={{ fontSize: 7, letterSpacing: 1.5, textTransform: "uppercase", color: "#4caf7d", fontWeight: 600 }}>Live</span>
+                    </>
+                  )}
+                </div>
                 <div style={{ position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 20, background: "linear-gradient(to right,var(--card-bg),transparent)", zIndex: 1, pointerEvents: "none" }} />
                   <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 20, background: "linear-gradient(to left,var(--card-bg),transparent)", zIndex: 1, pointerEvents: "none" }} />
