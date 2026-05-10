@@ -40,10 +40,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 App UI overhaul is complete — all 5 phases shipped.
 
+**Homepage rewrite — guardian positioning (May 10):**
+- Hero headline → "The advisor watching over your portfolio." (was "deserves better than a pie chart")
+- Hero subhead reframed around what Corvo does (monitors, flags risks, tells you what to do)
+- Hero stats: "AI Insights / 17K+" → "Risks Flagged / 12K+"
+- New floating red "Risk flagged · Tech > 60%" chip in the hero metric area, pulsing dot
+- Features eyebrow "Capabilities" → "Always watching"; headline → "What Corvo watches for you"
+- Final CTA headline → "Let Corvo watch your back." with refreshed subhead
+- "Guardian" used sparingly in copy — the concept comes through via "watching," "monitors," "advisor"
+
 **Up next (in priority order):**
-1. Homepage rewrite — "your portfolio's guardian" positioning
-2. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
-3. Plaid integration — auto-sync brokerage (apply at plaid.com while building)
+1. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
+2. Plaid integration — auto-sync brokerage (apply at plaid.com while building)
 
 **Daily Signal (built May 10):**
 - POST /portfolio/daily-signal backend endpoint with Claude, in-memory cache by (date, portfolio hash)
