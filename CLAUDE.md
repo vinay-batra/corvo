@@ -18,6 +18,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
 3. Action CTAs wired directly into AI insights and WSID results
 
+**Button layout (bottom right, all 48x48px, 12px gaps):**
+- AI (gold): right 24
+- Feedback (flag): right 84
+- Customize (grid): right 144 — dashboard tab only
+
 **Recent completions (May 10, continued):**
 - Metric grid: auto-fill -> auto-fit (cards now fill full row)
 - Daily Brief: chevron collapse/expand, persists to localStorage
