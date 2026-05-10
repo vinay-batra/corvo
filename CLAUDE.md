@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Elevated AiInsights: pill tags, full analyst sentences, bolder rebalancing section, bigger Ask AI CTA
 
 **Up next (in priority order):**
-1. Continue dashboard polish — look at the live site and identify remaining weak spots
+1. Keep iterating on dashboard polish based on screenshots
 2. Action CTAs on every AI insight — each insight needs a concrete next step
 3. Homepage/onboarding rewrite around "your portfolio's guardian" positioning
 4. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
