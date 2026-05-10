@@ -2505,7 +2505,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                       hideBriefing={hiddenCards.has("briefing")}
                       hideTickers={hiddenCards.has("tickers")}
                     />
-                    <div style={{ height: 1, background: "linear-gradient(90deg, var(--accent) 0%, rgba(184,134,11,0.15) 60%, transparent 100%)", marginBottom: 16, opacity: 0.4 }} />
                   </DashReveal>
                 </div>
 
