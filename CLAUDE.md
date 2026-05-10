@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Elevated AiInsights: pill tags, full analyst sentences, bolder rebalancing section, bigger Ask AI CTA
 
 **Up next (in priority order):**
-1. Goal tracking — target amount + date, trajectory calculation, gap analysis
+1. Onboarding rewrite — preset demo flow, 60-second first wow moment
 2. Onboarding rewrite — preset demo flow, 60-second first wow moment
 3. Homepage rewrite — "your portfolio's guardian" positioning
 4. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
