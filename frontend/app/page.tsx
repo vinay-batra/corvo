@@ -3413,10 +3413,6 @@ export default function Landing() {
       {/* Mobile desktop banner */}
       <MobileDesktopBanner />
 
-      {/* Fixed grid bg */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(var(--accent-rgb),0.025) 1px, transparent 1px),linear-gradient(90deg, rgba(var(--accent-rgb),0.025) 1px, transparent 1px)", backgroundSize: "80px 80px", pointerEvents: "none" }} />
-      </div>
       {/* NAV */}
       <nav ref={navRef} className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "color-mix(in srgb, var(--bg) 88%, transparent)" : "transparent", backdropFilter: navSolid ? "blur(24px) saturate(140%)" : "blur(0px)", borderBottom: navSolid ? "1px solid var(--border)" : "1px solid transparent", transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1), background 0.4s cubic-bezier(0.16,1,0.3,1), backdrop-filter 0.4s, border-color 0.4s cubic-bezier(0.16,1,0.3,1)", willChange: "transform" }}>
         {/* Logo */}

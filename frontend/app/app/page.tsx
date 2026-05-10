@@ -1111,6 +1111,21 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     }, 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Reinvest dividends preference — read from localStorage (written by PortfolioBuilder)
+  const [reinvestDividends, setReinvestDividends] = useState<boolean>(true);
+  useEffect(() => {
+    const handler = () => {
+      const stored = localStorage.getItem("corvo_reinvest_dividends");
+      if (stored !== null) setReinvestDividends(stored !== "false");
+    };
+    handler();
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  const [showBasicsNudge, setShowBasicsNudge] = useState(false);
+
   const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
@@ -1413,7 +1428,7 @@ const { dark, toggle: toggleDark }  = useTheme();
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
       const pendingRef = referralCodeRef.current;
-      const result = await fetchPortfolio(valid, period, benchmark, userId || "", pendingRef);
+      const result = await fetchPortfolio(valid, period, benchmark, userId || "", pendingRef, reinvestDividends);
       // Handle backend error responses (e.g. no price data for all tickers)
       if (result.error) {
         setErrorMsg(result.error);
@@ -2965,7 +2980,10 @@ const { dark, toggle: toggleDark }  = useTheme();
             learn:     "portfolio dashboard (learn tab — paper trading)",
             stocks:    "portfolio dashboard (stock detail overlay)",
           }[activeTab] || `portfolio dashboard (${activeTab} tab)`}
-          extraContext={activeTab === "learn" && paperCtx ? paperCtx : undefined}
+          extraContext={[
+            activeTab === "learn" && paperCtx ? paperCtx : "",
+            !reinvestDividends ? "Note: This user does NOT reinvest dividends. The CAGR shown is price return only, excluding dividend income. Factor this into any return or income advice." : "",
+          ].filter(Boolean).join("\n\n") || undefined}
           onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
         />
       )}
@@ -3052,6 +3070,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         <DashboardTour tabCount={TABS.length} onComplete={() => {
           setShowDashboardTour(false);
           localStorage.setItem("corvo_tour_completed", "true");
+          setShowBasicsNudge(true);
         }} />
       )}
       <AnimatePresence initial={false}>
@@ -3068,6 +3087,46 @@ const { dark, toggle: toggleDark }  = useTheme();
       </AnimatePresence>
       <AnimatePresence initial={false}>
         {showProfile && <ProfileEditor goals={goals} onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }} onClose={() => setShowProfile(false)} />}
+      </AnimatePresence>
+
+      {/* Basics nudge — shown once after tour completes */}
+      <AnimatePresence initial={false}>
+        {showBasicsNudge && (
+          <motion.div
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0 16px 32px", pointerEvents: "none" }}>
+            <motion.div
+              initial={false} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 240 }}
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: "16px 20px", maxWidth: 420, width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.35)", pointerEvents: "all", borderLeft: "2px solid var(--accent)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>Want to understand the numbers?</p>
+                  <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>Learn what CAGR, Sharpe Ratio, and Volatility actually mean. Takes about 3 minutes.</p>
+                </div>
+                <button onClick={() => setShowBasicsNudge(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2, flexShrink: 0, marginTop: 2 }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button
+                  onClick={() => { setShowBasicsNudge(false); setTabWithDir("learn"); setLearnResetKey(k => k + 1); }}
+                  style={{ flex: 1, padding: "8px", background: "var(--accent)", border: "none", borderRadius: 8, color: "var(--bg)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-mono)", letterSpacing: 0.5, transition: "opacity 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
+                  Learn the basics
+                </button>
+                <button
+                  onClick={() => setShowBasicsNudge(false)}
+                  style={{ padding: "8px 16px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text3)", fontSize: 12, cursor: "pointer", transition: "color 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}>
+                  Maybe later
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
       <AnimatePresence initial={false}>
         {showSettings && (
