@@ -1074,10 +1074,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>(undefined);
-  const [aiNudgeDismissed, setAiNudgeDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return sessionStorage.getItem("corvo_ai_nudge_dismissed") === "1";
-  });
+
   const [wsidOpen, setWsidOpen] = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
@@ -1164,7 +1161,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     return () => window.removeEventListener("storage", handler);
   }, []);
 
-  const [showBasicsNudge, setShowBasicsNudge] = useState(false);
 
   const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
@@ -2791,7 +2787,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     const cardKey = title === "Health Score" ? "health" : title === "AI Insights" ? "insights" : title.startsWith("vs ") ? "benchmark" : null;
                     if (cardKey && hiddenCards.has(cardKey as DashCard)) return null;
                     return (
-                      <motion.div key={title} initial={false} style={{ display: "flex", flexDirection: "column" }}>
+                      <motion.div key={title} initial={false} style={{ display: "flex", flexDirection: "column", gridColumn: title.startsWith("vs ") ? "1 / -1" : undefined }}>
                         <DashReveal from={from} delay={delayS} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                           <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
                         </DashReveal>
@@ -2842,17 +2838,32 @@ const { dark, toggle: toggleDark }  = useTheme();
                 {data && !isPortfolioSaved && (
                   <motion.div
                     initial={false}
-                    style={{ marginTop: 24, marginBottom: 80, padding: "16px 20px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", margin: 0 }}>Save this portfolio</p>
-                      <p style={{ fontSize: 11, color: "var(--text3)", margin: "2px 0 0" }}>Come back to this analysis anytime</p>
+                    style={{
+                      marginTop: 24, marginBottom: 80,
+                      padding: "18px 22px",
+                      background: "var(--card-bg)",
+                      border: "0.5px solid var(--border)",
+                      borderLeft: "2.5px solid var(--accent)",
+                      borderRadius: 12,
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+                    }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", margin: 0, letterSpacing: -0.2 }}>Save this analysis</p>
+                        <p style={{ fontSize: 11, color: "var(--text3)", margin: "2px 0 0", lineHeight: 1.4 }}>Come back to this portfolio anytime — one click to reload.</p>
+                      </div>
                     </div>
                     <button
                       onClick={() => {
                         const el = document.querySelector("[data-save-trigger]") as HTMLElement | null;
                         if (el) el.click();
                       }}
-                      style={{ padding: "8px 18px", background: "var(--accent)", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "var(--bg)", cursor: "pointer" }}>
+                      style={{ padding: "9px 20px", background: "var(--accent)", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, color: "var(--bg)", cursor: "pointer", flexShrink: 0, letterSpacing: 0.3, transition: "opacity 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
                       Save →
                     </button>
                   </motion.div>
@@ -3017,7 +3028,6 @@ const { dark, toggle: toggleDark }  = useTheme();
         <DashboardTour tabCount={TABS.length} onComplete={() => {
           setShowDashboardTour(false);
           localStorage.setItem("corvo_tour_completed", "true");
-          setShowBasicsNudge(true);
         }} />
       )}
       <AnimatePresence initial={false}>
@@ -3036,45 +3046,6 @@ const { dark, toggle: toggleDark }  = useTheme();
         {showProfile && <ProfileEditor goals={goals} onSave={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowProfile(false); }} onClose={() => setShowProfile(false)} />}
       </AnimatePresence>
 
-      {/* Basics nudge — shown once after tour completes */}
-      <AnimatePresence initial={false}>
-        {showBasicsNudge && (
-          <motion.div
-            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: "fixed", inset: 0, zIndex: 600, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0 16px 32px", pointerEvents: "none" }}>
-            <motion.div
-              initial={false} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
-              transition={{ type: "spring", damping: 28, stiffness: 240 }}
-              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: "16px 20px", maxWidth: 420, width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.35)", pointerEvents: "all", borderLeft: "2px solid var(--accent)" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>Want to understand the numbers?</p>
-                  <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>Learn what CAGR, Sharpe Ratio, and Volatility actually mean. Takes about 3 minutes.</p>
-                </div>
-                <button onClick={() => setShowBasicsNudge(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2, flexShrink: 0, marginTop: 2 }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <button
-                  onClick={() => { setShowBasicsNudge(false); }}
-                  style={{ flex: 1, padding: "8px", background: "var(--accent)", border: "none", borderRadius: 8, color: "var(--bg)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-mono)", letterSpacing: 0.5, transition: "opacity 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
-                  Learn the basics
-                </button>
-                <button
-                  onClick={() => setShowBasicsNudge(false)}
-                  style={{ padding: "8px 16px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8, color: "var(--text3)", fontSize: 12, cursor: "pointer", transition: "color 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}>
-                  Maybe later
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       <AnimatePresence initial={false}>
         {showSettings && (
           <motion.div
