@@ -219,6 +219,21 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     }
   };
 
+  // Reinvest dividends toggle - persisted to localStorage
+  const [reinvestDividends, setReinvestDividendsState] = useState<boolean>(true);
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_reinvest_dividends") : null;
+    if (stored !== null) setReinvestDividendsState(stored !== "false");
+  }, []);
+  const handleReinvestToggle = () => {
+    const next = !reinvestDividends;
+    setReinvestDividendsState(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("corvo_reinvest_dividends", next ? "true" : "false");
+      window.dispatchEvent(new Event("storage"));
+    }
+  };
+
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
     check();
@@ -638,6 +653,27 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         </div>
         <div style={{fontSize:10,color:"var(--text3)",marginTop:5,lineHeight:1.5}}>
           Used for P&amp;L, tax loss harvesting, and dividend calculations
+        </div>
+        {/* Reinvest dividends toggle */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:10,paddingTop:8,borderTop:"0.5px solid var(--border)"}}>
+          <div>
+            <div style={{fontSize:11,color:"var(--text2)",fontWeight:500}}>Reinvesting dividends</div>
+            <div style={{fontSize:10,color:"var(--text3)",marginTop:1}}>Affects CAGR and return calculations</div>
+          </div>
+          <button
+            onClick={handleReinvestToggle}
+            style={{
+              display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,
+              border:`0.5px solid ${reinvestDividends ? "rgba(76,175,80,0.4)" : "var(--border)"}`,
+              background:reinvestDividends ? "rgba(76,175,80,0.1)" : "var(--bg3)",
+              color:reinvestDividends ? "#4caf7d" : "var(--text3)",
+              fontSize:11,fontWeight:600,cursor:"pointer",transition:"all 0.15s",
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.opacity="0.8";}}
+            onMouseLeave={e=>{e.currentTarget.style.opacity="1";}}>
+            <span style={{width:7,height:7,borderRadius:"50%",background:reinvestDividends?"#4caf7d":"var(--text3)",transition:"background 0.15s"}} />
+            {reinvestDividends ? "Yes" : "No"}
+          </button>
         </div>
       </div>
 

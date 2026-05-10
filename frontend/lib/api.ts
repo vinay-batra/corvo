@@ -4,7 +4,7 @@ if (!API_URL && process.env.NODE_ENV === "production") {
 }
 const RESOLVED_API_URL = API_URL || "http://localhost:8000";
 
-export async function fetchPortfolio(assets: any[], period: string, benchmark = "^GSPC", userId = "", referralCode = "") {
+export async function fetchPortfolio(assets: any[], period: string, benchmark = "^GSPC", userId = "", referralCode = "", reinvestDividends = true) {
   const total = assets.reduce((sum, a) => sum + a.weight, 0);
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
@@ -16,6 +16,7 @@ export async function fetchPortfolio(assets: any[], period: string, benchmark = 
     userId ? `user_id=${encodeURIComponent(userId)}` : "",
     referralCode ? `referral_code=${encodeURIComponent(referralCode)}` : "",
     hasManual ? `manual_returns=${encodeURIComponent(manualReturns)}` : "",
+    !reinvestDividends ? `reinvest_dividends=false` : "",
   ].filter(Boolean).join("&");
   const res = await fetch(
     `${RESOLVED_API_URL}/portfolio?tickers=${tickers}&weights=${weights}&period=${period}&benchmark=${encodeURIComponent(benchmark)}${extras ? "&" + extras : ""}`

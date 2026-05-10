@@ -133,19 +133,22 @@ def clean_ai_response(text: str) -> str:
     text = text.replace("*", "").replace("**", "")
     return text
 
-def get_prices(tickers, period="1y"):
-    """Download prices for a list of tickers."""
+def get_prices(tickers, period="1y", auto_adjust=True):
+    """Download prices for a list of tickers.
+    auto_adjust=True  → total return (dividends reinvested, default)
+    auto_adjust=False → price return only (raw close, no dividend adjustment)
+    """
     period = PERIOD_MAP.get(period, "1y")
     try:
         if len(tickers) == 1:
-            data = yf.download(tickers[0], period=period, auto_adjust=True, progress=False)
+            data = yf.download(tickers[0], period=period, auto_adjust=auto_adjust, progress=False)
             if data.empty:
                 return None
             if "Close" in data.columns:
                 return data[["Close"]].rename(columns={"Close": tickers[0]})
             return None
         else:
-            data = yf.download(tickers, period=period, auto_adjust=True, progress=False)
+            data = yf.download(tickers, period=period, auto_adjust=auto_adjust, progress=False)
             if data.empty:
                 return None
             if isinstance(data.columns, pd.MultiIndex):
@@ -313,6 +316,7 @@ def portfolio(
     user_id: str = "",
     referral_code: str = "",
     manual_returns: str = "",
+    reinvest_dividends: bool = True,
 ):
     ip = request.client.host if request.client else "unknown"
     if check_rate_limit(ip, "portfolio", 30, 3600):
@@ -364,9 +368,9 @@ def portfolio(
     while len(manual_returns_list) < len(tickers_list):
         manual_returns_list.append(None)
 
-    # Download prices
+    # Download prices (auto_adjust controls dividend reinvestment in CAGR)
     all_tickers = tickers_list + [benchmark]
-    prices = get_prices(all_tickers, period)
+    prices = get_prices(all_tickers, period, auto_adjust=reinvest_dividends)
 
     if prices is None or prices.empty:
         raise HTTPException(status_code=500, detail="Failed to fetch price data")
