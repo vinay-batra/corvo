@@ -63,6 +63,7 @@ import DrawdownChart from "../../components/DrawdownChart";
 import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
 import LearnPage from "../learn/page";
+import DailySignal from "../../components/DailySignal";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -2491,6 +2492,19 @@ const { dark, toggle: toggleDark }  = useTheme();
                     />
                   </DashReveal>
                 </div>
+
+                {/* Daily Signal — AI-generated single actionable recommendation */}
+                {data && (
+                  <DashReveal from="up" delay={0.04}>
+                    <DailySignal
+                      data={data}
+                      assets={assets}
+                      portfolioValue={portfolioInputValue}
+                      userId={userId}
+                      onAskAi={(msg) => { if (msg) setChatInitialMessage(msg); setChatOpen(true); }}
+                    />
+                  </DashReveal>
+                )}
 
                 {/* What Should I Do Today */}
                 {!hiddenCards.has("wsid") && <div style={{ opacity: loadedVis(250) ? 1 : 0, transform: loadedVis(250) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
