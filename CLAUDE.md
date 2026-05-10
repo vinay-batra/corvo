@@ -14,9 +14,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Elevated AiInsights: pill tags, full analyst sentences, bolder rebalancing section, bigger Ask AI CTA
 
 **Up next (in priority order):**
-1. Homepage/onboarding rewrite around "your portfolio's guardian" positioning
-2. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
-3. Action CTAs wired directly into AI insights and WSID results
+1. Goal tracking — target amount + date, trajectory calculation, gap analysis
+2. Onboarding rewrite — preset demo flow, 60-second first wow moment
+3. Homepage rewrite — "your portfolio's guardian" positioning
+4. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
+5. Plaid integration — auto-sync brokerage (apply at plaid.com while building)
+
+**Daily Signal (built May 10):**
+- POST /portfolio/daily-signal backend endpoint with Claude, in-memory cache by (date, portfolio hash)
+- 8 categories: Risk Alert, Rebalance, Tax Opportunity, Earnings Watch, Benchmark Lag, Protect Gains, Diversify, Strong Hold
+- Full DailySignal.tsx component: headline, rationale, impact chips, numbered steps, confidence tooltip, urgency badge, dismissed state
+- Lives between Daily Brief and WSID on dashboard
+- Fails silently on error
 
 **Sidebar redesign (May 10):** AI editor collapsed by default (··· toggle row). Presets/Screenshot/CSV → ··· overflow menu. window.confirm removed → inline 2-click remove confirm. Holdings header shows count badge + weight %. Delete modal: dark blur overlay, red top border, trash icon. NEW ANALYSIS button: solid amber (was ghost). Saved rows: "VIG · SCHD +2" format, 600 weight name.
 
