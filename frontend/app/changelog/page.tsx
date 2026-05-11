@@ -166,17 +166,29 @@ export default function ChangelogPage() {
         .nl:hover { color: var(--text); }
         .tag { padding: 3px 10px; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.4); border-radius: 20px; font-size: 10px; color: var(--accent); letter-spacing: 0.5px; }
         .cl-eras-scroll { scrollbar-width: thin; scrollbar-color: rgba(201,168,76,0.4) transparent; }
-        .cl-eras-scroll::-webkit-scrollbar { height: 8px; }
-        .cl-eras-scroll::-webkit-scrollbar-track { background: transparent; }
+        .cl-eras-scroll::-webkit-scrollbar { height: 6px; }
+        .cl-eras-scroll::-webkit-scrollbar-track { background: transparent; margin: 0 56px; }
         .cl-eras-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.35); border-radius: 4px; }
         .cl-eras-scroll::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.6); }
-        .cl-era-card { transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s; }
-        .cl-era-card:hover { transform: translateY(-4px); }
+        .cl-era-card {
+          transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s cubic-bezier(0.16,1,0.3,1);
+          will-change: transform;
+        }
+        .cl-era-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 18px 40px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(var(--accent-rgb),0.25) !important;
+        }
+        .cl-era-dot { transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s; }
+        .cl-era:hover .cl-era-dot {
+          transform: translate(-50%, -50%) scale(1.18);
+          box-shadow: 0 0 0 5px rgba(var(--accent-rgb),0.22), 0 0 22px rgba(var(--accent-rgb),0.5) !important;
+        }
         @media(max-width:768px) {
           .cl-hero { padding: 100px 20px 48px !important; }
           .cl-eras-wrap { padding: 0 0 80px !important; }
           .cl-eras-scroll { padding-left: 20px !important; padding-right: 20px !important; }
-          .cl-era-card-inner { width: 85vw !important; max-width: 360px !important; }
+          .cl-era { width: min(82vw, 360px) !important; margin-right: 56px !important; }
+          .cl-era:last-child { margin-right: 0 !important; }
           .cl-footer { padding: 60px 20px 80px !important; }
         }
       `}</style>
@@ -201,11 +213,11 @@ export default function ChangelogPage() {
       </div>
 
       {/* Horizontal era timeline */}
-      <div className="cl-eras-wrap" style={{ position: "relative", paddingBottom: 96 }}>
+      <ScrollReveal from="up" delay={0.1}>
+        <div className="cl-eras-wrap" style={{ position: "relative", paddingBottom: 96 }}>
 
-        {/* Scroll hint */}
-        <ScrollReveal from="up" delay={0.15}>
-          <div style={{ textAlign: "center", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          {/* Scroll hint */}
+          <div style={{ textAlign: "center", marginBottom: 36, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
             <span style={{ fontSize: 10, letterSpacing: "0.22em", color: "var(--text3)", fontFamily: "Space Mono, monospace", textTransform: "uppercase", fontWeight: 600 }}>
               Five chapters · scroll
             </span>
@@ -213,136 +225,133 @@ export default function ChangelogPage() {
               <path d="M2 5h17M14 1l4 4-4 4" stroke="var(--text3)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-        </ScrollReveal>
 
-        {/* Horizontal scroll container */}
-        <div
-          className="cl-eras-scroll"
-          style={{
-            display: "flex",
-            gap: 28,
-            overflowX: "auto",
-            overflowY: "visible",
-            scrollSnapType: "x mandatory",
-            paddingLeft: "max(56px, calc((100vw - 1280px) / 2))",
-            paddingRight: "max(56px, calc((100vw - 1280px) / 2))",
-            paddingTop: 8,
-            paddingBottom: 24,
-            scrollPaddingLeft: 56,
-          }}
-        >
-          {ERAS.map((era, i) => (
-            <ScrollReveal key={era.num} from="right" delay={i * 0.06} style={{ flexShrink: 0, scrollSnapAlign: "start" }}>
-              <div
-                className="cl-era-card"
-                style={{
-                  position: "relative",
-                  paddingTop: 56,
-                  flexShrink: 0,
-                }}
-              >
-                {/* Connector segment (left half) — gives the impression of a continuous timeline between cards */}
-                {i > 0 && (
-                  <div style={{
-                    position: "absolute",
-                    left: -28, top: 84,
-                    width: 28, height: 2,
-                    background: "linear-gradient(to right, rgba(var(--accent-rgb),0.1), rgba(var(--accent-rgb),0.45))",
-                  }} />
-                )}
-                {/* Connector segment (right half) — extends to the next card */}
-                {i < ERAS.length - 1 && (
-                  <div style={{
-                    position: "absolute",
-                    right: -28, top: 84,
-                    width: 28, height: 2,
-                    background: "linear-gradient(to right, rgba(var(--accent-rgb),0.45), rgba(var(--accent-rgb),0.1))",
-                  }} />
-                )}
-
-                {/* Dot on the line */}
-                <div style={{
-                  position: "absolute",
-                  top: 76, left: "50%",
-                  transform: "translateX(-50%)",
-                  width: 18, height: 18, borderRadius: "50%",
-                  background: "var(--accent)",
-                  border: "4px solid var(--bg)",
-                  boxShadow: "0 0 0 4px rgba(var(--accent-rgb),0.18), 0 0 18px rgba(var(--accent-rgb),0.4)",
-                  zIndex: 2,
-                }} />
-
-                {/* Era card */}
+          {/* Horizontal scroll container */}
+          <div
+            className="cl-eras-scroll"
+            style={{
+              display: "flex",
+              overflowX: "auto",
+              overflowY: "hidden",
+              scrollSnapType: "x mandatory",
+              paddingLeft: "max(56px, calc((100vw - 1320px) / 2))",
+              paddingRight: "max(56px, calc((100vw - 1320px) / 2))",
+              paddingTop: 4,
+              paddingBottom: 32,
+              scrollPaddingLeft: 56,
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {ERAS.map((era, i) => {
+              const isFirst = i === 0;
+              const isLast = i === ERAS.length - 1;
+              return (
                 <div
-                  className="cl-era-card-inner"
+                  key={era.num}
+                  className="cl-era"
                   style={{
-                    width: 420,
-                    background: "var(--card-bg)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 18,
-                    padding: "28px 30px 26px",
-                    boxShadow: "0 8px 30px rgba(0,0,0,0.10), 0 0 0 0.5px var(--border)",
-                    marginTop: 38,
+                    flexShrink: 0,
+                    scrollSnapAlign: "center",
+                    width: 400,
+                    marginRight: isLast ? 0 : 56,
                   }}
                 >
-                  {/* Chapter meta row */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: "0.22em" }}>
-                      CHAPTER {era.num}
-                    </span>
-                    <span style={{
-                      fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700,
-                      color: "var(--accent)",
-                      background: "rgba(var(--accent-rgb),0.08)",
-                      border: "1px solid rgba(var(--accent-rgb),0.25)",
-                      borderRadius: 6, padding: "3px 9px",
-                      letterSpacing: 0.4,
-                    }}>
-                      {era.versions}
-                    </span>
+                  {/* Timeline strip — line + dot above card */}
+                  <div style={{ position: "relative", height: 36, marginBottom: 22 }}>
+                    {/* Continuous line: extends into the right margin to meet the next card's line */}
+                    <div style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: isFirst ? "50%" : 0,
+                      right: isLast ? "50%" : -56,
+                      height: 1.5,
+                      background: "rgba(var(--accent-rgb), 0.42)",
+                      transform: "translateY(-50%)",
+                    }} />
+                    {/* Dot */}
+                    <div className="cl-era-dot" style={{
+                      position: "absolute",
+                      top: "50%", left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      width: 16, height: 16,
+                      borderRadius: "50%",
+                      background: "var(--accent)",
+                      border: "4px solid var(--bg)",
+                      boxShadow: "0 0 0 3px rgba(var(--accent-rgb),0.18), 0 0 14px rgba(var(--accent-rgb),0.35)",
+                    }} />
                   </div>
 
-                  {/* Headline */}
-                  <h3 style={{
-                    fontFamily: "Space Mono, monospace",
-                    fontSize: 24, fontWeight: 700,
-                    color: "var(--text)",
-                    letterSpacing: -0.9, lineHeight: 1.12,
-                    marginBottom: 8,
-                  }}>
-                    {era.name}
-                  </h3>
+                  {/* Card */}
+                  <div
+                    className="cl-era-card"
+                    style={{
+                      width: "100%",
+                      background: "var(--card-bg)",
+                      border: "0.5px solid var(--border)",
+                      borderRadius: 18,
+                      padding: "28px 30px 26px",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 10px 28px rgba(0,0,0,0.07), 0 0 0 0.5px var(--border)",
+                    }}
+                  >
+                    {/* Chapter meta row */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: "0.22em" }}>
+                        CHAPTER {era.num}
+                      </span>
+                      <span style={{
+                        fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700,
+                        color: "var(--accent)",
+                        background: "rgba(var(--accent-rgb),0.08)",
+                        border: "1px solid rgba(var(--accent-rgb),0.25)",
+                        borderRadius: 6, padding: "3px 9px",
+                        letterSpacing: 0.4,
+                      }}>
+                        {era.versions}
+                      </span>
+                    </div>
 
-                  {/* Date range */}
-                  <p style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace", marginBottom: 16, letterSpacing: 0.3 }}>
-                    {era.dateRange}
-                  </p>
+                    {/* Headline */}
+                    <h3 style={{
+                      fontFamily: "Space Mono, monospace",
+                      fontSize: 24, fontWeight: 700,
+                      color: "var(--text)",
+                      letterSpacing: -0.9, lineHeight: 1.12,
+                      marginBottom: 8,
+                    }}>
+                      {era.name}
+                    </h3>
 
-                  {/* Intro */}
-                  <p style={{ fontSize: 13.5, color: "var(--text2)", lineHeight: 1.65, marginBottom: 18, fontStyle: "italic" }}>
-                    {era.intro}
-                  </p>
+                    {/* Date range */}
+                    <p style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace", marginBottom: 16, letterSpacing: 0.3 }}>
+                      {era.dateRange}
+                    </p>
 
-                  {/* Highlights */}
-                  <ul style={{ listStyle: "none", padding: 0, margin: "0 0 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-                    {era.highlights.map((h, hi) => (
-                      <li key={hi} style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.55, paddingLeft: 16, position: "relative" }}>
-                        <span style={{ position: "absolute", left: 0, top: 7, width: 5, height: 5, borderRadius: "50%", background: "var(--accent)" }} />
-                        {h}
-                      </li>
-                    ))}
-                  </ul>
+                    {/* Intro */}
+                    <p style={{ fontSize: 13.5, color: "var(--text2)", lineHeight: 1.65, marginBottom: 18, fontStyle: "italic" }}>
+                      {era.intro}
+                    </p>
 
-                  {/* Tags */}
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {era.tags.map(tag => <span key={tag} className="tag">{tag}</span>)}
+                    {/* Highlights */}
+                    <ul style={{ listStyle: "none", padding: 0, margin: "0 0 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+                      {era.highlights.map((h, hi) => (
+                        <li key={hi} style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.55, paddingLeft: 16, position: "relative" }}>
+                          <span style={{ position: "absolute", left: 0, top: 7, width: 5, height: 5, borderRadius: "50%", background: "var(--accent)" }} />
+                          {h}
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* Tags */}
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {era.tags.map(tag => <span key={tag} className="tag">{tag}</span>)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </ScrollReveal>
-          ))}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </ScrollReveal>
 
       {/* Subscribe section */}
       <div className="cl-footer" style={{ borderTop: "1px solid var(--bg3)", padding: "60px 56px 96px" }}>

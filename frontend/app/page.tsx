@@ -1868,7 +1868,7 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
   const [typedInsight, setTypedInsight] = useState("");
   const [cardsKey, setCardsKey] = useState(0);
   const [showMC, setShowMC] = useState(false);
-  const [portfolioValue, setPortfolioValue] = useState(10000);
+  const [portfolioValue, setPortfolioValue] = useState(50000);
 
   // Typewriter
   useEffect(() => {
@@ -1934,7 +1934,7 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
     setRows(DEFAULT_DEMO_ROWS.map(r => ({ ...r })));
     setResult(null); setSectors({});
     setInsight(""); setTypedInsight(""); setShowMC(false);
-    setPortfolioValue(10000);
+    setPortfolioValue(50000);
   };
 
   const fmtPct = (v: number, digits = 1) => {
