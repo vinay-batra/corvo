@@ -911,26 +911,44 @@ export default function AiChat({
         </AnimatePresence>
 
         {/* ── Header ── */}
-        <div style={{ height: 48, flexShrink: 0, borderTop: "2px solid var(--accent)", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "14px 16px", gap: 8, background: "var(--bg)" }}>
+        <div style={{ height: 56, flexShrink: 0, borderTop: "2px solid var(--accent)", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "14px 16px", gap: 10, background: "var(--bg)" }}>
           <button className="cv-icon-btn" onClick={() => setSidebarOpen(v => !v)} title="Chat history"
-            style={{ width: 28, height: 28, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0, transition: "all .15s" }}>
-            <Menu size={13} />
+            style={{ width: 30, height: 30, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0, transition: "all .18s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.color = "var(--accent)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
+            <Menu size={14} />
           </button>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", letterSpacing: 0.5 }}>Corvo AI</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 8,
+              background: "rgba(201,168,76,0.10)",
+              border: "0.5px solid rgba(201,168,76,0.28)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              <img src="/corvo-logo.svg" width={16} height={13} alt="" style={{ opacity: 0.95 }} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1, minWidth: 0 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text)", letterSpacing: -0.2 }}>Corvo</span>
+              <span style={{ fontSize: 9, color: "var(--text3)", letterSpacing: "0.18em", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 600, marginTop: 2 }}>AI Advisor</span>
+            </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {messages.length > 0 && (
               <button className="cv-icon-btn" onClick={exportChat} title="Export chat"
-                style={{ width: 28, height: 28, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0, transition: "all .15s" }}>
-                <Download size={12} />
+                style={{ width: 30, height: 30, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0, transition: "all .18s" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.color = "var(--accent)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
+                <Download size={13} />
               </button>
             )}
             <button className="cv-icon-btn" onClick={onClose} title="Close (Esc)"
-              style={{ width: 28, height: 28, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0, transition: "all .15s" }}>
-              <X size={13} />
+              style={{ width: 30, height: 30, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0, transition: "all .18s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.color = "var(--accent)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
+              <X size={14} />
             </button>
           </div>
         </div>
@@ -973,22 +991,34 @@ export default function AiChat({
         <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "none", minHeight: 0 }}>
           {messages.length === 0 ? (
             /* Empty state */
-            <div style={{ padding: "28px 14px 20px" }}>
-              <div style={{ textAlign: "center", marginBottom: 20 }}>
-                <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--bg3)", border: "1px solid rgba(201,168,76,.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", boxShadow: "0 4px 16px rgba(201,168,76,.08)" }}>
-                  <img src="/corvo-logo.svg" width={30} height={30} alt="Corvo" />
+            <div style={{ padding: "32px 14px 20px" }}>
+              <div style={{ textAlign: "center", marginBottom: 22 }}>
+                <div style={{
+                  width: 58, height: 58, borderRadius: 16,
+                  background: "rgba(201,168,76,0.10)",
+                  border: "0.5px solid rgba(201,168,76,0.30)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 14px",
+                  boxShadow: "0 0 24px rgba(201,168,76,0.15) inset, 0 6px 20px rgba(201,168,76,0.10)",
+                }}>
+                  <img src="/corvo-logo.svg" width={32} height={26} alt="Corvo" style={{ opacity: 0.95 }} />
                 </div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>
+                <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 8 }}>
+                  Always watching
+                </div>
+                <p style={{ fontFamily: "Space Mono, monospace", fontSize: 17, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, lineHeight: 1.2, marginBottom: 8 }}>
                   {!portfolioCtxOn
-                    ? "Context is off. Enable it above for personalized recommendations."
+                    ? "Turn on Context for tailored advice"
                     : data
-                    ? "What's on the agenda today?"
-                    : "What's on your mind? I can help with portfolio analysis, market questions, or investing strategy."}
+                    ? "What can I look at for you?"
+                    : "What's on your mind?"}
                 </p>
-                <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
-                  {goals?.age
+                <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.6 }}>
+                  {!portfolioCtxOn
+                    ? "Toggle Context above so I can use your actual holdings."
+                    : goals?.age
                     ? `${goals.age}yo · ${goals.riskTolerance?.replace("_time", "") ?? ""} risk`
-                    : "Analyze risks, get rebalancing advice, and more."}
+                    : "Risk analysis, rebalancing, what-ifs — ask anything."}
                 </p>
               </div>
 
@@ -1126,7 +1156,7 @@ export default function AiChat({
               )}
             </motion.div>
           ) : (
-            <div style={{ display: "flex", gap: 7, alignItems: "flex-end" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
               <textarea
                 id="ai-chat-input"
                 name="message"
@@ -1136,37 +1166,50 @@ export default function AiChat({
                 onChange={e => {
                   setInput(e.target.value);
                   e.target.style.height = "auto";
-                  e.target.style.height = Math.min(e.target.scrollHeight, 110) + "px";
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
                 }}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
-                placeholder="Ask about your portfolio…"
+                placeholder="Ask Corvo anything about your portfolio…"
                 rows={1}
                 style={{
-                  flex: 1, minHeight: 40, maxHeight: 110, padding: "10px 12px",
+                  flex: 1, minHeight: 42, maxHeight: 120, padding: "11px 14px",
                   background: "var(--card-bg)",
-                  border: `1px solid ${inputFocused ? "var(--accent)" : "var(--border)"}`,
-                  borderRadius: 10, color: "var(--text)", fontSize: 12,
+                  border: `0.5px solid ${inputFocused ? "var(--accent)" : "var(--border)"}`,
+                  borderRadius: 12, color: "var(--text)", fontSize: 13,
                   resize: "none", lineHeight: 1.5,
-                  transition: "border-color .15s, box-shadow .15s",
-                  boxShadow: inputFocused ? "0 0 0 2px rgba(184,134,11,.15)" : "none",
+                  transition: "border-color .18s, box-shadow .18s",
+                  boxShadow: inputFocused ? "0 0 0 3px rgba(201,168,76,0.12)" : "0 1px 2px rgba(0,0,0,0.04)",
                   fontFamily: "var(--font-body)",
                 }}
               />
               <button
                 onClick={() => send()}
                 disabled={!hasText || loading}
+                title="Send (Enter)"
                 style={{
-                  height: 40, padding: "0 14px",
-                  background: hasText && !loading ? "var(--accent)" : "transparent",
-                  border: `1px solid ${hasText && !loading ? "var(--accent)" : "var(--border)"}`,
-                  borderRadius: 10, color: hasText && !loading ? "#ffffff" : "var(--text3)",
-                  fontSize: 11, fontWeight: 700, letterSpacing: 1,
+                  width: 42, height: 42, padding: 0,
+                  background: hasText && !loading ? "var(--accent)" : "var(--bg3)",
+                  border: `0.5px solid ${hasText && !loading ? "var(--accent)" : "var(--border)"}`,
+                  borderRadius: 12,
+                  color: hasText && !loading ? "var(--bg)" : "var(--text3)",
                   cursor: hasText && !loading ? "pointer" : "default",
-                  transition: "all .15s", fontFamily: "var(--font-mono)", flexShrink: 0,
-                }}>
-                {loading ? "…" : "SEND"}
+                  transition: "all .18s", flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: hasText && !loading ? "0 4px 12px rgba(201,168,76,0.28)" : "none",
+                }}
+                onMouseEnter={e => { if (hasText && !loading) { e.currentTarget.style.filter = "brightness(1.08)"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+                onMouseLeave={e => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
+              >
+                {loading ? (
+                  <div style={{ width: 14, height: 14, border: "1.5px solid rgba(255,255,255,0.3)", borderTopColor: "var(--bg)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                )}
               </button>
             </div>
           )}
