@@ -796,7 +796,7 @@ export default function DemoPage() {
       `}</style>
 
       {/* ── Top bar ── */}
-      <div className="demo-progress-bar" style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 50, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, background: `linear-gradient(${C.bg2}, transparent)` }}>
+      <div className="demo-progress-bar" style={{ position: "fixed", top: 68, left: 0, right: 0, zIndex: 50, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, background: `linear-gradient(${C.bg2}, transparent)` }}>
 
         {/* Progress bar */}
         <div style={{ flex: 1, display: "flex", gap: 6, alignItems: "center" }}>
