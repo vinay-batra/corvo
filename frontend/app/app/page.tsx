@@ -170,7 +170,7 @@ function useS() {
     section:    { padding: "10px 14px", borderBottom: "0.5px solid var(--border)" },
     label:      { fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 8 },
     main:       { flex: 1, display: "flex", flexDirection: "column" as const, background: "var(--bg)", minWidth: 0, overflow: "hidden" },
-    topbar:     { height: 52, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", background: "var(--bg2)", gap: 8 },
+    topbar:     { height: 56, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", background: "var(--bg2)", gap: 8, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 1px 0 rgba(255,255,255,0.02), 0 4px 12px rgba(0,0,0,0.03)", position: "relative", zIndex: 5 },
     content:    { flex: 1, overflowY: "auto" as const, overflowX: "hidden" as const, padding: "20px 24px", overscrollBehavior: "none" as const, overscrollBehaviorY: "none" as const },
     card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)" } as React.CSSProperties,
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
@@ -2240,12 +2240,13 @@ const { dark, toggle: toggleDark }  = useTheme();
               const isActive = activeTab === tab.id;
               const tabStyle: React.CSSProperties = {
                 position: "relative",
-                padding: "10px 14px", fontSize: 13, borderRadius: 0, flexShrink: 0,
+                padding: "12px 16px", fontSize: 13, borderRadius: 0, flexShrink: 0,
                 border: "none", background: "transparent",
                 color: isActive ? "var(--text)" : "var(--text3)",
-                cursor: "pointer", fontWeight: isActive ? 600 : 400,
+                cursor: "pointer", fontWeight: isActive ? 700 : 500,
                 display: "flex", alignItems: "center", gap: 5, textDecoration: "none",
-                transition: "color 0.15s", letterSpacing: 0.2,
+                transition: "color 0.18s",
+                letterSpacing: isActive ? -0.1 : 0.1,
               };
               const content = (
                 <>
@@ -2253,7 +2254,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <motion.span
                       layoutId="tab-indicator"
                       initial={false}
-                      style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: 2, borderRadius: 1, background: "var(--accent)", zIndex: 0 }}
+                      style={{ position: "absolute", bottom: -1, left: "14%", right: "14%", height: 2.5, borderRadius: "1.5px 1.5px 0 0", background: "var(--accent)", zIndex: 0, boxShadow: "0 0 12px rgba(201,168,76,0.4)" }}
                       transition={{ type: "spring", damping: 30, stiffness: 300 }}
                     />
                   )}
@@ -2262,8 +2263,12 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </span>
                 </>
               );
-              if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{content}</Link>;
-              return <button key={tab.id} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
+              const hoverHandlers = !isActive ? {
+                onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.color = "var(--text2)"; },
+                onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.color = "var(--text3)"; },
+              } : {};
+              if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle} {...hoverHandlers} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{content}</Link>;
+              return <button key={tab.id} {...hoverHandlers} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
             })}
           </div>
 
