@@ -67,7 +67,7 @@ export default function AboutPage() {
       <PublicNav />
 
       {/* Hero */}
-      <div className="ab-hero" style={{ padding: "140px 56px 0", textAlign: "center" }}>
+      <div className="ab-hero" style={{ padding: "140px 56px 40px", textAlign: "center" }}>
         {/* Badge */}
         <ScrollReveal from="up" delay={0} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", borderRadius: 24, marginBottom: 24, background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
@@ -80,7 +80,7 @@ export default function AboutPage() {
       </div>
 
       {/* Story */}
-      <div className="ab-body" style={{ maxWidth: 640, margin: "0 auto", padding: "0 56px 80px", textAlign: "left" }}>
+      <div className="ab-body" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 56px 120px", textAlign: "left" }}>
         <ScrollReveal from="left" delay={0}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
             Every tool was expensive, outdated, or ugly. So I built a better one.
@@ -104,7 +104,7 @@ export default function AboutPage() {
       </div>
 
       {/* Founder card */}
-      <div className="ab-founder" style={{ maxWidth: 640, margin: "0 auto", padding: "0 56px 96px" }}>
+      <div className="ab-founder" style={{ maxWidth: 640, margin: "0 auto", padding: "0 56px 140px" }}>
         <ScrollReveal from="up" delay={0}>
           <div style={{ borderRadius: 14, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderLeft: "3px solid var(--accent)", padding: "28px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 0 }}>Founder</p>

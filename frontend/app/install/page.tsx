@@ -450,7 +450,7 @@ function DemoStrip() {
   }, [started, currentStep]);
 
   return (
-    <div ref={containerRef} style={{ maxWidth: 1100, margin: "0 auto", padding: "0 56px 88px" }} className="demo-section">
+    <div ref={containerRef} style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 56px 140px" }} className="demo-section">
       <ScrollReveal from="up" delay={0} style={{ textAlign: "center", marginBottom: 36 }}>
         <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(16px, 2.2vw, 22px)", fontWeight: 700, color: "var(--text)", margin: 0, letterSpacing: -0.5 }}>
           See how it works
@@ -668,16 +668,16 @@ export default function InstallPage() {
         }
 
         /* ── Layout ── */
-        .install-hero { padding: 140px 56px 48px; }
-        .install-cards { max-width: 1100px; margin: 0 auto; padding: 0 56px 72px; display: flex; align-items: stretch; gap: 20px; }
+        .install-hero { padding: 140px 56px 80px; }
+        .install-cards { max-width: 1100px; margin: 0 auto; padding: 40px 56px 120px; display: flex; align-items: stretch; gap: 28px; }
         .install-card { border-color: var(--border); transition: border-color 0.25s ease; }
         .install-card:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent) !important; }
         .demo-scroll { scrollbar-width: none; }
         .demo-scroll::-webkit-scrollbar { display: none; }
         @media (max-width: 768px) {
-          .install-hero { padding: 100px 24px 40px !important; }
-          .install-cards { padding: 0 20px 56px !important; grid-template-columns: 1fr !important; }
-          .demo-section { padding: 0 20px 64px !important; }
+          .install-hero { padding: 100px 24px 60px !important; }
+          .install-cards { padding: 32px 20px 88px !important; grid-template-columns: 1fr !important; gap: 20px !important; }
+          .demo-section { padding: 40px 20px 100px !important; }
         }
       `}</style>
 

@@ -445,7 +445,7 @@ function PricingCard({
 function FoundingMemberSection() {
   const { ref, visible } = useReveal(0.1);
   return (
-    <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
+    <section className="pricing-section" style={{ position: "relative", zIndex: 1, padding: "80px 24px 120px" }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
         <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)", padding: "44px 40px", textAlign: "center" }}>
           <div>
@@ -564,7 +564,7 @@ function FeatureVoteSection() {
   const sorted = [...FEATURE_DEFS].sort((a, b) => (votes[b.id] ?? 0) - (votes[a.id] ?? 0));
 
   return (
-    <section style={{ position: "relative", zIndex: 1, padding: "0 24px 100px" }}>
+    <section className="pricing-section" style={{ position: "relative", zIndex: 1, padding: "80px 24px 140px" }}>
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
         <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -644,7 +644,7 @@ export default function PricingPage() {
           .pricing-cards { flex-direction: column !important; align-items: stretch !important; gap: 32px !important; }
           .pricing-cards > * { width: 100% !important; max-width: 100% !important; flex: none !important; }
           .nav-links { display: none !important; }
-          .pricing-section { padding-left: 20px !important; padding-right: 20px !important; }
+          .pricing-section { padding: 56px 20px 80px !important; }
           .pricing-section-inner { padding: 0 !important; }
         }
       `}</style>
@@ -710,7 +710,7 @@ export default function PricingPage() {
       </section>
 
       {/* PRICING CARDS */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 24px 80px" }}>
+      <section className="pricing-section" style={{ position: "relative", zIndex: 1, padding: "20px 24px 140px" }}>
         <div
           className="pricing-cards"
           style={{
