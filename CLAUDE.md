@@ -27,11 +27,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Dashboard grouped into 4 named regions: **Overview** (daily brief, signal, WSID) → **Analysis** (metrics, performance, goal) → **Intelligence** (health, AI insights, vs benchmark) → **Composition** (allocation, sector, insider)
 - Headers only render if at least one card in the region is visible (respects customizer)
 
-**App UI overhaul — remaining phases:**
-- Phase 2: Positions tab
-- Phase 3: Stocks tab
-- Phase 4: Simulations + News
-- Phase 5: Shared component polish (modals, tooltips, buttons)
+**App UI overhaul — Phase 2-4 (May 10):**
+- Positions tab: 3 SectionHeaders (Positions / Tax / Activity)
+- Stocks tab: SectionHeader on Compare mode
+- Simulations tab: 2 SectionHeaders (Project / Stress-test)
+- News tab unchanged — single-card sub-tab layout already reads well with upgraded TooltipCardHeader
+
+**App UI overhaul — remaining:**
+- Phase 5: Shared component polish (modals, tooltips, buttons) — modal radii, button hover states, info-modal styling
 
 **Up next (in priority order):**
 1. Homepage rewrite — "your portfolio's guardian" positioning
