@@ -385,7 +385,7 @@ export default function FaqPage() {
     >
       <style>{`
         @media(max-width:600px){
-          .faq-main{padding:72px 16px 64px!important}
+          .faq-main{padding:96px 16px 96px!important}
           .faq-section{padding:0!important}
           .faq-card{padding:12px 14px!important}
         }
@@ -401,7 +401,7 @@ export default function FaqPage() {
         style={{
           maxWidth: 760,
           margin: "0 auto",
-          padding: "80px 24px 80px",
+          padding: "140px 24px 140px",
         }}
       >
         {/* Hero title */}
@@ -446,7 +446,7 @@ export default function FaqPage() {
 
         {/* Accordion sections */}
         {SECTIONS.map((section, si) => (
-          <section key={section.category} style={{ marginBottom: 24 }}>
+          <section key={section.category} style={{ marginBottom: 56 }}>
             {/* Category label */}
             <ScrollReveal from="left" delay={si * 0.1}>
               <p

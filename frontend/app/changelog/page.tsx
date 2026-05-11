@@ -197,7 +197,7 @@ export default function ChangelogPage() {
       <PublicNav />
 
       {/* Hero */}
-      <div className="cl-hero" style={{ paddingTop: 120, paddingBottom: 64, textAlign: "center", padding: "120px 56px 64px" }}>
+      <div className="cl-hero" style={{ textAlign: "center", padding: "140px 56px 80px" }}>
         <ScrollReveal from="up" delay={0}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.4)", borderRadius: 24, marginBottom: 28, background: "rgba(201,168,76,0.08)" }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
@@ -354,7 +354,7 @@ export default function ChangelogPage() {
       </ScrollReveal>
 
       {/* Subscribe section */}
-      <div className="cl-footer" style={{ borderTop: "1px solid var(--bg3)", padding: "60px 56px 96px" }}>
+      <div className="cl-footer" style={{ borderTop: "1px solid var(--bg3)", padding: "100px 56px 140px" }}>
         <ScrollReveal from="up" delay={0}>
           <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Stay in the loop</p>
