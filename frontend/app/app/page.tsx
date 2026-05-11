@@ -2126,7 +2126,8 @@ const { dark, toggle: toggleDark }  = useTheme();
           .c-risk-2col{grid-template-columns:1fr!important}
           .c-content{padding:12px 10px!important;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
-          #tour-desk-chat{display:flex!important;bottom:24px!important;right:24px!important;width:48px!important;height:48px!important}
+          #tour-desk-chat{display:flex!important;bottom:24px!important;right:24px!important;width:56px!important;height:56px!important}
+          #tour-desk-customize{bottom:30px!important;right:138px!important;width:40px!important;height:40px!important}
           .c-alloc-row{flex-direction:column!important}
           .c-alloc-row>*{flex:none!important;width:100%!important}
           .c-mob-bar #usermenu-btn>span{display:none!important}
@@ -3077,7 +3078,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         />
       )}
 
-      {/* Floating AI Chat button */}
+      {/* Floating AI Chat button — biggest, primary action */}
       <motion.button
         initial={false}
         id="tour-desk-chat"
@@ -3085,25 +3086,25 @@ const { dark, toggle: toggleDark }  = useTheme();
         title="AI Chat (A)"
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5, type: "spring", damping: 20 }}
-        whileHover={{ y: -1, scale: 1.04 }}
+        whileHover={{ y: -2, scale: 1.04 }}
         whileTap={{ scale: 0.97 }}
         style={{
           position: "fixed", bottom: 24, right: 24, zIndex: 1000,
-          width: 48, height: 48, borderRadius: "50%",
+          width: 60, height: 60, borderRadius: "50%",
           background: chatOpen ? "var(--bg3)" : "linear-gradient(155deg, #d8b15a 0%, var(--accent) 55%, rgba(184,134,11,0.95) 100%)",
-          border: chatOpen ? "0.5px solid var(--border2)" : "0.5px solid rgba(255,255,255,0.12)",
+          border: chatOpen ? "0.5px solid var(--border2)" : "0.5px solid rgba(255,255,255,0.14)",
           cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: chatOpen ? "0 2px 10px rgba(0,0,0,0.18)" : "0 6px 24px rgba(184,134,11,0.4), inset 0 1px 0 rgba(255,255,255,0.18)",
+          boxShadow: chatOpen ? "0 4px 14px rgba(0,0,0,0.18)" : "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)",
           transition: "background 0.2s, box-shadow 0.2s, border 0.2s",
         }}
-        onMouseEnter={e => { if (!chatOpen) e.currentTarget.style.boxShadow = "0 8px 32px rgba(184,134,11,0.55), 0 0 0 4px rgba(201,168,76,0.18), inset 0 1px 0 rgba(255,255,255,0.22)"; }}
-        onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.boxShadow = "0 6px 24px rgba(184,134,11,0.4), inset 0 1px 0 rgba(255,255,255,0.18)"; }}
+        onMouseEnter={e => { if (!chatOpen) e.currentTarget.style.boxShadow = "0 14px 40px rgba(184,134,11,0.6), 0 0 0 5px rgba(201,168,76,0.18), inset 0 1px 0 rgba(255,255,255,0.26)"; }}
+        onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.boxShadow = "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)"; }}
       >
-        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: chatOpen ? "var(--text2)" : "var(--bg)", letterSpacing: 0.6, textShadow: chatOpen ? "none" : "0 0.5px 0 rgba(255,255,255,0.25)" }}>AI</span>
+        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 14, fontWeight: 700, color: chatOpen ? "var(--text2)" : "var(--bg)", letterSpacing: 0.6, textShadow: chatOpen ? "none" : "0 0.5px 0 rgba(255,255,255,0.28)" }}>AI</span>
       </motion.button>
 
-      {/* Floating Customize button — dashboard only */}
+      {/* Floating Customize button — dashboard overview only, secondary */}
       {activeTab === "overview" && (
         <motion.button
           initial={false}
@@ -3113,22 +3114,22 @@ const { dark, toggle: toggleDark }  = useTheme();
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.6, type: "spring", damping: 20 }}
           whileHover={{ y: -1 }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.96 }}
           style={{
-            position: "fixed", bottom: 24, right: 144, zIndex: 1000,
-            width: 48, height: 48, borderRadius: "50%",
+            position: "fixed", bottom: 32, right: 152, zIndex: 1000,
+            width: 44, height: 44, borderRadius: "50%",
             background: "var(--bg2)",
             border: "0.5px solid var(--border)",
             cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.08)",
             transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s, color 0.2s",
-            color: "var(--text3)",
+            color: "var(--text2)",
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.boxShadow = "0 6px 22px rgba(0,0,0,0.28), 0 0 0 3px rgba(201,168,76,0.1)"; e.currentTarget.style.color = "var(--accent)"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)"; e.currentTarget.style.color = "var(--text3)"; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.55)"; e.currentTarget.style.background = "rgba(201,168,76,0.08)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.22), 0 0 0 4px rgba(201,168,76,0.12)"; e.currentTarget.style.color = "var(--accent)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.08)"; e.currentTarget.style.color = "var(--text2)"; }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
             <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
           </svg>

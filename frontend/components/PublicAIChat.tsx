@@ -79,7 +79,7 @@ function PublicAIChatInner() {
 
   return (
     <>
-      {/* Floating bubble */}
+      {/* Floating AI bubble — same spec as dashboard, biggest primary action */}
       <button
         ref={buttonRef}
         onClick={() => setOpen((o) => !o)}
@@ -90,33 +90,42 @@ function PublicAIChatInner() {
           bottom: 24,
           right: 24,
           zIndex: 1000,
-          width: 52,
-          height: 52,
+          width: 60,
+          height: 60,
           borderRadius: "50%",
-          background: "var(--accent)",
-          border: "none",
+          background: open
+            ? "var(--bg3)"
+            : "linear-gradient(155deg, #d8b15a 0%, var(--accent) 55%, rgba(184,134,11,0.95) 100%)",
+          border: open ? "0.5px solid var(--border2)" : "0.5px solid rgba(255,255,255,0.14)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.35), 0 2px 8px rgba(0,0,0,0.4)",
-          transition: "background 0.2s, transform 0.2s",
-          transform: open ? "scale(0.95)" : "scale(1)",
-          fontFamily: "Space Mono, monospace",
-          fontSize: 18,
-          fontWeight: 700,
-          color: "#0a0e14",
-          letterSpacing: -1,
+          boxShadow: open
+            ? "0 4px 14px rgba(0,0,0,0.18)"
+            : "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)",
+          transition: "background 0.2s, box-shadow 0.2s, transform 0.2s, border 0.2s",
+          transform: open ? "scale(0.96)" : "scale(1)",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.06)")}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = open ? "scale(0.95)" : "scale(1)")}
+        onMouseEnter={(e) => {
+          if (!open) {
+            e.currentTarget.style.transform = "translateY(-2px) scale(1.04)";
+            e.currentTarget.style.boxShadow = "0 14px 40px rgba(184,134,11,0.6), 0 0 0 5px rgba(201,168,76,0.18), inset 0 1px 0 rgba(255,255,255,0.26)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!open) {
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.boxShadow = "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)";
+          }
+        }}
       >
         {open ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0e14" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2.5" strokeLinecap="round">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         ) : (
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, color: "#0a0e14", letterSpacing: 0.5 }}>AI</span>
+          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 14, fontWeight: 700, color: "var(--bg)", letterSpacing: 0.6, textShadow: "0 0.5px 0 rgba(255,255,255,0.28)" }}>AI</span>
         )}
       </button>
 
@@ -126,7 +135,7 @@ function PublicAIChatInner() {
           ref={panelRef}
           style={{
             position: "fixed",
-            bottom: 92,
+            bottom: 100,
             right: 24,
             zIndex: 1001,
             width: 340,
