@@ -58,190 +58,86 @@ function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSS
   );
 }
 
-const ENTRIES = [
+// Five chapters covering everything from launch to today.
+// Each chapter summarizes a span of versions instead of listing every release.
+const ERAS = [
   {
-    date: "May 11, 2026",
-    version: "v0.25",
-    title: "Guardian Positioning, Full UI Overhaul & Security Sweep",
-    desc: "Corvo's identity sharpened across the product: new homepage hero (\"The advisor watching over your portfolio.\"), Risk Flagged stat replacing AI Insights, features section reframed as \"What Corvo watches for you\", and a new pulsing red risk chip in the hero. The dashboard and every authenticated tab were rebuilt with a unified design language: new SectionHeader component (gold eyebrow plus Space Mono headline with scroll reveal), refined card chrome (14px radius, layered shadow, larger padding), and four named regions on the dashboard (Overview, Analysis, Intelligence, Composition). Public marketing pages and the entire settings/account/referrals area got the same treatment. Behind the scenes, the AI chat, Daily Signal, and AI Insights prompts were rewritten to enforce Corvo's three-beat advisor voice with no hedging filler. Backend security sweep closed two IDOR vulnerabilities (tax-loss-alert and price-alert deletion both now JWT-verify the caller), fixed a startup secret leak, and stripped raw Supabase error bodies from delete responses. Onboarding cut from 11 to 8 steps. Dashboard tour cut from 9 stops to 5. Empty and error states fully redesigned with branded icon containers and Railway-cold-start-aware copy.",
-    tags: ["Brand", "UI", "Security", "AI", "Onboarding"],
+    num: "01",
+    name: "Foundations",
+    versions: "v0.1 → v0.6",
+    dateRange: "Mar 1 → Mar 28, 2026",
+    intro: "The first build of Corvo.",
+    highlights: [
+      "Portfolio builder, onboarding, and one-click preset portfolios",
+      "Sharpe ratio, max drawdown, and Monte Carlo simulation",
+      "AI chat overlay that reads your actual holdings, not generic advice",
+      "Health Score and Diversification Score graded across risk and stability",
+      "Dividend tracker, tax loss harvesting, CSV import, PDF export, shareable card",
+    ],
+    tags: ["Launch", "Risk", "AI", "Tax"],
   },
   {
-    date: "May 10, 2026",
-    version: "v0.24",
-    title: "Corvo Insight Card, Dashboard Polish & Feature Refinement",
-    desc: "Proactive Corvo insight card added above the metrics grid — derives a specific observation from your live portfolio data (no API call) and links directly into AI chat. Dashboard customizer expanded to all cards and moved to a floating button. Visual polish across the board: health score breathing ring, holding sparklines on hover, ambient portfolio glow, and direction-aware slide transitions between tabs. Performance chart now has $ value and dividends toggles. Drawdown chart adds a Why? button. Period buttons trigger automatic re-analysis instead of showing a stale banner. AI chat gets roast mode with a dedicated icon and stricter no-disclaimer rules. Browser back/forward now navigates between tabs. Removed: paper trading, options chain, tax loss harvesting alert banner, Price Targets card, Projected Income card, How You Compare card.",
-    tags: ["Dashboard", "AI", "Charts", "Polish", "Removals"],
+    num: "02",
+    name: "Smart & Connected",
+    versions: "v0.7 → v0.12",
+    dateRange: "Apr 2 → Apr 24, 2026",
+    intro: "Corvo learned to talk back, install as a PWA, and stop blinding you in dark rooms.",
+    highlights: [
+      "Benchmark comparison, rebalancing suggestions, and full What-If mode",
+      "PWA install, push notifications, morning AI brief, weekly digest email",
+      "Referral system, command palette (⌘K), demo mode, preset portfolios",
+      "Cash and money market tickers (VMFXX, SPAXX, FDRXX) with real yield tracking",
+      "Light mode by default; Learn overhaul with 15 XP levels and daily challenges",
+    ],
+    tags: ["AI", "PWA", "Learn", "Light Mode"],
   },
   {
-    date: "May 7, 2026",
-    version: "v0.23",
-    title: "Dashboard Animations, Stock Chart Overhaul & SEO",
-    desc: "Dashboard rebuilt with scroll-driven entrance animations, countup metrics, trend indicator arrows, and promoted AI action card. Stock charts now use daily intervals for 1Y (252 data points) and weekly for 5Y with Y-axis hugging actual price range. Landing page upgraded with Three.js particle canvas, GSAP character animations, 3D bento cards, and infinite testimonial carousel. All public pages (FAQ, Changelog, Pricing, Install, Blog, About) now animate on scroll with character-by-character headings. Navigation consolidated: Income & Tax and Transactions merged into Positions tab, Paper Trade moved into Learn. Notification settings redesigned as a two-column email/push grid. ETF price data fixed with fast_info fallback. Tax loss harvesting alert endpoint added. Weekly portfolio checkup upgraded to verdict format. Full SEO overhaul with JSON-LD structured data, OG tags, and per-page metadata. Sentry error monitoring configured.",
-    tags: ["Dashboard", "Charts", "Animations", "SEO", "Fixes"],
+    num: "03",
+    name: "Mobile, Auth & Math",
+    versions: "v0.13 → v0.17",
+    dateRange: "Apr 24 → Apr 26, 2026",
+    intro: "Phones, sessions, and the math underneath all got serious upgrades.",
+    highlights: [
+      "Full mobile overhaul across every page in the app",
+      "Critical auth fix: middleware was silently expiring sessions on every request",
+      "AI chat connected to live web search with word-by-word streaming responses",
+      "Monte Carlo rebuilt: 8,500 paths, 1-30 year horizons, full distribution histogram",
+      "About page, public-page redesign, and CAGR replacing simple return on the dashboard",
+    ],
+    tags: ["Mobile", "Auth", "AI", "Monte Carlo"],
   },
   {
-    date: "May 6, 2026",
-    version: "v0.22",
-    title: "Landing Page Redesign, Animated Public Pages & Notification Settings",
-    desc: "Full landing page overhaul with Three.js particle canvas, GSAP hero animations, 3D bento cards with mouse-tracking tilt, horizontal infinite testimonial carousel, and animated stats countup. All public pages (FAQ, Changelog, Pricing, Install, Blog, About) now have scroll-driven entrance animations with the character-by-character heading animation. Notification settings redesigned as a two-column email/push grid. Install page platform cards unified to equal height.",
-    tags: ["Design", "Animations", "UX"],
+    num: "04",
+    name: "Income, Email & Tools",
+    versions: "v0.18 → v0.22",
+    dateRange: "Apr 23 → May 6, 2026",
+    intro: "Corvo grew into a real financial workbench: tax, dividends, options, and proper email.",
+    highlights: [
+      "Rebalance Assistant, Options Chain viewer, and Transaction Log",
+      "Email system rebuilt on Resend (welcome, weekly digest, morning briefing)",
+      "Capital Gains Estimator, Dividend Calendar, and the new /install page",
+      "Paper Trading, Peer Comparison, life events, and financial goals in onboarding",
+      "Landing page redesign with Three.js particles, 3D bento cards, and animated headings",
+    ],
+    tags: ["Income", "Tax", "Email", "Design"],
   },
   {
-    date: "May 1, 2026",
-    version: "v0.21",
-    title: "Paper Trading, Peer Comparison & Life Events",
-    desc: "Paper trading simulator with live search, price charts, key stats, sparklines, and full trade history. Peer comparison card on the dashboard benchmarks your portfolio against 847+ users. Life events onboarding step and settings integration feeds context into AI chat. Financial goals onboarding step added. Earnings call transcript summaries via SEC EDGAR integration.",
-    tags: ["Paper Trading", "Social", "AI"],
-  },
-  {
-    date: "Apr 28, 2026",
-    version: "v0.21",
-    title: "Capital Gains Estimator, Dividend Calendar & /install Page",
-    desc: "Capital Gains Estimator is now live in the Income and Tax tab with automatic long-term and short-term classification, a configurable LTCG tax bracket selector, and per-ticker realized gain insights. The Dividend Calendar shows a 90-day lookahead of upcoming ex-dates with warnings when a position goes ex-dividend within the next five trading days and a projected income total for the period. The /install page gives every platform a dedicated installation guide with animated device mockups and an interactive demo strip. Seven components that were built but not yet wired up are now reachable from the dashboard: Correlation Heatmap, Drawdown Chart, Portfolio Compare, Portfolio History, Earnings Impact Preview, Share Portfolio, and Share Image Modal. Referral flow was tightened so ref links route through signup, onboarding, and tour in the correct order with bonus credit applied on redeem. Sixteen stability fixes across the frontend and backend including a showShareImage crash, broken whileInView animations across public pages, and eight backend bugs in main.py.",
-    tags: ["Income", "Tax", "Dividends", "Install", "Fixes"],
-  },
-  {
-    date: "Apr 28, 2026",
-    version: "v0.20",
-    title: "UX Fixes, InfoTooltips & Global Scroll Overhaul",
-    desc: "An InfoTooltip system was added across every unexplained financial metric in the app, so hovering any term shows a plain-English explanation without leaving the page. Global scrolling was overhauled to eliminate overscroll bounce and scroll lag on all panels and modal overlays. Morning briefing expand and collapse now shows a one-sentence preview when collapsed instead of hiding all content behind the toggle. Price alerts are now editable inline without needing to delete and recreate the alert from scratch. Portfolio state auto-loads from your last saved session on every login, and the leaderboard was corrected to read from profiles.xp for accurate XP tracking.",
-    tags: ["UX", "Tooltips", "Fixes"],
-  },
-  {
-    date: "Apr 27, 2026",
-    version: "v0.19",
-    title: "Email System Rebuilt on Resend",
-    desc: "The email system was rebuilt on Resend with purpose-built transactional templates for welcome emails, weekly digest, and morning briefing. Welcome emails now go out automatically on account creation with a personalized first-login guide. The weekly digest summarizes performance, key metric changes, and suggested actions based on your portfolio since the last send. Morning briefing emails pull live prices via yfinance at send time so the data is never stale. All templates use the same CSS color variables as the app and render correctly across Gmail, Outlook, and Apple Mail.",
-    tags: ["Email", "Notifications", "Briefing"],
-  },
-  {
-    date: "Apr 23, 2026",
-    version: "v0.18",
-    title: "Rebalance Assistant, Options Chain & Transaction Log",
-    desc: "The Rebalance Assistant generates a prioritized trade list showing exactly how many shares to buy or sell to bring each drifted position back to its target weight. The Options Chain Viewer was added inside Stock Detail with live calls and puts tables, ITM row highlighting, a delta column, and a Max Pain section at the bottom. A Transaction Log now tracks each holding's cost basis and purchase history, giving you a running record of entries and exits. Health Score was upgraded with weighted sub-scores across risk, diversification, and return quality, replacing the simpler composite formula. All three panels respond to the same analyzed portfolio state so no additional analysis run is required to access them.",
-    tags: ["Rebalance", "Options", "Transactions"],
-  },
-  {
-    date: "Apr 22, 2026",
-    version: "v0.17",
-    title: "Monte Carlo Overhaul: 8,500 Paths & 30-Year Horizon",
-    desc: "Monte Carlo simulation was rebuilt from scratch with exactly 8,500 paths for statistically meaningful results. The horizon selector now spans 1 to 30 years, letting you model outcomes across different investment timelines. A histogram view shows the full distribution of terminal wealth so you can see the entire range of outcomes rather than just median and tail values. Simulation settings persist between sessions so your preferred horizon is remembered on every visit. The underlying math uses each holding's historical volatility and cross-asset correlation to generate realistic, correlated paths rather than treating positions independently.",
-    tags: ["Monte Carlo", "Simulations", "Risk"],
-  },
-  {
-    date: "Apr 20, 2026",
-    version: "v0.16",
-    title: "AI Chat: Live Web Search & Streaming Responses",
-    desc: "AI chat now connects to live web search so every answer is grounded in current market data rather than training knowledge alone. Responses stream word by word instead of arriving all at once, making conversations feel more natural. The system prompt was enriched with live portfolio context so the AI references your actual holdings when answering questions about risk, sector exposure, and return quality. Message rate limits and usage tracking were tightened to prevent abuse while keeping the experience smooth for regular users. Chat history now persists across sessions so you can revisit earlier conversations without losing context.",
-    tags: ["AI Chat", "Web Search", "Streaming"],
-  },
-  {
-    date: "Apr 26, 2026",
-    version: "v0.15",
-    title: "Auth Fix, Portfolio Pill & Morning Brief Accuracy",
-    desc: "Critical auth fix: missing Next.js middleware was causing expired JWTs on every server-side request, silently failing sessions after sign-in. Supabase client is now a true singleton throughout the app. Dashboard ticker scroll adds a live Portfolio pill next to the S&P 500, Nasdaq, and Dow pills, showing your weighted daily dollar and percent change in real time. Morning brief now pulls live prices via the same yfinance logic as the ticker chips, never inferring or approximating. Onboarding no longer flashes on step transitions, and the header now shows the Corvo logo and user menu.",
-    tags: ["Auth", "Dashboard", "AI Brief", "Fixes"],
-  },
-  {
-    date: "Apr 25, 2026",
-    version: "v0.14",
-    title: "Full Mobile Overhaul",
-    desc: "Complete mobile experience rebuilt from the ground up across every page in the app. Dashboard now mirrors desktop with a scrollable tab bar and no bottom nav, and performance charts fill exactly to the selected period with axis detail scaled per timeframe. Mobile audit completed across all pages: AI chat sidebar, onboarding modal, FAQ, pricing, settings, and referrals all fixed. Blog posts added for Markets and Product categories, and light mode is now the default for new and logged-out users. PWA install button added to nav and AI insights no longer misidentify largest holdings when weights are equal.",
-    tags: ["Mobile", "UI", "Dashboard", "Charts"],
-  },
-  {
-    date: "Apr 24, 2026",
-    version: "v0.13",
-    title: "About Page, Nav Polish & Public Page Redesign",
-    desc: "New About page at corvo.capital/about tells the story behind Corvo. Nav updated with About link across all pages. Public pages now show pill-style eyebrow badges above headings. Light mode is now the default for all new and logged-out visitors. Nav order standardized to Features, Demo, Pricing, Blog, Changelog, FAQ, About.",
-    tags: ["About", "UI", "Light Mode"],
-  },
-  {
-    date: "Apr 24, 2026",
-    version: "v0.12",
-    title: "Light Mode, AI Chat Overhaul, CAGR Metrics & Dashboard Polish",
-    desc: "Full light mode support across all pages with CSS variables for instant theme switching and no flash on load. Dashboard now shows CAGR instead of simple return, Sharpe ratio uses the live T-bill rate (^IRX), and a stale results banner appears when holdings change after analysis. Money market funds (FDRXX, SPAXX, VMFXX) now tracked with accurate yield-based price series. AI chat redesigned with conversation history sidebar, refreshable suggestions, and a richer system prompt with live portfolio context. PDF export redesigned with metric cards, benchmark comparison, and an investor profile section.",
-    tags: ["Light Mode", "AI Chat", "Dashboard", "Fixes"],
-  },
-  {
-    date: "Apr 21, 2026",
-    version: "v0.11",
-    title: "Learn Overhaul, SEO, Light Mode Fixes & XP System Improvements",
-    desc: "Learn page overhauled with XP and streak loading correctly on refresh, expanded to 15 levels from Novice through Legend with a visual reference card. Leaderboard pulls from profiles.xp for accuracy, and AI Practice unlocks after the first quiz attempt. Daily challenge fail state added with a retry button, and arcade grid and lesson step badges improved. Feedback button added to every page via React portal alongside SEO upgrades including a sitemap and upgraded JSON-LD schema. Light mode visual overhaul applied throughout: all component colors now use CSS variables and the news tab now requires an analyzed portfolio for consistency.",
-    tags: ["Learn", "XP", "SEO", "UX"],
-  },
-  {
-    date: "Apr 16, 2026",
-    version: "v0.10",
-    title: "Cash Tickers, Guided Tour, Custom Date Range & 6 More Features",
-    desc: "Add cash and money market positions (VMFXX, SPAXX, FDRXX) to your portfolio with accurate yield tracking. A post-onboarding guided tour walks every new user through key features, with the option to replay onboarding from settings at any time. Custom date range picker added for all charts, with drawdown annotations marking the worst periods visually. Saved portfolio overlay lets you compare current positions against a saved snapshot, and a presets modal adds one-click demo portfolios. Company names now appear alongside tickers and the weight header stays sticky while scrolling the positions table.",
-    tags: ["Cash", "UX", "Charts"],
-  },
-  {
-    date: "Apr 12, 2026",
-    version: "v0.9",
-    title: "Referral System, Command Palette, Demo Mode & Preset Portfolios",
-    desc: "Invite friends and earn extra AI chat messages with every successful referral. A keyboard-driven command palette (Cmd+K) lets power users navigate anywhere instantly. Demo mode lets anyone try Corvo with a realistic sample portfolio without signing up. One-click preset portfolios (All-Weather, Tech Heavy, Dividend Growth) scaffold a starting point for new users.",
-    tags: ["Referrals", "UX", "Onboarding"],
-  },
-  {
-    date: "Apr 7, 2026",
-    version: "v0.8",
-    title: "Push Notifications, PWA, Morning AI Brief & Weekly Digest Email",
-    desc: "Corvo is now installable as a Progressive Web App on iOS and Android. Opt-in push notifications alert you when any holding moves more than 5%. Every morning Corvo generates a personalized AI market brief based on your specific holdings. A weekly digest email summarizes performance, key changes, and suggested actions.",
-    tags: ["PWA", "Notifications", "Email"],
-  },
-  {
-    date: "Apr 2, 2026",
-    version: "v0.7",
-    title: "Benchmark Comparison, Rebalancing Suggestions & What-If Mode",
-    desc: "Compare your portfolio against SPY, QQQ, or a custom benchmark with a side-by-side performance chart and alpha calculation. The rebalancing tool highlights positions that have drifted from target weights and generates a suggested trade list. What-if mode lets you model the impact of adding, removing, or resizing any position before committing. All three views use the same analyzed portfolio state, so switching between them requires no additional analysis runs.",
-    tags: ["Benchmarks", "Rebalancing"],
-  },
-  {
-    date: "Mar 28, 2026",
-    version: "v0.6",
-    title: "CSV Import, PDF Export & Shareable Portfolio Card",
-    desc: "Import holdings directly from Fidelity, Schwab, and Robinhood CSV exports. Generate a single-page PDF report of your full portfolio analysis for offline review or sharing with an advisor. A shareable portfolio card creates a clean public image of your allocation breakdown, safe to post without exposing exact values. The PDF includes your Sharpe ratio, CAGR, Max Drawdown, Health Score, and a sector breakdown chart formatted for print.",
-    tags: ["Import", "Export", "Sharing"],
-  },
-  {
-    date: "Mar 25, 2026",
-    version: "v0.5",
-    title: "Dividend Tracker & Tax Loss Harvesting",
-    desc: "Track projected annual dividend income by position and visualize the full dividend history for each holding. The tax loss harvesting module scans your portfolio for unrealized losses that can offset gains, flags IRS wash sale risk, and suggests correlated replacement securities to maintain your target exposure. Dividend yield and annual income are shown per position and in aggregate so you can see at a glance how much passive income your portfolio generates. Ex-dividend dates are pulled automatically so you always know when the next payout is expected.",
-    tags: ["Dividends", "Tax"],
-  },
-  {
-    date: "Mar 8, 2026",
-    version: "v0.4",
-    title: "AI Chat Overlay",
-    desc: "A persistent AI chat overlay available on every screen inside the app. Ask anything: \"Is my tech allocation too high?\", \"What is dragging down my Sharpe ratio?\", or \"Explain sequence of returns risk.\" The AI reads your actual holdings and weights, so every answer is specific to your portfolio, not generic commentary. Conversation context is preserved within a session so follow-up questions remember what was discussed earlier.",
-    tags: ["AI", "Chat"],
-  },
-  {
-    date: "Mar 5, 2026",
-    version: "v0.3",
-    title: "AI Portfolio Insights, Health Score & Diversification Score",
-    desc: "Corvo now generates a written AI analysis of your portfolio every time you save changes. The analysis covers concentration risk, sector bias, and specific recommendations. A single Health Score (0-100) summarizes overall portfolio quality. A Diversification Score grades how effectively your holdings offset each other.",
-    tags: ["AI", "Scoring"],
-  },
-  {
-    date: "Mar 3, 2026",
-    version: "v0.2",
-    title: "Sharpe Ratio, Monte Carlo Simulation & Max Drawdown",
-    desc: "Core risk analytics are live. Sharpe ratio measures return per unit of risk. Max drawdown shows the worst peak-to-trough decline over the selected period. Monte Carlo runs 8,500 forward simulations using each holding's historical volatility and correlation to show the realistic range of 1, 5, and 10 year outcomes.",
-    tags: ["Risk", "Analytics"],
-  },
-  {
-    date: "Mar 1, 2026",
-    version: "v0.1",
-    title: "Launch: Portfolio Builder & Onboarding",
-    desc: "Corvo is live. Build a portfolio by entering tickers and weights, or start from a one-click preset. A step-by-step onboarding flow collects your risk tolerance, time horizon, and goals to personalize the analysis. Accounts are free, no brokerage connection required.",
-    tags: ["Launch", "Onboarding"],
+    num: "05",
+    name: "The Guardian Era",
+    versions: "v0.23 → v0.25",
+    dateRange: "May 7 → May 11, 2026",
+    intro: "Corvo found its voice: the AI advisor watching over your portfolio.",
+    highlights: [
+      "Homepage rewrite around the \"your portfolio's guardian\" positioning",
+      "Full app UI overhaul: features-page design language applied to every tab",
+      "AI chat, Daily Signal, and AI Insights prompts rewritten for sharper three-beat voice",
+      "Security sweep: closed two IDOR vulnerabilities and fixed startup secret leak",
+      "Onboarding cut 11 → 8 steps, dashboard tour cut 9 → 5 stops, branded empty states",
+    ],
+    tags: ["Brand", "UI", "Security", "AI"],
   },
 ];
+
 
 export default function ChangelogPage() {
   const [email, setEmail] = useState("");
@@ -269,12 +165,18 @@ export default function ChangelogPage() {
         .nl { color: var(--text2); text-decoration: none; font-size: 12px; padding: 7px 14px; letter-spacing: 0.3px; transition: color 0.2s; }
         .nl:hover { color: var(--text); }
         .tag { padding: 3px 10px; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.4); border-radius: 20px; font-size: 10px; color: var(--accent); letter-spacing: 0.5px; }
+        .cl-eras-scroll { scrollbar-width: thin; scrollbar-color: rgba(201,168,76,0.4) transparent; }
+        .cl-eras-scroll::-webkit-scrollbar { height: 8px; }
+        .cl-eras-scroll::-webkit-scrollbar-track { background: transparent; }
+        .cl-eras-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.35); border-radius: 4px; }
+        .cl-eras-scroll::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.6); }
+        .cl-era-card { transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s; }
+        .cl-era-card:hover { transform: translateY(-4px); }
         @media(max-width:768px) {
-          .cl-center-line { display: none !important; }
-          .cl-alt-entry { display: block !important; }
-          .cl-alt-left, .cl-alt-right { text-align: left !important; }
           .cl-hero { padding: 100px 20px 48px !important; }
-          .cl-body { padding: 0 20px 80px !important; }
+          .cl-eras-wrap { padding: 0 0 80px !important; }
+          .cl-eras-scroll { padding-left: 20px !important; padding-right: 20px !important; }
+          .cl-era-card-inner { width: 85vw !important; max-width: 360px !important; }
           .cl-footer { padding: 60px 20px 80px !important; }
         }
       `}</style>
@@ -298,51 +200,147 @@ export default function ChangelogPage() {
         </ScrollReveal>
       </div>
 
-      {/* Timeline */}
-      <div className="cl-body" style={{ maxWidth: 860, margin: "0 auto", padding: "0 56px 0" }}>
-        <div style={{ position: "relative" }}>
-          {/* Center vertical line */}
-          <div className="cl-center-line" style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 2, background: "linear-gradient(to bottom, rgba(var(--accent-rgb),0.6), rgba(var(--accent-rgb),0.1))", transform: "translateX(-50%)" }} />
+      {/* Horizontal era timeline */}
+      <div className="cl-eras-wrap" style={{ position: "relative", paddingBottom: 96 }}>
 
-          {ENTRIES.map((entry, i) => {
-            const isLeft = i % 2 === 0;
-            const card = (
-              <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 16, padding: "24px 28px", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", textAlign: isLeft ? "right" : "left" }}>
-                <span style={{ display: "inline-block", fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.2)", borderRadius: 6, padding: "2px 8px", marginBottom: 8 }}>{entry.version}</span>
-                <p style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace", marginBottom: 6 }}>{entry.date}</p>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3, marginBottom: 8, lineHeight: 1.35 }}>{entry.title}</h3>
-                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.75, marginBottom: 14 }}>{entry.desc}</p>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: isLeft ? "flex-end" : "flex-start" }}>
-                  {entry.tags.map(tag => <span key={tag} className="tag">{tag}</span>)}
+        {/* Scroll hint */}
+        <ScrollReveal from="up" delay={0.15}>
+          <div style={{ textAlign: "center", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <span style={{ fontSize: 10, letterSpacing: "0.22em", color: "var(--text3)", fontFamily: "Space Mono, monospace", textTransform: "uppercase", fontWeight: 600 }}>
+              Five chapters · scroll
+            </span>
+            <svg width="22" height="10" viewBox="0 0 22 10" fill="none">
+              <path d="M2 5h17M14 1l4 4-4 4" stroke="var(--text3)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </ScrollReveal>
+
+        {/* Horizontal scroll container */}
+        <div
+          className="cl-eras-scroll"
+          style={{
+            display: "flex",
+            gap: 28,
+            overflowX: "auto",
+            overflowY: "visible",
+            scrollSnapType: "x mandatory",
+            paddingLeft: "max(56px, calc((100vw - 1280px) / 2))",
+            paddingRight: "max(56px, calc((100vw - 1280px) / 2))",
+            paddingTop: 8,
+            paddingBottom: 24,
+            scrollPaddingLeft: 56,
+          }}
+        >
+          {ERAS.map((era, i) => (
+            <ScrollReveal key={era.num} from="right" delay={i * 0.06} style={{ flexShrink: 0, scrollSnapAlign: "start" }}>
+              <div
+                className="cl-era-card"
+                style={{
+                  position: "relative",
+                  paddingTop: 56,
+                  flexShrink: 0,
+                }}
+              >
+                {/* Connector segment (left half) — gives the impression of a continuous timeline between cards */}
+                {i > 0 && (
+                  <div style={{
+                    position: "absolute",
+                    left: -28, top: 84,
+                    width: 28, height: 2,
+                    background: "linear-gradient(to right, rgba(var(--accent-rgb),0.1), rgba(var(--accent-rgb),0.45))",
+                  }} />
+                )}
+                {/* Connector segment (right half) — extends to the next card */}
+                {i < ERAS.length - 1 && (
+                  <div style={{
+                    position: "absolute",
+                    right: -28, top: 84,
+                    width: 28, height: 2,
+                    background: "linear-gradient(to right, rgba(var(--accent-rgb),0.45), rgba(var(--accent-rgb),0.1))",
+                  }} />
+                )}
+
+                {/* Dot on the line */}
+                <div style={{
+                  position: "absolute",
+                  top: 76, left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 18, height: 18, borderRadius: "50%",
+                  background: "var(--accent)",
+                  border: "4px solid var(--bg)",
+                  boxShadow: "0 0 0 4px rgba(var(--accent-rgb),0.18), 0 0 18px rgba(var(--accent-rgb),0.4)",
+                  zIndex: 2,
+                }} />
+
+                {/* Era card */}
+                <div
+                  className="cl-era-card-inner"
+                  style={{
+                    width: 420,
+                    background: "var(--card-bg)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 18,
+                    padding: "28px 30px 26px",
+                    boxShadow: "0 8px 30px rgba(0,0,0,0.10), 0 0 0 0.5px var(--border)",
+                    marginTop: 38,
+                  }}
+                >
+                  {/* Chapter meta row */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <span style={{ fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: "0.22em" }}>
+                      CHAPTER {era.num}
+                    </span>
+                    <span style={{
+                      fontFamily: "Space Mono, monospace", fontSize: 10, fontWeight: 700,
+                      color: "var(--accent)",
+                      background: "rgba(var(--accent-rgb),0.08)",
+                      border: "1px solid rgba(var(--accent-rgb),0.25)",
+                      borderRadius: 6, padding: "3px 9px",
+                      letterSpacing: 0.4,
+                    }}>
+                      {era.versions}
+                    </span>
+                  </div>
+
+                  {/* Headline */}
+                  <h3 style={{
+                    fontFamily: "Space Mono, monospace",
+                    fontSize: 24, fontWeight: 700,
+                    color: "var(--text)",
+                    letterSpacing: -0.9, lineHeight: 1.12,
+                    marginBottom: 8,
+                  }}>
+                    {era.name}
+                  </h3>
+
+                  {/* Date range */}
+                  <p style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace", marginBottom: 16, letterSpacing: 0.3 }}>
+                    {era.dateRange}
+                  </p>
+
+                  {/* Intro */}
+                  <p style={{ fontSize: 13.5, color: "var(--text2)", lineHeight: 1.65, marginBottom: 18, fontStyle: "italic" }}>
+                    {era.intro}
+                  </p>
+
+                  {/* Highlights */}
+                  <ul style={{ listStyle: "none", padding: 0, margin: "0 0 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+                    {era.highlights.map((h, hi) => (
+                      <li key={hi} style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.55, paddingLeft: 16, position: "relative" }}>
+                        <span style={{ position: "absolute", left: 0, top: 7, width: 5, height: 5, borderRadius: "50%", background: "var(--accent)" }} />
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Tags */}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {era.tags.map(tag => <span key={tag} className="tag">{tag}</span>)}
+                  </div>
                 </div>
               </div>
-            );
-            const dot = (
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <div style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--accent)", border: "3px solid var(--bg)", boxShadow: "0 0 0 4px rgba(var(--accent-rgb),0.15)", marginTop: 20, position: "relative", zIndex: 2 }} />
-              </div>
-            );
-            return (
-              <ScrollReveal key={i} from={isLeft ? "left" : "right"} delay={i * 0.05}>
-                <div className="cl-alt-entry" style={{ display: "grid", gridTemplateColumns: "1fr 48px 1fr", alignItems: "start", marginBottom: 56 }}>
-                  {isLeft ? (
-                    <>
-                      <div className="cl-alt-left" style={{ paddingRight: 24 }}>{card}</div>
-                      {dot}
-                      <div />
-                    </>
-                  ) : (
-                    <>
-                      <div />
-                      {dot}
-                      <div className="cl-alt-right" style={{ paddingLeft: 24 }}>{card}</div>
-                    </>
-                  )}
-                </div>
-              </ScrollReveal>
-            );
-          })}
-
+            </ScrollReveal>
+          ))}
         </div>
       </div>
 
