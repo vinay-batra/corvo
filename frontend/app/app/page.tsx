@@ -891,7 +891,7 @@ const TopbarActions = memo(function TopbarActions({
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+      <div id="tour-desk-topbar-actions" style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
         {/* Alerts bell */}
         <button id="tour-desk-bell" onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
           style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s, border-color 0.15s, color 0.15s", color: "var(--text2)" }}
@@ -2243,7 +2243,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               </Link>
             </div>
             {/* Right actions */}
-            <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
+            <div id="tour-mob-topbar-actions" style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
               {/* Alerts bell */}
               <button id="tour-mob-bell" onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
                 style={{ width: 32, height: 32, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: "var(--text2)" }}>
@@ -2593,7 +2593,7 @@ const { dark, toggle: toggleDark }  = useTheme();
 
                 {/* Daily Brief card - whole card toggled by "briefing" switch */}
                 {!hiddenCards.has("briefing") && (
-                <div style={{ opacity: loadedVis(0) ? 1 : 0, transform: loadedVis(0) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <div id="tour-desk-brief" style={{ opacity: loadedVis(0) ? 1 : 0, transform: loadedVis(0) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                   <DashReveal from="up" delay={0}>
                     <GreetingBar
                       displayName={navProfile.displayName}
