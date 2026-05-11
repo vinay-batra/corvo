@@ -25,7 +25,15 @@ function useTheme() {
   return { dark, toggle };
 }
 
-export default function PublicNav() {
+interface PublicNavProps {
+  // Optional inner scroller. When provided, hide/show is driven by the
+  // container's scrollTop instead of window.scrollY. Used on the homepage,
+  // which wraps everything in a 100vh overflow-auto container so GSAP
+  // ScrollTrigger can attach to it.
+  scrollerRef?: React.RefObject<HTMLElement | HTMLDivElement | null>;
+}
+
+export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const prevScrollY = useRef(0);
@@ -43,8 +51,10 @@ export default function PublicNav() {
   }, []);
 
   useEffect(() => {
+    const scrollEl = scrollerRef?.current ?? null;
+    const readY = () => (scrollEl ? scrollEl.scrollTop : window.scrollY);
     const onScroll = () => {
-      const currentY = window.scrollY;
+      const currentY = readY();
       if (currentY < 10) {
         setHidden(false);
       } else if (currentY > prevScrollY.current + 8) {
@@ -54,9 +64,10 @@ export default function PublicNav() {
       }
       prevScrollY.current = currentY;
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    const target: Window | HTMLElement = scrollEl ?? window;
+    target.addEventListener("scroll", onScroll, { passive: true } as AddEventListenerOptions);
+    return () => target.removeEventListener("scroll", onScroll as EventListener);
+  }, [scrollerRef]);
 
   const active = (path: string) => pathname === path || pathname?.startsWith(path + "/");
 
