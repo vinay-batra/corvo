@@ -31,10 +31,19 @@ Premium polish queue is empty. Likely next moves: demo video, YC application, pr
 
 ### Bottom-right buttons (layout reference)
 
-All 48x48px, 12px gaps. Right edges:
-- AI (gold): right 24
-- Feedback (flag): right 84
-- Customize (grid): right 144 — dashboard tab only
+Three-button stack, right-aligned, fixed to bottom. AI is the primary action and is bigger than the other two.
+
+Desktop:
+- AI (gold gradient): 60×60, bottom 24, right 24 — always rendered (PublicAIChat on public pages, dashboard AI on `/app`)
+- Feedback (flag): 44×44, bottom 32, right 96 — global, every page
+- Customize (grid): 44×44, bottom 32, right 152 — dashboard `overview` tab only
+
+Mobile (≤768px):
+- AI: 56×56, bottom 24, right 24
+- Feedback: 40×40, bottom 30, right 88
+- Customize: 40×40, bottom 30, right 138
+
+Centers of the secondary buttons align with the center of the AI button. Hover on AI: 4-stage gold drop shadow + 1.04 scale + 2px y-lift. Hover on Feedback/Customize: gold border + gold-tint background + gold icon + 4px gold ring shadow + 1px y-lift.
 
 ---
 

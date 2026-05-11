@@ -58,34 +58,52 @@ export default function FeedbackButton() {
 
   return mounted ? createPortal(
     <>
-      {/* Fixed button: stacked above AI chat */}
+      {/* Global mobile responsive sizing for the three bottom-right buttons */}
+      <style>{`
+        @media (max-width: 768px) {
+          .corvo-ai-chat-btn,
+          #tour-desk-chat {
+            width: 56px !important; height: 56px !important;
+            bottom: 24px !important; right: 24px !important;
+          }
+          .corvo-feedback-btn {
+            width: 40px !important; height: 40px !important;
+            bottom: 30px !important; right: 88px !important;
+          }
+          #tour-desk-customize {
+            width: 40px !important; height: 40px !important;
+            bottom: 30px !important; right: 138px !important;
+          }
+        }
+      `}</style>
+      {/* Fixed button: secondary action — sits left of the AI button */}
       <motion.button
         initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
         whileHover={{ y: -1 }}
-        whileTap={{ scale: 0.97 }}
+        whileTap={{ scale: 0.96 }}
         onClick={() => setOpen(true)}
         title="Send feedback"
         aria-label="Send feedback"
         className="corvo-feedback-btn"
         style={{
           position: "fixed",
-          bottom: 24,
-          right: 84,
+          bottom: 32,
+          right: 96,
           zIndex: 1000,
-          width: 48, height: 48,
+          width: 44, height: 44,
           background: "var(--bg2)",
           border: "0.5px solid var(--border)",
           borderRadius: "50%",
           cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)",
+          boxShadow: "0 6px 20px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.08)",
           transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s, color 0.2s",
           color: "var(--text2)",
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.boxShadow = "0 6px 22px rgba(0,0,0,0.28), 0 0 0 3px rgba(201,168,76,0.1)"; e.currentTarget.style.color = "var(--accent)"; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)"; e.currentTarget.style.color = "var(--text2)"; }}>
+        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.55)"; e.currentTarget.style.background = "rgba(201,168,76,0.08)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.22), 0 0 0 4px rgba(201,168,76,0.12)"; e.currentTarget.style.color = "var(--accent)"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.08)"; e.currentTarget.style.color = "var(--text2)"; }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M4 3h16a1 1 0 0 1 .73 1.68l-4.73 5.32 4.73 5.32A1 1 0 0 1 20 17H5v4a1 1 0 0 1-2 0V4a1 1 0 0 1 1-1z"/>
         </svg>
