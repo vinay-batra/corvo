@@ -134,9 +134,11 @@ function BenchmarkDropdown({ localBenchmark, benchmarks, onSelect }: { localBenc
 function IconBtn({ onClick, title, children }: { onClick: () => void; title?: string; children: React.ReactNode }) {
   return (
     <button onClick={onClick} title={title}
-      style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", transition: "background 0.15s, color 0.15s", flexShrink: 0 }}
-      onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+      style={{ width: 34, height: 34, borderRadius: 9, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", transition: "background 0.18s, color 0.18s, border-color 0.18s, transform 0.12s", flexShrink: 0 }}
+      onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; }}
+      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+      onMouseDown={e => { e.currentTarget.style.transform = "scale(0.94)"; }}
+      onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}>
       {children}
     </button>
   );
@@ -2767,11 +2769,20 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                       <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
                       <div className="c-perf-controls" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        {/* Period selector: adjacent to graph */}
-                        <div style={{ display: "flex", gap: 3 }}>
+                        {/* Period selector — gold-tinted active state, premium pill group */}
+                        <div style={{ display: "inline-flex", padding: 3, background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8, gap: 2 }}>
                           {PERIODS.map(p => (
                             <button key={p} onClick={() => setPeriod(p)}
-                              style={{ padding: "4px 9px", fontSize: 11, fontFamily: "var(--font-mono)", background: period === p ? "var(--text)" : "transparent", border: "0.5px solid var(--border)", borderRadius: 5, color: period === p ? "var(--bg)" : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
+                              style={{
+                                padding: "5px 11px", fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 600,
+                                background: period === p ? "var(--accent)" : "transparent",
+                                border: "none", borderRadius: 6,
+                                color: period === p ? "var(--bg)" : "var(--text3)",
+                                cursor: "pointer", transition: "background 0.18s, color 0.18s",
+                                letterSpacing: 0.3,
+                              }}
+                              onMouseEnter={e => { if (period !== p) e.currentTarget.style.color = "var(--text)"; }}
+                              onMouseLeave={e => { if (period !== p) e.currentTarget.style.color = "var(--text3)"; }}>
                               {PERIOD_LABELS[p]}
                             </button>
                           ))}
@@ -2779,9 +2790,9 @@ const { dark, toggle: toggleDark }  = useTheme();
                         {/* Benchmark selector: chart-only, does NOT trigger re-analyze */}
                         <BenchmarkDropdown localBenchmark={localBenchmark} benchmarks={BENCHMARKS} onSelect={setLocalBenchmark} />
                         <button onClick={() => setWhatIfOpen(true)}
-                          style={{ padding: "4px 10px", fontSize: 11, borderRadius: 5, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text3)", cursor: "pointer", letterSpacing: 0.5, transition: "all 0.15s" }}
-                          onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}>
+                          style={{ padding: "6px 12px", fontSize: 11, fontWeight: 600, borderRadius: 7, border: "0.5px solid rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.06)", color: "var(--accent)", cursor: "pointer", letterSpacing: 0.3, transition: "background 0.18s, border-color 0.18s" }}
+                          onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.14)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"; }}>
                           What-If →
                         </button>
                       </div>
