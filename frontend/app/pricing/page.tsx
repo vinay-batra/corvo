@@ -246,25 +246,26 @@ function WaitlistCapture() {
 }
 
 const FREE_FEATURES = [
-  "Full portfolio analysis (Sharpe, Monte Carlo, drawdown)",
-  "AI health score with daily action items",
-  "Up to 15 AI chat messages per day (earn more via referrals)",
-  "Watchlist with price alerts",
-  "CSV brokerage import",
-  "Capital gains estimator",
-  "Dividend calendar",
-  "Earnings and insider activity tracking",
-  "Weekly digest email",
-  "Paper trading simulator",
-  "Monte Carlo retirement projections",
+  "Full portfolio analysis: Sharpe, CAGR, volatility, max drawdown",
+  "Daily Signal — one AI recommendation tailored to your portfolio",
+  "AI Health Score with the three-beat advisor breakdown",
+  "15 AI chat messages per day (earn more via referrals)",
+  "Goal Tracker with on-track / off-track projections",
+  "Capital gains estimator and dividend calendar",
+  "Earnings calendar and insider activity tracking",
+  "Morning brief + weekly digest emails",
+  "CSV import from Fidelity, Schwab, Robinhood",
+  "Monte Carlo simulation with 1-30 year retirement horizon",
+  "PWA install with push notifications and price alerts",
 ];
 
 const PRO_EXTRAS = [
-  "Unlimited AI chat",
-  "Custom PDF portfolio reports",
+  "Unlimited AI chat messages",
+  "Brokerage sync via Plaid (auto-update holdings)",
   "SMS price alerts",
-  "Brokerage sync via Plaid",
-  "Tax loss harvesting suggestions",
+  "Tax loss harvesting suggestions with replacement tickers",
+  "Multiple saved portfolios with side-by-side comparison",
+  "Custom PDF reports with your branding",
   "Priority support",
   "Early access to new features",
 ];
@@ -305,57 +306,94 @@ function PricingCard({
   return (
     <div
       ref={ref}
+      className={isPro ? "pricing-card pricing-card-pro" : "pricing-card pricing-card-free"}
       style={{
-        flex: "1 1 340px",
-        maxWidth: 420,
+        flex: "1 1 360px",
+        maxWidth: 440,
         background: isPro
-          ? "rgba(201,168,76,0.04)"
-          : "var(--bg3)",
+          ? "linear-gradient(180deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 60%, transparent 100%), var(--card-bg)"
+          : "var(--card-bg)",
         border: isPro
-          ? "0.5px solid rgba(201,168,76,0.35)"
+          ? "1px solid rgba(201,168,76,0.4)"
           : "0.5px solid var(--border)",
         borderRadius: 20,
-        padding: "36px 32px 40px",
+        padding: "32px 32px 36px",
         position: "relative",
-        overflow: "clip",
+        overflow: "visible",
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(32px)",
-        transition: `opacity 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
-        animation: isPro ? "amberPulse 3s ease-in-out infinite" : undefined,
+        transition: `opacity 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s, box-shadow 0.3s, border-color 0.3s`,
+        boxShadow: isPro
+          ? "0 1px 3px rgba(0,0,0,0.05), 0 16px 48px rgba(201,168,76,0.10), 0 0 0 0.5px rgba(201,168,76,0.18)"
+          : "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06), 0 0 0 0.5px var(--border)",
       }}
     >
-      {/* Pill label */}
-      <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{
-          fontSize: 10,
-          letterSpacing: 2,
-          fontWeight: 700,
-          color: "#c9a84c",
-          background: "rgba(201,168,76,0.12)",
-          border: "0.5px solid rgba(201,168,76,0.25)",
-          borderRadius: 20,
-          padding: "4px 11px",
+      {/* "MOST POPULAR" floating badge on Pro card */}
+      {isPro && (
+        <div style={{
+          position: "absolute", top: -12, left: "50%",
+          transform: "translateX(-50%)",
+          background: "linear-gradient(135deg, #c9a84c 0%, #d4b35a 100%)",
+          color: "var(--bg)",
+          fontSize: 10, fontWeight: 700,
+          letterSpacing: "0.18em",
           textTransform: "uppercase",
+          padding: "5px 14px",
+          borderRadius: 100,
+          fontFamily: "Space Mono, monospace",
+          boxShadow: "0 4px 14px rgba(201,168,76,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset",
+          whiteSpace: "nowrap",
         }}>
-          {isPro ? "Coming Soon" : "Beta"}
+          Most Popular
+        </div>
+      )}
+
+      {/* Header: status pill + plan name */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+        <span style={{
+          fontSize: 9,
+          letterSpacing: "0.22em",
+          fontWeight: 700,
+          color: isPro ? "#c9a84c" : "var(--text3)",
+          background: isPro ? "rgba(201,168,76,0.10)" : "var(--bg3)",
+          border: isPro ? "0.5px solid rgba(201,168,76,0.3)" : "0.5px solid var(--border)",
+          borderRadius: 100,
+          padding: "4px 10px",
+          textTransform: "uppercase",
+          fontFamily: "Space Mono, monospace",
+        }}>
+          {isPro ? "Coming Soon" : "Free Forever in Beta"}
         </span>
       </div>
 
-      {/* Plan name */}
-      <p style={{ fontFamily: "Space Mono,monospace", fontSize: 13, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>
+      {/* Plan name — bigger, more prominent */}
+      <h3 style={{
+        fontFamily: "Space Mono, monospace",
+        fontSize: 28, fontWeight: 700,
+        letterSpacing: -1,
+        color: "var(--text)",
+        marginBottom: 14,
+        lineHeight: 1.1,
+      }}>
         {isPro ? "Pro" : "Free"}
-      </p>
+      </h3>
 
-      {/* Price */}
-      <div style={{ marginBottom: 6 }}>
-        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 44, fontWeight: 700, letterSpacing: -2, color: isPro ? "#c9a84c" : "var(--text)" }}>
+      {/* Price block */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 10 }}>
+        <span style={{
+          fontFamily: "Space Mono, monospace",
+          fontSize: 56, fontWeight: 700,
+          letterSpacing: -3,
+          color: isPro ? "#c9a84c" : "var(--text)",
+          lineHeight: 1,
+        }}>
           {isPro ? "$9" : "$0"}
         </span>
-        <span style={{ fontSize: 14, color: "var(--text3)", marginLeft: 4 }}>/mo</span>
+        <span style={{ fontSize: 15, color: "var(--text3)", fontFamily: "Space Mono, monospace", letterSpacing: 0.3 }}>/month</span>
       </div>
 
-      <p style={{ fontSize: 13.5, color: "var(--text2)", marginBottom: 28, lineHeight: 1.6 }}>
-        {isPro ? "For investors who want the full picture" : "Everything you need to start investing smarter"}
+      <p style={{ fontSize: 13.5, color: "var(--text2)", marginBottom: 26, lineHeight: 1.55, maxWidth: 320 }}>
+        {isPro ? "For investors who want the full picture." : "Everything you need to start investing smarter."}
       </p>
 
       {/* CTA */}
@@ -367,35 +405,36 @@ function PricingCard({
           style={{
             display: "block",
             textAlign: "center",
-            padding: "13px 0",
-            borderRadius: 10,
-            fontSize: 13,
+            padding: "14px 0",
+            borderRadius: 12,
+            fontSize: 14,
             fontWeight: 700,
-            background: "#c9a84c",
+            background: "var(--accent)",
             color: "var(--bg)",
             textDecoration: "none",
             letterSpacing: 0.3,
-            transition: "opacity 0.2s",
+            transition: "filter 0.2s, transform 0.2s, box-shadow 0.2s",
+            boxShadow: "0 4px 14px rgba(201,168,76,0.25)",
           }}
-          onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.1)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-          onMouseLeave={e => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
+          onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.08)"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 22px rgba(201,168,76,0.35)"; }}
+          onMouseLeave={e => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(201,168,76,0.25)"; }}
         >
           Get Started Free →
         </Link>
       )}
 
       {/* Divider */}
-      <div style={{ height: "0.5px", background: "var(--border)", margin: "28px 0" }} />
+      <div style={{ height: "0.5px", background: "var(--border)", margin: "28px 0 22px" }} />
 
       {/* Features heading */}
-      <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 18 }}>
+      <p style={{ fontSize: 9, letterSpacing: "0.22em", color: isPro ? "#c9a84c" : "var(--text3)", textTransform: "uppercase", marginBottom: 18, fontFamily: "Space Mono, monospace", fontWeight: 700 }}>
         {isPro ? "Everything in Free, plus" : "What's included"}
       </p>
 
       {/* Feature list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
         {(isPro ? PRO_EXTRAS : FREE_FEATURES).map((f, i) => (
-          <FeatureItem key={f} text={f} delay={delay + 0.08 + i * 0.05} />
+          <FeatureItem key={f} text={f} delay={delay + 0.08 + i * 0.04} />
         ))}
       </div>
     </div>
@@ -587,15 +626,22 @@ export default function PricingPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes amberPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); border-color: rgba(201,168,76,0.35); }
-          50% { box-shadow: 0 0 28px 4px rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.55); }
-        }
         @keyframes heroFadeIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeinUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pdot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .pricing-card:hover {
+          transform: translateY(-6px) !important;
+        }
+        .pricing-card-free:hover {
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 20px 50px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(201,168,76,0.18) !important;
+          border-color: rgba(201,168,76,0.25) !important;
+        }
+        .pricing-card-pro:hover {
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 24px 60px rgba(201,168,76,0.18), 0 0 0 0.5px rgba(201,168,76,0.35) !important;
+          border-color: rgba(201,168,76,0.65) !important;
+        }
         @media (max-width: 768px) {
-          .pricing-cards { flex-direction: column !important; align-items: stretch !important; }
+          .pricing-cards { flex-direction: column !important; align-items: stretch !important; gap: 32px !important; }
           .pricing-cards > * { width: 100% !important; max-width: 100% !important; flex: none !important; }
           .nav-links { display: none !important; }
           .pricing-section { padding-left: 20px !important; padding-right: 20px !important; }
