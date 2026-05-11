@@ -294,7 +294,7 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
           .pnav-desktop-links { display: none !important; }
           .pnav-desktop-actions { display: none !important; }
           .pnav-hamburger { display: inline-flex !important; }
-          .pnav-pad { padding: 0 18px !important; }
+          .pnav-inner { padding: 0 18px !important; }
         }
 
         /* Mobile drawer */
@@ -336,7 +336,6 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
       `}</style>
 
       <nav
-        className="pnav-pad"
         style={{
           position: "fixed",
           top: 0,
@@ -344,10 +343,6 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
           right: 0,
           zIndex: 100,
           height: 68,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 32px",
           background: navBackground,
           backdropFilter: "blur(20px) saturate(140%)",
           WebkitBackdropFilter: "blur(20px) saturate(140%)",
@@ -357,6 +352,22 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
           willChange: "transform",
         }}
       >
+        {/* Inner container - matches the hero content max-width (1240) and
+            horizontal padding (56px) so the logo aligns with the leading
+            edge of the headline and the actions align with the trailing edge. */}
+        <div
+          className="pnav-inner"
+          style={{
+            position: "relative",
+            height: "100%",
+            maxWidth: 1240,
+            margin: "0 auto",
+            padding: "0 56px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
         {/* Logo - left */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flexShrink: 0 }}>
           <img src="/corvo-logo.png" width={30} height={30} alt="Corvo" />
@@ -482,6 +493,7 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
               </svg>
             )}
           </button>
+        </div>
         </div>
       </nav>
 
