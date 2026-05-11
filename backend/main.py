@@ -3764,15 +3764,14 @@ def watchlist_data(tickers: str, request: Request):
     for ticker in ticker_list:
         try:
             t = yf.Ticker(ticker)
-            # Use fast_info for prices — avoids Yahoo Finance crumb/auth failures
+
+            # Try fast_info first — fastest path, avoids Yahoo crumb/auth failures
             fi = t.fast_info
-            current_price = safe_float(getattr(fi, 'last_price', None) or 0)
-            prev_close = safe_float(getattr(fi, 'previous_close', None) or current_price)
-            change = current_price - prev_close
-            change_pct = (change / prev_close * 100) if prev_close else 0.0
-            # name/sector from info — isolated so a 404 for ETFs doesn't kill price data
-            name = ticker
-            sector = "Other"
+            raw_last = getattr(fi, 'last_price', None)
+            raw_prev = getattr(fi, 'previous_close', None)
+
+            # name/sector/info — also pulled here so we can fall back to it for prices
+            name, sector, info = ticker, "Other", {}
             try:
                 info = t.info or {}
                 name = info.get("longName") or info.get("shortName") or ticker
@@ -3780,20 +3779,51 @@ def watchlist_data(tickers: str, request: Request):
             except Exception:
                 pass
 
-            hist = t.history(period="7d", interval="1d")
-            sparkline = [safe_float(row["Close"]) for _, row in hist.iterrows()] if not hist.empty else []
+            # Fallback: if fast_info missed price/prev, try info fields. Yahoo sometimes
+            # returns nothing on fast_info during cold starts or for index tickers.
+            if not raw_last:
+                raw_last = info.get("regularMarketPrice") or info.get("currentPrice")
+            if not raw_prev:
+                raw_prev = info.get("regularMarketPreviousClose") or info.get("previousClose")
+
+            # If we truly have no price data, return nulls so the frontend can render "--"
+            # instead of a misleading "+0.00%".
+            if not raw_last:
+                results.append({
+                    "ticker": ticker, "name": name, "sector": sector,
+                    "price": None, "change": None, "change_pct": None,
+                    "sparkline": [],
+                })
+                continue
+
+            current_price = safe_float(raw_last)
+            # If prev_close is missing, change is unknowable — emit nulls for change fields
+            # rather than silently reporting 0% movement.
+            if not raw_prev:
+                change_val: float | None = None
+                change_pct_val: float | None = None
+            else:
+                prev_close = safe_float(raw_prev)
+                change_val = current_price - prev_close
+                change_pct_val = (change_val / prev_close * 100) if prev_close else None
+
+            try:
+                hist = t.history(period="7d", interval="1d")
+                sparkline = [safe_float(row["Close"]) for _, row in hist.iterrows()] if not hist.empty else []
+            except Exception:
+                sparkline = []
 
             results.append({
                 "ticker": ticker,
                 "name": name,
                 "sector": sector,
                 "price": round(current_price, 2),
-                "change": round(change, 2),
-                "change_pct": round(change_pct, 2),
+                "change": round(change_val, 2) if change_val is not None else None,
+                "change_pct": round(change_pct_val, 2) if change_pct_val is not None else None,
                 "sparkline": sparkline,
             })
         except Exception as e:
-            results.append({"ticker": ticker, "name": ticker, "price": 0.0, "change": 0.0, "change_pct": 0.0, "sparkline": [], "error": str(e)})
+            results.append({"ticker": ticker, "name": ticker, "price": None, "change": None, "change_pct": None, "sparkline": [], "error": str(e)})
     return {"results": results}
 
 

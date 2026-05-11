@@ -45,7 +45,7 @@ function computeMarketStatus() {
 
 type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
 interface MarketSummary { market: string; holdings: string; context: string; outlook?: string; }
-interface HoldingPrice { ticker: string; price: number; changePct: number; }
+interface HoldingPrice { ticker: string; price: number | null; changePct: number | null; }
 
 interface Props {
   displayName: string;
@@ -200,7 +200,11 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
       try {
         const r = await fetch(`${API_URL}/watchlist-data?tickers=${validTickers.join(",")}`);
         const d = await r.json();
-        setHoldingPrices((d.results || []).map((s: any) => ({ ticker: s.ticker, price: s.price ?? 0, changePct: s.change_pct ?? 0 })));
+        setHoldingPrices((d.results || []).map((s: any) => ({
+          ticker: s.ticker,
+          price: s.price == null ? null : Number(s.price),
+          changePct: s.change_pct == null ? null : Number(s.change_pct),
+        })));
       } catch {}
     };
     load(); const id = setInterval(load, 60000); return () => clearInterval(id);
@@ -214,10 +218,15 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
     let weightedPct = 0, coveredWeight = 0;
     for (const asset of validAssets) {
       const hp = holdingPrices.find(h => h.ticker === asset.ticker);
-      if (hp) { weightedPct += asset.weight * hp.changePct; coveredWeight += asset.weight; }
+      // Only include holdings with real change data — null means yfinance didn't return it
+      if (hp && hp.changePct != null) {
+        weightedPct += asset.weight * hp.changePct;
+        coveredWeight += asset.weight;
+      }
     }
+    // Need data for at least half the portfolio weight to show a meaningful number
     if (coveredWeight / totalWeight < 0.5) return null;
-    const pct = weightedPct / totalWeight;
+    const pct = weightedPct / coveredWeight;
     if (Math.abs(pct) < 0.005 && !mkt.isOpen) return null; // hide 0.00% when market closed
     const dollar = (portfolioValue ?? 0) > 0 ? ((portfolioValue as number) * pct / 100) : null;
     return { pct, dollar };
