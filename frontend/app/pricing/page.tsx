@@ -306,10 +306,28 @@ function PricingCard({
   return (
     <div
       ref={ref}
-      className={isPro ? "pricing-card pricing-card-pro" : "pricing-card pricing-card-free"}
       style={{
+        position: "relative",
         flex: "1 1 320px",
         maxWidth: 400,
+      }}
+    >
+      {/* Gold glow halo behind card — bigger on Pro */}
+      <div aria-hidden style={{
+        position: "absolute",
+        inset: isPro ? -64 : -40,
+        borderRadius: isPro ? 48 : 36,
+        background: isPro
+          ? "radial-gradient(ellipse 72% 62% at 50% 55%, rgba(201,168,76,0.55), rgba(201,168,76,0.22) 35%, rgba(201,168,76,0.06) 60%, transparent 80%)"
+          : "radial-gradient(ellipse 68% 58% at 50% 55%, rgba(201,168,76,0.28), rgba(201,168,76,0.08) 45%, transparent 75%)",
+        filter: isPro ? "blur(56px)" : "blur(40px)",
+        pointerEvents: "none",
+        zIndex: 0,
+      }} />
+    <div
+      className={isPro ? "pricing-card pricing-card-pro" : "pricing-card pricing-card-free"}
+      style={{
+        width: "100%",
         background: isPro
           ? "linear-gradient(180deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 60%, transparent 100%), var(--card-bg)"
           : "var(--card-bg)",
@@ -319,6 +337,7 @@ function PricingCard({
         borderRadius: 20,
         padding: "28px 28px 32px",
         position: "relative",
+        zIndex: 1,
         overflow: "visible",
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(32px)",
@@ -437,6 +456,7 @@ function PricingCard({
           <FeatureItem key={f} text={f} delay={delay + 0.08 + i * 0.04} />
         ))}
       </div>
+    </div>
     </div>
   );
 }

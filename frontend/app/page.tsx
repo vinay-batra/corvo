@@ -255,15 +255,28 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ gridArea, height: "100%", position: "relative", perspective: 900 }}
     >
-      {/* Static gold glow behind the card */}
+      {/* Static gold glow behind the card — large soft halo */}
       <div
         aria-hidden
         style={{
           position: "absolute",
-          inset: -36,
-          borderRadius: 36,
-          background: "radial-gradient(ellipse 65% 55% at 50% 55%, rgba(var(--accent-rgb), 0.32), rgba(var(--accent-rgb), 0.08) 45%, transparent 75%)",
-          filter: "blur(44px)",
+          inset: -64,
+          borderRadius: 48,
+          background: "radial-gradient(ellipse 70% 60% at 50% 55%, rgba(var(--accent-rgb), 0.55), rgba(var(--accent-rgb), 0.22) 35%, rgba(var(--accent-rgb), 0.06) 60%, transparent 80%)",
+          filter: "blur(56px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      {/* Tighter inner glow for depth */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: -12,
+          borderRadius: 28,
+          background: "radial-gradient(ellipse 75% 65% at 50% 55%, rgba(var(--accent-rgb), 0.35), transparent 70%)",
+          filter: "blur(24px)",
           pointerEvents: "none",
           zIndex: 0,
         }}
@@ -2581,7 +2594,18 @@ function HorizontalTestiCard({ t, i }: { t: { text: string; name: string; role: 
       opacity: visible ? 1 : 0,
       transform: visible ? "none" : initialTransform,
       transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}`,
+      position: "relative",
     }}>
+      {/* Gold glow halo behind testimonial card */}
+      <div aria-hidden style={{
+        position: "absolute",
+        inset: -50,
+        borderRadius: 40,
+        background: "radial-gradient(ellipse 70% 60% at 50% 55%, rgba(var(--accent-rgb), 0.45), rgba(var(--accent-rgb), 0.14) 40%, transparent 75%)",
+        filter: "blur(48px)",
+        pointerEvents: "none",
+        zIndex: 0,
+      }} />
       <div style={{
         position: "relative",
         padding: "36px 36px 28px",
@@ -2593,6 +2617,7 @@ function HorizontalTestiCard({ t, i }: { t: { text: string; name: string; role: 
         minHeight: 290,
         display: "flex",
         flexDirection: "column" as const,
+        zIndex: 1,
       }}>
         <span style={{ fontFamily: "Georgia, serif", fontSize: 64, color: "var(--accent)", opacity: 0.22, lineHeight: 1, position: "absolute", top: 14, left: 22 }}>"</span>
         <p style={{ fontSize: 15, color: "var(--text2)", lineHeight: 1.85, fontWeight: 300, marginBottom: 26, marginTop: 28, flex: 1 }}>{t.text}</p>
