@@ -7,92 +7,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Session: May 11, 2026 — shipped v0.25**
+**Last shipped: v0.26 (May 11, 2026)**
 
-Massive polish, design, and security session. Everything below was deployed to prod (frontend via Vercel auto-deploy, backend via manual Railway deploy at end of session).
+A two-day marathon of design, copy, AI voice, and security work landed in production. See the v0.25 + v0.26 entries under "What Was Built" for the full scope. Frontend auto-deploys via Vercel; backend was manually deployed via Railway at the end of the session.
 
-**App UI overhaul — features-page design language applied to every authenticated tab:**
-- New shared components: `SectionHeader` (gold eyebrow + Space Mono headline with scroll-reveal), upgraded `TooltipCardHeader` (sentence-case title + optional eyebrow), refined `_CARD_BASE` (14px radius, 22-24px padding, layered shadow)
-- Dashboard split into 4 named regions: Overview / Analysis / Intelligence / Composition (region headers respect customizer — hide if all cards in region hidden)
-- Positions tab: Positions / Tax / Activity regions
-- Stocks tab: SectionHeader on Compare mode
-- Simulations tab: Project / Stress-test regions
-- Polished shared components: `InfoModal` (rebuilt header with gold eyebrow + Space Mono title), `IconBtn` (gold-accent hover, 0.94 press scale, 34px), performance period selector (premium grouped pill control with gold active state)
+### Premium polish queue — pick up here next session
 
-**Marketing + profile pages:**
-- Install/Changelog/FAQ hero badges: pulsing gold dot (matched Pricing's existing animation). Copy: "Changelog" → "What's new", "FAQ" → "Help"
-- Settings: SectionTitle rebuilt with gold accent stripe + 22px Space Mono — drives all 5 sections
-- Referrals: same Section pattern applied
-- Account: display name now Space Mono, Quick Links upgraded
+Six items still feel "default" relative to the rest of the app. Each is roughly one session of work. Pick whichever has the highest visibility for the moment.
 
-**Homepage rewrite — "your portfolio's guardian" positioning:**
-- Hero headline → "The advisor watching over your portfolio."
-- Hero subhead reframed around what Corvo does (monitors, flags risks, tells you what to do)
-- Hero stats: "AI Insights / 17K+" → "Risks Flagged / 12K+"
-- New floating red "Risk flagged · Tech > 60%" chip (replaces Sharpe Ratio card)
-- Features eyebrow "Capabilities" → "Always watching"; headline → "What Corvo watches for you"
-- Final CTA headline → "Let Corvo watch your back."
-- Hero overall scaled up: clamp(32-60px) headline, larger metric cards (21px values, deeper shadows)
-- "Guardian" used sparingly — the concept comes through via "watching," "monitors," "advisor"
+1. **Sidebar / portfolio builder polish** — every user touches this constantly. The "Edit with AI" collapse row, the holdings rows, the saved portfolio chips, the value input. v0.24 did a layout pass; this would be a typography + chrome pass to match the rest of the v0.25/v0.26 design language.
+2. **Modals standardization** — there are several modals (What-If, save portfolio, share image, NL edit confirmation, dashboard customizer, limit info modal). They use slightly different chrome. Standardize them all to the upgraded `InfoModal`-style header (gold eyebrow + Space Mono title, refined sections, gold-tinted close button).
+3. **Loading / "analyzing" state** — the orb + step list users see while the dashboard loads (`AnalysisSteps` in `app/app/page.tsx`). Currently OK, could feel more cinematic — maybe a subtle gold pulse on the active step, smoother transitions, premium typography.
+4. **404 / not-found / global error pages** — `app/not-found.tsx`, `app/global-error.tsx`. Currently bland Next.js defaults or close to it. Small but high-quality polish moments when users hit them.
+5. **Sidebar's bottom toolbar buttons** — AI, Feedback, Customize (bottom-right, 48x48px). Tight visually; could get the same `IconBtn` premium hover treatment.
+6. **Settings inner UI controls** — toggles, inputs, theme picker. Section headers were upgraded in Phase 6 but the row-level controls could match.
 
-**AI quality pass — sharper Corvo voice across 3 backend prompts:**
-- Chat (POST /chat): identity reframed, explicit 3-beat structure for recommendations (what you see / why it matters / what to consider), more banned filler ("happy to help", "absolutely", "consider consulting")
-- Daily Signal: rationale must flow through Corvo's 3 beats
-- AI Insights / Health Score: demands a position, no more hedged plain-English
+### Blocked / non-design work
 
-**Security sweep — 5 real issues patched in backend:**
-- CRITICAL: GET /portfolio/tax-loss-alert/{user_id} — IDOR (any user could fetch any other user's tax data). Now requires JWT-verified user_id matches path. Also added 30/hr rate limit.
-- CRITICAL: Startup log leaking RESEND_API_KEY first-6-chars to Railway logs. Fixed.
-- HIGH: DELETE /price-alerts/{alert_id} trusted self-reported user_id. Now JWT-verifies.
-- HIGH: /user DELETE returning raw Supabase error body. Now generic message + server-side log.
-- Frontend: stripped 14 verbose console.log statements from dashboard auto-load (were leaking user IDs and portfolio data to browser console)
+1. **Stripe/Pro tier ($9/mo)** — needs parent (Vinay is under 18; TOS requires 18+ to sign for Stripe)
+2. **Plaid integration** — auto-sync brokerage. Needs parent to sign for Plaid + production-access approval (weeks). Can build against sandbox in the meantime.
 
-**Empty/error states upgrade:**
-- EmptyState.tsx: gold-tinted SVG icon container, 15px Space Mono title, gold-accent CTA. Now accepts ReactNode for icon.
-- ErrorState.tsx: red-tinted icon container, primary message + reason line, gold "Try again" button. Default copy explains Railway cold starts ("Corvo couldn't reach the server. Our backend may be waking up after idle.")
+### Daily Signal (built May 10) — reference
 
-**Mobile polish:**
-- SectionHeader: mobile rule (≤768px) shrinks headline 22→18px, tightens eyebrow spacing
-- Dashboard customizer: 2-col → 1-col on mobile
-- Homepage hero risk chip auto-hides on mobile via .hero-metric-card class
-
-**Earlier today (May 10/11 boundary) — onboarding + tour simplification:**
-- Onboarding 11 steps → 8: age+income combined; risk+horizon combined; life events step removed
-- Dashboard tour 9 stops → 5 desktop (6 → 4 mobile): Portfolio / Daily Brief / Tabs / AI Advisor / Alerts
-- Dashboard customizer redesigned: 540px wide, 2-col grid, grouped into Overview / Analysis / Other. All 14 cards independently toggleable.
-
-**Up next (in priority order):**
-1. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
-2. Plaid integration — auto-sync brokerage (apply at plaid.com while building)
-
-**Daily Signal (built May 10):**
 - POST /portfolio/daily-signal backend endpoint with Claude, in-memory cache by (date, portfolio hash)
 - 8 categories: Risk Alert, Rebalance, Tax Opportunity, Earnings Watch, Benchmark Lag, Protect Gains, Diversify, Strong Hold
 - Full DailySignal.tsx component: headline, rationale, impact chips, numbered steps, confidence tooltip, urgency badge, dismissed state
-- Lives between Daily Brief and WSID on dashboard
-- Fails silently on error
+- Lives between Daily Brief and WSID on dashboard. Fails silently on error.
 
-**Sidebar redesign (May 10):** AI editor collapsed by default (··· toggle row). Presets/Screenshot/CSV → ··· overflow menu. window.confirm removed → inline 2-click remove confirm. Holdings header shows count badge + weight %. Delete modal: dark blur overlay, red top border, trash icon. NEW ANALYSIS button: solid amber (was ghost). Saved rows: "VIG · SCHD +2" format, 600 weight name.
+### Bottom-right buttons (layout reference)
 
-**Button layout (bottom right, all 48x48px, 12px gaps):**
+All 48x48px, 12px gaps. Right edges:
 - AI (gold): right 24
 - Feedback (flag): right 84
 - Customize (grid): right 144 — dashboard tab only
-
-**Recent completions (May 10, continued):**
-- Metric grid: auto-fill -> auto-fit (cards now fill full row)
-- Daily Brief: chevron collapse/expand, persists to localStorage
-- Health Score: removed duplicate score/grade text, added CTA button that fires AI chat with health score prompt
-
-**Recent completions (May 10, earlier):**
-- Daily Brief card: CSS Grid layout, always-visible, portfolio today live
-- AI Insights: pill tags, analyst sentences, bolder rebalancing
-- Removed: Corvo insight banner, AI nudge banner, showBasicsNudge modal, dead state
-- VS S&P card: now full width (grid-column: 1/-1)
-- Metric cards: bigger padding and grid min-width
-- Save portfolio banner: redesigned with icon + accent border
-- Holdings: LIVE pulsing dot when market open
-- CORS confirmed locked; no XSS vectors in AI content rendering
 
 ---
 
@@ -270,9 +217,21 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.25
+- Version: v0.26
 
 ## What Was Built
+
+### v0.26 (May 11, 2026)
+- Auth page rebuilt — 56px gold-tinted logo container, "Welcome back / Get started / Magic link / Reset password" headline above tagline ("The advisor watching over your portfolio"), bigger card (460px, 44/40 padding, layered shadow + gold top-edge accent), mode tabs use solid amber active state, OAuth buttons hover with gold accent, primary CTA has gold drop shadow + hover lift, inputs have 4px gold focus glow.
+- AI chat polished — header rebuilt with gold-tinted Corvo logo + two-line "Corvo / AI ADVISOR" title (was plain "Corvo AI" text). Empty state: gold "ALWAYS WATCHING" eyebrow + 17px Space Mono headline + 58px logo container with inner glow. Input grew to 42px min-height with 3px gold focus ring; the plain-text "SEND" button became a 42×42 amber square with a paper-plane SVG icon + drop shadow + hover lift.
+- App top bar premium upgrade — height 52→56px, backdrop-blur(12px), subtle drop shadow. Active tab underline 2→2.5px thick with amber glow. Active tab fontWeight 600→700 with tighter letter-spacing. Inactive tabs hover-lighten.
+- Pricing page rebuilt — feature lists updated to match v0.25 product reality (removed Paper Trading + Watchlist; added Daily Signal, Goal Tracker, three-beat AI Health Score, morning brief + PWA push). New floating "MOST POPULAR" gold pill badge on Pro card. Plan names promoted to 28→25px Space Mono, prices to 56→48px. Subtle vertical gold gradient on Pro card. Killed `amberPulse` animation. Cards lift +6px on hover with deepened shadows. Made cards slightly smaller across the board (max-width 440→400).
+- Public page section padding rhythm matched to homepage features section — pricing/install/faq/about/changelog all now use 80–140px top + bottom on sections (was 0–80px). Mobile rules scaled proportionally.
+- Changelog timeline redesigned — vertical alternating cards → horizontal scroll-snap of 5 thematic chapters (Foundations / Smart & Connected / Mobile, Auth & Math / Income, Email & Tools / The Guardian Era). Solid amber line through dots, card hover lift, dot scale on hover.
+- Account page: removed Quick Links section (destinations reachable from global nav).
+- Default portfolio value 10k → 50k for new users (dashboard, homepage demo widget, PortfolioBuilder). Existing users keep their stored value.
+- Bug fix — /watchlist-data backend was returning `0` for missing yfinance data, making the dashboard render "+0.00%" instead of "--". Now falls back to `t.info` regularMarketPrice/PreviousClose, and returns nulls when both sources fail. Frontend stops coercing nulls to 0. Fixed math bug in portfolioToday averaging.
+- Auth flow not changed — same Supabase OAuth + magic link + Turnstile captcha, just sharper UI.
 
 ### v0.25 (May 11, 2026)
 - App UI overhaul: features-page design language applied across every authenticated tab. New `SectionHeader` component (gold eyebrow + Space Mono headline) with scroll-reveal. Dashboard split into 4 named regions (Overview / Analysis / Intelligence / Composition). Positions, Stocks, Simulations tabs all upgraded with the same pattern.
