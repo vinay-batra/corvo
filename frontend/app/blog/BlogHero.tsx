@@ -7,6 +7,13 @@ function useReveal(threshold = 0.15) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current; if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const inView = rect.top < window.innerHeight * 0.95 && rect.bottom > 0;
+    if (inView) {
+      let rafA = 0, rafB = 0;
+      rafA = requestAnimationFrame(() => { rafB = requestAnimationFrame(() => setVisible(true)); });
+      return () => { cancelAnimationFrame(rafA); cancelAnimationFrame(rafB); };
+    }
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold });
     obs.observe(el); return () => obs.disconnect();
   }, [threshold]);
