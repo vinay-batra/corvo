@@ -308,8 +308,8 @@ function PricingCard({
       ref={ref}
       className={isPro ? "pricing-card pricing-card-pro" : "pricing-card pricing-card-free"}
       style={{
-        flex: "1 1 360px",
-        maxWidth: 440,
+        flex: "1 1 320px",
+        maxWidth: 400,
         background: isPro
           ? "linear-gradient(180deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 60%, transparent 100%), var(--card-bg)"
           : "var(--card-bg)",
@@ -317,7 +317,7 @@ function PricingCard({
           ? "1px solid rgba(201,168,76,0.4)"
           : "0.5px solid var(--border)",
         borderRadius: 20,
-        padding: "32px 32px 36px",
+        padding: "28px 28px 32px",
         position: "relative",
         overflow: "visible",
         opacity: visible ? 1 : 0,
@@ -369,10 +369,10 @@ function PricingCard({
       {/* Plan name — bigger, more prominent */}
       <h3 style={{
         fontFamily: "Space Mono, monospace",
-        fontSize: 28, fontWeight: 700,
+        fontSize: 25, fontWeight: 700,
         letterSpacing: -1,
         color: "var(--text)",
-        marginBottom: 14,
+        marginBottom: 12,
         lineHeight: 1.1,
       }}>
         {isPro ? "Pro" : "Free"}
@@ -382,17 +382,17 @@ function PricingCard({
       <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 10 }}>
         <span style={{
           fontFamily: "Space Mono, monospace",
-          fontSize: 56, fontWeight: 700,
-          letterSpacing: -3,
+          fontSize: 48, fontWeight: 700,
+          letterSpacing: -2.5,
           color: isPro ? "#c9a84c" : "var(--text)",
           lineHeight: 1,
         }}>
           {isPro ? "$9" : "$0"}
         </span>
-        <span style={{ fontSize: 15, color: "var(--text3)", fontFamily: "Space Mono, monospace", letterSpacing: 0.3 }}>/month</span>
+        <span style={{ fontSize: 14, color: "var(--text3)", fontFamily: "Space Mono, monospace", letterSpacing: 0.3 }}>/month</span>
       </div>
 
-      <p style={{ fontSize: 13.5, color: "var(--text2)", marginBottom: 26, lineHeight: 1.55, maxWidth: 320 }}>
+      <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 24, lineHeight: 1.55, maxWidth: 320 }}>
         {isPro ? "For investors who want the full picture." : "Everything you need to start investing smarter."}
       </p>
 
@@ -424,15 +424,15 @@ function PricingCard({
       )}
 
       {/* Divider */}
-      <div style={{ height: "0.5px", background: "var(--border)", margin: "28px 0 22px" }} />
+      <div style={{ height: "0.5px", background: "var(--border)", margin: "24px 0 18px" }} />
 
       {/* Features heading */}
-      <p style={{ fontSize: 9, letterSpacing: "0.22em", color: isPro ? "#c9a84c" : "var(--text3)", textTransform: "uppercase", marginBottom: 18, fontFamily: "Space Mono, monospace", fontWeight: 700 }}>
+      <p style={{ fontSize: 9, letterSpacing: "0.22em", color: isPro ? "#c9a84c" : "var(--text3)", textTransform: "uppercase", marginBottom: 16, fontFamily: "Space Mono, monospace", fontWeight: 700 }}>
         {isPro ? "Everything in Free, plus" : "What's included"}
       </p>
 
       {/* Feature list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
         {(isPro ? PRO_EXTRAS : FREE_FEATURES).map((f, i) => (
           <FeatureItem key={f} text={f} delay={delay + 0.08 + i * 0.04} />
         ))}
