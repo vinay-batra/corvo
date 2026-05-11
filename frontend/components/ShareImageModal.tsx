@@ -127,23 +127,26 @@ export default function ShareImageModal({ assets, data, onClose }: ShareImageMod
         <button
           onClick={onClose}
           style={{
-            position: "absolute", top: 16, right: 16,
-            background: "var(--bg3)", border: "1px solid var(--border)",
-            borderRadius: 8, width: 30, height: 30, cursor: "pointer",
+            position: "absolute", top: 18, right: 18,
+            background: "var(--bg3)", border: "0.5px solid var(--border)",
+            borderRadius: 8, width: 28, height: 28, cursor: "pointer",
             color: "var(--text3)", display: "flex",
             alignItems: "center", justifyContent: "center",
-          }}>
+            transition: "color 0.15s, border-color 0.15s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; }}
+          onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
 
         {/* Header */}
-        <div style={{ marginBottom: 20 }}>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 6 }}>
+        <div style={{ marginBottom: 22 }}>
+          <p style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", marginBottom: 7, fontFamily: "var(--font-mono)", fontWeight: 700 }}>
             Share Portfolio Card
           </p>
-          <h2 style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", letterSpacing: -0.3 }}>
+          <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.2, margin: 0 }}>
             {assets.slice(0, 4).map(a => a.ticker).join("  ·  ")}
             {assets.length > 4 ? `  +${assets.length - 4}` : ""}
           </h2>

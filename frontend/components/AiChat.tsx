@@ -799,14 +799,16 @@ export default function AiChat({
               >
                 {/* Mobile header with close button */}
                 {isMobile && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", height: 52, borderBottom: "0.5px solid var(--border)", flexShrink: 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", letterSpacing: 0.5 }}>Chat History</span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", height: 52, borderBottom: "0.5px solid var(--border)", flexShrink: 0 }}>
+                    <span style={{ fontSize: 10, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 700 }}>Chat History</span>
                     <button
                       onClick={() => setSidebarOpen(false)}
                       aria-label="Close history"
-                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, background: "transparent", border: "none", cursor: "pointer", color: "var(--text3)", borderRadius: 8 }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, background: "var(--bg3)", border: "0.5px solid var(--border)", cursor: "pointer", color: "var(--text3)", borderRadius: 8, transition: "color 0.15s, border-color 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}
                     >
-                      <X size={18} />
+                      <X size={12} />
                     </button>
                   </div>
                 )}
@@ -814,11 +816,11 @@ export default function AiChat({
                 <div style={{ padding: "12px 10px", borderBottom: "0.5px solid var(--border)", flexShrink: 0 }}>
                   <button
                     onClick={startNewChat}
-                    style={{ width: "100%", padding: "8px 12px", background: "rgba(184,134,11,.08)", border: "0.5px solid rgba(184,134,11,.25)", borderRadius: 8, color: "var(--accent)", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,.15)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,.08)"; }}
+                    style={{ width: "100%", padding: "9px 12px", background: "rgba(184,134,11,.08)", border: "0.5px solid rgba(184,134,11,.28)", borderRadius: 9, color: "var(--accent)", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all .15s", letterSpacing: 0.2 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,134,11,.16)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.45)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,134,11,.08)"; e.currentTarget.style.borderColor = "rgba(184,134,11,0.28)"; }}
                   >
-                    <Plus size={12} /> New Chat
+                    <Plus size={12} /> New chat
                   </button>
                 </div>
 
@@ -913,9 +915,9 @@ export default function AiChat({
         {/* ── Header ── */}
         <div style={{ height: 56, flexShrink: 0, borderTop: "2px solid var(--accent)", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", padding: "14px 16px", gap: 10, background: "var(--bg)" }}>
           <button className="cv-icon-btn" onClick={() => setSidebarOpen(v => !v)} title="Chat history"
-            style={{ width: 30, height: 30, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0, transition: "all .18s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.color = "var(--accent)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
+            style={{ width: 30, height: 30, borderRadius: 8, border: "0.5px solid var(--border)", background: "var(--bg3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text2)", flexShrink: 0, transition: "all .18s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.45)"; e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.color = "var(--accent)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text2)"; }}>
             <Menu size={14} />
           </button>
 
@@ -963,9 +965,15 @@ export default function AiChat({
           <button
             onClick={() => setPortfolioCtxOn(v => !v)}
             title={portfolioCtxOn ? "Disable portfolio context" : "Enable portfolio context"}
-            style={{ position: "relative", width: 28, height: 16, borderRadius: 8, border: "none", cursor: "pointer", padding: 0, background: portfolioCtxOn ? "#5cb88a" : "var(--border)", transition: "background .2s", flexShrink: 0 }}
+            style={{
+              position: "relative", width: 30, height: 17, borderRadius: 9, border: "none", cursor: "pointer", padding: 0,
+              background: portfolioCtxOn ? "linear-gradient(180deg, #5cb88a 0%, #4ca070 100%)" : "var(--border2)",
+              transition: "background .2s, box-shadow .2s",
+              flexShrink: 0,
+              boxShadow: portfolioCtxOn ? "0 0 0 1px rgba(92,184,138,0.3), 0 0 8px rgba(92,184,138,0.25), inset 0 1px 2px rgba(0,0,0,0.08)" : "inset 0 1px 2px rgba(0,0,0,0.12)",
+            }}
           >
-            <span style={{ position: "absolute", top: 2, left: portfolioCtxOn ? 14 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left .15s", boxShadow: "0 1px 3px rgba(0,0,0,.3)" }} />
+            <span style={{ position: "absolute", top: 2, left: portfolioCtxOn ? 15 : 2, width: 13, height: 13, borderRadius: "50%", background: "linear-gradient(180deg, #fff, rgba(245,240,230,0.95))", transition: "left .15s ease", boxShadow: "0 1px 3px rgba(0,0,0,.32), 0 0 0 0.5px rgba(0,0,0,0.08)" }} />
           </button>
         </div>
 
@@ -1042,8 +1050,12 @@ export default function AiChat({
                     initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
+                    whileHover={{ y: -1 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => send(s)}
-                    style={{ padding: "9px 12px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 9, color: "var(--text2)", fontSize: 12, cursor: "pointer", transition: "all .15s", textAlign: "left", lineHeight: 1.4, fontFamily: "var(--font-body)" }}
+                    style={{ padding: "10px 13px", background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, color: "var(--text2)", fontSize: 12, cursor: "pointer", transition: "border-color .15s, background .15s, color .15s", textAlign: "left", lineHeight: 1.45, fontFamily: "var(--font-body)" }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; e.currentTarget.style.background = "rgba(201,168,76,0.04)"; e.currentTarget.style.color = "var(--text)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; e.currentTarget.style.color = "var(--text2)"; }}
                   >
                     {s}
                   </motion.button>
@@ -1052,11 +1064,12 @@ export default function AiChat({
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
                 <button
                   onClick={() => setSuggestionSet(s => (s + 1) % SUGGESTION_SETS.length)}
-                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 4, padding: "2px 4px", borderRadius: 4, transition: "color .15s" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "var(--text2)")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text3)", display: "flex", alignItems: "center", gap: 5, padding: "3px 7px", borderRadius: 5, transition: "color .15s, background .15s", letterSpacing: 0.2 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.background = "rgba(201,168,76,0.05)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}
                 >
-                  ↻ Refresh suggestions
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  Refresh suggestions
                 </button>
               </div>
 
@@ -1235,44 +1248,56 @@ export default function AiChat({
               style={{
                 position: "fixed", top: "50%", left: "50%",
                 transform: "translate(-50%,-50%)",
-                width: "min(360px, calc(100vw - 32px))",
+                width: "min(380px, calc(100vw - 32px))",
                 background: "var(--card-bg)",
                 border: "0.5px solid var(--border2)",
-                borderRadius: 14, padding: "22px 24px",
+                borderRadius: 16, overflow: "hidden",
                 zIndex: 1011,
-                boxShadow: "0 20px 60px rgba(0,0,0,.5)",
+                boxShadow: "0 24px 80px rgba(0,0,0,.5)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Zap size={15} style={{ color: "var(--accent)" }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>Message Limits</span>
+              {/* Header — InfoModal pattern */}
+              <div style={{ padding: "22px 26px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", marginBottom: 7, fontFamily: "var(--font-mono)", fontWeight: 700 }}>AI Chat</div>
+                  <div style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.2 }}>Message limits</div>
                 </div>
                 <button onClick={() => setShowLimitModal(false)}
-                  style={{ width: 26, height: 26, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)" }}>
+                  style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text3)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "color 0.15s, border-color 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
                   <X size={12} />
                 </button>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--bg3)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
-                <div style={{ flex: 1, height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(100, pct * 100)}%`, background: limitColor, borderRadius: 2 }} />
+              <div style={{ padding: "20px 26px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--bg3)", borderRadius: 10, padding: "12px 14px", marginBottom: 16, border: "0.5px solid var(--border)" }}>
+                  <div style={{ flex: 1, height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${Math.min(100, pct * 100)}%`, background: limitColor, borderRadius: 2, boxShadow: pct > 0 ? `0 0 6px ${limitColor}` : "none" }} />
+                  </div>
+                  <span style={{ fontFamily: "Space Mono, monospace", fontSize: 12, fontWeight: 700, color: limitColor, whiteSpace: "nowrap", letterSpacing: 0.3 }}>{remaining}/{messagesLimit}</span>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: limitColor, whiteSpace: "nowrap" }}>{remaining}/{messagesLimit}</span>
+                {[
+                  { label: "Base limit", text: `${messagesLimit} messages per day` },
+                  { label: "How to get more", text: "Invite friends with your referral link. Each referral adds +5 messages per day (up to +25 bonus)." },
+                  { label: "Resets", text: "Midnight UTC daily" },
+                ].map(item => (
+                  <div key={item.label} style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 9, letterSpacing: "0.18em", color: "var(--accent)", textTransform: "uppercase", marginBottom: 5, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{item.label}</div>
+                    <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.6, margin: 0 }}>{item.text}</p>
+                  </div>
+                ))}
+                {referralLink && (
+                  <button
+                    onClick={async () => {
+                      try { await navigator.clipboard.writeText(referralLink); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); } catch {}
+                    }}
+                    style={{ width: "100%", padding: "10px", fontSize: 12, fontWeight: 700, borderRadius: 9, border: "none", background: referralCopied ? "#5cb88a" : "var(--accent)", color: "#ffffff", cursor: "pointer", transition: "background .2s, box-shadow .2s, transform .15s", letterSpacing: 0.3, marginTop: 6, boxShadow: referralCopied ? "none" : "0 3px 14px rgba(201,168,76,0.35)" }}
+                    onMouseEnter={e => { if (!referralCopied) { e.currentTarget.style.transform = "translateY(-0.5px)"; e.currentTarget.style.boxShadow = "0 5px 18px rgba(201,168,76,0.5)"; } }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; if (!referralCopied) e.currentTarget.style.boxShadow = "0 3px 14px rgba(201,168,76,0.35)"; }}>
+                    {referralCopied ? "Referral link copied" : "Copy my referral link"}
+                  </button>
+                )}
               </div>
-              <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.7, marginBottom: 16 }}>
-                <strong style={{ color: "var(--text)" }}>Base limit:</strong> {messagesLimit} messages/day<br />
-                <strong style={{ color: "var(--text)" }}>How to get more:</strong> Invite friends using your referral link. Each referral adds +5 messages per day (up to +25 bonus).<br />
-                <strong style={{ color: "var(--text)" }}>Resets:</strong> Midnight UTC daily.
-              </p>
-              {referralLink && (
-                <button
-                  onClick={async () => {
-                    try { await navigator.clipboard.writeText(referralLink); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); } catch {}
-                  }}
-                  style={{ width: "100%", padding: "9px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", background: referralCopied ? "#5cb88a" : "var(--accent)", color: "#ffffff", cursor: "pointer", transition: "background .2s" }}>
-                  {referralCopied ? "Referral link copied!" : "Copy My Referral Link"}
-                </button>
-              )}
             </motion.div>
           </>
         )}

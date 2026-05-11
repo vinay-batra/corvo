@@ -170,9 +170,15 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ fontSize: 9, letterSpacing: 3, color: C.cream3, textTransform: "uppercase" }}>Saved</span>
-        <button id="tour-save-btn" data-save-trigger onClick={() => setShowSave(s => !s)} style={{ fontSize: 11, letterSpacing: 1, color: C.amber, background: "none", border: "none", cursor: "pointer" }}>+ Save</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span style={{ fontSize: 10, letterSpacing: 2.5, color: C.amber, textTransform: "uppercase", fontWeight: 700, fontFamily: "Space Mono, monospace" }}>Saved</span>
+        <button id="tour-save-btn" data-save-trigger onClick={() => setShowSave(s => !s)}
+          style={{ fontSize: 10.5, letterSpacing: 1.2, color: C.amber, background: "rgba(201,168,76,0.07)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 6, cursor: "pointer", padding: "3px 9px", fontWeight: 700, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 4 }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.14)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.45)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(201,168,76,0.07)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.25)"; }}>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Save
+        </button>
       </div>
       <AnimatePresence initial={false}>
         {showSave && (
@@ -192,26 +198,26 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
         )}
       </AnimatePresence>
       {portfolios.length === 0 ? (
-        <p style={{ fontSize: 11, color: C.cream3, textAlign: "center", padding: "6px 0" }}>No saved portfolios</p>
+        <p style={{ fontSize: 11, color: C.cream3, textAlign: "center", padding: "10px 0", letterSpacing: 0.1 }}>No saved portfolios</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {portfolios.map(p => (
             <motion.div key={p.id} initial={false} animate={{ opacity: 1 }}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", background: "var(--bg2)", borderRadius: 9, border: `0.5px solid ${C.border}`, cursor: "pointer", transition: "all 0.15s" }}
+              style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 11px", background: "var(--bg2)", borderRadius: 10, border: `0.5px solid ${C.border}`, borderLeft: `2px solid transparent`, cursor: "pointer", transition: "all 0.15s", position: "relative" }}
               onClick={() => onLoad(p.assets)}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.background = "rgba(201,168,76,0.04)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = "var(--bg2)"; }}>
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.borderLeftColor = "var(--accent)"; e.currentTarget.style.background = "rgba(201,168,76,0.05)"; e.currentTarget.style.transform = "translateX(1px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.borderLeftColor = "transparent"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.transform = "translateX(0)"; }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: C.cream2, margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</p>
-                <p style={{ fontSize: 10, color: C.cream3, margin: 0, fontFamily: "Space Mono, monospace" }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: C.cream2, margin: "0 0 3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: -0.1 }}>{p.name}</p>
+                <p style={{ fontSize: 10, color: C.cream3, margin: 0, fontFamily: "Space Mono, monospace", letterSpacing: 0.2 }}>
                   {p.assets.slice(0, 3).map((a: Asset) => a.ticker).join(" · ")}
                   {p.assets.length > 3 ? ` +${p.assets.length - 3}` : ""}
                 </p>
               </div>
               <button onClick={e => { e.stopPropagation(); setDeleteConfirm(p.id); }}
-                style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", padding: "2px 4px", lineHeight: 1, flexShrink: 0, transition: "color 0.12s" }}
-                onMouseEnter={e => e.currentTarget.style.color = "var(--red)"}
-                onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}
+                style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", padding: "3px 5px", lineHeight: 1, flexShrink: 0, transition: "all 0.12s", borderRadius: 4, display: "flex" }}
+                onMouseEnter={e => { e.currentTarget.style.color = "var(--red)"; e.currentTarget.style.background = "rgba(224,92,92,0.08)"; }}
+                onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}
                 title="Delete portfolio">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>

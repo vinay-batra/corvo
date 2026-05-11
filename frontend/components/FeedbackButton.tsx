@@ -63,6 +63,8 @@ export default function FeedbackButton() {
         initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
+        whileHover={{ y: -1 }}
+        whileTap={{ scale: 0.97 }}
         onClick={() => setOpen(true)}
         title="Send feedback"
         aria-label="Send feedback"
@@ -78,12 +80,13 @@ export default function FeedbackButton() {
           borderRadius: "50%",
           cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
-          transition: "border-color 0.15s, background 0.15s",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)",
+          transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s, color 0.2s",
+          color: "var(--text2)",
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.background = "var(--bg3)"; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ color: "var(--text2)" }}>
+        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.boxShadow = "0 6px 22px rgba(0,0,0,0.28), 0 0 0 3px rgba(201,168,76,0.1)"; e.currentTarget.style.color = "var(--accent)"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)"; e.currentTarget.style.color = "var(--text2)"; }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M4 3h16a1 1 0 0 1 .73 1.68l-4.73 5.32 4.73 5.32A1 1 0 0 1 20 17H5v4a1 1 0 0 1-2 0V4a1 1 0 0 1 1-1z"/>
         </svg>
       </motion.button>
@@ -102,15 +105,15 @@ export default function FeedbackButton() {
               onClick={e => e.stopPropagation()}>
 
               {/* Header */}
-              <div style={{ padding: "18px 20px 14px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 3 }}>Corvo</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Send Feedback</div>
+              <div style={{ padding: "22px 26px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase" as const, marginBottom: 7, fontFamily: "var(--font-mono)", fontWeight: 700 }}>Corvo</div>
+                  <div style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.2 }}>Send feedback</div>
                 </div>
                 <button onClick={handleClose}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4, display: "flex", alignItems: "center" }}
-                  onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
-                  onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}>
+                  style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text3)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "color 0.15s, border-color 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
