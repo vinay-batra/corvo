@@ -224,25 +224,43 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
   );
 }
 
-/* ─── Bento Card base — gold glow on hover, no 3D tilt ─── */
+/* ─── Bento Card base — ambient gold glow behind + 3D mouse-tilt + cursor glow ─── */
 function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
   const glowRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const ambientRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const cx = e.clientX, cy = e.clientY;
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
-      if (!glowRef.current) return;
-      const rect = glowRef.current.closest(".bento-card-inner")?.getBoundingClientRect();
-      if (!rect) return;
+      if (!glowRef.current || !innerRef.current) return;
+      const rect = innerRef.current.getBoundingClientRect();
       const x = cx - rect.left, y = cy - rect.top;
+      // Cursor-following sheen
       glowRef.current.style.opacity = "1";
-      glowRef.current.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(var(--accent-rgb),0.18), transparent 55%)`;
+      glowRef.current.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(var(--accent-rgb),0.22), transparent 55%)`;
+      // 3D mouse tilt — max 6deg rotation
+      const px = (x / rect.width) - 0.5;   // -0.5..0.5
+      const py = (y / rect.height) - 0.5;
+      const rotY = px * 8;                  // left/right tilt
+      const rotX = -py * 8;                 // up/down tilt
+      innerRef.current.style.transform = `perspective(900px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(0)`;
+      // Ambient glow drifts slightly with cursor for a sense of depth
+      if (ambientRef.current) {
+        ambientRef.current.style.opacity = "1";
+        ambientRef.current.style.transform = `translate3d(${px * 12}px, ${py * 12}px, 0)`;
+      }
     });
   };
   const handleMouseLeave = () => {
     cancelAnimationFrame(rafRef.current);
     if (glowRef.current) glowRef.current.style.opacity = "0";
+    if (innerRef.current) innerRef.current.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg) translateZ(0)";
+    if (ambientRef.current) {
+      ambientRef.current.style.opacity = "0.55";
+      ambientRef.current.style.transform = "translate3d(0,0,0)";
+    }
   };
   const { gridArea, ...restStyle } = style as any;
   return (
@@ -252,11 +270,45 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
-      style={{ gridArea, height: "100%", position: "relative" }}
+      style={{ gridArea, height: "100%", position: "relative", perspective: 900 }}
     >
-      <div onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
+      {/* Ambient gold glow behind the card */}
+      <div
+        ref={ambientRef}
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: -28,
+          borderRadius: 32,
+          background: "radial-gradient(ellipse 70% 60% at 50% 55%, rgba(var(--accent-rgb), 0.22), transparent 70%)",
+          filter: "blur(36px)",
+          opacity: 0.55,
+          pointerEvents: "none",
+          zIndex: 0,
+          transition: "opacity 0.5s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)",
+          willChange: "transform, opacity",
+        }}
+      />
+      {/* Inner card with 3D tilt + cursor glow */}
+      <div
+        ref={innerRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         className="bento-card-inner"
-        style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20, overflow: "clip", position: "relative", height: "100%", ...restStyle }}>
+        style={{
+          background: "var(--card-bg)",
+          border: "1px solid var(--border)",
+          borderRadius: 20,
+          overflow: "clip",
+          position: "relative",
+          height: "100%",
+          zIndex: 1,
+          transformStyle: "preserve-3d",
+          transform: "perspective(900px) rotateX(0deg) rotateY(0deg) translateZ(0)",
+          transition: "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)",
+          willChange: "transform",
+          ...restStyle,
+        }}>
         <div ref={glowRef} aria-hidden style={{ position: "absolute", inset: 0, opacity: 0, pointerEvents: "none", transition: "opacity 0.35s ease", zIndex: 0, mixBlendMode: "screen" as const }} />
         <div style={{ position: "relative", zIndex: 1, height: "100%" }}>{children}</div>
       </div>
