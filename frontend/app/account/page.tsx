@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import PublicFooter from "@/components/PublicFooter";
 
@@ -140,42 +139,6 @@ export default function AccountPage() {
           </p>
         </div>
 
-        {/* Quick links */}
-        <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, marginBottom: 32 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <div style={{ width: 4, height: 22, background: "var(--accent)", borderRadius: 2, flexShrink: 0 }} />
-            <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: 22, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.15, margin: 0 }}>
-              Quick Links
-            </h2>
-          </div>
-          <Link href="/app" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "rgba(184,134,11,0.06)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(184,134,11,0.35)")}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(184,134,11,0.15)")}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--accent)" }}>Go to App</span>
-            </div>
-            <span style={{ fontSize: 14, color: "var(--accent)" }}>→</span>
-          </Link>
-          <Link href="/settings" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border2)")}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text)" }}>Settings</span>
-            </div>
-            <span style={{ fontSize: 14, color: "var(--text3)" }}>→</span>
-          </Link>
-          <Link href="/referrals" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 12, textDecoration: "none", transition: "border-color 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border2)")}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text)" }}>Referrals</span>
-            </div>
-            <span style={{ fontSize: 14, color: "var(--text3)" }}>→</span>
-          </Link>
-        </div>
 
       </main>
       <PublicFooter />
