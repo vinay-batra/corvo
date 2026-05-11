@@ -4,9 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase as sb } from "../lib/supabase";
 import { motion } from "framer-motion";
-import { Sun, Moon } from "lucide-react";
 import PublicFooter from "../components/PublicFooter";
-import { usePWAInstall } from "../hooks/usePWAInstall";
+import PublicNav from "../components/PublicNav";
 import type gsapType from "gsap";
 import type { ScrollTrigger as ScrollTriggerType } from "gsap/ScrollTrigger";
 import type { SplitText as SplitTextType } from "gsap/SplitText";
@@ -3274,83 +3273,29 @@ function GsapHero({
 /* ─── Main Landing ─── */
 export default function Landing() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const navRef = useRef<HTMLElement>(null);
-  const lastScrollY = useRef(0);
-  const navHidden = useRef(false);
-  const [navSolid, setNavSolid] = useState(false);
+  // Nav hide-on-scroll behavior now lives in PublicNav, which receives
+  // containerRef as its scroller.
   const [loggedIn, setLoggedIn] = useState(false);
-  const [dark, setDark] = useState(false);
 
+  // Sync data-theme on initial mount from stored preference (PublicNav does
+  // the same via its useTheme hook but this fires earlier in the render tree
+  // and prevents a brief flash before PublicNav mounts).
   useEffect(() => {
     const stored = localStorage.getItem("corvo_theme");
-    const isDark = stored ? stored === "dark" : false;
-    setDark(isDark);
+    const isDark = stored === "dark";
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, []);
 
-  const toggleTheme = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
-    localStorage.setItem("corvo_theme", next ? "dark" : "light");
-  };
-  const { canInstall, install } = usePWAInstall();
   const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ displayName: string; avatarUrl: string | null; initials: string } | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [refLinkCopied, setRefLinkCopied] = useState(false);
 
+  // Logged-in status is only needed to gate "Get Started" CTAs inside hero
+  // and feature sections; PublicNav fetches its own session for the avatar.
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const y = el.scrollTop;
-      setNavSolid(y > 60);
-      const delta = y - lastScrollY.current;
-      if (delta > 4 && y > 100 && !navHidden.current) {
-        navHidden.current = true;
-        if (navRef.current) navRef.current.style.transform = "translateY(-100%)";
-      } else if (delta < -4 && navHidden.current) {
-        navHidden.current = false;
-        if (navRef.current) navRef.current.style.transform = "translateY(0)";
-      }
-      lastScrollY.current = y;
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    sb.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        setLoggedIn(true);
-        setUserId(session.user.id);
-        const { data: prof } = await sb.from("profiles").select("display_name,avatar_url").eq("id", session.user.id).single();
-        const name = prof?.display_name || session.user.email?.split("@")[0] || "User";
-        setUserProfile({ displayName: name, avatarUrl: prof?.avatar_url || null, initials: name[0].toUpperCase() });
-      }
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) setLoggedIn(true);
     }).catch(() => {});
     fetch(`${API_URL}/stats`).then(r => r.json()).then(d => { if (d.user_count) setLiveUserCount(d.user_count); }).catch(() => {});
   }, []);
-
-  const signOut = async () => {
-    await sb.auth.signOut();
-    setLoggedIn(false); setUserProfile(null); setUserMenuOpen(false); setMobileMenuOpen(false);
-    window.location.href = "/";
-  };
-
-  useEffect(() => {
-    if (!userMenuOpen) return;
-    const close = (e: MouseEvent) => {
-      const menu = document.getElementById("user-menu-dropdown");
-      const btn = document.getElementById("user-menu-btn");
-      if (menu && !menu.contains(e.target as Node) && btn && !btn.contains(e.target as Node)) setUserMenuOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [userMenuOpen]);
 
 
   const jsonLd = {
@@ -3519,173 +3464,9 @@ export default function Landing() {
       {/* Mobile desktop banner */}
       <MobileDesktopBanner />
 
-      {/* NAV */}
-      <nav ref={navRef} className="nav-pad" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px", background: navSolid ? "color-mix(in srgb, var(--bg) 88%, transparent)" : "transparent", backdropFilter: navSolid ? "blur(24px) saturate(140%)" : "blur(0px)", borderBottom: navSolid ? "1px solid var(--border)" : "1px solid transparent", transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1), background 0.4s cubic-bezier(0.16,1,0.3,1), backdrop-filter 0.4s, border-color 0.4s cubic-bezier(0.16,1,0.3,1)", willChange: "transform" }}>
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
-        </div>
-        {/* Desktop nav links */}
-        <div className="nav-links" style={{ display: "flex", gap: 2, alignItems: "center", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
-          <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", letterSpacing: 0.3, transition: "color 0.2s", fontFamily: "Inter,sans-serif" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>Features</button>
-          <Link href="/install" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Install</Link>
-          <Link href="/pricing" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Pricing</Link>
-          <Link href="/changelog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Changelog</Link>
-          <Link href="/blog" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Blog</Link>
-          <Link href="/about" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>About</Link>
-          <Link href="/faq" className="nl" style={{ padding: "7px 14px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>FAQ</Link>
-        </div>
-        {/* Right side */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {/* PWA install - desktop only, shown in drawer on mobile */}
-          {canInstall && (
-            <button
-              onClick={install}
-              className="nav-install-desktop"
-              style={{ display: "flex", alignItems: "center", height: 32, padding: "0 14px", fontSize: 12, color: "var(--text2)", background: "transparent", border: "1px solid var(--border)", borderRadius: 20, cursor: "pointer", letterSpacing: 0.3, transition: "color 0.2s, border-color 0.2s, background 0.2s", whiteSpace: "nowrap" as const }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
-            >
-              Install App
-            </button>
-          )}
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            title={dark ? "Switch to light mode" : "Switch to dark mode"}
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, background: "transparent", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text2)", transition: "color 0.2s, border-color 0.2s, background 0.2s" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg3)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text2)"; }}
-          >
-            {dark ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
-          {loggedIn ? (
-            <div style={{ position: "relative" }}>
-              <button id="user-menu-btn" onClick={e => { e.stopPropagation(); setUserMenuOpen(v => !v); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 24, cursor: "pointer", transition: "border-color 0.2s" }} onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(var(--accent-rgb),0.3)")} onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}>
-                {userProfile?.avatarUrl ? (
-                  <img src={userProfile.avatarUrl} alt="" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" as const }} />
-                ) : (
-                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--accent-rgb),0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent)" }}>{userProfile?.initials ?? "?"}</div>
-                )}
-                <span className="nav-user-name" style={{ fontSize: 12, color: "var(--text2)", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{userProfile?.displayName}</span>
-                <span className="nav-user-name-mobile" style={{ display: "none", fontSize: 12, color: "var(--text2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{userProfile?.displayName?.split(" ")[0] || "Account"}</span>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.4, flexShrink: 0 }}><path d="M2 3.5L5 6.5L8 3.5" stroke="var(--text)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-              {userMenuOpen && (
-                <div id="user-menu-dropdown" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, minWidth: 182, background: "var(--card-bg)", border: "1px solid var(--border2)", borderRadius: 12, padding: "6px", backdropFilter: "blur(20px)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", zIndex: 200 }}>
-                  {/* Referral callout */}
-                  {userId && (() => {
-                    const code = userId.replace(/-/g, "").slice(0, 8);
-                    const link = `https://corvo.capital/app?ref=${code}`;
-                    const shortLink = `corvo.capital/app?ref=${code}`;
-                    return (
-                      <div style={{ margin: "0 6px 6px", padding: "10px 11px", background: "rgba(var(--accent-rgb), 0.05)", border: "0.5px solid rgba(var(--accent-rgb), 0.18)", borderRadius: 9 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)", letterSpacing: 0.3 }}>Refer a friend</span>
-                          <span style={{ fontSize: 9, color: "var(--text3)" }}>+5 AI messages each</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                          <div style={{ flex: 1, fontSize: 10, fontFamily: "Space Mono, monospace", color: "var(--text3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 5, padding: "4px 7px" }}>
-                            {shortLink}
-                          </div>
-                          <button
-                            onClick={e => {
-                              e.stopPropagation();
-                              navigator.clipboard.writeText(link).then(() => {
-                                setRefLinkCopied(true);
-                                setTimeout(() => setRefLinkCopied(false), 2000);
-                              }).catch(() => {});
-                            }}
-                            title="Copy referral link"
-                            style={{ width: 26, height: 26, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: refLinkCopied ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "color 0.15s" }}
-                          >
-                            {refLinkCopied ? (
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            ) : (
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                                <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  <div style={{ height: "0.5px", background: "var(--border)", margin: "2px 6px 4px" }} />
-                  <Link href="/account" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                    My Account
-                  </Link>
-                  <Link href="/referrals" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                    Referrals
-                  </Link>
-                  <Link href="/settings" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                    Settings
-                  </Link>
-                  <Link href="/app" onClick={() => setUserMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                    Go to App
-                  </Link>
-                  <div style={{ height: "0.5px", background: "var(--border)", margin: "4px 6px" }} />
-                  <button onClick={signOut} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "rgba(224,92,92,0.8)", background: "none", border: "none", cursor: "pointer", textAlign: "left" as const, transition: "background 0.15s", fontFamily: "Inter,sans-serif" }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(224,92,92,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="nav-auth-desktop" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <Link href="/auth" className="nl" style={{ padding: "7px 16px", fontSize: 12, color: "var(--text3)", textDecoration: "none", letterSpacing: 0.3, transition: "color 0.2s" }}>Sign In</Link>
-              <Link href="/auth?mode=signup" className="cta" style={{ padding: "8px 20px", fontSize: 12, fontWeight: 600, background: "var(--accent)", borderRadius: 8, color: "var(--bg)", textDecoration: "none" }}>Get Started Free</Link>
-            </div>
-          )}
-          {/* Hamburger */}
-          <button className="hamburger" aria-label="Open menu" onClick={() => setMobileMenuOpen(v => !v)} style={{ display: "none", alignItems: "center", justifyContent: "center", width: 36, height: 36, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", flexShrink: 0, color: "var(--text)" }}>
-            {mobileMenuOpen ? (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            )}
-          </button>
-        </div>
-      </nav>
+      {/* NAV - shared PublicNav with hide-on-scroll behavior, driven by the inner scroller */}
+      <PublicNav scrollerRef={containerRef} />
 
-      {/* Mobile drawer */}
-      {mobileMenuOpen && (
-        <div style={{ position: "fixed", top: 58, left: 0, right: 0, zIndex: 99, background: "var(--bg)", borderBottom: "1px solid var(--border)", backdropFilter: "blur(20px)", padding: "16px 24px 24px", display: "flex", flexDirection: "column" as const, gap: 0 }}>
-          <button onClick={() => { document.getElementById("features")?.scrollIntoView({ behavior: "smooth" }); setMobileMenuOpen(false); }} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", background: "none", border: "none", borderBottom: "0.5px solid var(--border)", cursor: "pointer", textAlign: "left" as const, fontFamily: "Inter,sans-serif" }}>Features</button>
-          <Link href="/install" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Install</Link>
-          <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Pricing</Link>
-          <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Changelog</Link>
-          <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>Blog</Link>
-          <Link href="/about" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>About</Link>
-          <Link href="/faq" onClick={() => setMobileMenuOpen(false)} style={{ padding: "13px 4px", fontSize: 14, color: "var(--text2)", textDecoration: "none", borderBottom: "0.5px solid var(--border)", display: "block" }}>FAQ</Link>
-          {canInstall && (
-            <button
-              onClick={() => { setMobileMenuOpen(false); install(); }}
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", padding: "13px 4px", fontSize: 14, color: "var(--text2)", background: "none", border: "none", borderBottom: "0.5px solid var(--border)", cursor: "pointer", textAlign: "center" as const }}
-            >
-              Install App
-            </button>
-          )}
-          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-            {loggedIn ? (
-              <Link href="/app" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Go to App</Link>
-            ) : (
-              <>
-                <Link href="/auth" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Sign In</Link>
-                <Link href="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, padding: "12px", textAlign: "center" as const, fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 10 }}>Get Started Free</Link>
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* HERO - pinned, GSAP-driven */}
       <GsapHero loggedIn={loggedIn} liveUserCount={liveUserCount} scrollerRef={containerRef} />
