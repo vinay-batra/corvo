@@ -7,18 +7,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Session: May 10, 2026**
-- Removed Watchlist and Learn tabs from nav (code preserved in page.tsx — add back to TABS to restore)
-- Rebuilt GreetingBar as premium Daily Brief card — CSS Grid layout (1fr 1px 230px), greeting full-width above grid, Portfolio Today hides when market closed + value ~0
-- Fixed TS build error: removed `tab.id === "learn"` comparisons after TABS narrowing
-- Elevated AiInsights: pill tags, full analyst sentences, bolder rebalancing section, bigger Ask AI CTA
+**Session: May 10, 2026 (continued)**
+- Onboarding rewritten: 11-step form replaced with 3-screen preset demo flow
+  - Screen 1: pick preset (Tech Growth, Index Core, Dividend Income, Balanced) with risk badge + ticker pills
+  - Screen 2: loading orb while fetchPortfolio runs (1.8s min for feel), then full reveal
+  - Screen 3 (reveal): Sharpe / return / drawdown / health score chips + Corvo AI verdict card (what I see / why it matters / what to consider), derived client-side from real backend data
+  - Preset assets saved to localStorage as `corvo_onboarding_assets`; redirect to /app?tour=true as before
+  - Personalization questions (risk tolerance, income, goals) deferred to in-app context
 
 **Up next (in priority order):**
-1. Onboarding rewrite — preset demo flow, 60-second first wow moment
-2. Onboarding rewrite — preset demo flow, 60-second first wow moment
-3. Homepage rewrite — "your portfolio's guardian" positioning
-4. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
-5. Plaid integration — auto-sync brokerage (apply at plaid.com while building)
+1. Homepage rewrite — "your portfolio's guardian" positioning
+2. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
+3. Plaid integration — auto-sync brokerage (apply at plaid.com while building)
 
 **Daily Signal (built May 10):**
 - POST /portfolio/daily-signal backend endpoint with Claude, in-memory cache by (date, portfolio hash)
