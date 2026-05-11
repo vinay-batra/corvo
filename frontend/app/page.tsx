@@ -380,7 +380,7 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
           <p style={{ fontSize: 11, color: "var(--text)" }}>Am I taking too much risk?</p>
         </div>
         <div style={{ background: "rgba(var(--accent-rgb),0.06)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: "12px 12px 12px 2px", padding: "10px 13px", display: "flex", gap: 8, minHeight: 56 }}>
-          <img src="/corvo-logo.svg" width={12} height={10} alt="" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
+          <img src="/corvo-logo.png" width={12} height={10} alt="" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
           <p style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.65 }}>
             {displayed}
             {displayed.length < FULL_TEXT.length && (
@@ -970,7 +970,7 @@ function StockTeaserSection() {
             </div>
             {/* AI insight */}
             <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", background: "rgba(var(--accent-rgb),0.03)", display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <img src="/corvo-logo.svg" width={14} height={11} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
+              <img src="/corvo-logo.png" width={14} height={11} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, fontStyle: "italic" as const }}>{result.insight}</p>
             </div>
             {/* CTA */}
@@ -1040,7 +1040,7 @@ function VisualComparisonSection() {
           <div style={{ background: "var(--bg2)", height: "100%", padding: "22px 20px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(var(--accent-rgb),0.1)", paddingBottom: 10, marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <img src="/corvo-logo.svg" width={16} height={13} alt="" />
+                <img src="/corvo-logo.png" width={16} height={13} alt="" />
                 <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "var(--accent)" }}>CORVO</span>
               </div>
               <span style={{ fontSize: 10, color: "var(--green)", fontWeight: 700, background: "rgba(92,184,138,0.1)", border: "1px solid rgba(92,184,138,0.3)", padding: "2px 8px", borderRadius: 4 }}>$0/mo</span>
@@ -1066,7 +1066,7 @@ function VisualComparisonSection() {
               </svg>
             </div>
             <div style={{ background: "rgba(var(--accent-rgb),0.05)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: 8, padding: "9px 12px", display: "flex", gap: 7, alignItems: "flex-start" }}>
-              <img src="/corvo-logo.svg" width={11} height={9} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
+              <img src="/corvo-logo.png" width={11} height={9} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
               <p style={{ fontSize: 10, color: "var(--text2)", lineHeight: 1.6 }}>Strong cash flow and buyback program supports price stability.</p>
             </div>
           </div>
@@ -1477,7 +1477,7 @@ function EmailPopupModal() {
 
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
-          <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
+          <img src="/corvo-logo.png" width={28} height={28} alt="Corvo" />
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, letterSpacing: 3, color: "var(--accent)" }}>CORVO</span>
         </div>
 
@@ -1591,7 +1591,7 @@ function FinalCTASection() {
       >
         <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center", background: "transparent" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-            <img src="/corvo-logo.svg" width={32} height={32} alt="Corvo" style={{ opacity: 0.8 }} />
+            <img src="/corvo-logo.png" width={32} height={32} alt="Corvo" style={{ opacity: 0.8 }} />
           </div>
           <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 20 }}>
             Get Started
@@ -3331,7 +3331,7 @@ export default function Landing() {
         "@id": "https://corvo.capital/#org",
         name: "Corvo",
         url: "https://corvo.capital",
-        logo: "https://corvo.capital/corvo-logo.svg",
+        logo: "https://corvo.capital/corvo-logo.png",
         sameAs: ["https://twitter.com/corvocapital"],
         description: "Corvo provides free institutional-grade portfolio analytics tools for retail investors.",
       },

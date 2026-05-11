@@ -69,7 +69,7 @@ export default function BlogPost({ title, date, readTime, category, description,
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img src="/corvo-logo.svg" width={16} height={14} alt="Corvo" style={{ opacity: 0.85 }} />
+              <img src="/corvo-logo.png" width={16} height={14} alt="Corvo" style={{ opacity: 0.85 }} />
             </div>
             <div>
               <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", lineHeight: 1 }}>Corvo Team</p>
