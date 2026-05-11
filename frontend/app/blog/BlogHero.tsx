@@ -27,9 +27,9 @@ function AnimatedHeading({ text, accentText, style = {} }: { text: string; accen
   const ref = useRef<HTMLHeadingElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.2 });
-    obs.observe(el); return () => obs.disconnect();
+    let rafA = 0, rafB = 0;
+    rafA = requestAnimationFrame(() => { rafB = requestAnimationFrame(() => setVisible(true)); });
+    return () => { cancelAnimationFrame(rafA); cancelAnimationFrame(rafB); };
   }, []);
   const blackWords = text.split(" ").filter(Boolean);
   const goldWords = accentText ? accentText.split(" ").filter(Boolean) : [];

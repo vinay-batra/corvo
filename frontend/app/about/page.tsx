@@ -29,9 +29,9 @@ function AnimatedHeading({ text, accentText, style = {} }: { text: string; accen
   const ref = useRef<HTMLHeadingElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.2 });
-    obs.observe(el); return () => obs.disconnect();
+    let rafA = 0, rafB = 0;
+    rafA = requestAnimationFrame(() => { rafB = requestAnimationFrame(() => setVisible(true)); });
+    return () => { cancelAnimationFrame(rafA); cancelAnimationFrame(rafB); };
   }, []);
   const blackWords = text.split(" ").filter(Boolean);
   const goldWords = accentText ? accentText.split(" ").filter(Boolean) : [];
@@ -92,7 +92,7 @@ export default function AboutPage() {
         </ScrollReveal>
 
         <div style={{ margin: "0 auto 80px", maxWidth: 1040 }}>
-          <AnimatedHeading text="Most apps show data." accentText="Corvo tells you what to do." style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(32px, 4.4vw, 60px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.12 }} />
+          <AnimatedHeading text="Built to be" accentText="the advisor I needed." style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(32px, 4.4vw, 60px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.12 }} />
         </div>
       </div>
 
