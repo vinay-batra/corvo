@@ -3169,7 +3169,7 @@ function GsapHero({
 
           {/* Floating "watching" alert chip — sits where Sharpe Ratio used to live */}
           <div className="hero-metric-card gh-metric-wrap" ref={(el) => { metricRefs.current[0] = el; }} style={{
-            position: "absolute", top: -32, left: -56,
+            position: "absolute", top: 16, left: -56,
             zIndex: 4,
             display: "inline-flex", alignItems: "center", gap: 9,
             padding: "9px 16px 9px 14px",
