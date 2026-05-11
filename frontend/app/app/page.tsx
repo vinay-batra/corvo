@@ -1961,7 +1961,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         {aiEditorOpen && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, background: "var(--accent)", boxShadow: "0 0 8px rgba(201,168,76,0.5)" }} />}
         <button
           onClick={() => setAiEditorOpen(o => !o)}
-          style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "11px 14px", background: aiEditorOpen ? "rgba(201,168,76,0.06)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
+          style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", background: aiEditorOpen ? "rgba(201,168,76,0.06)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
           onMouseEnter={e => { if (!aiEditorOpen) e.currentTarget.style.background = "rgba(201,168,76,0.04)"; }}
           onMouseLeave={e => { if (!aiEditorOpen) e.currentTarget.style.background = "transparent"; }}
         >
@@ -1975,7 +1975,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           </svg>
         </button>
         {aiEditorOpen && (
-          <div style={{ padding: "0 14px 12px" }}>
+          <div style={{ padding: "4px 16px 16px" }}>
             {(() => {
               const runNLCommand = async (cmd: string) => {
                 if (!cmd.trim() || !assets.length || nlLoading) return;
@@ -1998,7 +1998,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       onKeyDown={e => { if (e.key === "Enter") runNLCommand(nlCommand); }}
                       placeholder={assets.length ? "e.g. Rebalance to equal weight" : "Add holdings first"}
                       disabled={nlLoading || !assets.length}
-                      style={{ width: "100%", padding: "9px 34px 9px 11px", fontSize: 12, background: "var(--bg)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 8, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5, transition: "border-color 0.15s" }}
+                      style={{ width: "100%", padding: "10px 36px 10px 12px", fontSize: 12, background: "var(--bg)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 9, color: "var(--text)", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box", opacity: assets.length ? 1 : 0.5, transition: "border-color 0.15s" }}
                       onFocus={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.6)"; }}
                       onBlur={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.25)"; }}
                     />
@@ -2012,12 +2012,12 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </div>
                   {nlError && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>}
                   {chips.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 12 }}>
                       {chips.map(chip => (
                         <button key={chip} onClick={() => runNLCommand(chip)}
-                          style={{ padding: "3px 9px", fontSize: 10, background: "rgba(201,168,76,0.07)", border: "0.5px solid rgba(201,168,76,0.18)", borderRadius: 12, color: "var(--text3)", cursor: "pointer", lineHeight: 1.5, transition: "all 0.12s", whiteSpace: "nowrap" }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.color = "var(--accent)"; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.18)"; e.currentTarget.style.color = "var(--text3)"; }}>
+                          style={{ padding: "5px 11px", fontSize: 10.5, background: "rgba(201,168,76,0.07)", border: "0.5px solid rgba(201,168,76,0.18)", borderRadius: 14, color: "var(--text3)", cursor: "pointer", lineHeight: 1.5, transition: "all 0.12s", whiteSpace: "nowrap", letterSpacing: 0.1 }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.background = "rgba(201,168,76,0.1)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.18)"; e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "rgba(201,168,76,0.07)"; }}>
                           {chip}
                         </button>
                       ))}
