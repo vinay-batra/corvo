@@ -20,6 +20,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Added goal (GoalTracker), signal (DailySignal), save (Save Analysis banner) to DASH_CARDS
   - All 14 dashboard cards are now independently toggleable
 
+**App UI overhaul — Phase 1 (Dashboard tab, May 10):**
+- _CARD_BASE upgraded: 14px radius, 22-24px padding, layered shadow (used by every Card site-wide)
+- TooltipCardHeader rebuilt: 14px medium-weight sentence-case title with optional gold eyebrow; replaces the old 10px uppercase tag
+- New SectionHeader component (gold mini-label + Space Mono headline) with scroll-triggered reveal
+- Dashboard grouped into 4 named regions: **Overview** (daily brief, signal, WSID) → **Analysis** (metrics, performance, goal) → **Intelligence** (health, AI insights, vs benchmark) → **Composition** (allocation, sector, insider)
+- Headers only render if at least one card in the region is visible (respects customizer)
+
+**App UI overhaul — remaining phases:**
+- Phase 2: Positions tab
+- Phase 3: Stocks tab
+- Phase 4: Simulations + News
+- Phase 5: Shared component polish (modals, tooltips, buttons)
+
 **Up next (in priority order):**
 1. Homepage rewrite — "your portfolio's guardian" positioning
 2. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
