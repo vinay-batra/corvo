@@ -8,12 +8,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
 **Session: May 10, 2026 (continued)**
-- Onboarding rewritten: 11-step form replaced with 3-screen preset demo flow
-  - Screen 1: pick preset (Tech Growth, Index Core, Dividend Income, Balanced) with risk badge + ticker pills
-  - Screen 2: loading orb while fetchPortfolio runs (1.8s min for feel), then full reveal
-  - Screen 3 (reveal): Sharpe / return / drawdown / health score chips + Corvo AI verdict card (what I see / why it matters / what to consider), derived client-side from real backend data
-  - Preset assets saved to localStorage as `corvo_onboarding_assets`; redirect to /app?tour=true as before
-  - Personalization questions (risk tolerance, income, goals) deferred to in-app context
+- Onboarding simplified: 11 steps → 8 steps (same structure, less friction)
+  - Age + income combined into one step; risk tolerance + horizon combined into one step
+  - Life events step removed entirely
+  - Portfolio builder and financial goals remain, both skippable
+- Dashboard tour cut: 9 desktop stops → 5 (portfolio, daily brief, tabs, AI advisor, alerts)
+  - Mobile cut from 6 → 4 stops
+  - AI advisor card is now the clear final highlight of the tour
 
 **Up next (in priority order):**
 1. Homepage rewrite — "your portfolio's guardian" positioning
