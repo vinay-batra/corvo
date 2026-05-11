@@ -5,10 +5,11 @@ import { motion } from "framer-motion";
 import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, ChevronDown } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import dynamic from "next/dynamic";
+import { RESOLVED_API_URL } from "../lib/api";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 const LOCAL_KEY = "corvo_saved_portfolios";
 
 const TICKER_NAMES: Record<string, string> = {
@@ -77,7 +78,7 @@ interface PositionRow {
   sector: string;
   portfolioId: string;
   portfolioName: string;
-  weightFrac: number;   // 0–1 within that portfolio
+  weightFrac: number;   // 0-1 within that portfolio
   value: number | null;
   change1d: number | null;
   change7d: number | null;
@@ -246,7 +247,7 @@ export default function PositionsTab({
   onSelectTicker: (t: string) => void;
 }) {
   const cssVar = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  // Portfolio value — synced with localStorage (set in sidebar)
+  // Portfolio value - synced with localStorage (set in sidebar)
   const [portfolioValue, setPortfolioValue] = useState<number>(() => {
     if (typeof window === "undefined") return 10000;
     const s = localStorage.getItem("corvo_portfolio_value");
@@ -481,11 +482,11 @@ export default function PositionsTab({
       allTickers.map(ticker =>
         fetch(`${API_URL}/analyst-targets/${ticker}`)
           .then(r => {
-            if (!r.ok) { console.error(`[analyst-targets] ${ticker}: HTTP ${r.status}`); return null; }
+            if (!r.ok) { if (process.env.NODE_ENV !== "production") console.error(`[analyst-targets] ${ticker}: HTTP ${r.status}`); return null; }
             return r.json();
           })
           .then(d => ({ ticker, d }))
-          .catch(e => { console.error(`[analyst-targets] ${ticker}:`, e); return { ticker, d: null }; })
+          .catch(e => { if (process.env.NODE_ENV !== "production") console.error(`[analyst-targets] ${ticker}:`, e); return { ticker, d: null }; })
       )
     ).then(results => {
       const map: Record<string, AnalystTarget> = {};
@@ -710,7 +711,7 @@ export default function PositionsTab({
       {/* ── Performance chart ─────────────────────────────────────────────── */}
       {!portfoliosLoading && savedPortfolios.length > 0 && (
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="pos-perf-wrap"
           style={{ marginBottom: 20, border: "0.5px solid var(--border)", borderRadius: 12, padding: "16px 16px 8px", background: "var(--bg2)", overflow: "hidden", width: "100%" }}
@@ -877,7 +878,7 @@ export default function PositionsTab({
             />
           </div>
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
+            <table className="corvo-responsive-table" style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
               <thead>
                 <tr>
                   <SortTh label="Ticker"          sortKey="ticker"         active={sortKey==="ticker"}         dir={sortDir} onClick={() => toggleSort("ticker")} />

@@ -11,6 +11,7 @@ import ReferralsDashboard from "@/components/ReferralsDashboard";
 import { useToast } from "../../components/Toast";
 import LifeEvents, { type LifeEvent } from "../../components/LifeEvents";
 import FinancialGoals, { type FinancialGoal } from "../../components/FinancialGoals";
+import { RESOLVED_API_URL } from "../../lib/api";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -68,9 +69,9 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
       <div style={{
         position: "absolute", top: 2, left: on ? 19 : 2,
         width: 17, height: 17, borderRadius: "50%",
-        background: "linear-gradient(180deg, #fff 0%, rgba(245,240,230,0.95) 100%)",
+        background: "var(--toggle-knob)",
         transition: "left 0.2s ease",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.08)",
+        boxShadow: "var(--toggle-knob-shadow)",
       }} />
     </div>
   );
@@ -201,7 +202,7 @@ export default function SettingsPage({
       }
 
       // Only select the 5 columns that are guaranteed to exist in the schema.
-      // Push and email_theme columns may not be migrated yet — omit them to avoid 400 errors.
+      // Push and email_theme columns may not be migrated yet - omit them to avoid 400 errors.
       const { data: prefs } = await supabase
         .from("email_preferences")
         .select("morning_briefing,market_close_summary,week_in_review,monthly_summary,price_alerts")
@@ -316,9 +317,9 @@ export default function SettingsPage({
         { user_id: user.id, morning_briefing: mb, market_close_summary: mcs, week_in_review: wr, monthly_summary: ms, price_alerts: pa, updated_at: new Date().toISOString() },
         { onConflict: "user_id" }
       );
-      if (error) { console.error("saveNotifs error:", error); throw error; }
+      if (error) { if (process.env.NODE_ENV !== "production") console.error("saveNotifs error:", error); throw error; }
     } catch (err) {
-      console.error("saveNotifs caught:", err);
+      if (process.env.NODE_ENV !== "production") console.error("saveNotifs caught:", err);
       toast("Failed to save notification preferences. Please try again.", "error");
     }
   };
@@ -330,9 +331,9 @@ export default function SettingsPage({
         { user_id: user.id, email_theme: theme, updated_at: new Date().toISOString() },
         { onConflict: "user_id" }
       );
-      if (error) { console.error("saveEmailTheme error:", error); throw error; }
+      if (error) { if (process.env.NODE_ENV !== "production") console.error("saveEmailTheme error:", error); throw error; }
     } catch (err) {
-      console.error("saveEmailTheme caught:", err);
+      if (process.env.NODE_ENV !== "production") console.error("saveEmailTheme caught:", err);
       toast("Failed to save email theme. Please try again.", "error");
     }
   };
@@ -343,11 +344,11 @@ export default function SettingsPage({
     setPushPermission(result);
   };
 
-  // Push preference columns not yet in DB schema — suppress DB writes until migration is applied.
+  // Push preference columns not yet in DB schema - suppress DB writes until migration is applied.
   const savePushPrefs = async (
     _pmb: boolean, _pmc: boolean, _ppa: boolean, _ppt: boolean, _pwc: boolean, _per: boolean
   ) => {
-    console.warn("Push preference columns not yet in DB schema");
+    if (process.env.NODE_ENV !== "production") console.warn("Push preference columns not yet in DB schema");
   };
 
   const saveProfileQuestionnaire = async () => {
@@ -373,7 +374,7 @@ export default function SettingsPage({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated");
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiUrl = RESOLVED_API_URL;
       const res = await fetch(`${apiUrl}/user`, { method: "DELETE", headers: { Authorization: `Bearer ${session.access_token}` } });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -596,10 +597,10 @@ export default function SettingsPage({
               <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.5 }}>{row.desc}</p>
             </div>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-              {row.email ? <Toggle on={row.email.on} onChange={row.email.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}>—</span>}
+              {row.email ? <Toggle on={row.email.on} onChange={row.email.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}> - </span>}
             </div>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-              {row.push ? <Toggle on={row.push.on} onChange={row.push.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}>—</span>}
+              {row.push ? <Toggle on={row.push.on} onChange={row.push.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}> - </span>}
             </div>
           </div>
         ))}
@@ -970,11 +971,11 @@ export default function SettingsPage({
       <AnimatePresence>
         {cropSrc && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
               className="s-modal-inner"
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 420 }}>
@@ -999,12 +1000,12 @@ export default function SettingsPage({
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
             onClick={e => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}>
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
               className="s-modal-inner"
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400 }}>

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import { posthog } from "../../lib/posthog";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { RESOLVED_API_URL } from "../../lib/api";
 
 const C = {
   navy: "var(--bg)", navy2: "var(--bg)", navy3: "var(--bg2)",
@@ -51,7 +52,7 @@ function AuthForm() {
       if (error) setError(error.message);
       else {
         posthog.capture("signup_completed", { method: "email_password" });
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const apiUrl = RESOLVED_API_URL;
         const userId = signUpData.user?.id ?? null;
         const displayName = email.split("@")[0] || null;
         fetch(`${apiUrl}/send-welcome-email`, {
@@ -149,7 +150,7 @@ function AuthForm() {
       </a>
 
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         style={{
           width: 460,
@@ -309,7 +310,7 @@ function AuthForm() {
         <AnimatePresence>
           {error && (
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{ padding: "10px 12px", background: "rgba(224,92,92,0.1)", border: "1px solid rgba(224,92,92,0.25)", borderRadius: 8, fontSize: 12, color: "#e05c5c", marginBottom: 12 }}>
               {error}
@@ -317,7 +318,7 @@ function AuthForm() {
           )}
           {success && (
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{ padding: "10px 12px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 8, fontSize: 12, color: C.amber, marginBottom: 12 }}>
               {success}
@@ -356,7 +357,7 @@ function AuthForm() {
         {mode === "login" && (
           magicSent ? (
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }}
               style={{ marginTop: 10, padding: "10px 12px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 8, fontSize: 12, color: C.amber, textAlign: "center" }}>
               Check your email. Magic link sent.

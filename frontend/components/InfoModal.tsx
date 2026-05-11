@@ -65,19 +65,19 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
           >
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 12 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               onClick={e => e.stopPropagation()}
               style={{ width: "100%", maxWidth: 520, maxHeight: "90vh", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", zIndex: 10000 }}
             >
-              {/* Header — features-page pattern: gold eyebrow + Space Mono title */}
+              {/* Header - features-page pattern: gold eyebrow + Space Mono title */}
               <div style={{ padding: "22px 26px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 6 }}>

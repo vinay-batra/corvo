@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { RESOLVED_API_URL } from "../lib/api";
 
 interface ReferralStats {
   referral_link: string;
@@ -92,8 +93,9 @@ export default function ReferralsDashboard() {
       const code = user.id.replace(/-/g, "").slice(0, 8);
       setRefLink(`https://corvo.capital/app?ref=${code}`);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await fetch(`${apiUrl}/referrals?user_id=${user.id}`);
+        const apiUrl = RESOLVED_API_URL;
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${apiUrl}/referrals`, session?.access_token ? { headers: { "Authorization": `Bearer ${session.access_token}` } } : {});
         if (res.ok) {
           const data: ReferralStats = await res.json();
           setStats(data);

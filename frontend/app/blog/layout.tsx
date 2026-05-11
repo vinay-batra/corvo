@@ -28,7 +28,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
         .prose tr:last-child td{border-bottom:none}
         .prose tr:nth-child(even) td{background:var(--bg2)}
         @keyframes fadein{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        @media(max-width:900px){
+        @media (max-width: 768px){
           .blog-cards-grid{grid-template-columns:1fr!important}
           .blog-content-grid{display:block!important;padding:32px 20px 60px!important}
           .blog-toc-col{display:none!important}

@@ -3,8 +3,9 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -218,7 +219,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
     let weightedPct = 0, coveredWeight = 0;
     for (const asset of validAssets) {
       const hp = holdingPrices.find(h => h.ticker === asset.ticker);
-      // Only include holdings with real change data — null means yfinance didn't return it
+      // Only include holdings with real change data - null means yfinance didn't return it
       if (hp && hp.changePct != null) {
         weightedPct += asset.weight * hp.changePct;
         coveredWeight += asset.weight;
@@ -247,7 +248,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
         @keyframes gb-live-pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(76,175,125,0.5)} 50%{opacity:0.8;box-shadow:0 0 0 4px rgba(76,175,125,0)} }
         .gb-root { --chip-pos:#4caf7d; --chip-neg:var(--red); }
 
-        /* Two-column content grid — collapses on small viewports */
+        /* Two-column content grid - collapses on small viewports */
         .gb-grid {
           display: grid;
           grid-template-columns: 1fr 1px 230px;
@@ -308,11 +309,11 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
           {getGreeting()}{firstName ? `, ${firstName}` : ""}.
         </h1>
 
-        {/* ── Two-column content grid — collapses ── */}
+        {/* ── Two-column content grid - collapses ── */}
         <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 2000, transition: "max-height 0.35s ease", opacity: collapsed ? 0 : 1, transitionProperty: "max-height, opacity", transitionDuration: "0.35s, 0.2s" }}>
         <div className="gb-grid">
 
-          {/* LEFT — brief sections */}
+          {/* LEFT - brief sections */}
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {!hideBriefing ? (
               summaryLoading ? (
@@ -340,10 +341,10 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
             )}
           </div>
 
-          {/* CENTER — vertical divider */}
+          {/* CENTER - vertical divider */}
           <div className="gb-vdiv" style={{ background: "var(--border)", height: "100%" }} />
 
-          {/* RIGHT — portfolio today + indices + holdings */}
+          {/* RIGHT - portfolio today + indices + holdings */}
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
 
             {/* Portfolio today */}

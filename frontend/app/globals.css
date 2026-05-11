@@ -17,10 +17,10 @@ body {
 
 * {
   -webkit-overflow-scrolling: auto !important;
-  /* overscroll-behavior intentionally NOT set here — setting it on * blocks scroll chaining from overflow:hidden containers */
+  /* overscroll-behavior intentionally NOT set here - setting it on * blocks scroll chaining from overflow:hidden containers */
 }
 
-/* Next.js app root — explicit coverage so it never relies on inheritance */
+/* Next.js app root - explicit coverage so it never relies on inheritance */
 #__next {
   overscroll-behavior: none !important;
   overscroll-behavior-x: none !important;
@@ -81,6 +81,9 @@ body {
   --fab-edge:      24px;
   --fab-chat-size: 52px;
   --fab-gap:       12px;
+  /* toggle knob (light default) */
+  --toggle-knob:        #ffffff;
+  --toggle-knob-shadow: 0 1px 3px rgba(0,0,0,0.18), 0 0 0 0.5px rgba(0,0,0,0.08);
 }
 
 /* ── Dark mode ── */
@@ -111,6 +114,9 @@ body {
   --shadow-md:   0 4px 16px rgba(0,0,0,0.5);
   --track:       rgba(255,255,255,0.05);
   --accent-rgb:  201, 168, 76;
+  /* toggle knob - slight off-white in dark mode reads better against bg */
+  --toggle-knob:        #f4ecda;
+  --toggle-knob-shadow: 0 1px 3px rgba(0,0,0,0.45), 0 0 0 0.5px rgba(0,0,0,0.25);
 }
 
 /* ── Light mode explicit overrides ── */
@@ -676,11 +682,26 @@ main, .public-page-content, [data-page-content] {
 }
 
 @media (max-width: 768px) {
-  .corvo-ai-chat-btn { bottom: 16px !important; right: 16px !important; }
-  .corvo-feedback-btn { bottom: 16px !important; right: 72px !important; }
+  /* Bottom FAB stack on mobile: AI (right edge), Feedback, Customize.
+     12px gap, 16px right padding, 48x48 buttons. */
+  .corvo-ai-chat-btn   { bottom: 16px !important; right: 16px !important; }
+  .corvo-feedback-btn  { bottom: 16px !important; right: 76px !important; }
+  .corvo-customize-btn { bottom: 16px !important; right: 136px !important; }
+  /* Install banner sits ABOVE the FAB row so it does not overlap. */
+  .corvo-install-banner { bottom: 80px !important; left: 12px !important; right: 12px !important; max-width: none !important; }
+  /* Wide data tables: shrink padding + font so more columns are visible
+     within the horizontal-scroll wrapper, and surface a scroll affordance. */
+  .corvo-responsive-table { font-size: 12px !important; }
+  .corvo-responsive-table th,
+  .corvo-responsive-table td { padding: 8px 8px !important; }
+  .corvo-responsive-table th { font-size: 9px !important; letter-spacing: 1px !important; }
+  /* Touch-target floor for icon buttons that often appear in tables and panels. */
+  .corvo-touch-44 { min-width: 44px !important; min-height: 44px !important; }
+  /* Two-column grids inside narrow modals stack to one column on mobile. */
+  .corvo-profile-grid { grid-template-columns: 1fr !important; }
 }
 
-/* ── Intermediate desktop (900–1100px snapped window) ── */
+/* ── Intermediate desktop (900-1100px snapped window) ── */
 @media (min-width: 769px) and (max-width: 1100px) {
   /* Prevent any stray overflow */
   body { overflow-x: hidden; }

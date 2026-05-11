@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

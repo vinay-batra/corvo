@@ -7,12 +7,39 @@ import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import PublicFooter from "../components/PublicFooter";
 import { usePWAInstall } from "../hooks/usePWAInstall";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SplitText } from "gsap/SplitText";
+import type gsapType from "gsap";
+import type { ScrollTrigger as ScrollTriggerType } from "gsap/ScrollTrigger";
+import type { SplitText as SplitTextType } from "gsap/SplitText";
+import { RESOLVED_API_URL } from "../lib/api";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger, SplitText);
+// GSAP is heavy and only ever runs client-side. Defer loading until the first
+// component that needs it (AnimatedHero useEffect) calls loadGsap(). Avoids
+// inflating the SSR JS payload with three large libraries that the server can
+// never use.
+type GsapBundle = {
+  gsap: typeof gsapType;
+  ScrollTrigger: typeof ScrollTriggerType;
+  SplitText: typeof SplitTextType;
+};
+let _gsapBundlePromise: Promise<GsapBundle> | null = null;
+function loadGsap(): Promise<GsapBundle> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("GSAP can only be loaded on the client"));
+  }
+  if (!_gsapBundlePromise) {
+    _gsapBundlePromise = Promise.all([
+      import("gsap"),
+      import("gsap/ScrollTrigger"),
+      import("gsap/SplitText"),
+    ]).then(([gsapMod, stMod, splitMod]) => {
+      const gsap = gsapMod.default || gsapMod;
+      const ScrollTrigger = stMod.ScrollTrigger;
+      const SplitText = splitMod.SplitText;
+      gsap.registerPlugin(ScrollTrigger, SplitText);
+      return { gsap, ScrollTrigger, SplitText };
+    });
+  }
+  return _gsapBundlePromise;
 }
 
 /* ─── Reveal hook ─── */
@@ -78,42 +105,28 @@ function LoopCounter({ target, suffix = "", prefix = "", decimals = 0, duration 
 /* ─── Animation defaults ─── */
 const ANIM_EASE = [0.25, 0.1, 0.25, 1] as const;
 
-/* ─── FadeUp: reusable Framer Motion scroll-in ─── */
+/* FadeUp / SlideIn / Reveal - delegate to ScrollReveal below.
+   Framer's whileInView paired with initial={false} is a documented anti-pattern
+   in this codebase (reveal fires immediately or never), so all scroll reveals
+   route through the IntersectionObserver-based ScrollReveal. */
 function FadeUp({ children, delay = 0, y = 30, style = {}, className }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties; className?: string }) {
   return (
-    <motion.div
-      // initial={false} is required — do not remove
-      initial={false}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
-      style={style}
-      className={className}
-    >
+    <ScrollReveal from="up" distance={y} delay={delay} style={style} className={className}>
       {children}
-    </motion.div>
+    </ScrollReveal>
   );
 }
 
-/* ─── SlideIn: reusable Framer Motion horizontal slide ─── */
 function SlideIn({ children, direction = "left", delay = 0, style = {} }: { children: React.ReactNode; direction?: "left" | "right"; delay?: number; style?: React.CSSProperties }) {
   return (
-    <motion.div
-      // initial={false} is required — do not remove
-      initial={false}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
-      style={style}
-    >
+    <ScrollReveal from={direction} distance={30} delay={delay} style={style}>
       {children}
-    </motion.div>
+    </ScrollReveal>
   );
 }
 
-/* ─── Reveal wrapper (delegates to FadeUp) ─── */
 function Reveal({ children, delay = 0, y = 30, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
-  return <FadeUp delay={delay} y={y} style={style}>{children}</FadeUp>;
+  return <ScrollReveal from="up" distance={y} delay={delay} style={style}>{children}</ScrollReveal>;
 }
 
 /* ─── ScrollReveal: directional IntersectionObserver-based reveal (no whileInView) ─── */
@@ -210,7 +223,7 @@ function MobileDesktopBanner() {
   );
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 /* ─── Stat Item (extracted to avoid hook-in-loop) ─── */
 function StatItem({ target, suffix, label, delay, borderRight }: { target: number; suffix: string; label: string; delay: number; borderRight?: boolean }) {
@@ -224,7 +237,7 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
   );
 }
 
-/* ─── Bento Card base — static gold glow behind + 3D mouse-tilt ─── */
+/* ─── Bento Card base - static gold glow behind + 3D mouse-tilt ─── */
 function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
   const innerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
@@ -248,14 +261,14 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
   const { gridArea, ...restStyle } = style as any;
   return (
     <motion.div
-      // initial={false} is required — do not remove
-      initial={false}
+      // initial={{ opacity: 0, y: 30 }} is required - do not remove
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ gridArea, height: "100%", position: "relative", perspective: 900 }}
     >
-      {/* Static gold glow behind the card — large soft halo */}
+      {/* Static gold glow behind the card - large soft halo */}
       <div
         aria-hidden
         style={{
@@ -521,7 +534,7 @@ function BentoLearnCard({ delay = 0 }: { delay?: number }) {
 }
 
 /* ─── Stock Deep Dives bento card ─── */
-const API_URL_PUBLIC = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL_PUBLIC = RESOLVED_API_URL;
 
 const AAPL_FALLBACK = {
   price: 213.49,
@@ -678,7 +691,7 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
           </div>
         ))}
       </div>
-      {/* Dark PDF preview — floating dark card inside white card */}
+      {/* Dark PDF preview - floating dark card inside white card */}
       <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "14px 20px", position: "relative", overflow: "clip" }}>
         <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 400 150">
           {[30, 60, 90, 120].map(y => (
@@ -1094,8 +1107,8 @@ function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon:
   const initial = dir === "left" ? { opacity: 0, x: -32, y: 0 } : dir === "right" ? { opacity: 0, x: 32, y: 0 } : { opacity: 0, x: 0, y: 28 };
   return (
     <motion.div
-      // initial={false} is required — do not remove
-      initial={false}
+      // initial={{ opacity: 0, y: 28 }} is required - do not remove
+      initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, x: 0, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
@@ -1113,8 +1126,8 @@ function HowStep({ n, icon, title, desc, delay, dir = "up" }: { n: string; icon:
 function TestimonialCard({ text, name, role, delay }: { text: string; name: string; role: string; delay: number }) {
   return (
     <motion.div
-      // initial={false} is required — do not remove
-      initial={false}
+      // initial={{ opacity: 0, y: 30, scale: 0.96 }} is required - do not remove
+      initial={{ opacity: 0, y: 30, scale: 0.96 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
@@ -1327,8 +1340,8 @@ function HeroMetricCard({ label, value, color, animDelay, style }: { label: stri
 function AnimatedTableRow({ children, delay }: { children: React.ReactNode; delay: number }) {
   return (
     <motion.tr
-      // initial={false} is required — do not remove
-      initial={false}
+      // initial={{ opacity: 0, x: -30 }} is required - do not remove
+      initial={{ opacity: 0, x: -30 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.5, ease: ANIM_EASE, delay }}
@@ -1549,7 +1562,7 @@ function FinalCTASection() {
       padding: "140px 56px 160px",
       overflow: "hidden",
     }}>
-      {/* Drifting radial orb — closing cinematic moment */}
+      {/* Drifting radial orb - closing cinematic moment */}
       <div aria-hidden style={{
         position: "absolute", top: "10%", left: "50%",
         width: 880, height: 880,
@@ -1570,8 +1583,8 @@ function FinalCTASection() {
         zIndex: 0,
       }} />
       <motion.div
-        // initial={false} is required — do not remove
-        initial={false}
+        // initial={{ opacity: 0, y: 30 }} is required - do not remove
+        initial={{ opacity: 0, y: 30 }}
         style={{ opacity: 0, position: "relative", zIndex: 1, background: "transparent" }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
@@ -1592,8 +1605,8 @@ function FinalCTASection() {
           }}>
             {HEADLINE.map((w, i) => (
               <motion.span
-                // initial={false} is required — do not remove
-                initial={false}
+                // initial={{ opacity: 0, y: 30 }} is required - do not remove
+                initial={{ opacity: 0, y: 30 }}
                 key={i}
                 style={{ display: "inline-block", marginRight: "0.25em", color: "var(--text)", opacity: 0 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -1712,7 +1725,7 @@ function FeaturedInBar() {
         {platforms.map((p, i) => (
           <motion.div
             key={i}
-            initial={false}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: ANIM_EASE, delay: 0.1 + i * 0.08 }}
@@ -1998,7 +2011,7 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false}
       style={{
         animation: "fadein 0.6s cubic-bezier(0.16,1,0.3,1) 0.4s both",
@@ -2154,11 +2167,11 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
       {/* ─── Step 3: Results ─── */}
       {step === "results" && result && (
         <div>
-          {/* 4 metric pills — single horizontal row */}
+          {/* 4 metric pills - single horizontal row */}
           <motion.div
             key={cardsKey}
-            // initial={false} is required — do not remove
-            initial={false}
+            // initial={{ opacity: 0 }} is required - do not remove
+            initial={{ opacity: 0 }}
             style={{ opacity: 0, display: "flex", gap: 6, marginBottom: 12 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
@@ -2198,8 +2211,8 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
 
           {/* Sparkline */}
           <motion.div
-            // initial={false} is required — do not remove
-            initial={false}
+            // initial={{ opacity: 0 }} is required - do not remove
+            initial={{ opacity: 0 }}
             style={{ opacity: 0, marginBottom: 10 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
@@ -2253,8 +2266,8 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
 
           {/* AI insight: amber dot + italic text */}
           <motion.div
-            // initial={false} is required — do not remove
-            initial={false}
+            // initial={{ opacity: 0 }} is required - do not remove
+            initial={{ opacity: 0 }}
             style={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
@@ -2273,8 +2286,8 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
 
           {/* Mini Monte Carlo collapsible */}
           <motion.div
-            // initial={false} is required — do not remove
-            initial={false}
+            // initial={{ opacity: 0 }} is required - do not remove
+            initial={{ opacity: 0 }}
             style={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
@@ -2332,8 +2345,8 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
 
           {/* CTA + reset */}
           <motion.div
-            // initial={false} is required — do not remove
-            initial={false}
+            // initial={{ opacity: 0 }} is required - do not remove
+            initial={{ opacity: 0 }}
             style={{ opacity: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
@@ -2490,8 +2503,8 @@ function GrowthCalculatorSection() {
 function TrustCard({ icon, title, desc, delay }: { icon: React.ReactNode; title: string; desc: string; delay: number }) {
   return (
     <motion.div
-      // initial={false} is required — do not remove
-      initial={false}
+      // initial={{ opacity: 0, y: 30 }} is required - do not remove
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
@@ -2753,10 +2766,16 @@ function GsapHero({
     const sectionEl = sectionRef.current;
     if (!sectionEl) return;
 
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
-    let split: SplitText | null = null;
+    let split: SplitTextType | null = null;
+    let cancelled = false;
+    let cleanupCtx: { revert: () => void } | null = null;
+    let refreshTimer = 0;
 
-    const ctx = gsap.context(() => {
+    loadGsap().then(({ gsap, ScrollTrigger, SplitText }) => {
+      if (cancelled || !sectionRef.current) return;
+
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      const ctx = gsap.context(() => {
       const headlineEl = headlineRef.current;
       if (headlineEl) {
         split = new SplitText(headlineEl, {
@@ -2903,14 +2922,17 @@ function GsapHero({
         delay: 0.5,
       });
 
-    }, sectionRef);
+      }, sectionRef);
 
-    // Refresh once layout / fonts settle
-    const refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 120);
+      cleanupCtx = ctx;
+      // Refresh once layout / fonts settle
+      refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 120);
+    });
 
     return () => {
-      window.clearTimeout(refreshTimer);
-      ctx.revert();
+      cancelled = true;
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      if (cleanupCtx) cleanupCtx.revert();
       if (split) {
         try {
           split.revert();
@@ -2946,7 +2968,7 @@ function GsapHero({
           zIndex: 0,
         }}
       />
-      {/* Radial gold orbs — outer wrapper takes GSAP scrub, inner does the slow CSS drift */}
+      {/* Radial gold orbs - outer wrapper takes GSAP scrub, inner does the slow CSS drift */}
       <div
         ref={orbARef}
         aria-hidden
@@ -2998,7 +3020,7 @@ function GsapHero({
         />
       </div>
 
-      {/* Animated chart — bottom of hero, refs for GSAP draw */}
+      {/* Animated chart - bottom of hero, refs for GSAP draw */}
       <div
         style={{
           position: "absolute",
@@ -3167,7 +3189,7 @@ function GsapHero({
         <div ref={demoRef} className="hero-right" style={{ position: "relative", willChange: "transform, opacity" }}>
           <div className={demoActive ? "hero-metrics-hidden" : ""} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
 
-          {/* Floating "watching" alert chip — sits where Sharpe Ratio used to live */}
+          {/* Floating "watching" alert chip - sits where Sharpe Ratio used to live */}
           <div className="hero-metric-card gh-metric-wrap" ref={(el) => { metricRefs.current[0] = el; }} style={{
             position: "absolute", top: 16, left: -56,
             zIndex: 4,
@@ -3423,7 +3445,7 @@ export default function Landing() {
         .nl:hover{color:var(--accent)!important}
         .demo-btn{animation:amberPulse 3s ease-in-out infinite}
         .hero-metrics-hidden .hero-metric-card{opacity:0!important;transform:scale(0.85)!important;pointer-events:none!important;transition:opacity 0.4s ease,transform 0.4s ease!important}
-        @media(max-width:900px){
+        @media (max-width: 768px){
           .hero-metric-card{display:none!important}
           .bento-grid{display:flex!important;flex-direction:column!important}
           .how-grid{display:flex!important;flex-direction:column!important;gap:48px!important}
@@ -3473,7 +3495,7 @@ export default function Landing() {
           .stock-search-wrap{width:100%!important;max-width:540px!important;margin:0 auto!important}
           .stock-search-wrap>div{flex-direction:column!important;max-width:100%!important}
         }
-        @media(max-width:600px){
+        @media (max-width: 768px){
           .stats-grid{grid-template-columns:1fr!important}
 
           .hero-btns>*{width:100%!important;max-width:360px!important}
@@ -3489,7 +3511,7 @@ export default function Landing() {
         @media(max-width:768px){.testi-arrow{display:none!important}.testi-scroll-container{padding:20px 20px 40px!important}}
         .x-social-link:hover{color:var(--accent)!important}
         .mobile-desktop-banner{display:none!important}
-        @media(max-width:767px){
+        @media (max-width: 768px){
           .mobile-desktop-banner{display:flex!important;align-items:center;gap:8px;background:var(--bg2);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:7px 14px;position:relative;z-index:200}
         }
       `}</style>
@@ -3516,7 +3538,7 @@ export default function Landing() {
         </div>
         {/* Right side */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {/* PWA install — desktop only, shown in drawer on mobile */}
+          {/* PWA install - desktop only, shown in drawer on mobile */}
           {canInstall && (
             <button
               onClick={install}
@@ -3665,7 +3687,7 @@ export default function Landing() {
         </div>
       )}
 
-      {/* HERO — pinned, GSAP-driven */}
+      {/* HERO - pinned, GSAP-driven */}
       <GsapHero loggedIn={loggedIn} liveUserCount={liveUserCount} scrollerRef={containerRef} />
 
       {/* TICKER */}
@@ -3693,7 +3715,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS — 3D Carousel (desktop) / Card Carousel (mobile) ─── */}
+      {/* ─── TESTIMONIALS - 3D Carousel (desktop) / Card Carousel (mobile) ─── */}
       <section className="sec-pad testimonials-section" style={{ position: "relative", zIndex: 1, padding: "120px 56px 120px", background: "transparent" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <FadeUp delay={0} y={30} style={{ textAlign: "center", marginBottom: 56 }}>

@@ -38,10 +38,21 @@ function getTooltipPos(id: string): { top: number; left: number } | null {
   const rect = el.getBoundingClientRect();
   // If element is hidden (e.g. sidebar collapsed) skip
   if (rect.width === 0 || rect.right <= 0) return null;
-  return {
-    top: Math.max(8, rect.top + rect.height / 2 - 56),
-    left: rect.right + 14,
-  };
+  // Clamp to viewport: prefer placing to the right of the target, but if that
+  // would overflow on a narrow screen, snap to within 12px of the right edge.
+  const TOOLTIP_W = 272;
+  const vw = window.innerWidth;
+  let left = rect.right + 14;
+  if (left + TOOLTIP_W > vw - 12) {
+    left = Math.max(12, vw - TOOLTIP_W - 12);
+  }
+  let top = Math.max(8, rect.top + rect.height / 2 - 56);
+  // Also clamp the bottom edge - tooltip height is ~180px in practice.
+  const TOOLTIP_H = 200;
+  if (top + TOOLTIP_H > window.innerHeight - 12) {
+    top = Math.max(8, window.innerHeight - TOOLTIP_H - 12);
+  }
+  return { top, left };
 }
 
 export default function OnboardingTour({ assets, dataAvailable, onComplete }: Props) {

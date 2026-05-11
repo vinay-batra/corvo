@@ -28,4 +28,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, { silent: true });
+// `silent` was previously true, which masked source-map upload failures
+// during build. Keep CI logs noisy unless explicitly silenced via env so
+// regressions surface immediately.
+export default withSentryConfig(nextConfig, {
+  silent: process.env.SENTRY_SUPPRESS_LOGS === "1",
+});

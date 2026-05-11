@@ -10,7 +10,7 @@ function getColors(isDark: boolean) {
         line: (a: number) => `rgba(201,168,76,${a})`,
       }
     : {
-        // Darker gold (0x8b6914) at 0.4 opacity — visible on white background
+        // Darker gold (0x8b6914) at 0.4 opacity - visible on white background
         amber: "rgba(139,105,20,0.4)",
         regular: "rgba(139,105,20,0.22)",
         line: (a: number) => `rgba(139,105,20,${(a * 1.4).toFixed(3)})`,

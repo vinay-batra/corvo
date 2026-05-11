@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import InfoModal from "./InfoModal";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 const GREEN = "#4caf7d";
 const RED = "var(--red)";
 const AMBER = "#b8860b";
@@ -67,11 +68,11 @@ export function InsiderActivitySummary({ assets }: { assets: { ticker: string; w
         fetch(`${API_URL}/insider-activity/${t}`)
           .then(r => {
             if (!r.ok) {
-              return r.json().then(e => { console.error(`[insider] ${t}: HTTP ${r.status}`, e); return null; }).catch(() => null);
+              return r.json().then(e => { if (process.env.NODE_ENV !== "production") console.error(`[insider] ${t}: HTTP ${r.status}`, e); return null; }).catch(() => null);
             }
             return r.json();
           })
-          .catch(e => { console.error(`[insider] ${t}:`, e); return null; })
+          .catch(e => { if (process.env.NODE_ENV !== "production") console.error(`[insider] ${t}:`, e); return null; })
       )
     ).then(results => {
       const combined: (InsiderTransaction & { ticker: string })[] = [];
@@ -210,7 +211,7 @@ export default function InsiderActivity({ ticker }: { ticker: string }) {
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
       style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
@@ -263,7 +264,7 @@ export default function InsiderActivity({ ticker }: { ticker: string }) {
           <span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 4 }}>open market only</span>
         </div>
         <div style={{ overflowX: "auto", overscrollBehavior: "contain" }} onWheel={e => { e.stopPropagation(); }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 460 }}>
+          <table className="corvo-responsive-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 460 }}>
             <thead>
               <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
                 {[

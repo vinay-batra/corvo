@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { RESOLVED_API_URL } from "../../lib/api";
 
 type ReferralData = {
   referrals_count: number;
@@ -48,9 +49,10 @@ export default function ReferralsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { window.location.href = "/auth"; return; }
       setUser(user);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiUrl = RESOLVED_API_URL;
       try {
-        const res = await fetch(`${apiUrl}/referrals?user_id=${user.id}`);
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${apiUrl}/referrals`, session?.access_token ? { headers: { "Authorization": `Bearer ${session.access_token}` } } : {});
         const data = await res.json();
         setReferralData(data);
       } catch {}

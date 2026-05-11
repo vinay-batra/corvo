@@ -57,13 +57,13 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
 
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
         onClick={e => e.stopPropagation()}
         style={{ width: "min(480px, 95vw)", maxHeight: "85vh", overflowY: "auto", overscrollBehavior: "none", background: C.navy3, border: `1px solid ${C.border}`, borderRadius: 16, padding: "28px 28px 24px" }}>
@@ -77,7 +77,7 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
         </div>
 
         {/* Fields */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        <div className="corvo-profile-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           {fields.map(f => (
             <div key={f.key}>
               <label style={{ fontSize: 9, letterSpacing: 1.5, color: C.cream3, textTransform: "uppercase", display: "block", marginBottom: 5 }}>{f.label}</label>
@@ -105,7 +105,7 @@ export default function ProfileEditor({ goals, onSave, onClose }: Props) {
         {/* Goal */}
         <div style={{ marginBottom: 24 }}>
           <label style={{ fontSize: 9, letterSpacing: 1.5, color: C.cream3, textTransform: "uppercase", display: "block", marginBottom: 8 }}>Primary Goal</label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          <div className="corvo-profile-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             {GOAL_OPTIONS.map(o => (
               <button key={o.value} onClick={() => set("goal", o.value)}
                 style={{ padding: "9px", background: form.goal === o.value ? C.amber2 : "var(--bg3)", border: `1px solid ${form.goal === o.value ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 8, color: form.goal === o.value ? C.amber : C.cream2, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s" }}>

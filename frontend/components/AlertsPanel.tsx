@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { posthog } from "../lib/posthog";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 interface Alert {
   id: string;
@@ -150,7 +151,7 @@ function TickerSearch({ value, onChange }: { value: string; onChange: (ticker: s
       <AnimatePresence initial={false}>
         {open && results.length > 0 && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
             style={{ position: "absolute", left: 0, right: 0, top: "calc(100% + 4px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 9, overflow: "hidden", zIndex: 400, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
             {results.map((r, i) => (
@@ -318,13 +319,13 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
         style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300 }}
       />
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ x: 0 }} exit={{ x: 340 }}
         transition={{ type: "spring", damping: 28, stiffness: 300 }}
         className="c-alerts-panel"
@@ -522,14 +523,14 @@ export default function AlertsPanel({ onClose, assets }: { onClose: () => void; 
                       </div>
                       {/* edit button */}
                       <button onClick={() => startEdit(a)}
-                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+                        className="corvo-touch-44" style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.color = "var(--accent)"; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </button>
                       {/* delete button */}
                       <button onClick={() => removeAlert(a.id)}
-                        style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+                        className="corvo-touch-44" style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(224,92,92,0.4)"; e.currentTarget.style.color = "var(--red)"; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

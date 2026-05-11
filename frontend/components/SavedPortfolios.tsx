@@ -226,7 +226,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
         </div>
       )}
 
-      {/* Delete confirmation modal — Corvo-styled */}
+      {/* Delete confirmation modal - Corvo-styled */}
       <AnimatePresence initial={false}>
         {deleteConfirm && (
           <motion.div

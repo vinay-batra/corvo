@@ -32,8 +32,24 @@ print(f"[startup] SUPABASE_URL: {'SET' if SUPABASE_URL else 'NOT SET'}")
 print(f"[startup] FINNHUB_API_KEY: {'SET' if os.environ.get('FINNHUB_API_KEY') else 'NOT SET'}")
 print(f"[startup] deployed at {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
 
-# ── In-memory rate limiting ────────────────────────────────────────────────────
-RATE_LIMITS: dict[str, list[float]] = {}
+# In-memory rate limiting
+# OrderedDict so we can LRU-evict when the dict grows beyond MAX_RATE_LIMIT_KEYS.
+from collections import OrderedDict
+RATE_LIMITS: "OrderedDict[str, list[float]]" = OrderedDict()
+MAX_RATE_LIMIT_KEYS = 50000
+
+
+def _client_ip(request: "Request") -> str:
+    """Return the originating client IP, preferring X-Forwarded-For so we get
+    a per-client bucket even when the app sits behind Railway's proxy."""
+    fwd = (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+    if fwd:
+        return fwd
+    real = (request.headers.get("X-Real-IP") or "").strip()
+    if real:
+        return real
+    return request.client.host if request.client else "anon"
+
 
 def check_rate_limit(ip: str, endpoint: str, max_requests: int, window_seconds: int) -> bool:
     """Return True if this request should be rate-limited (i.e. blocked)."""
@@ -44,9 +60,14 @@ def check_rate_limit(ip: str, endpoint: str, max_requests: int, window_seconds: 
     timestamps = [t for t in timestamps if now - t < window_seconds]
     if len(timestamps) >= max_requests:
         RATE_LIMITS[key] = timestamps
+        RATE_LIMITS.move_to_end(key)
         return True
     timestamps.append(now)
     RATE_LIMITS[key] = timestamps
+    RATE_LIMITS.move_to_end(key)
+    # LRU eviction so the dict cannot grow unbounded
+    while len(RATE_LIMITS) > MAX_RATE_LIMIT_KEYS:
+        RATE_LIMITS.popitem(last=False)
     return False
 
 if os.getenv("SENTRY_DSN"):
@@ -101,7 +122,7 @@ def safe_float(val):
         if math.isnan(f) or math.isinf(f):
             return 0.0
         return f
-    except:
+    except (TypeError, ValueError):
         return 0.0
 
 def safe_int(val) -> int:
@@ -206,11 +227,6 @@ def health():
     }
 
 
-@app.get("/docs-check")
-def docs_check():
-    return {"status": "running"}
-
-
 @app.delete("/user")
 def delete_user(request: Request):
     """
@@ -291,9 +307,31 @@ CASH_TICKERS = {
     "CASH",
 }
 
+# Broad-market funds and broad bond/commodity ETFs. Used to suppress "single
+# holding concentration" warnings since these are already diversified. Cash
+# tickers are handled separately via is_cash_ticker().
+BROAD_FUNDS = {
+    "VTI", "VXUS", "BND", "BNDX", "VT", "ITOT", "AGG", "SCHB", "SCHA", "SCHX", "SCHF", "SCHI",
+    "IEMG", "EFA", "EEM", "IVV", "VOO", "SPY", "QQQ", "DIA", "IWM", "GLD", "SLV", "TLT", "LQD",
+}
+
+
 def is_cash_ticker(t: str) -> bool:
     """Return True if t should be treated as a cash/money-market equivalent."""
     return t in CASH_TICKERS or (len(t) == 5 and t.endswith("XX"))
+
+
+def is_fund_or_cash(t: str) -> bool:
+    """Return True if t is a broad fund (mutual / index / bond / cash) and so
+    should NOT be flagged as a single-stock concentration risk."""
+    if is_cash_ticker(t):
+        return True
+    if t in BROAD_FUNDS:
+        return True
+    # 5-letter mutual fund tickers ending in X (e.g. FXAIX, FZROX, VTSAX)
+    if len(t) == 5 and t.endswith("X"):
+        return True
+    return False
 
 def make_synthetic_prices(annual_return: float, n_days: int, start_date=None) -> pd.Series:
     """Generate synthetic daily price series from an annual return rate."""
@@ -319,7 +357,7 @@ def portfolio(
     manual_returns: str = "",
     reinvest_dividends: bool = True,
 ):
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "portfolio", 30, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
     # Process referral bonus on first analysis
@@ -342,7 +380,7 @@ def portfolio(
     if weights:
         try:
             w_list = [float(x) for x in weights.split(",")]
-        except:
+        except Exception:
             w_list = [1.0 / len(tickers_list)] * len(tickers_list)
     else:
         w_list = [1.0 / len(tickers_list)] * len(tickers_list)
@@ -394,7 +432,7 @@ def portfolio(
             s.index = s.index.tz_localize(None)
         return s
 
-    # Track tickers assigned synthetic cash data (informational only — no ticker is excluded)
+    # Track tickers assigned synthetic cash data (informational only - no ticker is excluded)
     skipped_tickers = []
 
     for i, t in enumerate(tickers_list):
@@ -425,7 +463,7 @@ def portfolio(
             if not is_cash_ticker(t):
                 skipped_tickers.append(t)
 
-    # Every ticker is now present — none are excluded from analysis
+    # Every ticker is now present - none are excluded from analysis
     available = tickers_list
     prices = prices[available]
     prices = prices.ffill().bfill()
@@ -437,7 +475,7 @@ def portfolio(
     if prices.empty or len(prices) < 2:
         raise HTTPException(status_code=500, detail="Insufficient price data")
 
-    # Weights are already normalized to tickers_list — no renormalization needed
+    # Weights are already normalized to tickers_list - no renormalization needed
     avail_weights = w_list
     weights_arr = np.array(avail_weights)
 
@@ -458,7 +496,7 @@ def portfolio(
     # Portfolio returns
     port_returns = returns[available].values @ weights_arr
 
-    # Annualized stats — CAGR and 252-day vol
+    # Annualized stats - CAGR and 252-day vol
     total_return = safe_float(float((1 + port_returns).prod() - 1))
     n_years = len(port_returns) / 252
     ann_return = safe_float((1 + total_return) ** (1 / n_years) - 1) if n_years > 0 else total_return
@@ -488,7 +526,7 @@ def portfolio(
         bench_cum = bench_cum[:min_len]
         dates = dates[:min_len]
 
-    # Individual stock returns for breakdown — CAGR per ticker
+    # Individual stock returns for breakdown - CAGR per ticker
     individual_returns = {}
     for t in available:
         t_rets = returns[t].values
@@ -533,7 +571,7 @@ def drawdown(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"):
     if weights:
         try:
             w_list = [float(x) for x in weights.split(",")]
-        except:
+        except Exception:
             w_list = [1.0 / len(tickers_list)] * len(tickers_list)
     else:
         w_list = [1.0 / len(tickers_list)] * len(tickers_list)
@@ -614,7 +652,7 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     if weights:
         try:
             w_list = [float(x) for x in weights.split(",")]
-        except:
+        except Exception:
             w_list = [1.0 / len(tickers_list)] * len(tickers_list)
     else:
         w_list = [1.0 / len(tickers_list)] * len(tickers_list)
@@ -769,9 +807,11 @@ class MonteCarloInsightRequest(BaseModel):
 
 @app.post("/montecarlo/insight")
 def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "montecarlo-insight", 15, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+    # Enforce canonical path count regardless of what the client sends
+    req.simulations = 8500
 
     import anthropic
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -801,7 +841,7 @@ def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
     resp = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=200,
-        system="You are a plain-English financial analyst. Write concise, jargon-free summaries for retail investors. Never claim a cash or money market fund like FDRXX, SPAXX, or VMFXX is a stock holding — they are cash equivalents. Never use em dashes in your response. Never use asterisks (*) or markdown formatting. Write in plain prose only.",
+        system="You are a plain-English financial analyst. Write concise, jargon-free summaries for retail investors. Never claim a cash or money market fund like FDRXX, SPAXX, or VMFXX is a stock holding - they are cash equivalents. Never use em dashes in your response. Never use asterisks (*) or markdown formatting. Write in plain prose only.",
         messages=[{"role": "user", "content": prompt}],
     )
     return {"insight": clean_ai_response(resp.content[0].text)}
@@ -823,9 +863,12 @@ class RetirementSimRequest(BaseModel):
 
 @app.post("/portfolio/retirement-simulation")
 def retirement_simulation(req: RetirementSimRequest, request: Request):
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "retirement-simulation", 10, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+    # Enforce canonical path count regardless of client input (prevents both
+    # cheap probes and DoS via giant sim counts).
+    req.simulations = 8500
 
     if not req.tickers or len(req.tickers) != len(req.weights):
         raise HTTPException(status_code=400, detail="Tickers and weights must be non-empty and equal length.")
@@ -881,14 +924,14 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
     mu_hist = float(np.mean(port_returns))
     sigma_daily = float(np.std(port_returns))
 
-    # Portfolio CAGR (geometric return) over the available price history — more conservative
+    # Portfolio CAGR (geometric return) over the available price history - more conservative
     # than arithmetic mean * 252, especially for volatile portfolios with recent bull runs
     n_years_hist = max(len(port_returns), 1) / 252.0
     port_total_growth = float((1.0 + pd.Series(port_returns)).prod())
     port_cagr = max(-0.99, port_total_growth ** (1.0 / n_years_hist) - 1.0)
 
     # Use portfolio historical CAGR directly, capped at 12% nominal.
-    # port_cagr is the geometric (compounded) annual return over the price history period —
+    # port_cagr is the geometric (compounded) annual return over the price history period  - 
     # more accurate than arithmetic mean * 252, especially for volatile portfolios.
     # Floor at 0% to prevent negative forward projections from short bad-period snapshots.
     mu_annual = min(max(port_cagr, 0.0), 0.12)
@@ -1020,7 +1063,7 @@ class NLEditRequest(BaseModel):
 @app.post("/portfolio/natural-language-edit")
 def portfolio_natural_language_edit(req: NLEditRequest, request: Request):
     import json as _json
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "nl-edit", 30, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
 
@@ -1189,7 +1232,18 @@ ETF_SECTORS: dict[str, str] = {
     "ARKK": "Disruptive Tech",
 }
 
-_sectors_cache: dict[str, tuple[dict, float]] = {}
+_sectors_cache: "OrderedDict[str, tuple[dict, float]]" = OrderedDict()
+_SECTORS_CACHE_MAX = 1000
+
+
+def _cap_dict(d: "OrderedDict | dict", max_size: int) -> None:
+    """Trim a dict-like cache to max_size by dropping insertion-oldest keys.
+    Works for plain dict (Python 3.7+ preserves insertion order) or OrderedDict."""
+    while len(d) > max_size:
+        if isinstance(d, OrderedDict):
+            d.popitem(last=False)
+        else:
+            d.pop(next(iter(d)))
 
 @app.get("/portfolio/sectors")
 def portfolio_sectors(tickers: str = "AAPL", weights: str = "", request: Request = None):
@@ -1237,10 +1291,12 @@ def portfolio_sectors(tickers: str = "AAPL", weights: str = "", request: Request
 
     result = {"sectors": sector_map}
     _sectors_cache[cache_key] = (result, time.time())
+    _cap_dict(_sectors_cache, _SECTORS_CACHE_MAX)
     return result
 
 
-_dividends_cache: dict[str, tuple[dict, float]] = {}
+_dividends_cache: "OrderedDict[str, tuple[dict, float]]" = OrderedDict()
+_DIVIDENDS_CACHE_MAX = 1000
 
 @app.get("/portfolio/dividends")
 def portfolio_dividends(
@@ -1349,6 +1405,7 @@ def portfolio_dividends(
         "next_ex_div_date": next_ex_div_date,
     }
     _dividends_cache[cache_key] = (result, time.time())
+    _cap_dict(_dividends_cache, _DIVIDENDS_CACHE_MAX)
     return result
 
 
@@ -1419,7 +1476,7 @@ def news(tickers: str = "AAPL"):
                 pub_date = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             elif ts:
                 pub_date = str(ts)
-        except:
+        except Exception:
             pass
         return {
             "ticker": ticker,
@@ -1461,7 +1518,7 @@ def news(tickers: str = "AAPL"):
                 pub_date = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             elif ts:
                 pub_date = str(ts)
-        except:
+        except Exception:
             pass
         return {
             "ticker": ticker,
@@ -1541,7 +1598,9 @@ def news(tickers: str = "AAPL"):
 
 
 @app.get("/prices")
-def get_prices_live(tickers: str = "AAPL"):
+def get_prices_live(tickers: str = "AAPL", request: Request = None):
+    if request is not None and check_rate_limit(_client_ip(request), "prices", 120, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     result = {}
     for ticker in tickers_list[:20]:
@@ -1567,7 +1626,9 @@ def get_prices_live(tickers: str = "AAPL"):
     return result
 
 @app.get("/search-ticker")
-def search_ticker(q: str = ""):
+def search_ticker(q: str = "", request: Request = None):
+    if request is not None and check_rate_limit(_client_ip(request), "search-ticker", 60, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     if not q or len(q) < 1:
         return {"results": []}
     try:
@@ -1597,7 +1658,7 @@ def generate_report(req: ReportRequest, request: Request):
     from fastapi.responses import StreamingResponse
     import io
 
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "generate-report", 10, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
     try:
@@ -1903,7 +1964,8 @@ def _verify_jwt_user(request: Request) -> str:
 
 
 # Per-user daily rate limit for image parsing {user_id: {"date": str, "count": int}}
-_image_parse_daily: dict = {}
+_image_parse_daily: "OrderedDict[str, dict]" = OrderedDict()
+_IMAGE_PARSE_MAX_KEYS = 5000
 
 def get_daily_chat_limit(user_id: str) -> int:
     """Return effective daily chat limit: base 15 + bonus (max 40 total)."""
@@ -2069,10 +2131,13 @@ def redeem_referral(req: ReferralRedeemRequest, request: Request):
 
 
 @app.get("/referrals")
-def get_referrals(user_id: str = ""):
-    """Return referral data for a user."""
-    if not user_id or not SUPABASE_URL:
+def get_referrals(request: Request, user_id: str = ""):
+    """Return referral data for the authenticated user."""
+    if not SUPABASE_URL:
         return {"referral_link": "", "referrals_count": 0, "bonus_messages": 0}
+    verified_id = _verify_jwt_user(request)
+    # Ignore any user_id passed in; trust only the JWT-derived id
+    user_id = verified_id
     try:
         resp = requests.get(
             f"{SUPABASE_URL}/rest/v1/referrals?referrer_id=eq.{user_id}&select=id,referred_id,created_at",
@@ -2200,7 +2265,7 @@ def chat(req: ChatRequest, request: Request):
         verified_user_id = _verify_jwt_user(request)
         req.user_id = verified_user_id
     elif req.user_id:
-        # user_id in body but no JWT to verify it — reject rather than trust self-reported id
+        # user_id in body but no JWT to verify it - reject rather than trust self-reported id
         raise HTTPException(status_code=401, detail="Authorization header required when providing user_id")
     # Daily limit check (per-user via Supabase); fall back to IP rate limit for unauthenticated
     daily_limit = BASE_DAILY_CHAT_LIMIT
@@ -2214,7 +2279,7 @@ def chat(req: ChatRequest, request: Request):
                 detail="Daily message limit reached. Invite a friend to get +5 more messages per day.",
             )
     else:
-        ip = request.client.host if request.client else "unknown"
+        ip = _client_ip(request)
         if check_rate_limit(ip, "chat", 20, 3600):
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
 
@@ -2293,7 +2358,7 @@ def chat(req: ChatRequest, request: Request):
 
     if benchmark_return is not None:
         vs_bench = "outperformed" if ret > benchmark_return else "underperformed"
-        benchmark_text = f"\n- Benchmark Return ({period}): {benchmark_return:.2%} — portfolio {vs_bench} by {abs(ret - benchmark_return):.2%}"
+        benchmark_text = f"\n- Benchmark Return ({period}): {benchmark_return:.2%} - portfolio {vs_bench} by {abs(ret - benchmark_return):.2%}"
     else:
         benchmark_text = ""
 
@@ -2382,7 +2447,7 @@ def chat(req: ChatRequest, request: Request):
         if _goal_parts:
             financial_goals_text = "\n\nFINANCIAL GOALS: " + "; ".join(_goal_parts) + "\n(Factor these into advice: retirement goal means prioritize growth and tax efficiency; emergency fund means flag that cash reserves should come before investing more; home down payment means flag liquidity needs and keep funds accessible; college savings means consider 529 plans and time horizon; passive income goal means consider dividend stocks, REITs, and covered calls; paying off debt means weigh debt payoff rate vs expected market returns; major purchase timeline means flag liquidity and capital preservation.)"
 
-    system = f"""You are Corvo: the AI advisor watching over this investor's portfolio. You have their full data, financial profile, saved portfolios, alerts, and targets. You also have web search for current prices, historical events, earnings, analyst ratings, news, and any market data needed. You are not a generic chatbot — you are this user's portfolio guardian, and every answer should feel personal to their exact holdings.{user_context_block}
+    system = f"""You are Corvo: the AI advisor watching over this investor's portfolio. You have their full data, financial profile, saved portfolios, alerts, and targets. You also have web search for current prices, historical events, earnings, analyst ratings, news, and any market data needed. You are not a generic chatbot - you are this user's portfolio guardian, and every answer should feel personal to their exact holdings.{user_context_block}
 
 CURRENT PORTFOLIO:
 - Holdings{weights_note}: {holdings_str}
@@ -2394,15 +2459,15 @@ CURRENT PORTFOLIO:
 
 HOW TO RESPOND:
 • Address the user by their first name when known.
-• Never say "I don't know which page you're on", "could you tell me more about your portfolio", or "I don't have access to your data" — all context is provided above.
+• Never say "I don't know which page you're on", "could you tell me more about your portfolio", or "I don't have access to your data" - all context is provided above.
 • Maximum 150-200 words per response. Hard limit.
 • Lead with the direct answer or recommendation in the first 1-2 sentences. Never recap what the user asked. Never open with "great question", "let me break this down", "happy to help", "absolutely", or any other filler.
-• When making a recommendation, follow the Corvo pattern: (1) what you see in their portfolio, (2) why it matters for them specifically, (3) what to consider doing. Compress this into 3-4 sentences total — not headers, not bullets, just prose that flows through the three beats.
+• When making a recommendation, follow the Corvo pattern: (1) what you see in their portfolio, (2) why it matters for them specifically, (3) what to consider doing. Compress this into 3-4 sentences total - not headers, not bullets, just prose that flows through the three beats.
 • Use their actual numbers (CAGR, weights, prices, dollar amounts when portfolio_value is known) but do not list every analyst target for every ticker unless asked.
-• Write like a sharp analyst giving a quick take in a meeting, not a written report. Be direct: "NVDA will struggle here because X" — not "it depends on many factors". Take a position.
+• Write like a sharp analyst giving a quick take in a meeting, not a written report. Be direct: "NVDA will struggle here because X" - not "it depends on many factors". Take a position.
 • Never hedge with "this isn't financial advice", "consider consulting", "do your own research", "every situation is different", or similar safety filler. Just give the take.
 • Never say "Let me pull up the latest data" or similar filler. Just answer.
-• Use web search to back up claims about market conditions, historical price action, earnings, analyst consensus, and economic events. Never say "I don't have access to" or "I can't check" — search instead.
+• Use web search to back up claims about market conditions, historical price action, earnings, analyst consensus, and economic events. Never say "I don't have access to" or "I can't check" - search instead.
 • Use the user's actual numbers (CAGR, weights, prices, dollar amounts when portfolio_value is known) but do not list every analyst target for every ticker unless asked.
 • State the analysis period when discussing returns. Compare to benchmark when available.
 • Verify weights before stating them. If equally weighted, say so. Never single out one holding as "the largest" when multiple share the same weight.
@@ -2414,7 +2479,7 @@ HOW TO RESPOND:
 • No em dashes. No asterisks. No emoji.
 • NEVER write "Not financial advice" or any disclaimer anywhere in your response. Ever. Not at the end, not in the middle, not at all. Zero exceptions.
 
-ROAST MODE: When the user says "Roast my portfolio", you are a ruthless hedge fund PM with zero patience for retail mistakes. Never compliment returns. Never say "genuinely impressive" or "you are getting paid well". Only attack. Pick apart every holding by name — why the sizing is wrong, why the thesis is flawed. If their Sharpe is embarrassing, call it embarrassing. If they are dangerously concentrated, destroy them for it. Use their actual tickers and exact percentages. Sound like you have seen this mistake a hundred times and are sick of it. End with one sentence so brutal they screenshot it. Zero disclaimers."""
+ROAST MODE: When the user says "Roast my portfolio", you are a ruthless hedge fund PM with zero patience for retail mistakes. Never compliment returns. Never say "genuinely impressive" or "you are getting paid well". Only attack. Pick apart every holding by name - why the sizing is wrong, why the thesis is flawed. If their Sharpe is embarrassing, call it embarrassing. If they are dangerously concentrated, destroy them for it. Use their actual tickers and exact percentages. Sound like you have seen this mistake a hundred times and are sick of it. End with one sentence so brutal they screenshot it. Zero disclaimers."""
 
     messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
     messages.append({"role": "user", "content": req.message})
@@ -2434,7 +2499,7 @@ ROAST MODE: When the user says "Roast my portfolio", you are a ruthless hedge fu
             ) as stream:
                 for text in stream.text_stream:
                     # Strip em dashes and asterisks inline
-                    cleaned = text.replace("—", ",").replace("*", "")
+                    cleaned = text.replace(" - ", ",").replace("*", "")
                     if cleaned:
                         yield f"data: {_json.dumps({'chunk': cleaned})}\n\n"
 
@@ -2446,7 +2511,7 @@ ROAST MODE: When the user says "Roast my portfolio", you are a ruthless hedge fu
 
         except Exception as e:
             print(f"Chat stream error: {e}")
-            yield f"data: {_json.dumps({'error': str(e)})}\n\n"
+            yield f"data: {_json.dumps({'error': 'Chat error. Please try again.'})}\n\n"
 
     from fastapi.responses import StreamingResponse as _SR
     return _SR(
@@ -2457,9 +2522,11 @@ ROAST MODE: When the user says "Roast my portfolio", you are a ruthless hedge fu
 
 
 @app.get("/chat/usage")
-def chat_usage(user_id: str = ""):
+def chat_usage(request: Request):
     """Return daily message usage for the authenticated user."""
-    if not user_id:
+    try:
+        user_id = _verify_jwt_user(request)
+    except HTTPException:
         return {"messages_used": 0, "messages_limit": BASE_DAILY_CHAT_LIMIT}
     limit = get_daily_chat_limit(user_id)
     count = get_daily_chat_count(user_id)
@@ -2476,7 +2543,7 @@ class GenerateQuestionsRequest(BaseModel):
 
 @app.post("/generate-questions")
 def generate_questions(req: GenerateQuestionsRequest, request: Request):
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "generate-questions", 10, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
 
@@ -2507,7 +2574,7 @@ def generate_questions(req: GenerateQuestionsRequest, request: Request):
         f"Generate {count} multiple choice questions about {req.topic} at {req.difficulty} level."
         f"{wrong_clause}{exclude_clause} "
         f"IMPORTANT RULES for answer options:\n"
-        f"1. All 4 options must be similar in length — within 3-4 words of each other.\n"
+        f"1. All 4 options must be similar in length - within 3-4 words of each other.\n"
         f"2. The correct answer must NOT be the longest option. Vary which position (0,1,2,3) is correct across questions.\n"
         f"3. Wrong answers must be plausible and specific, not obviously wrong.\n"
         f"4. Never make the correct answer stand out by being more detailed or verbose than the others.\n"
@@ -2542,16 +2609,23 @@ def generate_questions(req: GenerateQuestionsRequest, request: Request):
 
 @app.post("/parse-portfolio-image")
 def parse_portfolio_image(body: dict, request: Request):
-    # Rate limit: max 10 per user per day (in-memory)
-    user_id = body.get("user_id", "") or (request.client.host if request.client else "anon")
+    # Auth-required: verify JWT and use the token-derived user_id as the quota key
+    user_id = _verify_jwt_user(request)
+    # Optional ip rate limit too, to cap anonymous client churn at the proxy
+    check_rate_limit(_client_ip(request), "parse-portfolio-image", 30, 3600)
+    # Per-user daily limit: max 10 per day
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     record = _image_parse_daily.get(user_id)
     if record and record["date"] == today:
         if record["count"] >= 10:
             raise HTTPException(status_code=429, detail="Image parse limit reached (10/day)")
         record["count"] += 1
+        _image_parse_daily.move_to_end(user_id)
     else:
         _image_parse_daily[user_id] = {"date": today, "count": 1}
+        # LRU eviction so the dict cannot grow forever
+        while len(_image_parse_daily) > _IMAGE_PARSE_MAX_KEYS:
+            _image_parse_daily.popitem(last=False)
     try:
         import anthropic
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -2588,10 +2662,10 @@ def parse_portfolio_image(body: dict, request: Request):
         return {"assets": []}
     except Exception as e:
         print(f"Image parse error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Image parse failed")
 
 
-# ── Shared email HTML builder ──────────────────────────────────────────────────
+# Shared email HTML builder
 
 def _email_html(
     heading: str,
@@ -2860,7 +2934,7 @@ SECTOR_PEERS: dict[str, list[str]] = {
 @app.get("/stock/{ticker}")
 def stock_detail(ticker: str, request: Request):
     """Return rich stock info for a single ticker using yfinance .info dict."""
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "stock-detail", 60, 3600):
         raise HTTPException(status_code=429, detail="Rate limit: 60 requests/hr")
 
@@ -2886,7 +2960,7 @@ def stock_detail(ticker: str, request: Request):
         }
         analyst_rating = rating_map.get(rec, "N/A")
 
-        # Price + change — fast_info is authoritative fallback for ETFs where info is empty
+        # Price + change - fast_info is authoritative fallback for ETFs where info is empty
         _fi = t.fast_info
         current_price = (
             si("currentPrice") or
@@ -2903,7 +2977,7 @@ def stock_detail(ticker: str, request: Request):
         change        = current_price - prev_close
         change_pct    = (change / prev_close * 100) if prev_close else 0.0
 
-        # 1D chart data — mutual funds have no intraday data, fall back to daily
+        # 1D chart data - mutual funds have no intraday data, fall back to daily
         hist_1d = t.history(period="1d", interval="5m")
         chart_1d: list = []
         if not hist_1d.empty:
@@ -3055,7 +3129,7 @@ def stock_detail(ticker: str, request: Request):
 def stock_history(ticker: str, period: str = "1y", request: Request = None):
     """OHLC history for charting: 1D/1W/1M/3M/1Y/5Y."""
     if request:
-        ip = request.client.host if request.client else "unknown"
+        ip = _client_ip(request)
         if check_rate_limit(ip, "stock-history", 60, 3600):
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
@@ -3066,7 +3140,7 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
     try:
         t = yf.Ticker(ticker)
         hist = t.history(period=p, interval=interval)
-        # Mutual funds have no intraday data — fall back to daily for 1D/1W views
+        # Mutual funds have no intraday data - fall back to daily for 1D/1W views
         if hist.empty and interval in ("5m", "15m"):
             hist = t.history(period=p, interval="1d")
         if hist.empty:
@@ -3238,7 +3312,7 @@ def insider_activity_endpoint(ticker: str, request: Request):
                     })
                 print(f"[insider] Finnhub {ticker}: {len(processed)} qualifying transactions after filter")
             else:
-                print(f"[insider] Finnhub {ticker}: HTTP {resp.status_code} — {resp.text[:200]}")
+                print(f"[insider] Finnhub {ticker}: HTTP {resp.status_code} - {resp.text[:200]}")
         except Exception as e:
             print(f"[insider] Finnhub error for {ticker}: {e}")
 
@@ -3271,7 +3345,7 @@ def insider_activity_endpoint(ticker: str, request: Request):
                         "total_value": round(abs(value), 2),
                     })
         except Exception as e:
-            # ETFs and indices have no insider transactions — 404 is expected, don't log
+            # ETFs and indices have no insider transactions - 404 is expected, don't log
             if "404" not in str(e) and "Not Found" not in str(e) and "no fundamentals" not in str(e).lower():
                 print(f"[insider] yfinance fallback error for {ticker}: {e}")
 
@@ -3283,7 +3357,8 @@ def insider_activity_endpoint(ticker: str, request: Request):
     return result
 
 
-_options_cache: dict[str, tuple[dict, float]] = {}
+_options_cache: "OrderedDict[str, tuple[dict, float]]" = OrderedDict()
+_OPTIONS_CACHE_MAX = 2000
 
 def _norm_cdf(x: float) -> float:
     """Standard normal CDF via math.erf (no scipy needed)."""
@@ -3373,7 +3448,7 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
     import traceback as _tb
 
     if request:
-        ip = request.client.host if request.client else "unknown"
+        ip = _client_ip(request)
         if check_rate_limit(ip, "options", 30, 3600):
             raise HTTPException(status_code=429, detail="Rate limit: 30 requests/hr")
 
@@ -3433,6 +3508,7 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
             "puts":             _process(chain.puts, False),
         }
         _options_cache[cache_key] = (result, time.time())
+        _cap_dict(_options_cache, _OPTIONS_CACHE_MAX)
         return result
 
     except HTTPException:
@@ -3447,6 +3523,7 @@ def get_options_chain(ticker: str, date: str = None, request: Request = None):
         fh_result = _finnhub_options(ticker, fh_key, date, 0.0)
         if fh_result:
             _options_cache[cache_key] = (fh_result, time.time())
+            _cap_dict(_options_cache, _OPTIONS_CACHE_MAX)
             return fh_result
 
     raise HTTPException(
@@ -3461,19 +3538,24 @@ _market_base_cache: dict = {"indexes": {}, "headlines": [], "ts": 0.0}
 _market_per_ticker_cache: dict = {}
 
 @app.get("/market-summary")
-def market_summary(tickers: str = Query(default="")):
+def market_summary(tickers: str = Query(default=""), request: Request = None):
     """Return structured AI market brief (market/holdings/context) + raw index values.
     Accepts optional ?tickers=BND,SPY,... to include per-holding performance.
     Base market data cached 5 min globally; per-ticker AI results cached 5 min each."""
     global _market_base_cache, _market_per_ticker_cache
 
+    if request is not None and check_rate_limit(_client_ip(request), "market-summary", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+
     user_tickers = [t.strip().upper() for t in tickers.split(",") if t.strip()] if tickers else []
     ticker_key = ",".join(sorted(user_tickers))
 
-    # Check per-ticker cache first
+    # Check per-ticker cache first. Cap to 500 entries with LRU eviction.
     cached = _market_per_ticker_cache.get(ticker_key)
     if cached and time.time() - cached.get("ts", 0) < 60:
         return cached
+    while len(_market_per_ticker_cache) > 500:
+        _market_per_ticker_cache.pop(next(iter(_market_per_ticker_cache)))
 
     # Refresh base market data (indexes + news) if stale
     now = time.time()
@@ -3546,7 +3628,7 @@ def market_summary(tickers: str = Query(default="")):
                             else:
                                 holdings_data[t] = 0.0
                     else:
-                        # Only one row — fall back to fast_info
+                        # Only one row - fall back to fast_info
                         for t in real_tickers:
                             try:
                                 fi = yf.Ticker(t).fast_info
@@ -3573,7 +3655,7 @@ def market_summary(tickers: str = Query(default="")):
     today_date = datetime.now(timezone.utc).date()
     for sym in (user_tickers or [])[:6]:
         if is_cash_ticker(sym) or sym in ETF_SECTORS:
-            continue  # ETFs have no earnings dates — skip to avoid 404s
+            continue  # ETFs have no earnings dates - skip to avoid 404s
         try:
             cal = yf.Ticker(sym).calendar
             date_str = None
@@ -3604,7 +3686,7 @@ def market_summary(tickers: str = Query(default="")):
             if "404" not in str(e) and "Not Found" not in str(e) and "no fundamentals" not in str(e).lower():
                 print(f"market-summary earnings error for {sym}: {e}")
 
-    # AI generation — four distinct sections
+    # AI generation - four distinct sections
     market_text = holdings_text = context_text = outlook_text = ""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if api_key:
@@ -3755,7 +3837,7 @@ def platform_stats():
 @app.get("/watchlist-data")
 def watchlist_data(tickers: str, request: Request):
     """Return price, change_pct, and 7-day sparkline for a comma-separated list of tickers."""
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "watchlist-data", 30, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded.")
 
@@ -3765,12 +3847,12 @@ def watchlist_data(tickers: str, request: Request):
         try:
             t = yf.Ticker(ticker)
 
-            # Try fast_info first — fastest path, avoids Yahoo crumb/auth failures
+            # Try fast_info first - fastest path, avoids Yahoo crumb/auth failures
             fi = t.fast_info
             raw_last = getattr(fi, 'last_price', None)
             raw_prev = getattr(fi, 'previous_close', None)
 
-            # name/sector/info — also pulled here so we can fall back to it for prices
+            # name/sector/info - also pulled here so we can fall back to it for prices
             name, sector, info = ticker, "Other", {}
             try:
                 info = t.info or {}
@@ -3797,7 +3879,7 @@ def watchlist_data(tickers: str, request: Request):
                 continue
 
             current_price = safe_float(raw_last)
-            # If prev_close is missing, change is unknowable — emit nulls for change fields
+            # If prev_close is missing, change is unknowable - emit nulls for change fields
             # rather than silently reporting 0% movement.
             if not raw_prev:
                 change_val: float | None = None
@@ -3978,12 +4060,16 @@ _UNSUB_VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary",
 
 
 @app.post("/unsubscribe")
-def unsubscribe_post(req: UnsubscribeRequest):
-    """Disable email preferences for the user. If type is provided, disable only that preference; otherwise disable all."""
+def unsubscribe_post(req: UnsubscribeRequest, request: Request):
+    """Disable email preferences for the user. If type is provided, disable only that preference; otherwise disable all.
+    Auth-required to prevent anyone from disabling another user's emails."""
     if not req.user_id:
         raise HTTPException(status_code=400, detail="user_id is required")
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+    verified_id = _verify_jwt_user(request)
+    if verified_id != req.user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     try:
         if req.type and req.type in _UNSUB_VALID_COLUMNS:
             patch_body = {req.type: False}
@@ -4201,10 +4287,13 @@ def create_price_target(req: PriceTargetCreate, request: Request):
 
 
 @app.patch("/price-targets/{target_id}")
-def update_price_target(target_id: str, user_id: str, target_price: float, direction: str):
-    """Update a price target's price and direction."""
+def update_price_target(target_id: str, user_id: str, target_price: float, direction: str, request: Request):
+    """Update a price target's price and direction. JWT-verified."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=500, detail="Supabase not configured")
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     direction = _normalize_direction(direction) or direction
     if direction not in ("above", "below"):
         raise HTTPException(status_code=400, detail=f"direction must be 'above' or 'below', got '{direction}'")
@@ -4220,10 +4309,13 @@ def update_price_target(target_id: str, user_id: str, target_price: float, direc
 
 
 @app.delete("/price-targets/{target_id}")
-def delete_price_target(target_id: str, user_id: str):
-    """Delete a price target, verifying ownership by user_id."""
+def delete_price_target(target_id: str, user_id: str, request: Request):
+    """Delete a price target. JWT-verified."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=500, detail="Supabase not configured")
+    verified_id = _verify_jwt_user(request)
+    if verified_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     resp = requests.delete(
         f"{SUPABASE_URL}/rest/v1/price_targets?id=eq.{target_id}&user_id=eq.{user_id}",
         headers={**_sb_headers(), "Prefer": "return=minimal"},
@@ -4276,21 +4368,44 @@ async def check_price_alerts():
             if t:
                 ticker_alerts.setdefault(t, []).append(a)
 
+        # Batch the price fetch into a single yfinance call across all tickers.
+        # period=5d covers both the current close and the prior close, so we
+        # don't need a second per-ticker request anymore.
+        try:
+            batch = yf.download(
+                list(ticker_alerts.keys()),
+                period="5d",
+                interval="1d",
+                progress=False,
+                auto_adjust=True,
+                group_by="ticker",
+                threads=False,
+            )
+        except Exception as e:
+            print(f"[alerts] batch yfinance failed: {e}")
+            batch = None
+
+        def _series_for(ticker: str):
+            """Pull a Close series for `ticker` from the batched frame."""
+            if batch is None:
+                return None
+            try:
+                # MultiIndex columns when multiple tickers were requested
+                if (ticker, "Close") in batch.columns:
+                    return batch[(ticker, "Close")].dropna()
+                if "Close" in batch.columns:
+                    return batch["Close"].dropna()
+            except Exception:
+                return None
+            return None
+
         for ticker, ticker_alert_list in ticker_alerts.items():
             try:
-                # Get current price via yfinance (1-day data, last close)
-                df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
-                if df.empty:
+                series = _series_for(ticker)
+                if series is None or len(series) < 2:
                     continue
-                raw_price = df["Close"].iloc[-1]
-                current_price = float(raw_price.iloc[0] if hasattr(raw_price, 'iloc') else raw_price)
-
-                # Get reference price (close from previous day)
-                df_prev = yf.download(ticker, period="5d", progress=False, auto_adjust=True)
-                if df_prev.empty or len(df_prev) < 2:
-                    continue
-                raw_prev = df_prev["Close"].iloc[-2]
-                prev_close = float(raw_prev.iloc[0] if hasattr(raw_prev, 'iloc') else raw_prev)
+                current_price = float(series.iloc[-1])
+                prev_close    = float(series.iloc[-2])
                 if prev_close <= 0:
                     continue
                 pct_change = ((current_price - prev_close) / prev_close) * 100
@@ -4477,14 +4592,18 @@ class SnapshotRequest(BaseModel):
 
 
 @app.post("/portfolio/snapshot")
-def portfolio_snapshot(req: SnapshotRequest):
+def portfolio_snapshot(req: SnapshotRequest, request: Request):
+    # JWT-verify caller and reject if their token does not match req.user_id
+    verified_id = _verify_jwt_user(request)
+    if verified_id != req.user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     try:
         return _portfolio_snapshot_inner(req)
     except HTTPException:
         raise
     except Exception as exc:
         print(f"[snapshot] unexpected error: {exc}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Snapshot error: {exc}")
+        raise HTTPException(status_code=500, detail="Snapshot error")
 
 
 def _portfolio_snapshot_inner(req: SnapshotRequest):
@@ -4600,7 +4719,7 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
     if patch_resp.status_code in (200, 204):
         pass  # updated existing row
     else:
-        # No existing row — insert fresh
+        # No existing row - insert fresh
         insert_payload = {
             "user_id": req.user_id,
             "portfolio_id": req.portfolio_id,
@@ -4615,7 +4734,7 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
         )
         if insert_resp.status_code not in (200, 201, 204):
             err_body = insert_resp.text[:500]
-            print(f"[snapshot] insert failed: {insert_resp.status_code} — {err_body}")
+            print(f"[snapshot] insert failed: {insert_resp.status_code} - {err_body}")
             raise HTTPException(status_code=500, detail=f"Snapshot insert failed: {insert_resp.status_code} {err_body}")
 
     return {
@@ -4626,8 +4745,9 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
     }
 
 
-# ── Health Score cache (keyed by user_id + UTC date + sorted tickers hash) ────
-_health_score_cache: dict[str, tuple[dict, str]] = {}
+# Health Score cache (keyed by user_id + UTC date + sorted tickers hash)
+_health_score_cache: "OrderedDict[str, tuple[dict, str]]" = OrderedDict()
+_HEALTH_SCORE_CACHE_MAX = 5000
 
 
 def _hs_cache_key(user_id: str, tickers: list[str]) -> str:
@@ -4691,7 +4811,9 @@ class HealthScoreRequest(BaseModel):
 
 
 @app.post("/portfolio/health-score")
-def portfolio_health_score(req: HealthScoreRequest):
+def portfolio_health_score(req: HealthScoreRequest, request: Request):
+    if check_rate_limit(_client_ip(request), "health-score", 20, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     tickers = [t.upper() for t in req.tickers if t]
     weights = req.weights or [1.0 / max(len(tickers), 1)] * len(tickers)
     if len(weights) != len(tickers):
@@ -4709,6 +4831,7 @@ def portfolio_health_score(req: HealthScoreRequest):
     sb_cached = _hs_load_from_supabase(req.user_id, today, tkr_hash)
     if sb_cached:
         _health_score_cache[cache_key] = (sb_cached, today)
+        _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
         return sb_cached
 
     # Compute base sub-scores
@@ -4797,11 +4920,9 @@ def portfolio_health_score(req: HealthScoreRequest):
 
     score_label = "Excellent" if score >= 75 else "Good" if score >= 50 else "Fair" if score >= 25 else "Weak"
 
-    # Mutual funds and broad ETFs — don't flag as single-stock risk
-    MUTUAL_FUNDS = {t for t in tickers if (len(t) == 5 and t.endswith("X")) or t in {
-        "VTI","VXUS","BND","BNDX","VT","ITOT","AGG","SCHB","SCHA","SCHX","SCHF","SCHI",
-        "IEMG","EFA","EEM","IVV","VOO","SPY","QQQ","DIA","IWM","GLD","SLV","TLT","LQD",
-    }}
+    # Mutual funds, broad ETFs, and cash - don't flag any as single-stock risk.
+    # Uses the shared is_fund_or_cash() helper so all callsites stay aligned.
+    MUTUAL_FUNDS = {t for t in tickers if is_fund_or_cash(t)}
     non_fund_tickers = [t for t in tickers if t not in MUTUAL_FUNDS]
 
     # Build concentration risk context for the prompt
@@ -4830,7 +4951,7 @@ def portfolio_health_score(req: HealthScoreRequest):
     system_prompt = (
         "You are Corvo: the AI advisor watching over this investor's portfolio. "
         "Speak in plain English, direct and confident. No em dashes, no asterisks, no markdown, no emoji. "
-        "Every sentence must reference this user's actual tickers, weights, or metrics — generic advice is rejected. "
+        "Every sentence must reference this user's actual tickers, weights, or metrics - generic advice is rejected. "
         "Take a position. Do not hedge with 'consider', 'might want to', or 'every situation is different'. "
         "Say what the single biggest driver of the score is, and exactly what to do about it."
     )
@@ -4910,6 +5031,7 @@ Rules:
 
     result = {"score": score, "headline": headline, "actions": actions, "cached": False}
     _health_score_cache[cache_key] = (result, today)
+    _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
     _hs_save_to_supabase(req.user_id, today, tkr_hash, result)
 
     return result
@@ -5114,7 +5236,7 @@ def portfolio_peer_comparison(
     percentiles = {
         "cagr": _normal_percentile(user_cagr, _PEER_BASELINE_MEDIANS["cagr"], _PEER_BASELINE_STDS["cagr"]),
         "sharpe": _normal_percentile(user_sharpe, _PEER_BASELINE_MEDIANS["sharpe"], _PEER_BASELINE_STDS["sharpe"]),
-        # Lower is better for volatility and drawdown — invert rank
+        # Lower is better for volatility and drawdown - invert rank
         "volatility": 100 - _normal_percentile(user_volatility, _PEER_BASELINE_MEDIANS["volatility"], _PEER_BASELINE_STDS["volatility"]),
         "max_drawdown": 100 - _normal_percentile(user_max_drawdown, _PEER_BASELINE_MEDIANS["max_drawdown"], _PEER_BASELINE_STDS["max_drawdown"]),
     }
@@ -5134,18 +5256,19 @@ def portfolio_peer_comparison(
 
 
 @app.get("/portfolio/history")
-def get_portfolio_history(portfolio_id: str, user_id: str = ""):
-    """Return all snapshots for a portfolio ordered by date ascending."""
+def get_portfolio_history(portfolio_id: str, request: Request):
+    """Return all snapshots for a portfolio ordered by date ascending.
+    Auth-required: filters strictly to the JWT-derived user_id."""
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         return {"snapshots": []}
 
+    user_id = _verify_jwt_user(request)
     params: dict = {
         "portfolio_id": f"eq.{portfolio_id}",
+        "user_id": f"eq.{user_id}",
         "select": "date,portfolio_value,cumulative_return",
         "order": "date.asc",
     }
-    if user_id:
-        params["user_id"] = f"eq.{user_id}"
 
     resp = requests.get(
         f"{SUPABASE_URL}/rest/v1/portfolio_snapshots",
@@ -5475,8 +5598,8 @@ async def portfolio_tax_loss_alert(user_id: str, request: Request, portfolio_val
     verified_user_id = _verify_jwt_user(request)
     if verified_user_id != user_id:
         raise HTTPException(status_code=403, detail="Forbidden")
-    # Rate limit — this endpoint runs async Supabase fetches and yfinance lookups
-    ip = request.client.host if request.client else "unknown"
+    # Rate limit - this endpoint runs async Supabase fetches and yfinance lookups
+    ip = _client_ip(request)
     if check_rate_limit(ip, "tax-loss-alert", 30, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded.")
     loop = asyncio.get_event_loop()
@@ -5591,7 +5714,7 @@ def portfolio_capital_gains(
         elif is_long_term is False:
             tax_rate = stcg_rate
         else:
-            tax_rate = ltcg_rate  # unknown holding period — show LTCG as default
+            tax_rate = ltcg_rate  # unknown holding period - show LTCG as default
 
         estimated_tax = max(0.0, estimated_gain_dollars * tax_rate / 100)
 
@@ -5758,7 +5881,7 @@ def portfolio_dividend_calendar(
             allocated_value = portfolio_value * weight
             dividend_yield = safe_float(info.get("dividendYield")) or 0.0
             # yfinance inconsistently returns dividendYield as decimal (0.0268) or percentage (2.68)
-            # Normalize: any yield > 0.5 is already a percentage — divide by 100
+            # Normalize: any yield > 0.5 is already a percentage - divide by 100
             if dividend_yield > 0.5:
                 dividend_yield = dividend_yield / 100
             div_yield_pct = round(dividend_yield * 100, 2)
@@ -5804,7 +5927,7 @@ def portfolio_share_image(
     vol: float = 0.0,
     theme: str = "dark",
 ):
-    """Generate a 1200x630 OG-style portfolio card image — clean minimal design."""
+    """Generate a 1200x630 OG-style portfolio card image - clean minimal design."""
     from fastapi.responses import StreamingResponse
     import io, datetime
     try:
@@ -5844,7 +5967,7 @@ def portfolio_share_image(
     # ── Fonts ──
     def try_font(path, size):
         try:    return ImageFont.truetype(path, size)
-        except: return ImageFont.load_default()
+        except Exception: return ImageFont.load_default()
 
     FONT_PATHS = [
         "/System/Library/Fonts/Helvetica.ttc",
@@ -5872,7 +5995,7 @@ def portfolio_share_image(
 
     LM = 60  # left margin
 
-    # ── TOP SECTION (y=30–130) ──
+    # ── TOP SECTION (y=30-130) ──
     # "CORVO" large bold amber
     draw.text((LM, 30), "CORVO", font=font_corvo, fill=AMBER)
 
@@ -5901,7 +6024,7 @@ def portfolio_share_image(
     tick_x = W - LM - (bbox[2] - bbox[0])
     draw.text((tick_x, 62), ticker_str, font=font_tickers, fill=TEXT_DIM)
 
-    # ── CENTER LEFT (y=160–340): giant return ──
+    # ── CENTER LEFT (y=160-340): giant return ──
     ret_sign  = "+" if ret >= 0 else ""
     ret_color = GREEN if ret >= 0 else RED
     ret_str   = f"{ret_sign}{ret:.1f}%"
@@ -5914,7 +6037,7 @@ def portfolio_share_image(
     lbl = "P O R T F O L I O   R E T U R N"
     draw.text((LM, ret_y + rh + 14), lbl, font=font_ret_lbl, fill=(*AMBER, 180))
 
-    # ── CENTER RIGHT (y=155–345): 2×2 metric cards ──
+    # ── CENTER RIGHT (y=155-345): 2×2 metric cards ──
     vol_display = vol if vol >= 1.0 else vol * 100
     health_color = GREEN if health >= 70 else (AMBER if health >= 50 else RED)
     metrics = [
@@ -5936,7 +6059,7 @@ def portfolio_share_image(
         cx = CARD_X + col_i * (CARD_W + CARD_GAP)
         cy = CARD_Y0 + row_i * (CARD_H + CARD_GAP)
 
-        # Card background — use RGBA image overlay for subtle fill
+        # Card background - use RGBA image overlay for subtle fill
         card_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         cd = ImageDraw.Draw(card_layer, "RGBA")
         cd.rounded_rectangle(
@@ -5956,7 +6079,7 @@ def portfolio_share_image(
         lw = bbox[2] - bbox[0]
         draw.text((cx + (CARD_W - lw) // 2, cy + CARD_H - 26), mlabel, font=font_card_lbl, fill=TEXT_DIM)
 
-    # ── BOTTOM SECTION (y=380–440): amber divider + ticker pills ──
+    # ── BOTTOM SECTION (y=380-440): amber divider + ticker pills ──
     DIV_Y = 375
     draw.line([(LM, DIV_Y), (W - LM, DIV_Y)], fill=DIVIDER_CLR, width=1)
 
@@ -6145,7 +6268,7 @@ async def send_morning_brief() -> dict:
         print("[morning-brief] no brief generated (API key missing?)")
         return {"skipped": "no brief"}
 
-    title = "📈 Morning Market Brief"
+    title = "Morning Market Brief"
     body  = _brief_push_body(brief, indices)
     icon  = "https://corvo.capital/corvo-logo.png"
     url   = "https://corvo.capital/app"
@@ -6229,6 +6352,7 @@ def _seconds_until_9am_et() -> float:
 async def morning_brief_loop():
     """Background task: fire market brief push at 9am ET every day."""
     print("[morning-brief] scheduler started")
+    await asyncio.sleep(60)  # startup delay
     while True:
         wait = _seconds_until_9am_et()
         print(f"[morning-brief] sleeping {wait/3600:.2f}h until 9am ET")
@@ -6304,8 +6428,10 @@ _BRIEF_TTL = 3600  # 1 hour
 
 
 @app.get("/market-brief")
-async def market_brief_endpoint(force: bool = False):
+async def market_brief_endpoint(force: bool = False, request: Request = None):
     """Return AI-generated daily market brief, cached 1 hour. Used by the frontend."""
+    if request is not None and check_rate_limit(_client_ip(request), "market-brief", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     now = time.time()
     cached = _market_brief_cache.get("data")
     if not force and cached and (now - _market_brief_cache.get("ts", 0)) < _BRIEF_TTL:
@@ -6500,6 +6626,9 @@ def _send_price_target_email(
 async def price_alert_loop():
     """Background loop: check price alerts and price targets every 60 seconds."""
     print("[alerts] background price alert checker started")
+    # Startup delay so we don't immediately fire yfinance calls on boot and
+    # risk tripping Yahoo's 401-Crumb anti-abuse on every cold start.
+    await asyncio.sleep(30)
     while True:
         try:
             await check_price_alerts()
@@ -6806,7 +6935,7 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
                     market_note = f"The S&P 500 is {'up' if sp >= 0 else 'down'} {abs(sp):.2f}% today."
 
             if portfolio_change is None:
-                print(f"[morning-brief-email] skip {uid}: portfolio_change is None — FINNHUB_API_KEY missing or all quotes returned no data")
+                print(f"[morning-brief-email] skip {uid}: portfolio_change is None - FINNHUB_API_KEY missing or all quotes returned no data")
                 skipped += 1
                 continue
 
@@ -6848,6 +6977,7 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
 async def morning_briefing_email_loop():
     """Background task: send morning briefing emails at 6am ET daily."""
     print("[morning-brief-email] scheduler started")
+    await asyncio.sleep(90)  # startup delay
     while True:
         wait = _seconds_until_6am_et()
         print(f"[morning-brief-email] sleeping {wait/3600:.2f}h until 6am ET")
@@ -6971,6 +7101,7 @@ async def send_week_in_review_emails(target_user_id=None) -> dict:
 async def week_in_review_loop():
     """Background task: send week-in-review emails every Monday at 6am ET."""
     print("[week-in-review-email] scheduler started")
+    await asyncio.sleep(120)  # startup delay
     while True:
         wait = _seconds_until_monday_6am_et()
         print(f"[week-in-review-email] sleeping {wait/3600:.1f}h until Monday 6am ET")
@@ -7055,6 +7186,7 @@ async def send_monthly_summary_emails(target_user_id=None) -> dict:
 async def monthly_summary_loop():
     """Background task: send monthly summary emails on the 1st of each month at 6am ET."""
     print("[monthly-summary-email] scheduler started")
+    await asyncio.sleep(150)  # startup delay
     while True:
         wait = _seconds_until_first_of_month_6am_et()
         print(f"[monthly-summary-email] sleeping {wait/3600:.1f}h until 1st of month 6am ET")
@@ -7275,6 +7407,7 @@ async def send_market_close_summary_emails(target_user_id=None) -> dict:
 async def market_close_summary_loop():
     """Background task: send market close summary at 4:05pm ET on weekdays."""
     print("[mkt-close] scheduler started")
+    await asyncio.sleep(180)  # startup delay
     while True:
         wait = _seconds_until_4_05pm_et()
         print(f"[mkt-close] sleeping {wait/3600:.2f}h until next weekday 4:05pm ET")
@@ -7558,7 +7691,7 @@ async def send_weekly_portfolio_checkup_push() -> dict:
                     sent += 1
                 elif result == "dead" and sub_row.get("id"):
                     dead_ids.append(str(sub_row["id"]))
-            # Tax loss harvesting check — send a separate push if a meaningful opportunity exists
+            # Tax loss harvesting check - send a separate push if a meaningful opportunity exists
             try:
                 tlh_data = await loop.run_in_executor(None, _fetch_user_portfolio_with_cost_basis, user_id)
                 if tlh_data:
@@ -7599,6 +7732,7 @@ async def send_weekly_portfolio_checkup_push() -> dict:
 async def weekly_portfolio_checkup_loop():
     """Background task: send weekly portfolio checkup push every Sunday at 8am ET."""
     print("[weekly-checkup] scheduler started")
+    await asyncio.sleep(210)  # startup delay
     while True:
         wait = _seconds_until_sunday_8am_et()
         print(f"[weekly-checkup] sleeping {wait/3600:.1f}h until Sunday 8am ET")
@@ -7675,7 +7809,7 @@ def _fetch_earnings_dates(ticker: str) -> list:
             if not isinstance(raw, list):
                 raw = [raw]
         else:
-            # DataFrame — flatten first row of 'Earnings Date' column
+            # DataFrame - flatten first row of 'Earnings Date' column
             try:
                 raw = list(cal.loc["Earnings Date"])
             except Exception:
@@ -7795,6 +7929,7 @@ async def send_earnings_reminder_push() -> dict:
 async def earnings_reminder_loop():
     """Background task: send earnings day reminder push every morning at 8am ET."""
     print("[earnings-reminder] scheduler started")
+    await asyncio.sleep(240)  # startup delay
     while True:
         wait = _seconds_until_8am_et()
         print(f"[earnings-reminder] sleeping {wait/3600:.2f}h until 8am ET")
@@ -7950,8 +8085,10 @@ _market_driver_cache: dict = {"data": None, "ts": 0.0}
 
 
 @app.get("/market-driver")
-async def market_driver():
+async def market_driver(request: Request = None):
     """Return one-sentence explanation of the primary US market driver today."""
+    if request is not None and check_rate_limit(_client_ip(request), "market-driver", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     global _market_driver_cache
     now = time.time()
     cached = _market_driver_cache.get("data")
@@ -8012,8 +8149,10 @@ async def market_driver():
 # ── Earnings Calendar ──────────────────────────────────────────────────────────
 
 @app.get("/earnings-calendar")
-def earnings_calendar(tickers: str = Query(default="")):
+def earnings_calendar(tickers: str = Query(default=""), request: Request = None):
     """Return upcoming earnings dates for portfolio tickers within the next 60 days."""
+    if request is not None and check_rate_limit(_client_ip(request), "earnings-calendar", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     from datetime import date, timedelta
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
@@ -8446,8 +8585,10 @@ def _fetch_sec_transcript(ticker: str) -> str | None:
 
 
 @app.get("/earnings/transcript/{ticker}")
-async def earnings_transcript(ticker: str):
+async def earnings_transcript(ticker: str, request: Request = None):
     """Fetch and summarize earnings call transcript from SEC EDGAR 8-K filings."""
+    if request is not None and check_rate_limit(_client_ip(request), "earnings-transcript", 20, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     import re as _re
     import json as _json
 
@@ -8838,7 +8979,7 @@ def _horizon_category(years: int | None) -> str:
 
 @app.post("/what-should-i-do")
 def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "what-should-i-do", 10, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded.")
 
@@ -8872,7 +9013,7 @@ def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
         quote = (_fetch_finnhub_quote(ticker, finnhub_key) if finnhub_key else None) or _fetch_yf_quote(ticker)
         live_prices[ticker] = quote
 
-    # Market context (SPY + QQQ) — shown as background, not as a reason to act
+    # Market context (SPY + QQQ) - shown as background, not as a reason to act
     market_lines: list[str] = []
     for sym in ["SPY", "QQQ"]:
         q = (_fetch_finnhub_quote(sym, finnhub_key) if finnhub_key else None) or _fetch_yf_quote(sym)
@@ -8923,7 +9064,7 @@ def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
         investor_rules = """INVESTOR CONSTRAINT (conservative or income-focused investor):
 - Focus on capital preservation, income generation, and protecting existing gains. Never chase returns.
 - Do NOT recommend adding to volatile or speculative positions.
-- When prices are down, do not recommend selling — evaluate whether the long-term thesis still holds.
+- When prices are down, do not recommend selling - evaluate whether the long-term thesis still holds.
 - Valid actions: adding stability through bonds or dividend ETFs, trimming concentrated high-risk positions, rebalancing toward the target allocation.
 - Every recommendation must prioritize stability and downside protection over upside return."""
     elif rt_lower == "aggressive" or investor_type.lower() in ("growth", "aggressive"):
@@ -9003,9 +9144,12 @@ MARKET CONTEXT (background only, never a reason to act):
     return {"recommendations": result}
 
 
-# ── Daily Signal ──────────────────────────────────────────────────────────────
+# Daily Signal
 
-_daily_signal_cache: dict = {}
+# OrderedDict so we can LRU-evict on get + on insert. Cached signals stay valid
+# for the day, so we tag the LRU on hit.
+_daily_signal_cache: "OrderedDict[str, dict]" = OrderedDict()
+_DAILY_SIGNAL_MAX = 500
 
 class DailySignalRequest(BaseModel):
     tickers: list[str] = []
@@ -9022,7 +9166,7 @@ class DailySignalRequest(BaseModel):
 
 @app.post("/portfolio/daily-signal")
 def generate_daily_signal(req: DailySignalRequest, request: Request):
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "daily-signal", 20, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded.")
 
@@ -9035,13 +9179,24 @@ def generate_daily_signal(req: DailySignalRequest, request: Request):
     cache_key = f"{today_str}:{portfolio_key}"
 
     if cache_key in _daily_signal_cache:
+        _daily_signal_cache.move_to_end(cache_key)
         return _daily_signal_cache[cache_key]
 
     total_w = sum(req.weights) or 1.0
     holdings_lines = [f"  {t}: {(w/total_w):.1%}" for t, w in zip(req.tickers, req.weights)]
     n = len(req.tickers)
     max_weight = max(w / total_w for w in req.weights) if req.weights else 0
-    top_ticker = req.tickers[req.weights.index(max(req.weights))] if req.tickers else ""
+    # Guard against ties: if multiple holdings share the max weight, don't single
+    # out one. Use a generic descriptor instead of a specific ticker.
+    if req.tickers and req.weights:
+        max_raw = max(req.weights)
+        top_indices = [i for i, w in enumerate(req.weights) if w == max_raw]
+        if len(top_indices) == 1:
+            top_ticker = req.tickers[top_indices[0]]
+        else:
+            top_ticker = f"{len(top_indices)} holdings tied"
+    else:
+        top_ticker = ""
 
     issues = []
     if max_weight > 0.35:
@@ -9055,15 +9210,15 @@ def generate_daily_signal(req: DailySignalRequest, request: Request):
     if n <= 2:
         issues.append(f"under_diversified: only {n} holding(s) creates dangerous single-name concentration")
     if req.annualized_return < 0.04:
-        issues.append(f"underperformance: {req.annualized_return:.1%} CAGR is below risk-free rate — justify why you hold this vs cash")
+        issues.append(f"underperformance: {req.annualized_return:.1%} CAGR is below risk-free rate - justify why you hold this vs cash")
     issues_str = "\n".join(f"  - {x}" for x in issues) if issues else "  - Portfolio is reasonably healthy; focus on the single highest-impact marginal improvement"
 
     prompt_system = f"""You are Corvo: the AI advisor watching over this portfolio every day. Today is {today_str}.
 
-Your task: surface ONE specific, actionable recommendation for today. Not a list — the single highest-impact signal you would flag if this were your own money.
+Your task: surface ONE specific, actionable recommendation for today. Not a list - the single highest-impact signal you would flag if this were your own money.
 
 RULES:
-- Be brutally specific. "Trim VIG from 35% to 25%" — not "consider reducing VIG".
+- Be brutally specific. "Trim VIG from 35% to 25%" - not "consider reducing VIG".
 - Use this portfolio's actual numbers in every claim. Generic statements get rejected.
 - Estimate the expected impact on at least two measurable metrics.
 - Write 3 execution steps a non-expert can follow in their brokerage today.
@@ -9128,10 +9283,10 @@ Return this exact JSON structure:
                     break
         signal = json.loads(raw)
         signal["generated_at"] = today_str
-        if len(_daily_signal_cache) >= 500:
-            oldest = next(iter(_daily_signal_cache))
-            del _daily_signal_cache[oldest]
         _daily_signal_cache[cache_key] = signal
+        _daily_signal_cache.move_to_end(cache_key)
+        while len(_daily_signal_cache) > _DAILY_SIGNAL_MAX:
+            _daily_signal_cache.popitem(last=False)
         return signal
     except json.JSONDecodeError:
         raise HTTPException(status_code=502, detail="Signal generation returned invalid JSON.")
@@ -9151,7 +9306,7 @@ _PERIOD_YEARS: dict[str, float] = {
 
 @app.post("/portfolio/rebalance")
 def portfolio_rebalance(req: RebalanceRequest, request: Request):
-    ip = request.client.host if request.client else "unknown"
+    ip = _client_ip(request)
     if check_rate_limit(ip, "portfolio-rebalance", 10, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded.")
 
@@ -9288,277 +9443,3 @@ Overall portfolio: annualized return {req.portfolio_return:.2%}, volatility {req
     plan = clean_ai_response(raw)
     return {"holdings": holdings, "plan": plan}
 
-
-# ── Paper Trading ──────────────────────────────────────────────────────────────
-
-class PaperBuyRequest(BaseModel):
-    ticker: str
-    shares: float
-
-class PaperSellRequest(BaseModel):
-    ticker: str
-    shares: float
-
-
-def _paper_live_price(ticker: str) -> float | None:
-    """Fetch latest live price for a ticker, using fast_info first then 1m candles."""
-    try:
-        t = yf.Ticker(ticker)
-        info = t.fast_info
-        price = getattr(info, "last_price", None)
-        if price and float(price) > 0:
-            return float(price)
-    except Exception:
-        pass
-    try:
-        df = yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
-        if not df.empty:
-            raw = df["Close"].iloc[-1]
-            return float(raw.iloc[0] if hasattr(raw, "iloc") else raw)
-    except Exception:
-        pass
-    return None
-
-
-def _get_or_create_paper_portfolio(user_id: str) -> dict:
-    resp = requests.get(
-        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}&limit=1",
-        headers=_sb_headers(), timeout=5,
-    )
-    if resp.status_code == 200 and resp.json():
-        return resp.json()[0]
-    # Create fresh portfolio
-    create = requests.post(
-        f"{SUPABASE_URL}/rest/v1/paper_portfolio",
-        headers={**_sb_headers(), "Prefer": "return=representation"},
-        json={"user_id": user_id, "cash": 10000.0, "positions": {}, "starting_value": 10000.0},
-        timeout=5,
-    )
-    if create.status_code in (200, 201):
-        return create.json()[0]
-    raise HTTPException(status_code=500, detail="Failed to create paper portfolio")
-
-
-@app.get("/paper-trading/{user_id}/history")
-def get_paper_trade_history(user_id: str, request: Request):
-    """Return all paper trades for a user ordered newest first. JWT verified."""
-    verified_id = _verify_jwt_user(request)
-    if verified_id != user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
-    resp = requests.get(
-        f"{SUPABASE_URL}/rest/v1/paper_trades?user_id=eq.{user_id}&order=executed_at.desc",
-        headers=_sb_headers(), timeout=5,
-    )
-    if resp.status_code != 200:
-        raise HTTPException(status_code=resp.status_code, detail="Failed to fetch trade history")
-    return resp.json()
-
-
-@app.get("/paper-trading/{user_id}")
-def get_paper_portfolio(user_id: str, request: Request):
-    """Return paper portfolio with live prices, total value, and P&L. JWT verified."""
-    verified_id = _verify_jwt_user(request)
-    if verified_id != user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    portfolio = _get_or_create_paper_portfolio(user_id)
-    positions_raw = portfolio.get("positions", {}) or {}
-    cash = float(portfolio.get("cash", 10000))
-    starting_value = float(portfolio.get("starting_value", 10000))
-    created_at = portfolio.get("created_at", "")
-
-    enriched: list[dict] = []
-    total_holdings_value = 0.0
-
-    for ticker, pos in positions_raw.items():
-        shares = float(pos.get("shares", 0))
-        avg_cost = float(pos.get("avg_cost", 0))
-        if shares < 0.0001:
-            continue
-        price = _paper_live_price(ticker)
-        current_value = shares * price if price else shares * avg_cost
-        cost_basis = shares * avg_cost
-        pl_dollar = current_value - cost_basis
-        pl_pct = (pl_dollar / cost_basis * 100) if cost_basis else 0.0
-        total_holdings_value += current_value
-        enriched.append({
-            "ticker": ticker,
-            "shares": shares,
-            "avg_cost": avg_cost,
-            "current_price": price,
-            "current_value": current_value,
-            "pl_dollar": pl_dollar,
-            "pl_pct": pl_pct,
-        })
-
-    total_value = cash + total_holdings_value
-    total_pl = total_value - starting_value
-    total_return_pct = (total_pl / starting_value * 100) if starting_value else 0.0
-
-    # S&P 500 return since portfolio creation
-    sp500_return_pct = None
-    if created_at:
-        try:
-            start_date = created_at[:10]
-            # SPY is more reliable than ^GSPC for historical data fetches
-            df = yf.download("SPY", start=start_date, progress=False, auto_adjust=True)
-            if not df.empty and len(df) >= 2:
-                s = df["Close"].iloc[0]
-                e = df["Close"].iloc[-1]
-                s_val = float(s.iloc[0] if hasattr(s, "iloc") else s)
-                e_val = float(e.iloc[0] if hasattr(e, "iloc") else e)
-                if s_val > 0:
-                    sp500_return_pct = (e_val - s_val) / s_val * 100
-        except Exception:
-            pass
-
-    return {
-        "cash": cash,
-        "positions": enriched,
-        "total_value": total_value,
-        "total_holdings_value": total_holdings_value,
-        "total_return_pct": total_return_pct,
-        "total_pl": total_pl,
-        "starting_value": starting_value,
-        "sp500_return_pct": sp500_return_pct,
-        "created_at": created_at,
-    }
-
-
-@app.post("/paper-trading/buy")
-def paper_trade_buy(body: PaperBuyRequest, request: Request):
-    """Buy shares in paper portfolio. JWT verified."""
-    user_id = _verify_jwt_user(request)
-    ticker = body.ticker.upper().strip()
-    shares = float(body.shares)
-
-    if not ticker:
-        raise HTTPException(status_code=400, detail="Ticker required")
-    if shares <= 0:
-        raise HTTPException(status_code=400, detail="Shares must be positive")
-
-    price = _paper_live_price(ticker)
-    if not price:
-        raise HTTPException(status_code=400, detail=f"Could not fetch price for {ticker}. Check the ticker and try again.")
-
-    total_cost = round(shares * price, 6)
-    portfolio = _get_or_create_paper_portfolio(user_id)
-    cash = float(portfolio.get("cash", 0))
-    positions = dict(portfolio.get("positions", {}) or {})
-
-    if total_cost > cash:
-        raise HTTPException(status_code=400, detail=f"Insufficient cash. Need ${total_cost:.2f}, have ${cash:.2f}")
-
-    existing = positions.get(ticker, {"shares": 0.0, "avg_cost": 0.0})
-    old_shares = float(existing.get("shares", 0))
-    old_avg = float(existing.get("avg_cost", 0))
-    new_shares = old_shares + shares
-    new_avg = ((old_shares * old_avg) + total_cost) / new_shares
-
-    positions[ticker] = {"shares": new_shares, "avg_cost": new_avg}
-    new_cash = round(cash - total_cost, 6)
-
-    upd = requests.patch(
-        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}",
-        headers={**_sb_headers(), "Prefer": "return=minimal"},
-        json={"cash": new_cash, "positions": positions, "updated_at": datetime.now(timezone.utc).isoformat()},
-        timeout=5,
-    )
-    if upd.status_code not in (200, 201, 204):
-        raise HTTPException(status_code=500, detail="Failed to update portfolio")
-
-    requests.post(
-        f"{SUPABASE_URL}/rest/v1/paper_trades",
-        headers={**_sb_headers(), "Prefer": "return=minimal"},
-        json={"user_id": user_id, "ticker": ticker, "action": "buy", "shares": shares, "price": price, "total": total_cost},
-        timeout=5,
-    )
-
-    return {"status": "ok", "ticker": ticker, "shares": shares, "price": price, "total": total_cost, "cash_remaining": new_cash}
-
-
-@app.post("/paper-trading/sell")
-def paper_trade_sell(body: PaperSellRequest, request: Request):
-    """Sell shares from paper portfolio. JWT verified."""
-    user_id = _verify_jwt_user(request)
-    ticker = body.ticker.upper().strip()
-    shares = float(body.shares)
-
-    if shares <= 0:
-        raise HTTPException(status_code=400, detail="Shares must be positive")
-
-    portfolio = _get_or_create_paper_portfolio(user_id)
-    cash = float(portfolio.get("cash", 0))
-    positions = dict(portfolio.get("positions", {}) or {})
-
-    if ticker not in positions:
-        raise HTTPException(status_code=400, detail=f"No position in {ticker}")
-
-    existing = positions[ticker]
-    owned = float(existing.get("shares", 0))
-    if shares > owned + 0.0001:
-        raise HTTPException(status_code=400, detail=f"Insufficient shares. Own {owned:.4f}, selling {shares}")
-
-    price = _paper_live_price(ticker)
-    if not price:
-        raise HTTPException(status_code=400, detail=f"Could not fetch price for {ticker}")
-
-    proceeds = round(shares * price, 6)
-    new_cash = round(cash + proceeds, 6)
-    remaining = owned - shares
-
-    if remaining < 0.0001:
-        del positions[ticker]
-    else:
-        positions[ticker] = {"shares": remaining, "avg_cost": existing.get("avg_cost", 0)}
-
-    upd = requests.patch(
-        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}",
-        headers={**_sb_headers(), "Prefer": "return=minimal"},
-        json={"cash": new_cash, "positions": positions, "updated_at": datetime.now(timezone.utc).isoformat()},
-        timeout=5,
-    )
-    if upd.status_code not in (200, 201, 204):
-        raise HTTPException(status_code=500, detail="Failed to update portfolio")
-
-    requests.post(
-        f"{SUPABASE_URL}/rest/v1/paper_trades",
-        headers={**_sb_headers(), "Prefer": "return=minimal"},
-        json={"user_id": user_id, "ticker": ticker, "action": "sell", "shares": shares, "price": price, "total": proceeds},
-        timeout=5,
-    )
-
-    return {"status": "ok", "ticker": ticker, "shares": shares, "price": price, "total": proceeds, "cash_remaining": new_cash}
-
-
-@app.post("/paper-trading/reset")
-def reset_paper_portfolio(request: Request):
-    """Reset paper portfolio to $10,000 and clear all trade history. JWT verified."""
-    user_id = _verify_jwt_user(request)
-
-    requests.delete(
-        f"{SUPABASE_URL}/rest/v1/paper_trades?user_id=eq.{user_id}",
-        headers=_sb_headers(), timeout=5,
-    )
-
-    upd = requests.patch(
-        f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}",
-        headers={**_sb_headers(), "Prefer": "return=minimal"},
-        json={"cash": 10000.0, "positions": {}, "starting_value": 10000.0, "updated_at": datetime.now(timezone.utc).isoformat()},
-        timeout=5,
-    )
-    # If no portfolio row exists yet, create one
-    if upd.status_code == 204:
-        check = requests.get(
-            f"{SUPABASE_URL}/rest/v1/paper_portfolio?user_id=eq.{user_id}&limit=1",
-            headers=_sb_headers(), timeout=5,
-        )
-        if check.status_code == 200 and not check.json():
-            requests.post(
-                f"{SUPABASE_URL}/rest/v1/paper_portfolio",
-                headers={**_sb_headers(), "Prefer": "return=minimal"},
-                json={"user_id": user_id, "cash": 10000.0, "positions": {}, "starting_value": 10000.0},
-                timeout=5,
-            )
-
-    return {"status": "reset"}

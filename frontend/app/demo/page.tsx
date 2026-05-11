@@ -7,12 +7,14 @@ import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 import confetti from "canvas-confetti";
 
-/* ── Palette ── */
+/* Palette: route theme-aware colors through CSS variables so the demo respects
+   dark/light mode like the rest of the app. Brand gold + status colors stay
+   fixed because they are brand identifiers, not theme chrome. */
 const C = {
-  bg: "#0a0e14", bg2: "#0d1117", bg3: "#111620", bg4: "#161b25",
-  border: "rgba(255,255,255,0.07)", border2: "rgba(255,255,255,0.14)",
-  cream: "#e8e0cc", cream2: "rgba(232,224,204,0.6)", cream3: "rgba(232,224,204,0.28)",
-  amber: "#c9a84c", amberBg: "rgba(201,168,76,0.1)", amberBd: "rgba(201,168,76,0.25)",
+  bg: "var(--bg)", bg2: "var(--bg2)", bg3: "var(--bg3)", bg4: "var(--card-bg)",
+  border: "var(--border)", border2: "var(--border2)",
+  cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)",
+  amber: "var(--accent)", amberBg: "rgba(201,168,76,0.1)", amberBd: "rgba(201,168,76,0.25)",
   green: "#4caf7d", greenBg: "rgba(76,175,125,0.12)",
   red: "#e05c5c", redBg: "rgba(224,92,92,0.12)",
 };
@@ -153,7 +155,7 @@ function Step1Panel({ active }: { active: boolean }) {
       <AnimatePresence>
         {(showResult || userResult) && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ position: "absolute", top: "110%", left: 0, right: 0, background: C.bg3, border: `1px solid ${C.border2}`, borderRadius: 10, overflow: "hidden", zIndex: 10 }}>
             {[showResult || userResult].filter(Boolean).map(r => r && (
@@ -193,7 +195,7 @@ function Step1Panel({ active }: { active: boolean }) {
                   <span style={{ color: C.amber, fontSize: 12, fontWeight: 600 }}>{s.pct}%</span>
                   <div style={{ width: 60, height: 4, background: C.border, borderRadius: 2, overflow: "hidden" }}>
                     <motion.div
-                      // initial={false} is required — do not remove
+                      // initial={false} is required - do not remove
                       initial={false} animate={{ width: `${s.pct}%` }} transition={{ duration: 0.5, ease: "easeOut" }}
                       style={{ height: "100%", background: C.amber, borderRadius: 2 }} />
                   </div>
@@ -358,7 +360,7 @@ function Step3Panel({ active }: { active: boolean }) {
             <div style={{ fontSize: 20, fontWeight: 700, color: o.color, fontFamily: "'Space Mono', monospace" }}>{o.value}</div>
             <div style={{ marginTop: 8, height: 3, background: C.border, borderRadius: 2 }}>
               <motion.div
-                // initial={false} is required — do not remove
+                // initial={false} is required - do not remove
                 initial={false} animate={{ width: drawn ? `${o.pct}%` : 0 }}
                 transition={{ duration: 0.8, delay: 2.2 }}
                 style={{ height: "100%", background: o.color, borderRadius: 2 }} />
@@ -408,7 +410,7 @@ function Step4Panel({ active }: { active: boolean }) {
       <AnimatePresence>
         {showAlert && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ padding: "10px 14px", background: "rgba(201,168,76,0.12)", border: `1px solid ${C.amberBd}`, borderRadius: 10, display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
             <span style={{ display: "flex", color: C.amber }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
@@ -440,7 +442,7 @@ function Step4Panel({ active }: { active: boolean }) {
                     <span style={{ display: "flex", color: C.amber }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></span>
                     {ping && item.ticker === "AAPL" && (
                       <motion.div
-                        // initial={false} is required — do not remove
+                        // initial={false} is required - do not remove
                         initial={false} animate={{ scale: 2.5, opacity: 0 }} transition={{ duration: 1, repeat: Infinity }}
                         style={{ position: "absolute", inset: -2, borderRadius: "50%", border: `2px solid ${C.amber}` }} />
                     )}
@@ -466,7 +468,7 @@ function Step4Panel({ active }: { active: boolean }) {
           <div style={{ fontSize: 9, color: C.cream3, letterSpacing: 0.8, marginBottom: 4 }}>LIVE PRICES</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false}
               animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
               style={{ width: 8, height: 8, borderRadius: "50%", background: C.green }} />
@@ -529,7 +531,7 @@ function Step5Panel({ active }: { active: boolean }) {
         </div>
         {showXp && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ marginTop: 6, fontSize: 11, color: C.amber, fontWeight: 600 }}>
             +100 XP earned!
@@ -631,18 +633,18 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
       <ParticleCanvas />
       <div style={{ position: "relative", zIndex: 1, maxWidth: 520 }}>
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}>
           <div style={{ marginBottom: 8, display: "flex", justifyContent: "center", color: C.amber }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
         </motion.div>
         <motion.h2
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           style={{ fontSize: "clamp(20px, 3.5vw, 32px)", fontWeight: 700, color: C.cream, margin: "0 0 8px", lineHeight: 1.2, fontFamily: "'Space Mono', monospace" }}>
           Tour complete!
         </motion.h2>
         <motion.p
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           style={{ fontSize: 14, color: C.cream2, margin: "0 0 20px" }}>
           You&apos;re ready to analyze your real portfolio
@@ -650,7 +652,7 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
 
         {/* Completion checklist */}
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 18px", marginBottom: 20, textAlign: "left" }}>
           <p style={{ fontSize: 9, letterSpacing: 1.5, color: C.amber, textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>Here&apos;s what you explored</p>
@@ -670,7 +672,7 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
 
         {/* CTAs */}
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
           style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href="/auth?mode=signup"
@@ -688,7 +690,7 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
         </motion.div>
 
         <motion.p
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}
           style={{ marginTop: 16, fontSize: 11, color: C.cream3 }}>
           No credit card required · Free forever · Cancel anytime

@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
             if (!profile?.onboarding_completed) {
               // Safety: if the user already has saved portfolios they have
-              // used the app before — do not redirect them to onboarding.
+              // used the app before - do not redirect them to onboarding.
               const { count } = await supabase
                 .from("portfolios")
                 .select("id", { count: "exact", head: true })

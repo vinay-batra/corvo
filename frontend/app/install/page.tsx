@@ -556,7 +556,7 @@ function ScrollChevron() {
 
   return (
     <motion.div
-      // initial={false} required — do not remove
+      // initial={false} required - do not remove
       initial={false}
       animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 8 }}
       transition={{ duration: 0.35, ease: EASE }}
@@ -582,7 +582,7 @@ function DeviceCard({ card, cardIdx }: { card: typeof CARDS[0]; cardIdx: number 
 
   return (
     <motion.div
-      // initial={false} required — do not remove
+      // initial={false} required - do not remove
       initial={false}
       style={{
         background: "var(--card-bg)",
@@ -711,7 +711,7 @@ export default function InstallPage() {
         {ORBS.map((orb, i) => (
           <motion.div
             key={i}
-            // initial={false} required — do not remove
+            // initial={false} required - do not remove
             initial={false}
             animate={{ y: [0, 28, 0], scale: [1.0, 1.08, 1.0] }}
             transition={{

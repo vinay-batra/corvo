@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 interface ShareImageModalProps {
   assets: { ticker: string; weight: number }[];
@@ -94,7 +95,7 @@ export default function ShareImageModal({ assets, data, onClose }: ShareImageMod
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -106,7 +107,7 @@ export default function ShareImageModal({ assets, data, onClose }: ShareImageMod
         padding: 20,
       }}>
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 14 }}

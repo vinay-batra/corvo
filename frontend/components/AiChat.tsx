@@ -8,8 +8,9 @@ import {
   X, Copy, Check, Download, Plus, Trash2,
   MessageSquare, Menu, Info, Zap, Pencil,
 } from "lucide-react";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 const PANEL_SLIDE_OFFSET = 500; // px used only for slide-in/out animation
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -233,7 +234,7 @@ export default function AiChat({
   const panelRef   = useRef<HTMLDivElement>(null);
   const initialMessageSentRef = useRef(false);
 
-  // Mobile detection — useLayoutEffect runs before paint, eliminating the SSR flash
+  // Mobile detection - useLayoutEffect runs before paint, eliminating the SSR flash
   useLayoutEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
     check();
@@ -313,7 +314,9 @@ export default function AiChat({
       setUserId(uid);
       userIdRef.current = uid;
       setReferralLink(`https://corvo.capital/app?ref=${uid.replace(/-/g, "").slice(0, 8)}`);
-      fetch(`${API_URL}/chat/usage?user_id=${uid}`)
+      const { data: { session: ctxSession } } = await supabase.auth.getSession();
+      const ctxToken = ctxSession?.access_token ?? "";
+      fetch(`${API_URL}/chat/usage`, ctxToken ? { headers: { "Authorization": `Bearer ${ctxToken}` } } : {})
         .then(r => r.json())
         .then(d => { setMessagesUsed(d.messages_used || 0); setMessagesLimit(d.messages_limit || 15); })
         .catch(() => {});
@@ -321,8 +324,6 @@ export default function AiChat({
 
       // Fetch all user context data in parallel for richer AI responses
       const meta = ud.user.user_metadata || {};
-      const { data: { session: ctxSession } } = await supabase.auth.getSession();
-      const ctxToken = ctxSession?.access_token ?? "";
       const [profileRes, portfoliosRes, emailPrefsRes, alertsRes, targetsRes] = await Promise.allSettled([
         supabase.from("profiles").select("display_name,life_events,financial_goals").eq("id", uid).single(),
         supabase.from("portfolios").select("name,tickers").eq("user_id", uid).order("updated_at", { ascending: false }),
@@ -485,9 +486,9 @@ export default function AiChat({
         .eq("user_id", uid)
         .order("updated_at", { ascending: false })
         .limit(30);
-      if (error) { console.error("[AiChat] load error:", error.message); return; }
+      if (error) { if (process.env.NODE_ENV !== "production") console.error("[AiChat] load error:", error.message); return; }
       if (convs) setConversations(convs as Conversation[]);
-    } catch (e) { console.error("[AiChat] load exception:", e); }
+    } catch (e) { if (process.env.NODE_ENV !== "production") console.error("[AiChat] load exception:", e); }
   }
 
   // Saves using refs so it's always current even inside async send
@@ -500,7 +501,7 @@ export default function AiChat({
         const { error } = await supabase.from("ai_chat_history")
           .update({ messages: allMessages, updated_at: new Date().toISOString() })
           .eq("id", convId);
-        if (error) { console.error("[AiChat] update error:", error.message); return convId; }
+        if (error) { if (process.env.NODE_ENV !== "production") console.error("[AiChat] update error:", error.message); return convId; }
         setConversations(prev => prev.map(c =>
           c.id === convId ? { ...c, messages: allMessages, updated_at: new Date().toISOString() } : c
         ));
@@ -510,7 +511,7 @@ export default function AiChat({
           .insert({ user_id: uid, title: firstMsg.slice(0, 60), messages: allMessages })
           .select()
           .single();
-        if (error) { console.error("[AiChat] insert error:", error.message); return null; }
+        if (error) { if (process.env.NODE_ENV !== "production") console.error("[AiChat] insert error:", error.message); return null; }
         if (conv) {
           const newConv = conv as Conversation;
           setConversations(prev => [newConv, ...prev]);
@@ -519,7 +520,7 @@ export default function AiChat({
           return newConv.id;
         }
       }
-    } catch (e) { console.error("[AiChat] save exception:", e); }
+    } catch (e) { if (process.env.NODE_ENV !== "production") console.error("[AiChat] save exception:", e); }
     return null;
   }
 
@@ -743,7 +744,7 @@ export default function AiChat({
 
       {/* Semi-transparent backdrop */}
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false}
         animate={{ opacity: 0.35 }}
         exit={{ opacity: 0 }}
@@ -755,7 +756,7 @@ export default function AiChat({
       {/* Slide-in panel */}
       <motion.div
         ref={panelRef}
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false}
         animate={{ x: 0 }}
         exit={{ x: PANEL_SLIDE_OFFSET }}
@@ -780,7 +781,7 @@ export default function AiChat({
                 style={{ position: "fixed", inset: 0, zIndex: 1001, background: "transparent" }}
               />
               <motion.div
-                // initial={false} is required — do not remove
+                // initial={false} is required - do not remove
                 initial={false}
                 animate={{ x: 0 }}
                 exit={{ x: isMobile ? "100%" : 240 }}
@@ -1026,7 +1027,7 @@ export default function AiChat({
                     ? "Toggle Context above so I can use your actual holdings."
                     : goals?.age
                     ? `${goals.age}yo · ${goals.riskTolerance?.replace("_time", "") ?? ""} risk`
-                    : "Risk analysis, rebalancing, what-ifs — ask anything."}
+                    : "Risk analysis, rebalancing, what-ifs - ask anything."}
                 </p>
               </div>
 
@@ -1038,7 +1039,7 @@ export default function AiChat({
                 onMouseLeave={e => { e.currentTarget.style.background = "rgba(224,92,92,0.07)"; }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e05c5c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Roast my portfolio — no filters
+                Roast my portfolio - no filters
               </button>
 
               {/* Suggestions: 2x2 grid */}
@@ -1127,7 +1128,7 @@ export default function AiChat({
 
               {loading && messages[messages.length - 1]?.role !== "assistant" && (
                 <motion.div
-                  // initial={false} is required — do not remove
+                  // initial={false} is required - do not remove
                   initial={false} animate={{ opacity: 1, y: 0 }}
                   style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -1148,7 +1149,7 @@ export default function AiChat({
         <div style={{ flexShrink: 0, borderTop: "0.5px solid var(--border)", padding: "10px 12px", background: "var(--bg)" }}>
           {limitReached ? (
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }}
               style={{ background: "rgba(184,134,11,.07)", border: "0.5px solid rgba(184,134,11,.22)", borderRadius: 10, padding: "12px 14px" }}>
 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -1234,13 +1235,13 @@ export default function AiChat({
         {showLimitModal && (
           <>
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowLimitModal(false)}
               style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 1010, backdropFilter: "blur(4px)" }}
             />
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
@@ -1256,7 +1257,7 @@ export default function AiChat({
                 boxShadow: "0 24px 80px rgba(0,0,0,.5)",
               }}
             >
-              {/* Header — InfoModal pattern */}
+              {/* Header - InfoModal pattern */}
               <div style={{ padding: "22px 26px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", marginBottom: 7, fontFamily: "var(--font-mono)", fontWeight: 700 }}>AI Chat</div>

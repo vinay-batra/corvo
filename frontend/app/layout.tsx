@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }, { url: "/icon-192.png", sizes: "192x192" }],
   },
   openGraph: {
-    title: "Corvo — Free AI Portfolio Analytics",
+    title: "Corvo - Free AI Portfolio Analytics",
     description: "Institutional-grade portfolio analytics for retail investors. Free.",
     url: "https://corvo.capital",
     siteName: "Corvo",

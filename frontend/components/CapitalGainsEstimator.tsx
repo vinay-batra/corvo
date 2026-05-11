@@ -83,7 +83,7 @@ const CapitalGainsEstimator = memo(function CapitalGainsEstimator({
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}

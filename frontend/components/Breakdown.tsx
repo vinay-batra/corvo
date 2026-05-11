@@ -1,8 +1,9 @@
 "use client";
 import { motion } from "framer-motion";
 import { useState, useCallback } from "react";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 // Broad funds that shouldn't be mapped to stock sectors
 const FUND_LABELS: Record<string, string> = {
@@ -84,7 +85,7 @@ function HoldingRow({ a, i, normalized, maxPct, equalWeight, portfolioValue }: a
         <div style={{ height: 4, borderRadius: 2, background: "var(--track)", overflow: "hidden", width: "100%",
           opacity: hovered && sparkline ? 0 : 1, transition: "opacity 0.2s" }}>
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false}
             animate={{ width: equalWeight ? `${a.pct * 100}%` : `${(a.pct / maxPct) * 100}%` }}
             transition={{ duration: 0.9, delay: 0.4 + i * 0.08, ease: "easeOut" }}
@@ -141,7 +142,7 @@ export default function Breakdown({ assets, portfolioValue }: { assets: Asset[];
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
       {/* Stacked bar */}
       <div style={{ display: "flex", height: 14, borderRadius: 6, overflow: "hidden", marginBottom: 16, gap: 2 }}>

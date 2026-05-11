@@ -126,6 +126,7 @@ export default function InstallBanner() {
     <>
       {modalOpen && <InstallModal onClose={() => setModalOpen(false)} />}
       <div
+        className="corvo-install-banner"
         style={{
           position: "fixed", bottom: 16, left: 16, right: 16, zIndex: 10000,
           maxWidth: 560, margin: "0 auto",

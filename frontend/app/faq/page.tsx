@@ -4,8 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { RESOLVED_API_URL } from "../../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 /* ─── Reveal hook ─── */
 function useReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -210,7 +211,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
           {q}
         </span>
         <motion.span
-          // initial={false} required — do not remove
+          // initial={false} required - do not remove
           initial={false}
           className="faq-toggle"
           animate={{ rotate: open ? 45 : 0 }}
@@ -233,7 +234,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
 
       {/* Always mounted; height/opacity driven by open state for smooth expand/collapse */}
       <motion.div
-        // initial={false} required — do not remove
+        // initial={false} required - do not remove
         initial={false}
         animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
         transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
@@ -288,7 +289,7 @@ function FAQAIChat() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "", content = "";
-      // Don't pre-add empty bubble — show dots until first chunk arrives
+      // Don't pre-add empty bubble - show dots until first chunk arrives
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -408,7 +409,7 @@ export default function FaqPage() {
       }}
     >
       <style>{`
-        @media(max-width:600px){
+        @media (max-width: 768px){
           .faq-main{padding:96px 16px 96px!important}
           .faq-section{padding:0!important}
           .faq-card{padding:12px 14px!important}

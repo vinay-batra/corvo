@@ -3,9 +3,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
+import { RESOLVED_API_URL } from "../lib/api";
+import { plotlyHoverlabel } from "../lib/theme";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 const PALETTE = ["#b8860b", "#b47ee0", "#5cb88a", "#e05c5c"];
 const MAX = 4;
@@ -464,7 +466,7 @@ export default function StockCompare() {
 
         {tickers.length >= 2 && !comparing && (
           <motion.button
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1, y: 0 }}
             onClick={() => setComparing(true)}
             style={{ marginTop: 10, width: "100%", padding: "10px 0", border: "1px solid " + AMBER, color: AMBER, background: "rgba(184,134,11,0.08)", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.03em" }}
@@ -593,7 +595,7 @@ export default function StockCompare() {
                 } : {}),
                 legend: { orientation: "h", y: -0.15, font: { size: 11, color: dark ? "rgba(232,224,204,0.75)" : "#4a4a4a" }, bgcolor: "transparent" },
                 hovermode: "x unified",
-                hoverlabel: { bgcolor: "#0d1117", bordercolor: "rgba(201,168,76,0.4)", font: { color: "#e8e0cc", size: 11 } },
+                hoverlabel: plotlyHoverlabel(),
               }}
               config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
               style={{ width: "100%", height: 260 }}
@@ -671,12 +673,12 @@ export default function StockCompare() {
       <AnimatePresence initial={false}>
         {modal && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setModal(null)}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0 }}
               onClick={e => e.stopPropagation()}
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, padding: 28, maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto", overscrollBehavior: "none", position: "relative" }}>

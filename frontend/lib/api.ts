@@ -1,8 +1,36 @@
+import { supabase } from "./supabase";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL && process.env.NODE_ENV === "production") {
-  console.error("NEXT_PUBLIC_API_URL is not set in production");
+if (!API_URL) {
+  if (process.env.NODE_ENV === "production") {
+    // In production we should never silently fall back to localhost; surface
+    // the misconfig immediately so deploys fail loud instead of hitting a
+    // dead localhost from the user's browser.
+    throw new Error("NEXT_PUBLIC_API_URL must be set in production");
+  } else {
+    console.warn("NEXT_PUBLIC_API_URL not set, falling back to http://localhost:8000");
+  }
 }
-const RESOLVED_API_URL = API_URL || "http://localhost:8000";
+export const RESOLVED_API_URL = API_URL || "http://localhost:8000";
+
+// Read the current Supabase session's access token (if any). Returns "" when
+// unauthenticated so callers can skip the Authorization header.
+export async function getAuthToken(): Promise<string> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data?.session?.access_token ?? "";
+  } catch {
+    return "";
+  }
+}
+
+// Build standard headers with optional bearer token.
+export async function authHeaders(extra: Record<string, string> = {}): Promise<HeadersInit> {
+  const token = await getAuthToken();
+  const headers: Record<string, string> = { ...extra };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
+}
 
 export async function fetchPortfolio(assets: any[], period: string, benchmark = "^GSPC", userId = "", referralCode = "", reinvestDividends = true) {
   const total = assets.reduce((sum, a) => sum + a.weight, 0);
@@ -210,56 +238,7 @@ export async function fetchNaturalLanguageEdit(
   return res.json();
 }
 
-// ── Paper Trading ──────────────────────────────────────────────────────────────
-
-function authHeaders(token: string) {
-  return { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
-}
-
-export async function fetchPaperPortfolio(userId: string, token: string) {
-  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/${userId}`, { headers: authHeaders(token) });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-export async function fetchPaperHistory(userId: string, token: string) {
-  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/${userId}/history`, { headers: authHeaders(token) });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-export async function paperBuy(ticker: string, shares: number, token: string) {
-  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/buy`, {
-    method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify({ ticker, shares }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
-  return data;
-}
-
-export async function paperSell(ticker: string, shares: number, token: string) {
-  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/sell`, {
-    method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify({ ticker, shares }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
-  return data;
-}
-
-export async function paperReset(token: string) {
-  const res = await fetch(`${RESOLVED_API_URL}/paper-trading/reset`, {
-    method: "POST",
-    headers: authHeaders(token),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-// ── Daily Signal ──────────────────────────────────────────────────────────────
+// Daily Signal
 
 export interface DailySignalImpact {
   primary: string;

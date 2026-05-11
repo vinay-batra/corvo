@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchPortfolio } from "../lib/api";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 const COLORS = { current: "#b8860b", whatif: "#5cb88a" };
 
@@ -138,15 +139,15 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
         <>
           {/* Backdrop */}
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 500 }}
           />
 
-          {/* Drawer — right-side panel on desktop, bottom sheet on mobile */}
+          {/* Drawer - right-side panel on desktop, bottom sheet on mobile */}
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false}
             animate={isMobile ? { y: 0 } : { x: 0 }}
             exit={isMobile ? { y: "100%" } : { x: "100%" }}

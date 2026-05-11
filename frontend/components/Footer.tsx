@@ -9,7 +9,7 @@ export default function Footer() {
         .footer-link:hover { color: #c9a84c !important; }
         .footer-x-link:hover { color: #c9a84c !important; }
         .footer-ph-link:hover { opacity: 1 !important; }
-        @media(max-width: 600px) {
+        @media (max-width: 768px) {
           .footer-inner { flex-direction: column !important; gap: 12px !important; text-align: center !important; }
           .footer-root { padding: 24px 20px !important; }
         }

@@ -92,7 +92,7 @@ export default function TourInviteModal({ onAccept, onDecline }: Props) {
             fillOpacity="0.45"
           />
 
-          {/* Area fill under line chart (no animation — just subtle presence) */}
+          {/* Area fill under line chart (no animation - just subtle presence) */}
           <path
             d="M 88,100 C 102,86 114,76 128,64 C 142,52 152,40 168,26 C 176,34 192,42 220,36 L 220,120 L 88,120 Z"
             fill="var(--accent)"

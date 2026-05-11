@@ -1,9 +1,14 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { RESOLVED_API_URL } from "../lib/api";
+import { cssVar } from "../lib/theme";
 
-const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", navy: "#0a0e14", cream: "#e8e0cc", cream3: "rgba(232,224,204,0.35)" };
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// `amber` is the brand-fixed gold (matches --accent across themes). The rest
+// resolve from the active theme at render-time via cssVar() so PDF exports and
+// HTML fallbacks respect the user's theme.
+const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", cream3: "rgba(232,224,204,0.35)" };
+const API_URL = RESOLVED_API_URL;
 
 interface Props { data: any; assets: any[]; goals?: any; menuItem?: boolean; onClose?: () => void; onAiGenerationStart?: () => void; onAiGenerationEnd?: () => void; }
 
@@ -68,13 +73,13 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
   doc.setFillColor(...hdrBg);
   doc.rect(0, 1.5, W, 18, "F");
 
-  // CORVO — courier bold amber (keep mono for brand)
+  // CORVO - courier bold amber (keep mono for brand)
   doc.setFont("courier", "bold");
   doc.setFontSize(14);
   doc.setTextColor(...amber);
   doc.text("CORVO", ML, 12.5);
 
-  // Subtitle — smaller, tighter, less crowding
+  // Subtitle - smaller, tighter, less crowding
   doc.setFont("helvetica", "normal");
   doc.setFontSize(4.5);
   doc.setTextColor(...dim);
@@ -82,7 +87,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
   doc.text("PORTFOLIO INTELLIGENCE", ML, 17.5);
   doc.setCharSpace(0);
 
-  // Tickers centered — helvetica bold
+  // Tickers centered - helvetica bold
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(...text);
@@ -134,13 +139,13 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     doc.setLineWidth(0.2);
     doc.roundedRect(mx, y, cardW, cardH, 1.5, 1.5, "S");
 
-    // Value — courier bold, 16 (keep mono for numbers)
+    // Value - courier bold, 16 (keep mono for numbers)
     doc.setFont("courier", "bold");
     doc.setFontSize(16);
     doc.setTextColor(...m.color);
     doc.text(m.value, mx + cardW / 2, y + 15, { align: "center" });
 
-    // Label — helvetica, dim, spaced
+    // Label - helvetica, dim, spaced
     doc.setFont("helvetica", "normal");
     doc.setFontSize(5.5);
     doc.setTextColor(...dim);
@@ -376,16 +381,19 @@ function computeHealthScore(data: any): number {
 function buildAiReport(analysis: string, data: any, assets: any[]): string {
   const isLight = document.documentElement.getAttribute("data-theme") === "light";
 
-  const bg = isLight ? "#ffffff" : "#0a0e14";
-  const fg = isLight ? "#1a1a1a" : "#e8e0cc";
-  const hdrBg = isLight ? "#f5f5f0" : "#0d1117";
-  const cardBg = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
+  // Resolve from theme variables so we never drift from globals.css; keep the
+  // isLight branches only for the rgba-with-base derivations the variables
+  // can't express directly.
+  const bg         = cssVar("--bg");
+  const fg         = cssVar("--text");
+  const hdrBg      = cssVar("--bg2");
+  const strongColor = cssVar("--text");
+  const cardBg     = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
   const cardBorder = isLight ? "1px solid rgba(201,168,76,0.3)" : "1px solid rgba(201,168,76,0.15)";
-  const mutedText = (a: number) => isLight ? `rgba(0,0,0,${a})` : `rgba(232,224,204,${a})`;
-  const subtleBg = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)";
+  const mutedText  = (a: number) => isLight ? `rgba(0,0,0,${a})` : `rgba(232,224,204,${a})`;
+  const subtleBg     = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)";
   const subtleBorder = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)";
-  const wbgColor = isLight ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.07)";
-  const strongColor = isLight ? "#1a1a1a" : "#e8e0cc";
+  const wbgColor     = isLight ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.07)";
 
   const printCss = `
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -513,7 +521,7 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose, onAi
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ display: "flex", gap: 0 }}>
         <motion.button
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false}
           whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
           onClick={() => handleExport()} disabled={!data || loading}
@@ -529,7 +537,7 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose, onAi
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", zIndex: 100, width: 220, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
             {[

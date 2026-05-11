@@ -4,8 +4,9 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { RESOLVED_API_URL } from "../../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 /* ─── Reveal hook ─── */
 function useReveal(threshold = 0.15) {
@@ -271,7 +272,7 @@ function WaitlistCapture() {
 
 const FREE_FEATURES = [
   "Full portfolio analysis: Sharpe, CAGR, volatility, max drawdown",
-  "Daily Signal — one AI recommendation tailored to your portfolio",
+  "Daily Signal - one AI recommendation tailored to your portfolio",
   "AI Health Score with the three-beat advisor breakdown",
   "15 AI chat messages per day (earn more via referrals)",
   "Goal Tracker with on-track / off-track projections",
@@ -301,7 +302,7 @@ const FAQS = [
   },
   {
     q: "When will Pro launch, and how much will it cost?",
-    a: "We're still working out the exact pricing. We'll offer early-bird pricing to everyone on the waitlist, typically 30–50% off the regular rate, locked in forever.",
+    a: "We're still working out the exact pricing. We'll offer early-bird pricing to everyone on the waitlist, typically 30-50% off the regular rate, locked in forever.",
   },
   {
     q: "Will my free account be grandfathered in?",
@@ -387,7 +388,7 @@ function PricingCard({
         </span>
       </div>
 
-      {/* Plan name — bigger, more prominent */}
+      {/* Plan name - bigger, more prominent */}
       <h3 style={{
         fontFamily: "Space Mono, monospace",
         fontSize: 25, fontWeight: 700,
@@ -544,7 +545,7 @@ function FeatureVoteSection() {
           setVotes(counts);
         }
       } catch {
-        // Fetch failed — votes will show as 0, loading state still clears below
+        // Fetch failed - votes will show as 0, loading state still clears below
       }
       try {
         const storedVoted = localStorage.getItem("corvo_feature_voted");
