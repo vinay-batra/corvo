@@ -100,13 +100,16 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Scroll behavior: hide on scroll down, show on scroll up, listen to either
-  // window or the optional inner scroller.
+  // Scroll behavior: hide on scroll down, show on scroll up. Listens on both
+  // window AND the optional inner scroller so we don't miss events if the ref
+  // populates late, and reads the actual scroll position dynamically from
+  // whichever source is the active scroll context. (Required by the homepage,
+  // which wraps everything in a 100vh overflow-auto container; other pages
+  // scroll on window.)
   useEffect(() => {
-    const scrollEl = scrollerRef?.current ?? null;
-    const readY = () => (scrollEl ? scrollEl.scrollTop : window.scrollY);
     const onScroll = () => {
-      const currentY = readY();
+      const el = scrollerRef?.current ?? null;
+      const currentY = el ? el.scrollTop : window.scrollY;
       setScrolled(currentY > 8);
       if (currentY < 10) {
         setHidden(false);
@@ -119,9 +122,27 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
       }
       prevScrollY.current = currentY;
     };
-    const target: Window | HTMLElement = scrollEl ?? window;
-    target.addEventListener("scroll", onScroll, { passive: true } as AddEventListenerOptions);
-    return () => target.removeEventListener("scroll", onScroll as EventListener);
+    // Attach to window unconditionally; on most pages that's the scroll source.
+    window.addEventListener("scroll", onScroll, { passive: true });
+    // Also attach to the inner scroller if one was provided. Re-resolve the
+    // ref on a microtask in case it hadn't been attached when this effect
+    // first fired (parent ref-callback ordering edge case).
+    let innerEl: HTMLElement | null = null;
+    const attachInner = () => {
+      const el = scrollerRef?.current ?? null;
+      if (el && el !== innerEl) {
+        if (innerEl) innerEl.removeEventListener("scroll", onScroll);
+        innerEl = el;
+        el.addEventListener("scroll", onScroll, { passive: true });
+      }
+    };
+    attachInner();
+    const raf = (typeof window !== "undefined") ? window.requestAnimationFrame(attachInner) : 0;
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      if (innerEl) innerEl.removeEventListener("scroll", onScroll);
+    };
   }, [scrollerRef]);
 
   // Escape closes any open dropdown
