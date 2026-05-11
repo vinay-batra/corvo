@@ -33,8 +33,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Simulations tab: 2 SectionHeaders (Project / Stress-test)
 - News tab unchanged — single-card sub-tab layout already reads well with upgraded TooltipCardHeader
 
-**App UI overhaul — remaining:**
-- Phase 5: Shared component polish (modals, tooltips, buttons) — modal radii, button hover states, info-modal styling
+**App UI overhaul — Phase 5 (May 10):**
+- InfoModal (the `?` popup on every card): rebuilt header with gold eyebrow + Space Mono title, generous paddings, refined section labels
+- IconBtn (top-bar icons): gold-accent hover with border tint, 0.94 press scale, bumped to 34px
+- Performance chart period selector: premium grouped pill control with gold active state; What-If button promoted to gold-accent style
+
+App UI overhaul is complete — all 5 phases shipped.
 
 **Up next (in priority order):**
 1. Homepage rewrite — "your portfolio's guardian" positioning
