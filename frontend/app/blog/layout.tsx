@@ -53,7 +53,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
 
       <PublicNav />
 
-      <main style={{ paddingTop: 58, position: "relative", zIndex: 1 }}>
+      <main style={{ paddingTop: 68, position: "relative", zIndex: 1 }}>
         {children}
       </main>
 
