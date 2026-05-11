@@ -312,15 +312,13 @@ function PricingCard({
         maxWidth: 400,
       }}
     >
-      {/* Gold glow halo behind card — bigger on Pro */}
+      {/* Gold glow halo behind card */}
       <div aria-hidden style={{
         position: "absolute",
-        inset: isPro ? -64 : -40,
-        borderRadius: isPro ? 48 : 36,
-        background: isPro
-          ? "radial-gradient(ellipse 72% 62% at 50% 55%, rgba(201,168,76,0.55), rgba(201,168,76,0.22) 35%, rgba(201,168,76,0.06) 60%, transparent 80%)"
-          : "radial-gradient(ellipse 68% 58% at 50% 55%, rgba(201,168,76,0.28), rgba(201,168,76,0.08) 45%, transparent 75%)",
-        filter: isPro ? "blur(56px)" : "blur(40px)",
+        inset: -40,
+        borderRadius: 36,
+        background: "radial-gradient(ellipse 68% 58% at 50% 55%, rgba(201,168,76,0.28), rgba(201,168,76,0.08) 45%, transparent 75%)",
+        filter: "blur(40px)",
         pointerEvents: "none",
         zIndex: 0,
       }} />
