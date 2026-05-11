@@ -256,15 +256,6 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
           font-family: var(--font-mono);
         }
 
-        /* Vertical divider */
-        .pnav-divider {
-          width: 1px;
-          height: 24px;
-          background: var(--border);
-          margin: 0 4px;
-          flex-shrink: 0;
-        }
-
         /* Get Started pill */
         .pnav-cta {
           display: inline-flex; align-items: center; gap: 5px;
@@ -302,7 +293,6 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
         @media (max-width: 768px) {
           .pnav-desktop-links { display: none !important; }
           .pnav-desktop-actions { display: none !important; }
-          .pnav-divider { display: none !important; }
           .pnav-hamburger { display: inline-flex !important; }
           .pnav-pad { padding: 0 18px !important; }
         }
@@ -367,7 +357,7 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
           willChange: "transform",
         }}
       >
-        {/* Logo - left, alone */}
+        {/* Logo - left */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flexShrink: 0 }}>
           <img src="/corvo-logo.png" width={30} height={30} alt="Corvo" />
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 14, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>
@@ -375,55 +365,63 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
           </span>
         </Link>
 
-        {/* Right cluster - all links + actions, right-aligned together */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-          {/* Desktop nav links */}
-          <div className="pnav-desktop-links" style={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {/* Product dropdown */}
-            <div
-              style={{ position: "relative" }}
-              onMouseEnter={() => openDrop("product")}
-              onMouseLeave={closeDrop}
+        {/* Desktop nav links - absolutely centered */}
+        <div
+          className="pnav-desktop-links"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          {/* Product dropdown */}
+          <div
+            style={{ position: "relative" }}
+            onMouseEnter={() => openDrop("product")}
+            onMouseLeave={closeDrop}
+          >
+            <button
+              className="pnav-bubble"
+              data-open={openDropdown === "product"}
+              onClick={() => setOpenDropdown(openDropdown === "product" ? null : "product")}
             >
-              <button
-                className="pnav-bubble"
-                data-open={openDropdown === "product"}
-                onClick={() => setOpenDropdown(openDropdown === "product" ? null : "product")}
-              >
-                Product
-                <ChevronDown className="pnav-chev" size={13} strokeWidth={2.2} />
-              </button>
-              {openDropdown === "product" && (
-                <Dropdown items={PRODUCT_ITEMS} tagline="What Corvo does" ctaHref="/auth?mode=signup" ctaLabel="Try free" onSelect={() => setOpenDropdown(null)} />
-              )}
-            </div>
-
-            {/* Resources dropdown */}
-            <div
-              style={{ position: "relative" }}
-              onMouseEnter={() => openDrop("resources")}
-              onMouseLeave={closeDrop}
-            >
-              <button
-                className="pnav-bubble"
-                data-open={openDropdown === "resources"}
-                onClick={() => setOpenDropdown(openDropdown === "resources" ? null : "resources")}
-              >
-                Resources
-                <ChevronDown className="pnav-chev" size={13} strokeWidth={2.2} />
-              </button>
-              {openDropdown === "resources" && (
-                <Dropdown items={RESOURCES_ITEMS} tagline="Learn more" ctaHref="/blog" ctaLabel="Visit the blog" onSelect={() => setOpenDropdown(null)} />
-              )}
-            </div>
-
-            {/* Direct links */}
-            <Link href="/pricing" className={`pnav-bubble ${active("/pricing") ? "active" : ""}`}>Pricing</Link>
-            <Link href="/about"   className={`pnav-bubble ${active("/about")   ? "active" : ""}`}>About</Link>
+              Product
+              <ChevronDown className="pnav-chev" size={13} strokeWidth={2.2} />
+            </button>
+            {openDropdown === "product" && (
+              <Dropdown items={PRODUCT_ITEMS} tagline="What Corvo does" ctaHref="/auth?mode=signup" ctaLabel="Try free" onSelect={() => setOpenDropdown(null)} />
+            )}
           </div>
 
-          <div className="pnav-divider" />
+          {/* Resources dropdown */}
+          <div
+            style={{ position: "relative" }}
+            onMouseEnter={() => openDrop("resources")}
+            onMouseLeave={closeDrop}
+          >
+            <button
+              className="pnav-bubble"
+              data-open={openDropdown === "resources"}
+              onClick={() => setOpenDropdown(openDropdown === "resources" ? null : "resources")}
+            >
+              Resources
+              <ChevronDown className="pnav-chev" size={13} strokeWidth={2.2} />
+            </button>
+            {openDropdown === "resources" && (
+              <Dropdown items={RESOURCES_ITEMS} tagline="Learn more" ctaHref="/blog" ctaLabel="Visit the blog" onSelect={() => setOpenDropdown(null)} />
+            )}
+          </div>
 
+          {/* Direct links */}
+          <Link href="/pricing" className={`pnav-bubble ${active("/pricing") ? "active" : ""}`}>Pricing</Link>
+          <Link href="/about"   className={`pnav-bubble ${active("/about")   ? "active" : ""}`}>About</Link>
+        </div>
+
+        {/* Right actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
           {/* Desktop actions */}
           <div className="pnav-desktop-actions" style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {/* Theme toggle */}
