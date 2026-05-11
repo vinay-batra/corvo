@@ -403,19 +403,20 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         position:"sticky", top:0, zIndex:20,
         background:"var(--bg2)",
         marginLeft:-14, marginRight:-14, marginTop:-12,
-        padding:"10px 14px 8px",
+        padding:"12px 14px 10px",
         borderBottom:`0.5px solid var(--border)`,
-        backdropFilter:"blur(8px)", WebkitBackdropFilter:"blur(8px)",
+        backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)",
+        boxShadow:"0 1px 0 rgba(201,168,76,0.06)",
       }}>
         {/* Hidden file input for screenshot import */}
         <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleImport(e.target.files[0]);e.target.value="";}} />
 
         {/* Single header row: Holdings label + count · weight status · ··· menu */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-          <div style={{display:"flex",alignItems:"center",gap:7}}>
-            <span style={{fontSize:9,letterSpacing:2.5,color:C.cream3,textTransform:"uppercase",fontWeight:600}}>Holdings</span>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:10,letterSpacing:2.5,color:C.amber,textTransform:"uppercase",fontWeight:700,fontFamily:"Space Mono,monospace"}}>Holdings</span>
             {assets.filter(a=>a.ticker&&a.weight>0).length > 0 && (
-              <span style={{fontSize:9,fontFamily:"Space Mono,monospace",color:C.cream3,background:"var(--bg3)",border:`0.5px solid var(--border)`,borderRadius:4,padding:"1px 5px"}}>
+              <span style={{fontSize:10,fontFamily:"Space Mono,monospace",color:C.amber,background:"rgba(201,168,76,0.08)",border:`0.5px solid rgba(201,168,76,0.22)`,borderRadius:5,padding:"1px 6px",fontWeight:700,letterSpacing:0.4}}>
                 {assets.filter(a=>a.ticker&&a.weight>0).length}
               </span>
             )}
@@ -425,12 +426,13 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               onClick={!balanced && !overweight ? equalize : undefined}
               title={!balanced && !overweight ? "Click to equalize" : ""}
               style={{
-                fontSize:10,padding:"2px 7px",
-                border:`0.5px solid ${overweight?"rgba(224,92,92,0.5)":!balanced?"rgba(201,168,76,0.35)":C.border}`,
-                borderRadius:4, cursor:balanced?"default":!overweight?"pointer":"default",
+                fontSize:10.5,padding:"3px 9px",
+                border:`0.5px solid ${overweight?"rgba(224,92,92,0.5)":!balanced?"rgba(201,168,76,0.4)":C.border}`,
+                borderRadius:6, cursor:balanced?"default":!overweight?"pointer":"default",
                 color:overweight?"var(--red)":!balanced?C.amber:C.cream3,
-                background:overweight?"rgba(224,92,92,0.06)":"transparent",
+                background:overweight?"rgba(224,92,92,0.07)":!balanced?"rgba(201,168,76,0.06)":"transparent",
                 fontFamily:"Space Mono,monospace", transition:"all 0.15s", flexShrink:0,
+                fontWeight:600, letterSpacing:0.3,
               }}>
               {overweight ? `${overBy}% over` : `${totalPct}%`}
             </span>
@@ -482,8 +484,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             <motion.div key={`${a.ticker}-${i}`} initial={false} animate={{opacity:1,x:0}} exit={{opacity:0,height:0}} transition={{duration:0.15}} style={{marginBottom:12,position:"relative"}}>
 
               {/* Main row: dot · ticker · weight · expand · remove */}
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <div style={{width:4,height:4,borderRadius:"50%",background:color,flexShrink:0,marginTop:1}}/>
+              <div style={{display:"flex",alignItems:"center",gap:7}}>
+                <div style={{width:6,height:6,borderRadius:"50%",background:color,flexShrink:0,marginTop:1,boxShadow:`0 0 6px ${color}`}}/>
 
                 {/* Ticker search */}
                 <div style={{position:"relative",flex:1,zIndex:active===i?50:1}}>
@@ -574,15 +576,15 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
 
               {/* Company name */}
               {displayName&&(
-                <div style={{paddingLeft:10,marginTop:3,fontSize:11,color:C.cream3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                <div style={{paddingLeft:13,marginTop:4,fontSize:11,color:C.cream3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",letterSpacing:0.1}}>
                   {displayName}
                 </div>
               )}
 
-              {/* Weight progress bar (3px, no handle) */}
-              <div style={{paddingLeft:10,marginTop:5}}>
-                <div style={{height:3,borderRadius:2,background:"rgba(201,168,76,0.1)",overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${Math.min(100,a.weight*100)}%`,background:C.amber,borderRadius:2,transition:"width 0.1s"}}/>
+              {/* Weight progress bar */}
+              <div style={{paddingLeft:13,marginTop:6}}>
+                <div style={{height:4,borderRadius:3,background:"rgba(201,168,76,0.08)",overflow:"hidden",border:"0.5px solid rgba(201,168,76,0.06)"}}>
+                  <div style={{height:"100%",width:`${Math.min(100,a.weight*100)}%`,background:`linear-gradient(90deg, var(--accent), rgba(201,168,76,0.85))`,borderRadius:3,transition:"width 0.2s ease",boxShadow:"0 0 6px rgba(201,168,76,0.35)"}}/>
                 </div>
               </div>
 
@@ -655,26 +657,29 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       </div>
 
       {/* ── Add Asset + Equalize ───────────────────────────────────── */}
-      <div style={{display:"flex",gap:5,marginTop:12,marginBottom:10}}>
+      <div style={{display:"flex",gap:6,marginTop:14,marginBottom:12}}>
         <button onClick={add} disabled={assets.length>=20}
-          style={{flex:1,padding:"7px",background:"transparent",border:"1px solid var(--border2)",borderRadius:8,color:C.cream3,fontSize:11,letterSpacing:1,cursor:assets.length>=20?"not-allowed":"pointer",transition:"all 0.15s"}}
-          onMouseEnter={e=>{if(assets.length<20){e.currentTarget.style.borderColor="rgba(201,168,76,0.6)";e.currentTarget.style.color=C.amber;}}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.color=C.cream3;}}>
-          + Add Asset
+          style={{flex:1,padding:"9px",background:"transparent",border:"1px dashed var(--border2)",borderRadius:9,color:C.cream3,fontSize:11,letterSpacing:1.2,cursor:assets.length>=20?"not-allowed":"pointer",transition:"all 0.15s",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontWeight:600}}
+          onMouseEnter={e=>{if(assets.length<20){e.currentTarget.style.borderColor="rgba(201,168,76,0.55)";e.currentTarget.style.color=C.amber;e.currentTarget.style.background="rgba(201,168,76,0.03)";}}}
+          onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border2)";e.currentTarget.style.color=C.cream3;e.currentTarget.style.background="transparent";}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Asset
         </button>
         {!balanced&&assets.length>0&&(
           <button onClick={equalize}
-            style={{padding:"7px 10px",background:"rgba(201,168,76,0.08)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:8,color:C.amber,fontSize:11,letterSpacing:1,cursor:"pointer"}}>
+            style={{padding:"9px 12px",background:"rgba(201,168,76,0.08)",border:"0.5px solid rgba(201,168,76,0.28)",borderRadius:9,color:C.amber,fontSize:11,letterSpacing:1.2,cursor:"pointer",fontWeight:600,transition:"all 0.15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.background="rgba(201,168,76,0.14)";e.currentTarget.style.borderColor="rgba(201,168,76,0.45)";}}
+            onMouseLeave={e=>{e.currentTarget.style.background="rgba(201,168,76,0.08)";e.currentTarget.style.borderColor="rgba(201,168,76,0.28)";}}>
             Equal
           </button>
         )}
       </div>
 
       {/* ── Portfolio Value input ──────────────────────────────────── */}
-      <div style={{marginTop:4,marginBottom:16,padding:"10px 14px",borderTop:"0.5px solid var(--border)"}}>
-        <label style={LABEL_STYLE}>Portfolio Value</label>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontFamily:"Space Mono,monospace",fontSize:13,color:"var(--text2)",lineHeight:1,flexShrink:0}}>$</span>
+      <div style={{marginTop:6,marginBottom:16,padding:"14px 14px 12px",borderTop:"0.5px solid var(--border)",background:"linear-gradient(180deg, rgba(201,168,76,0.025) 0%, transparent 100%)",marginLeft:-14,marginRight:-14}}>
+        <div style={{fontSize:10,letterSpacing:2.5,color:C.amber,textTransform:"uppercase",fontWeight:700,fontFamily:"Space Mono,monospace",marginBottom:7}}>Portfolio Value</div>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <span style={{fontFamily:"Space Mono,monospace",fontSize:14,color:C.amber,lineHeight:1,flexShrink:0,fontWeight:600}}>$</span>
           <input
             id="portfolio-value"
             name="portfolioValue"
@@ -683,32 +688,33 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             step="1000"
             value={portfolioValue}
             onChange={e=>handlePortfolioValueChange(e.target.value)}
-            placeholder="10000"
+            placeholder="50000"
             className="accent-input"
-            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:700}}
+            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:700, fontSize:14, padding:"7px 9px"}}
           />
         </div>
-        <div style={{fontSize:10,color:"var(--text3)",marginTop:5,lineHeight:1.5}}>
+        <div style={{fontSize:10,color:"var(--text3)",marginTop:6,lineHeight:1.5,letterSpacing:0.1}}>
           Used for P&amp;L, tax loss harvesting, and dividend calculations
         </div>
         {/* Reinvest dividends toggle */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:10,paddingTop:8,borderTop:"0.5px solid var(--border)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:"0.5px solid var(--border)"}}>
           <div>
-            <div style={{fontSize:11,color:"var(--text2)",fontWeight:500}}>Reinvesting dividends</div>
-            <div style={{fontSize:10,color:"var(--text3)",marginTop:1}}>Affects CAGR and return calculations</div>
+            <div style={{fontSize:11,color:"var(--text2)",fontWeight:600,letterSpacing:0.1}}>Reinvest dividends</div>
+            <div style={{fontSize:10,color:"var(--text3)",marginTop:2,letterSpacing:0.1}}>Affects CAGR and returns</div>
           </div>
           <button
             onClick={handleReinvestToggle}
             style={{
-              display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,
-              border:`0.5px solid ${reinvestDividends ? "rgba(76,175,80,0.4)" : "var(--border)"}`,
-              background:reinvestDividends ? "rgba(76,175,80,0.1)" : "var(--bg3)",
+              display:"flex",alignItems:"center",gap:6,padding:"5px 11px",borderRadius:20,
+              border:`0.5px solid ${reinvestDividends ? "rgba(76,175,125,0.45)" : "var(--border)"}`,
+              background:reinvestDividends ? "rgba(76,175,125,0.1)" : "var(--bg3)",
               color:reinvestDividends ? "#4caf7d" : "var(--text3)",
-              fontSize:11,fontWeight:600,cursor:"pointer",transition:"all 0.15s",
+              fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s",
+              letterSpacing:0.4,
             }}
-            onMouseEnter={e=>{e.currentTarget.style.opacity="0.8";}}
-            onMouseLeave={e=>{e.currentTarget.style.opacity="1";}}>
-            <span style={{width:7,height:7,borderRadius:"50%",background:reinvestDividends?"#4caf7d":"var(--text3)",transition:"background 0.15s"}} />
+            onMouseEnter={e=>{e.currentTarget.style.opacity="0.85";e.currentTarget.style.transform="translateY(-0.5px)";}}
+            onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>
+            <span style={{width:7,height:7,borderRadius:"50%",background:reinvestDividends?"#4caf7d":"var(--text3)",transition:"background 0.15s",boxShadow:reinvestDividends?"0 0 5px rgba(76,175,125,0.6)":"none"}} />
             {reinvestDividends ? "Yes" : "No"}
           </button>
         </div>
@@ -727,15 +733,15 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               initial={false} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
               style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:380,boxShadow:"var(--shadow-md)",overflow:"hidden"}}
               onClick={e=>e.stopPropagation()}>
-              <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div>
-                  <div style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase",marginBottom:4}}>Portfolio</div>
-                  <div style={{fontSize:14,fontWeight:600,color:"var(--text)"}}>Load a Preset</div>
+              <div style={{padding:"22px 26px 20px",borderBottom:"0.5px solid var(--border)",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:14}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:9,letterSpacing:"0.22em",color:"var(--accent)",textTransform:"uppercase",marginBottom:7,fontFamily:"var(--font-mono)",fontWeight:700}}>Portfolio</div>
+                  <div style={{fontFamily:"Space Mono, monospace",fontSize:18,fontWeight:700,color:"var(--text)",letterSpacing:-0.6,lineHeight:1.2}}>Load a Preset</div>
                 </div>
                 <button onClick={()=>{setShowPresetsModal(false);setPresetConfirm(null);}}
-                  style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:4,display:"flex",alignItems:"center"}}
-                  onMouseEnter={e=>e.currentTarget.style.color="var(--text)"}
-                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                  style={{background:"var(--bg3)",border:"0.5px solid var(--border)",borderRadius:8,cursor:"pointer",color:"var(--text3)",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"color 0.15s, border-color 0.15s"}}
+                  onMouseEnter={e=>{e.currentTarget.style.color="var(--accent)";e.currentTarget.style.borderColor="rgba(201,168,76,0.4)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.color="var(--text3)";e.currentTarget.style.borderColor="var(--border)";}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
               {presetConfirm ? (
                 <div style={{padding:"20px"}}>
@@ -789,15 +795,15 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               className="c-modal-sheet"
               style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:460,boxShadow:"var(--shadow-md)",overflow:"hidden"}}
               onClick={e=>e.stopPropagation()}>
-              <div style={{padding:"18px 20px 14px",borderBottom:"0.5px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div>
-                  <div style={{fontSize:10,letterSpacing:2,color:"var(--text3)",textTransform:"uppercase",marginBottom:4}}>Portfolio</div>
-                  <div style={{fontSize:14,fontWeight:600,color:"var(--text)"}}>Import from CSV</div>
+              <div style={{padding:"22px 26px 20px",borderBottom:"0.5px solid var(--border)",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:14}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:9,letterSpacing:"0.22em",color:"var(--accent)",textTransform:"uppercase",marginBottom:7,fontFamily:"var(--font-mono)",fontWeight:700}}>Portfolio</div>
+                  <div style={{fontFamily:"Space Mono, monospace",fontSize:18,fontWeight:700,color:"var(--text)",letterSpacing:-0.6,lineHeight:1.2}}>Import from CSV</div>
                 </div>
                 <button onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}
-                  style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:4,display:"flex",alignItems:"center"}}
-                  onMouseEnter={e=>e.currentTarget.style.color="var(--text)"}
-                  onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                  style={{background:"var(--bg3)",border:"0.5px solid var(--border)",borderRadius:8,cursor:"pointer",color:"var(--text3)",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"color 0.15s, border-color 0.15s"}}
+                  onMouseEnter={e=>{e.currentTarget.style.color="var(--accent)";e.currentTarget.style.borderColor="rgba(201,168,76,0.4)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.color="var(--text3)";e.currentTarget.style.borderColor="var(--border)";}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
               <div style={{padding:"16px 20px 20px"}}>
                 {!csvPreview&&(

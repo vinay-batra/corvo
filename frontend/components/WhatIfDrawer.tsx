@@ -174,23 +174,28 @@ export default function WhatIfDrawer({ open, onClose, assets, period, benchmark,
             )}
 
             {/* Header */}
-            <div style={{ padding: isMobile ? "10px 16px" : "14px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <div>
-                <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--text3)", textTransform: "uppercase", marginBottom: 2 }}>What-If Analysis</p>
-                <p style={{ fontSize: 13, color: "var(--text2)" }}>Compare your current portfolio against a scenario</p>
+            <div style={{ padding: isMobile ? "14px 16px 12px" : "18px 22px 16px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexShrink: 0, gap: 12 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", marginBottom: 7, fontFamily: "var(--font-mono)", fontWeight: 700, margin: "0 0 7px" }}>What-If Analysis</p>
+                <h3 style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", margin: "0 0 4px", letterSpacing: -0.6, lineHeight: 1.2 }}>Simulate a change</h3>
+                <p style={{ fontSize: 12, color: "var(--text3)", margin: 0, letterSpacing: 0.1 }}>Compare your current portfolio against a scenario</p>
               </div>
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "flex", gap: 7, flexShrink: 0 }}>
                 <button onClick={reset}
-                  style={{ padding: "7px 12px", fontSize: 11, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
+                  style={{ padding: "7px 12px", fontSize: 11, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer", fontWeight: 600, letterSpacing: 0.3, transition: "all 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; e.currentTarget.style.color = "var(--accent)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
                   Reset
                 </button>
                 <button onClick={() => { onApply(whatIfAssets); onClose(); }}
                   disabled={!analyzed}
-                  style={{ padding: "7px 12px", fontSize: 11, borderRadius: 8, border: "none", background: analyzed ? "var(--accent)" : "var(--bg3)", color: analyzed ? "#0a0e14" : "var(--text3)", fontWeight: 600, cursor: analyzed ? "pointer" : "not-allowed", transition: "all 0.15s" }}>
+                  style={{ padding: "7px 14px", fontSize: 11, borderRadius: 8, border: "none", background: analyzed ? "var(--accent)" : "var(--bg3)", color: analyzed ? "#0a0e14" : "var(--text3)", fontWeight: 700, letterSpacing: 0.3, cursor: analyzed ? "pointer" : "not-allowed", transition: "all 0.15s", boxShadow: analyzed ? "0 2px 12px rgba(201,168,76,0.25)" : "none" }}>
                   Apply
                 </button>
                 <button onClick={onClose}
-                  style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  style={{ width: 28, height: 28, borderRadius: 8, border: "0.5px solid var(--border)", background: "var(--bg3)", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s, border-color 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>

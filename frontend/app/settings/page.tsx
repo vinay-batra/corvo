@@ -39,10 +39,10 @@ const NAV_ITEMS: { id: Category; label: string; terms: string[] }[] = [
 
 function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 0", borderBottom: "0.5px solid var(--border)" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", borderBottom: "0.5px solid var(--border)", transition: "padding 0.15s" }}>
       <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
-        <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>{label}</div>
-        {desc && <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2, lineHeight: 1.4 }}>{desc}</div>}
+        <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 600, letterSpacing: -0.1, lineHeight: 1.3 }}>{label}</div>
+        {desc && <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 3, lineHeight: 1.5, letterSpacing: 0.1 }}>{desc}</div>}
       </div>
       <div style={{ flexShrink: 0 }}>{children}</div>
     </div>
@@ -55,9 +55,23 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
       onClick={onChange}
       role="switch"
       aria-checked={on}
-      style={{ width: 38, height: 22, borderRadius: 11, background: on ? "var(--accent)" : "var(--border2)", position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0 }}
+      style={{
+        width: 40, height: 22, borderRadius: 11,
+        background: on ? "linear-gradient(180deg, var(--accent) 0%, rgba(184,134,11,0.95) 100%)" : "var(--border2)",
+        position: "relative", cursor: "pointer",
+        transition: "background 0.2s, box-shadow 0.2s",
+        flexShrink: 0,
+        boxShadow: on ? "0 0 0 1px rgba(201,168,76,0.25), 0 0 12px rgba(201,168,76,0.3), inset 0 1px 2px rgba(0,0,0,0.1)" : "inset 0 1px 2px rgba(0,0,0,0.15)",
+        border: on ? "0.5px solid rgba(201,168,76,0.4)" : "0.5px solid transparent",
+      }}
     >
-      <div style={{ position: "absolute", top: 3, left: on ? 19 : 3, width: 16, height: 16, borderRadius: "50%", background: "var(--bg)", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+      <div style={{
+        position: "absolute", top: 2, left: on ? 19 : 2,
+        width: 17, height: 17, borderRadius: "50%",
+        background: "linear-gradient(180deg, #fff 0%, rgba(245,240,230,0.95) 100%)",
+        transition: "left 0.2s ease",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(0,0,0,0.08)",
+      }} />
     </div>
   );
 }
@@ -378,9 +392,10 @@ export default function SettingsPage({
   const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "";
 
   const inputStyle: React.CSSProperties = {
-    padding: "8px 12px", fontSize: 13, borderRadius: "var(--radius)",
+    padding: "9px 13px", fontSize: 13, borderRadius: "var(--radius)",
     border: "0.5px solid var(--border)", background: "var(--bg3)",
     color: "var(--text)", outline: "none", width: "100%",
+    transition: "border-color 0.15s, box-shadow 0.15s, background 0.15s",
   };
 
   const selectStyle: React.CSSProperties = {
@@ -388,15 +403,21 @@ export default function SettingsPage({
   };
 
   const btnOutline: React.CSSProperties = {
-    padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: "var(--radius)",
+    padding: "8px 16px", fontSize: 12, fontWeight: 600, borderRadius: "var(--radius)",
     border: "0.5px solid var(--border2)", background: "transparent",
-    color: "var(--text2)", cursor: "pointer", transition: "border-color 0.15s",
+    color: "var(--text2)", cursor: "pointer",
+    transition: "border-color 0.15s, color 0.15s, background 0.15s",
+    letterSpacing: 0.2,
   };
 
   const btnSave = (saved: boolean): React.CSSProperties => ({
-    padding: "8px 18px", fontSize: 12, fontWeight: 600, borderRadius: "var(--radius)",
-    border: "none", background: saved ? "rgba(var(--accent-rgb), 0.7)" : "var(--accent)",
-    color: "var(--bg)", cursor: "pointer", transition: "background 0.2s",
+    padding: "9px 20px", fontSize: 12, fontWeight: 700, borderRadius: "var(--radius)",
+    border: "none",
+    background: saved ? "rgba(var(--accent-rgb), 0.7)" : "var(--accent)",
+    color: "var(--bg)", cursor: "pointer",
+    transition: "background 0.2s, box-shadow 0.2s, transform 0.1s",
+    letterSpacing: 0.3,
+    boxShadow: saved ? "none" : "0 2px 12px rgba(201,168,76,0.3)",
   });
 
   // ── Category panels ────────────────────────────────────────────────────────
@@ -422,7 +443,7 @@ export default function SettingsPage({
           )}
         </div>
         <div>
-          <button onClick={() => fileRef.current?.click()} style={btnOutline}>Upload photo</button>
+          <button onClick={() => fileRef.current?.click()} className="s-btn-outline" style={btnOutline}>Upload photo</button>
           <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 5 }}>JPG, PNG, WEBP · max 2MB</p>
           <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
             onChange={e => {
@@ -442,7 +463,7 @@ export default function SettingsPage({
         <div style={{ display: "flex", gap: 8 }}>
           <input value={displayName} onChange={e => setDisplayName(e.target.value)}
             placeholder="Enter display name" style={{ ...inputStyle, flex: 1 }} />
-          <button onClick={saveProfile} disabled={savingProfile} style={btnSave(profileSaved)}>
+          <button onClick={saveProfile} disabled={savingProfile} className="s-btn-save" style={btnSave(profileSaved)}>
             {profileSaved ? "Saved" : savingProfile ? "..." : "Save"}
           </button>
         </div>
@@ -461,13 +482,26 @@ export default function SettingsPage({
     <div>
       <SectionTitle>Preferences</SectionTitle>
       <Row label="Default analysis period">
-        <div style={{ display: "flex", gap: 4 }}>
-          {PERIODS.map(p => (
-            <button key={p} onClick={() => { setPeriod(p); localStorage.setItem("corvo_period", p); }}
-              style={{ padding: "4px 10px", fontSize: 11, fontFamily: "var(--font-mono)", borderRadius: 6, border: "0.5px solid var(--border)", background: period === p ? "var(--text)" : "transparent", color: period === p ? "var(--bg)" : "var(--text3)", cursor: "pointer", transition: "all 0.15s" }}>
-              {p}
-            </button>
-          ))}
+        <div style={{ display: "flex", gap: 4, padding: 3, background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8 }}>
+          {PERIODS.map(p => {
+            const active = period === p;
+            return (
+              <button key={p} onClick={() => { setPeriod(p); localStorage.setItem("corvo_period", p); }}
+                style={{
+                  padding: "5px 11px", fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700,
+                  borderRadius: 5, border: "none",
+                  background: active ? "var(--accent)" : "transparent",
+                  color: active ? "var(--bg)" : "var(--text3)",
+                  cursor: "pointer", transition: "all 0.15s",
+                  letterSpacing: 0.4,
+                  boxShadow: active ? "0 2px 8px rgba(201,168,76,0.3)" : "none",
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.color = "var(--text)"; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.color = "var(--text3)"; }}>
+                {p}
+              </button>
+            );
+          })}
         </div>
       </Row>
       <Row label="Default benchmark">
@@ -683,7 +717,7 @@ export default function SettingsPage({
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={saveProfileQuestionnaire} disabled={savingProfileQ} style={btnSave(profileQSaved)}>
+          <button onClick={saveProfileQuestionnaire} disabled={savingProfileQ} className="s-btn-save" style={btnSave(profileQSaved)}>
             {profileQSaved ? "Saved" : savingProfileQ ? "..." : "Save"}
           </button>
         </div>
@@ -731,7 +765,7 @@ export default function SettingsPage({
       <SectionTitle>Account</SectionTitle>
 
       <Row label="Get the App" desc="Install Corvo on your phone or desktop for instant access and push notifications">
-        <Link href="/install" style={{ ...btnOutline, display: "inline-block", textDecoration: "none", textAlign: "center" }}
+        <Link href="/install" className="s-btn-outline" style={{ ...btnOutline, display: "inline-block", textDecoration: "none", textAlign: "center" }}
           onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--accent)")}
           onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border2)")}
         >
@@ -742,7 +776,7 @@ export default function SettingsPage({
       <Row label="Replay onboarding" desc="Restart the full setup questionnaire from step 1">
         <button
           onClick={() => { window.location.href = "/onboarding?replay=true"; }}
-          style={btnOutline}
+          className="s-btn-outline" style={btnOutline}
           onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
           onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
           Restart
@@ -751,7 +785,7 @@ export default function SettingsPage({
 
       {onReplayTour && (
         <Row label="Replay dashboard tour" desc="Re-run the guided tooltip tour of dashboard features">
-          <button onClick={onReplayTour} style={btnOutline}
+          <button onClick={onReplayTour} className="s-btn-outline" style={btnOutline}
             onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--accent)")}
             onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border2)")}>
             Start tour
@@ -790,6 +824,30 @@ export default function SettingsPage({
         @keyframes s-fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .s-nav-btn:hover { background: var(--bg3) !important; color: var(--text) !important; }
         .s-nav-btn.active { color: var(--accent) !important; background: rgba(var(--accent-rgb), 0.08) !important; }
+        .s-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
+        .s-content select:focus,
+        .s-content textarea:focus {
+          border-color: rgba(201,168,76,0.55) !important;
+          box-shadow: 0 0 0 3px rgba(201,168,76,0.14) !important;
+          background: var(--bg2) !important;
+        }
+        .s-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover:not(:focus),
+        .s-content select:hover:not(:focus),
+        .s-content textarea:hover:not(:focus) {
+          border-color: var(--border2) !important;
+        }
+        .s-btn-outline:hover {
+          border-color: rgba(201,168,76,0.45) !important;
+          color: var(--accent) !important;
+          background: rgba(201,168,76,0.04) !important;
+        }
+        .s-btn-save:hover:not(:disabled) {
+          box-shadow: 0 4px 18px rgba(201,168,76,0.45) !important;
+          transform: translateY(-0.5px);
+        }
+        .s-btn-save:active:not(:disabled) {
+          transform: translateY(0);
+        }
         @media (max-width: 768px) {
           .s-sidebar { display: none !important; }
           .s-mobile-nav { display: flex !important; }

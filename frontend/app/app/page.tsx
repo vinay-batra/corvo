@@ -170,7 +170,7 @@ function useS() {
     section:    { padding: "10px 14px", borderBottom: "0.5px solid var(--border)" },
     label:      { fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase" as const, marginBottom: 8 },
     main:       { flex: 1, display: "flex", flexDirection: "column" as const, background: "var(--bg)", minWidth: 0, overflow: "hidden" },
-    topbar:     { height: 56, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", background: "var(--bg2)", gap: 8, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 1px 0 rgba(255,255,255,0.02), 0 4px 12px rgba(0,0,0,0.03)", position: "relative" as const, zIndex: 5 },
+    topbar:     { height: 56, flexShrink: 0, borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", background: "linear-gradient(180deg, var(--bg2) 0%, var(--bg2) 100%)", gap: 8, backdropFilter: "blur(14px) saturate(140%)", WebkitBackdropFilter: "blur(14px) saturate(140%)", boxShadow: "0 1px 0 rgba(201,168,76,0.04), 0 4px 16px rgba(0,0,0,0.05)", position: "relative", zIndex: 5 } as React.CSSProperties,
     content:    { flex: 1, overflowY: "auto" as const, overflowX: "hidden" as const, padding: "20px 24px", overscrollBehavior: "none" as const, overscrollBehaviorY: "none" as const },
     card:       { border: "0.5px solid var(--border)", borderRadius: 12, padding: "18px 20px", background: "var(--card-bg)", marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)" } as React.CSSProperties,
     cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
@@ -275,47 +275,78 @@ function AnalysisSteps({ externalStep }: { externalStep?: number }) {
     return () => timers.forEach(clearTimeout);
   }, []);
   const displayStep = externalStep !== undefined ? Math.max(step, externalStep) : step;
-  // After first 4 steps done, switch to "thinking" phase for the AI step
-  const earlyDone = displayStep >= ANALYSIS_STEPS.length - 1;
   const allDone = displayStep >= ANALYSIS_STEPS.length;
+  const currentLabel = allDone ? "Finalizing" : (ANALYSIS_STEPS[displayStep] ?? ANALYSIS_STEPS[ANALYSIS_STEPS.length - 1]);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "70vh", padding: "20px 16px" }}>
       <style>{`
         @keyframes step-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes step-pulse { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
-        @keyframes step-dot { 0%,80%,100%{transform:scale(0)}40%{transform:scale(1)} }
+        @keyframes step-pulse { 0%,100% { opacity:0.55; transform: scale(1); } 50% { opacity:1; transform: scale(1.06); } }
+        @keyframes step-dot { 0%,80%,100%{transform:scale(0.4); opacity:0.45;}40%{transform:scale(1); opacity:1;} }
+        @keyframes step-orb-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(201,168,76,0.35), 0 0 30px rgba(201,168,76,0.18); } 50% { box-shadow: 0 0 0 12px rgba(201,168,76,0), 0 0 50px rgba(201,168,76,0.32); } }
+        @keyframes step-orb-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes step-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
-      <div style={{ display: "flex", flexDirection: "column", gap: 0, width: 280 }}>
-        {/* Steps 1-4 */}
-        {ANALYSIS_STEPS.slice(0, -1).map((label, i) => {
-          const done = i < displayStep, active = i === displayStep;
-          return (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "7px 0", opacity: done || active ? 1 : 0.18, transition: "opacity 0.15s ease", borderBottom: "0.5px solid var(--border)", borderColor: "rgba(255,255,255,0.05)" }}>
-              <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                background: done ? "rgba(92,184,138,0.12)" : "transparent",
-                border: `1px solid ${done ? "#5cb88a" : "var(--border)"}`,
-                transition: "all 0.2s",
-              }}>
-                {done && <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-              </div>
-              <span style={{ fontSize: 12, color: done ? "var(--text3)" : "var(--text3)", transition: "color 0.15s" }}>{label}</span>
-            </div>
-          );
-        })}
-
-        {/* Step 5 — AI insights — stays active until results arrive */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", marginTop: 2 }}>
-          <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${allDone ? "#5cb88a" : "var(--accent)"}`, background: allDone ? "rgba(92,184,138,0.12)" : "rgba(201,168,76,0.1)", transition: "all 0.3s" }}>
-            {allDone
-              ? <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              : <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
-                  {[0,1,2].map(j => <div key={j} style={{ width: 2.5, height: 2.5, borderRadius: "50%", background: "var(--accent)", animation: `step-dot 1.2s ease-in-out infinite`, animationDelay: `${j * 0.2}s` }} />)}
-                </div>
-            }
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0, width: 340, maxWidth: "100%" }}>
+        {/* Orb */}
+        <div style={{ position: "relative", width: 84, height: 84, marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "0.5px solid rgba(201,168,76,0.25)", animation: "step-orb-rotate 8s linear infinite" }} />
+          <div style={{ position: "absolute", inset: 8, borderRadius: "50%", border: "0.5px solid rgba(201,168,76,0.4)", animation: "step-orb-rotate 14s linear infinite reverse" }} />
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, rgba(201,168,76,0.35), rgba(201,168,76,0.1) 55%, rgba(201,168,76,0.05) 100%)", border: "0.5px solid rgba(201,168,76,0.55)", display: "flex", alignItems: "center", justifyContent: "center", animation: allDone ? "none" : "step-orb-pulse 2.6s ease-in-out infinite" }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 6px rgba(201,168,76,0.5))" }}>
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
           </div>
-          <span style={{ fontSize: 12, color: "var(--text)", fontWeight: 500 }}>Generating AI insights</span>
-          {!allDone && <svg style={{ marginLeft: "auto", animation: "step-spin 1s linear infinite", opacity: 0.4 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.2"/><path d="M21 12a9 9 0 00-9-9"/></svg>}
+        </div>
+
+        {/* Eyebrow + current step headline */}
+        <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", fontFamily: "Space Mono, monospace", fontWeight: 700, marginBottom: 8 }}>
+          Analyzing portfolio
+        </div>
+        <div key={currentLabel} style={{ fontFamily: "Space Mono, monospace", fontSize: 17, fontWeight: 700, color: "var(--text)", letterSpacing: -0.4, marginBottom: 24, textAlign: "center", animation: "step-fade-in 0.4s ease" }}>
+          {currentLabel}
+        </div>
+
+        {/* Step rows */}
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 0 }}>
+          {ANALYSIS_STEPS.slice(0, -1).map((label, i) => {
+            const done = i < displayStep, active = i === displayStep;
+            return (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 13, padding: "9px 2px", opacity: done ? 0.65 : active ? 1 : 0.22, transition: "opacity 0.25s ease", borderBottom: "0.5px solid rgba(201,168,76,0.06)" }}>
+                <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                  background: done ? "rgba(92,184,125,0.14)" : active ? "rgba(201,168,76,0.14)" : "transparent",
+                  border: `1px solid ${done ? "#5cb88a" : active ? "var(--accent)" : "var(--border)"}`,
+                  transition: "all 0.25s",
+                  boxShadow: active ? "0 0 10px rgba(201,168,76,0.4)" : "none",
+                  animation: active ? "step-pulse 1.6s ease-in-out infinite" : "none",
+                }}>
+                  {done && <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {active && !done && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 6px rgba(201,168,76,0.7)" }} />}
+                </div>
+                <span style={{ fontSize: 12, color: active ? "var(--text)" : "var(--text3)", fontWeight: active ? 600 : 500, transition: "color 0.2s", letterSpacing: 0.1 }}>{label}</span>
+                {active && (
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 3, alignItems: "center" }}>
+                    {[0,1,2].map(j => <div key={j} style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--accent)", animation: `step-dot 1.2s ease-in-out infinite`, animationDelay: `${j * 0.18}s` }} />)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* AI insights step — final step, stays active until results arrive */}
+          <div style={{ display: "flex", alignItems: "center", gap: 13, padding: "11px 2px", marginTop: 4 }}>
+            <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${allDone ? "#5cb88a" : "var(--accent)"}`, background: allDone ? "rgba(92,184,125,0.14)" : "rgba(201,168,76,0.14)", transition: "all 0.3s", boxShadow: !allDone ? "0 0 10px rgba(201,168,76,0.4)" : "none", animation: !allDone ? "step-pulse 1.6s ease-in-out infinite" : "none" }}>
+              {allDone
+                ? <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                : <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+                    {[0,1,2].map(j => <div key={j} style={{ width: 2.5, height: 2.5, borderRadius: "50%", background: "var(--accent)", animation: `step-dot 1.2s ease-in-out infinite`, animationDelay: `${j * 0.18}s` }} />)}
+                  </div>
+              }
+            </div>
+            <span style={{ fontSize: 12, color: allDone ? "var(--text3)" : "var(--text)", fontWeight: allDone ? 500 : 600, transition: "color 0.2s", letterSpacing: 0.1 }}>Generating AI insights</span>
+            {!allDone && <svg style={{ marginLeft: "auto", animation: "step-spin 1s linear infinite", opacity: 0.5 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.2"/><path d="M21 12a9 9 0 00-9-9"/></svg>}
+          </div>
         </div>
       </div>
     </div>
@@ -863,24 +894,24 @@ const TopbarActions = memo(function TopbarActions({
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
         {/* Alerts bell */}
         <button id="tour-desk-bell" onClick={() => setShowAlerts(true)} title="Alerts" aria-label="Price alerts"
-          style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
-          onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+          style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, transition: "background 0.15s, border-color 0.15s, color 0.15s", color: "var(--text2)" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.color = "var(--accent)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
           {alertCount > 0 && (
-            <span style={{ position: "absolute", top: 4, right: 4, width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg3)" }} />
+            <span style={{ position: "absolute", top: 4, right: 4, width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", border: "1.5px solid var(--bg3)", boxShadow: "0 0 6px rgba(201,168,76,0.6)" }} />
           )}
         </button>
 
         {/* Dark mode */}
         <div id="tour-dark-mode-toggle">
           <button onClick={toggleDark} title={dark ? "Light mode" : "Dark mode"}
-            style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s", color: "var(--text2)" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text2)"; }}>
+            style={{ width: 32, height: 32, borderRadius: 8, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s, border-color 0.15s, color 0.15s", color: "var(--text2)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.color = "var(--accent)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}>
             {dark ? <Sun size={14} /> : <Moon size={14} />}
           </button>
         </div>
@@ -890,9 +921,9 @@ const TopbarActions = memo(function TopbarActions({
           <button
             onClick={() => setOverflowOpen(o => !o)}
             title="Export"
-            style={{ height: 32, padding: "0 12px", borderRadius: 8, border: "0.5px solid var(--border)", background: overflowOpen ? "var(--bg3)" : "transparent", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-mono)", color: overflowOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, letterSpacing: 0.5, transition: "all 0.15s", whiteSpace: "nowrap" }}
-            onMouseEnter={e => { if (!overflowOpen) { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}}
-            onMouseLeave={e => { if (!overflowOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}}>
+            style={{ height: 32, padding: "0 12px", borderRadius: 8, border: `0.5px solid ${overflowOpen ? "rgba(201,168,76,0.4)" : "var(--border)"}`, background: overflowOpen ? "rgba(201,168,76,0.08)" : "transparent", cursor: "pointer", fontSize: 11, fontFamily: "var(--font-mono)", color: overflowOpen ? "var(--accent)" : "var(--text3)", display: "flex", alignItems: "center", gap: 5, letterSpacing: 0.5, transition: "all 0.15s", whiteSpace: "nowrap", fontWeight: 600 }}
+            onMouseEnter={e => { if (!overflowOpen) { e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.color = "var(--accent)"; }}}
+            onMouseLeave={e => { if (!overflowOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}}>
             Export ↓
           </button>
           {overflowOpen && (
@@ -1926,15 +1957,18 @@ const { dark, toggle: toggleDark }  = useTheme();
       </div>
 
       {/* AI Editor — collapsed by default, expand on demand */}
-      <div style={{ borderBottom: "0.5px solid var(--border)" }}>
+      <div style={{ borderBottom: "0.5px solid var(--border)", position: "relative" }}>
+        {aiEditorOpen && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, background: "var(--accent)", boxShadow: "0 0 8px rgba(201,168,76,0.5)" }} />}
         <button
           onClick={() => setAiEditorOpen(o => !o)}
-          style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: aiEditorOpen ? "rgba(201,168,76,0.05)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
-          onMouseEnter={e => { if (!aiEditorOpen) e.currentTarget.style.background = "rgba(201,168,76,0.03)"; }}
+          style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "11px 14px", background: aiEditorOpen ? "rgba(201,168,76,0.06)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
+          onMouseEnter={e => { if (!aiEditorOpen) e.currentTarget.style.background = "rgba(201,168,76,0.04)"; }}
           onMouseLeave={e => { if (!aiEditorOpen) e.currentTarget.style.background = "transparent"; }}
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          <span style={{ fontSize: 11, color: aiEditorOpen ? "var(--accent)" : "var(--text3)", fontWeight: 600, flex: 1, textAlign: "left", letterSpacing: 0.2 }}>Edit with AI</span>
+          <div style={{ width: 22, height: 22, borderRadius: 6, background: aiEditorOpen ? "rgba(201,168,76,0.14)" : "rgba(201,168,76,0.08)", border: "0.5px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <span style={{ fontSize: 11, color: aiEditorOpen ? "var(--accent)" : "var(--text2)", fontWeight: 700, flex: 1, textAlign: "left", letterSpacing: 1.4, textTransform: "uppercase", fontFamily: "Space Mono, monospace" }}>Edit with AI</span>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             style={{ transition: "transform 0.2s", transform: aiEditorOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
             <polyline points="6 9 12 15 18 9" />
@@ -2245,7 +2279,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 color: isActive ? "var(--text)" : "var(--text3)",
                 cursor: "pointer", fontWeight: isActive ? 700 : 500,
                 display: "flex", alignItems: "center", gap: 5, textDecoration: "none",
-                transition: "color 0.18s",
+                transition: "color 0.18s, background 0.18s",
                 letterSpacing: isActive ? -0.1 : 0.1,
               };
               const content = (
@@ -2254,7 +2288,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <motion.span
                       layoutId="tab-indicator"
                       initial={false}
-                      style={{ position: "absolute", bottom: -1, left: "14%", right: "14%", height: 2.5, borderRadius: "1.5px 1.5px 0 0", background: "var(--accent)", zIndex: 0, boxShadow: "0 0 12px rgba(201,168,76,0.4)" }}
+                      style={{ position: "absolute", bottom: -1, left: "14%", right: "14%", height: 2.5, borderRadius: "1.5px 1.5px 0 0", background: "linear-gradient(90deg, rgba(201,168,76,0.6), var(--accent) 50%, rgba(201,168,76,0.6))", zIndex: 0, boxShadow: "0 0 14px rgba(201,168,76,0.45), 0 -1px 8px rgba(201,168,76,0.2)" }}
                       transition={{ type: "spring", damping: 30, stiffness: 300 }}
                     />
                   )}
@@ -2264,8 +2298,8 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </>
               );
               const hoverHandlers = !isActive ? {
-                onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.color = "var(--text2)"; },
-                onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.color = "var(--text3)"; },
+                onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.03)"; },
+                onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.color = "var(--text3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; },
               } : {};
               if (tab.href) return <Link key={tab.id} href={tab.href} style={tabStyle} {...hoverHandlers} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{content}</Link>;
               return <button key={tab.id} {...hoverHandlers} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={tabStyle}>{content}</button>;
@@ -3051,20 +3085,22 @@ const { dark, toggle: toggleDark }  = useTheme();
         title="AI Chat (A)"
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5, type: "spring", damping: 20 }}
+        whileHover={{ y: -1, scale: 1.04 }}
+        whileTap={{ scale: 0.97 }}
         style={{
           position: "fixed", bottom: 24, right: 24, zIndex: 1000,
           width: 48, height: 48, borderRadius: "50%",
-          background: chatOpen ? "var(--bg3)" : "var(--accent)",
-          border: chatOpen ? "1px solid var(--border2)" : "none",
+          background: chatOpen ? "var(--bg3)" : "linear-gradient(155deg, #d8b15a 0%, var(--accent) 55%, rgba(184,134,11,0.95) 100%)",
+          border: chatOpen ? "0.5px solid var(--border2)" : "0.5px solid rgba(255,255,255,0.12)",
           cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: chatOpen ? "none" : "0 4px 20px rgba(184,134,11,0.35)",
+          boxShadow: chatOpen ? "0 2px 10px rgba(0,0,0,0.18)" : "0 6px 24px rgba(184,134,11,0.4), inset 0 1px 0 rgba(255,255,255,0.18)",
           transition: "background 0.2s, box-shadow 0.2s, border 0.2s",
         }}
-        onMouseEnter={e => { if (!chatOpen) e.currentTarget.style.background = "#d4b05a"; }}
-        onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.background = "var(--accent)"; }}
+        onMouseEnter={e => { if (!chatOpen) e.currentTarget.style.boxShadow = "0 8px 32px rgba(184,134,11,0.55), 0 0 0 4px rgba(201,168,76,0.18), inset 0 1px 0 rgba(255,255,255,0.22)"; }}
+        onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.boxShadow = "0 6px 24px rgba(184,134,11,0.4), inset 0 1px 0 rgba(255,255,255,0.18)"; }}
       >
-        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: chatOpen ? "var(--text2)" : "var(--bg)", letterSpacing: 0.5 }}>AI</span>
+        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: chatOpen ? "var(--text2)" : "var(--bg)", letterSpacing: 0.6, textShadow: chatOpen ? "none" : "0 0.5px 0 rgba(255,255,255,0.25)" }}>AI</span>
       </motion.button>
 
       {/* Floating Customize button — dashboard only */}
@@ -3076,6 +3112,8 @@ const { dark, toggle: toggleDark }  = useTheme();
           title="Customize dashboard"
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.6, type: "spring", damping: 20 }}
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.97 }}
           style={{
             position: "fixed", bottom: 24, right: 144, zIndex: 1000,
             width: 48, height: 48, borderRadius: "50%",
@@ -3083,13 +3121,14 @@ const { dark, toggle: toggleDark }  = useTheme();
             border: "0.5px solid var(--border)",
             cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
-            transition: "border-color 0.15s, background 0.15s",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)",
+            transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s, color 0.2s",
+            color: "var(--text3)",
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.4)"; e.currentTarget.style.background = "var(--bg3)"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.background = "rgba(201,168,76,0.06)"; e.currentTarget.style.boxShadow = "0 6px 22px rgba(0,0,0,0.28), 0 0 0 3px rgba(201,168,76,0.1)"; e.currentTarget.style.color = "var(--accent)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)"; e.currentTarget.style.color = "var(--text3)"; }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text3)" }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
             <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
           </svg>
@@ -3233,11 +3272,14 @@ const { dark, toggle: toggleDark }  = useTheme();
               {/* Header */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
                 <div>
-                  <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 4, fontFamily: "var(--font-mono)" }}>Dashboard</p>
-                  <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", margin: 0 }}>Customize cards</h3>
+                  <p style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", marginBottom: 7, fontFamily: "var(--font-mono)", fontWeight: 700 }}>Dashboard</p>
+                  <h3 style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", margin: 0, letterSpacing: -0.6, lineHeight: 1.2 }}>Customize cards</h3>
                 </div>
-                <button onClick={() => setShowDashEditor(false)} style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text3)", padding: "6px 8px", display: "flex" }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <button onClick={() => setShowDashEditor(false)}
+                  style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text3)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s, border-color 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
 
@@ -3310,18 +3352,25 @@ const { dark, toggle: toggleDark }  = useTheme();
               style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: "22px 22px 18px", maxWidth: 480, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.32)", maxHeight: "90vh", overflowY: "auto" }}
             >
               {/* Header */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 3, height: 14, background: nlPending.mode === "preview" ? "rgba(59,130,246,0.8)" : "var(--accent)", borderRadius: 1, flexShrink: 0 }} />
-                  <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>
-                    {nlPending.mode === "preview" ? "Simulated Preview" : "Confirm Change"}
-                  </span>
-                  {nlPending.mode === "preview" && (
-                    <span style={{ fontSize: 9, letterSpacing: 1, color: "rgba(59,130,246,0.9)", background: "rgba(59,130,246,0.1)", border: "0.5px solid rgba(59,130,246,0.3)", borderRadius: 4, padding: "2px 6px" }}>NOT APPLIED</span>
-                  )}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                    <p style={{ fontSize: 9, letterSpacing: "0.22em", color: nlPending.mode === "preview" ? "rgba(59,130,246,0.95)" : "var(--accent)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 700, margin: 0 }}>
+                      {nlPending.mode === "preview" ? "Simulated Preview" : "Confirm Change"}
+                    </p>
+                    {nlPending.mode === "preview" && (
+                      <span style={{ fontSize: 9, letterSpacing: 1, color: "rgba(59,130,246,0.95)", background: "rgba(59,130,246,0.12)", border: "0.5px solid rgba(59,130,246,0.3)", borderRadius: 4, padding: "2px 6px", fontWeight: 600 }}>NOT APPLIED</span>
+                    )}
+                  </div>
+                  <h3 style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", margin: 0, letterSpacing: -0.6, lineHeight: 1.2 }}>
+                    {nlPending.mode === "preview" ? "Preview impact" : "Review changes"}
+                  </h3>
                 </div>
-                <button onClick={() => setNlPending(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 16, lineHeight: 1, padding: "2px 4px" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <button onClick={() => setNlPending(null)}
+                  style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text3)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "color 0.15s, border-color 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
 
