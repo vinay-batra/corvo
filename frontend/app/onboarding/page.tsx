@@ -1,218 +1,246 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
-import UserMenu from "../../components/UserMenu";
-import PortfolioBuilder from "../../components/PortfolioBuilder";
-import LifeEvents, { type LifeEvent } from "../../components/LifeEvents";
-import FinancialGoals, { type FinancialGoal } from "../../components/FinancialGoals";
+import { fetchPortfolio } from "../../lib/api";
 
-const TOTAL = 11;
+type Stage = "pick" | "loading" | "reveal";
 
-const INVESTOR_TYPES = [
-  { id: "beginner",      label: "Beginner investor",     desc: "New to investing" },
-  { id: "active",        label: "Active trader",          desc: "Frequent buying and selling" },
-  { id: "longterm",      label: "Long-term investor",     desc: "Buy and hold for years" },
-  { id: "professional",  label: "Finance professional",   desc: "Work in finance" },
+interface PresetAsset { ticker: string; weight: number; }
+interface Preset {
+  id: string;
+  name: string;
+  tagline: string;
+  risk: string;
+  riskColor: string;
+  assets: PresetAsset[];
+  icon: React.ReactNode;
+}
+
+const PRESETS: Preset[] = [
+  {
+    id: "tech-growth",
+    name: "Tech Growth",
+    tagline: "High-conviction bets on the AI era",
+    risk: "Aggressive",
+    riskColor: "#e05c5c",
+    assets: [
+      { ticker: "NVDA", weight: 0.25 },
+      { ticker: "AAPL", weight: 0.20 },
+      { ticker: "MSFT", weight: 0.20 },
+      { ticker: "GOOGL", weight: 0.20 },
+      { ticker: "META", weight: 0.15 },
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M11 2L13.5 8H20L14.5 12L16.5 18.5L11 14.5L5.5 18.5L7.5 12L2 8H8.5L11 2Z"
+          stroke="var(--accent)" strokeWidth="1.4" strokeLinejoin="round" fill="rgba(201,168,76,0.12)" />
+      </svg>
+    ),
+  },
+  {
+    id: "index-core",
+    name: "Index Core",
+    tagline: "Own the entire market, low cost",
+    risk: "Moderate",
+    riskColor: "#5c8ee0",
+    assets: [
+      { ticker: "VTI", weight: 0.60 },
+      { ticker: "VXUS", weight: 0.30 },
+      { ticker: "BND", weight: 0.10 },
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="9" stroke="var(--accent)" strokeWidth="1.4" fill="rgba(201,168,76,0.08)" />
+        <path d="M11 5v12M5 11h12" stroke="var(--accent)" strokeWidth="1.3" strokeLinecap="round" />
+        <circle cx="11" cy="11" r="3" fill="rgba(201,168,76,0.25)" />
+      </svg>
+    ),
+  },
+  {
+    id: "dividend-income",
+    name: "Dividend Income",
+    tagline: "Steady income from quality holdings",
+    risk: "Conservative",
+    riskColor: "#5cb87a",
+    assets: [
+      { ticker: "VIG", weight: 0.40 },
+      { ticker: "SCHD", weight: 0.40 },
+      { ticker: "O", weight: 0.20 },
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect x="3" y="8" width="16" height="11" rx="2" stroke="var(--accent)" strokeWidth="1.4" fill="rgba(201,168,76,0.08)" />
+        <path d="M7 8V6a4 4 0 0 1 8 0v2" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round" />
+        <circle cx="11" cy="13" r="2" fill="var(--accent)" opacity="0.6" />
+      </svg>
+    ),
+  },
+  {
+    id: "balanced",
+    name: "Balanced",
+    tagline: "Growth with a safety net underneath",
+    risk: "Moderate",
+    riskColor: "#5c8ee0",
+    assets: [
+      { ticker: "SPY", weight: 0.50 },
+      { ticker: "AGG", weight: 0.30 },
+      { ticker: "GLD", weight: 0.20 },
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M3 15L8 9l4 4 4-5 3 3" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <path d="M3 15L8 9l4 4 4-5 3 3V18H3V15Z" fill="rgba(201,168,76,0.10)" />
+      </svg>
+    ),
+  },
 ];
 
-const GOALS = [
-  { id: "track",       label: "Track my performance" },
-  { id: "risk",        label: "Reduce portfolio risk" },
-  { id: "learn",       label: "Learn investing" },
-  { id: "taxes",       label: "Optimize for taxes" },
-  { id: "wealth",      label: "Build long-term wealth" },
-  { id: "retirement",  label: "Save for retirement" },
-];
+interface Verdict {
+  observation: string;
+  meaning: string;
+  action: string;
+}
 
-const AGE_RANGES = [
-  { id: "under18", label: "Under 18" },
-  { id: "18-24",   label: "18 to 24" },
-  { id: "25-34",   label: "25 to 34" },
-  { id: "35-44",   label: "35 to 44" },
-  { id: "45-54",   label: "45 to 54" },
-  { id: "55-64",   label: "55 to 64" },
-  { id: "65+",     label: "65 or older" },
-];
+function generateVerdict(data: any, presetName: string): Verdict {
+  const sharpe = data?.sharpe_ratio ?? 0;
+  const cagr = (data?.annualized_return ?? 0) * 100;
+  const maxDD = Math.abs((data?.max_drawdown ?? 0) * 100);
+  const volatility = (data?.portfolio_volatility ?? 0) * 100;
 
-const INCOME_RANGES = [
-  { id: "under30k",   label: "Under $30k" },
-  { id: "30-60k",     label: "$30k to $60k" },
-  { id: "60-100k",    label: "$60k to $100k" },
-  { id: "100-200k",   label: "$100k to $200k" },
-  { id: "200k+",      label: "$200k or more" },
-  { id: "prefer_not", label: "Prefer not to say" },
-];
+  // Top holding detection
+  const holdings: any[] = data?.holdings ?? data?.individual_metrics ?? [];
+  const topHolding = holdings.length > 0
+    ? holdings.reduce((a: any, b: any) => ((b.weight ?? 0) > (a.weight ?? 0) ? b : a))
+    : null;
+  const topTicker: string = topHolding?.ticker ?? "";
+  const topWeight: number = (topHolding?.weight ?? 0) * 100;
 
-const RISK_LEVELS = [
-  { id: "conservative",   label: "Conservative",   desc: "Preserve capital, minimize losses" },
-  { id: "moderate",       label: "Moderate",        desc: "Balance growth and stability" },
-  { id: "aggressive",     label: "Aggressive",      desc: "Maximize growth, accept volatility" },
-  { id: "very_aggressive", label: "Very Aggressive", desc: "High risk, high reward" },
-];
+  // Top sector detection
+  const sectors: Record<string, number> = data?.sector_weights ?? {};
+  const sectorEntries = Object.entries(sectors).sort((a, b) => b[1] - a[1]);
+  const topSector = sectorEntries[0];
+  const topSectorName: string = topSector ? topSector[0] : "";
+  const topSectorWeight: number = topSector ? topSector[1] * 100 : 0;
 
-const HORIZONS = [
-  { id: "under1y", label: "Less than 1 year" },
-  { id: "1-3y",    label: "1 to 3 years" },
-  { id: "3-5y",    label: "3 to 5 years" },
-  { id: "5-10y",   label: "5 to 10 years" },
-  { id: "10y+",    label: "10 or more years" },
-];
+  let observation: string;
+  let meaning: string;
+  let action: string;
 
-const REFERRAL_SOURCES = [
-  { id: "twitter",  label: "Twitter / X" },
-  { id: "friend",   label: "Friend or family" },
-  { id: "google",   label: "Google search" },
-  { id: "reddit",   label: "Reddit" },
-  { id: "other",    label: "Other" },
-];
+  if (sharpe > 1.5) {
+    observation = `This ${presetName} portfolio has delivered exceptional risk-adjusted returns. A Sharpe ratio of ${sharpe.toFixed(2)} means you are getting a lot of return for the risk you are taking, and the ${cagr.toFixed(1)}% annualized return has significantly outpaced most benchmarks.`;
+  } else if (sharpe > 0.8) {
+    observation = `This ${presetName} portfolio has earned ${cagr.toFixed(1)}% annually with a Sharpe ratio of ${sharpe.toFixed(2)}. That puts it in solid territory for long-term investors who want real growth without excessive risk.`;
+  } else {
+    observation = `This ${presetName} portfolio has returned ${cagr.toFixed(1)}% annually. The Sharpe ratio of ${sharpe.toFixed(2)} tells me the returns come with notable volatility, which is worth understanding before you hold it.`;
+  }
 
-const STEP_TITLES = [
-  "What best describes you?",
-  "What are your main goals?",
-  "How old are you?",
-  "What is your annual income?",
-  "Build your first portfolio",
-  "What is your risk tolerance?",
-  "What is your investment horizon?",
-  "How did you hear about Corvo?",
-  "Any major life events coming up?",
-  "What are you investing for?",
-  "Take Corvo with you",
-];
+  if (topWeight > 35 && topTicker) {
+    meaning = `Your biggest risk right now is concentration. ${topTicker} makes up ${topWeight.toFixed(0)}% of the portfolio. A 20% drop in ${topTicker} alone would pull your entire portfolio down ${(topWeight * 0.2).toFixed(0)}%. That is a lot of exposure to a single name.`;
+  } else if (topSectorWeight > 60 && topSectorName) {
+    meaning = `With ${topSectorWeight.toFixed(0)}% in ${topSectorName}, this portfolio is heavily tied to one sector. When that sector rotates out of favor, the hit to your returns is amplified compared to a more diversified mix.`;
+  } else if (maxDD > 30) {
+    meaning = `At its worst, this portfolio has pulled back ${maxDD.toFixed(0)}% from its peak. That is the real cost of strong long-term returns. You need to be mentally prepared to hold through drawdowns like that, or they will shake you out at the worst time.`;
+  } else {
+    meaning = `With ${volatility.toFixed(1)}% annualized volatility and a max drawdown of ${maxDD.toFixed(0)}%, this portfolio manages risk well relative to the returns it generates. That balance is hard to find.`;
+  }
 
-function SelectCard({
-  label, desc, selected, onClick,
-}: {
-  label: string; desc?: string; selected: boolean; onClick: () => void;
-}) {
-  const [hovered, setHovered] = useState(false);
+  if (topWeight > 40 && topTicker) {
+    action = `Consider trimming ${topTicker} toward a 20 to 25% target and rotating the freed capital into something uncorrelated. I will show you exactly how to model this rebalance in the dashboard.`;
+  } else if (maxDD > 35) {
+    action = `A 10 to 15% allocation to bonds or gold would meaningfully cut your drawdown risk with minimal impact on long-term returns. I can model the exact tradeoff for you inside the dashboard.`;
+  } else {
+    action = `This is a well-structured starting point. Once you are inside, I will track it daily and surface an alert the moment something needs your attention, whether that is an earnings surprise, a rebalance trigger, or a tax opportunity.`;
+  }
+
+  return { observation, meaning, action };
+}
+
+function fmt(n: number, decimals = 2) {
+  return n.toFixed(decimals);
+}
+
+function LoadingOrb() {
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: selected
-          ? "rgba(var(--accent-rgb), 0.1)"
-          : hovered ? "var(--bg3)" : "var(--bg2)",
-        border: `1px solid ${selected ? "var(--accent)" : hovered ? "var(--border2)" : "var(--border)"}`,
-        borderRadius: "var(--radius-lg)",
-        padding: desc ? "14px 16px" : "12px 16px",
-        cursor: "pointer",
-        textAlign: "left",
-        transition: "all 150ms",
-      }}
-    >
-      <div style={{
-        fontSize: 13, fontWeight: 500,
-        color: selected ? "var(--accent)" : hovered ? "var(--text)" : "var(--text2)",
-      }}>
-        {label}
-      </div>
-      {desc && (
+    <div style={{
+      minHeight: "100vh", background: "var(--bg)",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", gap: 24,
+    }}>
+      <style>{`
+        @keyframes ob2-pulse { 0%,100%{transform:scale(1);opacity:0.7} 50%{transform:scale(1.18);opacity:1} }
+        @keyframes ob2-ring { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        @keyframes ob2-fade-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes ob2-dot { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+      `}</style>
+      <div style={{ position: "relative", width: 72, height: 72 }}>
         <div style={{
-          fontSize: 11, marginTop: 4,
-          color: selected ? "var(--accent-text)" : "var(--text3)",
+          position: "absolute", inset: 0, borderRadius: "50%",
+          background: "rgba(201,168,76,0.12)",
+          animation: "ob2-pulse 2s ease-in-out infinite",
+        }} />
+        <div style={{
+          position: "absolute", inset: 4, borderRadius: "50%",
+          border: "1.5px solid transparent",
+          borderTopColor: "var(--accent)",
+          borderRightColor: "rgba(201,168,76,0.3)",
+          animation: "ob2-ring 1.1s linear infinite",
+        }} />
+        <div style={{
+          position: "absolute", inset: 0, display: "flex",
+          alignItems: "center", justifyContent: "center",
         }}>
-          {desc}
+          <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+            <path d="M1 17C1 17 3.5 9 11 9C18.5 9 21 17 21 17" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" />
+            <circle cx="11" cy="5" r="4" stroke="var(--accent)" strokeWidth="1.6" fill="rgba(201,168,76,0.15)" />
+          </svg>
         </div>
-      )}
-    </button>
+      </div>
+      <div style={{ textAlign: "center", animation: "ob2-fade-in 0.5s ease both" }}>
+        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", margin: "0 0 6px" }}>
+          Corvo is analyzing your portfolio
+        </p>
+        <p style={{ fontSize: 12, color: "var(--text3)", margin: 0 }}>
+          Running risk models, sector analysis, and AI evaluation
+        </p>
+        <div style={{ display: "flex", gap: 5, justifyContent: "center", marginTop: 16 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{
+              width: 5, height: 5, borderRadius: "50%",
+              background: "var(--accent)",
+              animation: `ob2-dot 1.4s ease-in-out ${i * 0.2}s infinite`,
+            }} />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
-function InstallStep() {
-  const [platform, setPlatform] = useState<"ios" | "android" | "desktop">("desktop");
-  useEffect(() => {
-    const ua = navigator.userAgent;
-    if (/iPhone|iPad|iPod/i.test(ua)) setPlatform("ios");
-    else if (/Android/i.test(ua)) setPlatform("android");
-    else setPlatform("desktop");
-  }, []);
-
-  const config = {
-    ios: {
-      heading: "On iPhone or iPad",
-      icon: (
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="8" y="4" width="32" height="40" rx="5" stroke="var(--accent)" strokeWidth="1.5"/>
-          <circle cx="24" cy="38" r="2" fill="var(--accent)"/>
-          <path d="M24 18v-6M21 14.5l3-3 3 3" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M19 18h10" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round"/>
-          <path d="M17 23h14M17 27h10" stroke="var(--text3)" strokeWidth="1.1" strokeLinecap="round"/>
-        </svg>
-      ),
-      instructions: [
-        "Tap the Share button at the bottom of Safari",
-        'Tap "Add to Home Screen"',
-        'Tap "Add" to confirm',
-      ],
-    },
-    android: {
-      heading: "On Android",
-      icon: (
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="24" cy="22" r="12" stroke="var(--accent)" strokeWidth="1.5"/>
-          <path d="M12 22h24" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round"/>
-          <path d="M24 10v24" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round"/>
-          <circle cx="14" cy="16" r="2" fill="var(--accent)" opacity="0.5"/>
-          <circle cx="34" cy="16" r="2" fill="var(--accent)" opacity="0.5"/>
-          <path d="M11 11l4 5M37 11l-4 5" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round"/>
-          <path d="M18 36h12M20 40h8" stroke="var(--text3)" strokeWidth="1.1" strokeLinecap="round"/>
-        </svg>
-      ),
-      instructions: [
-        "Tap the three-dot menu in Chrome",
-        'Tap "Add to Home Screen"',
-        'Tap "Add" to confirm',
-      ],
-    },
-    desktop: {
-      heading: "On Desktop",
-      icon: (
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="4" y="10" width="40" height="26" rx="3" stroke="var(--accent)" strokeWidth="1.5"/>
-          <path d="M17 40h14M24 36v4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round"/>
-          <circle cx="39" cy="14" r="3.5" fill="rgba(201,168,76,0.15)" stroke="var(--accent)" strokeWidth="1.2"/>
-          <path d="M38 14h2M39 13v2" stroke="var(--accent)" strokeWidth="1" strokeLinecap="round"/>
-          <path d="M10 19h14M10 24h18M10 29h10" stroke="var(--text3)" strokeWidth="1.1" strokeLinecap="round"/>
-        </svg>
-      ),
-      instructions: [
-        "Click the install icon in your browser's address bar",
-        'Click "Install"',
-        "Corvo opens as a standalone app",
-      ],
-    },
-  };
-
-  const current = config[platform];
+function MetricChip({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: boolean }) {
   return (
-    <div style={{ textAlign: "center" }}>
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-        {current.icon}
+    <div style={{
+      background: highlight ? "rgba(201,168,76,0.08)" : "var(--bg2)",
+      border: `1px solid ${highlight ? "rgba(201,168,76,0.3)" : "var(--border)"}`,
+      borderRadius: "var(--radius)",
+      padding: "12px 14px",
+      flex: 1,
+      minWidth: 0,
+    }}>
+      <div style={{ fontSize: 10, color: "var(--text3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5, fontFamily: "var(--font-mono)" }}>
+        {label}
       </div>
-      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 20 }}>{current.heading}</p>
-      <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 12 }}>
-        {current.instructions.map((instruction, i) => (
-          <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-            <span style={{
-              fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
-              color: "var(--accent)", background: "rgba(var(--accent-rgb), 0.1)",
-              borderRadius: 4, padding: "2px 7px", flexShrink: 0, marginTop: 1,
-            }}>{i + 1}</span>
-            <span style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.55 }}>{instruction}</span>
-          </div>
-        ))}
+      <div style={{
+        fontSize: 18, fontWeight: 700, color: highlight ? "var(--accent)" : "var(--text)",
+        fontFamily: "Space Mono, monospace", lineHeight: 1,
+      }}>
+        {value}
       </div>
-      <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 20 }}>
-        View the full install guide at{" "}
-        <Link href="/install" style={{ color: "var(--accent)", textDecoration: "none" }}>corvo.capital/install</Link>
-        {" "}or in Settings anytime.
-      </p>
+      {sub && (
+        <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>{sub}</div>
+      )}
     </div>
   );
 }
@@ -224,27 +252,13 @@ function OnboardingContent() {
 
   const [authLoading, setAuthLoading] = useState(true);
   const [userId, setUserId] = useState("");
-  const [step, setStep] = useState(0);
-  const [animating, setAnimating] = useState(false);
-  const [direction, setDirection] = useState<"forward" | "back">("forward");
+  const [stage, setStage] = useState<Stage>("pick");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [portfolioData, setPortfolioData] = useState<any>(null);
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [completing, setCompleting] = useState(false);
-  const [hasNavigated, setHasNavigated] = useState(false);
-  const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>([]);
-  const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
-
-  const [answers, setAnswers] = useState({
-    investor_type: "",
-    primary_goals: [] as string[],
-    age_range: "",
-    income_range: "",
-    risk_tolerance: "",
-    investment_horizon: "",
-    referral_source: "",
-  });
-
-  const [assets, setAssets] = useState<{ ticker: string; weight: number; purchasePrice?: number }[]>([
-    { ticker: "", weight: 0.05 },
-  ]);
+  const [error, setError] = useState<string | null>(null);
+  const loadStartRef = useRef<number>(0);
 
   useEffect(() => {
     (async () => {
@@ -252,23 +266,8 @@ function OnboardingContent() {
       if (!user) { router.replace("/auth"); return; }
       setUserId(user.id);
 
-      // Replay mode: skip ALL redirect checks unconditionally, just pre-fill answers.
-      if (isReplay) {
-        const m = user.user_metadata || {};
-        setAnswers({
-          investor_type: m.investor_type || "",
-          primary_goals: Array.isArray(m.primary_goals) ? m.primary_goals : [],
-          age_range: m.age_range || "",
-          income_range: m.income_range || "",
-          risk_tolerance: m.risk_tolerance || "",
-          investment_horizon: m.investment_horizon || "",
-          referral_source: m.referral_source || "",
-        });
-        setAuthLoading(false);
-        return;
-      }
+      if (isReplay) { setAuthLoading(false); return; }
 
-      // Fresh onboarding: redirect away if already completed.
       if (user.user_metadata?.onboarding_complete === true) {
         router.replace("/app"); return;
       }
@@ -296,78 +295,54 @@ function OnboardingContent() {
           }).catch(() => {});
         }
       }
-
       setAuthLoading(false);
     })();
   }, [router, isReplay]);
 
-  const canProceed = () => {
-    if (step === 0) return answers.investor_type !== "";
-    if (step === 1) return answers.primary_goals.length > 0;
-    if (step === 2) return answers.age_range !== "";
-    if (step === 3) return answers.income_range !== "";
-    if (step === 4) return true;
-    if (step === 5) return answers.risk_tolerance !== "";
-    if (step === 6) return answers.investment_horizon !== "";
-    if (step === 7) return answers.referral_source !== "";
-    if (step === 8) return true; // life events — skippable
-    if (step === 9) return true;
-    if (step === 10) return true; // install step — always skippable
-    return false;
-  };
+  const handleAnalyze = async () => {
+    if (!selected) return;
+    const preset = PRESETS.find(p => p.id === selected);
+    if (!preset) return;
 
-  const navigate = (dir: "forward" | "back") => {
-    if (animating) return;
-    if (!hasNavigated) setHasNavigated(true);
-    setDirection(dir);
-    setAnimating(true);
-    setStep(s => s + (dir === "forward" ? 1 : -1));
-    setTimeout(() => setAnimating(false), 260);
-  };
+    setStage("loading");
+    setError(null);
+    loadStartRef.current = Date.now();
 
-  const handleNext = () => {
-    if (animating) return;
-    if (!canProceed() && step !== 4 && step !== 8) return;
-    if (step < TOTAL - 1) navigate("forward");
-    else handleComplete();
-  };
-
-  const handleBack = () => {
-    if (step > 0) navigate("back");
-  };
-
-  const toggleGoal = (id: string) => {
-    setAnswers(prev => {
-      const g = prev.primary_goals;
-      return g.includes(id)
-        ? { ...prev, primary_goals: g.filter(x => x !== id) }
-        : g.length < 3 ? { ...prev, primary_goals: [...g, id] } : prev;
-    });
+    try {
+      const data = await fetchPortfolio(preset.assets, "1y", "^GSPC", userId);
+      // Enforce a minimum 1.8s loading time so the animation feels real
+      const elapsed = Date.now() - loadStartRef.current;
+      if (elapsed < 1800) {
+        await new Promise(r => setTimeout(r, 1800 - elapsed));
+      }
+      setPortfolioData(data);
+      setVerdict(generateVerdict(data, preset.name));
+      setStage("reveal");
+    } catch {
+      // Show reveal with partial data on error
+      setPortfolioData(null);
+      setVerdict(generateVerdict({}, preset.name));
+      setStage("reveal");
+    }
   };
 
   const handleComplete = async () => {
+    if (completing) return;
     setCompleting(true);
+
+    const preset = PRESETS.find(p => p.id === selected);
+    const assets = preset?.assets ?? [];
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.replace("/auth"); return; }
 
     await supabase.auth.updateUser({
-      data: {
-        investor_type: answers.investor_type,
-        primary_goals: answers.primary_goals,
-        age_range: answers.age_range,
-        income_range: answers.income_range,
-        risk_tolerance: answers.risk_tolerance,
-        investment_horizon: answers.investment_horizon,
-        referral_source: answers.referral_source,
-        onboarding_complete: true,
-      },
+      data: { onboarding_complete: true },
     });
 
     await supabase.from("profiles").upsert({
       id: user.id,
       onboarding_completed: true,
-      life_events: lifeEvents,
-      financial_goals: financialGoals,
       updated_at: new Date().toISOString(),
     });
 
@@ -380,9 +355,8 @@ function OnboardingContent() {
       });
     } catch {}
 
-    const validAssets = assets.filter(a => a.ticker && a.weight > 0);
-    if (validAssets.length > 0) {
-      localStorage.setItem("corvo_onboarding_assets", JSON.stringify(validAssets));
+    if (assets.length > 0) {
+      localStorage.setItem("corvo_onboarding_assets", JSON.stringify(assets));
     }
     if (!isReplay) {
       localStorage.setItem("corvo_just_onboarded", "true");
@@ -391,172 +365,232 @@ function OnboardingContent() {
     router.push("/app?tour=true");
   };
 
-  const renderSingleSelect = (
-    field: keyof typeof answers,
-    options: { id: string; label: string; desc?: string }[],
-  ) => (
-    <div className="ob-select-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-      {options.map(opt => (
-        <SelectCard
-          key={opt.id}
-          label={opt.label}
-          desc={opt.desc}
-          selected={(answers[field] as string) === opt.id}
-          onClick={() => setAnswers(prev => ({ ...prev, [field]: opt.id }))}
-        />
-      ))}
-    </div>
-  );
-
-  const renderMultiSelect = () => (
-    <div>
-      <div className="ob-select-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-        {GOALS.map(g => {
-          const selected = answers.primary_goals.includes(g.id);
-          const maxed = answers.primary_goals.length >= 3 && !selected;
-          return (
-            <SelectCard
-              key={g.id}
-              label={g.label}
-              selected={selected}
-              onClick={() => { if (!maxed) toggleGoal(g.id); }}
-            />
-          );
-        })}
-      </div>
-      {answers.primary_goals.length > 0 && (
-        <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 10, textAlign: "center" }}>
-          {3 - answers.primary_goals.length} more selection{3 - answers.primary_goals.length !== 1 ? "s" : ""} allowed
-        </p>
-      )}
-    </div>
-  );
-
-  const renderPortfolioBuilder = () => (
-    <div>
-      <div className="ob-builder-scroll" style={{ maxHeight: 340, overflowY: "auto", marginBottom: 16 }}>
-        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} loading={false} />
-      </div>
-      <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "center" }}>
-        You can add or edit holdings anytime from the dashboard.
-      </p>
-    </div>
-  );
-
-  const renderLifeEvents = () => (
-    <div>
-      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16, lineHeight: 1.55 }}>
-        Corvo uses this to give you more relevant advice.
-      </p>
-      <LifeEvents
-        mode="onboarding"
-        userId={userId}
-        initialEvents={lifeEvents}
-        onChange={setLifeEvents}
-      />
-    </div>
-  );
-
-  const renderFinancialGoals = () => (
-    <div>
-      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16, lineHeight: 1.55 }}>
-        Corvo uses your goals to give you more relevant advice.
-      </p>
-      <FinancialGoals
-        mode="onboarding"
-        userId={userId}
-        initialGoals={financialGoals}
-        onChange={setFinancialGoals}
-      />
-      <button
-        onClick={handleNext}
-        style={{
-          display: "block",
-          marginTop: 16,
-          background: "none",
-          border: "none",
-          fontSize: 12,
-          color: "var(--text3)",
-          cursor: "pointer",
-          padding: 0,
-          textDecoration: "underline",
-          textUnderlineOffset: 3,
-        }}
-      >
-        Skip for now
-      </button>
-    </div>
-  );
-
-  const renderStepContent = () => {
-    switch (step) {
-      case 0: return renderSingleSelect("investor_type", INVESTOR_TYPES);
-      case 1: return renderMultiSelect();
-      case 2: return renderSingleSelect("age_range", AGE_RANGES);
-      case 3: return renderSingleSelect("income_range", INCOME_RANGES);
-      case 4: return renderPortfolioBuilder();
-      case 5: return renderSingleSelect("risk_tolerance", RISK_LEVELS);
-      case 6: return renderSingleSelect("investment_horizon", HORIZONS);
-      case 7: return renderSingleSelect("referral_source", REFERRAL_SOURCES);
-      case 8: return renderLifeEvents();
-      case 9: return renderFinancialGoals();
-      case 10: return <InstallStep />;
-      default: return null;
-    }
-  };
-
-  const progress = ((step + 1) / TOTAL) * 100;
-  const isLast = step === TOTAL - 1;
-  const canGoNext = canProceed();
-
   if (authLoading) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <style>{`@keyframes ob-spin { to { transform: rotate(360deg); } }`}</style>
+        <style>{`@keyframes ob2-ring-sm { to { transform: rotate(360deg); } }`}</style>
         <div style={{
           width: 20, height: 20, borderRadius: "50%",
           border: "2px solid rgba(var(--accent-rgb), 0.2)",
           borderTopColor: "var(--accent)",
-          animation: "ob-spin 0.8s linear infinite",
+          animation: "ob2-ring-sm 0.8s linear infinite",
         }} />
       </div>
     );
   }
 
+  if (stage === "loading") return <LoadingOrb />;
+
+  // ── PICK SCREEN ──────────────────────────────────────────────────────────────
+  if (stage === "pick") {
+    return (
+      <div style={{
+        minHeight: "100vh", background: "var(--bg)",
+        display: "flex", flexDirection: "column",
+        fontFamily: "var(--font-body)", color: "var(--text)",
+      }}>
+        <style>{`
+          @keyframes ob2-fade-up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+          .ob2-preset-card { transition: border-color 150ms, background 150ms, transform 120ms; cursor: pointer; }
+          .ob2-preset-card:hover { transform: translateY(-2px); }
+          .ob2-cta-btn { transition: opacity 150ms, transform 100ms; }
+          .ob2-cta-btn:hover:not(:disabled) { opacity: 0.88; transform: scale(0.98); }
+          @media (max-width: 768px) {
+            .ob2-preset-grid { grid-template-columns: 1fr 1fr !important; }
+            .ob2-main { padding: 20px 16px 32px !important; }
+            .ob2-header-title { font-size: 22px !important; }
+            .ob2-header-sub { font-size: 13px !important; }
+          }
+          @media (max-width: 480px) {
+            .ob2-preset-grid { grid-template-columns: 1fr !important; }
+          }
+        `}</style>
+
+        {/* Header bar */}
+        <header style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0 }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
+            <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
+            <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
+          </Link>
+        </header>
+
+        <main className="ob2-main" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 24px 48px" }}>
+          {/* Headline */}
+          <div style={{ textAlign: "center", maxWidth: 520, marginBottom: 40, animation: "ob2-fade-up 0.4s ease both" }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 7,
+              background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)",
+              borderRadius: 20, padding: "4px 12px", marginBottom: 18,
+            }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="5" stroke="var(--accent)" strokeWidth="1.2" fill="rgba(201,168,76,0.2)" />
+                <path d="M6 3v3l2 1.5" stroke="var(--accent)" strokeWidth="1.1" strokeLinecap="round" />
+              </svg>
+              <span style={{ fontSize: 11, color: "var(--accent)", fontFamily: "var(--font-mono)", letterSpacing: "0.05em" }}>
+                60-SECOND SETUP
+              </span>
+            </div>
+            <h1 className="ob2-header-title" style={{ fontSize: 28, fontWeight: 700, color: "var(--text)", margin: "0 0 12px", lineHeight: 1.25, letterSpacing: "-0.5px" }}>
+              Pick a portfolio and Corvo will analyze it instantly
+            </h1>
+            <p className="ob2-header-sub" style={{ fontSize: 14, color: "var(--text2)", margin: 0, lineHeight: 1.6 }}>
+              Corvo's AI will tell you your risk level, your biggest opportunity, and exactly what to watch out for.
+            </p>
+          </div>
+
+          {/* Preset grid */}
+          <div
+            className="ob2-preset-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 12,
+              width: "100%",
+              maxWidth: 780,
+              marginBottom: 28,
+            }}
+          >
+            {PRESETS.map((preset, i) => {
+              const isSelected = selected === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  className="ob2-preset-card"
+                  onClick={() => setSelected(preset.id)}
+                  style={{
+                    background: isSelected ? "rgba(201,168,76,0.07)" : "var(--card-bg)",
+                    border: `1.5px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
+                    borderRadius: "var(--radius-lg)",
+                    padding: "18px 16px",
+                    textAlign: "left",
+                    position: "relative",
+                    outline: "none",
+                    animation: `ob2-fade-up 0.4s ease ${0.1 + i * 0.07}s both`,
+                  }}
+                >
+                  {isSelected && (
+                    <div style={{
+                      position: "absolute", top: 10, right: 10,
+                      width: 16, height: 16, borderRadius: "50%",
+                      background: "var(--accent)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                        <path d="M1.5 4l2 2 3-3" stroke="var(--bg)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Icon */}
+                  <div style={{ marginBottom: 12 }}>{preset.icon}</div>
+
+                  {/* Name */}
+                  <div style={{
+                    fontSize: 14, fontWeight: 700, color: "var(--text)",
+                    marginBottom: 5, letterSpacing: "-0.2px",
+                  }}>
+                    {preset.name}
+                  </div>
+
+                  {/* Tagline */}
+                  <div style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.45, marginBottom: 12 }}>
+                    {preset.tagline}
+                  </div>
+
+                  {/* Tickers */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+                    {preset.assets.map(a => (
+                      <span key={a.ticker} style={{
+                        fontSize: 10, fontFamily: "Space Mono, monospace",
+                        color: "var(--text2)", background: "var(--bg3)",
+                        border: "1px solid var(--border)", borderRadius: 4,
+                        padding: "2px 6px",
+                      }}>
+                        {a.ticker}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Risk badge */}
+                  <div style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    fontSize: 10, fontFamily: "var(--font-mono)",
+                    color: preset.riskColor,
+                    background: `${preset.riskColor}18`,
+                    border: `1px solid ${preset.riskColor}40`,
+                    borderRadius: 10, padding: "2px 8px",
+                  }}>
+                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: preset.riskColor, display: "inline-block" }} />
+                    {preset.risk}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* CTA */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, animation: "ob2-fade-up 0.4s ease 0.35s both" }}>
+            <button
+              className="ob2-cta-btn"
+              onClick={handleAnalyze}
+              disabled={!selected}
+              style={{
+                padding: "13px 36px",
+                background: selected ? "var(--accent)" : "rgba(var(--accent-rgb),0.12)",
+                border: "none", borderRadius: "var(--radius)",
+                color: selected ? "var(--bg)" : "var(--text3)",
+                fontSize: 14, fontWeight: 700,
+                cursor: selected ? "pointer" : "not-allowed",
+                letterSpacing: 0.3,
+                display: "flex", alignItems: "center", gap: 8,
+              }}
+            >
+              Analyze with Corvo
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <Link
+              href="/app"
+              style={{ fontSize: 12, color: "var(--text3)", textDecoration: "none" }}
+              onClick={() => localStorage.setItem("corvo_just_onboarded", "true")}
+            >
+              Skip and build my own portfolio in the app
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ── REVEAL SCREEN ────────────────────────────────────────────────────────────
+  const preset = PRESETS.find(p => p.id === selected);
+  const data = portfolioData;
+  const sharpe = data?.sharpe_ratio ?? 0;
+  const cagr = (data?.annualized_return ?? 0) * 100;
+  const maxDD = Math.abs((data?.max_drawdown ?? 0) * 100);
+  const healthScore = data?.health_score ?? null;
+  const healthGrade = data?.health_grade ?? null;
+  const volatility = (data?.portfolio_volatility ?? 0) * 100;
+
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", fontFamily: "var(--font-body)", color: "var(--text)" }}>
+    <div style={{
+      minHeight: "100vh", background: "var(--bg)",
+      display: "flex", flexDirection: "column",
+      fontFamily: "var(--font-body)", color: "var(--text)",
+    }}>
       <style>{`
-        @keyframes ob-spin { to { transform: rotate(360deg); } }
-        @keyframes ob-card-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes ob-slide-fwd { from { opacity: 0; transform: translateX(36px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes ob-slide-back { from { opacity: 0; transform: translateX(-36px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes ob-fade-out { to { opacity: 0; pointer-events: none; } }
-        .ob-step { animation: ob-card-in 0.35s cubic-bezier(0.16,1,0.3,1) both; }
-        .ob-step-fwd { animation: ob-slide-fwd 0.28s ease both; }
-        .ob-step-back { animation: ob-slide-back 0.28s ease both; }
-        .ob-completing { animation: ob-fade-out 0.3s ease forwards; }
+        @keyframes ob2-fade-up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes ob2-scale-in { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
+        @keyframes ob2-verdict-in { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        .ob2-cta-btn { transition: opacity 150ms, transform 100ms; }
+        .ob2-cta-btn:hover:not(:disabled) { opacity: 0.88; transform: scale(0.98); }
         @media (max-width: 768px) {
-          .ob-main { padding: 16px !important; }
-          .ob-card { padding: 24px 20px 22px !important; }
-          .ob-card h2 { font-size: 18px !important; }
-          .ob-card p { font-size: 12px !important; }
-          .ob-select-grid { grid-template-columns: 1fr !important; }
-          .ob-life-events-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .ob-goals-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .ob-builder-scroll { max-height: min(340px, 45vh) !important; }
+          .ob2-metrics-row { flex-wrap: wrap !important; }
+          .ob2-metrics-row > * { min-width: calc(50% - 5px) !important; flex: none !important; }
+          .ob2-reveal-main { padding: 20px 16px 40px !important; }
         }
       `}</style>
-
-      {/* Progress bar — full width at top */}
-      <div style={{ height: 3, background: "var(--bg3)", flexShrink: 0 }}>
-        <div style={{
-          height: "100%",
-          background: "var(--accent)",
-          width: `${progress}%`,
-          transition: "width 0.4s cubic-bezier(0.16,1,0.3,1)",
-          borderRadius: "0 2px 2px 0",
-        }} />
-      </div>
 
       {/* Header */}
       <header style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0 }}>
@@ -564,108 +598,209 @@ function OnboardingContent() {
           <img src="/corvo-logo.svg" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
         </Link>
-        <span style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.5, fontFamily: "var(--font-mono)" }}>
-          {step + 1} / {TOTAL}
-        </span>
-        <UserMenu />
+        {preset && (
+          <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>
+            {preset.name.toUpperCase()}
+          </span>
+        )}
       </header>
 
-      {/* Main content */}
-      <main
-        className="ob-main"
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          padding: "32px 24px 40px",
-          overflowY: "auto",
-        }}
-      >
-        <div
-          className={`ob-card${completing ? " ob-completing" : ""}`}
-          style={{
-            width: "100%",
-            maxWidth: 540,
-            background: "var(--card-bg)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-lg)",
-            padding: "30px 30px 28px",
-            boxShadow: "var(--shadow-md)",
-          }}
-        >
-          {/* Step label */}
-          <div style={{
-            fontSize: 10, letterSpacing: "0.15em", color: "var(--accent)",
-            textTransform: "uppercase", marginBottom: 10,
-            fontFamily: "var(--font-mono)",
-          }}>
-            Step {step + 1} of {TOTAL}
-          </div>
+      <main className="ob2-reveal-main" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 24px 48px" }}>
+        <div style={{ width: "100%", maxWidth: 640 }}>
 
-          {/* Title */}
-          <h2 style={{
-            fontSize: 22, fontWeight: 600, color: "var(--text)",
-            margin: "0 0 24px", lineHeight: 1.3, letterSpacing: "-0.3px",
-          }}>
-            {STEP_TITLES[step]}
-          </h2>
-
-          {/* Step content */}
-          <div
-            key={step}
-            className={animating ? (direction === "forward" ? "ob-step-fwd" : "ob-step-back") : (hasNavigated ? "" : "ob-step")}
-            style={{ marginBottom: 24 }}
-          >
-            {renderStepContent()}
-          </div>
-
-          {/* Footer: back / skip / next */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <button
-              onClick={handleBack}
-              style={{
-                fontSize: 12,
-                color: step > 0 ? "var(--text3)" : "transparent",
-                background: "none", border: "none",
-                cursor: step > 0 ? "pointer" : "default",
-                padding: 0, transition: "color 150ms",
-                pointerEvents: step > 0 ? "auto" : "none",
-              }}
-              onMouseEnter={e => { if (step > 0) e.currentTarget.style.color = "var(--text2)"; }}
-              onMouseLeave={e => { e.currentTarget.style.color = step > 0 ? "var(--text3)" : "transparent"; }}
-            >
-              Back
-            </button>
-
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              {(step === 4 || step === 8 || step === 9 || step === 10) && (
-                <button
-                  onClick={handleNext}
-                  style={{ fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                >
-                  {step === 9 || step === 10 ? "Skip" : "Skip this step"}
-                </button>
-              )}
-              <button
-                onClick={handleNext}
-                disabled={!canGoNext || completing}
-                style={{
-                  padding: "11px 26px",
-                  background: canGoNext ? "var(--accent)" : "rgba(var(--accent-rgb), 0.12)",
-                  border: "none",
-                  borderRadius: "var(--radius)",
-                  color: canGoNext ? "var(--bg)" : "var(--text3)",
-                  fontSize: 13, fontWeight: 600,
-                  cursor: canGoNext ? "pointer" : "not-allowed",
-                  transition: "all 0.18s",
-                  opacity: completing ? 0.6 : 1,
-                  letterSpacing: 0.2,
-                }}
-              >
-                {completing ? "..." : isLast ? "Done" : "Next"}
-              </button>
+          {/* Headline */}
+          <div style={{ marginBottom: 28, animation: "ob2-fade-up 0.4s ease both" }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12,
+              background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)",
+              borderRadius: 20, padding: "3px 10px",
+            }}>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <circle cx="5" cy="5" r="4.5" fill="var(--accent)" />
+              </svg>
+              <span style={{ fontSize: 10, color: "var(--accent)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em" }}>
+                ANALYSIS COMPLETE
+              </span>
             </div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: "var(--text)", margin: "0 0 8px", lineHeight: 1.3, letterSpacing: "-0.4px" }}>
+              Here is what Corvo found
+            </h2>
+            <p style={{ fontSize: 13, color: "var(--text3)", margin: 0 }}>
+              Based on the last 12 months of real market data
+            </p>
+          </div>
+
+          {/* Metrics row */}
+          {data && (
+            <div className="ob2-metrics-row" style={{
+              display: "flex", gap: 10, marginBottom: 20,
+              animation: "ob2-scale-in 0.4s ease 0.1s both",
+            }}>
+              {healthScore !== null && (
+                <MetricChip
+                  label="Health Score"
+                  value={healthGrade ? `${healthGrade}` : `${Math.round(healthScore)}`}
+                  sub={healthGrade ? `${Math.round(healthScore)} / 100` : "out of 100"}
+                  highlight
+                />
+              )}
+              <MetricChip
+                label="Sharpe Ratio"
+                value={fmt(sharpe)}
+                sub="risk-adjusted return"
+              />
+              <MetricChip
+                label="Annual Return"
+                value={`${cagr >= 0 ? "+" : ""}${fmt(cagr, 1)}%`}
+                sub="last 12 months"
+              />
+              <MetricChip
+                label="Max Drawdown"
+                value={`-${fmt(maxDD, 1)}%`}
+                sub="worst peak-to-trough"
+              />
+            </div>
+          )}
+
+          {/* Corvo Verdict — the star of the show */}
+          {verdict && (
+            <div style={{
+              background: "var(--card-bg)",
+              border: "1px solid rgba(201,168,76,0.25)",
+              borderRadius: "var(--radius-lg)",
+              overflow: "hidden",
+              marginBottom: 24,
+              animation: "ob2-verdict-in 0.5s cubic-bezier(0.16,1,0.3,1) 0.2s both",
+            }}>
+              {/* Corvo header bar */}
+              <div style={{
+                padding: "14px 20px",
+                background: "rgba(201,168,76,0.06)",
+                borderBottom: "1px solid rgba(201,168,76,0.15)",
+                display: "flex", alignItems: "center", gap: 10,
+              }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: "50%",
+                  background: "rgba(201,168,76,0.12)",
+                  border: "1px solid rgba(201,168,76,0.3)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <img src="/corvo-logo.svg" width={14} height={12} alt="" style={{ opacity: 0.9 }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>Corvo</div>
+                  <div style={{ fontSize: 10, color: "var(--text3)" }}>AI Portfolio Advisor</div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#5cb87a" }} />
+                  <span style={{ fontSize: 10, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>LIVE ANALYSIS</span>
+                </div>
+              </div>
+
+              {/* Verdict body */}
+              <div style={{ padding: "20px" }}>
+                {/* What I see */}
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, color: "var(--accent)",
+                    letterSpacing: "0.12em", textTransform: "uppercase",
+                    fontFamily: "var(--font-mono)", marginBottom: 8,
+                  }}>
+                    What I see
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, margin: 0 }}>
+                    {verdict.observation}
+                  </p>
+                </div>
+
+                <div style={{ height: 1, background: "var(--border)", marginBottom: 18 }} />
+
+                {/* Why it matters */}
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, color: "var(--accent)",
+                    letterSpacing: "0.12em", textTransform: "uppercase",
+                    fontFamily: "var(--font-mono)", marginBottom: 8,
+                  }}>
+                    Why it matters
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, margin: 0 }}>
+                    {verdict.meaning}
+                  </p>
+                </div>
+
+                <div style={{ height: 1, background: "var(--border)", marginBottom: 18 }} />
+
+                {/* What to consider */}
+                <div>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, color: "var(--accent)",
+                    letterSpacing: "0.12em", textTransform: "uppercase",
+                    fontFamily: "var(--font-mono)", marginBottom: 8,
+                  }}>
+                    What to consider
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, margin: 0 }}>
+                    {verdict.action}
+                  </p>
+                </div>
+
+                {/* AI disclaimer */}
+                <div style={{
+                  marginTop: 16, padding: "10px 12px",
+                  background: "var(--bg2)", borderRadius: "var(--radius)",
+                  display: "flex", alignItems: "center", gap: 8,
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+                    <circle cx="6" cy="6" r="5.5" stroke="var(--text3)" strokeWidth="1" />
+                    <path d="M6 5.5v3M6 3.5v.5" stroke="var(--text3)" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                  <span style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.4 }}>
+                    This analysis uses real market data and Corvo's AI models. It is educational, not financial advice.
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CTAs */}
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 14,
+            animation: "ob2-fade-up 0.4s ease 0.35s both",
+          }}>
+            <button
+              className="ob2-cta-btn"
+              onClick={handleComplete}
+              disabled={completing}
+              style={{
+                width: "100%",
+                padding: "14px 24px",
+                background: "var(--accent)",
+                border: "none", borderRadius: "var(--radius)",
+                color: "var(--bg)", fontSize: 14, fontWeight: 700,
+                cursor: completing ? "not-allowed" : "pointer",
+                opacity: completing ? 0.7 : 1,
+                letterSpacing: 0.3,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              }}
+            >
+              {completing ? "Opening your dashboard..." : "Open my dashboard"}
+              {!completing && (
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={() => { setStage("pick"); setPortfolioData(null); setVerdict(null); }}
+              style={{
+                background: "none", border: "none",
+                fontSize: 12, color: "var(--text3)", cursor: "pointer", padding: 0,
+              }}
+            >
+              Choose a different portfolio
+            </button>
           </div>
         </div>
       </main>
@@ -677,12 +812,12 @@ export default function OnboardingPage() {
   return (
     <Suspense fallback={
       <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <style>{`@keyframes ob-spin { to { transform: rotate(360deg); } }`}</style>
+        <style>{`@keyframes ob2-spin { to { transform: rotate(360deg); } }`}</style>
         <div style={{
           width: 20, height: 20, borderRadius: "50%",
           border: "2px solid rgba(var(--accent-rgb), 0.2)",
           borderTopColor: "var(--accent)",
-          animation: "ob-spin 0.8s linear infinite",
+          animation: "ob2-spin 0.8s linear infinite",
         }} />
       </div>
     }>
