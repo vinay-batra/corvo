@@ -16,12 +16,19 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [dark, setDark] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
     check();
     const obs = new MutationObserver(check);
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
+  }, []);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   useEffect(() => {
@@ -41,7 +48,7 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -102,7 +109,7 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
             hoverlabel: { bgcolor: "#0a1020", bordercolor: "rgba(255,64,96,0.3)", font: { color: "#e2e8f0", family: "Space Grotesk", size: 11 } },
           }}
           config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
-          style={{ width: "100%", height: 220 }}
+          style={{ width: "100%", height: isMobile ? 200 : 220 }}
         />
         </>
       ) : null}

@@ -433,7 +433,7 @@ export default function GoalTracker({ data, portfolioValue, onAskAi }: Props) {
                 value={`${((result.onTrack ? cagr : result.requiredCAGR) * 100).toFixed(1)}%`}
                 sub={result.onTrack
                   ? `${((result.requiredCAGR * 100)).toFixed(1)}% required to hit on time`
-                  : `You're at ${(cagr * 100).toFixed(1)}% — need ${((result.requiredCAGR - cagr) * 100).toFixed(1)}% more`}
+                  : `You're at ${(cagr * 100).toFixed(1)}% - need ${((result.requiredCAGR - cagr) * 100).toFixed(1)}% more`}
                 color={result.onTrack ? "#4caf7d" : "var(--accent)"}
               />
             </>
@@ -475,7 +475,7 @@ export default function GoalTracker({ data, portfolioValue, onAskAi }: Props) {
           {!result.alreadyReached && result.onTrack && ahead >= 1 && (
             <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(76,175,125,0.06)", border: "0.5px solid rgba(76,175,125,0.2)", marginBottom: 12 }}>
               <p style={{ fontSize: 12.5, color: "#4caf7d", margin: 0, lineHeight: 1.65, fontWeight: 500 }}>
-                At {(cagr * 100).toFixed(1)}% CAGR, you will reach {fmtFull(goal.amount)} in {result.goalYear} — {ahead.toFixed(0)} year{ahead >= 2 ? "s" : ""} ahead of your {goal.year} target. Keep your current allocation and re-run this analysis after any major portfolio change.
+                At {(cagr * 100).toFixed(1)}% CAGR, you will reach {fmtFull(goal.amount)} in {result.goalYear} - {ahead.toFixed(0)} year{ahead >= 2 ? "s" : ""} ahead of your {goal.year} target. Keep your current allocation and re-run this analysis after any major portfolio change.
               </p>
             </div>
           )}

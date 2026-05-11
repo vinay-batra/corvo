@@ -14,7 +14,7 @@ interface TourStop {
   placement?: "bottom" | "top";
 }
 
-// ── Animated SVG illustrations — all colors via CSS variables ─────────────────
+// ── Animated SVG illustrations - all colors via CSS variables ─────────────────
 
 function IllusBars() {
   return (
@@ -137,7 +137,7 @@ function IllusChat() {
       {/* Bubble tail */}
       <path d="M100 30 L106 36 L112 30" strokeWidth="1"
         style={{ fill: "var(--card-bg)", stroke: "var(--accent)", opacity: 0, animation: "ti-bubble-in 0.25s ease 0.2s both" }} />
-      {/* Three typing dots — staggered delays: 0ms, 150ms, 300ms */}
+      {/* Three typing dots - staggered delays: 0ms, 150ms, 300ms */}
       {[
         { cx: 114, delay: "0ms" },
         { cx: 130, delay: "150ms" },
@@ -255,7 +255,7 @@ function getDesktopStops(_tabCount: number): TourStop[] {
       id: "tour-desk-analyze",
       label: "Daily Brief",
       title: "Your daily brief, every morning",
-      description: "Every time you open the dashboard Corvo shows a personalized brief — what the market did, how your specific holdings were affected, and what to watch next. It updates automatically. Collapse it with the chevron if you want a cleaner view.",
+      description: "Every time you open the dashboard Corvo shows a personalized brief - what the market did, how your specific holdings were affected, and what to watch next. It updates automatically. Collapse it with the chevron if you want a cleaner view.",
       Illus: IllusLine,
     },
     {
@@ -270,7 +270,7 @@ function getDesktopStops(_tabCount: number): TourStop[] {
       id: "tour-desk-chat",
       label: "AI",
       title: "Your AI advisor, always on",
-      description: "The gold button is Corvo's AI — ask anything about your portfolio, request a full roast, or explore what-if scenarios. It has your complete analysis in context, so answers are specific to you, not generic advice.",
+      description: "The gold button is Corvo's AI - ask anything about your portfolio, request a full roast, or explore what-if scenarios. It has your complete analysis in context, so answers are specific to you, not generic advice.",
       Illus: IllusChat,
       placement: "top",
     },
@@ -448,7 +448,7 @@ export default function DashboardTour({ onComplete, tabCount }: Props) {
           onClick={!isMobile ? handleDone : undefined}
         />
 
-        {/* Amber ring — hidden while DOM is settling */}
+        {/* Amber ring - hidden while DOM is settling */}
         {ring && !settling && (
           <div style={{
             position: "fixed",
@@ -462,7 +462,7 @@ export default function DashboardTour({ onComplete, tabCount }: Props) {
           }} />
         )}
 
-        {/* Tooltip card — hidden while DOM is settling, transition:none prevents position snap */}
+        {/* Tooltip card - hidden while DOM is settling, transition:none prevents position snap */}
         {!settling && (tooltipPos || noTarget) && (
           <div
             style={isMobile ? {

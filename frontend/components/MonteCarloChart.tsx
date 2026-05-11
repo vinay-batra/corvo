@@ -6,11 +6,13 @@ import { motion } from "framer-motion";
 import { fetchMonteCarlo } from "../lib/api";
 import ErrorState from "./ErrorState";
 import InfoModal from "./InfoModal";
+import { RESOLVED_API_URL } from "../lib/api";
+import { plotlyHoverlabel } from "../lib/theme";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 // Module-level cache: keyed by simulation params string so results survive tab switches
 // and component remounts without re-firing the expensive backend request.
@@ -32,8 +34,9 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
   const [insight, setInsight] = useState<string | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const [dark, setDark] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [simYears, setSimYears] = useState(5);
-  // Track the last key we actually ran for — prevents re-runs from stable-but-recreated prop refs
+  // Track the last key we actually ran for - prevents re-runs from stable-but-recreated prop refs
   const simKeyRef = useRef<string>("");
 
   useEffect(() => {
@@ -42,6 +45,12 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
     const obs = new MutationObserver(check);
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
+  }, []);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   useEffect(() => {
@@ -54,7 +63,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
     if (newKey === simKeyRef.current) return;
     simKeyRef.current = newKey;
 
-    // Restore from cache first — avoids re-fetching on tab switch or remount
+    // Restore from cache first - avoids re-fetching on tab switch or remount
     const cached = _mcDataCache.get(newKey);
     if (cached) {
       setData(cached);
@@ -276,7 +285,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
         />
       ) : data ? (
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
 
           {/* Legend */}
@@ -305,11 +314,11 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
 
           {/*
             Fan chart: filled areas between percentile bands.
-            [0] p5  — outer bottom boundary (no fill)
-            [1] p95 — outer top boundary (fill="tonexty" → fills p5-p95, very transparent amber)
-            [2] p25 — inner bottom boundary (no fill)
-            [3] p75 — inner top boundary (fill="tonexty" → fills p25-p75, more opaque amber)
-            [4] p50 — median line (bright amber, no fill)
+            [0] p5  - outer bottom boundary (no fill)
+            [1] p95 - outer top boundary (fill="tonexty" → fills p5-p95, very transparent amber)
+            [2] p25 - inner bottom boundary (no fill)
+            [3] p75 - inner top boundary (fill="tonexty" → fills p25-p75, more opaque amber)
+            [4] p50 - median line (bright amber, no fill)
             [5] breakeven at y=0 (blue dashed)
           */}
           <Plot
@@ -373,20 +382,16 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
               },
               showlegend: false,
               hovermode: "x unified",
-              hoverlabel: {
-                bgcolor: "#0d1117",
-                bordercolor: "rgba(201,168,76,0.4)",
-                font: { color: "#e8e0cc", family: "Inter", size: 11 },
-              },
+              hoverlabel: plotlyHoverlabel(),
             }}
             config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
-            style={{ width: "100%", height: 300 }}
+            style={{ width: "100%", height: isMobile ? 240 : 300 }}
           />
 
           {/* AI insight summary box */}
           {positiveProb !== null && (
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
               style={{ marginTop: 16, background: dark ? C.amber3 : "rgba(184,134,11,0.06)", border: "1px solid rgba(184,134,11,0.15)", borderRadius: 10, padding: "14px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
               <span style={{ color: mcAmber, fontSize: 14, flexShrink: 0, marginTop: 1 }}>◈</span>
@@ -409,7 +414,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
           {/* What Would Your Money Become? */}
           {data && portfolioValue != null && (
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
               style={{ marginTop: 20, background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
               <div style={{ padding: "12px 16px 8px", borderBottom: "0.5px solid var(--border)" }}>
@@ -469,7 +474,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
 
           {/* Risk Metrics Panel */}
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
             style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {[
@@ -508,7 +513,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
 
           {/* What this means for you (Claude insight) */}
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             style={{ marginTop: 12, borderLeft: `3px solid ${mcAmber}`, background: dark ? "rgba(201,168,76,0.05)" : "rgba(184,134,11,0.06)", borderRadius: "0 10px 10px 0", padding: "14px 16px" }}>
             <p style={{ fontSize: 9, letterSpacing: 2, color: mcAmber, textTransform: "uppercase", marginBottom: 10 }}>What this means for you</p>

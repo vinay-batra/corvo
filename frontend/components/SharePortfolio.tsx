@@ -31,12 +31,18 @@ function downloadCardAsImage(
   const ctx = canvas.getContext("2d")!;
   ctx.scale(scale, scale);
 
-  const bgMain   = isDark ? "#0d1117" : "#ffffff";
-  const bgCard   = isDark ? "#111620" : "#f4f4f5";
-  const borderC  = isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)";
-  const textPrim = isDark ? "#e8e0cc" : "#111827";
-  const textMut  = isDark ? "rgba(232,224,204,0.38)" : "#6b7280";
-  const accentC  = isDark ? "#c9a84c" : "#8b6914";
+  // Canvas2D can't resolve CSS variables, so resolve them at render time from
+  // the document. Theme-aware without duplicating the palette.
+  const cs = typeof window !== "undefined"
+    ? getComputedStyle(document.documentElement)
+    : null;
+  const v = (name: string, fb: string) => (cs?.getPropertyValue(name).trim() || fb);
+  const bgMain   = v("--bg2", isDark ? "#0d1117" : "#ffffff");
+  const bgCard   = v("--card-bg", isDark ? "#111620" : "#f4f4f5");
+  const borderC  = v("--border", isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)");
+  const textPrim = v("--text", isDark ? "#e8e0cc" : "#111827");
+  const textMut  = v("--text-muted", isDark ? "rgba(232,224,204,0.38)" : "#6b7280");
+  const accentC  = v("--accent", isDark ? "#c9a84c" : "#8b6914");
   const posC     = "#5cb88a";
   const negC     = "#e05c5c";
   const retColor = isPos ? posC : negC;
@@ -82,7 +88,7 @@ function downloadCardAsImage(
   ctx.fillText(period, W - PAD, PAD + 10);
   ctx.textAlign = "left";
 
-  // Return — large center
+  // Return - large center
   const retStr = `${isPos ? "+" : ""}${ret}%`;
   ctx.font = `700 48px "Space Mono", monospace`;
   ctx.fillStyle = retColor;
@@ -238,12 +244,12 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
               onClick={e => e.stopPropagation()}
               style={{ background: "var(--card-bg)", border: "1px solid var(--border2)", borderRadius: 16, padding: 28, width: "100%", maxWidth: "min(480px, 95vw)", position: "relative" }}>

@@ -7,22 +7,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.27 (May 11, 2026)**
+**Last shipped: v0.28 (May 11, 2026) - audit-driven security + cleanup pass**
 
-Seven polish targets shipped in a single session, clearing both the original v0.26 queue and the two follow-on items. Sidebar/builder, modals standardization, app top bar (incremental on v0.26), loading state, 404/error pages, bottom toolbar (AI/Feedback/Customize), and settings row controls (Toggle, inputs, selects, period selector, buttons) all moved to the v0.25/v0.26 design language. See the v0.27 entry under "What Was Built" for the full scope. Frontend auto-deploys via Vercel; backend untouched this session.
+Full sweep across light/dark mode, debug & correctness, mobile responsiveness, and em dashes. Closed 3 IDOR vulnerabilities, force-enforced the 8500 Monte Carlo path count, purged Paper Trade entirely (backend routes + 9 dead frontend components), removed 330 em dashes and 42 en dashes across 79 source files, fixed 7 wrong-breakpoint media queries, converted 3 compare pages to CSS variables, fixed 34 broken motion reveal patterns, added new RLS migration for health_score_cache and a column-restricted leaderboard RPC, hardened middleware, added new app/error.tsx boundary. See the v0.28 entry under "What Was Built" for the full scope.
 
-**AI Chat panel — v0.27 second pass shipped** on top of the v0.26 rebuild. See the v0.27 entry under "What Was Built" for specifics.
+### KEY ROTATION REQUIRED
 
-### Premium polish queue — pick up here next session
+`backend/.env` (with a live `ANTHROPIC_API_KEY`) is now untracked from git but remains in commit history. Rotate the Anthropic key immediately, update the Railway env, and redeploy backend.
 
-Premium polish queue is empty. Likely next moves: demo video, YC application, product direction brainstorm (cut News/Watchlist/Learn, build daily morning brief, action CTAs on insights), Plaid sandbox build, rate limiting, PDF reports.
+### Premium polish queue - pick up here next session
+
+Premium polish queue is empty. Likely next moves: demo video, YC application, product direction brainstorm (cut News/Watchlist/Learn, build daily morning brief, action CTAs on insights), Plaid sandbox build, PDF reports.
 
 ### Blocked / non-design work
 
-1. **Stripe/Pro tier ($9/mo)** — needs parent (Vinay is under 18; TOS requires 18+ to sign for Stripe)
-2. **Plaid integration** — auto-sync brokerage. Needs parent to sign for Plaid + production-access approval (weeks). Can build against sandbox in the meantime.
+1. **Stripe/Pro tier ($9/mo)** - needs parent (Vinay is under 18; TOS requires 18+ to sign for Stripe)
+2. **Plaid integration** - auto-sync brokerage. Needs parent to sign for Plaid + production-access approval (weeks). Can build against sandbox in the meantime.
 
-### Daily Signal (built May 10) — reference
+### Daily Signal (built May 10) - reference
 
 - POST /portfolio/daily-signal backend endpoint with Claude, in-memory cache by (date, portfolio hash)
 - 8 categories: Risk Alert, Rebalance, Tax Opportunity, Earnings Watch, Benchmark Lag, Protect Gains, Diversify, Strong Hold
@@ -34,9 +36,9 @@ Premium polish queue is empty. Likely next moves: demo video, YC application, pr
 Three-button stack, right-aligned, fixed to bottom. AI is the primary action and is bigger than the other two.
 
 Desktop:
-- AI (gold gradient): 60×60, bottom 24, right 24 — always rendered (PublicAIChat on public pages, dashboard AI on `/app`)
-- Feedback (flag): 44×44, bottom 32, right 96 — global, every page
-- Customize (grid): 44×44, bottom 32, right 152 — dashboard `overview` tab only
+- AI (gold gradient): 60×60, bottom 24, right 24 - always rendered (PublicAIChat on public pages, dashboard AI on `/app`)
+- Feedback (flag): 44×44, bottom 32, right 96 - global, every page
+- Customize (grid): 44×44, bottom 32, right 152 - dashboard `overview` tab only
 
 Mobile (≤768px):
 - AI: 56×56, bottom 24, right 24
@@ -70,15 +72,15 @@ Never show a number without explaining what it means. Never explain what somethi
 ### Frontend (Next.js on Vercel)
 ```bash
 cd frontend
-npm run dev        # start dev server at localhost:3000
-npm run build      # production build (also runs type check)
-npm run lint       # ESLint
+npm run dev # start dev server at localhost:3000
+npm run build # production build (also runs type check)
+npm run lint # ESLint
 ```
 
 ### Backend (FastAPI on Railway)
 ```bash
 cd backend
-uvicorn main:app --reload --port 8000   # local dev with hot reload
+uvicorn main:app --reload --port 8000 # local dev with hot reload
 ```
 
 Backend env vars must be in `backend/.env`. Frontend env vars in `frontend/.env.local`. See `frontend/.env.local.example` and `backend/.env.example` for required keys.
@@ -93,25 +95,25 @@ Migrations live in `supabase/migrations/`. Apply them manually in the Supabase d
 ### Repository layout
 ```
 portfolio_v2/
-  frontend/          Next.js app (Vercel)
-    app/app/page.tsx   main authenticated dashboard — all state lives here
-    app/page.tsx       public homepage — has its own inline nav
-    components/        all reusable components
-    lib/
-      supabase.ts      browser Supabase singleton (always import from here)
-      api.ts           typed fetch helpers for every backend route
-    middleware.ts      SSR session refresh — must never be deleted
-  backend/
-    main.py            entire FastAPI backend (~4500 lines, single file)
-  supabase/
-    migrations/        SQL files applied manually to the Supabase project
+ frontend/ Next.js app (Vercel)
+ app/app/page.tsx main authenticated dashboard - all state lives here
+ app/page.tsx public homepage - has its own inline nav
+ components/ all reusable components
+ lib/
+ supabase.ts browser Supabase singleton (always import from here)
+ api.ts typed fetch helpers for every backend route
+ middleware.ts SSR session refresh - must never be deleted
+ backend/
+ main.py entire FastAPI backend (~4500 lines, single file)
+ supabase/
+ migrations/ SQL files applied manually to the Supabase project
 ```
 
 ### Main app data flow
 
 `app/app/page.tsx` owns all global state:
-- `assets`: array of `{ticker, weight, costBasis?, manualReturn?}` — the user's portfolio
-- `data`: the full portfolio analysis result from `GET /portfolio` — passed as props to every analysis component
+- `assets`: array of `{ticker, weight, costBasis?, manualReturn?}` - the user's portfolio
+- `data`: the full portfolio analysis result from `GET /portfolio` - passed as props to every analysis component
 - `activeTab`: which of the eight tabs is visible
 - Analysis is triggered by `handleAnalyze()`, which calls `fetchPortfolio()` from `lib/api.ts`
 
@@ -123,19 +125,19 @@ The `TABS` constant defines the tab bar. Adding a new tab requires:
 
 `backend/main.py` is a single file. Top-to-bottom layout:
 1. Imports, env vars, startup prints, rate limiter
-2. FastAPI lifespan — starts 5 background asyncio tasks on startup: `price_alert_loop`, `morning_brief_loop`, `morning_briefing_email_loop`, `week_in_review_loop`, `monthly_summary_loop`
+2. FastAPI lifespan - starts 5 background asyncio tasks on startup: `price_alert_loop`, `morning_brief_loop`, `morning_briefing_email_loop`, `week_in_review_loop`, `monthly_summary_loop`
 3. CORS middleware
 4. All route handlers with inline helper functions
 5. Background task implementations (bottom third of the file)
 
 Key routes already implemented:
-- `GET /portfolio` — main analysis: Sharpe, CAGR, VaR, correlation, sector, etc.
-- `GET /options/{ticker}?date=` — options chain via yfinance, 15-min cache (already fully built)
-- `GET /stock/{ticker}` — fundamentals + analyst ratings via yfinance
-- `GET /news?tickers=` — news with Finnhub as fallback
-- `POST /chat` — Claude-powered AI chat with rate limiting and usage tracking
-- `GET /market-brief` — cached AI market summary (5-min TTL)
-- `GET /earnings-calendar`, `GET /events-calendar` — calendar data
+- `GET /portfolio` - main analysis: Sharpe, CAGR, VaR, correlation, sector, etc.
+- `GET /options/{ticker}?date=` - options chain via yfinance, 15-min cache (already fully built)
+- `GET /stock/{ticker}` - fundamentals + analyst ratings via yfinance
+- `GET /news?tickers=` - news with Finnhub as fallback
+- `POST /chat` - Claude-powered AI chat with rate limiting and usage tracking
+- `GET /market-brief` - cached AI market summary (5-min TTL)
+- `GET /earnings-calendar`, `GET /events-calendar` - calendar data
 
 ### External services and env vars
 
@@ -150,48 +152,48 @@ Key routes already implemented:
 
 ### Authentication pattern
 
-- Frontend: `lib/supabase.ts` exports a singleton browser client. Always import from here — never call `createClient` inline.
+- Frontend: `lib/supabase.ts` exports a singleton browser client. Always import from here - never call `createClient` inline.
 - `middleware.ts` calls `supabase.auth.getUser()` on every request to refresh expired JWTs. Without it, SSR pages receive stale sessions.
 - Backend: some routes accept an optional `user_id` query param. They verify it by calling `supabase.auth.admin.getUser(token)` via the service role key, falling back to unauthenticated behavior when not provided.
 
 ### StockDetail tab system
 
-`StockDetail.tsx` has its own internal tab switcher between "Overview" and "Insider Activity". The Options Chain tab was removed in v0.24 — do not re-add it.
+`StockDetail.tsx` has its own internal tab switcher between "Overview" and "Insider Activity". The Options Chain tab was removed in v0.24 - do not re-add it.
 
 ---
 
-## Critical Rules — Never Break These
+## Critical Rules - Never Break These
 
-- `initial={false}` on ALL `motion.*` components, every single one, no exceptions — add comment `// initial={false} required — do not remove`; audit every new component
+- `initial={false}` on ALL `motion.*` components EXCEPT those using `whileInView`. For whileInView reveals: use the IntersectionObserver-based `ScrollReveal` helper in `app/page.tsx`, OR set an explicit inverse `initial={{ opacity: 0, y: 30 }}` state. NEVER pair `initial={false}` with `whileInView` (reveal becomes a no-op).
 - No emojis anywhere in the app
-- No em dashes anywhere — not in code, not in AI responses, not in copy
+- No em dashes anywhere - not in code, not in AI responses, not in copy
 - No asterisks in AI responses
 - Space Mono font for all numbers and monospace text
-- All colors use CSS variables only — never hardcode dark colors
-- SVG icons only — no emoji icons
+- All colors use CSS variables only - never hardcode dark colors
+- SVG icons only - no emoji icons
 - Always add "Commit and push." to the end of every Claude Code prompt
 - Vinay uses Claude Code inside VS Code, not standalone terminal
-- Supabase client must always be imported from `lib/supabase.ts` singleton, never instantiated inline — inline clients omit `cookieOptions` and cause sessions to expire on browser close
-- `middleware.ts` must exist at the frontend repo root and call `supabase.auth.getUser()` on every request — without it, SSR pages receive expired JWTs and users get silently logged out
-- Monte Carlo simulations always run exactly 8,500 paths — never 5,000 or any other number
-- `overscroll-behavior: none` must be set globally in `globals.css` on `html`, `body`, and all major layout containers — never remove this
+- Supabase client must always be imported from `lib/supabase.ts` singleton, never instantiated inline - inline clients omit `cookieOptions` and cause sessions to expire on browser close
+- `middleware.ts` must exist at the frontend repo root and call `supabase.auth.getUser()` on every request - without it, SSR pages receive expired JWTs and users get silently logged out
+- Monte Carlo simulations always run exactly 8,500 paths - never 5,000 or any other number
+- `overscroll-behavior: none` must be set globally in `globals.css` on `html`, `body`, and all major layout containers - never remove this
 - AI chat endpoint (`POST /chat`) uses `claude-sonnet-4-6` with `web_search` tool enabled and streaming responses
-- Never use `animate={{ opacity: 0 }}` or `animate={{ y: X }}` together with `whileInView` — use inline CSS `opacity: 0` and `transform` for the initial hidden state instead; combining both causes the animation to fire immediately and skip the scroll trigger
-- `market_close_summary` column exists in the `email_preferences` Supabase table — do not re-add it in migrations
-- Both feedback and AI chat buttons render from `app/layout.tsx` globally — do not add them to individual pages or they will appear twice
-- Market hours countdown always shows time until next open or close — "After Hours", "Closed", and weekend states must include a live countdown, not a static label
-- GSAP is installed (`gsap` package) — ScrollTrigger and SplitText are available; use them for landing page and public page animations
-- `ParticleCanvas` component lives in `app/page.tsx` using Three.js, `position: fixed`, `z-index: 0` — do not move or re-implement it
-- Income & Tax and Transactions are sections inside the Positions tab — not standalone tabs
-- Paper Trade is removed from the app entirely (removed from Learn tab in v0.24) — do not re-add it
-- Options Chain is removed from StockDetail entirely (removed in v0.24) — StockDetail has Overview + Insider Activity tabs only
-- Period and Benchmark selectors are only in chart controls — not in sidebar
+- Never use `animate={{ opacity: 0 }}` or `animate={{ y: X }}` together with `whileInView` - use inline CSS `opacity: 0` and `transform` for the initial hidden state instead; combining both causes the animation to fire immediately and skip the scroll trigger
+- `market_close_summary` column exists in the `email_preferences` Supabase table - do not re-add it in migrations
+- Both feedback and AI chat buttons render from `app/layout.tsx` globally - do not add them to individual pages or they will appear twice
+- Market hours countdown always shows time until next open or close - "After Hours", "Closed", and weekend states must include a live countdown, not a static label
+- GSAP is installed (`gsap` package) - ScrollTrigger and SplitText are available; use them for landing page and public page animations
+- `ParticleCanvas` is a Canvas2D component (NOT Three.js) wrapped by `ConditionalParticleCanvas` mounted globally from `app/layout.tsx`. It hides on `/app/*` and `/learn/*`. `position: fixed`, `z-index: 0`, `pointer-events: none`. Do not re-implement or move into `app/page.tsx`.
+- Income & Tax and Transactions are sections inside the Positions tab - not standalone tabs
+- Paper Trade is removed from the app entirely (removed from Learn tab in v0.24) - do not re-add it
+- Options Chain is removed from StockDetail entirely (removed in v0.24) - StockDetail has Overview + Insider Activity tabs only
+- Period and Benchmark selectors are only in chart controls - not in sidebar
 
 ## Mobile Rules
 
 - All mobile fixes must use `max-width: 768px`
 - Never touch desktop styles when fixing mobile
-- Desktop is the source of truth — mobile adapts to it
+- Desktop is the source of truth - mobile adapts to it
 
 ## CSS Variables
 
@@ -199,59 +201,123 @@ Key routes already implemented:
 - `--text`, `--text2`, `--text3`, `--text-muted`
 - `--accent` (`#c9a84c` dark dashboard, `#b8860b` dark, `#8b6914` light)
 - Themes set via `[data-theme="dark"]` and `[data-theme="light"]` in `globals.css`
-- Light mode is the default for new/logged-out users — localStorage key is `corvo_theme`
+- Light mode is the default for new/logged-out users - localStorage key is `corvo_theme`
 
 ## Key Things Never to Break
 
-- The double backend/backend path issue on Railway — always edit `backend/main.py`, confirm Railway serves the right file
-- Sharpe ratio uses live `^IRX` T-bill rate — never hardcode `rf_rate`
+- The double backend/backend path issue on Railway - always edit `backend/main.py`, confirm Railway serves the right file
+- Sharpe ratio uses live `^IRX` T-bill rate - never hardcode `rf_rate`
 - CAGR label is dynamic based on selected period
 - AI insights must never single out one holding as largest when multiple share equal weight
 - What-If analysis requires weights to total 100% before running
-- Morning briefing uses actual yfinance 1D price data for holdings — never estimate
+- Morning briefing uses actual yfinance 1D price data for holdings - never estimate
 - Money market tickers (ending in `XX`, or in `CASH_TICKERS` list) get synthetic 4.5% price series
 
 ---
 
 ## Stack
 
-- Frontend: Next.js 16, deployed on Vercel — `frontend/`
-- Backend: FastAPI, deployed on Railway — `backend/main.py`
+- Frontend: Next.js 16, deployed on Vercel - `frontend/`
+- Backend: FastAPI, deployed on Railway - `backend/main.py`
 - Database: Supabase (Postgres + Auth + RLS)
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.27
+- Version: v0.28
 
 ## What Was Built
 
+### v0.28 (May 11, 2026) - audit-driven security + cleanup pass
+
+**Backend security**
+- `POST /portfolio/snapshot`, `PATCH /price-targets/{id}`, `DELETE /price-targets/{id}`, `POST /parse-portfolio-image` now JWT-verify the caller and 403 on user_id mismatch (closed 3 IDOR vulnerabilities flagged in audit)
+- `GET /referrals`, `GET /chat/usage`, `GET /portfolio/history`, `POST /unsubscribe` now require auth; user_id is derived from the token, not the request
+- `/chat` SSE error stream and `/parse-portfolio-image` no longer leak raw exception strings to the client
+- New `_client_ip(request)` helper reads X-Forwarded-For first, so rate limit buckets work per-client behind Railway's proxy (was per-deployment global)
+- `check_rate_limit` uses OrderedDict with LRU eviction capped at 50000 keys. `_image_parse_daily` capped at 5000. `_market_per_ticker_cache` capped at 500.
+- Rate limits added to `/prices`, `/search-ticker`, `/market-summary`, `/market-brief`, `/market-driver`, `/earnings-calendar`, `/earnings/transcript/{ticker}`, `/portfolio/health-score`
+- `/montecarlo/insight` and `/portfolio/retirement-simulation` now force `req.simulations = 8500` regardless of client input (was a critical rule violation per CLAUDE.md)
+- Push notification title emoji removed
+- 8 background loops gain staggered startup delays (30 to 240s) to avoid yfinance dogpiles on cold boot
+- 6 bare `except:` clauses promoted to `except Exception:`
+- Daily-signal tied-largest-holding guard added (returns "N holdings tied" descriptor instead of singling out one when weights are equal)
+- Dead `/docs-check` route removed
+- All Paper Trade routes + helpers deleted (~270 lines from main.py)
+
+**Frontend security & cleanup**
+- backend/.env, frontend/.env.local.bak, frontend/.env.local.save untracked from git (key rotation still required for ANTHROPIC_API_KEY)
+- backend/.env.example corruption fixed (newlines + real anon key replaced with placeholder)
+- `lib/api.ts` now throws on missing NEXT_PUBLIC_API_URL in production. 33 files migrated from local `process.env... || "http://localhost:8000"` fallbacks to centralized `RESOLVED_API_URL` export
+- `middleware.ts` `supabase.auth.getUser()` wrapped in try/catch so transient Supabase outage no longer 500s the site
+- New `app/error.tsx` segment-level error boundary (was only `global-error.tsx` for root)
+- New `lib/theme.ts` helper (`cssVar`, `plotlyHoverlabel`, `currentTheme`) for libraries that cannot read CSS vars directly
+- 17 console.error / console.warn statements wrapped in `process.env.NODE_ENV !== "production"` guards
+
+**Dead code purge**
+- Deleted 9 unused/orphan components: PaperTrading, PriceTargetTracker, DividendTracker, EarningsImpactPreview, PeerComparison, PortfolioCompareTab, PortfolioHeartbeat, PortfolioHistory, MobileBottomNav
+- Migration `paper_trading.sql` deleted; new migration `20260511000100_drop_paper_trading.sql` drops the underlying tables
+- Removed MobileBottomNav references from app/app/page.tsx (it was force-hidden via CSS dead code)
+
+**Em / en dash sweep**
+- 330 em dashes and 42 en dashes replaced across 79 project source files (.ts, .tsx, .py, .css, .md, .sql, .html)
+- AGENTS.md em dash removed
+- CLAUDE.md em dashes removed too
+
+**Light / dark mode**
+- 3 compare pages (Bloomberg, Yahoo Finance, Robinhood) converted from inline hex (#0a0e14 page bg, #e8e0cc text, #0d1117 bg2, #111620 card-bg) to CSS variables. 39 hex literals replaced.
+- Plotly hoverlabel colors in PerformanceChart, MonteCarloChart, StockCompare, StockDetail, CorrelationHeatmap now theme-aware via the new `plotlyHoverlabel()` / `cssVar()` helpers
+- Toggle knobs in settings and dashboard use new `--toggle-knob` and `--toggle-knob-shadow` CSS variables (defined in both `[data-theme="dark"]` and the light root)
+- SharePortfolio canvas-rendering helper reads CSS variables at runtime instead of hardcoded hex
+
+**Mobile breakpoints**
+- 7 wrong-breakpoint media queries (max-width 900, 600, 767) standardized to 768 in app/page.tsx, app/faq/page.tsx, app/blog/layout.tsx, components/PublicNav.tsx, components/Footer.tsx
+
+**Mobile polish**
+- Customize FAB gains `corvo-customize-btn` class and repositions to `right: 136px` on mobile (no longer overlaps Feedback or runs off-screen)
+- InstallBanner gains `corvo-install-banner` class and stacks above the FAB row on mobile (`bottom: 80px`)
+- OnboardingTour tooltip clamps to viewport on both axes (no more off-screen on narrow phones)
+- Mobile tab bar bumped from `height: 40` to `height: 44` (touch target spec), padding 11 to 14, gains `mobTabsRef` + scrollIntoView effect so active tab is always visible after back/forward navigation
+
+**Motion reveal anti-pattern fix**
+- 34 `motion.div` blocks with broken `whileInView + initial={false}` combo (app/page.tsx + 3 compare pages) rewritten with explicit inverse initial state matching the whileInView target
+- `FadeUp`, `SlideIn`, `Reveal` helpers in app/page.tsx now delegate to the IntersectionObserver-based `ScrollReveal`
+- CLAUDE.md rule updated: `initial={false}` is required EXCEPT when paired with `whileInView`
+
+**Supabase RLS**
+- New migration `20260511000000_security_hardening.sql`:
+  - Adds `Users read own health scores` policy on health_score_cache (RLS was enabled with zero policies, locking the table to service role only)
+  - Drops the blanket `Authenticated users can read all profiles` policy (was leaking bonus_messages_per_day, referral_credited, life_events, financial_goals, etc.)
+  - Adds tighter `Users read own profile` policy on profiles
+  - Creates `get_leaderboard(p_limit int)` SECURITY DEFINER RPC that exposes only id / display_name / xp for the leaderboard view
+- `app/learn/page.tsx` leaderboard migrated from direct `profiles` SELECT to `supabase.rpc("get_leaderboard", { p_limit: 10 })`
+
 ### v0.27 (May 11, 2026)
-- Sidebar / portfolio builder polish — sticky header eyebrow promoted to gold 10px Space Mono with refined holdings count chip (rgba 201,168,76 tint). Total-weight badge gained gold-tinted background when unbalanced + rounded 6px corners. Holding row dots 4→6px with `box-shadow` glow. Weight bar 3→4px with gold gradient + soft shadow. Add Asset button got dashed border + plus-icon + hover lift to amber. Portfolio Value section now has its own gold-eyebrow header (Space Mono), bigger 14px value input with gold $ prefix, faint gradient backdrop. Reinvest toggle pill refined (font-weight 700, drop shadow on green dot, hover lift). "Edit with AI" sidebar row rebuilt with gold-tinted icon container (22×22 rounded square), Space Mono uppercase label, 2px gold left-rail accent when expanded. SavedPortfolios got gold-eyebrow "SAVED" header + premium "Save" pill button with plus icon, and chip cards now have 2px gold border-left accent on hover with 1px translateX lift.
-- Modals standardization — `InfoModal` (gold eyebrow + Space Mono 18px title + 28×28 gold-hover close) pattern applied to: ShareImageModal, dashboard customizer, NL edit preview (now has a real title — "Preview impact" or "Review changes"), Presets modal, CSV import modal, WhatIfDrawer. All eyebrows now use letter-spacing 0.22em + var(--font-mono). All close buttons standardized to 28×28 with `var(--bg3)` background + gold border-color/color on hover.
-- App top bar premium pass (incremental on v0.26) — backdrop-blur(14px) + saturate(140%), shadow gained 4% gold tint at top edge. Active tab underline now has a 3-stop gold gradient (60%→100%→60%) for a soft glow taper, plus secondary inner shadow. Inactive tabs gain a 3% gold-tinted background on hover + brighten to var(--text). Alert bell, dark-mode toggle, and Export pill all gained gold-accent hover (border + color + background) — Export shifts to gold pill when open. Alert dot got a 6px gold glow.
-- Loading / "analyzing" state — `AnalysisSteps` rebuilt. New 84px ambient orb up top: two rotating gold orbit rings (8s + 14s reverse), inner 56px gold sphere with radial gradient + pulsing box-shadow + Corvo star icon with drop shadow. New gold eyebrow "ANALYZING PORTFOLIO" + Space Mono 17px headline that swaps to the active step with a 0.4s fade-in. Step rows now show an active state — gold-tinted circle with breathing pulse, 0 0 10px gold glow, three animated trailing dots. Active step label brightens to var(--text) at weight 600. Done rows fade to opacity 0.65 (was 1).
-- 404 / not-found / global error pages — both rebuilt to brand language. `app/not-found.tsx` now has a Corvo-logo orb with two rotating gold rings + pulse animation, gold "ERROR 404" eyebrow, gold→half-amber linear-gradient text-clip on the 404 numeral, Space Mono headline, premium gold CTA with drop shadow. `app/global-error.tsx` upgraded from default sans-serif div to red-orb-with-warning-triangle pattern, "UNEXPECTED ERROR" eyebrow, Space Mono headline, copy now mentions "Corvo hit an unexpected error" + that the issue was reported, premium gold Reload button.
-- Bottom toolbar buttons (AI / Feedback / Customize, 48×48 fixed bottom-right) — all three lift on hover via Framer Motion (`whileHover={{ y: -1 }}`), tap-shrink via `whileTap`. AI Chat button now uses a 155° amber→gold→darker-gold linear gradient with inner-top white highlight, 24px gold drop shadow → 32px gold drop shadow + 4px gold ring + brighter inner highlight on hover, text-shadow on the "AI" label. Feedback + Customize gain matching premium hover (gold-tint background + gold border + gold color + gold ring shadow + 0.04 inner highlight). FeedbackModal header standardized to InfoModal pattern (gold eyebrow + Space Mono 18px title + 28×28 gold-hover close).
-- Settings row-level UI controls — Toggle redesigned: 40×22 with gold linear-gradient background when on, 1px gold-tinted ring + 12px gold glow + inset shadow + 0.5px gold border, knob 17×17 with subtle off-white gradient + deeper drop shadow + hairline outer-stroke. Period selector now a single segmented pill (3px padding, var(--bg3) background, 0.5px border) with the active option getting a solid gold pill + 0.4 letter-spacing + 8px gold drop shadow; inactive options hover-brighten. inputStyle / selectStyle gained `transition` and now get a gold focus ring (0.55 border + 3px gold halo + bg2 background) and var(--border2) on plain hover via a global `.s-content` CSS rule. btnOutline gained gold border + gold color + gold-tinted background on hover via `.s-btn-outline`. btnSave got 12px gold drop shadow + transform-translateY hover lift + 18px gold drop shadow on hover via `.s-btn-save`. Row label promoted from 500 to 600 weight with -0.1 letter-spacing; desc copy gets 1.5 line-height.
-- AI Chat panel — second polish pass on top of v0.26. Header icon buttons (history / export / close) gained var(--bg3) background + premium gold-tinted hover (border + background + color). Context bar toggle bumped from 28×16 plain pill to 30×17 with green linear-gradient + 1px green ring + 8px green glow + inset shadow + premium knob with subtle gradient/outline-stroke; matches Settings Toggle spec. Empty-state suggestion chips lift on hover (`y: -1`), get gold-tinted border + gold-tinted background + brighter text. "Refresh suggestions" link got a proper SVG refresh icon and gold-hover pill background. Message-limit modal upgraded to InfoModal pattern (gold "AI Chat" eyebrow + Space Mono 18px "Message limits" title + 28×28 gold-hover close), inner sections now use gold mini-eyebrows + per-item descriptions, usage bar gained 6px colored glow, "Copy referral link" button gained 14px gold drop shadow + hover translateY-lift. Chat-history sidebar "Chat History" label promoted to gold Space Mono eyebrow with 0.22em letter-spacing; mobile close went from 44×44 transparent to 28×28 bg3 + gold hover. "New Chat" button got tighter hover state (border + bg both gold-tint) and weight bumped to 700.
+- Sidebar / portfolio builder polish - sticky header eyebrow promoted to gold 10px Space Mono with refined holdings count chip (rgba 201,168,76 tint). Total-weight badge gained gold-tinted background when unbalanced + rounded 6px corners. Holding row dots 4→6px with `box-shadow` glow. Weight bar 3→4px with gold gradient + soft shadow. Add Asset button got dashed border + plus-icon + hover lift to amber. Portfolio Value section now has its own gold-eyebrow header (Space Mono), bigger 14px value input with gold $ prefix, faint gradient backdrop. Reinvest toggle pill refined (font-weight 700, drop shadow on green dot, hover lift). "Edit with AI" sidebar row rebuilt with gold-tinted icon container (22×22 rounded square), Space Mono uppercase label, 2px gold left-rail accent when expanded. SavedPortfolios got gold-eyebrow "SAVED" header + premium "Save" pill button with plus icon, and chip cards now have 2px gold border-left accent on hover with 1px translateX lift.
+- Modals standardization - `InfoModal` (gold eyebrow + Space Mono 18px title + 28×28 gold-hover close) pattern applied to: ShareImageModal, dashboard customizer, NL edit preview (now has a real title - "Preview impact" or "Review changes"), Presets modal, CSV import modal, WhatIfDrawer. All eyebrows now use letter-spacing 0.22em + var(--font-mono). All close buttons standardized to 28×28 with `var(--bg3)` background + gold border-color/color on hover.
+- App top bar premium pass (incremental on v0.26) - backdrop-blur(14px) + saturate(140%), shadow gained 4% gold tint at top edge. Active tab underline now has a 3-stop gold gradient (60%→100%→60%) for a soft glow taper, plus secondary inner shadow. Inactive tabs gain a 3% gold-tinted background on hover + brighten to var(--text). Alert bell, dark-mode toggle, and Export pill all gained gold-accent hover (border + color + background) - Export shifts to gold pill when open. Alert dot got a 6px gold glow.
+- Loading / "analyzing" state - `AnalysisSteps` rebuilt. New 84px ambient orb up top: two rotating gold orbit rings (8s + 14s reverse), inner 56px gold sphere with radial gradient + pulsing box-shadow + Corvo star icon with drop shadow. New gold eyebrow "ANALYZING PORTFOLIO" + Space Mono 17px headline that swaps to the active step with a 0.4s fade-in. Step rows now show an active state - gold-tinted circle with breathing pulse, 0 0 10px gold glow, three animated trailing dots. Active step label brightens to var(--text) at weight 600. Done rows fade to opacity 0.65 (was 1).
+- 404 / not-found / global error pages - both rebuilt to brand language. `app/not-found.tsx` now has a Corvo-logo orb with two rotating gold rings + pulse animation, gold "ERROR 404" eyebrow, gold→half-amber linear-gradient text-clip on the 404 numeral, Space Mono headline, premium gold CTA with drop shadow. `app/global-error.tsx` upgraded from default sans-serif div to red-orb-with-warning-triangle pattern, "UNEXPECTED ERROR" eyebrow, Space Mono headline, copy now mentions "Corvo hit an unexpected error" + that the issue was reported, premium gold Reload button.
+- Bottom toolbar buttons (AI / Feedback / Customize, 48×48 fixed bottom-right) - all three lift on hover via Framer Motion (`whileHover={{ y: -1 }}`), tap-shrink via `whileTap`. AI Chat button now uses a 155° amber→gold→darker-gold linear gradient with inner-top white highlight, 24px gold drop shadow → 32px gold drop shadow + 4px gold ring + brighter inner highlight on hover, text-shadow on the "AI" label. Feedback + Customize gain matching premium hover (gold-tint background + gold border + gold color + gold ring shadow + 0.04 inner highlight). FeedbackModal header standardized to InfoModal pattern (gold eyebrow + Space Mono 18px title + 28×28 gold-hover close).
+- Settings row-level UI controls - Toggle redesigned: 40×22 with gold linear-gradient background when on, 1px gold-tinted ring + 12px gold glow + inset shadow + 0.5px gold border, knob 17×17 with subtle off-white gradient + deeper drop shadow + hairline outer-stroke. Period selector now a single segmented pill (3px padding, var(--bg3) background, 0.5px border) with the active option getting a solid gold pill + 0.4 letter-spacing + 8px gold drop shadow; inactive options hover-brighten. inputStyle / selectStyle gained `transition` and now get a gold focus ring (0.55 border + 3px gold halo + bg2 background) and var(--border2) on plain hover via a global `.s-content` CSS rule. btnOutline gained gold border + gold color + gold-tinted background on hover via `.s-btn-outline`. btnSave got 12px gold drop shadow + transform-translateY hover lift + 18px gold drop shadow on hover via `.s-btn-save`. Row label promoted from 500 to 600 weight with -0.1 letter-spacing; desc copy gets 1.5 line-height.
+- AI Chat panel - second polish pass on top of v0.26. Header icon buttons (history / export / close) gained var(--bg3) background + premium gold-tinted hover (border + background + color). Context bar toggle bumped from 28×16 plain pill to 30×17 with green linear-gradient + 1px green ring + 8px green glow + inset shadow + premium knob with subtle gradient/outline-stroke; matches Settings Toggle spec. Empty-state suggestion chips lift on hover (`y: -1`), get gold-tinted border + gold-tinted background + brighter text. "Refresh suggestions" link got a proper SVG refresh icon and gold-hover pill background. Message-limit modal upgraded to InfoModal pattern (gold "AI Chat" eyebrow + Space Mono 18px "Message limits" title + 28×28 gold-hover close), inner sections now use gold mini-eyebrows + per-item descriptions, usage bar gained 6px colored glow, "Copy referral link" button gained 14px gold drop shadow + hover translateY-lift. Chat-history sidebar "Chat History" label promoted to gold Space Mono eyebrow with 0.22em letter-spacing; mobile close went from 44×44 transparent to 28×28 bg3 + gold hover. "New Chat" button got tighter hover state (border + bg both gold-tint) and weight bumped to 700.
 
 ### v0.26 (May 11, 2026)
-- Auth page rebuilt — 56px gold-tinted logo container, "Welcome back / Get started / Magic link / Reset password" headline above tagline ("The advisor watching over your portfolio"), bigger card (460px, 44/40 padding, layered shadow + gold top-edge accent), mode tabs use solid amber active state, OAuth buttons hover with gold accent, primary CTA has gold drop shadow + hover lift, inputs have 4px gold focus glow.
-- AI chat polished — header rebuilt with gold-tinted Corvo logo + two-line "Corvo / AI ADVISOR" title (was plain "Corvo AI" text). Empty state: gold "ALWAYS WATCHING" eyebrow + 17px Space Mono headline + 58px logo container with inner glow. Input grew to 42px min-height with 3px gold focus ring; the plain-text "SEND" button became a 42×42 amber square with a paper-plane SVG icon + drop shadow + hover lift.
-- App top bar premium upgrade — height 52→56px, backdrop-blur(12px), subtle drop shadow. Active tab underline 2→2.5px thick with amber glow. Active tab fontWeight 600→700 with tighter letter-spacing. Inactive tabs hover-lighten.
-- Pricing page rebuilt — feature lists updated to match v0.25 product reality (removed Paper Trading + Watchlist; added Daily Signal, Goal Tracker, three-beat AI Health Score, morning brief + PWA push). New floating "MOST POPULAR" gold pill badge on Pro card. Plan names promoted to 28→25px Space Mono, prices to 56→48px. Subtle vertical gold gradient on Pro card. Killed `amberPulse` animation. Cards lift +6px on hover with deepened shadows. Made cards slightly smaller across the board (max-width 440→400).
-- Public page section padding rhythm matched to homepage features section — pricing/install/faq/about/changelog all now use 80–140px top + bottom on sections (was 0–80px). Mobile rules scaled proportionally.
-- Changelog timeline redesigned — vertical alternating cards → horizontal scroll-snap of 5 thematic chapters (Foundations / Smart & Connected / Mobile, Auth & Math / Income, Email & Tools / The Guardian Era). Solid amber line through dots, card hover lift, dot scale on hover.
+- Auth page rebuilt - 56px gold-tinted logo container, "Welcome back / Get started / Magic link / Reset password" headline above tagline ("The advisor watching over your portfolio"), bigger card (460px, 44/40 padding, layered shadow + gold top-edge accent), mode tabs use solid amber active state, OAuth buttons hover with gold accent, primary CTA has gold drop shadow + hover lift, inputs have 4px gold focus glow.
+- AI chat polished - header rebuilt with gold-tinted Corvo logo + two-line "Corvo / AI ADVISOR" title (was plain "Corvo AI" text). Empty state: gold "ALWAYS WATCHING" eyebrow + 17px Space Mono headline + 58px logo container with inner glow. Input grew to 42px min-height with 3px gold focus ring; the plain-text "SEND" button became a 42×42 amber square with a paper-plane SVG icon + drop shadow + hover lift.
+- App top bar premium upgrade - height 52→56px, backdrop-blur(12px), subtle drop shadow. Active tab underline 2→2.5px thick with amber glow. Active tab fontWeight 600→700 with tighter letter-spacing. Inactive tabs hover-lighten.
+- Pricing page rebuilt - feature lists updated to match v0.25 product reality (removed Paper Trading + Watchlist; added Daily Signal, Goal Tracker, three-beat AI Health Score, morning brief + PWA push). New floating "MOST POPULAR" gold pill badge on Pro card. Plan names promoted to 28→25px Space Mono, prices to 56→48px. Subtle vertical gold gradient on Pro card. Killed `amberPulse` animation. Cards lift +6px on hover with deepened shadows. Made cards slightly smaller across the board (max-width 440→400).
+- Public page section padding rhythm matched to homepage features section - pricing/install/faq/about/changelog all now use 80-140px top + bottom on sections (was 0-80px). Mobile rules scaled proportionally.
+- Changelog timeline redesigned - vertical alternating cards → horizontal scroll-snap of 5 thematic chapters (Foundations / Smart & Connected / Mobile, Auth & Math / Income, Email & Tools / The Guardian Era). Solid amber line through dots, card hover lift, dot scale on hover.
 - Account page: removed Quick Links section (destinations reachable from global nav).
 - Default portfolio value 10k → 50k for new users (dashboard, homepage demo widget, PortfolioBuilder). Existing users keep their stored value.
-- Bug fix — /watchlist-data backend was returning `0` for missing yfinance data, making the dashboard render "+0.00%" instead of "--". Now falls back to `t.info` regularMarketPrice/PreviousClose, and returns nulls when both sources fail. Frontend stops coercing nulls to 0. Fixed math bug in portfolioToday averaging.
-- Auth flow not changed — same Supabase OAuth + magic link + Turnstile captcha, just sharper UI.
+- Bug fix - /watchlist-data backend was returning `0` for missing yfinance data, making the dashboard render "+0.00%" instead of "--". Now falls back to `t.info` regularMarketPrice/PreviousClose, and returns nulls when both sources fail. Frontend stops coercing nulls to 0. Fixed math bug in portfolioToday averaging.
+- Auth flow not changed - same Supabase OAuth + magic link + Turnstile captcha, just sharper UI.
 
 ### v0.25 (May 11, 2026)
 - App UI overhaul: features-page design language applied across every authenticated tab. New `SectionHeader` component (gold eyebrow + Space Mono headline) with scroll-reveal. Dashboard split into 4 named regions (Overview / Analysis / Intelligence / Composition). Positions, Stocks, Simulations tabs all upgraded with the same pattern.
 - Shared component polish: `_CARD_BASE` refined (14px radius, 22-24px padding), `TooltipCardHeader` rebuilt (sentence-case title + optional eyebrow), `InfoModal` upgraded, `IconBtn` with gold-accent hover, performance period selector promoted to premium pill group.
 - Marketing + profile pages: Install/Changelog/FAQ hero badges get pulsing gold dot. Settings/Referrals/Account sections rebuilt with gold accent stripe + Space Mono headlines.
-- Homepage rewrite — "your portfolio's guardian" positioning. New headline "The advisor watching over your portfolio." Hero stats swap "AI Insights" for "Risks Flagged". New pulsing red "Risk flagged · Tech > 60%" floating chip. Features section reframed as "Always watching" / "What Corvo watches for you". Final CTA → "Let Corvo watch your back." Hero scaled up to clamp(32-60px) headline with larger metric cards.
+- Homepage rewrite - "your portfolio's guardian" positioning. New headline "The advisor watching over your portfolio." Hero stats swap "AI Insights" for "Risks Flagged". New pulsing red "Risk flagged · Tech > 60%" floating chip. Features section reframed as "Always watching" / "What Corvo watches for you". Final CTA → "Let Corvo watch your back." Hero scaled up to clamp(32-60px) headline with larger metric cards.
 - AI quality pass: sharpened Corvo voice across chat, Daily Signal, and AI Insights prompts. All three now identity-reframed as "the AI advisor watching over your portfolio" with explicit 3-beat structure (what I see / why it matters / what to consider), banned hedging filler.
 - Security sweep: closed 2 IDOR vulnerabilities (`/portfolio/tax-loss-alert/{user_id}` and `/price-alerts/{alert_id}` DELETE both now JWT-verify caller matches user_id). Fixed RESEND_API_KEY prefix leak in startup logs. Removed raw Supabase error leakage from `/user` DELETE. Added rate limit to tax-loss-alert. Stripped 14 verbose console.log statements from dashboard auto-load.
 - Empty/error states: branded design with gold-tinted icon containers, Space Mono titles, gold-accent CTAs. Default error copy explains Railway cold starts.
@@ -261,7 +327,7 @@ Key routes already implemented:
 - Dashboard customizer redesigned: 540px, 2-col grid, grouped Overview/Analysis/Other, all 14 cards individually toggleable.
 
 ### v0.24 (May 10, 2026)
-- Dashboard: proactive Corvo insight card above metrics — derives specific 2-sentence observation from live portfolio data (no API call), links to AI chat
+- Dashboard: proactive Corvo insight card above metrics - derives specific 2-sentence observation from live portfolio data (no API call), links to AI chat
 - Dashboard customizer: expanded to all cards (tickers, morning brief, WSID); moved to floating button next to AI/feedback
 - UI polish: health score breathing ring, holding sparklines on hover, ambient portfolio glow behind dashboard
 - Tab transitions: direction-aware slide animations when switching tabs
@@ -292,11 +358,11 @@ Key routes already implemented:
 
 ## Deployment
 
-- **Frontend**: push to `main` — Vercel auto-deploys
+- **Frontend**: push to `main` - Vercel auto-deploys
 - **Backend deploy**: always use this exact sequence:
-  ```
-  mkdir -p /tmp/corvo-deploy2/backend && cp ~/Downloads/portfolio_v2/backend/main.py /tmp/corvo-deploy2/backend/ && cp ~/Downloads/portfolio_v2/backend/requirements.txt /tmp/corvo-deploy2/backend/ && cd ~/Downloads/portfolio_v2 && railway up --detach --path-as-root /tmp/corvo-deploy2
-  ```
-- Railway project has `Root Directory = backend` in settings — upload must have a `backend/` subfolder
-- Railway GitHub integration is BROKEN — always deploy manually
+ ```
+ mkdir -p /tmp/corvo-deploy2/backend && cp ~/Downloads/portfolio_v2/backend/main.py /tmp/corvo-deploy2/backend/ && cp ~/Downloads/portfolio_v2/backend/requirements.txt /tmp/corvo-deploy2/backend/ && cd ~/Downloads/portfolio_v2 && railway up --detach --path-as-root /tmp/corvo-deploy2
+ ```
+- Railway project has `Root Directory = backend` in settings - upload must have a `backend/` subfolder
+- Railway GitHub integration is BROKEN - always deploy manually
 - Plain `railway up` times out (.git is 146MB)

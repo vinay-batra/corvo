@@ -67,7 +67,7 @@ const DividendCalendar = memo(function DividendCalendar({
       .then(d => { if (!cancelled) setData(d ?? null); })
       .catch(err => {
         if (!cancelled) {
-          console.error("DividendCalendar fetch error:", err);
+          if (process.env.NODE_ENV !== "production") console.error("DividendCalendar fetch error:", err);
           setError(true);
         }
       })
@@ -77,7 +77,7 @@ const DividendCalendar = memo(function DividendCalendar({
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}

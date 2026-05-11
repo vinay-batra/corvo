@@ -6,8 +6,9 @@ import StockDetail from "./StockDetail";
 import InfoModal from "./InfoModal";
 import { supabase } from "../lib/supabase";
 import { posthog } from "../lib/posthog";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 const STORAGE_KEY = "corvo_watchlist";
 const LISTS_KEY = "corvo_watchlist_lists";
 
@@ -491,7 +492,7 @@ export default function Watchlist() {
             <AnimatePresence initial={false}>
               {switcherOpen && editingListId !== activeListId && (
                 <motion.div
-                  // initial={false} is required — do not remove
+                  // initial={false} is required - do not remove
                   initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }}
                   transition={{ duration: 0.12 }}
                   style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
@@ -509,14 +510,14 @@ export default function Watchlist() {
                         {count > 0 && <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0 }}>{count} {count === 1 ? "asset" : "assets"}</span>}
                         <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
                           <button onClick={e => { e.stopPropagation(); startRename(list.id, list.name, list.icon); }}
-                            style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.1s, background 0.1s" }}
+                            className="corvo-touch-44" style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.1s, background 0.1s" }}
                             onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--bg3)"; }}
                             onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}>
                             <PencilIcon size={10} />
                           </button>
                           {lists.length > 1 && (
                             <button onClick={e => { e.stopPropagation(); deleteList(list.id); }}
-                              style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent", cursor: "pointer", color: "rgba(224,92,92,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, transition: "color 0.1s, background 0.1s" }}
+                              className="corvo-touch-44" style={{ width: 22, height: 22, borderRadius: 5, border: "none", background: "transparent", cursor: "pointer", color: "rgba(224,92,92,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, transition: "color 0.1s, background 0.1s" }}
                               onMouseEnter={e => { e.currentTarget.style.color = "var(--red)"; e.currentTarget.style.background = "rgba(224,92,92,0.06)"; }}
                               onMouseLeave={e => { e.currentTarget.style.color = "rgba(224,92,92,0.4)"; e.currentTarget.style.background = "transparent"; }}>
                               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -574,7 +575,7 @@ export default function Watchlist() {
             <AnimatePresence initial={false}>
               {searchOpen && searchResults.length > 0 && (
                 <motion.div
-                  // initial={false} is required — do not remove
+                  // initial={false} is required - do not remove
                   initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.1 }}
                   style={{ position: "absolute", left: 0, right: 0, top: "calc(100% + 4px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 300, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
@@ -633,7 +634,7 @@ export default function Watchlist() {
       ) : (
         <div style={{ border: "0.5px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
+            <table className="corvo-responsive-table" style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
               <thead>
                 <tr>
                   {["Ticker", "Company", "Price", "Change 1D", "Sparkline", "Sector", "Actions"].map(col => (
@@ -696,7 +697,7 @@ export default function Watchlist() {
                         <td style={{ padding: "0 12px" }}>
                           <div style={{ display: "flex", gap: 4, alignItems: "center" }} onClick={e => e.stopPropagation()}>
                             <button onClick={e => { e.stopPropagation(); remove(item.ticker); }}
-                              style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", transition: "all 0.15s" }}
+                              className="corvo-touch-44" style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", transition: "all 0.15s" }}
                               onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--red)"; e.currentTarget.style.color = "var(--red)"; }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; }}>
                               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

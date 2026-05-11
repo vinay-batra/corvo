@@ -7,6 +7,7 @@ import { fetchCorrelation } from "../lib/api";
 import ErrorState from "./ErrorState";
 import EmptyState from "./EmptyState";
 import InfoModal from "./InfoModal";
+import { cssVar } from "../lib/theme";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
@@ -18,12 +19,19 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [dark, setDark] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
     check();
     const obs = new MutationObserver(check);
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
+  }, []);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   useEffect(() => {
@@ -44,7 +52,7 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
   if (assets.length < 2) {
     return (
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ opacity: 1 }}
         style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "22px 24px" }}>
         <EmptyState
@@ -59,7 +67,7 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
@@ -97,7 +105,7 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
             zmax: 1,
             text: data.matrix.map((row: number[]) => row.map((v: number) => (v ?? 0).toFixed(2))),
             texttemplate: "%{text}",
-            textfont: { color: dark ? "rgba(226,232,240,0.7)" : "#1a1a1a", size: 11 },
+            textfont: { color: cssVar("--text2"), size: 11 },
             hovertemplate: "%{y} / %{x}: %{z:.3f}<extra></extra>",
             showscale: true,
             colorbar: {
@@ -117,7 +125,7 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
             yaxis: { tickcolor: "transparent", gridcolor: "transparent", linecolor: "transparent", autorange: "reversed" },
           }}
           config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
-          style={{ width: "100%", height: 260 }}
+          style={{ width: "100%", height: isMobile ? 240 : 260 }}
         />
         </>
       ) : null}

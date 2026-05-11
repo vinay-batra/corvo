@@ -69,7 +69,7 @@ export default function PublicNav() {
       <style>{`
         .pnav-link:hover { color: var(--accent) !important; }
         .pnav-cta:hover { filter: brightness(1.1) !important; transform: translateY(-1px) !important; }
-        @media(max-width: 900px) {
+        @media (max-width: 768px) {
           .pnav-links { display: none !important; }
           .pnav-actions { display: none !important; }
           .pnav-hamburger { display: flex !important; }

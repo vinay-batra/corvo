@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 const C = { amber: "var(--accent)" };
 
 function sanitize(text: string): string {
-  return text.replace(/\*+/g, "").replace(/—/g, "-").replace(/_{1,2}([^_]+)_{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").trim();
+  return text.replace(/\*+/g, "").replace(/ - /g, "-").replace(/_{1,2}([^_]+)_{1,2}/g, "$1").replace(/`([^`]+)`/g, "$1").trim();
 }
 
 function InsightRow({ text, delay, tag }: { text: string; delay: number; tag?: string }) {
@@ -41,15 +41,15 @@ export default function AiInsights({ data, assets, period, onAskAi }: { data: an
   // Concentration
   if (topAssets.length > 1) {
     if (topAssets.length === assets.length) {
-      insights.push({ tag: "Balance", text: sanitize(`All ${assets.length} holdings are equally weighted at ${(maxWeight * 100).toFixed(0)}% — your portfolio is evenly balanced.`) });
+      insights.push({ tag: "Balance", text: sanitize(`All ${assets.length} holdings are equally weighted at ${(maxWeight * 100).toFixed(0)}% - your portfolio is evenly balanced.`) });
     } else {
       const tiedTickers = topAssets.map(a => a.ticker).join(" and ");
-      insights.push({ tag: "Concentration", text: sanitize(`${tiedTickers} are tied as your largest holdings at ${(maxWeight * 100).toFixed(0)}% each — concentration is shared and looks reasonable.`) });
+      insights.push({ tag: "Concentration", text: sanitize(`${tiedTickers} are tied as your largest holdings at ${(maxWeight * 100).toFixed(0)}% each - concentration is shared and looks reasonable.`) });
     }
   } else if (top && top.weight > 0.4) {
-    insights.push({ tag: "Risk", text: sanitize(`${top.ticker} makes up ${(top.weight * 100).toFixed(0)}% of your portfolio. High single-asset concentration amplifies volatility — consider trimming to under 30%.`) });
+    insights.push({ tag: "Risk", text: sanitize(`${top.ticker} makes up ${(top.weight * 100).toFixed(0)}% of your portfolio. High single-asset concentration amplifies volatility - consider trimming to under 30%.`) });
   } else if (top && top.ticker) {
-    insights.push({ tag: "Concentration", text: sanitize(`${top.ticker} is your largest position at ${(top.weight * 100).toFixed(0)}% — concentration looks manageable.`) });
+    insights.push({ tag: "Concentration", text: sanitize(`${top.ticker} is your largest position at ${(top.weight * 100).toFixed(0)}% - concentration looks manageable.`) });
   }
 
   // Volatility
@@ -57,17 +57,17 @@ export default function AiInsights({ data, assets, period, onAskAi }: { data: an
     const vol = data.portfolio_volatility;
     const baseline = 0.15;
     if (vol > baseline * 1.5) {
-      insights.push({ tag: "Volatility", text: sanitize(`Your portfolio volatility is ${(vol * 100).toFixed(1)}% — significantly above a typical balanced portfolio (15%). Expect larger day-to-day swings.`) });
+      insights.push({ tag: "Volatility", text: sanitize(`Your portfolio volatility is ${(vol * 100).toFixed(1)}% - significantly above a typical balanced portfolio (15%). Expect larger day-to-day swings.`) });
     } else if (vol > baseline) {
-      insights.push({ tag: "Volatility", text: sanitize(`Volatility sits at ${(vol * 100).toFixed(1)}% — slightly elevated versus a typical balanced portfolio (15%), but within a normal range for equity-heavy portfolios.`) });
+      insights.push({ tag: "Volatility", text: sanitize(`Volatility sits at ${(vol * 100).toFixed(1)}% - slightly elevated versus a typical balanced portfolio (15%), but within a normal range for equity-heavy portfolios.`) });
     } else {
-      insights.push({ tag: "Volatility", text: sanitize(`Your portfolio volatility is ${(vol * 100).toFixed(1)}% — lower than a typical balanced portfolio (15%). You are taking on less risk than average.`) });
+      insights.push({ tag: "Volatility", text: sanitize(`Your portfolio volatility is ${(vol * 100).toFixed(1)}% - lower than a typical balanced portfolio (15%). You are taking on less risk than average.`) });
     }
   }
 
   // Diversification
   if (assets.length <= 2) {
-    insights.push({ tag: "Diversification", text: sanitize(`Only ${assets.length} holding${assets.length === 1 ? "" : "s"} — this is heavily concentrated. Consider adding broad ETFs to reduce single-name risk.`) });
+    insights.push({ tag: "Diversification", text: sanitize(`Only ${assets.length} holding${assets.length === 1 ? "" : "s"} - this is heavily concentrated. Consider adding broad ETFs to reduce single-name risk.`) });
   } else if (assets.length >= 4 && data.sector_concentration != null && data.sector_concentration > 0.7) {
     insights.push({ tag: "Sectors", text: sanitize(`High sector concentration at ${(data.sector_concentration * 100).toFixed(0)}% in one sector. A market rotation could disproportionately impact your portfolio.`) });
   } else if (assets.length >= 4) {
@@ -83,7 +83,7 @@ export default function AiInsights({ data, assets, period, onAskAi }: { data: an
     .map(a => {
       const diff = a.normW - equalW;
       const action = diff > 0 ? "Trim" : "Add to";
-      return sanitize(`${action} ${a.ticker} — currently ${(a.normW * 100).toFixed(0)}%, target ${(equalW * 100).toFixed(0)}%`);
+      return sanitize(`${action} ${a.ticker} - currently ${(a.normW * 100).toFixed(0)}%, target ${(equalW * 100).toFixed(0)}%`);
     });
 
   return (

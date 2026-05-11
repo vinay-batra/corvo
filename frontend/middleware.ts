@@ -25,9 +25,18 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh the session if expired — writes updated cookies to supabaseResponse
+  // Refresh the session if expired - writes updated cookies to supabaseResponse
   // so the browser and server stay in sync. Required by @supabase/ssr.
-  await supabase.auth.getUser();
+  // Wrapped in try/catch so a transient Supabase outage does not 500 the
+  // whole site; the request continues with a stale (or anonymous) session and
+  // the client retries on the next navigation.
+  try {
+    await supabase.auth.getUser();
+  } catch (err) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[middleware] supabase.auth.getUser failed:", err);
+    }
+  }
 
   return supabaseResponse;
 }

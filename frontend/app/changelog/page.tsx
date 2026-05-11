@@ -4,8 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { RESOLVED_API_URL } from "../../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 function useReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -280,7 +281,7 @@ export default function ChangelogPage() {
                     marginRight: isLast ? 0 : 56,
                   }}
                 >
-                  {/* Timeline strip — line + dot above card */}
+                  {/* Timeline strip - line + dot above card */}
                   <div style={{ position: "relative", height: 36, marginBottom: 22 }}>
                     {/* Continuous line: extends into the right margin to meet the next card's line */}
                     <div style={{

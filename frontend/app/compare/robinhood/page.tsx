@@ -11,8 +11,8 @@ const EASE = [0.25, 0.1, 0.25, 1] as const;
 function FadeUp({ children, delay = 0, y = 28, style = {} }: { children: React.ReactNode; delay?: number; y?: number; style?: React.CSSProperties }) {
   return (
     <motion.div
-      // initial={false} is required — do not remove
-      initial={false}
+      // initial={{ opacity: 0, y: 30 }} is required - do not remove
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.6, ease: EASE, delay }}
@@ -27,7 +27,7 @@ const FEATURES: [string, boolean, boolean][] = [
   ["AI-Powered Portfolio Chat",           true,  false],
   ["Monte Carlo Simulation",              true,  false],
   ["Sharpe Ratio & Risk Metrics",         true,  false],
-  ["Portfolio Health Score (A–F grade)",  true,  false],
+  ["Portfolio Health Score (A-F grade)",  true,  false],
   ["Correlation Heatmap",                 true,  false],
   ["Benchmark Comparison (S&P 500 etc.)", true,  false],
   ["Custom Price & % Alerts",             true,  true],
@@ -43,7 +43,7 @@ const FEATURES: [string, boolean, boolean][] = [
 
 export default function RobinhoodComparePage() {
   return (
-    <div style={{ background: "#0a0e14", minHeight: "100vh", color: "#e8e0cc", fontFamily: "'Inter',system-ui,sans-serif", overflowX: "hidden" }}>
+    <div style={{ background: "var(--bg)", minHeight: "100vh", color: "var(--text)", fontFamily: "'Inter',system-ui,sans-serif", overflowX: "hidden" }}>
       <style>{`@media(max-width:768px){.cmp-section{padding-left:20px!important;padding-right:20px!important}.cmp-pricing-grid{grid-template-columns:1fr!important;gap:16px!important}.cmp-pricing-grid>*:nth-child(2){display:none!important}}`}</style>
       {/* Nav */}
       <PublicNav />
@@ -53,7 +53,7 @@ export default function RobinhoodComparePage() {
         <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 800, height: 500, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 65%)", pointerEvents: "none" }} />
         <FadeUp>
           <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 20 }}>Comparison · Robinhood vs Corvo</p>
-          <h1 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4.5vw,58px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -2.5, lineHeight: 1.1, maxWidth: 820, margin: "0 auto 24px" }}>
+          <h1 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4.5vw,58px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2.5, lineHeight: 1.1, maxWidth: 820, margin: "0 auto 24px" }}>
             Corvo vs Robinhood:<br />
             <span style={{ color: "#c9a84c" }}>Which is better for retail investors?</span>
           </h1>
@@ -61,7 +61,7 @@ export default function RobinhoodComparePage() {
             Robinhood is built for executing trades. Corvo is built for understanding your portfolio. Get AI-powered risk analytics, Monte Carlo simulation, and Sharpe ratio. All free.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/auth?mode=signup" style={{ padding: "15px 40px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
+            <Link href="/auth?mode=signup" style={{ padding: "15px 40px", borderRadius: 12, background: "#c9a84c", color: "var(--bg)", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
               Try Corvo Free →
             </Link>
             <a href="#comparison" style={{ padding: "15px 40px", borderRadius: 12, border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c", fontSize: 14, fontWeight: 500, textDecoration: "none", background: "transparent" }}>
@@ -92,7 +92,7 @@ export default function RobinhoodComparePage() {
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Key Differences</p>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>Trading vs. understanding</h2>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>Trading vs. understanding</h2>
           </FadeUp>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20 }}>
             {[
@@ -116,7 +116,7 @@ export default function RobinhoodComparePage() {
                 <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: "32px 28px", position: "relative", overflow: "clip", height: "100%" }}>
                   <div style={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
                   <div style={{ fontSize: 28, marginBottom: 16 }}>{card.icon}</div>
-                  <h3 style={{ fontFamily: "Space Mono,monospace", fontSize: 15, fontWeight: 700, color: "#e8e0cc", marginBottom: 12, letterSpacing: -0.3 }}>{card.title}</h3>
+                  <h3 style={{ fontFamily: "Space Mono,monospace", fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 12, letterSpacing: -0.3 }}>{card.title}</h3>
                   <p style={{ fontSize: 14, color: "rgba(232,224,204,0.45)", lineHeight: 1.75, fontWeight: 300 }}>{card.body}</p>
                 </div>
               </FadeUp>
@@ -130,7 +130,7 @@ export default function RobinhoodComparePage() {
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Feature Comparison</p>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>Head-to-head breakdown</h2>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>Head-to-head breakdown</h2>
           </FadeUp>
           <FadeUp delay={0.1}>
             <div style={{ overflowX: "auto" }}>
@@ -152,7 +152,7 @@ export default function RobinhoodComparePage() {
                   {FEATURES.map(([label, corvo, robinhood], ri) => (
                     <motion.tr
                       key={ri}
-                      initial={false}
+                      initial={{ opacity: 0, x: -30 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true, margin: "-40px" }}
                       transition={{ duration: 0.4, ease: EASE, delay: ri * 0.04 }}
@@ -182,7 +182,7 @@ export default function RobinhoodComparePage() {
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Pricing</p>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>Pay less. Understand more.</h2>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>Pay less. Understand more.</h2>
           </FadeUp>
           <div className="cmp-pricing-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 24, alignItems: "center" }}>
             <FadeUp>
@@ -193,7 +193,7 @@ export default function RobinhoodComparePage() {
                 <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10 }}>
                   {["Margin investing", "Bigger instant deposits", "Level II market data", "Higher interest on uninvested cash", "Morningstar research reports"].map((f, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "rgba(232,224,204,0.25)", fontSize: 12 }}>–</span>
+                      <span style={{ color: "rgba(232,224,204,0.25)", fontSize: 12 }}>-</span>
                       <span style={{ fontSize: 12, color: "rgba(232,224,204,0.4)" }}>{f}</span>
                     </div>
                   ))}
@@ -205,7 +205,7 @@ export default function RobinhoodComparePage() {
             </FadeUp>
             <FadeUp delay={0.1}>
               <div style={{ background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 20, padding: "40px 36px", textAlign: "center", boxShadow: "0 0 80px rgba(201,168,76,0.05)", position: "relative" }}>
-                <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "#c9a84c", color: "#0a0e14", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, padding: "4px 16px", borderRadius: 20, textTransform: "uppercase", whiteSpace: "nowrap" }}>For serious investors</div>
+                <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "#c9a84c", color: "var(--bg)", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, padding: "4px 16px", borderRadius: 20, textTransform: "uppercase", whiteSpace: "nowrap" }}>For serious investors</div>
                 <p style={{ fontSize: 11, letterSpacing: 2, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", marginBottom: 16 }}>Corvo</p>
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 52, fontWeight: 700, color: "#c9a84c", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>$0</p>
                 <p style={{ fontSize: 13, color: "rgba(201,168,76,0.4)", marginBottom: 24 }}>always free · no credit card</p>
@@ -228,7 +228,7 @@ export default function RobinhoodComparePage() {
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Real Stories</p>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5 }}>Why Robinhood users add Corvo</h2>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>Why Robinhood users add Corvo</h2>
           </FadeUp>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
             {[
@@ -241,7 +241,7 @@ export default function RobinhoodComparePage() {
                   <div style={{ fontSize: 28, color: "rgba(201,168,76,0.2)", fontFamily: "Georgia,serif", lineHeight: 1, marginBottom: 16, fontWeight: 700 }}>"</div>
                   <p style={{ fontSize: 14, color: "rgba(232,224,204,0.6)", lineHeight: 1.75, fontWeight: 300, marginBottom: 20, fontStyle: "italic" }}>{t.text}</p>
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: "#e8e0cc" }}>{t.name}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{t.name}</p>
                     <p style={{ fontSize: 11, color: "rgba(232,224,204,0.3)", marginTop: 2 }}>{t.role}</p>
                   </div>
                 </div>
@@ -257,13 +257,13 @@ export default function RobinhoodComparePage() {
           <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 24, padding: "72px 48px", boxShadow: "0 0 100px rgba(201,168,76,0.04)", position: "relative", overflow: "clip" }}>
             <div style={{ position: "absolute", top: "-30%", left: "50%", transform: "translateX(-50%)", width: 400, height: 300, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
             <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Ready to Switch?</p>
-            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,3.5vw,42px)", fontWeight: 700, color: "#e8e0cc", letterSpacing: -1.5, marginBottom: 16, lineHeight: 1.2 }}>
+            <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,3.5vw,42px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 16, lineHeight: 1.2 }}>
               It takes 60 seconds.
             </h2>
             <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", marginBottom: 44, lineHeight: 1.8, fontWeight: 300 }}>
               Keep using Robinhood for trades. Use Corvo to understand if those trades are working.
             </p>
-            <Link href="/auth?mode=signup" style={{ display: "inline-block", padding: "16px 48px", borderRadius: 12, background: "#c9a84c", color: "#0a0e14", fontSize: 15, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
+            <Link href="/auth?mode=signup" style={{ display: "inline-block", padding: "16px 48px", borderRadius: 12, background: "#c9a84c", color: "var(--bg)", fontSize: 15, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
               Get Started Free →
             </Link>
             <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", marginTop: 20 }}>No credit card required · Takes 60 seconds to connect your portfolio</p>

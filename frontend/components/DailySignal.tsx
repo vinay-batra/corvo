@@ -277,7 +277,7 @@ export default function DailySignal({ data, assets, portfolioValue, userId, onAs
 
   if (!data || !assets.filter(a => a.ticker && a.weight > 0).length) return null;
   if (loading) return <LoadingSkeleton />;
-  if (error) return null; // Fail silently — don't break dashboard
+  if (error) return null; // Fail silently - don't break dashboard
 
   const cat = signal?.category ?? "Rebalance";
   const cfg = CAT[cat] ?? CAT["Rebalance"];
@@ -298,7 +298,7 @@ export default function DailySignal({ data, assets, portfolioValue, userId, onAs
           <span style={{ color: cfg.color, display: "flex", alignItems: "center" }}>{cfg.icon}</span>
           <span style={{ fontSize: 11, color: "var(--text3)" }}>Today's signal dismissed</span>
           {signal && (
-            <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600 }}>— {signal.headline}</span>
+            <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600 }}> -  {signal.headline}</span>
           )}
         </div>
         <button

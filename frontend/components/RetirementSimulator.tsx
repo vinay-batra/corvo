@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { RESOLVED_API_URL } from "../lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 function fmtDollar(n: number) {
   if (n >= 1_000_000) return "$" + (n / 1_000_000).toFixed(2) + "M";
@@ -129,7 +130,7 @@ function HistogramChart({ counts, edges, ciLow, ciHigh, median, startingValue, c
         />
       </svg>
 
-      {/* X-axis labels: min, two intermediate ticks, max — avoids overlap from preserveAspectRatio="none" */}
+      {/* X-axis labels: min, two intermediate ticks, max - avoids overlap from preserveAspectRatio="none" */}
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3, position: "relative" }}>
         <span style={{ fontSize: 9, color: dark ? "rgba(232,224,204,0.4)" : "#9a9a98" }}>{fmtLabel(minVal)}</span>
         <span style={{ fontSize: 9, color: dark ? "rgba(232,224,204,0.4)" : "#9a9a98", position: "absolute", left: "33%", transform: "translateX(-50%)" }}>{fmtLabel(minVal + valRange / 3)}</span>
@@ -329,7 +330,7 @@ export default function RetirementSimulator({
 
   return (
     <div style={{ padding: "20px 0 4px" }}>
-      {/* Fixed-position tooltip popover — escapes overflow:hidden animation container */}
+      {/* Fixed-position tooltip popover - escapes overflow:hidden animation container */}
       {tooltipInfo && (
         <div
           onMouseDown={e => e.stopPropagation()}
@@ -425,7 +426,7 @@ export default function RetirementSimulator({
         <AnimatePresence initial={false}>
           {advancedOpen && (
             <motion.div
-              // initial={false} required — do not remove
+              // initial={false} required - do not remove
               initial={false}
               animate={{ opacity: 1, height: "auto", marginTop: 10 }}
               exit={{ opacity: 0, height: 0, marginTop: 0 }}
@@ -531,7 +532,7 @@ export default function RetirementSimulator({
       <AnimatePresence initial={false}>
         {loading && (
           <motion.div
-            // initial={false} required — do not remove
+            // initial={false} required - do not remove
             initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -547,7 +548,7 @@ export default function RetirementSimulator({
             </div>
             <div style={{ height: 3, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
               <motion.div
-                // initial={false} required — do not remove
+                // initial={false} required - do not remove
                 initial={false}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.12 }}
@@ -562,7 +563,7 @@ export default function RetirementSimulator({
       <AnimatePresence initial={false}>
         {result && !loading && (
           <motion.div
-            // initial={false} required — do not remove
+            // initial={false} required - do not remove
             initial={false}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}

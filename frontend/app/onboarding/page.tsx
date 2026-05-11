@@ -7,6 +7,7 @@ import { supabase } from "../../lib/supabase";
 import UserMenu from "../../components/UserMenu";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import FinancialGoals, { type FinancialGoal } from "../../components/FinancialGoals";
+import { RESOLVED_API_URL } from "../../lib/api";
 
 // 11 steps → 8: combined age+income into one step, risk+horizon into one step, dropped life events
 const TOTAL = 8;
@@ -278,7 +279,7 @@ function OnboardingContent() {
           updated_at: new Date().toISOString(),
         });
         if (user.app_metadata?.provider && user.app_metadata.provider !== "email") {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          const apiUrl = RESOLVED_API_URL;
           const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || null;
           fetch(`${apiUrl}/send-welcome-email`, {
             method: "POST",
@@ -295,14 +296,14 @@ function OnboardingContent() {
   const canProceed = () => {
     if (step === 0) return answers.investor_type !== "";
     if (step === 1) return answers.primary_goals.length > 0;
-    // Step 2: age + income combined — both required
+    // Step 2: age + income combined - both required
     if (step === 2) return answers.age_range !== "" && answers.income_range !== "";
-    if (step === 3) return true; // portfolio builder — skippable
-    // Step 4: risk + horizon combined — both required
+    if (step === 3) return true; // portfolio builder - skippable
+    // Step 4: risk + horizon combined - both required
     if (step === 4) return answers.risk_tolerance !== "" && answers.investment_horizon !== "";
     if (step === 5) return answers.referral_source !== "";
-    if (step === 6) return true; // financial goals — skippable
-    if (step === 7) return true; // install — always skippable
+    if (step === 6) return true; // financial goals - skippable
+    if (step === 7) return true; // install - always skippable
     return false;
   };
 

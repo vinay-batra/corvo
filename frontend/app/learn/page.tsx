@@ -36,9 +36,10 @@ import {
   CalendarCheck,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import { RESOLVED_API_URL } from "../../lib/api";
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 const AMBER = "var(--accent)";
 const GREEN = "#4caf7d";
 const RED   = "#e05c5c";
@@ -79,7 +80,7 @@ function getAIDifficulty(xp: number): "beginner" | "intermediate" | "advanced" {
 function XPToast({ amount, onDone }: { amount: number; onDone: () => void }) {
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 1.15, y: -20 }}
@@ -175,20 +176,20 @@ function LevelUpModal({ levelName, color, onDone }: { levelName: string; color: 
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000 }}
       onClick={onDone}
     >
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         style={{ background: "var(--bg2)", border: `1.5px solid ${color}55`, borderRadius: 22, padding: "40px 52px", textAlign: "center", maxWidth: 340 }}
         onClick={e => e.stopPropagation()}
       >
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ rotate: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 15, delay: 0.1 }}
           style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}
@@ -324,7 +325,7 @@ function SharpGame({ onXP }: { onXP: (n: number) => void }) {
         </div>
       ) : (
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: isClose ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${isClose ? "rgba(76,175,125,0.35)" : "rgba(224,92,92,0.35)"}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
             <p style={{ fontSize: 14, fontWeight: 500, color: isClose ? GREEN : RED, marginBottom: 5 }}>{isClose ? "Correct" : "Not quite"}</p>
@@ -401,7 +402,7 @@ function BuilderChallenge({ onXP }: { onXP: (n: number) => void }) {
         </button>
       ) : (
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: score >= 2 ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${score >= 2 ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
             <p style={{ fontSize: 14, fontWeight: 500, color: score >= 2 ? GREEN : RED, marginBottom: 5 }}>{score >= 2 ? "Well done!" : "Not quite"}, {score}/3 correct</p>
@@ -427,8 +428,8 @@ const LESSONS = [
       { type: "text", text: "The Sharpe ratio measures how much return you're getting per unit of risk. It was invented by Nobel laureate William Sharpe in 1966." },
       { type: "formula", text: "Sharpe = (Portfolio Return − Risk-Free Rate) ÷ Volatility" },
       { type: "text", text: "A higher Sharpe ratio is better. Here's a rough guide:" },
-      { type: "list", items: ["Below 0: Not compensated for the risk", "0–1: Acceptable, but room for improvement", "1–2: Good risk-adjusted return", "Above 2: Excellent (rare outside specific strategies)"] },
-      { type: "text", text: "The risk-free rate is typically the 3-month US Treasury yield (~4–5%). So a portfolio returning 12% with 20% volatility has a Sharpe of (12 − 4) ÷ 20 = 0.40." },
+      { type: "list", items: ["Below 0: Not compensated for the risk", "0-1: Acceptable, but room for improvement", "1-2: Good risk-adjusted return", "Above 2: Excellent (rare outside specific strategies)"] },
+      { type: "text", text: "The risk-free rate is typically the 3-month US Treasury yield (~4-5%). So a portfolio returning 12% with 20% volatility has a Sharpe of (12 − 4) ÷ 20 = 0.40." },
     ],
     example: {
       problem: "A portfolio returns 12% annually with 20% volatility. The risk-free rate is 4%.",
@@ -452,7 +453,7 @@ const LESSONS = [
       { type: "formula", text: "Max Drawdown = (Trough Value − Peak Value) ÷ Peak Value" },
       { type: "text", text: "Why it matters more than volatility:" },
       { type: "list", items: ["Volatility treats upswings and downswings equally", "Drawdown only captures losing periods", "A -50% drawdown requires a +100% return to break even", "Many investors panic-sell at the trough, locking in losses"] },
-      { type: "text", text: "A max drawdown under 20% is generally manageable. Crypto portfolios often see 60–80% drawdowns." },
+      { type: "text", text: "A max drawdown under 20% is generally manageable. Crypto portfolios often see 60-80% drawdowns." },
     ],
     example: {
       problem: "A portfolio peaks at $10,000 then falls to $7,500 before recovering.",
@@ -602,7 +603,7 @@ const LESSONS = [
     content: [
       { type: "text", text: "Stock valuation is about determining what a company is actually worth (its intrinsic value) and comparing that to the market price. A stock trading below intrinsic value is considered undervalued (a potential buy); above intrinsic value is overvalued." },
       { type: "formula", text: "P/E Ratio = Price Per Share ÷ Earnings Per Share (EPS)" },
-      { type: "list", items: ["P/E of 15 = investors pay $15 for every $1 of annual earnings", "Low P/E: cheaper stock, but could signal low growth expectations", "High P/E: investors expect strong future growth (e.g., tech stocks often trade at 30–50x)", "Forward P/E uses next year's estimated earnings, more forward-looking"] },
+      { type: "list", items: ["P/E of 15 = investors pay $15 for every $1 of annual earnings", "Low P/E: cheaper stock, but could signal low growth expectations", "High P/E: investors expect strong future growth (e.g., tech stocks often trade at 30-50x)", "Forward P/E uses next year's estimated earnings, more forward-looking"] },
       { type: "text", text: "Discounted Cash Flow (DCF) is the gold standard of valuation. You project future cash flows, then discount them back to today's value using a required rate of return. The sum of those discounted flows is the intrinsic value." },
       { type: "formula", text: "Intrinsic Value = Sum of (Future Cash Flows ÷ (1 + Discount Rate)^Year)" },
     ],
@@ -750,7 +751,7 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
   if (loading) return (
     <div style={{ textAlign: "center", padding: "60px 0" }}>
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false}
         animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block", marginBottom: 16 }}>
         <RefreshCw size={32} color={AMBER} />
@@ -774,7 +775,7 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
     if (!questions) return null;
     return (
       <motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
           <BrainCircuit size={48} color={AMBER} />
@@ -827,7 +828,7 @@ function AIPracticeSession({ lesson, xp, onBack }: { lesson: Lesson; xp: number;
       </div>
       {answered && (
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: selected === q.correct ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${selected === q.correct ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
             <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p>
@@ -943,7 +944,7 @@ function ChallengeMode({
       ) : (
         <>
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false}
             animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block", marginBottom: 16 }}>
             <RefreshCw size={32} color={AMBER} />
@@ -956,7 +957,7 @@ function ChallengeMode({
 
   if (phase === "done") return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
         <Trophy size={48} color={AMBER} />
@@ -1000,7 +1001,7 @@ function ChallengeMode({
       {/* Timer bar */}
       <div style={{ height: 4, background: "var(--track)", borderRadius: 2, overflow: "hidden", marginBottom: 18 }}>
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false}
           animate={{ width: `${timerPct}%` }} transition={{ duration: 0.3 }}
           style={{ height: "100%", background: timerColor, borderRadius: 2 }} />
@@ -1025,7 +1026,7 @@ function ChallengeMode({
       </div>
       {answered && (
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }}>
           <div style={{ background: selected === q.correct ? "rgba(76,175,125,0.08)" : "rgba(224,92,92,0.08)", border: `0.5px solid ${selected === q.correct ? "rgba(76,175,125,0.3)" : "rgba(224,92,92,0.3)"}`, borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
             <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p>
@@ -1068,7 +1069,7 @@ function LevelsReference({ currentXp }: { currentXp: number }) {
                   {isCurrentLevel && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: `${lvl.color}22`, color: lvl.color, letterSpacing: 1 }}>YOU ARE HERE</span>}
                 </div>
                 <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "Space Mono, monospace" }}>
-                  {lvl.max === Infinity ? `${lvl.min}+ XP` : `${lvl.min} – ${lvl.max} XP`}
+                  {lvl.max === Infinity ? `${lvl.min}+ XP` : `${lvl.min} - ${lvl.max} XP`}
                 </span>
               </div>
               {!isUnlocked && xpNeeded > 0 && (
@@ -1104,13 +1105,12 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user)).catch(() => {});
     (async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("display_name,xp,id")
-        .gt("xp", 0)
-        .order("xp", { ascending: false })
-        .limit(10);
-      if (!error && data) setEntries(data.map((r: any, i: number) => ({ display_name: r.display_name || "Corvo User", total_points: r.xp ?? 0, id: r.id, rank: i + 1 })));
+      // Use the secure SECURITY DEFINER RPC instead of selecting from `profiles`
+      // directly, so RLS only exposes display_name / xp / id columns.
+      const { data, error } = await supabase.rpc("get_leaderboard", { p_limit: 10 });
+      if (!error && Array.isArray(data)) {
+        setEntries(data.map((r: any, i: number) => ({ display_name: r.display_name || "Corvo User", total_points: r.xp ?? 0, id: r.id, rank: i + 1 })));
+      }
       setLoading(false);
     })();
   }, []);
@@ -1131,7 +1131,7 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
       ) : entries.length === 0 ? (
         <div style={{ textAlign: "center", padding: "24px 0" }}>
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }} style={{ display: "inline-flex", marginBottom: 10, opacity: 0.4 }}>
             <Trophy size={32} color="var(--text3)" />
           </motion.div>
@@ -1144,7 +1144,7 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
             const isMe = user && e.id === user.id;
             return (
               <motion.div
-                // initial={false} is required — do not remove
+                // initial={false} is required - do not remove
                 initial={false} whileHover={{ x: 3 }} key={e.rank} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: isMe ? `${AMBER}12` : "var(--bg2)", border: `0.5px solid ${isMe ? `${AMBER}44` : "var(--border)"}`, borderRadius: 10 }}>
                 <span style={{ width: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {rankLabel(e.rank)}
@@ -1174,7 +1174,7 @@ function Leaderboard({ myPoints }: { myPoints: number }) {
 const CRASH_SCENARIOS = [
   { name: "2008 Financial Crisis", clue: "Lehman Brothers collapsed, banks froze credit, housing market imploded.", answer: 2, options: ["-18%", "-32%", "-57%", "-71%"], correct: 2, explanation: "The S&P 500 fell ~57% from its 2007 peak to March 2009 trough." },
   { name: "COVID Crash 2020",      clue: "Global pandemic declared, economies locked down overnight.", answer: 1, options: ["-15%", "-34%", "-50%", "-60%"], correct: 1, explanation: "The S&P 500 dropped 34% in just 33 days, the fastest bear market ever." },
-  { name: "Dot-com Bust 2000–02",  clue: "Tech valuations collapsed after years of speculative excess.", answer: 2, options: ["-20%", "-35%", "-49%", "-65%"], correct: 2, explanation: "S&P 500 fell 49%. Nasdaq dropped 78% from peak to trough." },
+  { name: "Dot-com Bust 2000-02",  clue: "Tech valuations collapsed after years of speculative excess.", answer: 2, options: ["-20%", "-35%", "-49%", "-65%"], correct: 2, explanation: "S&P 500 fell 49%. Nasdaq dropped 78% from peak to trough." },
   { name: "2022 Rate Hike Cycle",  clue: "Fed raised rates at fastest pace since the 1980s to fight 8% inflation.", answer: 1, options: ["-10%", "-25%", "-40%", "-55%"], correct: 1, explanation: "S&P 500 fell 25.4% in 2022, the worst year since 2008." },
 ];
 function CrashSimulator({ onXP }: { onXP: (n: number) => void }) {
@@ -1209,7 +1209,7 @@ function CrashSimulator({ onXP }: { onXP: (n: number) => void }) {
       </div>
       {sel !== null && (
         <motion.div
-          // initial={false} is required — do not remove
+          // initial={false} is required - do not remove
           initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
           <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p>
         </motion.div>
@@ -1252,7 +1252,7 @@ function OptionsGame({ onXP }: { onXP: (n: number) => void }) {
         })}
       </div>
       {sel !== null && <><motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#a78bfa", color: "#fff", cursor: "pointer" }}>{qi < OPTIONS_QS.length - 1 ? "Next →" : "See Results"}</button></>}
     </div>
   );
@@ -1290,7 +1290,7 @@ function InflationGame({ onXP }: { onXP: (n: number) => void }) {
         })}
       </div>
       {sel !== null && <><motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.explanation}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#4a9eff", color: "#fff", cursor: "pointer" }}>{qi < INFLATION_QS.length - 1 ? "Next →" : "See Results"}</button></>}
     </div>
   );
@@ -1336,7 +1336,7 @@ function FedGame({ onXP }: { onXP: (n: number) => void }) {
         })}
       </div>
       {sel !== null && <><motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 11, fontWeight: 600, color: "#4caf7d", marginBottom: 4 }}>Actual: {q.actualAction}</p><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.why}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: "#4caf7d", color: "#fff", cursor: "pointer" }}>{qi < FED_SCENARIOS.length - 1 ? "Next →" : "See Results"}</button></>}
     </div>
   );
@@ -1382,7 +1382,7 @@ function ValuationShowdown({ onXP }: { onXP: (n: number) => void }) {
         })}
       </div>
       {sel !== null && <><motion.div
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} animate={{ opacity: 1, y: 0 }} style={{ background: "var(--bg2)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}><p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>{q.reason}</p></motion.div><button onClick={next} style={{ padding: "10px 24px", fontSize: 12, fontWeight: 600, borderRadius: 9, border: "none", background: AMBER, color: "#0a0e14", cursor: "pointer" }}>{round < VALUATION_ROUNDS.length - 1 ? "Next Round →" : "See Results"}</button></>}
     </div>
   );
@@ -1805,7 +1805,7 @@ export default function LearnPage({ resetKey }: { resetKey?: number } = {}) {
                   padding: "24px 28px", position: "relative", overflow: "hidden",
                 }}>
                   <motion.div
-                    // initial={false} is required — do not remove
+                    // initial={false} is required - do not remove
                     initial={false}
                     animate={{ x: ["-100%", "200%"] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -1899,7 +1899,7 @@ export default function LearnPage({ resetKey }: { resetKey?: number } = {}) {
               {/* Challenge Mode */}
               <div style={{ marginBottom: 40 }}>
                 <motion.button
-                  // initial={false} is required — do not remove
+                  // initial={false} is required - do not remove
                   initial={false}
                   whileHover={challengeUnlocked ? { scale: 1.01 } : {}}
                   whileTap={challengeUnlocked ? { scale: 0.99 } : {}}
@@ -1929,7 +1929,7 @@ export default function LearnPage({ resetKey }: { resetKey?: number } = {}) {
                     {challengeUnlocked
                       ? <ChevronRight size={16} color={AMBER} />
                       : <motion.div
-                          // initial={false} is required — do not remove
+                          // initial={false} is required - do not remove
                           initial={false} animate={{ opacity: [0.4, 0.7, 0.4] }} transition={{ duration: 2, repeat: Infinity }}><Lock size={14} color="var(--text3)" /></motion.div>}
                   </div>
                 </motion.button>
@@ -1952,7 +1952,7 @@ export default function LearnPage({ resetKey }: { resetKey?: number } = {}) {
                   const isLastOdd = idx === ARCADE_GAMES.length - 1 && ARCADE_GAMES.length % 2 !== 0;
                   return (
                     <motion.button
-                      // initial={false} is required — do not remove
+                      // initial={false} is required - do not remove
                       initial={false}
                       variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
                       whileHover={{ y: -3, boxShadow: `0 8px 32px ${g.color}22` }}
@@ -2053,7 +2053,7 @@ export default function LearnPage({ resetKey }: { resetKey?: number } = {}) {
           {activeSection === "game" && (
             <motion.div key="game" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <motion.button
-                // initial={false} is required — do not remove
+                // initial={false} is required - do not remove
                 initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
               {(() => {
                 const meta = ARCADE_GAMES.find(g => g.id === activeGame);
@@ -2107,7 +2107,7 @@ export default function LearnPage({ resetKey }: { resetKey?: number } = {}) {
           {activeSection === "ai-practice" && activePracticeLesson && (
             <motion.div key="ai-practice" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <motion.button
-                // initial={false} is required — do not remove
+                // initial={false} is required - do not remove
                 initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
               <div style={{ background: "var(--card-bg)", border: "0.5px solid var(--border)", borderRadius: 18, padding: "26px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
@@ -2128,7 +2128,7 @@ export default function LearnPage({ resetKey }: { resetKey?: number } = {}) {
           {activeSection === "challenge" && (
             <motion.div key="challenge" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <motion.button
-                // initial={false} is required — do not remove
+                // initial={false} is required - do not remove
                 initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={() => setActiveSection("home")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}><ChevronLeft size={14} /> Back to Learn</motion.button>
               <div style={{ background: "var(--card-bg)", border: `0.5px solid ${AMBER}55`, borderRadius: 18, padding: "26px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
@@ -2237,10 +2237,10 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
       <motion.button
-        // initial={false} is required — do not remove
+        // initial={false} is required - do not remove
         initial={false} whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }} onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", marginBottom: 22, padding: 0 }}>
         <ChevronLeft size={14} /> Back to lessons
       </motion.button>
@@ -2354,7 +2354,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
             </div>
             {answered && (
               <motion.button
-                // initial={false} is required — do not remove
+                // initial={false} is required - do not remove
                 initial={false} animate={{ opacity: 1, y: 0 }} onClick={nextQ}
                 style={{ width: "100%", padding: "11px", background: AMBER, border: "none", borderRadius: 9, color: "#0a0e14", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 {qi >= lesson.quiz.length - 1 ? "Finish" : "Next"}
@@ -2368,7 +2368,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
               {updatedProgressForDone.length >= lesson.quiz.length ? (
                 <motion.div
-                  // initial={false} is required — do not remove
+                  // initial={false} is required - do not remove
                   initial={false} animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", stiffness: 320, damping: 16, delay: 0.05 }}
                   style={{ filter: "drop-shadow(0 0 8px rgba(76,175,125,0.5))" }}
@@ -2377,7 +2377,7 @@ function LessonView({ lesson, onBack, onXP, progress, onAIPractice }: {
                 </motion.div>
               ) : (
                 <motion.div
-                  // initial={false} is required — do not remove
+                  // initial={false} is required - do not remove
                   initial={false} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 18 }}>
                   <BookOpen size={52} color="var(--text3)" />
                 </motion.div>

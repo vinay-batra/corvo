@@ -2,6 +2,7 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
+import { RESOLVED_API_URL } from "../lib/api";
 
 function Ring({ score, size = 115 }: { score: number; size?: number }) {
   const r = (size - 12) / 2, circ = 2 * Math.PI * r, offset = circ - (score / 100) * circ;
@@ -35,7 +36,7 @@ function Ring({ score, size = 115 }: { score: number; size?: number }) {
             cx={size / 2} cy={size / 2} r={r} fill="none"
             stroke={`url(#${gradId})`} strokeWidth={6}
             strokeLinecap="round" strokeDasharray={circ}
-            // initial={false} required — do not remove
+            // initial={false} required - do not remove
             initial={false} animate={{ strokeDashoffset: offset }}
             transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }}
           />
@@ -43,7 +44,7 @@ function Ring({ score, size = 115 }: { score: number; size?: number }) {
           <motion.circle
             cx={size / 2} cy={6}
             r={4} fill={ringColor}
-            // initial={false} required — do not remove
+            // initial={false} required - do not remove
             initial={false}
             animate={{ opacity: [0, 1, 0.6], scale: [0.5, 1.2, 1] }}
             transition={{ delay: 0.9, duration: 0.5 }}
@@ -52,14 +53,14 @@ function Ring({ score, size = 115 }: { score: number; size?: number }) {
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <motion.p
-            // initial={false} required — do not remove
+            // initial={false} required - do not remove
             initial={false} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
             style={{ fontFamily: "Space Mono,monospace", fontSize, fontWeight: 700, color: ringColor, letterSpacing: -1, lineHeight: 1 }}
           >{score}</motion.p>
         </div>
       </div>
       <motion.p
-        // initial={false} required — do not remove
+        // initial={false} required - do not remove
         initial={false} animate={{ opacity: 1 }} transition={{ delay: 1 }}
         style={{ fontSize: 9, letterSpacing: 2, color: ringColor, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}
       >{label}</motion.p>
@@ -140,7 +141,7 @@ export default function HealthScore({
 
   useEffect(() => {
     if (!data || !data.tickers?.length) return;
-    const base = apiUrl || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const base = apiUrl || RESOLVED_API_URL;
     setLoading(true);
     fetch(`${base}/portfolio/health-score`, {
       method: "POST",
@@ -186,7 +187,7 @@ export default function HealthScore({
                 ? "Strong returns and efficient risk management across all four dimensions."
                 : score >= 50
                 ? "Solid foundation with room to improve risk-adjusted performance."
-                : "Your portfolio needs attention — consider reducing concentration and improving diversification.")}
+                : "Your portfolio needs attention - consider reducing concentration and improving diversification.")}
             </p>
           )}
         </div>

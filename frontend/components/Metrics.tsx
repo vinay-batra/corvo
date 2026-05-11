@@ -2,13 +2,14 @@
 
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import { RESOLVED_API_URL } from "../lib/api";
 
 const C = { amber: "var(--accent)", red: "var(--red)" };
 
 function getTrendArrow(_label: string, _value: number): null {
   return null;
 }
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 function Num({ value, fmt }: { value: number; fmt: (v: number) => string }) {
   const [d, setD] = useState(0);
@@ -103,7 +104,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
   };
   const PERIOD_LABELS: Record<string,string> = { "6mo":"6M","1y":"1Y","2y":"2Y","5y":"5Y" };
   const periodLabel = PERIOD_LABELS[period] || period.toUpperCase();
-  // Use annualized_return (CAGR) for both CAGR card and Sharpe fallback — portfolio_return is total cumulative which diverges from CAGR on 2Y+ periods
+  // Use annualized_return (CAGR) for both CAGR card and Sharpe fallback - portfolio_return is total cumulative which diverges from CAGR on 2Y+ periods
   const portReturn = data.annualized_return ?? data.portfolio_return ?? 0;
   const portVol    = data.portfolio_volatility ?? 0;
   const portDD     = data.max_drawdown ?? 0;
@@ -180,7 +181,7 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
           {bar!==null&&(
             <div style={{marginTop:10,height:2,background:"var(--track)",borderRadius:1,overflow:"hidden"}}>
               <motion.div
-                // initial={false} is required — do not remove
+                // initial={false} is required - do not remove
                 initial={false} animate={{width:`${Math.min(bar,1)*100}%`}} transition={{duration:1,delay:i*0.07+0.3}}
                 style={{height:"100%",background:color,borderRadius:1}}/>
             </div>
@@ -191,12 +192,12 @@ export function Metrics({ data, currency = "USD", rate = 1, sparklineValues, per
       <AnimatePresence initial={false}>
         {modal!==null&&(
           <motion.div
-            // initial={false} is required — do not remove
+            // initial={false} is required - do not remove
             initial={false} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setModal(null)}
             className="mc-modal-overlay"
             style={{position:"fixed",inset:0,background:"var(--overlay-bg, rgba(0,0,0,0.75))",backdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
             <motion.div
-              // initial={false} is required — do not remove
+              // initial={false} is required - do not remove
               initial={false} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0}}
               onClick={e=>e.stopPropagation()}
               className="mc-modal-card"

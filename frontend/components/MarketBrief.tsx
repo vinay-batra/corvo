@@ -93,7 +93,7 @@ function IndexPill({ ticker, change }: { ticker: string; change: number }) {
 function SectionBlock({ label, labelColor, text, delay }: { label?: string; labelColor?: string; text: string; delay: number }) {
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}

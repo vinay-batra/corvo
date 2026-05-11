@@ -76,7 +76,7 @@ export default function FeedbackButton() {
           }
         }
       `}</style>
-      {/* Fixed button: secondary action — sits left of the AI button */}
+      {/* Fixed button: secondary action - sits left of the AI button */}
       <motion.button
         initial={false}
         animate={{ opacity: 1, y: 0 }}

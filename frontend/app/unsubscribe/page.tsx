@@ -5,8 +5,10 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { RESOLVED_API_URL } from "../../lib/api";
+import { supabase } from "../../lib/supabase";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 
 const VALID_TYPES = new Set(["morning_briefing", "week_in_review", "monthly_summary", "price_alerts", "market_close_summary"]);
 
@@ -27,14 +29,23 @@ function UnsubscribeContent() {
       body.type = type;
     }
 
-    fetch(`${API_URL}/unsubscribe`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-      .then((r) => r.json())
-      .then((data) => setStatus(data.ok ? "success" : "error"))
-      .catch(() => setStatus("error"));
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const r = await fetch(`${API_URL}/unsubscribe`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify(body),
+        });
+        const data = await r.json();
+        setStatus(data.ok ? "success" : "error");
+      } catch {
+        setStatus("error");
+      }
+    })();
   }, [userId, type]);
 
   const circleBg =

@@ -79,7 +79,7 @@ function PublicAIChatInner() {
 
   return (
     <>
-      {/* Floating AI bubble — same spec as dashboard, biggest primary action */}
+      {/* Floating AI bubble - same spec as dashboard, biggest primary action */}
       <button
         ref={buttonRef}
         onClick={() => setOpen((o) => !o)}

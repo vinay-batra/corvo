@@ -7,11 +7,13 @@ import { Eye, EyeOff, TrendingUp, CandlestickChart as CandleIcon } from "lucide-
 import InfoModal from "./InfoModal";
 import InsiderActivity from "./InsiderActivity";
 import { supabase } from "../lib/supabase";
+import { RESOLVED_API_URL } from "../lib/api";
+import { plotlyHoverlabel } from "../lib/theme";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
 const STORAGE_KEY = "corvo_watchlist";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = RESOLVED_API_URL;
 const AMBER = "#b8860b";
 const GREEN = "#4caf7d";
 const RED   = "#e05c5c";
@@ -538,8 +540,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
     showlegend: false,
     hovermode: "x unified",
     hoverlabel: {
-      bgcolor: dark ? "#0d1117" : "#ffffff", bordercolor: AMBER + "66",
-      font: { color: dark ? "#e8e0cc" : "#1a1a1a", family: "Space Mono", size: 11 },
+      ...plotlyHoverlabel({ borderColor: AMBER + "66", family: "Space Mono" }),
     },
   };
 
@@ -601,7 +602,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
 
   return (
     <motion.div
-      // initial={false} is required — do not remove
+      // initial={false} is required - do not remove
       initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
@@ -829,7 +830,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({
-                                message: `What happened in the markets on ${clickedDate} that caused ${ticker} to move? Be specific — name the actual event, news, or catalyst. 2-3 sentences max.`,
+                                message: `What happened in the markets on ${clickedDate} that caused ${ticker} to move? Be specific - name the actual event, news, or catalyst. 2-3 sentences max.`,
                                 history: [],
                                 portfolio_context: {},
                                 page_context: "stock chart",

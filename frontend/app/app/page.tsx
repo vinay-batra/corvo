@@ -48,10 +48,10 @@ import ReferralModal from "../../components/ReferralModal";
 import SettingsPage from "../settings/page";
 import GreetingBar from "../../components/GreetingBar";
 import KeyboardShortcutsModal from "../../components/KeyboardShortcutsModal";
+import { RESOLVED_API_URL } from "../../lib/api";
 import PositionsTab from "../../components/PositionsTab";
 import TransactionsTab from "../../components/TransactionsTab";
 import RetirementSimulator from "../../components/RetirementSimulator";
-import MobileBottomNav from "../../components/MobileBottomNav";
 import DashboardTour from "../../components/DashboardTour";
 import { type SavedPortfolioLine } from "../../components/PerformanceChart";
 import EarningsCalendar from "../../components/EarningsCalendar";
@@ -72,7 +72,7 @@ const TABS = [
   { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
   { id: "simulate",    label: "Simulations", Icon: FlaskConical,  href: null },
   { id: "news",        label: "News",        Icon: Newspaper,     href: null },
-  // watchlist and learn tabs hidden — code preserved, add back to TABS to restore
+  // watchlist and learn tabs hidden - code preserved, add back to TABS to restore
 ] as const;
 
 const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
@@ -334,7 +334,7 @@ function AnalysisSteps({ externalStep }: { externalStep?: number }) {
             );
           })}
 
-          {/* AI insights step — final step, stays active until results arrive */}
+          {/* AI insights step - final step, stays active until results arrive */}
           <div style={{ display: "flex", alignItems: "center", gap: 13, padding: "11px 2px", marginTop: 4 }}>
             <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${allDone ? "#5cb88a" : "var(--accent)"}`, background: allDone ? "rgba(92,184,125,0.14)" : "rgba(201,168,76,0.14)", transition: "all 0.3s", boxShadow: !allDone ? "0 0 10px rgba(201,168,76,0.4)" : "none", animation: !allDone ? "step-pulse 1.6s ease-in-out infinite" : "none" }}>
               {allDone
@@ -463,7 +463,7 @@ function useCurrency() {
 
 // ── Push notification prompt ───────────────────────────────────────────────────
 const NOTIF_ASKED_KEY = "corvo_notif_asked";
-const VAPID_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const VAPID_API = RESOLVED_API_URL;
 
 function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -706,7 +706,7 @@ function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => vo
   const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
   const [busy, setBusy] = useState(false);
   const [liveData, setLiveData] = useState<Record<string, WatchlistStockData>>({});
-  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const API = RESOLVED_API_URL;
 
   // Fetch live prices for cards, with localStorage cache (60s TTL)
   useEffect(() => {
@@ -725,7 +725,7 @@ function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => vo
     try {
       const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
       if (cached?.data) applyData(cached.data);
-      if (cached?.ts && Date.now() - cached.ts < TTL) return; // fresh — skip background fetch
+      if (cached?.ts && Date.now() - cached.ts < TTL) return; // fresh - skip background fetch
     } catch {}
 
     const doFetch = () =>
@@ -1116,7 +1116,16 @@ export default function AppPage() {
   const [tabDir, setTabDir]               = useState(0); // -1 = left, 1 = right
   const [analysisStep, setAnalysisStep]   = useState(0);
   const activeTabRef = useRef(activeTab);
+  const mobTabsRef   = useRef<HTMLDivElement | null>(null);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  // Scroll the active tab into view on the mobile tab bar so users always see
+  // which tab they're on even after back/forward navigation.
+  useEffect(() => {
+    const container = mobTabsRef.current;
+    if (!container) return;
+    const btn = container.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`);
+    if (btn) btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [activeTab]);
   const setTabWithDir = (id: string, pushHistory = true) => {
     const from = TAB_IDS.indexOf(activeTabRef.current), to = TAB_IDS.indexOf(id);
     setTabDir(to > from ? 1 : -1);
@@ -1238,7 +1247,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     return () => clearInterval(id);
   }, []);
 
-  // Reinvest dividends preference — read from localStorage (written by PortfolioBuilder)
+  // Reinvest dividends preference - read from localStorage (written by PortfolioBuilder)
   const [reinvestDividends, setReinvestDividends] = useState<boolean>(true);
   useEffect(() => {
     const handler = () => {
@@ -1398,8 +1407,10 @@ const { dark, toggle: toggleDark }  = useTheme();
     }
 
     // Load nav profile and (on first visit per session) redirect to /onboarding if not yet complete
+    let cancelled = false;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
       if (!user) {
         const urlRef = new URLSearchParams(window.location.search).get("ref") || localStorage.getItem("corvo_pending_referral");
         if (urlRef) {
@@ -1425,13 +1436,13 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       // ── Auto-load most recent saved portfolio for returning users ──────────────
       // Runs on every mount so that navigating back to the dashboard always
-      // restores the portfolio — no sessionStorage gate that would break re-entry.
+      // restores the portfolio - no sessionStorage gate that would break re-entry.
       if (!hadLocalRestoreRef.current) {
         const urlParams = new URLSearchParams(window.location.search);
         const hasUrlOverride = !!urlParams.get("portfolio") || urlParams.get("demo") === "true";
         if (!hasUrlOverride) {
           try {
-            // Note: do NOT select 'period' — that column does not exist in the table.
+            // Note: do NOT select 'period' - that column does not exist in the table.
             // Order by updated_at; fall back to created_at if updated_at is absent.
             let portfolioRow: any = null;
             const { data: byUpdated, error: updErr } = await supabase
@@ -1469,13 +1480,15 @@ const { dark, toggle: toggleDark }  = useTheme();
                 setAnalysisStep(0);
                 try {
                   const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "");
+                  if (cancelled) return;
                   if (result && !result.error) {
                     setAnalysisStep(ANALYSIS_STEPS.length);
                     await new Promise(r => setTimeout(r, 400));
+                    if (cancelled) return;
                     setData(result);
                     setLoadedAt(Date.now());
                     setAnimatingIn(true);
-                    setTimeout(() => setAnimatingIn(false), 50);
+                    setTimeout(() => { if (!cancelled) setAnimatingIn(false); }, 50);
                     setTabWithDir("overview");
                     setPortfolioStale(false);
                     lastAnalyzedAssetsRef.current = autoAssets
@@ -1484,13 +1497,13 @@ const { dark, toggle: toggleDark }  = useTheme();
                     if (result.skipped_tickers?.length) setSkippedTickers(result.skipped_tickers);
                   }
                 } catch (fetchErr) {
-                  console.error("[auto-load] fetchPortfolio failed:", fetchErr);
+                  if (process.env.NODE_ENV !== "production") console.error("[auto-load] fetchPortfolio failed:", fetchErr);
                 }
-                setLoading(false);
+                if (!cancelled) setLoading(false);
               }
             }
           } catch (outerErr) {
-            console.error("[auto-load] failed:", outerErr);
+            if (process.env.NODE_ENV !== "production") console.error("[auto-load] failed:", outerErr);
           }
         }
       }
@@ -1512,7 +1525,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       if (alreadyDone) return;
 
       // Safety: if the user already has saved portfolios they have used the
-      // app before — never redirect them to onboarding regardless of flags.
+      // app before - never redirect them to onboarding regardless of flags.
       const { count: portfolioCount } = await supabase
         .from("portfolios")
         .select("id", { count: "exact", head: true })
@@ -1525,6 +1538,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         window.location.replace("/onboarding");
       }
     })();
+    return () => { cancelled = true; };
   }, []);
 
   const handleAnalyze = async (keepData = false) => {
@@ -1578,7 +1592,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             if (match) {
               setSavedPortfolioId(match.id);
               setSavedPortfolioName(match.name || "");
-              const API_SNAP = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+              const API_SNAP = RESOLVED_API_URL;
               const { data: { session: snapSession1 } } = await supabase.auth.getSession();
               const snapTickers1 = valid.map(a => a.ticker).filter(Boolean);
               if (!userId || !match.id || !snapTickers1.length) return;
@@ -1618,7 +1632,7 @@ const { dark, toggle: toggleDark }  = useTheme();
     setWsidLoading(true);
     setWsidError(null);
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API = RESOLVED_API_URL;
       const valid = assets.filter(a => a.ticker && a.weight > 0);
       const total = valid.reduce((s, a) => s + a.weight, 0) || 1;
       const body = {
@@ -1720,16 +1734,31 @@ const { dark, toggle: toggleDark }  = useTheme();
     })();
   }, [assets, userId]);
 
-  // ── Load portfolio performance history when savedPortfolioId is known ────────
+  // Load portfolio performance history when savedPortfolioId is known
   useEffect(() => {
     if (!savedPortfolioId || !userId) { setPerfHistory([]); return; }
     setPerfLoading(true);
-    const API_H = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    fetch(`${API_H}/portfolio/history?portfolio_id=${savedPortfolioId}&user_id=${userId}`)
-      .then(r => r.json())
-      .then(d => setPerfHistory(d.snapshots || []))
-      .catch(() => setPerfHistory([]))
-      .finally(() => setPerfLoading(false));
+    const API_H = RESOLVED_API_URL;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session: histSession } } = await supabase.auth.getSession();
+        const res = await fetch(
+          `${API_H}/portfolio/history?portfolio_id=${savedPortfolioId}`,
+          histSession?.access_token
+            ? { headers: { "Authorization": `Bearer ${histSession.access_token}` } }
+            : {}
+        );
+        if (cancelled) return;
+        const d = await res.json();
+        setPerfHistory(d.snapshots || []);
+      } catch {
+        if (!cancelled) setPerfHistory([]);
+      } finally {
+        if (!cancelled) setPerfLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [savedPortfolioId, userId]);
 
   // ── Auto-snapshot on dashboard load (once per portfolio per session) ──────────
@@ -1742,7 +1771,7 @@ const { dark, toggle: toggleDark }  = useTheme();
     if (hasToday) return;
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl = RESOLVED_API_URL;
     supabase.auth.getSession().then(({ data: { session: snapSession2 } }) => {
       fetch(`${apiUrl}/portfolio/snapshot`, {
         method: "POST",
@@ -1758,7 +1787,12 @@ const { dark, toggle: toggleDark }  = useTheme();
         }),
       }).then(r => {
         if (r.ok) {
-          fetch(`${apiUrl}/portfolio/history?portfolio_id=${savedPortfolioId}&user_id=${userId}`)
+          fetch(
+            `${apiUrl}/portfolio/history?portfolio_id=${savedPortfolioId}`,
+            snapSession2?.access_token
+              ? { headers: { "Authorization": `Bearer ${snapSession2.access_token}` } }
+              : {}
+          )
             .then(r => r.json())
             .then(d => setPerfHistory(d.snapshots || []))
             .catch(() => {});
@@ -1774,7 +1808,7 @@ const { dark, toggle: toggleDark }  = useTheme();
     if (!userId || allSnapshotFiredRef.current) return;
     allSnapshotFiredRef.current = true;
     const today = new Date().toISOString().slice(0, 10);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl = RESOLVED_API_URL;
     (async () => {
       try {
         const { data: { session: snapSession3 } } = await supabase.auth.getSession();
@@ -1864,7 +1898,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         // If the user explicitly disabled push, don't prompt again
         if (data && data.push_notifications === false) return;
       } catch {
-        // No row yet means default true — proceed with prompt
+        // No row yet means default true - proceed with prompt
       }
       setTimeout(() => setShowNotifPrompt(true), 3000);
     })();
@@ -1956,7 +1990,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         </Link>
       </div>
 
-      {/* AI Editor — collapsed by default, expand on demand */}
+      {/* AI Editor - collapsed by default, expand on demand */}
       <div style={{ borderBottom: "0.5px solid var(--border)", position: "relative" }}>
         {aiEditorOpen && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, background: "var(--accent)", boxShadow: "0 0 8px rgba(201,168,76,0.5)" }} />}
         <button
@@ -2119,7 +2153,6 @@ const { dark, toggle: toggleDark }  = useTheme();
           .c-topbar{display:none!important}
           .c-sidebar-logo{display:none!important}
           .c-mob-bar{display:flex!important}
-          .c-mob-bottom-nav{display:none!important}
           .c-metrics{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
           .c-bgrid{grid-template-columns:1fr!important}
           .c-risk-grid{grid-template-columns:1fr!important}
@@ -2146,7 +2179,6 @@ const { dark, toggle: toggleDark }  = useTheme();
         @media(min-width:769px){
           .c-mob-bar{display:none!important}
           .c-mob-drawer{display:none!important}
-          .c-mob-bottom-nav{display:none!important}
         }
         @media(min-width:769px) and (max-width:1100px){
           .c-sidebar{width:clamp(260px,22vw,300px)!important}
@@ -2191,7 +2223,7 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       <div style={{ ...S.main, flexDirection: "row" as const }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, minWidth: 0, overflow: "hidden" }}>
-        {/* Mobile top bar — two rows: brand/actions + tabs */}
+        {/* Mobile top bar - two rows: brand/actions + tabs */}
         <div className="c-mob-bar" style={{ display: "none", flexDirection: "column", borderBottom: "0.5px solid var(--border)", background: "var(--bg2)", flexShrink: 0 }}>
           {/* Row 1: left icons | action icons */}
           <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "0.5px solid var(--border)", padding: "0 4px" }}>
@@ -2256,13 +2288,13 @@ const { dark, toggle: toggleDark }  = useTheme();
               </div>
             </div>
           </div>
-          {/* Row 2: scrollable tab bar */}
-          <div id="tour-mob-tabs" className="c-mob-tabs" style={{ display: "flex", overflowX: "auto", height: 40 }}>
+          {/* Row 2: scrollable tab bar. 44px height meets touch-target spec. */}
+          <div id="tour-mob-tabs" ref={mobTabsRef} className="c-mob-tabs" style={{ display: "flex", overflowX: "auto", height: 44 }}>
             {TABS.map(tab => {
               const isActive = activeTab === tab.id;
-              const ts: React.CSSProperties = { padding: "0 11px", height: 40, fontSize: 12, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "color 0.15s" };
-              if (tab.href) return <Link key={tab.id} href={tab.href} style={ts} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{tab.label}</Link>;
-              return <button key={tab.id} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={ts}>{tab.label}</button>;
+              const ts: React.CSSProperties = { padding: "0 14px", height: 44, minWidth: 44, fontSize: 12, border: "none", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent", background: "transparent", color: isActive ? "var(--text)" : "var(--text3)", cursor: "pointer", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", textDecoration: "none", boxSizing: "border-box" as const, transition: "color 0.15s" };
+              if (tab.href) return <Link key={tab.id} href={tab.href} data-tab={tab.id} style={ts} onClick={() => { try { localStorage.setItem("corvo_saved_assets", JSON.stringify(assets)); if (data) localStorage.setItem("corvo_saved_data", JSON.stringify(data)); } catch {} }}>{tab.label}</Link>;
+              return <button key={tab.id} data-tab={tab.id} onClick={() => { sound.whoosh(); setTabWithDir(tab.id); if (tab.id === "stocks") setStockTicker(null); if (tab.id !== "stocks") setShowStockCompare(false); }} style={ts}>{tab.label}</button>;
             })}
           </div>
         </div>
@@ -2328,7 +2360,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           />
         </header>
 
-        {/* Ambient portfolio glow — barely perceptible, shifts green/red based on period return */}
+        {/* Ambient portfolio glow - barely perceptible, shifts green/red based on period return */}
         {data && (
           <div aria-hidden style={{
             position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
@@ -2559,7 +2591,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </div>
                 )}
 
-                {/* Daily Brief card — whole card toggled by "briefing" switch */}
+                {/* Daily Brief card - whole card toggled by "briefing" switch */}
                 {!hiddenCards.has("briefing") && (
                 <div style={{ opacity: loadedVis(0) ? 1 : 0, transform: loadedVis(0) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                   <DashReveal from="up" delay={0}>
@@ -2575,7 +2607,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>
                 )}
 
-                {/* Daily Signal — AI-generated single actionable recommendation */}
+                {/* Daily Signal - AI-generated single actionable recommendation */}
                 {!hiddenCards.has("signal") && data && (
                   <DashReveal from="up" delay={0.04}>
                     <DailySignal
@@ -2631,7 +2663,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                           What should I do today?
                         </div>
                         <div style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.4 }}>
-                          Get a personalized action plan — rebalancing moves, risk alerts, and market signals specific to your portfolio.
+                          Get a personalized action plan - rebalancing moves, risk alerts, and market signals specific to your portfolio.
                         </div>
                       </div>
                     </div>
@@ -2796,7 +2828,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                       <div style={{ ...S.cardHeader, marginBottom: 0 }}><div style={S.cardAccent} /><span style={S.cardTitle}>Performance</span></div>
                       <div className="c-perf-controls" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        {/* Period selector — gold-tinted active state, premium pill group */}
+                        {/* Period selector - gold-tinted active state, premium pill group */}
                         <div style={{ display: "inline-flex", padding: 3, background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 8, gap: 2 }}>
                           {PERIODS.map(p => (
                             <button key={p} onClick={() => setPeriod(p)}
@@ -2859,7 +2891,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <SectionHeader eyebrow="Intelligence" title="Where Corvo would focus" />
                 )}
 
-                {/* Everything below — Feature 2: delay 400ms */}
+                {/* Everything below - Feature 2: delay 400ms */}
                 <div style={{ opacity: loadedVis(1000) ? 1 : 0, transform: loadedVis(1000) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
 
                 <motion.div
@@ -2873,7 +2905,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     {
                       title: "Health Score",
                       from: "left" as const, delayS: 0.1,
-                      content: <HealthScore data={data} userId={userId} apiUrl={process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"} onAskAi={() => { setChatInitialMessage("Walk me through my health score — what's driving each sub-score and what specific changes would push it higher?"); setChatOpen(true); }} />,
+                      content: <HealthScore data={data} userId={userId} apiUrl={RESOLVED_API_URL} onAskAi={() => { setChatInitialMessage("Walk me through my health score - what's driving each sub-score and what specific changes would push it higher?"); setChatOpen(true); }} />,
                       sections: [
                         { label: "Plain English", text: "A composite score from 0-100 that grades your portfolio on returns, risk-adjusted performance, stability, and resilience." },
                         { label: "Example", text: "Score 78 = Good. Strong returns and Sharpe ratio, but some volatility keeping it from Excellent." },
@@ -2978,7 +3010,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       </div>
                       <div>
                         <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", margin: 0, letterSpacing: -0.2 }}>Save this analysis</p>
-                        <p style={{ fontSize: 11, color: "var(--text3)", margin: "2px 0 0", lineHeight: 1.4 }}>Come back to this portfolio anytime — one click to reload.</p>
+                        <p style={{ fontSize: 11, color: "var(--text3)", margin: "2px 0 0", lineHeight: 1.4 }}>Come back to this portfolio anytime - one click to reload.</p>
                       </div>
                     </div>
                     <button
@@ -3078,7 +3110,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         />
       )}
 
-      {/* Floating AI Chat button — biggest, primary action */}
+      {/* Floating AI Chat button - biggest, primary action */}
       <motion.button
         initial={false}
         id="tour-desk-chat"
@@ -3104,11 +3136,12 @@ const { dark, toggle: toggleDark }  = useTheme();
         <span style={{ fontFamily: "Space Mono,monospace", fontSize: 14, fontWeight: 700, color: chatOpen ? "var(--text2)" : "var(--bg)", letterSpacing: 0.6, textShadow: chatOpen ? "none" : "0 0.5px 0 rgba(255,255,255,0.28)" }}>AI</span>
       </motion.button>
 
-      {/* Floating Customize button — dashboard overview only, secondary */}
+      {/* Floating Customize button - dashboard overview only, secondary */}
       {activeTab === "overview" && (
         <motion.button
           initial={false}
           id="tour-desk-customize"
+          className="corvo-customize-btn"
           onClick={() => setShowDashEditor(true)}
           title="Customize dashboard"
           animate={{ scale: 1, opacity: 1 }}
@@ -3135,15 +3168,6 @@ const { dark, toggle: toggleDark }  = useTheme();
           </svg>
         </motion.button>
       )}
-
-      {/* Mobile bottom navigation */}
-      <MobileBottomNav
-        activeTab={activeTab}
-        onTabChange={id => { setTabWithDir(id); sound.whoosh(); }}
-        onProfile={() => setShowProfile(true)}
-        onAiChat={() => { setChatInitialMessage(undefined); setChatOpen(v => !v); sound.whoosh(); }}
-      />
-
 
       <AnimatePresence initial={false}>
         {showGoals && <GoalsModal onComplete={(g: any) => { setGoals(g); localStorage.setItem("corvo_goals", JSON.stringify(g)); setShowGoals(false); }} onSkip={() => { localStorage.setItem("corvo_goals", "skipped"); setShowGoals(false); }} />}
@@ -3315,7 +3339,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                           </span>
                           {/* Toggle pill */}
                           <div style={{ position: "relative", width: 32, height: 18, borderRadius: 9, background: on ? "#5cb88a" : "var(--border2)", transition: "background 0.2s", flexShrink: 0, marginLeft: 10 }}>
-                            <span style={{ position: "absolute", top: 2, left: on ? 16 : 2, width: 14, height: 14, borderRadius: "50%", background: "#fff", transition: "left 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,.25)" }} />
+                            <span style={{ position: "absolute", top: 2, left: on ? 16 : 2, width: 14, height: 14, borderRadius: "50%", background: "var(--toggle-knob)", transition: "left 0.15s", boxShadow: "var(--toggle-knob-shadow)" }} />
                           </div>
                         </button>
                       );
@@ -3335,7 +3359,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         {showNotifPrompt && <NotificationPrompt onDismiss={() => setShowNotifPrompt(false)} />}
       </AnimatePresence>
 
-      {/* Natural language edit — before/after modal */}
+      {/* Natural language edit - before/after modal */}
       <AnimatePresence initial={false}>
         {nlPending && (
           <motion.div
