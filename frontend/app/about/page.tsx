@@ -34,18 +34,25 @@ function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSS
     obs.observe(el); return () => obs.disconnect();
   }, []);
   const words = text.split(" ");
+  const offsets: number[] = [];
+  let acc = 0;
+  words.forEach(w => { offsets.push(acc); acc += w.length; });
   return (
-    <h1 ref={ref} style={{ overflow: "hidden", ...style }}>
+    <h1 ref={ref} style={style}>
       {words.map((word, wi) => (
-        <span key={wi} style={{ display: "inline-block", marginRight: "0.3em", overflow: "hidden" }}>
-          {word.split("").map((char, ci) => (
-            <span key={ci} style={{
-              display: "inline-block",
-              opacity: visible ? 1 : 0,
-              transform: visible ? "translateY(0)" : "translateY(100%)",
-              transition: `opacity 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s, transform 0.5s cubic-bezier(0.16,1,0.3,1) ${(wi * 0.08) + (ci * 0.025)}s`,
-            }}>{char}</span>
-          ))}
+        <span key={wi} style={{ display: "inline-block", marginRight: "0.3em" }}>
+          {word.split("").map((char, ci) => {
+            const delay = (offsets[wi] + ci) * 0.03;
+            return (
+              <span key={ci} style={{
+                display: "inline-block",
+                opacity: visible ? 1 : 0,
+                transform: visible ? "translateX(0)" : "translateX(-40px)",
+                transition: `opacity 0.6s cubic-bezier(0.215,0.61,0.355,1) ${delay}s, transform 0.6s cubic-bezier(0.215,0.61,0.355,1) ${delay}s`,
+                willChange: "transform, opacity",
+              }}>{char}</span>
+            );
+          })}
         </span>
       ))}
     </h1>

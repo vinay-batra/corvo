@@ -2806,16 +2806,16 @@ function GsapHero({
         ease: "power2.out",
       });
 
-      // ── Headline: char-by-char slide-up reveal, matches AnimatedHeading on other pages ──
+      // ── Headline slam-in: chars slide in left to right, sequential ──
       if (chars.length) {
         gsap.fromTo(chars,
-          { yPercent: 110, opacity: 0 },
+          { x: -40, opacity: 0 },
           {
-            yPercent: 0,
+            x: 0,
             opacity: 1,
-            duration: 0.55,
-            ease: "expo.out",
-            stagger: 0.04,
+            duration: 0.6,
+            ease: "power3.out",
+            stagger: 0.03,
           }
         );
       }
@@ -3417,7 +3417,6 @@ export default function Landing() {
         .gh-orb-inner.gh-orb-a{animation:orbDriftA 18s ease-in-out infinite}
         .gh-orb-inner.gh-orb-b{animation:orbDriftB 22s ease-in-out 4s infinite reverse}
         .gh-headline .gh-char,.gh-headline .gh-word{display:inline-block;will-change:transform,opacity}
-        .gh-headline .gh-word{overflow:hidden;padding:0.04em 0 0.16em}
         .gh-headline{transform-style:preserve-3d}
         .cta{transition:all 0.25s!important}.cta:hover{background:var(--accent)!important;transform:translateY(-2px)!important;box-shadow:0 12px 40px rgba(var(--accent-rgb),0.25)!important}
         .ghost{transition:all 0.25s!important}.ghost:hover{border-color:rgba(var(--accent-rgb),0.4)!important;color:var(--accent)!important}
