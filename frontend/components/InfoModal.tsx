@@ -75,29 +75,32 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
               initial={false} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 12 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               onClick={e => e.stopPropagation()}
-              style={{ width: "100%", maxWidth: 480, maxHeight: "90vh", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", zIndex: 10000 }}
+              style={{ width: "100%", maxWidth: 520, maxHeight: "90vh", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", zIndex: 10000 }}
             >
-              {/* Header */}
-              <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>About</span>
-                  <span style={{ width: 1, height: 12, background: "var(--border)" }} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{title}</span>
+              {/* Header — features-page pattern: gold eyebrow + Space Mono title */}
+              <div style={{ padding: "22px 26px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 6 }}>
+                    About
+                  </div>
+                  <div style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.2 }}>
+                    {title}
+                  </div>
                 </div>
                 <button onClick={() => setOpen(false)}
-                  style={{ width: 24, height: 24, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s" }}
-                  onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
-                  onMouseLeave={e => e.currentTarget.style.color = "var(--text3)"}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  style={{ width: 28, height: 28, borderRadius: 8, border: "0.5px solid var(--border)", background: "var(--bg3)", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s, border-color 0.15s", flexShrink: 0 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderColor = "var(--border2)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
 
               {/* Sections */}
-              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", overscrollBehavior: "none", flex: 1 }}>
+              <div style={{ padding: "22px 26px 24px", display: "flex", flexDirection: "column", gap: 20, overflowY: "auto", overscrollBehavior: "none", flex: 1 }}>
                 {sections.map((s, i) => (
                   <div key={i}>
-                    <p style={{ fontSize: 8, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 5, fontWeight: 600 }}>{s.label}</p>
-                    <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, wordBreak: "break-word", overflowWrap: "break-word" }}>{s.text}</p>
+                    <div style={{ fontSize: 9, letterSpacing: "0.18em", color: "var(--accent)", textTransform: "uppercase", marginBottom: 7, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{s.label}</div>
+                    <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, wordBreak: "break-word", overflowWrap: "break-word", margin: 0 }}>{s.text}</p>
                   </div>
                 ))}
               </div>
