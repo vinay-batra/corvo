@@ -15,6 +15,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Dashboard tour cut: 9 desktop stops → 5 (portfolio, daily brief, tabs, AI advisor, alerts)
   - Mobile cut from 6 → 4 stops
   - AI advisor card is now the clear final highlight of the tour
+- Dashboard customizer redesigned: 540px wide, 2-column grid, grouped into Overview / Analysis / Other
+  - briefing toggle now hides the entire Daily Brief card (not just the brief text)
+  - Added goal (GoalTracker), signal (DailySignal), save (Save Analysis banner) to DASH_CARDS
+  - All 14 dashboard cards are now independently toggleable
 
 **Up next (in priority order):**
 1. Homepage rewrite — "your portfolio's guardian" positioning
