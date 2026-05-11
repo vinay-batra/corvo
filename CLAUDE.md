@@ -7,78 +7,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Session: May 10, 2026 (continued)**
-- Onboarding simplified: 11 steps → 8 steps (same structure, less friction)
-  - Age + income combined into one step; risk tolerance + horizon combined into one step
-  - Life events step removed entirely
-  - Portfolio builder and financial goals remain, both skippable
-- Dashboard tour cut: 9 desktop stops → 5 (portfolio, daily brief, tabs, AI advisor, alerts)
-  - Mobile cut from 6 → 4 stops
-  - AI advisor card is now the clear final highlight of the tour
-- Dashboard customizer redesigned: 540px wide, 2-column grid, grouped into Overview / Analysis / Other
-  - briefing toggle now hides the entire Daily Brief card (not just the brief text)
-  - Added goal (GoalTracker), signal (DailySignal), save (Save Analysis banner) to DASH_CARDS
-  - All 14 dashboard cards are now independently toggleable
+**Session: May 11, 2026 — shipped v0.25**
 
-**App UI overhaul — Phase 1 (Dashboard tab, May 10):**
-- _CARD_BASE upgraded: 14px radius, 22-24px padding, layered shadow (used by every Card site-wide)
-- TooltipCardHeader rebuilt: 14px medium-weight sentence-case title with optional gold eyebrow; replaces the old 10px uppercase tag
-- New SectionHeader component (gold mini-label + Space Mono headline) with scroll-triggered reveal
-- Dashboard grouped into 4 named regions: **Overview** (daily brief, signal, WSID) → **Analysis** (metrics, performance, goal) → **Intelligence** (health, AI insights, vs benchmark) → **Composition** (allocation, sector, insider)
-- Headers only render if at least one card in the region is visible (respects customizer)
+Massive polish, design, and security session. Everything below was deployed to prod (frontend via Vercel auto-deploy, backend via manual Railway deploy at end of session).
 
-**App UI overhaul — Phase 2-4 (May 10):**
-- Positions tab: 3 SectionHeaders (Positions / Tax / Activity)
+**App UI overhaul — features-page design language applied to every authenticated tab:**
+- New shared components: `SectionHeader` (gold eyebrow + Space Mono headline with scroll-reveal), upgraded `TooltipCardHeader` (sentence-case title + optional eyebrow), refined `_CARD_BASE` (14px radius, 22-24px padding, layered shadow)
+- Dashboard split into 4 named regions: Overview / Analysis / Intelligence / Composition (region headers respect customizer — hide if all cards in region hidden)
+- Positions tab: Positions / Tax / Activity regions
 - Stocks tab: SectionHeader on Compare mode
-- Simulations tab: 2 SectionHeaders (Project / Stress-test)
-- News tab unchanged — single-card sub-tab layout already reads well with upgraded TooltipCardHeader
+- Simulations tab: Project / Stress-test regions
+- Polished shared components: `InfoModal` (rebuilt header with gold eyebrow + Space Mono title), `IconBtn` (gold-accent hover, 0.94 press scale, 34px), performance period selector (premium grouped pill control with gold active state)
 
-**App UI overhaul — Phase 5 (May 10):**
-- InfoModal (the `?` popup on every card): rebuilt header with gold eyebrow + Space Mono title, generous paddings, refined section labels
-- IconBtn (top-bar icons): gold-accent hover with border tint, 0.94 press scale, bumped to 34px
-- Performance chart period selector: premium grouped pill control with gold active state; What-If button promoted to gold-accent style
+**Marketing + profile pages:**
+- Install/Changelog/FAQ hero badges: pulsing gold dot (matched Pricing's existing animation). Copy: "Changelog" → "What's new", "FAQ" → "Help"
+- Settings: SectionTitle rebuilt with gold accent stripe + 22px Space Mono — drives all 5 sections
+- Referrals: same Section pattern applied
+- Account: display name now Space Mono, Quick Links upgraded
 
-App UI overhaul is complete — all 5 phases shipped.
-
-**Homepage rewrite — guardian positioning (May 10):**
-- Hero headline → "The advisor watching over your portfolio." (was "deserves better than a pie chart")
+**Homepage rewrite — "your portfolio's guardian" positioning:**
+- Hero headline → "The advisor watching over your portfolio."
 - Hero subhead reframed around what Corvo does (monitors, flags risks, tells you what to do)
 - Hero stats: "AI Insights / 17K+" → "Risks Flagged / 12K+"
-- New floating red "Risk flagged · Tech > 60%" chip in the hero metric area, pulsing dot
+- New floating red "Risk flagged · Tech > 60%" chip (replaces Sharpe Ratio card)
 - Features eyebrow "Capabilities" → "Always watching"; headline → "What Corvo watches for you"
-- Final CTA headline → "Let Corvo watch your back." with refreshed subhead
-- "Guardian" used sparingly in copy — the concept comes through via "watching," "monitors," "advisor"
+- Final CTA headline → "Let Corvo watch your back."
+- Hero overall scaled up: clamp(32-60px) headline, larger metric cards (21px values, deeper shadows)
+- "Guardian" used sparingly — the concept comes through via "watching," "monitors," "advisor"
 
-**AI quality pass (May 10):** sharpened Corvo voice across 3 prompts in backend/main.py
-- Chat (POST /chat, line ~2384): identity reframed to "the AI advisor watching over this investor's portfolio". Added explicit 3-beat structure rule for recommendations. Banned more hedging filler.
-- Daily Signal (line ~9015): identity reframed. Rationale now must flow through Corvo's 3 beats (what you see / why it matters / setup for action).
-- AI Insights / Health Score (line ~4793): demands a position. No more hedged plain-English.
-- **Note: backend needs a Railway deploy for these to take effect.**
+**AI quality pass — sharper Corvo voice across 3 backend prompts:**
+- Chat (POST /chat): identity reframed, explicit 3-beat structure for recommendations (what you see / why it matters / what to consider), more banned filler ("happy to help", "absolutely", "consider consulting")
+- Daily Signal: rationale must flow through Corvo's 3 beats
+- AI Insights / Health Score: demands a position, no more hedged plain-English
 
-**Empty/error states (May 10):**
-- EmptyState.tsx: gold-tinted SVG icon container (52x52, 14px radius), 15px Space Mono title, gold-accent CTA. Now accepts ReactNode for icon (was string-only).
-- ErrorState.tsx: red-tinted icon container, primary message + optional reason line, gold "Try again" button. Default copy explains Railway cold starts.
-- globals.css updated for both classes.
+**Security sweep — 5 real issues patched in backend:**
+- CRITICAL: GET /portfolio/tax-loss-alert/{user_id} — IDOR (any user could fetch any other user's tax data). Now requires JWT-verified user_id matches path. Also added 30/hr rate limit.
+- CRITICAL: Startup log leaking RESEND_API_KEY first-6-chars to Railway logs. Fixed.
+- HIGH: DELETE /price-alerts/{alert_id} trusted self-reported user_id. Now JWT-verifies.
+- HIGH: /user DELETE returning raw Supabase error body. Now generic message + server-side log.
+- Frontend: stripped 14 verbose console.log statements from dashboard auto-load (were leaking user IDs and portfolio data to browser console)
 
-**Security sweep (May 10):**
-- IDOR fixed: GET /portfolio/tax-loss-alert/{user_id} now JWT-verifies caller matches path param (was wide open); also added 30/hr rate limit
-- IDOR fixed: DELETE /price-alerts/{alert_id} now JWT-verifies caller (was trusting self-reported user_id query param)
-- Secret logging fixed: startup log no longer leaks RESEND_API_KEY first-6-chars to Railway logs
-- Error leakage fixed: /user DELETE no longer returns raw Supabase error body to client; logs server-side instead
-- Frontend: stripped 14 verbose console.log statements from dashboard auto-load flow (were leaking user IDs, portfolio data, query results to browser console)
-- **Note: backend needs a Railway deploy for these to take effect.**
+**Empty/error states upgrade:**
+- EmptyState.tsx: gold-tinted SVG icon container, 15px Space Mono title, gold-accent CTA. Now accepts ReactNode for icon.
+- ErrorState.tsx: red-tinted icon container, primary message + reason line, gold "Try again" button. Default copy explains Railway cold starts ("Corvo couldn't reach the server. Our backend may be waking up after idle.")
 
-**Mobile polish (May 10):**
-- SectionHeader: added c-section-header / c-section-title / c-section-eyebrow classes. Mobile rule (<=768px) shrinks headline 22→18px, tightens eyebrow letter-spacing, reduces top margin 32→24. Applies to every dashboard, Positions, Simulations, Stocks region header.
-- Dashboard customizer: 2-col grid collapses to 1-col on mobile (was cramped at 320-375px).
-- Homepage hero risk chip inherits .hero-metric-card so it gets hidden on mobile alongside the other floating cards.
+**Mobile polish:**
+- SectionHeader: mobile rule (≤768px) shrinks headline 22→18px, tightens eyebrow spacing
+- Dashboard customizer: 2-col → 1-col on mobile
+- Homepage hero risk chip auto-hides on mobile via .hero-metric-card class
 
-**Phase 6 — marketing + profile pages (May 10):**
-- Install/Changelog/FAQ hero badges: added pulsing gold dot to match the existing Pricing badge animation
-- Changelog badge copy: "Changelog" → "What's new"; FAQ badge: "FAQ" → "Help"
-- Settings page: SectionTitle component rebuilt with gold accent stripe + Space Mono headline (drives all 5 sections — Profile, Preferences, Investor Profile, Referrals, Account)
-- Referrals page: Section component rebuilt with same pattern
-- Account page: display name now Space Mono, Quick Links upgraded to proper SectionTitle
+**Earlier today (May 10/11 boundary) — onboarding + tour simplification:**
+- Onboarding 11 steps → 8: age+income combined; risk+horizon combined; life events step removed
+- Dashboard tour 9 stops → 5 desktop (6 → 4 mobile): Portfolio / Daily Brief / Tabs / AI Advisor / Alerts
+- Dashboard customizer redesigned: 540px wide, 2-col grid, grouped into Overview / Analysis / Other. All 14 cards independently toggleable.
 
 **Up next (in priority order):**
 1. Stripe/Pro tier ($9/mo) — needs parent to set up (Vinay is under 18)
@@ -289,9 +270,22 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.24
+- Version: v0.25
 
 ## What Was Built
+
+### v0.25 (May 11, 2026)
+- App UI overhaul: features-page design language applied across every authenticated tab. New `SectionHeader` component (gold eyebrow + Space Mono headline) with scroll-reveal. Dashboard split into 4 named regions (Overview / Analysis / Intelligence / Composition). Positions, Stocks, Simulations tabs all upgraded with the same pattern.
+- Shared component polish: `_CARD_BASE` refined (14px radius, 22-24px padding), `TooltipCardHeader` rebuilt (sentence-case title + optional eyebrow), `InfoModal` upgraded, `IconBtn` with gold-accent hover, performance period selector promoted to premium pill group.
+- Marketing + profile pages: Install/Changelog/FAQ hero badges get pulsing gold dot. Settings/Referrals/Account sections rebuilt with gold accent stripe + Space Mono headlines.
+- Homepage rewrite — "your portfolio's guardian" positioning. New headline "The advisor watching over your portfolio." Hero stats swap "AI Insights" for "Risks Flagged". New pulsing red "Risk flagged · Tech > 60%" floating chip. Features section reframed as "Always watching" / "What Corvo watches for you". Final CTA → "Let Corvo watch your back." Hero scaled up to clamp(32-60px) headline with larger metric cards.
+- AI quality pass: sharpened Corvo voice across chat, Daily Signal, and AI Insights prompts. All three now identity-reframed as "the AI advisor watching over your portfolio" with explicit 3-beat structure (what I see / why it matters / what to consider), banned hedging filler.
+- Security sweep: closed 2 IDOR vulnerabilities (`/portfolio/tax-loss-alert/{user_id}` and `/price-alerts/{alert_id}` DELETE both now JWT-verify caller matches user_id). Fixed RESEND_API_KEY prefix leak in startup logs. Removed raw Supabase error leakage from `/user` DELETE. Added rate limit to tax-loss-alert. Stripped 14 verbose console.log statements from dashboard auto-load.
+- Empty/error states: branded design with gold-tinted icon containers, Space Mono titles, gold-accent CTAs. Default error copy explains Railway cold starts.
+- Mobile polish: SectionHeaders shrink at ≤768px, customizer collapses to 1 column, homepage risk chip auto-hides via `.hero-metric-card`.
+- Onboarding simplified: 11 steps → 8 (age+income combined, risk+horizon combined, life events removed).
+- Dashboard tour cut: 9 stops → 5 desktop (6 → 4 mobile). AI advisor card is the final highlight.
+- Dashboard customizer redesigned: 540px, 2-col grid, grouped Overview/Analysis/Other, all 14 cards individually toggleable.
 
 ### v0.24 (May 10, 2026)
 - Dashboard: proactive Corvo insight card above metrics — derives specific 2-sentence observation from live portfolio data (no API call), links to AI chat
