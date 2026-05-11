@@ -2389,21 +2389,19 @@ const { dark, toggle: toggleDark }  = useTheme();
                 {stockTicker ? (
                   <StockDetail ticker={stockTicker} onBack={() => setStockTicker(null)} onSelectTicker={t => setStockTicker(t)} />
                 ) : showStockCompare ? (
-                  <DashReveal from="up" delay={0}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                        <button
-                          onClick={() => setShowStockCompare(false)}
-                          style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                          Back to Stocks
-                        </button>
-                        <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Compare Stocks</span>
-                      </div>
+                  <div>
+                    <button
+                      onClick={() => setShowStockCompare(false)}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer", marginTop: -4 }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                      Back to Stocks
+                    </button>
+                    <SectionHeader eyebrow="Compare" title="Stack any tickers side by side" />
+                    <DashReveal from="up" delay={0}>
                       <StockCompare />
-                    </div>
-                  </DashReveal>
+                    </DashReveal>
+                  </div>
                 ) : (
                   <DashReveal from="up" delay={0}>
                     <div>
@@ -2430,39 +2428,33 @@ const { dark, toggle: toggleDark }  = useTheme();
               </motion.div>
             ) : activeTab === "positions" ? (
               <motion.div key="positions" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+
+                {/* ═══ POSITIONS REGION ═══ */}
+                <div style={{ marginTop: -8 }}>
+                  <SectionHeader eyebrow="Positions" title="Every holding, every detail" />
+                  <p style={{ fontSize: 12, color: "var(--text3)", margin: "-10px 0 18px", lineHeight: 1.5 }}>
+                    Across every saved portfolio. Click any row to open the stock detail.
+                  </p>
+                </div>
                 <DashReveal from="up" delay={0}>
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <div style={S.cardAccent} />
-                      <span style={S.cardTitle}>All Positions</span>
-                    </div>
-                    <p style={{ fontSize: 12, color: "var(--text3)", marginLeft: 10 }}>All saved portfolios · click any row to open stock detail</p>
-                  </div>
                   <PositionsTab
                     onSelectTicker={t => { setStockTicker(t); setTabWithDir("stocks"); }}
                   />
                 </DashReveal>
-                <DashReveal from="right" delay={0.15}>
-                  <div style={{ marginTop: 24 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                      <div style={S.cardAccent} />
-                      <span style={S.cardTitle}>Income & Tax</span>
-                    </div>
-                    <TaxLossHarvester assets={assets} />
-                    <div style={{ marginTop: 16 }}>
-                      <CapitalGainsEstimator assets={assets} />
-                    </div>
 
+                {/* ═══ TAX REGION ═══ */}
+                <SectionHeader eyebrow="Tax" title="Optimize what you keep" />
+                <DashReveal from="up" delay={0.05}>
+                  <TaxLossHarvester assets={assets} />
+                  <div style={{ marginTop: 16 }}>
+                    <CapitalGainsEstimator assets={assets} />
                   </div>
                 </DashReveal>
-                <DashReveal from="up" delay={0.2}>
-                  <div style={{ marginTop: 24 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                      <div style={S.cardAccent} />
-                      <span style={S.cardTitle}>Transactions</span>
-                    </div>
-                    <TransactionsTab />
-                  </div>
+
+                {/* ═══ ACTIVITY REGION ═══ */}
+                <SectionHeader eyebrow="Activity" title="Recent moves and history" />
+                <DashReveal from="up" delay={0.05}>
+                  <TransactionsTab />
                 </DashReveal>
               </motion.div>
             ) : activeTab === "news" && data ? (
@@ -2967,6 +2959,11 @@ const { dark, toggle: toggleDark }  = useTheme();
               </motion.div>
             ) : activeTab === "simulate" ? (
               <motion.div key="simulate" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ overscrollBehavior: "none" }}>
+
+                {/* ═══ PROJECT REGION ═══ */}
+                <div style={{ marginTop: -8 }}>
+                  <SectionHeader eyebrow="Project" title="Where your portfolio could go" />
+                </div>
                 <DashReveal from="up" delay={0}>
                   <Card key="mc-card"><TooltipCardHeader title="Monte Carlo Simulation" sections={[
                     { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
@@ -2986,8 +2983,10 @@ const { dark, toggle: toggleDark }  = useTheme();
                     />
                   </Card>
                 </DashReveal>
+                {/* ═══ STRESS-TEST REGION ═══ */}
+                <SectionHeader eyebrow="Stress-test" title="How it has held up under pressure" />
                 <DashReveal from="left" delay={0.15}>
-                  <Card key="drawdown-card" style={{ marginTop: 16 }}>
+                  <Card key="drawdown-card" style={{ marginTop: 0 }}>
                     <TooltipCardHeader title="Drawdown Chart" sections={[
                       { label: "Plain English", text: "Shows how far your portfolio has fallen from its peak at each point in time. A drawdown of -20% means the portfolio was 20% below its previous high." },
                       { label: "Why it matters", text: "Max drawdown is the worst peak-to-trough decline ever. It measures how much pain you would have had to endure to stay invested. A smaller max drawdown means a smoother ride." },
