@@ -1081,11 +1081,12 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
-  const DASH_CARDS = ["tickers", "briefing", "wsid", "metrics", "performance", "health", "insights", "benchmark", "allocation", "sector", "insider"] as const;
+  const DASH_CARDS = ["briefing", "tickers", "signal", "wsid", "metrics", "performance", "health", "insights", "benchmark", "allocation", "sector", "goal", "insider", "save"] as const;
   type DashCard = typeof DASH_CARDS[number];
   const DASH_CARD_LABELS: Record<DashCard, string> = {
+    briefing: "Daily Brief",
     tickers: "Live Ticker Strip",
-    briefing: "Morning Briefing",
+    signal: "Daily Signal",
     wsid: "What Should I Do Today",
     metrics: "Key Metrics",
     performance: "Performance Chart",
@@ -1094,7 +1095,9 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     benchmark: "vs Benchmark",
     allocation: "Allocation",
     sector: "Sector Exposure",
+    goal: "Goal Tracker",
     insider: "Insider Activity",
+    save: "Save Analysis Banner",
   };
   const [hiddenCards, setHiddenCards] = useState<Set<DashCard>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem("corvo_hidden_cards") || "[]") as DashCard[]); } catch { return new Set(); }
@@ -2479,7 +2482,8 @@ const { dark, toggle: toggleDark }  = useTheme();
                 {/* Feature 3: fade+slide when results first arrive */}
                 <div style={{ opacity: animatingIn ? 0 : 1, transform: animatingIn ? "translateY(20px)" : "none", transition: animatingIn ? "none" : "opacity 0.5s ease, transform 0.5s ease" }}>
 
-                {/* Greeting + portfolio pulse + quick actions */}
+                {/* Daily Brief card — whole card toggled by "briefing" switch */}
+                {!hiddenCards.has("briefing") && (
                 <div style={{ opacity: loadedVis(0) ? 1 : 0, transform: loadedVis(0) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                   <DashReveal from="up" delay={0}>
                     <GreetingBar
@@ -2488,14 +2492,14 @@ const { dark, toggle: toggleDark }  = useTheme();
                       assets={assets}
                       perfHistory={perfHistory}
                       portfolioValue={portfolioInputValue}
-                      hideBriefing={hiddenCards.has("briefing")}
                       hideTickers={hiddenCards.has("tickers")}
                     />
                   </DashReveal>
                 </div>
+                )}
 
                 {/* Daily Signal — AI-generated single actionable recommendation */}
-                {data && (
+                {!hiddenCards.has("signal") && data && (
                   <DashReveal from="up" delay={0.04}>
                     <DailySignal
                       data={data}
@@ -2749,7 +2753,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>}
 
                 {/* Goal Tracker */}
-                {data && (
+                {!hiddenCards.has("goal") && data && (
                   <DashReveal from="up" delay={0.08}>
                     <GoalTracker
                       data={data}
@@ -2854,7 +2858,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 )}
                 </div> {/* end: everything below (Feature 2 delay 400ms) */}
 
-                {data && !isPortfolioSaved && (
+                {!hiddenCards.has("save") && data && !isPortfolioSaved && (
                   <motion.div
                     initial={false}
                     style={{
@@ -3150,28 +3154,60 @@ const { dark, toggle: toggleDark }  = useTheme();
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
             <motion.div initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
               onClick={e => e.stopPropagation()}
-              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: "24px", maxWidth: 380, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 16, padding: "24px 28px 20px", maxWidth: 540, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.4)", maxHeight: "90vh", overflowY: "auto" }}>
+
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
                 <div>
-                  <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text3)", textTransform: "uppercase", marginBottom: 4 }}>Dashboard</p>
-                  <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", margin: 0 }}>Customize cards</h3>
+                  <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 4, fontFamily: "var(--font-mono)" }}>Dashboard</p>
+                  <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", margin: 0 }}>Customize cards</h3>
                 </div>
-                <button onClick={() => setShowDashEditor(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4 }}>
+                <button onClick={() => setShowDashEditor(false)} style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text3)", padding: "6px 8px", display: "flex" }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {DASH_CARDS.map(card => (
-                  <div key={card} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg3)", borderRadius: 10, border: "0.5px solid var(--border)" }}>
-                    <span style={{ fontSize: 13, color: "var(--text)" }}>{DASH_CARD_LABELS[card]}</span>
-                    <button onClick={() => toggleCard(card)}
-                      style={{ position: "relative", width: 36, height: 20, borderRadius: 10, border: "none", cursor: "pointer", padding: 0, background: hiddenCards.has(card) ? "var(--border)" : "#5cb88a", transition: "background 0.2s", flexShrink: 0 }}>
-                      <span style={{ position: "absolute", top: 2, left: hiddenCards.has(card) ? 2 : 18, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,.3)" }} />
-                    </button>
+
+              {/* Grouped sections */}
+              {([
+                { label: "Overview", cards: ["briefing", "tickers", "signal", "wsid"] as DashCard[] },
+                { label: "Analysis", cards: ["metrics", "performance", "health", "insights", "benchmark", "allocation", "sector"] as DashCard[] },
+                { label: "Other", cards: ["goal", "insider", "save"] as DashCard[] },
+              ] as { label: string; cards: DashCard[] }[]).map(group => (
+                <div key={group.label} style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "var(--font-mono)", marginBottom: 10 }}>
+                    {group.label}
                   </div>
-                ))}
-              </div>
-              <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 14, textAlign: "center" }}>Changes save automatically</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {group.cards.map(card => {
+                      const on = !hiddenCards.has(card);
+                      return (
+                        <button
+                          key={card}
+                          onClick={() => toggleCard(card)}
+                          style={{
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            padding: "12px 14px",
+                            background: on ? "rgba(201,168,76,0.05)" : "var(--bg2)",
+                            border: `0.5px solid ${on ? "rgba(201,168,76,0.25)" : "var(--border)"}`,
+                            borderRadius: 10, cursor: "pointer", textAlign: "left",
+                            transition: "border-color 0.15s, background 0.15s",
+                          }}
+                        >
+                          <span style={{ fontSize: 12, fontWeight: 500, color: on ? "var(--text)" : "var(--text3)", lineHeight: 1.3 }}>
+                            {DASH_CARD_LABELS[card]}
+                          </span>
+                          {/* Toggle pill */}
+                          <div style={{ position: "relative", width: 32, height: 18, borderRadius: 9, background: on ? "#5cb88a" : "var(--border2)", transition: "background 0.2s", flexShrink: 0, marginLeft: 10 }}>
+                            <span style={{ position: "absolute", top: 2, left: on ? 16 : 2, width: 14, height: 14, borderRadius: "50%", background: "#fff", transition: "left 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,.25)" }} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, textAlign: "center" }}>Changes save automatically</p>
             </motion.div>
           </motion.div>
         )}
