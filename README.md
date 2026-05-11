@@ -1,8 +1,8 @@
 # Corvo
 
-### Your portfolio, with a point of view.
+### The advisor watching over your portfolio.
 
-[Live Site](https://corvo.capital) · [Changelog](/CHANGELOG.md) · Next.js · FastAPI · Supabase · All Rights Reserved
+[Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js · FastAPI · Supabase · All Rights Reserved
 
 ---
 
@@ -69,10 +69,12 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Arcade with financial mini-games
 - Paper trading simulator (collapsible section inside Learn tab)
 
-### Navigation Structure (as of v0.23)
-- Dashboard tabs: Overview, Stocks, Positions (includes Income & Tax and Transactions), Risk, Monte Carlo, News, Learn (includes Paper Trade), AI Chat
+### Navigation Structure (as of v0.25)
+- Dashboard tabs: Overview, Positions, Stocks, Simulations, News
+- Dashboard tab itself is split into four scroll-revealed regions: Overview (daily brief, signal, what should I do today), Analysis (metrics, performance, goal), Intelligence (health, AI insights, vs benchmark), Composition (allocation, sector, insider)
 - Income & Tax and Transactions are sections within the Positions tab -- not standalone tabs
-- Paper Trade is a collapsible section inside the Learn tab
+- Paper Trade was removed from the app in v0.24
+- Watchlist and Learn tabs are hidden from the active TABS list in v0.24 (code preserved)
 
 ---
 

@@ -60,6 +60,13 @@ function AnimatedHeading({ text, style = {} }: { text: string; style?: React.CSS
 
 const ENTRIES = [
   {
+    date: "May 11, 2026",
+    version: "v0.25",
+    title: "Guardian Positioning, Full UI Overhaul & Security Sweep",
+    desc: "Corvo's identity sharpened across the product: new homepage hero (\"The advisor watching over your portfolio.\"), Risk Flagged stat replacing AI Insights, features section reframed as \"What Corvo watches for you\", and a new pulsing red risk chip in the hero. The dashboard and every authenticated tab were rebuilt with a unified design language: new SectionHeader component (gold eyebrow plus Space Mono headline with scroll reveal), refined card chrome (14px radius, layered shadow, larger padding), and four named regions on the dashboard (Overview, Analysis, Intelligence, Composition). Public marketing pages and the entire settings/account/referrals area got the same treatment. Behind the scenes, the AI chat, Daily Signal, and AI Insights prompts were rewritten to enforce Corvo's three-beat advisor voice with no hedging filler. Backend security sweep closed two IDOR vulnerabilities (tax-loss-alert and price-alert deletion both now JWT-verify the caller), fixed a startup secret leak, and stripped raw Supabase error bodies from delete responses. Onboarding cut from 11 to 8 steps. Dashboard tour cut from 9 stops to 5. Empty and error states fully redesigned with branded icon containers and Railway-cold-start-aware copy.",
+    tags: ["Brand", "UI", "Security", "AI", "Onboarding"],
+  },
+  {
     date: "May 10, 2026",
     version: "v0.24",
     title: "Corvo Insight Card, Dashboard Polish & Feature Refinement",
