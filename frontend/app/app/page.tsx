@@ -179,12 +179,61 @@ function useS() {
   };
 }
 
-function TooltipCardHeader({ title, sections }: { title: string; sections: { label: string; text: string }[] }) {
+function TooltipCardHeader({ title, eyebrow, sections }: { title: string; eyebrow?: string; sections: { label: string; text: string }[] }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-      <div style={{ width: 3, height: 14, background: "var(--accent)", borderRadius: 1 }} />
-      <span style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>{title}</span>
-      <InfoModal title={title} sections={sections} />
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 18 }}>
+      <div style={{ width: 3, height: eyebrow ? 28 : 16, background: "var(--accent)", borderRadius: 1, marginTop: eyebrow ? 4 : 3, flexShrink: 0 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {eyebrow && (
+          <div style={{ fontSize: 9, letterSpacing: "0.18em", color: "var(--accent)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 600, marginBottom: 4 }}>
+            {eyebrow}
+          </div>
+        )}
+        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", letterSpacing: -0.2, lineHeight: 1.25 }}>
+          {title}
+        </div>
+      </div>
+      <div style={{ marginTop: eyebrow ? 4 : 1, flexShrink: 0 }}>
+        <InfoModal title={title} sections={sections} />
+      </div>
+    </div>
+  );
+}
+
+// Section header for grouping major dashboard regions (features-page pattern)
+function SectionHeader({ eyebrow, title, delay = 0 }: { eyebrow: string; title: string; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.1, rootMargin: "-20px 0px" });
+    obs.observe(el); return () => obs.disconnect();
+  }, []);
+  return (
+    <div
+      ref={ref}
+      style={{
+        marginTop: 32, marginBottom: 18,
+        opacity: visible ? 1 : 0,
+        transform: visible ? "none" : "translateY(20px)",
+        transition: `opacity 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
+      }}
+    >
+      <div style={{
+        fontSize: 10, letterSpacing: "0.22em", color: "var(--accent)",
+        textTransform: "uppercase", fontFamily: "var(--font-mono)",
+        fontWeight: 700, marginBottom: 6,
+      }}>
+        {eyebrow}
+      </div>
+      <div style={{
+        fontFamily: "Space Mono, monospace",
+        fontSize: 22, fontWeight: 700,
+        color: "var(--text)",
+        letterSpacing: -1, lineHeight: 1.15,
+      }}>
+        {title}
+      </div>
     </div>
   );
 }
@@ -923,11 +972,11 @@ function getNLSuggestions(assets: { ticker: string; weight: number }[]): string[
 // causing React to unmount/remount children like MonteCarloChart and re-fire simulations.
 const _CARD_BASE: React.CSSProperties = {
   border: "0.5px solid var(--border)",
-  borderRadius: 12,
-  padding: "18px 20px",
+  borderRadius: 14,
+  padding: "22px 24px",
   background: "var(--card-bg)",
   marginBottom: 16,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06), 0 0 0 0.5px var(--border)",
 };
 const Card = memo(function Card({ children, style = {} }: { children?: React.ReactNode; style?: React.CSSProperties }) {
   const [hov, setHov] = useState(false);
@@ -2482,6 +2531,13 @@ const { dark, toggle: toggleDark }  = useTheme();
                 {/* Feature 3: fade+slide when results first arrive */}
                 <div style={{ opacity: animatingIn ? 0 : 1, transform: animatingIn ? "translateY(20px)" : "none", transition: animatingIn ? "none" : "opacity 0.5s ease, transform 0.5s ease" }}>
 
+                {/* ═══ OVERVIEW REGION ═══ */}
+                {(!hiddenCards.has("briefing") || !hiddenCards.has("signal") || !hiddenCards.has("wsid")) && (
+                  <div style={{ marginTop: -8, marginBottom: 4 }}>
+                    <SectionHeader eyebrow="Overview" title="Your day at a glance" />
+                  </div>
+                )}
+
                 {/* Daily Brief card — whole card toggled by "briefing" switch */}
                 {!hiddenCards.has("briefing") && (
                 <div style={{ opacity: loadedVis(0) ? 1 : 0, transform: loadedVis(0) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
@@ -2680,6 +2736,11 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>}
 
 
+                {/* ═══ ANALYSIS REGION ═══ */}
+                {(!hiddenCards.has("metrics") || !hiddenCards.has("performance") || !hiddenCards.has("goal")) && (
+                  <SectionHeader eyebrow="Analysis" title="Risk and returns" />
+                )}
+
                 {/* Metric cards */}
                 {!hiddenCards.has("metrics") && <div style={{ opacity: loadedVis(500) ? 1 : 0, transform: loadedVis(500) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="up" delay={0.1}>
@@ -2763,6 +2824,11 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </DashReveal>
                 )}
 
+                {/* ═══ INTELLIGENCE REGION ═══ */}
+                {(!hiddenCards.has("health") || !hiddenCards.has("insights") || !hiddenCards.has("benchmark")) && (
+                  <SectionHeader eyebrow="Intelligence" title="Where Corvo would focus" />
+                )}
+
                 {/* Everything below — Feature 2: delay 400ms */}
                 <div style={{ opacity: loadedVis(1000) ? 1 : 0, transform: loadedVis(1000) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
 
@@ -2818,6 +2884,12 @@ const { dark, toggle: toggleDark }  = useTheme();
                     );
                   })}
                 </motion.div>
+
+                {/* ═══ COMPOSITION REGION ═══ */}
+                {(!hiddenCards.has("allocation") || !hiddenCards.has("sector") || !hiddenCards.has("insider")) && (
+                  <SectionHeader eyebrow="Composition" title="What you actually own" />
+                )}
+
                 <div className="c-alloc-row" style={{ display: "flex", gap: 16, marginTop: 12 }}>
                   <motion.div key="allocation-card" initial={false} style={{ flex: 3, display: hiddenCards.has("allocation") ? "none" : undefined }}>
                     <DashReveal from="left" delay={0.1} style={{ height: "100%" }}>
