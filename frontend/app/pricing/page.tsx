@@ -362,26 +362,6 @@ function PricingCard({
           : "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06), 0 0 0 0.5px var(--border)",
       }}
     >
-      {/* "MOST POPULAR" floating badge on Pro card */}
-      {isPro && (
-        <div style={{
-          position: "absolute", top: -12, left: "50%",
-          transform: "translateX(-50%)",
-          background: "linear-gradient(135deg, #c9a84c 0%, #d4b35a 100%)",
-          color: "var(--bg)",
-          fontSize: 10, fontWeight: 700,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          padding: "5px 14px",
-          borderRadius: 100,
-          fontFamily: "Space Mono, monospace",
-          boxShadow: "0 4px 14px rgba(201,168,76,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset",
-          whiteSpace: "nowrap",
-        }}>
-          Most Popular
-        </div>
-      )}
-
       {/* Header: status pill + plan name */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
         <span style={{
