@@ -252,10 +252,10 @@ function getDesktopStops(_tabCount: number): TourStop[] {
       Illus: IllusBars,
     },
     {
-      id: "tour-desk-analyze",
+      id: "tour-desk-brief",
       label: "Daily Brief",
       title: "Your daily brief, every morning",
-      description: "Every time you open the dashboard Corvo shows a personalized brief - what the market did, how your specific holdings were affected, and what to watch next. It updates automatically. Collapse it with the chevron if you want a cleaner view.",
+      description: "Every time you open the dashboard Corvo shows a personalized brief: what the market did, how your specific holdings were affected, and what to watch next. It updates automatically. Collapse it with the chevron if you want a cleaner view.",
       Illus: IllusLine,
     },
     {
@@ -275,10 +275,10 @@ function getDesktopStops(_tabCount: number): TourStop[] {
       placement: "top",
     },
     {
-      id: "tour-desk-bell",
-      label: "Alerts",
-      title: "Price alerts and digests",
-      description: "Set price alerts on any ticker from the bell icon. You will get a push notification or email the moment the threshold is hit. Weekly portfolio digests and morning briefing emails are available in Settings.",
+      id: "tour-desk-topbar-actions",
+      label: "Top bar",
+      title: "Alerts, theme, export, share, and settings",
+      description: "Everything in the top-right corner lives here. The bell opens price alerts. The sun/moon flips light and dark. Export pulls a PDF or CSV. Share generates a card you can post. Your avatar opens settings, email preferences, and your profile.",
       Illus: IllusBell,
     },
   ];
@@ -288,7 +288,7 @@ const MOBILE_STOPS: TourStop[] = [
   { id: "tour-mob-hamburger", label: "Sidebar", title: "Your portfolio lives here", description: "Tap the menu to open the sidebar. Add tickers, set weights, enter your portfolio value, then hit New Analysis to run the full analysis." },
   { id: "tour-mob-tabs",      label: "Tabs",    title: "Five tabs, everything you need", description: "Dashboard for your overview. Positions for tax and holdings detail. Stocks for research. Simulations for Monte Carlo. News filtered to your exact holdings." },
   { id: "tour-desk-chat",     label: "AI",      title: "Your AI advisor, always on", description: "The gold button is Corvo's AI. Ask anything about your portfolio, request a roast, or explore what-if scenarios. It has your full analysis in context." },
-  { id: "tour-mob-bell",      label: "Alerts",  title: "Price alerts and digests",   description: "Set price alerts on any ticker from the bell icon. Weekly digests and morning briefing emails are available in Settings." },
+  { id: "tour-mob-topbar-actions", label: "Top bar", title: "Alerts, theme, export, and settings", description: "Everything in the top-right corner lives here: price alerts, light/dark toggle, CSV export, and your avatar menu for settings, email preferences, and profile." },
 ];
 
 interface RingPos { top: number; left: number; width: number; height: number; }
