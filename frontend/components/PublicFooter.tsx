@@ -34,7 +34,7 @@ export default function PublicFooter() {
         {/* Left: wordmark + tagline + copyright */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img src="/corvo-logo.svg" width={28} height={28} alt="Corvo" />
+            <img src="/corvo-logo.png" width={28} height={28} alt="Corvo" />
             <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
           </div>
           <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5, margin: 0 }}>

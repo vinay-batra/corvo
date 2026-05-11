@@ -46,7 +46,7 @@ export default function NotFound() {
             animation: "nf-orb-pulse 3s ease-in-out infinite",
           }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/corvo-logo.svg" alt="Corvo" width={30} height={30} style={{ opacity: 0.95, filter: "drop-shadow(0 0 6px rgba(201,168,76,0.4))" }} />
+            <img src="/corvo-logo.png" alt="Corvo" width={30} height={30} style={{ opacity: 0.95, filter: "drop-shadow(0 0 6px rgba(201,168,76,0.4))" }} />
           </div>
         </div>
 

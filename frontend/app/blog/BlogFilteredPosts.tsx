@@ -159,7 +159,7 @@ export default function BlogFilteredPosts() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <img src="/corvo-logo.svg" width={11} height={10} alt="" style={{ opacity: 0.8 }} />
+                        <img src="/corvo-logo.png" width={11} height={10} alt="" style={{ opacity: 0.8 }} />
                       </div>
                       <span style={{ fontSize: 11, color: "var(--text3)" }}>Corvo Team</span>
                     </div>

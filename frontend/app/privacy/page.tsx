@@ -19,7 +19,7 @@ export default function PrivacyPage() {
   return (
     <div style={S.page}>
       <header style={S.header}>
-        <img src="/corvo-logo.svg" width={22} height={22} alt="Corvo" />
+        <img src="/corvo-logo.png" width={22} height={22} alt="Corvo" />
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Privacy Policy</span>
       </header>
 
