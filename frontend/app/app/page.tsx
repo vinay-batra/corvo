@@ -1182,9 +1182,9 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [showShareImage, setShowShareImage] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [portfolioInputValue, setPortfolioInputValue] = useState<number>(() => {
-    if (typeof window === "undefined") return 10000;
+    if (typeof window === "undefined") return 50000;
     const stored = localStorage.getItem("corvo_portfolio_value");
-    return stored ? Number(stored) : 10000;
+    return stored ? Number(stored) : 50000;
   });
   // Sync portfolioInputValue from localStorage: fire on mount + cross-tab storage events
   useEffect(() => {
