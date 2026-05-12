@@ -4,7 +4,7 @@
 
 [Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js 16 · FastAPI · Supabase · All Rights Reserved
 
-Current release: **v0.29** (May 11, 2026)
+Current release: **v0.30** (May 12, 2026)
 
 ---
 
@@ -17,7 +17,8 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 ## Features
 
 ### Portfolio Analysis
-- Live portfolio value display: base × today's % change, with delta dollars and percent visible on the dashboard and the sidebar input
+- Live portfolio value display: base × today's % change, with delta dollars and percent visible on the dashboard and the sidebar input. One-click privacy toggle replaces the dollar amount with bullets so screenshots and over-the-shoulder reads don't leak net worth (preference persisted across sessions).
+- End-of-day snapshot cron writes one `portfolio_snapshots` row per saved portfolio every weekday at 4:15 PM ET. Day-over-day continuity is now tracked in the database, not derived freshly from base on every page load.
 - CAGR across selectable time periods, for both the portfolio and individual holdings
 - Sharpe ratio computed with the live `^IRX` T-bill rate as the risk-free rate
 - Portfolio health score graded across returns, risk, stability, and resilience
@@ -30,7 +31,7 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 
 ### AI Tools
 - AI portfolio chat powered by Claude with full portfolio context, web search, persistent history, and conversation management
-- Daily Signal: a single AI-generated, actionable recommendation each day across 8 categories (Risk Alert, Rebalance, Tax Opportunity, Earnings Watch, Benchmark Lag, Protect Gains, Diversify, Strong Hold) with headline, rationale, impact chips, numbered steps, and confidence tooltip
+- Daily Signal: a single AI-generated, actionable recommendation each day across 8 categories (Risk Alert, Rebalance, Tax Opportunity, Earnings Watch, Benchmark Lag, Protect Gains, Diversify, Strong Hold) with headline, rationale, impact chips, numbered steps, and confidence tooltip. Starts minimized (header + headline visible) so it doesn't dominate the dashboard; chevron expands the full card
 - Morning briefing: a daily AI-generated summary of macro news and portfolio-relevant developments (defaults to collapsed; expand via chevron)
 - "What should I do today?" - a single-click, direct action recommendation based on your current holdings
 - Rebalance assistant with target allocation suggestions and drift analysis

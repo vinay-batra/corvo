@@ -88,8 +88,9 @@ async def lifespan(app_: FastAPI):
     mkt_close_task    = asyncio.create_task(market_close_summary_loop())
     checkup_task      = asyncio.create_task(weekly_portfolio_checkup_loop())
     earnings_task     = asyncio.create_task(earnings_reminder_loop())
+    eod_snap_task     = asyncio.create_task(eod_portfolio_snapshot_loop())
     yield
-    for t in (alert_task, brief_task, morning_task, review_task, monthly_task, mkt_close_task, checkup_task, earnings_task):
+    for t in (alert_task, brief_task, morning_task, review_task, monthly_task, mkt_close_task, checkup_task, earnings_task, eod_snap_task):
         t.cancel()
         try:
             await t
@@ -7425,6 +7426,160 @@ async def test_market_close_email(user_id: str = "", request: Request = None):
     _require_admin_key(request)
     uid = user_id or None
     return await send_market_close_summary_emails(target_user_id=uid)
+
+
+# ── End-of-day portfolio snapshot cron ────────────────────────────────────────
+#
+# Why this exists:
+#   The dashboard's "Live portfolio value" (GreetingBar) computes base x (1 +
+#   today's pct) on every page load. Without persisted end-of-day values, the
+#   live display snaps back to the user's manual base every morning - any prior
+#   day's growth is forgotten and tomorrow's view is indistinguishable from
+#   today's. Vinay flagged this on 2026-05-12 as the gap blocking real
+#   day-over-day tracking. This cron writes one portfolio_snapshots row per
+#   saved portfolio per weekday at 4:15 PM ET (10 minutes after close), letting
+#   the frontend read yesterday's snapshot as the implicit anchor.
+#
+# Why 4:15 PM ET:
+#   yfinance "Close" data settles within a few minutes of the 4:00 ET bell.
+#   4:05 PM is reserved for the market_close_summary email loop; running both
+#   at the same moment would dogpile yfinance. 10 minutes' offset keeps the
+#   loops decoupled.
+#
+# Why this is safe to deploy more than once:
+#   _portfolio_snapshot_inner does a PATCH-then-POST upsert keyed on
+#   (portfolio_id, date), so re-runs on the same day just refresh the row.
+
+
+def _seconds_until_4_15pm_et() -> float:
+    """Return seconds until the next weekday 4:15 PM ET, minimum 60 s.
+
+    Mirrors _seconds_until_4_05pm_et exactly - same weekday-skip logic,
+    just 10 minutes later so the EOD snapshot writer doesn't collide with
+    the market-close email sender.
+    """
+    from zoneinfo import ZoneInfo
+    from datetime import timedelta
+
+    now = datetime.now(ZoneInfo("America/New_York"))
+    target = now.replace(hour=16, minute=15, second=0, microsecond=0)
+    if now >= target:
+        target += timedelta(days=1)
+    while target.weekday() >= 5:
+        target += timedelta(days=1)
+    return max((target - now).total_seconds(), 60.0)
+
+
+def _write_eod_snapshots() -> dict:
+    """Iterate every saved portfolio and call _portfolio_snapshot_inner for
+    each. Returns counts for logging / the admin-test endpoint.
+
+    Each portfolio row in Supabase has its tickers and weights persisted as
+    Postgres arrays (or comma-separated strings, depending on column type).
+    We normalise both shapes to comma-separated strings before handing off
+    to SnapshotRequest, which is the same shape the public /portfolio/snapshot
+    endpoint accepts. The inner writer already handles yfinance failures,
+    upserts on (portfolio_id, date), and computes cumulative_return from the
+    first snapshot, so this loop stays a thin orchestrator.
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {"written": 0, "skipped_no_supabase": True}
+
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/portfolios",
+            headers=_sb_headers(),
+            params={"select": "id,user_id,tickers,weights"},
+            timeout=20,
+        )
+        if resp.status_code != 200:
+            print(f"[eod-snap] portfolio fetch failed: {resp.status_code} {resp.text[:200]}")
+            return {"written": 0, "error": f"fetch {resp.status_code}"}
+        portfolios = resp.json() or []
+    except Exception as exc:
+        print(f"[eod-snap] portfolio fetch error: {exc}")
+        return {"written": 0, "error": str(exc)}
+
+    written = 0
+    failed = 0
+    skipped = 0
+    for p in portfolios:
+        portfolio_id = p.get("id")
+        user_id = p.get("user_id")
+        raw_tickers = p.get("tickers") or []
+        raw_weights = p.get("weights") or []
+        if not portfolio_id or not user_id or not raw_tickers:
+            skipped += 1
+            continue
+
+        if isinstance(raw_tickers, list):
+            tickers_csv = ",".join(str(t).strip() for t in raw_tickers if str(t).strip())
+        else:
+            tickers_csv = str(raw_tickers)
+        if isinstance(raw_weights, list):
+            weights_csv = ",".join(str(w) for w in raw_weights)
+        else:
+            weights_csv = str(raw_weights) if raw_weights else ""
+
+        if not tickers_csv:
+            skipped += 1
+            continue
+
+        try:
+            req = SnapshotRequest(
+                user_id=user_id,
+                portfolio_id=portfolio_id,
+                tickers=tickers_csv,
+                weights=weights_csv,
+            )
+            _portfolio_snapshot_inner(req)
+            written += 1
+        except HTTPException as he:
+            # yfinance returned no data for these tickers, the schema is
+            # missing a column, etc. Log and move on - one user's bad data
+            # shouldn't poison the cron.
+            failed += 1
+            print(f"[eod-snap] write failed for {portfolio_id}: {he.detail}")
+        except Exception as exc:
+            failed += 1
+            print(f"[eod-snap] unexpected error for {portfolio_id}: {exc}")
+
+    print(f"[eod-snap] portfolios={len(portfolios)} written={written} failed={failed} skipped={skipped}")
+    return {"written": written, "failed": failed, "skipped": skipped, "total": len(portfolios)}
+
+
+async def eod_portfolio_snapshot_loop():
+    """Background task: snapshot every saved portfolio at 4:15 PM ET on weekdays."""
+    print("[eod-snap] scheduler started")
+    # Last in the startup stagger (other loops use 30s-240s) so we don't pile
+    # on top of yfinance during cold boot.
+    await asyncio.sleep(300)
+    while True:
+        wait = _seconds_until_4_15pm_et()
+        print(f"[eod-snap] sleeping {wait/3600:.2f}h until next weekday 4:15pm ET")
+        await asyncio.sleep(wait)
+        try:
+            # _write_eod_snapshots is synchronous (uses requests + yfinance
+            # under the hood). Run in a thread to keep the event loop free
+            # for the price_alert_loop and other concurrent work.
+            result = await asyncio.get_event_loop().run_in_executor(None, _write_eod_snapshots)
+            print(f"[eod-snap] cron complete: {result}")
+        except Exception as e:
+            print(f"[eod-snap] loop error: {e}")
+        # Prevent double-firing if the wake-up clock drifts.
+        await asyncio.sleep(120)
+
+
+@app.get("/admin/test-eod-snapshot")
+def admin_test_eod_snapshot(request: Request):
+    """Manually trigger the EOD snapshot cron. Requires X-Admin-Key header.
+
+    Use this to verify the cron works without waiting for 4:15 PM ET. Safe to
+    call mid-day - the upsert keyed on (portfolio_id, date) just refreshes
+    today's row with the current intraday value.
+    """
+    _require_admin_key(request)
+    return _write_eod_snapshots()
 
 
 # ── Weekly Portfolio Checkup Push ──────────────────────────────────────────────

@@ -4,6 +4,28 @@ All notable changes to Corvo are documented here.
 
 ---
 
+## v0.30 - May 12, 2026 - dashboard polish: signal collapse, privacy toggle, hash scroll, day-over-day cron
+
+### Added
+- **Daily Signal starts minimized**. Header + headline stay visible; rationale, impact, action steps, and footer collapse behind a chevron. Click to expand, click again to collapse. State is persisted via `corvo_signal_collapsed` localStorage with the same semantics as the brief (only `"0"` keeps it expanded across sessions). Matches the Evening Brief default and keeps the dashboard above the fold.
+- **Privacy toggle for the live portfolio value**. Eye / eye-off button next to the live dollar amount in GreetingBar header replaces the value with `$••••••` and hides the day delta. Persisted via `corvo_value_hidden` localStorage. Tabular-num figures keep the layout stable across the toggle so nothing reflows.
+- **End-of-day portfolio snapshot cron** (`eod_portfolio_snapshot_loop`). Runs at 4:15 PM ET on weekdays, iterates every row in `portfolios`, and calls the existing `_portfolio_snapshot_inner` upsert. Backed by the v0.29 `portfolio_snapshots` schema fix - no new migration required. New admin endpoint `GET /admin/test-eod-snapshot` lets you manually trigger the cron without waiting for market close. Solves the long-standing "tomorrow it resets to the manual base again" problem: the data layer is now there for real day-over-day tracking. GreetingBar reads the snapshot history via the existing `perfHistory` prop and exposes yesterday's daily change in the live-value tooltip; richer visible carry-forward UI lands next iteration once the cron has accumulated a few weekdays of rows.
+- **Hash anchor scroll on the homepage**. The homepage wraps content in a 100vh `containerRef` div, so the browser's native scroll-to-`#id` was scrolling the window (which can't move) instead of the actual scrollable container. New `useEffect` listens to `hashchange` and scrolls `containerRef` to the target element on both initial load and subsequent in-page nav clicks. Fixes "click Features in the nav → URL updates but nothing scrolls" - and works for `/#install`, `/#pricing` etc. too.
+
+### Changed
+- **Morning / Evening Brief localStorage key bumped** from `corvo_brief_collapsed` to `corvo_brief_collapsed_v2`. Existing users who had inadvertently kept the brief expanded across sessions get reset to the collapsed default; v1 values are ignored. Same `"0"` semantics on the new key.
+- **CLAUDE.md gains four authoritative rules** (Railway GitHub integration "GENUINELY BROKEN", em dash exception for `.agents/skills/*` plugin docs, `/watchlist-data` 429s are normal log noise, plus a session-scoped caveat on the live portfolio value pattern). Open items for v0.29 cleared.
+
+### Fixed
+- **Scroll nav not working on the features section**. See "Hash anchor scroll" above for the underlying cause.
+- **Daily Signal was dominating the dashboard** on first load. Now minimized by default.
+
+### Operations
+- **Railway "Deploy on Push" disabled at the dashboard level** (`Settings → Source → Auto deploy is disabled`). Backend pushes will no longer trigger broken auto-deploys regardless of `watchPatterns`. Manual `railway up` is the only path now. `railway.toml` keeps the watchPatterns as belt-and-suspenders if anyone ever re-enables auto-deploy.
+- **All previously-leaked backend secrets rotated** (Anthropic, Finnhub, Supabase service role, Resend, VAPID). Old keys in public git history are now invalidated.
+
+---
+
 ## v0.29 - May 11, 2026
 
 ### Added
