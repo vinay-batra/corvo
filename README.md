@@ -31,7 +31,7 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 
 ### AI Tools
 - AI portfolio chat powered by Claude with full portfolio context, web search, persistent history, and conversation management
-- Daily Signal: a single AI-generated, actionable recommendation each day across 8 categories (Risk Alert, Rebalance, Tax Opportunity, Earnings Watch, Benchmark Lag, Protect Gains, Diversify, Strong Hold) with headline, rationale, impact chips, numbered steps, and confidence tooltip. Starts minimized (header + headline visible) so it doesn't dominate the dashboard; chevron expands the full card
+- What Should I Do Today: on-demand AI action plan that pulls live prices, portfolio metrics, and your goal profile to surface 2-3 specific moves (with rationale) you'd consider this week. The dashboard's top-of-fold action card
 - Morning briefing: a daily AI-generated summary of macro news and portfolio-relevant developments (defaults to collapsed; expand via chevron)
 - "What should I do today?" - a single-click, direct action recommendation based on your current holdings
 - Rebalance assistant with target allocation suggestions and drift analysis

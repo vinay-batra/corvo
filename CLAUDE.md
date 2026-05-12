@@ -7,35 +7,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.30 (May 12, 2026) - dashboard: WSID restored, Daily Signal removed, brief preview, privacy toggle, hash scroll, day-over-day cron, rate-limit bump**
+**Last shipped: v0.30 (May 12, 2026) - dashboard polish, day-over-day cron, logo overhaul, math fixes, AiChat crash fix**
 
-Major reversal mid-day: rolled back the Daily Signal pivot and restored the "What should I do today?" card as the single action surface above the metrics. The earlier v0.30 attempt put DailySignal between the GreetingBar and the WSID prompt, which Vinay flagged as "the signal shit" and asked to remove. Net dashboard layout: GreetingBar → WSID card → metrics. DailySignal component file is left in `frontend/components/DailySignal.tsx` and the `/daily-signal` backend route is still registered, just not rendered or called.
+Long session. Net dashboard layout after a mid-day reversal: GreetingBar (with brief preview when collapsed, privacy toggle on the live $ value) → WSID action card → metrics → performance chart → retirement / goal card. DailySignal component + `/daily-signal` backend route are still in the repo but not rendered / not called - the v0.30 attempt to consolidate around DailySignal was rolled back. Logo went through two iterations and settled on: transparent gold raven with 6 px alpha-dilated strokes for the master, dark-navy-filled tiles for browser-chrome favicons. Math bugs fixed: PerformanceChart dollar mode now anchors the right edge at the user's portfolioValue (was treating it as start-of-period and inflating), GoalTracker projection CAGR clamped to a 4-10% long-horizon band (was compounding the user's 1Y CAGR for 20 years and projecting fantasy), GoalTracker layout trimmed 3 → 2 stat columns. Backend: `eod_portfolio_snapshot_loop` runs daily at 4:15 PM ET (writes one row per saved portfolio); `/watchlist-data` rate limit bumped 30 → 600/hr (the 30 cap was locking the dashboard tiles out after ~15 min); new admin `GET /admin/real-stats` returns the truth behind the floored homepage `/stats`. AiChat: "Always watching" eyebrow dropped, message avatar 20 → 28 px, "Get Actions" button finally clickable, response parser pairs short headline blocks with their long explanation blocks (Claude was emitting them as separate paragraphs and the prior parser numbered them as separate actions), `SUGGESTION_SETS` index-out-of-bounds crash fixed (random-roll-of-4 against a 3-element array, 25% chance of `undefined.map()` into the segment error boundary). First `/admin/real-stats` snapshot returned 9 profiles / 4 saved portfolios / 55 chat_usage rows.
 
-Kept from the original v0.30 work: 2-line brief preview in GreetingBar when collapsed (pulled from `market.market`, clamped via `-webkit-line-clamp`), privacy toggle (eye / eye-off) on the live portfolio value (`corvo_value_hidden`), bumped brief key to `corvo_brief_collapsed_v2`, hash-anchor scroll on homepage (hardened with retries + 700ms fallback against GsapHero's `ScrollTrigger.refresh()` at +120ms), `eod_portfolio_snapshot_loop` background task running at 4:15 PM ET weekdays + admin trigger endpoint, `/watchlist-data` rate limit bumped 30→600/hr to stop locking the dashboard tiles out after ~15 minutes. Plus six post-ship clarifications (Railway broken, em dash plugin exception, watchlist rate-limit reality, session-scoped caveat, etc.) baked into CLAUDE.md as authoritative rules.
-
-**Backend deploy on Railway: ONLINE** (manual `railway up` ran 2026-05-12 - eod_portfolio_snapshot_loop is live and scheduled for 4:15 PM ET on weekdays).
+**Backend deploy on Railway: ONLINE** (two `railway up` runs on 2026-05-12 - `eod_portfolio_snapshot_loop`, `GET /admin/real-stats`, `GET /admin/test-eod-snapshot`, `/watchlist-data` 600/hr rate limit, all live on the running instance).
 
 ### Open items / next session
 
-1. **Verify the EOD cron fires today** by hitting `GET /admin/test-eod-snapshot` with the admin key around 4:15 PM ET. Should return `{ written, failed, skipped, total }`. Safe to call mid-day too - the upsert just refreshes today's row.
-2. **Visible day-over-day display** in GreetingBar / PortfolioBuilder. The data is now flowing (perfHistory → `yesterdayClosePct` useMemo → tooltip), but UI carry-forward beyond the hover label is still pending. Pick this up after the cron has 2-3 weekdays of accumulated rows.
-3. **Clean up the backend `/what-should-i-do` route** - the frontend caller and all WSID state was removed in v0.30 but the endpoint still exists in `backend/main.py`. Either delete or re-wire (e.g., from inside the Daily Signal expanded view as a "drill deeper" action).
+1. **Rotate `SUPABASE_SERVICE_ROLE_KEY` again.** The key was pasted into a Claude chat session on 2026-05-12 so the `/admin/real-stats` query could run. The full transcript retains it. Supabase dashboard → Project Settings → API → Reset `service_role` key, then update the value in Railway env vars (auto-redeploys). Same key is also used as `X-Admin-Key` for every `_require_admin_key` route, so the new value will work everywhere automatically.
+2. **Verify the EOD cron fires today** by hitting `GET /admin/test-eod-snapshot` with the (new) admin key around 4:15 PM ET. Should return `{ written, failed, skipped, total }`. Safe to call mid-day too - the upsert just refreshes today's row.
+3. **Visible day-over-day display** in GreetingBar / PortfolioBuilder. Data is now flowing (perfHistory → `yesterdayClosePct` useMemo → tooltip on the live value), but UI carry-forward beyond the hover label is still pending. Pick up after the cron has 2-3 weekdays of accumulated rows so there's something real to display.
+4. **Real platform stats (snapshot 2026-05-12)**: 9 profiles, 4 saved portfolios, 55 AI chat messages, 0 portfolio_snapshots yet, 0 health_score_cache rows, 1 price alert, 2 price targets. Homepage `/stats` still floors at 847 for marketing copy. Update floors if the real numbers cross them.
 
 ### Premium polish queue - pick up here next session
 
-Likely next moves: demo video, YC application, product direction brainstorm (cut News/Watchlist/Learn, build daily morning brief, action CTAs on insights), Plaid sandbox build, PDF reports. Day-over-day backend cron shipped; visible UI carry-forward still pending.
+Likely next moves: demo video, YC application (Founder Profile is open and needs Education/Work history + accomplishments), product direction brainstorm (cut News/Watchlist/Learn, build daily morning brief, action CTAs on insights), Plaid sandbox build, PDF reports. Day-over-day backend cron shipped; visible UI carry-forward still pending.
 
 ### Blocked / non-design work
 
 1. **Stripe/Pro tier ($9/mo)** - needs parent (Vinay is under 18; TOS requires 18+ to sign for Stripe)
 2. **Plaid integration** - auto-sync brokerage. Needs parent to sign for Plaid + production-access approval (weeks). Can build against sandbox in the meantime.
 
-### Logo asset reference
+### Logo asset reference (updated v0.30)
 
-- Master: `frontend/public/corvo-logo.png` (717x717 transparent PNG, gold raven head + rising arrow)
-- Favicon set: `favicon-16x16.png`, `favicon-32x32.png`, `favicon.ico` (multi-res 16/32/48), `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png`
-- Marketing: `og-image.png` (1200x630), `corvo-pfp.png` (400x400 on dark fill)
-- 26 inline `<img src="/corvo-logo.png">` callsites across 18 files depend on this path. Never rename. If swapping the design, replace the file in place + regenerate favicon variants.
+- **Master**: `frontend/public/corvo-logo.png` (717×717 **transparent** PNG, gold raven head + rising arrow with **6 px alpha-dilated strokes** as of v0.30 so the silhouette holds at 30-40 px nav sizes). Pipeline kept at `/tmp/corvo_logo_transparent_thick.py` - re-run with a different `DILATE_PX` to change stroke weight.
+- **Browser-chrome favicons** (these are the only logo files with a **dark navy fill** behind the bird): `favicon-16x16.png`, `favicon-32x32.png`, `favicon.ico` (multi-res 16/32/48), `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png`. Sourced from the thickened transparent master, 98% canvas fill, BG `#0a0e18`. Pipeline at `/tmp/corvo_favicon_v2.py`. **Never reuse these in-app** - they're opaque tiles meant for Chrome / iOS / PWA contexts where transparent gold would disappear against light chrome.
+- **Marketing**: `og-image.png` (1200×630), `corvo-pfp.png` (400×400 on dark fill).
+- 26 inline `<img src="/corvo-logo.png">` callsites across 18 files depend on the master path. Never rename. If swapping the design, replace the file in place + re-run both pipelines so master + favicons stay in sync.
+- **Failed experiment 2026-05-12**: making the master a dark-tile version (gold on opaque #0a0e18 square) so it'd "match the reference image everywhere". User rejected - it turned every inline logo into a small dark badge against light page backgrounds. Master stays transparent for in-app contexts; only the browser-chrome favicons carry the dark fill.
 
 ### Live portfolio value pattern
 
@@ -258,7 +258,7 @@ Key routes already implemented:
 
 ## What Was Built
 
-### v0.30 (May 12, 2026) - dashboard polish: signal collapse, privacy toggle, hash scroll, day-over-day cron
+### v0.30 (May 12, 2026) - dashboard polish, day-over-day cron, logo overhaul, math fixes, AiChat crash fix
 
 **Daily Signal collapse**
 - New `corvo_signal_collapsed` localStorage state, defaults `true`. Matches the Evening Brief semantics: only an explicit `"0"` keeps the signal expanded across sessions.
@@ -282,11 +282,11 @@ Key routes already implemented:
 - Fixes clicking `/#features`, `/#install`, `/#pricing` etc. from the nav: the homepage's 100vh overflow-auto containerRef hijacks the scroll, so the browser's native anchor scroll was scrolling the (un-scrollable) window. This bridges the gap.
 - **Hardening pass**: the first version's one-shot 60ms timeout was being clobbered by GsapHero's `ScrollTrigger.refresh()` that runs at +120ms post mount. New version retries up to 20× at 100ms intervals if element/scroller aren't ready, fires the initial scroll at 250ms (post GSAP refresh), AND re-attempts at 700ms as a fallback in case anything else jostled scrollTop. First attempt uses `behavior: "auto"` so a user-initiated scroll within the first 250-700ms doesn't cancel a smooth animation. Hashchange events (user clicking Features in nav) still get smooth scrolling on the single attempt.
 
-**WSID card removal**
-- Deleted the standalone "What should I do today?" card that sat directly below the Daily Signal. The two were doing the same job from the user's POV (one a pre-computed daily insight, the other an on-demand action plan) and stacked into visual repetition - especially when the signal was dismissed (slim "Today's signal dismissed" strip + WSID prompt directly below it).
-- Removed: `wsid` entry from `DASH_CARDS` and `DASH_CARD_LABELS`, all four `wsid*` state slots (`wsidOpen`, `wsidLoading`, `wsidResult`, `wsidError`), `handleWhatShouldIDo` function, the 180-line JSX block in the dashboard's overview region, the customizer's group entry, the section-header gate's `|| !hiddenCards.has("wsid")` clause, and a stale `setWsidResult(null); setWsidOpen(false);` reset call in `handleAnalyze` (which broke Vercel's TS type-check on first push, fixed in a follow-up commit).
-- Backend `/what-should-i-do` route left in place for now. Queued as a follow-up clean-up.
-- DailySignal's existing "Talk to Corvo AI about this" CTA already routes to the chat for free-form follow-ups, so the on-demand "what should I do" path is preserved.
+**Dashboard action surface (mid-day reversal)**
+- First pass: deleted the standalone WSID card on the grounds that it duplicated DailySignal's framing - both said "here's what to do" and the two stacked into visual repetition.
+- Second pass (committed same day): user rejected the consolidation. DailySignal removed from the dashboard render entirely; WSID fully restored - state slots, `handleWhatShouldIDo` function, JSX, customizer entry, section-header gate, and the `setWsidResult(null); setWsidOpen(false);` reset call in `handleAnalyze`. DailySignal component file (`frontend/components/DailySignal.tsx`) and the `/daily-signal` backend route are kept in the codebase but no longer rendered / called. Net dashboard top-of-fold: GreetingBar → WSID action card → metrics.
+- **WSID button click fix** (the "Get Actions" pill): the previous handler called `e.stopPropagation()` unconditionally but only acted when `wsidOpen + wsidResult` were both true (refresh state). In the initial state propagation was blocked without doing anything, so clicking the surrounding banner worked but clicking the button itself was a no-op. Now always fires `handleWhatShouldIDo`, clears `wsidResult` first when refreshing, supports keyboard (Enter / Space), cursor is always `pointer` except during loading.
+- **WSID response parser pairs headline + explanation.** Claude was emitting each action's headline and its explanation as separate blank-line blocks, so a 3-action plan rendered as 6 numbered bullets where every other one was really a paragraph. New parser: a short single-line block (<130 char) followed by a substantially longer block (>1.6× length or >120 char) gets paired as headline + paragraph. Multi-line blocks still parse the original way for backwards compat. Result: 3 bullets, paragraph beneath each.
 
 **Collapsed-brief preview**
 - New: when the brief is collapsed (default), GreetingBar shows a 2-line teaser pulled from `market.market` (the "Markets Today" snippet) directly under the greeting row.
@@ -300,10 +300,39 @@ Key routes already implemented:
 - New `yesterdayClosePct` useMemo derived from `perfHistory[length-1].portfolio_value` vs `perfHistory[length-2].portfolio_value`. Returns null when fewer than 2 snapshots are available.
 - For now surfaces only in the live-value `title` tooltip. Visible carry-forward UI lands after the cron has accumulated a few weekdays.
 
+**Logo overhaul (multiple iterations, settled here)**
+- Master `frontend/public/corvo-logo.png`: transparent gold raven with **6 px alpha-dilated strokes** so the silhouette holds at 30-40 px nav sizes. Pipeline `/tmp/corvo_logo_transparent_thick.py` (PIL `MaxFilter` for alpha dilation, then crop + 4% pad + 717 resize). Failed mid-day experiment: making the master a dark-tile (gold on opaque #0a0e18 square) so it'd look like the user's reference image everywhere. User rejected - turned every inline logo into a small dark badge against light page bg. Reverted to transparent.
+- Browser-chrome favicons get a **dark navy fill** (BG `#0a0e18`) at 98% canvas fill, re-sourced from the thickened transparent master. Pipeline `/tmp/corvo_favicon_v2.py`. Files: `favicon-16x16`, `favicon-32x32`, `favicon.ico` (multi-res 16/32/48), `apple-touch-icon`, `icon-192`, `icon-512`. Dark fill is essential for browser tab + iOS home screen visibility - transparent gold disappears against light chrome.
+- In-app callsite bumps: PublicNav 30 → 38 px with soft gold drop-shadow. Dashboard sidebar logo 26 → 34 px at full opacity (was 0.9). AiChat empty-state container 32×26 (squished) → 42×42. AiChat message-bubble avatar 20 → 28 px outer with inner ratio 0.58 → 0.72 + soft gold glow. Footer.tsx + PublicFooter.tsx gain 64 / 88 px watermark logos centered at the very bottom. Footer.tsx inline 16×13 squished aspect corrected to 22×22.
+
+**GoalTracker math fix**
+- Projection CAGR clamped to a **4-10% long-horizon band**. The old code compounded the user's `data.annualized_return` (often a 1Y hot run, e.g. 25.5%) across the full 20-year horizon, producing fantasy projections ($50 k base → $4.7 M target vs $1 M goal) and a "+$3.7M ahead of goal" line that read like a participation trophy. New `projectionCagr = max(0.04, min(observedCagr, 0.10))` is used for the projected value, the trajectory chart, and the required-CAGR math.
+- The card now surfaces the assumption explicitly: "Projection assumes 10.0% CAGR (capped from your recent 25.5%, long-horizon estimates use 4-10% so a single hot or cold year doesn't dominate the math)".
+- Stat row trimmed 3 → 2 columns (Projected + Status). CAGR detail folded into status line + the assumption note. "Projected" sub reframed from "+$3.7M ahead of goal" to neutral "Meets / $X short of $1M target". Green celebration footer dropped for on-track goals.
+
+**PerformanceChart math fix**
+- Dollar mode now anchors the **right edge at TODAY's portfolioValue**. Previously the chart treated `portfolioValue` as the *start*-of-period value and grew it forward by cumulative return, so a $50 k input showed $62.5 k at the right edge on a +25% YTD - inconsistent with every other place in the app that uses `portfolioValue` as a "current" anchor.
+- New implementation derives the implicit start-of-period value as `portfolioValue / (1 + last_cumulative_return)`, then plots everything against that. The last data point lands exactly on `portfolioValue`. Benchmark and saved-portfolio overlay use the same implicit start so the comparison reads as "if you'd put $start into S&P / saved-portfolio on day one".
+
+**`/watchlist-data` rate limit bumped 30 → 600 per hour**
+- Old 30/hour cap was breaking the dashboard. GreetingBar polls `/watchlist-data` every 60 s for index prices (^GSPC, ^IXIC, ^DJI) and the user's holdings - 2 calls × 60 polls = 120/hour for one tab, double for two tabs. Users with the dashboard open more than ~15 minutes saw the live-value tiles, holdings chips, and Markets mini-cards all stuck on "loading...".
+- 600/hour = 10/min average gives multi-tab headroom and absorbs genuine bursts.
+- CLAUDE.md rule corrected: 429s on this endpoint were a UX bug, not normal log noise.
+
+**Admin endpoint `GET /admin/real-stats`**
+- Returns the unfloored platform counts: `auth.users`, `profiles`, `portfolios`, `portfolio_snapshots`, `chat_usage`, `health_score_cache`, `price_alerts`, `price_targets`. Per-table counts use PostgREST's `Prefer: count=exact + Range: 0-0` trick. Failures swallowed per-table so one broken table doesn't 500 the response.
+- Header: `X-Admin-Key: $SUPABASE_SERVICE_ROLE_KEY` (same key the rest of `_require_admin_key` checks).
+- First snapshot (2026-05-12): 9 profiles, 4 saved portfolios, 55 chat_usage rows, 0 portfolio_snapshots (cron hadn't fired yet), 0 health_score_cache, 1 price alert, 2 price targets. Homepage `/stats` still displays 847+ for marketing copy.
+
+**AiChat polish + crash fix**
+- "Always watching" gold eyebrow above the empty-state headline dropped - the headline already carries the framing.
+- Avatar (CorvoAvatar component) 20 → 28 px outer with inner logo ratio 0.58 → 0.72 + 6 px gold drop-shadow + border opacity 0.25 → 0.35. Default size raised in the component definition too.
+- **SUGGESTION_SETS index-out-of-bounds crash fixed.** `useEffect` rolled `Math.floor(Math.random() * 4)` for the active suggestion set, but `SUGGESTION_SETS` only has 3 entries (indices 0/1/2). On a 25% roll the state landed on index 3, and `SUGGESTION_SETS[3].map()` in the empty-state render returned `undefined.map` → crashed into `app/error.tsx` ("Corvo hit an unexpected error"). Reload re-rolled and usually picked 0-2, masking the bug. Random now capped to `SUGGESTION_SETS.length`; render site has a `?? SUGGESTION_SETS[0]` fallback for future drift.
+
 **CLAUDE.md authoritative rules (post-v0.29 clarifications)**
 - Railway GitHub integration relabeled "GENUINELY BROKEN" + noted as dashboard-disabled.
 - Em dash rule scopes to project source only; explicit `.agents/skills/*` exception for vendored plugin docs.
-- `/watchlist-data` 429s in prod Railway logs are normal rate-limiter noise, not a bug.
+- `/watchlist-data` rate limit is 600/hr as of v0.30. Earlier rule that called 429s "normal log noise" was wrong - they were a UX bug. New rule: investigate any 429s on this endpoint going forward.
 - Live portfolio value pattern gains a session-scoped caveat + pointer to the day-over-day backlog (now resolved by this release).
 - Open items for v0.29 cleared.
 
