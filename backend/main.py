@@ -3835,6 +3835,83 @@ def platform_stats():
     return {"user_count": result}
 
 
+@app.get("/admin/real-stats")
+def admin_real_stats(request: Request):
+    """Return the raw, unfloored counts for users / portfolios / AI activity.
+    The public /stats endpoint clamps user_count to a 847 floor for the
+    marketing copy on the homepage. This endpoint reports the truth so the
+    operator can see actual traction. Requires X-Admin-Key header.
+    """
+    _require_admin_key(request)
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return {"error": "Supabase not configured"}
+
+    headers = {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+    }
+
+    def _count_table(table: str) -> int:
+        """Count rows in a REST-exposed table using PostgREST's
+        Prefer: count=exact + Range: 0-0 header trick. Returns 0 if anything
+        fails so the endpoint surfaces partial data rather than 500-ing on a
+        single broken table."""
+        try:
+            resp = requests.get(
+                f"{SUPABASE_URL}/rest/v1/{table}?select=id",
+                headers={**headers, "Prefer": "count=exact", "Range": "0-0"},
+                timeout=8,
+            )
+            cr = resp.headers.get("content-range", "")
+            if "/" in cr:
+                tail = cr.split("/")[-1]
+                return int(tail) if tail.isdigit() else 0
+        except Exception as exc:
+            print(f"[real-stats] count {table} failed: {exc}")
+        return 0
+
+    # 1. Real user count: auth.users via the admin API
+    user_count = 0
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1",
+            headers=headers, timeout=8,
+        )
+        if resp.status_code == 200:
+            user_count = resp.json().get("total", 0)
+    except Exception as exc:
+        print(f"[real-stats] auth.users failed: {exc}")
+
+    profile_count = _count_table("profiles")
+    portfolio_count = _count_table("portfolios")
+    snapshot_count = _count_table("portfolio_snapshots")
+    health_score_count = _count_table("health_score_cache")
+    chat_usage_count = _count_table("chat_usage")
+    price_alert_count = _count_table("price_alerts")
+    price_target_count = _count_table("price_targets")
+
+    return {
+        "users": {
+            "auth_users": user_count,
+            "profiles_rows": profile_count,
+            "homepage_displays": max(user_count, 847),
+        },
+        "portfolios": {
+            "saved_portfolios": portfolio_count,
+            "snapshots_written": snapshot_count,
+        },
+        "ai_activity": {
+            "chat_messages": chat_usage_count,
+            "health_scores_cached": health_score_count,
+        },
+        "alerts": {
+            "price_alerts": price_alert_count,
+            "price_targets": price_target_count,
+        },
+        "note": "auth_users counts every Supabase auth account ever created (includes inactive). saved_portfolios counts rows in the portfolios table. chat_messages is one row per assistant turn. homepage_displays is what /stats returns - floored at 847 for marketing copy.",
+    }
+
+
 @app.get("/watchlist-data")
 def watchlist_data(tickers: str, request: Request):
     """Return price, change_pct, and 7-day sparkline for a comma-separated list of tickers."""
