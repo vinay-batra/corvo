@@ -7,17 +7,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.30 (May 12, 2026) - dashboard polish: signal collapse, privacy toggle, hash scroll, day-over-day cron**
+**Last shipped: v0.30 (May 12, 2026) - dashboard consolidation: signal collapse, brief preview, privacy toggle, hash scroll, day-over-day cron, WSID removal**
 
-Daily Signal now defaults to minimized (header + headline visible, body collapses behind a chevron) so the dashboard stays glanceable - matches Evening Brief. Added a privacy toggle (eye / eye-off) on the live portfolio value display in GreetingBar that replaces the dollar amount with bullets, persisted to `corvo_value_hidden`. Bumped the brief's localStorage key to `corvo_brief_collapsed_v2` to force-reset returning users whose old `"0"` value was keeping the brief open against the new default. Fixed scroll-to-anchor on the homepage - the 100vh `containerRef` wrapper meant the browser was scrolling the (un-scrollable) window when you clicked `/#features`; new `hashchange` useEffect on the homepage scrolls `containerRef` to the target instead. Added the `eod_portfolio_snapshot_loop` background task - runs daily at 4:15 PM ET, iterates every saved portfolio, calls the existing `_portfolio_snapshot_inner` upsert against `portfolio_snapshots`. Closes the v0.29 day-over-day gap: snapshots are now persisted and the GreetingBar surfaces yesterday's daily change in the live-value tooltip. Plus all six post-ship clarifications (Railway broken, em dash plugin exception, watchlist 429s normal, session-scoped caveat, etc.) baked into CLAUDE.md as authoritative rules.
+Daily Signal now defaults to minimized (header + headline visible, body collapses behind a chevron) so the dashboard stays glanceable - matches Evening Brief. Removed the redundant "What should I do today?" card that sat right below the signal and duplicated its job (both surfaced "here's what to do" framing, especially obvious when the signal was dismissed and the WSID prompt appeared immediately below the slim strip). Added a 2-line preview of the brief when collapsed - pulled from `market.market`, clamped via `-webkit-line-clamp`, clicking the preview expands the full brief. Added a privacy toggle (eye / eye-off) on the live portfolio value display in GreetingBar that replaces the dollar amount with bullets, persisted to `corvo_value_hidden`. Bumped the brief's localStorage key to `corvo_brief_collapsed_v2` to force-reset returning users whose old `"0"` value was keeping the brief open against the new default. Fixed scroll-to-anchor on the homepage - the 100vh `containerRef` wrapper meant the browser was scrolling the (un-scrollable) window when you clicked `/#features`; new `hashchange` useEffect on the homepage scrolls `containerRef` to the target instead. Hardened with up-to-20× retries at 100ms intervals and a 700ms fallback because GsapHero's `ScrollTrigger.refresh()` at +120ms was clobbering the initial scroll position. Added the `eod_portfolio_snapshot_loop` background task - runs daily at 4:15 PM ET, iterates every saved portfolio, calls the existing `_portfolio_snapshot_inner` upsert against `portfolio_snapshots`. Closes the v0.29 day-over-day gap: snapshots are now persisted and the GreetingBar surfaces yesterday's daily change in the live-value tooltip. Plus all six post-ship clarifications (Railway broken, em dash plugin exception, watchlist 429s normal, session-scoped caveat, etc.) baked into CLAUDE.md as authoritative rules.
 
-**Backend deploy on Railway: PENDING** (frontend pushed; backend has the new EOD cron + admin test endpoint. Run the canonical manual deploy to ship it - the cron only starts after a fresh boot.)
+**Backend deploy on Railway: ONLINE** (manual `railway up` ran 2026-05-12 - eod_portfolio_snapshot_loop is live and scheduled for 4:15 PM ET on weekdays).
 
 ### Open items / next session
 
-1. **Manual `railway up` for backend** to activate the new EOD snapshot cron. Until that lands, `portfolio_snapshots` keeps getting written only on user-triggered `/portfolio/snapshot` calls and day-over-day tracking stays sparse.
-2. **Verify the cron** post-deploy by hitting `GET /admin/test-eod-snapshot` with the admin key. Should return `{ written, failed, skipped, total }` per the writer's return shape. Safe to call mid-day - the upsert just refreshes today's row.
-3. **Visible day-over-day display** in GreetingBar / PortfolioBuilder. The data is now flowing (perfHistory → `yesterdayClosePct` useMemo → tooltip), but UI carry-forward beyond the hover label is still pending. Pick this up after the cron has 2-3 weekdays of accumulated rows.
+1. **Verify the EOD cron fires today** by hitting `GET /admin/test-eod-snapshot` with the admin key around 4:15 PM ET. Should return `{ written, failed, skipped, total }`. Safe to call mid-day too - the upsert just refreshes today's row.
+2. **Visible day-over-day display** in GreetingBar / PortfolioBuilder. The data is now flowing (perfHistory → `yesterdayClosePct` useMemo → tooltip), but UI carry-forward beyond the hover label is still pending. Pick this up after the cron has 2-3 weekdays of accumulated rows.
+3. **Clean up the backend `/what-should-i-do` route** - the frontend caller and all WSID state was removed in v0.30 but the endpoint still exists in `backend/main.py`. Either delete or re-wire (e.g., from inside the Daily Signal expanded view as a "drill deeper" action).
 
 ### Premium polish queue - pick up here next session
 
@@ -275,9 +275,21 @@ Key routes already implemented:
 - Solves the v0.29 day-over-day gap. `portfolio_snapshots` columns already in place from `20260511020000_portfolio_snapshots_schema_fix.sql` - no new migration.
 
 **Homepage hash anchor scroll**
-- New useEffect in `frontend/app/page.tsx` (the homepage Landing component) listens to `hashchange` and runs once on mount via `setTimeout(60)` so layout settles first.
-- Reads `window.location.hash`, finds the target element, computes its offset relative to `containerRef.current`, calls `containerRef.current.scrollTo({ top, behavior: "smooth" })` minus a 68px nav-height fudge.
+- New useEffect in `frontend/app/page.tsx` (the homepage Landing component) listens to `hashchange` and runs on mount.
+- Reads `window.location.hash`, finds the target element, computes its offset relative to `containerRef.current`, calls `containerRef.current.scrollTo({ top, behavior })` minus a 68px nav-height fudge.
 - Fixes clicking `/#features`, `/#install`, `/#pricing` etc. from the nav: the homepage's 100vh overflow-auto containerRef hijacks the scroll, so the browser's native anchor scroll was scrolling the (un-scrollable) window. This bridges the gap.
+- **Hardening pass**: the first version's one-shot 60ms timeout was being clobbered by GsapHero's `ScrollTrigger.refresh()` that runs at +120ms post mount. New version retries up to 20× at 100ms intervals if element/scroller aren't ready, fires the initial scroll at 250ms (post GSAP refresh), AND re-attempts at 700ms as a fallback in case anything else jostled scrollTop. First attempt uses `behavior: "auto"` so a user-initiated scroll within the first 250-700ms doesn't cancel a smooth animation. Hashchange events (user clicking Features in nav) still get smooth scrolling on the single attempt.
+
+**WSID card removal**
+- Deleted the standalone "What should I do today?" card that sat directly below the Daily Signal. The two were doing the same job from the user's POV (one a pre-computed daily insight, the other an on-demand action plan) and stacked into visual repetition - especially when the signal was dismissed (slim "Today's signal dismissed" strip + WSID prompt directly below it).
+- Removed: `wsid` entry from `DASH_CARDS` and `DASH_CARD_LABELS`, all four `wsid*` state slots (`wsidOpen`, `wsidLoading`, `wsidResult`, `wsidError`), `handleWhatShouldIDo` function, the 180-line JSX block in the dashboard's overview region, the customizer's group entry, the section-header gate's `|| !hiddenCards.has("wsid")` clause, and a stale `setWsidResult(null); setWsidOpen(false);` reset call in `handleAnalyze` (which broke Vercel's TS type-check on first push, fixed in a follow-up commit).
+- Backend `/what-should-i-do` route left in place for now. Queued as a follow-up clean-up.
+- DailySignal's existing "Talk to Corvo AI about this" CTA already routes to the chat for free-form follow-ups, so the on-demand "what should I do" path is preserved.
+
+**Collapsed-brief preview**
+- New: when the brief is collapsed (default), GreetingBar shows a 2-line teaser pulled from `market.market` (the "Markets Today" snippet) directly under the greeting row.
+- `-webkit-line-clamp: 2` for clean ellipsis truncation, click expands the full brief (calls `toggleCollapsed`), `Enter` / Space also works for keyboard.
+- Hidden when `hideBriefing` is set or when `market?.market` isn't loaded yet, so empty briefs don't render an empty preview row.
 
 **Morning / Evening Brief localStorage key bump**
 - `corvo_brief_collapsed` → `corvo_brief_collapsed_v2`. Same `"0" = expanded` semantics on the new key; v1 ignored. One-time force-reset for returning users whose brief was inadvertently still open.
