@@ -216,7 +216,7 @@ Key routes already implemented:
 - **Evening Brief defaults to collapsed**. localStorage `corvo_brief_collapsed` value `"0"` means expanded (user opted in); any other value means collapsed.
 - **PublicNav** is the single source of truth for the public nav. The homepage uses `<PublicNav scrollerRef={containerRef} />` to drive scroll-aware hide/show off its inner 100vh container. Other pages use `<PublicNav />` (no ref) which falls back to `window.scrollY`. Scroll behavior is `requestAnimationFrame` polling, NOT scroll events.
 - **PublicNav inner container** uses `max-width: 1240, padding: 0 56px` matching the hero content width. Logo aligns with the leading edge of "The advisor" headline; Get Started pill aligns with the trailing edge.
-- **`/watchlist-data` 429s in prod Railway logs are normal** - that's the rate limiter doing its job. Not a bug, do not chase. Only investigate if you see sustained spikes or 5xx errors in the same window.
+- **`/watchlist-data` rate limit is 600/hour** (10/min average) as of v0.30. The earlier 30/hour limit was breaking the dashboard: GreetingBar polls `/watchlist-data` every 60s for both index prices (^GSPC, ^IXIC, ^DJI) and the user's holdings - 2 calls × 60 polls = 120/hour for one tab, double for two tabs. Users with the dashboard open more than ~15 minutes saw the live-value tiles, holdings chips, and "Markets" mini-cards stuck on "loading..." because every poll was 429-ing. If 429s start showing up in prod Railway logs again, do investigate - they're no longer expected background noise.
 
 ## Mobile Rules
 
