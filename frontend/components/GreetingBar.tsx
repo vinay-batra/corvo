@@ -126,9 +126,14 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
   const firstName = resolvedName.trim().split(" ")[0] || null;
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
+  // Default to collapsed: the brief is a wall of text and the Today's Signal
+  // card below it should be the dashboard's main focal point. The user can
+  // expand the brief via the chevron, and their preference sticks via
+  // localStorage. Only an explicit "0" (user expanded) keeps it open across
+  // sessions; everything else defaults to collapsed.
   const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem("corvo_brief_collapsed") === "1"; } catch { return false; }
+    if (typeof window === "undefined") return true;
+    try { return localStorage.getItem("corvo_brief_collapsed") !== "0"; } catch { return true; }
   });
   const toggleCollapsed = () => setCollapsed(c => {
     const next = !c;
