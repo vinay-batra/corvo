@@ -2658,18 +2658,38 @@ const { dark, toggle: toggleDark }  = useTheme();
                     </div>
                     <div
                       onClick={e => {
+                        // Always handle the click here - the outer banner has its
+                        // own onClick but stopping propagation prevents accidental
+                        // double-fires. Refresh state clears the cached result
+                        // first so handleWhatShouldIDo re-fetches instead of
+                        // collapsing the panel.
                         e.stopPropagation();
-                        if (wsidOpen && wsidResult) { setWsidResult(null); handleWhatShouldIDo(); }
+                        if (wsidOpen && wsidResult) {
+                          setWsidResult(null);
+                        }
+                        handleWhatShouldIDo();
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (wsidOpen && wsidResult) setWsidResult(null);
+                          handleWhatShouldIDo();
+                        }
                       }}
                       style={{
                         padding: "12px 24px", fontSize: 13, fontWeight: 700, borderRadius: 10,
                         background: "var(--accent)", color: "var(--bg)", flexShrink: 0,
                         display: "flex", alignItems: "center", gap: 6,
-                        cursor: wsidOpen && wsidResult ? "pointer" : "default",
+                        cursor: wsidLoading ? "default" : "pointer",
                         pointerEvents: wsidLoading ? "none" : "auto",
                         letterSpacing: 0.2, whiteSpace: "nowrap" as const,
-                        transition: "opacity 0.15s",
-                      }}>
+                        transition: "opacity 0.15s, transform 0.12s",
+                      }}
+                      onMouseEnter={e => { if (!wsidLoading) (e.currentTarget as HTMLDivElement).style.opacity = "0.9"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.opacity = "1"; }}>
                       {wsidLoading ? (
                         <>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
@@ -2706,45 +2726,87 @@ const { dark, toggle: toggleDark }  = useTheme();
                           ) : wsidResult ? (
                             <div>
                               {(() => {
-                                // Split into blank-line-separated blocks. Last block starting with "These actions" is the closing summary.
+                                // Parse Claude's response into action+explanation pairs.
+                                //
+                                // Two LLM output shapes we have to handle:
+                                //
+                                // Shape A (intended by the prompt):
+                                //   Trim VIG from 35% to 20%
+                                //   VIG has drifted to an outsized weight, this concentrates risk.
+                                //
+                                //   Trim SCHD from 35% to 20%
+                                //   SCHD overlaps with VIG, rotating into QQQ adds growth exposure.
+                                //
+                                // Shape B (what Claude actually emits often, single-line per block):
+                                //   Trim VIG from 35% to 20%
+                                //
+                                //   VIG has drifted to an outsized weight, this concentrates risk.
+                                //
+                                //   Trim SCHD from 35% to 20%
+                                //
+                                //   SCHD overlaps with VIG, rotating into QQQ adds growth exposure.
+                                //
+                                // Previous version handled only Shape A and rendered Shape B as
+                                // 6 numbered "actions" - every other one was actually an
+                                // explanation, which was the layout bug the user flagged. New
+                                // version pairs single-line short blocks with the longer block
+                                // that follows.
                                 const blocks = wsidResult.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
                                 const summaryPattern = /^these actions/i;
                                 const summaryBlock = blocks.find(b => summaryPattern.test(b));
-                                const actionBlocks = blocks.filter(b => !summaryPattern.test(b));
+                                const raw = blocks.filter(b => !summaryPattern.test(b)).map(b => b.replace(/^\d+\.\s*/, "").trim());
+
+                                const pairs: Array<{ headline: string; explanation: string }> = [];
+                                for (let i = 0; i < raw.length; i++) {
+                                  const block = raw[i];
+                                  const lines = block.split(/\n/).map(l => l.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
+                                  if (lines.length > 1) {
+                                    // Shape A: headline + explanation packed in one block
+                                    pairs.push({ headline: lines[0], explanation: lines.slice(1).join(" ") });
+                                    continue;
+                                  }
+                                  // Single-line block. Check if the next block looks like its
+                                  // explanation (substantially longer or contains a period
+                                  // mid-sentence, which a real action almost never has).
+                                  const next = raw[i + 1];
+                                  const isShortAction = block.length < 130;
+                                  const nextIsLongExplanation = next && (next.length > block.length * 1.6 || next.length > 120);
+                                  if (isShortAction && nextIsLongExplanation) {
+                                    pairs.push({ headline: block, explanation: next });
+                                    i++; // consume the explanation block
+                                  } else {
+                                    pairs.push({ headline: block, explanation: "" });
+                                  }
+                                }
                                 return (
                                   <div style={{ display: "flex", flexDirection: "column" }}>
-                                    {actionBlocks.map((block, i) => {
-                                      const lines = block.split(/\n/).map(l => l.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
-                                      const headline = lines[0];
-                                      const explanation = lines.slice(1).join(" ");
-                                      return (
-                                        <div key={i}>
-                                          <div style={{ padding: "14px 0" }}>
-                                            <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: explanation ? 8 : 0 }}>
-                                              <div style={{
-                                                width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                                                background: "rgba(201,168,76,0.18)", border: "1px solid rgba(201,168,76,0.4)",
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                fontSize: 11, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)",
-                                              }}>
-                                                {i + 1}
-                                              </div>
-                                              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", lineHeight: 1.5 }}>
-                                                {headline}
-                                              </div>
+                                    {pairs.map((pair, i) => (
+                                      <div key={i}>
+                                        <div style={{ padding: "14px 0" }}>
+                                          <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: pair.explanation ? 8 : 0 }}>
+                                            <div style={{
+                                              width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                                              background: "rgba(201,168,76,0.18)", border: "1px solid rgba(201,168,76,0.4)",
+                                              display: "flex", alignItems: "center", justifyContent: "center",
+                                              fontSize: 11, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)",
+                                            }}>
+                                              {i + 1}
                                             </div>
-                                            {explanation && (
-                                              <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, paddingLeft: 38 }}>
-                                                {explanation}
-                                              </div>
-                                            )}
+                                            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", lineHeight: 1.5 }}>
+                                              {pair.headline}
+                                            </div>
                                           </div>
-                                          {i < actionBlocks.length - 1 && (
-                                            <div style={{ height: 1, background: "var(--border)", opacity: 0.5 }} />
+                                          {pair.explanation && (
+                                            <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, paddingLeft: 38 }}>
+                                              {pair.explanation}
+                                            </div>
                                           )}
                                         </div>
-                                      );
-                                    })}
+                                        {i < pairs.length - 1 && (
+                                          <div style={{ height: 1, background: "var(--border)", opacity: 0.5 }} />
+                                        )}
+                                      </div>
+                                    ))}
                                     {summaryBlock && (
                                       <div style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.6, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
                                         {summaryBlock}
