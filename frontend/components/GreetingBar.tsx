@@ -52,6 +52,11 @@ interface Props {
   displayName: string;
   portfolioData: any;
   assets: { ticker: string; weight: number }[];
+  // perfHistory: daily portfolio_snapshots rows the dashboard fetches for the
+  // saved portfolio, oldest first. Used here to derive yesterday's close
+  // change (day-over-day) and annotate the live value with it. Once the new
+  // EOD snapshot cron (backend/main.py: eod_portfolio_snapshot_loop) has been
+  // running for a few days, perfHistory will be a contiguous weekday series.
   perfHistory?: PerfSnapshot[];
   portfolioValue?: number;
   hideBriefing?: boolean;
@@ -115,7 +120,7 @@ function HoldingChip({ label, pct, price }: { label: string; pct: number | null;
   );
 }
 
-export default function GreetingBar({ displayName, assets, portfolioValue, hideBriefing, hideTickers, onTodayPctChange }: Props) {
+export default function GreetingBar({ displayName, assets, portfolioValue, perfHistory, hideBriefing, hideTickers, onTodayPctChange }: Props) {
   const [resolvedName, setResolvedName] = useState(displayName || "");
   useEffect(() => {
     if (displayName?.trim()) { setResolvedName(displayName.trim()); return; }
@@ -134,13 +139,32 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
   // expand the brief via the chevron, and their preference sticks via
   // localStorage. Only an explicit "0" (user expanded) keeps it open across
   // sessions; everything else defaults to collapsed.
+  //
+  // Key was bumped from v1 to v2 on 2026-05-12 to force-reset all existing
+  // users back to the collapsed default. Some users had inadvertently kept
+  // the brief expanded across sessions and the "should start minimized"
+  // intent was getting lost. v1 value is ignored.
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return true;
-    try { return localStorage.getItem("corvo_brief_collapsed") !== "0"; } catch { return true; }
+    try { return localStorage.getItem("corvo_brief_collapsed_v2") !== "0"; } catch { return true; }
   });
   const toggleCollapsed = () => setCollapsed(c => {
     const next = !c;
-    try { localStorage.setItem("corvo_brief_collapsed", next ? "1" : "0"); } catch {}
+    try { localStorage.setItem("corvo_brief_collapsed_v2", next ? "1" : "0"); } catch {}
+    return next;
+  });
+
+  // Privacy toggle for the live portfolio value displayed next to the
+  // greeting. When on, the dollar amount and delta are replaced with bullets
+  // so screenshots / over-the-shoulder reads don't leak the user's net
+  // worth. Defaults to visible; persisted to localStorage `corvo_value_hidden`.
+  const [valueHidden, setValueHidden] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem("corvo_value_hidden") === "1"; } catch { return false; }
+  });
+  const toggleValueHidden = () => setValueHidden(h => {
+    const next = !h;
+    try { localStorage.setItem("corvo_value_hidden", next ? "1" : "0"); } catch {}
     return next;
   });
 
@@ -247,6 +271,22 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
     onTodayPctChange?.(portfolioToday?.pct ?? null);
   }, [portfolioToday, onTodayPctChange]);
 
+  // Day-over-day change derived from yesterday's vs day-before's snapshot.
+  // Sourced from portfolio_snapshots via the EOD cron (backend
+  // eod_portfolio_snapshot_loop, writes one row per saved portfolio at 4:15
+  // PM ET on weekdays). Falls back to null when fewer than 2 snapshots are
+  // available (new portfolios, weekends, or the cron hasn't run yet).
+  const yesterdayClosePct = useMemo<number | null>(() => {
+    if (!perfHistory || perfHistory.length < 2) return null;
+    const last = perfHistory[perfHistory.length - 1];
+    const prev = perfHistory[perfHistory.length - 2];
+    if (!last || !prev) return null;
+    const lv = Number(last.portfolio_value);
+    const pv = Number(prev.portfolio_value);
+    if (!Number.isFinite(lv) || !Number.isFinite(pv) || pv <= 0) return null;
+    return ((lv - pv) / pv) * 100;
+  }, [perfHistory]);
+
   const validHoldingTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
   const baseChips = holdingPrices.length > 0
     ? holdingPrices.map(h => ({ label: h.ticker, pct: h.changePct, price: h.price }))
@@ -345,7 +385,13 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
                 flexShrink: 0,
                 fontFamily: "'Space Mono', monospace",
               }}
-              title="Today's estimated portfolio value"
+              title={
+                valueHidden
+                  ? "Show portfolio value"
+                  : yesterdayClosePct != null
+                    ? `Today's estimated portfolio value · Yesterday closed ${yesterdayClosePct >= 0 ? "+" : ""}${yesterdayClosePct.toFixed(2)}%`
+                    : "Today's estimated portfolio value"
+              }
             >
               <span
                 style={{
@@ -354,31 +400,73 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
                   color: "var(--text)",
                   letterSpacing: -0.5,
                   lineHeight: 1.1,
+                  // Tabular bullets keep width stable so the layout doesn't
+                  // jump when toggling hide/show.
+                  fontVariantNumeric: "tabular-nums",
                 }}
               >
-                ${(portfolioValue! * (1 + (portfolioToday?.pct ?? 0) / 100)).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                {valueHidden
+                  ? "$••••••"
+                  : `$${(portfolioValue! * (1 + (portfolioToday?.pct ?? 0) / 100)).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
               </span>
-              {portfolioToday ? (
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: portfolioToday.pct >= 0 ? "#4caf7d" : "var(--red)",
-                    letterSpacing: 0.1,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {portfolioToday.dollar != null && (
-                    <>
-                      {portfolioToday.dollar >= 0 ? "+" : "-"}${Math.abs(portfolioToday.dollar).toLocaleString("en-US", { maximumFractionDigits: 0 })}
-                      <span style={{ color: "var(--text3)", margin: "0 6px", fontWeight: 400 }}>·</span>
-                    </>
-                  )}
-                  {portfolioToday.pct >= 0 ? "+" : ""}{portfolioToday.pct.toFixed(2)}%
-                </span>
-              ) : (
-                <span style={{ fontSize: 11, color: "var(--text3)" }}>{mkt.isOpen ? "loading..." : "market closed"}</span>
+              {!valueHidden && (
+                portfolioToday ? (
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: portfolioToday.pct >= 0 ? "#4caf7d" : "var(--red)",
+                      letterSpacing: 0.1,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {portfolioToday.dollar != null && (
+                      <>
+                        {portfolioToday.dollar >= 0 ? "+" : "-"}${Math.abs(portfolioToday.dollar).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                        <span style={{ color: "var(--text3)", margin: "0 6px", fontWeight: 400 }}>·</span>
+                      </>
+                    )}
+                    {portfolioToday.pct >= 0 ? "+" : ""}{portfolioToday.pct.toFixed(2)}%
+                  </span>
+                ) : (
+                  <span style={{ fontSize: 11, color: "var(--text3)" }}>{mkt.isOpen ? "loading..." : "market closed"}</span>
+                )
               )}
+              {/* Privacy toggle: hide the dollar amount + delta with a single click */}
+              <button
+                type="button"
+                onClick={toggleValueHidden}
+                aria-label={valueHidden ? "Show portfolio value" : "Hide portfolio value"}
+                title={valueHidden ? "Show portfolio value" : "Hide portfolio value"}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text3)",
+                  padding: 4,
+                  marginLeft: 2,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  borderRadius: 6,
+                  transition: "color 0.12s, background 0.12s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--bg3)"; }}
+                onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}
+              >
+                {valueHidden ? (
+                  /* eye-off */
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                ) : (
+                  /* eye */
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+              </button>
             </div>
           )}
         </div>

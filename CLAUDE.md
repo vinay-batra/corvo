@@ -7,19 +7,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.29 (May 11, 2026) - product polish: logo, nav, live portfolio value, OG card, schema fix**
+**Last shipped: v0.30 (May 12, 2026) - dashboard polish: signal collapse, privacy toggle, hash scroll, day-over-day cron**
 
-Replaced the C-in-gold-circle logo with a new gold raven head + arrow across the whole site (nav, footer, AI avatar, dashboard, favicon, iOS home screen, PWA install, OG cards). Polished PublicNav to 68px height with hover bubbles + content-aligned inner container + bulletproof scroll-aware hide/show that finally works on the homepage (rAF polling instead of scroll events). Dashboard now shows live portfolio value (`base x (1 + today's pct)`) right next to the greeting AND in the sidebar input; the Evening Brief collapses by default so Today's Signal is the focal point. Fixed a stale-schema bug in portfolio_snapshots that was 500-ing in prod (legacy un-timestamped migration was silently skipped). Manual Railway deploy ran cleanly; added `watchPatterns` to railway.toml so frontend pushes stop triggering broken auto-deploys. Anthropic key was already rotated by Vinay; the leaked `backend/.env` is untracked from git but remains in commit history.
+Daily Signal now defaults to minimized (header + headline visible, body collapses behind a chevron) so the dashboard stays glanceable - matches Evening Brief. Added a privacy toggle (eye / eye-off) on the live portfolio value display in GreetingBar that replaces the dollar amount with bullets, persisted to `corvo_value_hidden`. Bumped the brief's localStorage key to `corvo_brief_collapsed_v2` to force-reset returning users whose old `"0"` value was keeping the brief open against the new default. Fixed scroll-to-anchor on the homepage - the 100vh `containerRef` wrapper meant the browser was scrolling the (un-scrollable) window when you clicked `/#features`; new `hashchange` useEffect on the homepage scrolls `containerRef` to the target instead. Added the `eod_portfolio_snapshot_loop` background task - runs daily at 4:15 PM ET, iterates every saved portfolio, calls the existing `_portfolio_snapshot_inner` upsert against `portfolio_snapshots`. Closes the v0.29 day-over-day gap: snapshots are now persisted and the GreetingBar surfaces yesterday's daily change in the live-value tooltip. Plus all six post-ship clarifications (Railway broken, em dash plugin exception, watchlist 429s normal, session-scoped caveat, etc.) baked into CLAUDE.md as authoritative rules.
 
-**Backend deploy on Railway: ONLINE** (manual deploy `970a4bf5`, May 11 - has v0.28 audit pass changes live).
+**Backend deploy on Railway: PENDING** (frontend pushed; backend has the new EOD cron + admin test endpoint. Run the canonical manual deploy to ship it - the cron only starts after a fresh boot.)
 
 ### Open items / next session
 
-Empty. All v0.29 open items resolved 2026-05-12: secret rotation done (Anthropic + Finnhub + Supabase service role + Resend + VAPID — old keys in public git history are now invalidated), Railway "Deploy on Push" disabled at the dashboard level (backend is fully manual-deploy now), OG card cache refresh intentionally skipped (new shares pick up the new card; old shares can wait for TTL).
+1. **Manual `railway up` for backend** to activate the new EOD snapshot cron. Until that lands, `portfolio_snapshots` keeps getting written only on user-triggered `/portfolio/snapshot` calls and day-over-day tracking stays sparse.
+2. **Verify the cron** post-deploy by hitting `GET /admin/test-eod-snapshot` with the admin key. Should return `{ written, failed, skipped, total }` per the writer's return shape. Safe to call mid-day - the upsert just refreshes today's row.
+3. **Visible day-over-day display** in GreetingBar / PortfolioBuilder. The data is now flowing (perfHistory → `yesterdayClosePct` useMemo → tooltip), but UI carry-forward beyond the hover label is still pending. Pick this up after the cron has 2-3 weekdays of accumulated rows.
 
 ### Premium polish queue - pick up here next session
 
-Empty. Likely next moves: demo video, YC application, product direction brainstorm (cut News/Watchlist/Learn, build daily morning brief, action CTAs on insights), Plaid sandbox build, PDF reports, day-over-day portfolio value tracking (requires backend table for end-of-day values).
+Likely next moves: demo video, YC application, product direction brainstorm (cut News/Watchlist/Learn, build daily morning brief, action CTAs on insights), Plaid sandbox build, PDF reports. Day-over-day backend cron shipped; visible UI carry-forward still pending.
 
 ### Blocked / non-design work
 
@@ -250,9 +252,46 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.29
+- Version: v0.30
 
 ## What Was Built
+
+### v0.30 (May 12, 2026) - dashboard polish: signal collapse, privacy toggle, hash scroll, day-over-day cron
+
+**Daily Signal collapse**
+- New `corvo_signal_collapsed` localStorage state, defaults `true`. Matches the Evening Brief semantics: only an explicit `"0"` keeps the signal expanded across sessions.
+- Header row gains a chevron-down button that rotates 180° when expanded. Headline stays visible in both states. Rationale + impact chips + action steps + confidence/CTA footer all live inside a single `<div>` wrapper with `max-height: 0 → 4000` and `opacity: 0 → 1` transitions (matches the GreetingBar collapse pattern).
+- Dismiss button kept (slim "Today's signal dismissed" strip still appears when clicked).
+
+**Live portfolio value privacy toggle**
+- New `corvo_value_hidden` localStorage state, defaults `false`. Eye / eye-off SVG button sits inline at the end of the live-value group in GreetingBar header.
+- When on: dollar amount swaps to `$••••••` and the day delta + "loading..." / "market closed" subtext are hidden. Eye icon flips to eye-off. The hidden value uses `fontVariantNumeric: tabular-nums` so the layout doesn't reflow on toggle.
+
+**End-of-day snapshot cron (`eod_portfolio_snapshot_loop`)**
+- 9th background task in `lifespan`. Startup delay 300s (last in the stagger), then waits until 4:15 PM ET on the next weekday and fires every 24h after.
+- `_write_eod_snapshots()` fetches every row of `portfolios` (id, user_id, tickers, weights), normalises array vs CSV ticker/weight columns, constructs a `SnapshotRequest`, and calls the existing `_portfolio_snapshot_inner`. The inner writer's PATCH-then-POST upsert keyed on `(portfolio_id, date)` makes the cron idempotent on same-day re-runs.
+- Synchronous body runs in `run_in_executor` to keep the event loop free for `price_alert_loop` and other concurrent tasks. Per-write try/except so one bad portfolio (missing tickers, yfinance flaky) doesn't poison the batch.
+- New `GET /admin/test-eod-snapshot` endpoint requires `X-Admin-Key`. Use it to manually trigger the cron without waiting for market close (safe mid-day; just refreshes today's row).
+- Solves the v0.29 day-over-day gap. `portfolio_snapshots` columns already in place from `20260511020000_portfolio_snapshots_schema_fix.sql` - no new migration.
+
+**Homepage hash anchor scroll**
+- New useEffect in `frontend/app/page.tsx` (the homepage Landing component) listens to `hashchange` and runs once on mount via `setTimeout(60)` so layout settles first.
+- Reads `window.location.hash`, finds the target element, computes its offset relative to `containerRef.current`, calls `containerRef.current.scrollTo({ top, behavior: "smooth" })` minus a 68px nav-height fudge.
+- Fixes clicking `/#features`, `/#install`, `/#pricing` etc. from the nav: the homepage's 100vh overflow-auto containerRef hijacks the scroll, so the browser's native anchor scroll was scrolling the (un-scrollable) window. This bridges the gap.
+
+**Morning / Evening Brief localStorage key bump**
+- `corvo_brief_collapsed` → `corvo_brief_collapsed_v2`. Same `"0" = expanded` semantics on the new key; v1 ignored. One-time force-reset for returning users whose brief was inadvertently still open.
+
+**GreetingBar perfHistory wiring**
+- New `yesterdayClosePct` useMemo derived from `perfHistory[length-1].portfolio_value` vs `perfHistory[length-2].portfolio_value`. Returns null when fewer than 2 snapshots are available.
+- For now surfaces only in the live-value `title` tooltip. Visible carry-forward UI lands after the cron has accumulated a few weekdays.
+
+**CLAUDE.md authoritative rules (post-v0.29 clarifications)**
+- Railway GitHub integration relabeled "GENUINELY BROKEN" + noted as dashboard-disabled.
+- Em dash rule scopes to project source only; explicit `.agents/skills/*` exception for vendored plugin docs.
+- `/watchlist-data` 429s in prod Railway logs are normal rate-limiter noise, not a bug.
+- Live portfolio value pattern gains a session-scoped caveat + pointer to the day-over-day backlog (now resolved by this release).
+- Open items for v0.29 cleared.
 
 ### v0.29 (May 11, 2026) - product polish: logo, nav, live portfolio value, OG card, schema fix
 

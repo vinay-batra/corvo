@@ -233,6 +233,21 @@ export default function DailySignal({ data, assets, portfolioValue, userId, onAs
   const todayKey = new Date().toISOString().slice(0, 10);
   const dismissKey = `corvo_signal_dismissed_${todayKey}`;
 
+  // Default minimized so the signal is glanceable without dominating the
+  // dashboard. Header + headline stay visible; rationale / impact / action
+  // steps / footer collapse behind the chevron. Only an explicit "0" (user
+  // chose to expand) survives across sessions; everything else defaults to
+  // collapsed.
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try { return localStorage.getItem("corvo_signal_collapsed") !== "0"; } catch { return true; }
+  });
+  const toggleCollapsed = () => setCollapsed(c => {
+    const next = !c;
+    try { localStorage.setItem("corvo_signal_collapsed", next ? "1" : "0"); } catch {}
+    return next;
+  });
+
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem(dismissKey) === "1") {
       setDismissed(true);
@@ -379,6 +394,20 @@ export default function DailySignal({ data, assets, portfolioValue, userId, onAs
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.3 }}>{cat}</span>
             </div>
 
+            {/* Expand / collapse */}
+            <button
+              onClick={toggleCollapsed}
+              title={collapsed ? "Expand signal" : "Collapse signal"}
+              aria-label={collapsed ? "Expand signal" : "Collapse signal"}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: "2px 4px", display: "flex", alignItems: "center", transition: "color 0.12s, transform 0.2s ease", transform: collapsed ? "rotate(0deg)" : "rotate(180deg)" }}
+              onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+
             {/* Dismiss */}
             <button
               onClick={handleDismiss}
@@ -397,10 +426,21 @@ export default function DailySignal({ data, assets, portfolioValue, userId, onAs
         {/* ── Headline ───────────────────────────────────────────────────── */}
         <h2 style={{
           fontSize: 22, fontWeight: 700, color: "var(--text)",
-          margin: "0 0 12px", letterSpacing: -0.4, lineHeight: 1.2,
+          margin: collapsed ? 0 : "0 0 12px", letterSpacing: -0.4, lineHeight: 1.2,
+          transition: "margin 0.25s ease",
         }}>
           {signal.headline}
         </h2>
+
+        {/* ── Collapsible body (rationale, impact, steps, footer) ─────────── */}
+        <div
+          style={{
+            overflow: "hidden",
+            maxHeight: collapsed ? 0 : 4000,
+            opacity: collapsed ? 0 : 1,
+            transition: "max-height 0.35s ease, opacity 0.2s ease",
+          }}
+        >
 
         {/* ── Rationale ──────────────────────────────────────────────────── */}
         <p style={{
@@ -506,6 +546,9 @@ export default function DailySignal({ data, assets, portfolioValue, userId, onAs
             Talk to Corvo AI about this
           </button>
         </div>
+
+        </div>
+        {/* /collapsible body */}
       </div>
     </motion.div>
   );

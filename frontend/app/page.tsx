@@ -3286,6 +3286,33 @@ export default function Landing() {
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, []);
 
+  // Hash anchor scroll: the homepage wraps everything in a 100vh
+  // overflow-auto container (containerRef), so the browser's native "scroll
+  // to #id" doesn't work - the browser scrolls the window, but our
+  // scrollable element is the nested container. Clicking the "Features" nav
+  // link (href="/#features") would update the URL but not move anything on
+  // screen. This effect bridges the gap: on mount and on every hashchange,
+  // we find the target element and scrollTo its offset inside containerRef.
+  useEffect(() => {
+    const NAV_HEIGHT = 68; // matches PublicNav height; gives the section a little breathing room under the nav
+    const scrollToHash = () => {
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      if (!hash) return;
+      const targetId = hash.slice(1);
+      const el = document.getElementById(targetId);
+      const scroller = containerRef.current;
+      if (!el || !scroller) return;
+      const elRect = el.getBoundingClientRect();
+      const scRect = scroller.getBoundingClientRect();
+      const top = elRect.top - scRect.top + scroller.scrollTop - NAV_HEIGHT;
+      scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    };
+    // Initial: wait a frame so layout (GSAP pinning, async sections) settles.
+    const t = setTimeout(scrollToHash, 60);
+    window.addEventListener("hashchange", scrollToHash);
+    return () => { clearTimeout(t); window.removeEventListener("hashchange", scrollToHash); };
+  }, []);
+
   const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
 
   // Logged-in status is only needed to gate "Get Started" CTAs inside hero
