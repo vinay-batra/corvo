@@ -130,10 +130,30 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
     onSavedLinesChange(savedLines.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
   };
 
-  // Dollar mode: convert cumulative decimal returns to absolute dollar values
+  // Dollar mode: convert cumulative decimal returns to absolute dollar values.
+  //
+  // The user's portfolioValue is the value of the portfolio TODAY (what they
+  // typed into the sidebar input). The previous version treated it as the
+  // value at the *start* of the lookback window, then grew it forward by the
+  // cumulative return - so a $50k input with 25% YTD return would display
+  // $62.5k at the right edge of the chart. That's exactly what the user
+  // flagged: "how is it saying my portfolio is 62k when its 50k". The chart
+  // and the sidebar input were disagreeing on what $50k means.
+  //
+  // Fix: anchor the right-edge (today) data point to portfolioValue. Derive
+  // the implicit start-of-period value by walking the cumulative return
+  // backwards: start = today / (1 + cumulative_return_at_today). Everything
+  // else gets multiplied by that start so the line ends exactly at
+  // portfolioValue. Benchmark and saved lines anchor to the same implicit
+  // start so the comparison is apples-to-apples ("if you'd put $start into
+  // S&P at the same date").
   const canShowDollars = showDollars && portfolioValue != null && portfolioValue > 0;
-  const plotPortfolioY = canShowDollars ? portfolioY.map(v => portfolioValue! * (1 + v)) : portfolioY;
-  const plotBenchmarkY = canShowDollars ? benchmarkY.map(v => portfolioValue! * (1 + v)) : benchmarkY;
+  const lastPortRet = portfolioY.length > 0 ? portfolioY[portfolioY.length - 1] : 0;
+  const periodStartVal = canShowDollars && 1 + lastPortRet > 0.01
+    ? portfolioValue! / (1 + lastPortRet)
+    : portfolioValue ?? 0;
+  const plotPortfolioY = canShowDollars ? portfolioY.map(v => periodStartVal * (1 + v)) : portfolioY;
+  const plotBenchmarkY = canShowDollars ? benchmarkY.map(v => periodStartVal * (1 + v)) : benchmarkY;
 
   // Build Plotly traces
   const traces: any[] = [
@@ -163,7 +183,12 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
           if (!ys.length) return ys;
           const base = ys[0];
           const rebased = ys.map(v => v - base);
-          return canShowDollars ? rebased.map(v => portfolioValue! * (1 + v)) : rebased;
+          // Saved-portfolio overlay anchors to the same implicit start value
+          // as the main portfolio + benchmark lines, so a comparison reads as
+          // "if you'd allocated $start into this saved portfolio at the same
+          // date" rather than "this saved portfolio also happens to be worth
+          // $50k today" (which would be misleading).
+          return canShowDollars ? rebased.map(v => periodStartVal * (1 + v)) : rebased;
         })(),
         type: "scatter", mode: "lines", name: l.name,
         line: { color: l.color, width: 1.5, dash: "dashdot" },
