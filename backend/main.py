@@ -3839,7 +3839,13 @@ def platform_stats():
 def watchlist_data(tickers: str, request: Request):
     """Return price, change_pct, and 7-day sparkline for a comma-separated list of tickers."""
     ip = _client_ip(request)
-    if check_rate_limit(ip, "watchlist-data", 30, 3600):
+    # 600/hour = 10/min average. GreetingBar polls /watchlist-data every 60s for
+    # both index prices and holdings (2 calls = 120/hour for a single dashboard
+    # tab), and a second tab doubles it. The previous 30/hour limit locked the
+    # live tiles out after ~15 min on the page - the "loading..." pills under
+    # the morning brief never resolved. 600/hour gives multi-tab headroom and
+    # leaves plenty of buffer for genuine bursts.
+    if check_rate_limit(ip, "watchlist-data", 600, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded.")
 
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()][:20]
