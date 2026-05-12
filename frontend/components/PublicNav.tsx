@@ -5,11 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import UserMenu from "./UserMenu";
-import {
-  Sun, Moon, ChevronDown,
-  LayoutDashboard, Sparkles, Sunrise, Activity, Target, TrendingUp,
-  BookOpen, FileText, HelpCircle, Download,
-} from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import { usePWAInstall } from "../hooks/usePWAInstall";
 
 // Theme hook (mirrors useTheme in the rest of the app: localStorage backed,
@@ -31,29 +27,16 @@ function useTheme() {
   return { dark, toggle };
 }
 
-// Dropdown item shape
-type LucideIcon = typeof LayoutDashboard;
-interface DropdownItem {
-  href: string;
-  title: string;
-  desc: string;
-  Icon: LucideIcon;
-}
-
-const PRODUCT_ITEMS: DropdownItem[] = [
-  { href: "/#features", title: "Dashboard",   desc: "Live portfolio with metrics, charts, and AI insights",  Icon: LayoutDashboard },
-  { href: "/#features", title: "AI Advisor",  desc: "Chat with Corvo about your holdings and what to do next", Icon: Sparkles },
-  { href: "/#features", title: "Daily Brief", desc: "Personalized morning summary of what moved your portfolio", Icon: Sunrise },
-  { href: "/#features", title: "Health Score", desc: "A to F grade across diversification, risk, and efficiency", Icon: Activity },
-  { href: "/#features", title: "Goal Tracker", desc: "Project retirement and milestones with Monte Carlo",       Icon: Target },
-  { href: "/#features", title: "Simulations",  desc: "Drawdown, Monte Carlo, and what-if scenarios",             Icon: TrendingUp },
-];
-
-const RESOURCES_ITEMS: DropdownItem[] = [
-  { href: "/blog",      title: "Blog",      desc: "Product updates and finance writing", Icon: BookOpen },
-  { href: "/changelog", title: "Changelog", desc: "Every release, every change",          Icon: FileText },
-  { href: "/faq",       title: "FAQ",       desc: "Common questions about Corvo",         Icon: HelpCircle },
-  { href: "/install",   title: "Install",   desc: "Add Corvo to your home screen",        Icon: Download },
+// Flat link list - 7 items, in display order.
+interface NavLinkDef { href: string; label: string; external?: boolean; }
+const NAV_LINKS: NavLinkDef[] = [
+  { href: "/#features",  label: "Features",  external: true }, // anchor on the homepage
+  { href: "/install",    label: "Install" },
+  { href: "/pricing",    label: "Pricing" },
+  { href: "/changelog",  label: "Changelog" },
+  { href: "/blog",       label: "Blog" },
+  { href: "/about",      label: "About" },
+  { href: "/faq",        label: "FAQ" },
 ];
 
 interface PublicNavProps {
@@ -63,11 +46,8 @@ interface PublicNavProps {
   scrollerRef?: React.RefObject<HTMLElement | HTMLDivElement | null>;
 }
 
-type DropdownKey = "product" | "resources" | null;
-
 export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileSection, setMobileSection] = useState<DropdownKey>(null);
   const [loggedIn, setLoggedIn] = useState(false);
   const prevScrollY = useRef(0);
   const [hidden, setHidden] = useState(false);
@@ -75,22 +55,6 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
   const pathname = usePathname();
   const { dark, toggle } = useTheme();
   const { canInstall, install } = usePWAInstall();
-
-  // Dropdown state with hover delays so the panel doesn't dismiss when the
-  // cursor moves from the trigger down into the dropdown.
-  const [openDropdown, setOpenDropdown] = useState<DropdownKey>(null);
-  const openTimer = useRef<number | undefined>(undefined);
-  const closeTimer = useRef<number | undefined>(undefined);
-  const openDrop = (which: DropdownKey) => {
-    if (closeTimer.current) window.clearTimeout(closeTimer.current);
-    if (openTimer.current) window.clearTimeout(openTimer.current);
-    openTimer.current = window.setTimeout(() => setOpenDropdown(which), 80);
-  };
-  const closeDrop = () => {
-    if (openTimer.current) window.clearTimeout(openTimer.current);
-    if (closeTimer.current) window.clearTimeout(closeTimer.current);
-    closeTimer.current = window.setTimeout(() => setOpenDropdown(null), 180);
-  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
@@ -115,8 +79,6 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
         setHidden(false);
       } else if (currentY > prevScrollY.current + 8) {
         setHidden(true);
-        // Auto-close any open dropdown when nav hides
-        setOpenDropdown(null);
       } else if (currentY < prevScrollY.current - 4) {
         setHidden(false);
       }
@@ -145,18 +107,13 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
     };
   }, [scrollerRef]);
 
-  // Escape closes any open dropdown
+  // Escape closes the mobile drawer
   useEffect(() => {
-    if (!openDropdown && !mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpenDropdown(null);
-        setMobileOpen(false);
-      }
-    };
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileOpen(false); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openDropdown, mobileOpen]);
+  }, [mobileOpen]);
 
   const active = (path: string) => pathname === path || pathname?.startsWith(path + "/");
 
@@ -196,86 +153,6 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
           color: var(--text);
         }
         .pnav-bubble.active { color: var(--text); }
-        .pnav-chev {
-          transition: transform 0.18s ease, opacity 0.18s ease;
-          opacity: 0.55;
-        }
-        .pnav-bubble[data-open="true"] .pnav-chev { transform: rotate(180deg); opacity: 1; }
-
-        /* Dropdown panel */
-        .pnav-dropdown {
-          position: absolute;
-          top: calc(100% + 8px);
-          left: 50%;
-          transform: translateX(-50%);
-          min-width: 360px;
-          background: var(--card-bg);
-          border: 1px solid var(--border2);
-          border-radius: 14px;
-          padding: 10px;
-          box-shadow: 0 24px 60px rgba(0,0,0,0.32), 0 1px 0 rgba(255,255,255,0.04) inset;
-          z-index: 110;
-          animation: pnav-dropdown-in 0.16s cubic-bezier(0.2,0.8,0.2,1);
-        }
-        @keyframes pnav-dropdown-in {
-          from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        .pnav-dropdown-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 2px;
-        }
-        .pnav-dropdown-item {
-          display: grid;
-          grid-template-columns: 34px 1fr;
-          gap: 10px;
-          align-items: flex-start;
-          padding: 10px 12px;
-          border-radius: 9px;
-          text-decoration: none;
-          transition: background 0.12s ease;
-        }
-        .pnav-dropdown-item:hover { background: var(--bg3); }
-        .pnav-dropdown-icon {
-          width: 34px; height: 34px;
-          display: flex; align-items: center; justify-content: center;
-          background: rgba(var(--accent-rgb), 0.10);
-          border: 1px solid rgba(var(--accent-rgb), 0.20);
-          border-radius: 8px;
-          color: var(--accent);
-          flex-shrink: 0;
-        }
-        .pnav-dropdown-item:hover .pnav-dropdown-icon {
-          background: rgba(var(--accent-rgb), 0.16);
-          border-color: rgba(var(--accent-rgb), 0.32);
-        }
-        .pnav-dropdown-title {
-          font-size: 13px; font-weight: 600; color: var(--text);
-          letter-spacing: -0.1px; line-height: 1.25;
-        }
-        .pnav-dropdown-desc {
-          font-size: 11px; color: var(--text3); line-height: 1.5;
-          margin-top: 3px; letter-spacing: 0.05px;
-        }
-        .pnav-dropdown-footer {
-          margin-top: 6px; padding: 10px 12px 4px;
-          border-top: 1px solid var(--border);
-          display: flex; align-items: center; justify-content: space-between;
-        }
-        .pnav-dropdown-cta {
-          display: inline-flex; align-items: center; gap: 6px;
-          font-size: 12px; font-weight: 600; color: var(--accent);
-          text-decoration: none;
-          padding: 6px 10px; border-radius: 7px;
-          transition: background 0.12s ease;
-        }
-        .pnav-dropdown-cta:hover { background: rgba(var(--accent-rgb), 0.10); }
-        .pnav-dropdown-tagline {
-          font-size: 10px; color: var(--text-muted);
-          letter-spacing: 0.4px; text-transform: uppercase;
-          font-family: var(--font-mono);
-        }
 
         /* Get Started pill */
         .pnav-cta {
@@ -332,28 +209,6 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
           font-family: inherit;
           text-align: left;
         }
-        .pnav-mobile-row .chev { transition: transform 0.18s ease; opacity: 0.5; }
-        .pnav-mobile-row[data-open="true"] .chev { transform: rotate(180deg); opacity: 1; }
-        .pnav-mobile-submenu {
-          padding: 6px 0 10px 8px;
-          border-bottom: 0.5px solid var(--border);
-          display: flex; flex-direction: column; gap: 2px;
-        }
-        .pnav-mobile-sub-item {
-          display: grid; grid-template-columns: 28px 1fr; gap: 10px;
-          align-items: center;
-          padding: 10px 8px;
-          border-radius: 8px;
-          text-decoration: none;
-        }
-        .pnav-mobile-sub-item .micon {
-          width: 28px; height: 28px; border-radius: 7px;
-          background: rgba(var(--accent-rgb), 0.10);
-          border: 1px solid rgba(var(--accent-rgb), 0.20);
-          color: var(--accent);
-          display: flex; align-items: center; justify-content: center;
-        }
-        .pnav-mobile-sub-item .mtitle { font-size: 13px; color: var(--text); font-weight: 500; }
       `}</style>
 
       <nav
@@ -397,7 +252,7 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
           </span>
         </Link>
 
-        {/* Desktop nav links - absolutely centered */}
+        {/* Desktop nav links - absolutely centered, 7 flat links */}
         <div
           className="pnav-desktop-links"
           style={{
@@ -409,47 +264,25 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
             transform: "translateX(-50%)",
           }}
         >
-          {/* Product dropdown */}
-          <div
-            style={{ position: "relative" }}
-            onMouseEnter={() => openDrop("product")}
-            onMouseLeave={closeDrop}
-          >
-            <button
-              className="pnav-bubble"
-              data-open={openDropdown === "product"}
-              onClick={() => setOpenDropdown(openDropdown === "product" ? null : "product")}
-            >
-              Product
-              <ChevronDown className="pnav-chev" size={13} strokeWidth={2.2} />
-            </button>
-            {openDropdown === "product" && (
-              <Dropdown items={PRODUCT_ITEMS} tagline="What Corvo does" ctaHref="/auth?mode=signup" ctaLabel="Try free" onSelect={() => setOpenDropdown(null)} />
-            )}
-          </div>
-
-          {/* Resources dropdown */}
-          <div
-            style={{ position: "relative" }}
-            onMouseEnter={() => openDrop("resources")}
-            onMouseLeave={closeDrop}
-          >
-            <button
-              className="pnav-bubble"
-              data-open={openDropdown === "resources"}
-              onClick={() => setOpenDropdown(openDropdown === "resources" ? null : "resources")}
-            >
-              Resources
-              <ChevronDown className="pnav-chev" size={13} strokeWidth={2.2} />
-            </button>
-            {openDropdown === "resources" && (
-              <Dropdown items={RESOURCES_ITEMS} tagline="Learn more" ctaHref="/blog" ctaLabel="Visit the blog" onSelect={() => setOpenDropdown(null)} />
-            )}
-          </div>
-
-          {/* Direct links */}
-          <Link href="/pricing" className={`pnav-bubble ${active("/pricing") ? "active" : ""}`}>Pricing</Link>
-          <Link href="/about"   className={`pnav-bubble ${active("/about")   ? "active" : ""}`}>About</Link>
+          {NAV_LINKS.map(link =>
+            link.external ? (
+              <a
+                key={link.href}
+                href={link.href}
+                className={`pnav-bubble ${active(link.href) ? "active" : ""}`}
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`pnav-bubble ${active(link.href) ? "active" : ""}`}
+              >
+                {link.label}
+              </Link>
+            )
+          )}
         </div>
 
         {/* Right actions */}
@@ -539,53 +372,30 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
             overflowY: "auto",
           }}
         >
-          {/* Product expandable */}
-          <button
-            className="pnav-mobile-row"
-            data-open={mobileSection === "product"}
-            onClick={() => setMobileSection(mobileSection === "product" ? null : "product")}
-          >
-            <span>Product</span>
-            <ChevronDown className="chev" size={16} strokeWidth={2.2} />
-          </button>
-          {mobileSection === "product" && (
-            <div className="pnav-mobile-submenu">
-              {PRODUCT_ITEMS.map(({ Icon, ...item }, i) => (
-                <Link key={i} href={item.href} onClick={() => setMobileOpen(false)} className="pnav-mobile-sub-item">
-                  <span className="micon"><Icon size={14} /></span>
-                  <span className="mtitle">{item.title}</span>
-                </Link>
-              ))}
-            </div>
+          {/* Flat 7-link list */}
+          {NAV_LINKS.map(link =>
+            link.external ? (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="pnav-mobile-row"
+                style={{ textDecoration: "none" }}
+              >
+                <span>{link.label}</span>
+              </a>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="pnav-mobile-row"
+                style={{ textDecoration: "none" }}
+              >
+                <span>{link.label}</span>
+              </Link>
+            )
           )}
-
-          {/* Resources expandable */}
-          <button
-            className="pnav-mobile-row"
-            data-open={mobileSection === "resources"}
-            onClick={() => setMobileSection(mobileSection === "resources" ? null : "resources")}
-          >
-            <span>Resources</span>
-            <ChevronDown className="chev" size={16} strokeWidth={2.2} />
-          </button>
-          {mobileSection === "resources" && (
-            <div className="pnav-mobile-submenu">
-              {RESOURCES_ITEMS.map(({ Icon, ...item }, i) => (
-                <Link key={i} href={item.href} onClick={() => setMobileOpen(false)} className="pnav-mobile-sub-item">
-                  <span className="micon"><Icon size={14} /></span>
-                  <span className="mtitle">{item.title}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {/* Direct mobile links */}
-          <Link href="/pricing" onClick={() => setMobileOpen(false)} className="pnav-mobile-row" style={{ textDecoration: "none" }}>
-            <span>Pricing</span>
-          </Link>
-          <Link href="/about" onClick={() => setMobileOpen(false)} className="pnav-mobile-row" style={{ textDecoration: "none" }}>
-            <span>About</span>
-          </Link>
 
           {/* Theme toggle row */}
           <button
@@ -604,7 +414,6 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
               className="pnav-mobile-row"
             >
               <span>Install App</span>
-              <Download size={16} />
             </button>
           )}
 
@@ -621,50 +430,3 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
   );
 }
 
-// Dropdown panel (Linear-style 2-col grid of icon + title + desc rows)
-function Dropdown({
-  items,
-  tagline,
-  ctaHref,
-  ctaLabel,
-  onSelect,
-}: {
-  items: DropdownItem[];
-  tagline: string;
-  ctaHref: string;
-  ctaLabel: string;
-  onSelect: () => void;
-}) {
-  return (
-    <div className="pnav-dropdown" role="menu">
-      <div className="pnav-dropdown-grid">
-        {items.map(({ Icon, ...item }, i) => (
-          <Link
-            key={i}
-            href={item.href}
-            onClick={onSelect}
-            className="pnav-dropdown-item"
-            role="menuitem"
-          >
-            <div className="pnav-dropdown-icon">
-              <Icon size={16} strokeWidth={2} />
-            </div>
-            <div>
-              <div className="pnav-dropdown-title">{item.title}</div>
-              <div className="pnav-dropdown-desc">{item.desc}</div>
-            </div>
-          </Link>
-        ))}
-      </div>
-      <div className="pnav-dropdown-footer">
-        <span className="pnav-dropdown-tagline">{tagline}</span>
-        <Link href={ctaHref} onClick={onSelect} className="pnav-dropdown-cta">
-          {ctaLabel}
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-          </svg>
-        </Link>
-      </div>
-    </div>
-  );
-}
