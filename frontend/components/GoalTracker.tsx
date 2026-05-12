@@ -330,12 +330,25 @@ export default function GoalTracker({ data, portfolioValue, onAskAi }: Props) {
   };
 
   const currentValue = portfolioValue || 10000;
-  const cagr = data?.annualized_return ?? data?.portfolio_return ?? 0;
+  // Recent CAGR from the user's portfolio. Whatever the analysis returned -
+  // could be a hot 1Y run (25%+) or a flat year. Used as the *observed* rate,
+  // not the *assumed* rate, because compounding a one-year tailwind across
+  // a 20-year horizon produces fantasyland numbers.
+  const observedCagr = data?.annualized_return ?? data?.portfolio_return ?? 0;
+  // Assumption used in the projection: clamp the observed CAGR to the band of
+  // long-run equity returns. Floor at 4% (roughly money-market) so a single
+  // flat year doesn't project the portfolio to zero growth; cap at 10% (just
+  // above the historical S&P 500 real return average) so a hot recent run
+  // doesn't oversell what we can actually promise. The card shows both
+  // numbers and a "based on X% assumed CAGR" note so the user can see the
+  // assumption rather than be surprised by it.
+  const projectionCagr = Math.max(0.04, Math.min(observedCagr, 0.10));
+  const dampened = observedCagr > projectionCagr || observedCagr < projectionCagr - 0.0001;
 
   const result = useMemo(() => {
     if (!goal || !data) return null;
-    return calculateTrajectory(currentValue, cagr, goal);
-  }, [goal, data, currentValue, cagr]);
+    return calculateTrajectory(currentValue, projectionCagr, goal);
+  }, [goal, data, currentValue, projectionCagr]);
 
   if (!data || !mounted) return null;
 
@@ -367,8 +380,8 @@ export default function GoalTracker({ data, portfolioValue, onAskAi }: Props) {
   const handleAskAi = () => {
     if (!onAskAi) return;
     const msg = result.onTrack
-      ? `My goal is to reach ${fmtFull(goal.amount)} by ${goal.year} for ${goal.label}. At my current ${(cagr * 100).toFixed(1)}% CAGR I'm on track to hit it ${ahead.toFixed(0)} years early. What can I do to make sure I stay on track and potentially accelerate it further?`
-      : `My goal is to reach ${fmtFull(goal.amount)} by ${goal.year} for ${goal.label}. At my current ${(cagr * 100).toFixed(1)}% CAGR I'll fall short. I need ${(result.requiredCAGR * 100).toFixed(1)}% CAGR to hit my goal on time. What specific portfolio changes would help me close this gap?`;
+      ? `My goal is to reach ${fmtFull(goal.amount)} by ${goal.year} for ${goal.label}. Assuming a long-run ${(projectionCagr * 100).toFixed(1)}% CAGR I'm on track to hit it ${ahead.toFixed(0)} years early. What can I do to make sure I stay on track and potentially accelerate it further?`
+      : `My goal is to reach ${fmtFull(goal.amount)} by ${goal.year} for ${goal.label}. Assuming a long-run ${(projectionCagr * 100).toFixed(1)}% CAGR I'll fall short. I need ${(result.requiredCAGR * 100).toFixed(1)}% CAGR to hit my goal on time. What specific portfolio changes would help me close this gap?`;
     onAskAi(msg);
   };
 
@@ -406,12 +419,14 @@ export default function GoalTracker({ data, portfolioValue, onAskAi }: Props) {
           </button>
         </div>
 
-        {/* ── Key stats ────────────────────────────────────────────────────── */}
-        <div style={{ display: "flex", gap: 32, marginBottom: 24, flexWrap: "wrap" }}>
+        {/* ── Key stats: 2-column layout, projected value + status ────────── */}
+        <div style={{ display: "flex", gap: 32, marginBottom: 20, flexWrap: "wrap" }}>
           <StatBlock
             label="Projected by target date"
             value={fmtShort(result.projectedValue)}
-            sub={result.onTrack ? `+${fmtShort(Math.abs(result.gapDollars))} ahead of goal` : `-${fmtShort(Math.abs(result.gapDollars))} short of goal`}
+            sub={result.onTrack
+              ? `Meets ${fmtShort(goal.amount)} target`
+              : `${fmtShort(Math.abs(result.gapDollars))} short of ${fmtShort(goal.amount)}`}
             color={trackColor}
           />
           <div style={{ width: "0.5px", background: "var(--border)", alignSelf: "stretch" }} />
@@ -421,23 +436,31 @@ export default function GoalTracker({ data, portfolioValue, onAskAi }: Props) {
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: trackColor, flexShrink: 0, boxShadow: `0 0 6px ${trackColor}88` }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: trackColor }}>{result.onTrack || result.alreadyReached ? "On Track" : "Behind"}</span>
             </div>
-            <p style={{ fontSize: 12, color: "var(--text3)", margin: "5px 0 0", lineHeight: 1.5, maxWidth: 280 }}>
+            <p style={{ fontSize: 12, color: "var(--text3)", margin: "5px 0 0", lineHeight: 1.5, maxWidth: 320 }}>
               {statusLine}
+              {!result.alreadyReached && (
+                <> Needs {(result.requiredCAGR * 100).toFixed(1)}% CAGR to land exactly on {goal.year}.</>
+              )}
             </p>
           </div>
-          {!result.alreadyReached && (
-            <>
-              <div style={{ width: "0.5px", background: "var(--border)", alignSelf: "stretch" }} />
-              <StatBlock
-                label={result.onTrack ? "Your current CAGR" : "CAGR needed"}
-                value={`${((result.onTrack ? cagr : result.requiredCAGR) * 100).toFixed(1)}%`}
-                sub={result.onTrack
-                  ? `${((result.requiredCAGR * 100)).toFixed(1)}% required to hit on time`
-                  : `You're at ${(cagr * 100).toFixed(1)}% - need ${((result.requiredCAGR - cagr) * 100).toFixed(1)}% more`}
-                color={result.onTrack ? "#4caf7d" : "var(--accent)"}
-              />
-            </>
-          )}
+        </div>
+
+        {/* Projection assumption note: surface the dampened CAGR so the user
+            can see the math rather than have it hidden. Without this the
+            projection feels like a black-box promise. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text3)", marginBottom: 20, flexWrap: "wrap" }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.65 }}>
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>
+            Projection assumes <strong style={{ color: "var(--text2)" }}>{(projectionCagr * 100).toFixed(1)}% CAGR</strong>
+            {dampened && (
+              <> (capped from your recent <span style={{ fontFamily: "Space Mono, monospace" }}>{(observedCagr * 100).toFixed(1)}%</span> - long-horizon estimates use 4-10% so a single hot or cold year doesn't dominate the math)</>
+            )}
+            {!dampened && (
+              <> - matches your observed return, within the 4-10% long-horizon band</>
+            )}
+          </span>
         </div>
 
         {/* ── Trajectory chart ──────────────────────────────────────────────── */}
@@ -457,7 +480,7 @@ export default function GoalTracker({ data, portfolioValue, onAskAi }: Props) {
               </div>
             </div>
           </div>
-          <TrajectoryChart currentValue={currentValue} cagr={cagr} goal={goal} result={result} />
+          <TrajectoryChart currentValue={currentValue} cagr={projectionCagr} goal={goal} result={result} />
         </div>
 
         {/* ── Gap closer / celebration ─────────────────────────────────────── */}
@@ -468,14 +491,7 @@ export default function GoalTracker({ data, portfolioValue, onAskAi }: Props) {
                 To close the gap
               </p>
               <p style={{ fontSize: 12.5, color: "var(--text2)", margin: 0, lineHeight: 1.65 }}>
-                You need <strong style={{ color: "var(--text)" }}>{(result.requiredCAGR * 100).toFixed(1)}% annualized returns</strong> to reach {fmtFull(goal.amount)} by {goal.year}. That is {((result.requiredCAGR - cagr) * 100).toFixed(1)}% more than your current {(cagr * 100).toFixed(1)}% CAGR. Improving your Sharpe ratio and reducing concentration risk are the two levers most likely to lift long-term returns.
-              </p>
-            </div>
-          )}
-          {!result.alreadyReached && result.onTrack && ahead >= 1 && (
-            <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(76,175,125,0.06)", border: "0.5px solid rgba(76,175,125,0.2)", marginBottom: 12 }}>
-              <p style={{ fontSize: 12.5, color: "#4caf7d", margin: 0, lineHeight: 1.65, fontWeight: 500 }}>
-                At {(cagr * 100).toFixed(1)}% CAGR, you will reach {fmtFull(goal.amount)} in {result.goalYear} - {ahead.toFixed(0)} year{ahead >= 2 ? "s" : ""} ahead of your {goal.year} target. Keep your current allocation and re-run this analysis after any major portfolio change.
+                You need <strong style={{ color: "var(--text)" }}>{(result.requiredCAGR * 100).toFixed(1)}% annualized returns</strong> to reach {fmtFull(goal.amount)} by {goal.year}. Improving your Sharpe ratio and reducing concentration risk are the two levers most likely to lift long-term returns.
               </p>
             </div>
           )}
