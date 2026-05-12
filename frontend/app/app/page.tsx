@@ -1986,7 +1986,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       {/* Logo → homepage */}
       <div className="c-sidebar-logo" style={{ ...S.sidebarTop, borderLeft: "3px solid var(--accent)", paddingLeft: 13 }}>
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/corvo-logo.png" width={26} height={26} alt="Corvo" style={{ flexShrink: 0, opacity: 0.9 }} />
+          <img src="/corvo-logo.png" width={34} height={34} alt="Corvo" style={{ flexShrink: 0, filter: "drop-shadow(0 0 4px rgba(201,168,76,0.25))" }} />
           <div style={S.logo}>CORVO</div>
         </Link>
       </div>
