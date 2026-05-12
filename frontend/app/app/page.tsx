@@ -63,7 +63,6 @@ import DrawdownChart from "../../components/DrawdownChart";
 import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
 import LearnPage from "../learn/page";
-import DailySignal from "../../components/DailySignal";
 import GoalTracker from "../../components/GoalTracker";
 
 const TABS = [
@@ -1169,12 +1168,16 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>(undefined);
 
-  const DASH_CARDS = ["briefing", "tickers", "signal", "metrics", "performance", "health", "insights", "benchmark", "allocation", "sector", "goal", "insider", "save"] as const;
+  const [wsidOpen, setWsidOpen] = useState(false);
+  const [wsidLoading, setWsidLoading] = useState(false);
+  const [wsidResult, setWsidResult] = useState<string | null>(null);
+  const [wsidError, setWsidError] = useState<string | null>(null);
+  const DASH_CARDS = ["briefing", "tickers", "wsid", "metrics", "performance", "health", "insights", "benchmark", "allocation", "sector", "goal", "insider", "save"] as const;
   type DashCard = typeof DASH_CARDS[number];
   const DASH_CARD_LABELS: Record<DashCard, string> = {
     briefing: "Daily Brief",
     tickers: "Live Ticker Strip",
-    signal: "Daily Signal",
+    wsid: "What Should I Do Today",
     metrics: "Key Metrics",
     performance: "Performance Chart",
     health: "Health Score",
@@ -1543,7 +1546,7 @@ const { dark, toggle: toggleDark }  = useTheme();
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
     setLoading(true); if (!keepData) setData(null); setErrorMsg(null); setSkippedTickers([]); setAnalyzeComplete(false);
-    setAnalysisStep(0);
+    setWsidResult(null); setWsidOpen(false); setAnalysisStep(0);
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
       const pendingRef = referralCodeRef.current;
@@ -1622,6 +1625,44 @@ const { dark, toggle: toggleDark }  = useTheme();
 
   const handleAnalyzeRef = useRef(handleAnalyze);
   useEffect(() => { handleAnalyzeRef.current = handleAnalyze; });
+
+  const handleWhatShouldIDo = async () => {
+    if (wsidOpen && wsidResult) { setWsidOpen(false); return; }
+    setWsidOpen(true);
+    if (wsidResult) return;
+    setWsidLoading(true);
+    setWsidError(null);
+    try {
+      const API = RESOLVED_API_URL;
+      const valid = assets.filter(a => a.ticker && a.weight > 0);
+      const total = valid.reduce((s, a) => s + a.weight, 0) || 1;
+      const body = {
+        tickers: valid.map(a => a.ticker),
+        weights: valid.map(a => a.weight / total),
+        portfolio_return: data?.portfolio_return ?? 0,
+        portfolio_volatility: data?.portfolio_volatility ?? 0,
+        sharpe_ratio: data?.sharpe_ratio ?? 0,
+        max_drawdown: data?.max_drawdown ?? 0,
+        period,
+        portfolio_value: portfolioInputValue || null,
+        health_score: data?.health_score ?? null,
+        user_goals: goals || {},
+        user_id: userId || "",
+      };
+      const res = await fetch(`${API}/what-should-i-do`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const json = await res.json();
+      setWsidResult(json.recommendations);
+    } catch (e: any) {
+      setWsidError("Could not load recommendations. Try again.");
+    } finally {
+      setWsidLoading(false);
+    }
+  };
 
   // Sync localBenchmark when data arrives from a new analysis
   useEffect(() => {
@@ -2545,7 +2586,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 <div style={{ opacity: animatingIn ? 0 : 1, transform: animatingIn ? "translateY(20px)" : "none", transition: animatingIn ? "none" : "opacity 0.5s ease, transform 0.5s ease" }}>
 
                 {/* ═══ OVERVIEW REGION ═══ */}
-                {(!hiddenCards.has("briefing") || !hiddenCards.has("signal")) && (
+                {(!hiddenCards.has("briefing") || !hiddenCards.has("wsid")) && (
                   <div style={{ marginTop: -8, marginBottom: 4 }}>
                     <SectionHeader eyebrow="Overview" title="Your day at a glance" />
                   </div>
@@ -2568,18 +2609,174 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>
                 )}
 
-                {/* Daily Signal - AI-generated single actionable recommendation */}
-                {!hiddenCards.has("signal") && data && (
-                  <DashReveal from="up" delay={0.04}>
-                    <DailySignal
-                      data={data}
-                      assets={assets}
-                      portfolioValue={portfolioInputValue}
-                      userId={userId}
-                      onAskAi={(msg) => { if (msg) setChatInitialMessage(msg); setChatOpen(true); }}
-                    />
-                  </DashReveal>
-                )}
+                {/* What Should I Do Today */}
+                {!hiddenCards.has("wsid") && <div style={{ opacity: loadedVis(250) ? 1 : 0, transform: loadedVis(250) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                <DashReveal from="left" delay={0.05}>
+                <div style={{ marginBottom: 20 }}>
+                  <div
+                    onClick={handleWhatShouldIDo}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") handleWhatShouldIDo(); }}
+                    style={{
+                      width: "100%", borderRadius: 14, cursor: "pointer",
+                      border: "0.5px solid rgba(201,168,76,0.35)",
+                      borderLeft: "3px solid var(--accent)",
+                      background: "linear-gradient(120deg, rgba(201,168,76,0.08) 0%, rgba(201,168,76,0.02) 60%, transparent 100%)",
+                      padding: "22px 24px", transition: "all 0.18s",
+                      display: "flex", alignItems: "center", gap: 20,
+                      boxSizing: "border-box",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.background = "linear-gradient(120deg, rgba(201,168,76,0.14) 0%, rgba(201,168,76,0.04) 60%, transparent 100%)";
+                      (e.currentTarget as HTMLElement).style.borderLeftColor = "var(--accent)";
+                      (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(201,168,76,0.1)";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.background = "linear-gradient(120deg, rgba(201,168,76,0.08) 0%, rgba(201,168,76,0.02) 60%, transparent 100%)";
+                      (e.currentTarget as HTMLElement).style.borderLeftColor = "var(--accent)";
+                      (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)";
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 18, flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        width: 52, height: 52, borderRadius: 12, flexShrink: 0,
+                        background: "rgba(201,168,76,0.12)", border: "0.5px solid rgba(201,168,76,0.3)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <Sparkles size={24} color="var(--accent)" />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", marginBottom: 4, letterSpacing: -0.3, lineHeight: 1.2 }}>
+                          What should I do today?
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.4 }}>
+                          Get a personalized action plan - rebalancing moves, risk alerts, and market signals specific to your portfolio.
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (wsidOpen && wsidResult) { setWsidResult(null); handleWhatShouldIDo(); }
+                      }}
+                      style={{
+                        padding: "12px 24px", fontSize: 13, fontWeight: 700, borderRadius: 10,
+                        background: "var(--accent)", color: "var(--bg)", flexShrink: 0,
+                        display: "flex", alignItems: "center", gap: 6,
+                        cursor: wsidOpen && wsidResult ? "pointer" : "default",
+                        pointerEvents: wsidLoading ? "none" : "auto",
+                        letterSpacing: 0.2, whiteSpace: "nowrap" as const,
+                        transition: "opacity 0.15s",
+                      }}>
+                      {wsidLoading ? (
+                        <>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
+                            <path d="M21 12a9 9 0 11-6.219-8.56" />
+                          </svg>
+                          Analyzing...
+                        </>
+                      ) : wsidOpen && wsidResult ? (
+                        <>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                          </svg>
+                          Refresh
+                        </>
+                      ) : "Get Actions →"}
+                    </div>
+                  </div>
+                  <AnimatePresence initial={false}>
+                    {wsidOpen && !wsidLoading && (
+                      <motion.div
+                        initial={false}
+                        animate={{ opacity: 1, height: "auto", marginTop: 8 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        style={{ overflow: "clip" }}
+                      >
+                        <div style={{
+                          background: "var(--card-bg)", border: "0.5px solid var(--border2)",
+                          borderLeft: "3px solid var(--accent)",
+                          borderRadius: 12, padding: "20px 24px",
+                        }}>
+                          {wsidError ? (
+                            <div style={{ fontSize: 12, color: "var(--red)" }}>{wsidError}</div>
+                          ) : wsidResult ? (
+                            <div>
+                              {(() => {
+                                // Split into blank-line-separated blocks. Last block starting with "These actions" is the closing summary.
+                                const blocks = wsidResult.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+                                const summaryPattern = /^these actions/i;
+                                const summaryBlock = blocks.find(b => summaryPattern.test(b));
+                                const actionBlocks = blocks.filter(b => !summaryPattern.test(b));
+                                return (
+                                  <div style={{ display: "flex", flexDirection: "column" }}>
+                                    {actionBlocks.map((block, i) => {
+                                      const lines = block.split(/\n/).map(l => l.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
+                                      const headline = lines[0];
+                                      const explanation = lines.slice(1).join(" ");
+                                      return (
+                                        <div key={i}>
+                                          <div style={{ padding: "14px 0" }}>
+                                            <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: explanation ? 8 : 0 }}>
+                                              <div style={{
+                                                width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                                                background: "rgba(201,168,76,0.18)", border: "1px solid rgba(201,168,76,0.4)",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                fontSize: 11, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-mono)",
+                                              }}>
+                                                {i + 1}
+                                              </div>
+                                              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", lineHeight: 1.5 }}>
+                                                {headline}
+                                              </div>
+                                            </div>
+                                            {explanation && (
+                                              <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7, paddingLeft: 38 }}>
+                                                {explanation}
+                                              </div>
+                                            )}
+                                          </div>
+                                          {i < actionBlocks.length - 1 && (
+                                            <div style={{ height: 1, background: "var(--border)", opacity: 0.5 }} />
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                    {summaryBlock && (
+                                      <div style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.6, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+                                        {summaryBlock}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    const msg = `Here are my recommended actions for today from my portfolio analysis:\n\n${wsidResult}\n\nI'd like to explore these further. Where should I start?`;
+                                    setChatInitialMessage(msg);
+                                    setChatOpen(true);
+                                  }}
+                                  style={{ fontSize: 11, padding: "4px 10px", borderRadius: 5, border: "0.5px solid var(--border2)", background: "transparent", color: "var(--text2)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                                >
+                                  <MessageSquare size={11} />
+                                  Continue in AI chat
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                </DashReveal>
+                </div>}
+
 
                 {/* ═══ ANALYSIS REGION ═══ */}
                 {(!hiddenCards.has("metrics") || !hiddenCards.has("performance") || !hiddenCards.has("goal")) && (
@@ -3102,7 +3299,7 @@ const { dark, toggle: toggleDark }  = useTheme();
 
               {/* Grouped sections */}
               {([
-                { label: "Overview", cards: ["briefing", "tickers", "signal"] as DashCard[] },
+                { label: "Overview", cards: ["briefing", "tickers", "wsid"] as DashCard[] },
                 { label: "Analysis", cards: ["metrics", "performance", "health", "insights", "benchmark", "allocation", "sector"] as DashCard[] },
                 { label: "Other", cards: ["goal", "insider", "save"] as DashCard[] },
               ] as { label: string; cards: DashCard[] }[]).map(group => (
