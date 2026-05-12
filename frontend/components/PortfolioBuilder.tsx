@@ -193,9 +193,15 @@ interface Props {
   setAssets?: (a: Asset[]) => void;
   onAnalyze?: () => void;
   loading?: boolean;
+  // Today's portfolio % change (number, not percent fraction - e.g. 0.23 for
+  // +0.23%). When provided, the Portfolio Value input shows the LIVE value
+  // (base x (1 + pct/100)) instead of the bare base. The user can click to
+  // edit; the input snaps to the base on focus, and saves user input as the
+  // new base on change.
+  todayPct?: number | null;
 }
 
-export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading }: Props) {
+export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct }: Props) {
   const update = onAssetsChange || setAssets || (() => {});
   const [dark, setDark] = useState(true);
   const [active, setActive] = useState<number|null>(null);
@@ -209,8 +215,11 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const utilMenuRef = useRef<HTMLDivElement>(null);
   const [pendingRemove, setPendingRemove] = useState<number | null>(null);
 
-  // Portfolio Value - persisted to localStorage
+  // Portfolio Value - persisted to localStorage. The stored value is the BASE
+  // (user-entered cost basis / starting amount). The displayed value adds
+  // today's gain so the input shows the live current portfolio value.
   const [portfolioValue, setPortfolioValueState] = useState<string>("50000");
+  const [pvFocused, setPvFocused] = useState(false);
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_portfolio_value") : null;
     if (stored) setPortfolioValueState(stored);
@@ -222,6 +231,15 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       window.dispatchEvent(new Event("storage"));
     }
   };
+  // Live (today's) value to show in the input when it's not being edited.
+  const portfolioBaseNum = parseFloat(portfolioValue) || 0;
+  const liveMultiplier = 1 + ((todayPct ?? 0) / 100);
+  const portfolioLiveNum = portfolioBaseNum * liveMultiplier;
+  const portfolioInputDisplay =
+    pvFocused || !todayPct || portfolioBaseNum <= 0
+      ? portfolioValue
+      : Math.round(portfolioLiveNum).toString();
+  const portfolioDeltaDollar = portfolioLiveNum - portfolioBaseNum;
 
   // Reinvest dividends toggle - persisted to localStorage
   const [reinvestDividends, setReinvestDividendsState] = useState<boolean>(true);
@@ -687,13 +705,32 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             type="number"
             min="0"
             step="1000"
-            value={portfolioValue}
+            value={portfolioInputDisplay}
             onChange={e=>handlePortfolioValueChange(e.target.value)}
+            onFocus={(e) => { setPvFocused(true); e.currentTarget.select(); }}
+            onBlur={() => setPvFocused(false)}
             placeholder="50000"
             className="accent-input"
             style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:700, fontSize:14, padding:"7px 9px"}}
           />
         </div>
+        {/* Live delta line - only shown when we have today's pct and a real base */}
+        {todayPct != null && portfolioBaseNum > 0 && (
+          <div style={{
+            fontSize: 10,
+            marginTop: 6,
+            lineHeight: 1.4,
+            letterSpacing: 0.1,
+            fontFamily: "Space Mono,monospace",
+            color: portfolioDeltaDollar >= 0 ? "#4caf7d" : "var(--red)",
+          }}>
+            {portfolioDeltaDollar >= 0 ? "+" : "-"}${Math.abs(portfolioDeltaDollar).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+            <span style={{ color: "var(--text3)", margin: "0 5px" }}>·</span>
+            {todayPct >= 0 ? "+" : ""}{todayPct.toFixed(2)}% today
+            <span style={{ color: "var(--text3)", margin: "0 5px" }}>·</span>
+            <span style={{ color: "var(--text3)" }}>base ${portfolioBaseNum.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+          </div>
+        )}
         <div style={{fontSize:10,color:"var(--text3)",marginTop:6,lineHeight:1.5,letterSpacing:0.1}}>
           Used for P&amp;L, tax loss harvesting, and dividend calculations
         </div>
