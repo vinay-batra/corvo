@@ -471,6 +471,40 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
           )}
         </div>
 
+        {/* ── Collapsed-state brief preview ──
+            Two-line teaser pulled from market.market so the dashboard isn't
+            just "Good evening, X" when the brief is closed. Clicking the
+            preview expands the full brief. Hidden when there's no brief
+            content (initial load, fetch error) or when the brief is already
+            expanded. */}
+        {collapsed && !hideBriefing && market?.market && (
+          <div
+            onClick={toggleCollapsed}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === "Enter" || e.key === " ") toggleCollapsed(); }}
+            title="Expand brief"
+            style={{
+              fontSize: 12.5,
+              color: "var(--text3)",
+              lineHeight: 1.55,
+              cursor: "pointer",
+              maxWidth: 720,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              marginTop: 6,
+              marginBottom: 4,
+              transition: "color 0.15s",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = "var(--text2)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = "var(--text3)"; }}
+          >
+            {market.market}
+          </div>
+        )}
+
         {/* ── Two-column content grid - collapses ── */}
         <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 2000, transition: "max-height 0.35s ease", opacity: collapsed ? 0 : 1, transitionProperty: "max-height, opacity", transitionDuration: "0.35s, 0.2s" }}>
         <div className="gb-grid">
