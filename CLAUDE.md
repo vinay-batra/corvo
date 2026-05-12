@@ -7,22 +7,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.28 (May 11, 2026) - audit-driven security + cleanup pass**
+**Last shipped: v0.29 (May 11, 2026) - product polish: logo, nav, live portfolio value, OG card, schema fix**
 
-Full sweep across light/dark mode, debug & correctness, mobile responsiveness, and em dashes. Closed 3 IDOR vulnerabilities, force-enforced the 8500 Monte Carlo path count, purged Paper Trade entirely (backend routes + 9 dead frontend components), removed 330 em dashes and 42 en dashes across 79 source files, fixed 7 wrong-breakpoint media queries, converted 3 compare pages to CSS variables, fixed 34 broken motion reveal patterns, added new RLS migration for health_score_cache and a column-restricted leaderboard RPC, hardened middleware, added new app/error.tsx boundary. See the v0.28 entry under "What Was Built" for the full scope.
+Replaced the C-in-gold-circle logo with a new gold raven head + arrow across the whole site (nav, footer, AI avatar, dashboard, favicon, iOS home screen, PWA install, OG cards). Polished PublicNav to 68px height with hover bubbles + content-aligned inner container + bulletproof scroll-aware hide/show that finally works on the homepage (rAF polling instead of scroll events). Dashboard now shows live portfolio value (`base x (1 + today's pct)`) right next to the greeting AND in the sidebar input; the Evening Brief collapses by default so Today's Signal is the focal point. Fixed a stale-schema bug in portfolio_snapshots that was 500-ing in prod (legacy un-timestamped migration was silently skipped). Manual Railway deploy ran cleanly; added `watchPatterns` to railway.toml so frontend pushes stop triggering broken auto-deploys. Anthropic key was already rotated by Vinay; the leaked `backend/.env` is untracked from git but remains in commit history.
 
-### KEY ROTATION REQUIRED
+**Backend deploy on Railway: ONLINE** (manual deploy `970a4bf5`, May 11 - has v0.28 audit pass changes live).
 
-`backend/.env` (with a live `ANTHROPIC_API_KEY`) is now untracked from git but remains in commit history. Rotate the Anthropic key immediately, update the Railway env, and redeploy backend.
+### Open items / next session
+
+1. **Rotate any other secrets** that were in backend/.env beyond Anthropic if you haven't already: Finnhub, Supabase service role, Resend, VAPID. File is untracked but git history retains it.
+2. **Optional**: Railway dashboard → web service → Settings → Source → toggle off "Deploy on Push" for absolute clean state. `watchPatterns` covers ~99% of the noise but doesn't fully disable auto-deploys.
+3. **Force-refresh OG card cache** on Twitter via [Card Validator](https://cards-dev.twitter.com/validator) if you want the new card to show on previously-shared links.
 
 ### Premium polish queue - pick up here next session
 
-Premium polish queue is empty. Likely next moves: demo video, YC application, product direction brainstorm (cut News/Watchlist/Learn, build daily morning brief, action CTAs on insights), Plaid sandbox build, PDF reports.
+Empty. Likely next moves: demo video, YC application, product direction brainstorm (cut News/Watchlist/Learn, build daily morning brief, action CTAs on insights), Plaid sandbox build, PDF reports, day-over-day portfolio value tracking (requires backend table for end-of-day values).
 
 ### Blocked / non-design work
 
 1. **Stripe/Pro tier ($9/mo)** - needs parent (Vinay is under 18; TOS requires 18+ to sign for Stripe)
 2. **Plaid integration** - auto-sync brokerage. Needs parent to sign for Plaid + production-access approval (weeks). Can build against sandbox in the meantime.
+
+### Logo asset reference
+
+- Master: `frontend/public/corvo-logo.png` (717x717 transparent PNG, gold raven head + rising arrow)
+- Favicon set: `favicon-16x16.png`, `favicon-32x32.png`, `favicon.ico` (multi-res 16/32/48), `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png`
+- Marketing: `og-image.png` (1200x630), `corvo-pfp.png` (400x400 on dark fill)
+- 26 inline `<img src="/corvo-logo.png">` callsites across 18 files depend on this path. Never rename. If swapping the design, replace the file in place + regenerate favicon variants.
+
+### Live portfolio value pattern
+
+- `GreetingBar` polls holding prices every 60s, computes `portfolioToday.pct` (weighted % change)
+- New prop `onTodayPctChange?: (pct: number | null) => void` bubbles the value up
+- `app/app/page.tsx` holds `todayPct` state, sets via the callback, passes to `PortfolioBuilder` as a `todayPct` prop
+- Display formula: `liveValue = base x (1 + todayPct / 100)`
+- Sidebar `PortfolioBuilder` shows live value when unfocused; on focus snaps to base + auto-selects; on change saves user input as new base. Annotation line below shows `+$X · +Y% today · base $Z`
+- Same live value shown in GreetingBar header next to the greeting, visible even when brief is collapsed
 
 ### Daily Signal (built May 10) - reference
 
@@ -188,6 +208,13 @@ Key routes already implemented:
 - Paper Trade is removed from the app entirely (removed from Learn tab in v0.24) - do not re-add it
 - Options Chain is removed from StockDetail entirely (removed in v0.24) - StockDetail has Overview + Insider Activity tabs only
 - Period and Benchmark selectors are only in chart controls - not in sidebar
+- **Logo path is `/corvo-logo.png`** (PNG, transparent background, 717x717 master). 26 inline `<img>` callsites across 18 files depend on this path. Never rename. If swapping the design, replace the file in place and regenerate favicon variants via the PIL pipeline (see scripts in commit `349696a`).
+- **Backend** lives ONLY in `backend/main.py` + `backend/requirements.txt` + `backend/.env*`. The `backend/app/`, `backend/components/`, `backend/frontend/`, `backend/lib/`, `backend/*.tsx`, and Streamlit prototype `.py` files were all purged in `bdcb293`. Do not recreate them. Railway only ships `main.py` and `requirements.txt`.
+- **Railway GitHub auto-deploys are unreliable** - always deploy manually. `railway.toml` has `[build].watchPatterns` scoped to `backend/**` + `railway.toml` + `Procfile` so frontend pushes don't trigger broken builds. If you change backend code via GitHub push, expect the auto-build to fail; run manual `railway up` instead.
+- **Live portfolio value pattern**: GreetingBar polls holding prices every 60s and computes `portfolioToday.pct`. Bubbles via `onTodayPctChange?: (pct: number | null) => void` callback up to `app/app/page.tsx` (`todayPct` state), down to `PortfolioBuilder` via `todayPct?: number | null` prop. Display formula is always `liveValue = base x (1 + todayPct / 100)`. Sidebar input shows live value when blurred, base when focused.
+- **Evening Brief defaults to collapsed**. localStorage `corvo_brief_collapsed` value `"0"` means expanded (user opted in); any other value means collapsed.
+- **PublicNav** is the single source of truth for the public nav. The homepage uses `<PublicNav scrollerRef={containerRef} />` to drive scroll-aware hide/show off its inner 100vh container. Other pages use `<PublicNav />` (no ref) which falls back to `window.scrollY`. Scroll behavior is `requestAnimationFrame` polling, NOT scroll events.
+- **PublicNav inner container** uses `max-width: 1240, padding: 0 56px` matching the hero content width. Logo aligns with the leading edge of "The advisor" headline; Get Started pill aligns with the trailing edge.
 
 ## Mobile Rules
 
@@ -223,9 +250,60 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.28
+- Version: v0.29
 
 ## What Was Built
+
+### v0.29 (May 11, 2026) - product polish: logo, nav, live portfolio value, OG card, schema fix
+
+**New logo**
+- Replaced "C in gold circle" with the new gold raven head + rising arrow (source: ChatGPT-generated PNG `07_00_13 PM.png`). Selected for clarity at 16-32 px favicon sizes; previous candidate (`07_00_04 PM.png`) was too detailed and read as a smudge in small renders.
+- PIL pipeline: strip black background via alpha threshold (< 18 fully transparent, < 50 graded alpha for smooth edges), crop to bird bounding box, square with 4% breathing padding.
+- Generated favicon variants: 16, 32, 48, 180, 192, 512 px. `favicon.ico` is multi-resolution (16/32/48 embedded) for legacy clients.
+- Master at `frontend/public/corvo-logo.png` (717x717 transparent).
+- 26 inline `<img src="/corvo-logo.png">` callsites across 18 files flipped from .svg to .png.
+- `app/layout.tsx` icons meta updated to point at the new PNG icon set; `manifest.json` already referenced icon-192/512.
+- Stale public/ files deleted: `favicon.svg`, `logo.svg`, `raven-logo.svg`, old `corvo-logo.svg`, `image-1778541426026.jpg`, 5 Next.js default templates (`file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg`).
+- `og-image.png` regenerated 1200x630 with raven left + wordmark + tagline + features row + URL footer. Previous OG was text-only wordmark with no logo.
+- `corvo-pfp.png` regenerated 400x400 raven on dark navy fill so external profile-pic links flip to the new mark automatically.
+
+**PublicNav redesign**
+- Height bumped 58 to 68px.
+- Logo left, **centered nav links** (Features anchor / Install / Pricing / Changelog / Blog / About / FAQ - 7 flat links, no dropdowns), actions right.
+- Inner container `max-width: 1240, padding: 0 56px` so logo aligns with hero "T" in "The advisor" and Get Started pill aligns with end of headline. Outer nav stays full-width for backdrop-blur.
+- Hover bubbles on every link/button: `var(--bg3)` background, 9px radius, 0.15s transition. No more bare text-color hover.
+- Fully rounded `Get Started` pill (border-radius 9999).
+- Scroll-aware hide-on-scroll-down / show-on-scroll-up - **NOW WORKS ON HOMEPAGE**. Switched from scroll events (which the homepage's GSAP container swallowed for unknown reasons) to requestAnimationFrame polling. Reads `scrollerRef.current.scrollTop` or `window.scrollY` each frame, ~free at 60fps, bulletproof.
+- Homepage replaced its inline 167-line nav with `<PublicNav scrollerRef={containerRef} />`. Lost the inline referral-link copy widget that lived in the avatar dropdown - same feature still reachable via `/referrals` or UserMenu.
+- Mobile drawer is a flat list of 7 links + theme toggle + install + auth row. No more accordion expand/collapse for non-existent dropdowns.
+
+**Dashboard: live portfolio value**
+- GreetingBar now shows live value (`base x (1 + todayPct / 100)`) + delta (`+$115 · +0.23%`) next to "Good evening, Test." Always visible regardless of brief collapse state.
+- Evening Brief defaults to **collapsed** so the Today's Signal card below it is the dashboard's focal point. localStorage `corvo_brief_collapsed` semantics changed: only `"0"` keeps it expanded across sessions; missing or any other value defaults to collapsed.
+- Sidebar `PortfolioBuilder` input now shows live value when unfocused. On focus, snaps to base + auto-selects so user can edit cleanly. On change, saves user input as new base. Below input: green/red annotation `+$115 · +0.23% today · base $50,000`.
+- New `onTodayPctChange?: (pct: number | null) => void` callback in GreetingBar bubbles today's pct up to `app/app/page.tsx`, which holds a `todayPct` state and passes down to PortfolioBuilder via new `todayPct?: number | null` prop.
+
+**Dashboard tour fixes**
+- Step 2 (Daily Brief) was anchored to `tour-desk-analyze` (the New Analysis button in the sidebar - wrong target). Now anchors to `tour-desk-brief` on the actual Daily Brief / GreetingBar wrapper.
+- Step 5 (was: "Price alerts and digests" on the bell only) consolidated into "Top bar" stop covering alerts + theme toggle + Export + Share + settings via new `tour-desk-topbar-actions` and `tour-mob-topbar-actions` wrappers on the action clusters.
+
+**Supabase migration**
+- New `20260511020000_portfolio_snapshots_schema_fix.sql`. Triggered by prod 500s ("Could not find the 'date' column of 'portfolio_snapshots' in the schema cache"). Root cause: legacy `portfolio_snapshots.sql` migration (no timestamp prefix) is silently skipped by `supabase db push`, so newer columns (date / raw_value / portfolio_value) never reached prod.
+- Idempotent: `create table if not exists`, `add column if not exists` for each expected column, guarded `create policy` + unique constraint via DO blocks, `notify pgrst, 'reload schema'` at the end to drop PostgREST's stale column cache.
+- Applied to prod. Backend snapshot inserts work again.
+
+**Railway hardening**
+- Added `[build].watchPatterns = ["backend/**", "railway.toml", "Procfile"]` so frontend-only pushes (where 99% of churn lives) stop triggering Railway auto-deploys. Each failed auto-deploy was leaving a red "Healthcheck failed" row in the deploy history.
+- Manual `railway up` ran cleanly (`970a4bf5`): build pass, deploy pass, healthcheck pass on first try. Service "Online", `GET /health` returns HTTP 200.
+- Backend code shipped is current main (no new backend changes since v0.28 audit).
+
+**Other-session work that's already in main**
+- `8630a8e` Bottom-right buttons: 60x60 AI, 44x44 Feedback/Customize, theme-aware hover (both themes), aligned button centers
+- `be1bf14` useReveal: detect viewport at mount + double-RAF for above-fold reveals (fixes scroll reveals that previously stuck at opacity:0 on first paint)
+- `c2ec571` AnimatedHeading double-RAF trigger; About page copy updated to guardian framing ("Built to be the advisor I needed.")
+- `3ebe354` Pricing: removed MOST POPULAR badge from Pro card (not launched)
+- `34ee324` Public-page headings sized to hero spec with mixed gold/black color
+- `bdcb293` Repo cruft purge: ~7,400 stale files deleted from `backend/` (duplicate frontend tree, Streamlit prototype, .DS_Store, Icon, ghost mirror, venv). `backend/` now contains only `main.py`, `requirements.txt`, `.env` (gitignored), `.env.example`.
 
 ### v0.28 (May 11, 2026) - audit-driven security + cleanup pass
 
@@ -285,10 +363,10 @@ Key routes already implemented:
 
 **Supabase RLS**
 - New migration `20260511000000_security_hardening.sql`:
-  - Adds `Users read own health scores` policy on health_score_cache (RLS was enabled with zero policies, locking the table to service role only)
-  - Drops the blanket `Authenticated users can read all profiles` policy (was leaking bonus_messages_per_day, referral_credited, life_events, financial_goals, etc.)
-  - Adds tighter `Users read own profile` policy on profiles
-  - Creates `get_leaderboard(p_limit int)` SECURITY DEFINER RPC that exposes only id / display_name / xp for the leaderboard view
+ - Adds `Users read own health scores` policy on health_score_cache (RLS was enabled with zero policies, locking the table to service role only)
+ - Drops the blanket `Authenticated users can read all profiles` policy (was leaking bonus_messages_per_day, referral_credited, life_events, financial_goals, etc.)
+ - Adds tighter `Users read own profile` policy on profiles
+ - Creates `get_leaderboard(p_limit int)` SECURITY DEFINER RPC that exposes only id / display_name / xp for the leaderboard view
 - `app/learn/page.tsx` leaderboard migrated from direct `profiles` SELECT to `supabase.rpc("get_leaderboard", { p_limit: 10 })`
 
 ### v0.27 (May 11, 2026)
