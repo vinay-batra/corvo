@@ -2,24 +2,27 @@
 
 ### The advisor watching over your portfolio.
 
-[Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js · FastAPI · Supabase · All Rights Reserved
+[Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js 16 · FastAPI · Supabase · All Rights Reserved
+
+Current release: **v0.29** (May 11, 2026)
 
 ---
 
 ## What is Corvo?
 
-Corvo is a free, AI-powered portfolio intelligence platform built for retail investors who are tired of dashboards that show numbers without telling them what those numbers mean. Most portfolio tools are built around data display. Corvo is built around advice: every insight surfaces not just what is happening in your portfolio, but why it matters to you specifically and what you should consider doing about it. Whether you want to stress-test your holdings with Monte Carlo simulation, understand your tax exposure before year-end, get a morning briefing on overnight moves, or simply ask "what should I do today?" -- Corvo gives you a direct, personalized answer, not a spreadsheet to interpret yourself.
+Corvo is a free, AI-powered portfolio intelligence platform built for retail investors who are tired of dashboards that show numbers without telling them what those numbers mean. Most portfolio tools are built around data display. Corvo is built around advice: every insight surfaces not just what is happening in your portfolio, but why it matters to you specifically and what you should consider doing about it. Whether you want to stress-test your holdings with Monte Carlo simulation, understand your tax exposure before year-end, get a morning briefing on overnight moves, or simply ask "what should I do today?" - Corvo gives you a direct, personalized answer, not a spreadsheet to interpret yourself.
 
 ---
 
 ## Features
 
 ### Portfolio Analysis
+- Live portfolio value display: base × today's % change, with delta dollars and percent visible on the dashboard and the sidebar input
 - CAGR across selectable time periods, for both the portfolio and individual holdings
 - Sharpe ratio computed with the live `^IRX` T-bill rate as the risk-free rate
 - Portfolio health score graded across returns, risk, stability, and resilience
 - Max drawdown, alpha, beta, and volatility
-- Monte Carlo simulation with 8,500 paths and a 1 to 30 year projection horizon
+- Monte Carlo simulation with exactly 8,500 paths and a 1 to 30 year projection horizon
 - Benchmark comparison versus the S&P 500, NASDAQ, and Dow Jones
 - Sector exposure breakdown with visual allocation chart
 - Correlation heatmap across all holdings
@@ -27,11 +30,13 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 
 ### AI Tools
 - AI portfolio chat powered by Claude with full portfolio context, web search, persistent history, and conversation management
-- Morning briefing: a daily AI-generated summary of macro news and portfolio-relevant developments
-- "What should I do today?" -- a single-click, direct action recommendation based on your current holdings
+- Daily Signal: a single AI-generated, actionable recommendation each day across 8 categories (Risk Alert, Rebalance, Tax Opportunity, Earnings Watch, Benchmark Lag, Protect Gains, Diversify, Strong Hold) with headline, rationale, impact chips, numbered steps, and confidence tooltip
+- Morning briefing: a daily AI-generated summary of macro news and portfolio-relevant developments (defaults to collapsed; expand via chevron)
+- "What should I do today?" - a single-click, direct action recommendation based on your current holdings
 - Rebalance assistant with target allocation suggestions and drift analysis
 - Natural language portfolio editor: describe a change in plain English and Corvo applies it
 - Earnings impact preview: AI analysis of how upcoming earnings could affect your positions
+- Goal Tracker: projects retirement and milestone savings with Monte Carlo
 
 ### Simulations
 - Monte Carlo engine running exactly 8,500 paths per simulation
@@ -61,20 +66,25 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Price alerts with browser push notification support
 - All email preferences individually configurable from the settings page
 
-### Learn
+### Learn (hidden from main nav as of v0.24, code preserved)
 - XP system with 15 progression levels
 - Structured lessons with worked examples across investing, options, tax, and risk topics
 - Daily challenges with timed scoring
-- Global leaderboard updated in real time
+- Global leaderboard backed by a column-restricted `get_leaderboard` SECURITY DEFINER RPC (no profile-column leaks)
 - Arcade with financial mini-games
-- Paper trading simulator (collapsible section inside Learn tab)
 
-### Navigation Structure (as of v0.25)
-- Dashboard tabs: Overview, Positions, Stocks, Simulations, News
-- Dashboard tab itself is split into four scroll-revealed regions: Overview (daily brief, signal, what should I do today), Analysis (metrics, performance, goal), Intelligence (health, AI insights, vs benchmark), Composition (allocation, sector, insider)
-- Income & Tax and Transactions are sections within the Positions tab -- not standalone tabs
-- Paper Trade was removed from the app in v0.24
-- Watchlist and Learn tabs are hidden from the active TABS list in v0.24 (code preserved)
+### Branding
+- Gold raven head + rising arrow logo (since v0.29). Master at `frontend/public/corvo-logo.png` (717×717 transparent PNG)
+- Full favicon and home-screen icon set: 16, 32, 48, 180, 192, 512 px PNGs + multi-resolution `favicon.ico`
+- Open Graph card (`og-image.png`, 1200×630) and social profile picture (`corvo-pfp.png`, 400×400)
+
+### Navigation Structure (as of v0.29)
+- **Public nav** is the shared `PublicNav` component used on every public page including the homepage. 68 px height, content-aligned inner container (matches the hero's 1240 max-width). 7 flat top-level links: Features (homepage anchor) · Install · Pricing · Changelog · Blog · About · FAQ. Theme toggle and Get Started rounded pill on the right. Scroll-aware hide on scroll down / show on scroll up (driven by `requestAnimationFrame` polling - works uniformly on the homepage's 100vh container and on regular `window`-scrolling pages).
+- **Dashboard tabs**: Dashboard · Positions · Stocks · Simulations · News
+- The Dashboard tab itself is split into four scroll-revealed regions: Overview (daily brief, Today's Signal, "What should I do today?"), Analysis (metrics, performance, goal), Intelligence (health, AI insights, vs benchmark), Composition (allocation, sector, insider)
+- Income & Tax and Transactions are sections within the Positions tab - not standalone tabs
+- Paper Trade was removed from the product in v0.24 and the routes, frontend component, and Supabase tables were fully purged in v0.28
+- Watchlist and Learn tabs are hidden from the active `TABS` list in v0.24 (component code preserved)
 
 ---
 
@@ -82,17 +92,18 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 14, TypeScript, Framer Motion, Recharts, Plotly |
-| Animations | GSAP (ScrollTrigger, SplitText), Three.js |
-| Backend | FastAPI (Python), deployed on Railway |
-| Database | Supabase (PostgreSQL) with Row-Level Security |
-| Auth | Supabase Auth with Cloudflare Turnstile CAPTCHA |
-| AI | Anthropic Claude (claude-sonnet-4-6) with streaming and web search |
-| Market Data | yfinance, Finnhub |
-| Email | Resend |
-| Error Monitoring | Sentry (client and server) |
-| Frontend Hosting | Vercel |
-| API Hosting | Railway |
+| Frontend | Next.js 16, React 19, TypeScript, Framer Motion, Recharts, Plotly |
+| Animations | GSAP (ScrollTrigger, SplitText) loaded dynamically, IntersectionObserver-based `ScrollReveal` helper |
+| Backend | FastAPI (Python), single-file `backend/main.py` |
+| Database | Supabase (PostgreSQL) with Row-Level Security and `get_leaderboard` SECURITY DEFINER RPC |
+| Auth | Supabase Auth with Cloudflare Turnstile CAPTCHA, JWT-verified per-request via `_verify_jwt_user` helper |
+| AI | Anthropic Claude (`claude-sonnet-4-6`) with streaming and `web_search` tool |
+| Market Data | yfinance, Finnhub fallback for news |
+| Email | Resend (morning briefing, week in review, monthly summary, market close summary, price alerts) |
+| Push | VAPID web push |
+| Error Monitoring | Sentry (client, server, edge) |
+| Frontend Hosting | Vercel (auto-deploys on push to `main`) |
+| API Hosting | Railway (manual `railway up` - GitHub auto-deploy is unreliable, `[build].watchPatterns` in `railway.toml` is scoped to `backend/**` so frontend pushes don't trigger build attempts) |
 
 ---
 
@@ -184,9 +195,18 @@ ALLOWED_ORIGINS=http://localhost:3000
 
 ## Deployment Notes
 
-- **Frontend**: push to `main` -- Vercel auto-deploys
-- **Backend**: always run `railway up` from the repo root (`~/Downloads/portfolio_v2`) -- Railway GitHub integration is unreliable, deploy manually
-- Railway runs from the repo root with `cd backend && uvicorn main:app ...` -- never run `railway up` from inside `/backend`
+- **Frontend**: push to `main` - Vercel auto-deploys
+- **Backend**: always deploy manually via the canonical sequence below - Railway's GitHub integration is unreliable. The repo's `railway.toml` scopes `watchPatterns` to `backend/**`, `railway.toml`, and `Procfile` so frontend pushes do not trigger broken auto-build attempts.
+- **Canonical Railway deploy:**
+ ```bash
+ mkdir -p /tmp/corvo-deploy2/backend \
+ && cp ~/Downloads/portfolio_v2/backend/main.py /tmp/corvo-deploy2/backend/ \
+ && cp ~/Downloads/portfolio_v2/backend/requirements.txt /tmp/corvo-deploy2/backend/ \
+ && cd ~/Downloads/portfolio_v2 \
+ && railway up --detach --path-as-root /tmp/corvo-deploy2
+ ```
+- Railway starts the service with `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT` (defined in `railway.toml`). Never run `railway up` from inside `/backend` - the canonical sequence shapes the upload root to include a `backend/` subdir so the start command resolves correctly.
+- **Supabase migrations**: live in `supabase/migrations/`. Apply via `supabase db push` (CLI must be installed and project linked) or paste manually into the Supabase dashboard SQL editor. Files without a `<timestamp>_name.sql` prefix are silently skipped by `db push` - name new migrations with a timestamp prefix.
 
 ---
 
