@@ -3293,24 +3293,59 @@ export default function Landing() {
   // link (href="/#features") would update the URL but not move anything on
   // screen. This effect bridges the gap: on mount and on every hashchange,
   // we find the target element and scrollTo its offset inside containerRef.
+  //
+  // Robust version (2026-05-12): the previous one-shot 60ms timeout was being
+  // overridden by GsapHero's ScrollTrigger.refresh() that runs at +120ms post
+  // mount and can reset scroller position. Also some below-fold sections
+  // are heavy and the #features element's getBoundingClientRect doesn't
+  // resolve to its final position until layout settles. New approach:
+  //   - retry up to 20 times at 100ms intervals if element/scroller not ready
+  //   - on initial load, fire at 250ms (post-GSAP-refresh) AND again at 700ms
+  //     as a fallback in case GSAP or hydration jostled the scroll position
+  //   - on subsequent hashchange (user clicks Features in nav), smooth scroll
+  //     once (no fallback needed since layout is already settled)
+  //   - first attempt uses behavior:"auto" so a user-initiated scroll input
+  //     within the first 250-700ms doesn't cancel a smooth animation
   useEffect(() => {
-    const NAV_HEIGHT = 68; // matches PublicNav height; gives the section a little breathing room under the nav
-    const scrollToHash = () => {
+    const NAV_HEIGHT = 68;
+    let cleanedUp = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+
+    const scrollToHash = (smooth: boolean) => {
+      if (cleanedUp) return;
       const hash = typeof window !== "undefined" ? window.location.hash : "";
-      if (!hash) return;
+      if (!hash || hash === "#") return;
       const targetId = hash.slice(1);
       const el = document.getElementById(targetId);
       const scroller = containerRef.current;
-      if (!el || !scroller) return;
+      if (!el || !scroller) {
+        if (attempts++ < 20) {
+          retryTimer = setTimeout(() => scrollToHash(smooth), 100);
+        }
+        return;
+      }
       const elRect = el.getBoundingClientRect();
       const scRect = scroller.getBoundingClientRect();
-      const top = elRect.top - scRect.top + scroller.scrollTop - NAV_HEIGHT;
-      scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      const top = Math.max(0, elRect.top - scRect.top + scroller.scrollTop - NAV_HEIGHT);
+      scroller.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
     };
-    // Initial: wait a frame so layout (GSAP pinning, async sections) settles.
-    const t = setTimeout(scrollToHash, 60);
-    window.addEventListener("hashchange", scrollToHash);
-    return () => { clearTimeout(t); window.removeEventListener("hashchange", scrollToHash); };
+
+    // Initial: wait past GSAP refresh (which fires at +120ms) before scrolling.
+    const initial = setTimeout(() => { attempts = 0; scrollToHash(false); }, 250);
+    // Fallback in case GSAP refresh or hydration disrupted the first attempt.
+    const fallback = setTimeout(() => { attempts = 0; scrollToHash(false); }, 700);
+
+    const onHashChange = () => { attempts = 0; scrollToHash(true); };
+    window.addEventListener("hashchange", onHashChange);
+
+    return () => {
+      cleanedUp = true;
+      clearTimeout(initial);
+      clearTimeout(fallback);
+      if (retryTimer) clearTimeout(retryTimer);
+      window.removeEventListener("hashchange", onHashChange);
+    };
   }, []);
 
   const [liveUserCount, setLiveUserCount] = useState<number | null>(null);
