@@ -1,3 +1,15 @@
+[build]
+# Only auto-rebuild when backend code or deploy config actually changes.
+# Frontend-only commits (Vercel's territory) will no longer trigger Railway
+# build attempts and won't add red "Healthcheck failed" entries to the deploy
+# history. Manual `railway up` from the canonical sequence in CLAUDE.md
+# continues to work the same way regardless of these patterns.
+watchPatterns = [
+  "backend/**",
+  "railway.toml",
+  "Procfile",
+]
+
 [deploy]
 startCommand = "PYTHONUNBUFFERED=1 cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
 restartPolicyType = "on_failure"
