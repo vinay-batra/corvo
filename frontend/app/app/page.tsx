@@ -1543,7 +1543,7 @@ const { dark, toggle: toggleDark }  = useTheme();
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     if (!valid.length) return;
     setLoading(true); if (!keepData) setData(null); setErrorMsg(null); setSkippedTickers([]); setAnalyzeComplete(false);
-    setWsidResult(null); setWsidOpen(false); setAnalysisStep(0);
+    setAnalysisStep(0);
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
       const pendingRef = referralCodeRef.current;
