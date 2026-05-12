@@ -15,8 +15,8 @@ export default function Footer() {
         }
       `}</style>
       <div className="footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/corvo-logo.png" width={16} height={13} alt="Corvo" style={{ opacity: 0.5 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <img src="/corvo-logo.png" width={22} height={22} alt="Corvo" style={{ opacity: 0.8 }} />
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "var(--text3)" }}>CORVO</span>
           <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>© 2026 Corvo. All rights reserved.</span>
         </div>
@@ -38,6 +38,18 @@ export default function Footer() {
             </svg>
           </a>
         </div>
+      </div>
+
+      {/* Large standalone logo mark at the bottom - brand presence without
+          dominating the footer text row above. */}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+        <img
+          src="/corvo-logo.png"
+          alt="Corvo"
+          width={64}
+          height={64}
+          style={{ opacity: 0.45, filter: "drop-shadow(0 2px 8px rgba(201,168,76,0.15))" }}
+        />
       </div>
     </footer>
   );

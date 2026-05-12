@@ -33,8 +33,8 @@ export default function PublicFooter() {
 
         {/* Left: wordmark + tagline + copyright */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img src="/corvo-logo.png" width={28} height={28} alt="Corvo" />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <img src="/corvo-logo.png" width={38} height={38} alt="Corvo" style={{ filter: "drop-shadow(0 0 4px rgba(201,168,76,0.2))" }} />
             <span style={{ fontFamily: "Space Mono, monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
           </div>
           <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5, margin: 0 }}>
@@ -68,6 +68,19 @@ export default function PublicFooter() {
           </div>
         </div>
 
+      </div>
+
+      {/* Large standalone logo mark at the bottom - brand presence beneath
+          the content row. Muted opacity so it reads as a watermark, not a
+          competing CTA. */}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 40 }}>
+        <img
+          src="/corvo-logo.png"
+          alt="Corvo"
+          width={88}
+          height={88}
+          style={{ opacity: 0.5, filter: "drop-shadow(0 2px 10px rgba(201,168,76,0.18))" }}
+        />
       </div>
     </footer>
   );
