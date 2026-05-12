@@ -260,9 +260,13 @@ export default function AiChat({
   const liveTotal = assets?.reduce((s: number, a: any) => s + (a.weight ?? 0), 0) || 1;
   const liveWeights = assets?.map((a: any) => (a.weight ?? 0) / liveTotal) || [];
 
-  // Reset suggestions when portfolio tickers change
+  // Reset suggestions when portfolio tickers change. Multiplier was hardcoded
+  // to 4 even though SUGGESTION_SETS has 3 entries - on a 25% roll you'd land
+  // on index 3 (undefined) and the .map() in the empty state would throw,
+  // tripping app/error.tsx ("Corvo hit an unexpected error"). Tie the upper
+  // bound to the array length so this can't drift again.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setSuggestionSet(Math.floor(Math.random() * 4)); }, [liveTickers.join(",")]);
+  useEffect(() => { setSuggestionSet(Math.floor(Math.random() * SUGGESTION_SETS.length)); }, [liveTickers.join(",")]);
 
   const portfolioContext = portfolioCtxOn ? {
     // Live holdings: always current
@@ -1041,7 +1045,7 @@ export default function AiChat({
 
               {/* Suggestions: 2x2 grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 6 }}>
-                {SUGGESTION_SETS[suggestionSet].map((s, i) => (
+                {(SUGGESTION_SETS[suggestionSet] ?? SUGGESTION_SETS[0]).map((s, i) => (
                   <motion.button
                     key={`${s}-${i}-${suggestionSet}`}
                     className="cv-chip"
