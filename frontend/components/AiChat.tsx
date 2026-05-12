@@ -930,7 +930,7 @@ export default function AiChat({
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
             }}>
-              <img src="/corvo-logo.png" width={16} height={13} alt="" style={{ opacity: 0.95 }} />
+              <img src="/corvo-logo.png" width={22} height={22} alt="" style={{ opacity: 1 }} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1, minWidth: 0 }}>
               <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text)", letterSpacing: -0.2 }}>Corvo</span>
@@ -1010,7 +1010,7 @@ export default function AiChat({
                   margin: "0 auto 14px",
                   boxShadow: "0 0 24px rgba(201,168,76,0.15) inset, 0 6px 20px rgba(201,168,76,0.10)",
                 }}>
-                  <img src="/corvo-logo.png" width={32} height={26} alt="Corvo" style={{ opacity: 0.95 }} />
+                  <img src="/corvo-logo.png" width={42} height={42} alt="Corvo" style={{ opacity: 1 }} />
                 </div>
                 <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 8 }}>
                   Always watching
