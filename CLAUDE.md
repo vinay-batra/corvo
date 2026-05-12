@@ -15,9 +15,7 @@ Replaced the C-in-gold-circle logo with a new gold raven head + arrow across the
 
 ### Open items / next session
 
-1. **Rotate any other secrets** that were in backend/.env beyond Anthropic if you haven't already: Finnhub, Supabase service role, Resend, VAPID. File is untracked but git history retains it.
-2. **Optional**: Railway dashboard → web service → Settings → Source → toggle off "Deploy on Push" for absolute clean state. `watchPatterns` covers ~99% of the noise but doesn't fully disable auto-deploys.
-3. **Force-refresh OG card cache** on Twitter via [Card Validator](https://cards-dev.twitter.com/validator) if you want the new card to show on previously-shared links.
+Empty. All v0.29 open items resolved 2026-05-12: secret rotation done (Anthropic + Finnhub + Supabase service role + Resend + VAPID — old keys in public git history are now invalidated), Railway "Deploy on Push" disabled at the dashboard level (backend is fully manual-deploy now), OG card cache refresh intentionally skipped (new shares pick up the new card; old shares can wait for TTL).
 
 ### Premium polish queue - pick up here next session
 
@@ -43,6 +41,7 @@ Empty. Likely next moves: demo video, YC application, product direction brainsto
 - Display formula: `liveValue = base x (1 + todayPct / 100)`
 - Sidebar `PortfolioBuilder` shows live value when unfocused; on focus snaps to base + auto-selects; on change saves user input as new base. Annotation line below shows `+$X · +Y% today · base $Z`
 - Same live value shown in GreetingBar header next to the greeting, visible even when brief is collapsed
+- **Session-scoped only**: `todayPct` resets to null every page load and recomputes from today's open. Live value is always `base × (1 + today's pct)` where `base` is the persisted portfolio value. At tomorrow's market open, today's pct rolls to 0 and the live value snaps back to `base`. True day-over-day tracking (yesterday's close becomes today's implicit base, etc.) needs a backend writer that snapshots end-of-day portfolio value into the `portfolio_snapshots` table on a cron, then a frontend consumer that reads "yesterday's snapshot" as the new base. v0.29 schema fix added the table columns but neither writer nor consumer are wired up. Queued item.
 
 ### Daily Signal (built May 10) - reference
 
@@ -186,7 +185,7 @@ Key routes already implemented:
 
 - `initial={false}` on ALL `motion.*` components EXCEPT those using `whileInView`. For whileInView reveals: use the IntersectionObserver-based `ScrollReveal` helper in `app/page.tsx`, OR set an explicit inverse `initial={{ opacity: 0, y: 30 }}` state. NEVER pair `initial={false}` with `whileInView` (reveal becomes a no-op).
 - No emojis anywhere in the app
-- No em dashes anywhere - not in code, not in AI responses, not in copy
+- No em dashes anywhere in project source (`.ts`, `.tsx`, `.py`, `.css`, `.md`, `.sql`, `.html`) - not in code, not in AI responses, not in copy. EXCEPTION: vendored plugin / skill docs under `.agents/skills/*` are upstream metadata, not project source - leave their em dashes alone.
 - No asterisks in AI responses
 - Space Mono font for all numbers and monospace text
 - All colors use CSS variables only - never hardcode dark colors
@@ -210,11 +209,12 @@ Key routes already implemented:
 - Period and Benchmark selectors are only in chart controls - not in sidebar
 - **Logo path is `/corvo-logo.png`** (PNG, transparent background, 717x717 master). 26 inline `<img>` callsites across 18 files depend on this path. Never rename. If swapping the design, replace the file in place and regenerate favicon variants via the PIL pipeline (see scripts in commit `349696a`).
 - **Backend** lives ONLY in `backend/main.py` + `backend/requirements.txt` + `backend/.env*`. The `backend/app/`, `backend/components/`, `backend/frontend/`, `backend/lib/`, `backend/*.tsx`, and Streamlit prototype `.py` files were all purged in `bdcb293`. Do not recreate them. Railway only ships `main.py` and `requirements.txt`.
-- **Railway GitHub auto-deploys are unreliable** - always deploy manually. `railway.toml` has `[build].watchPatterns` scoped to `backend/**` + `railway.toml` + `Procfile` so frontend pushes don't trigger broken builds. If you change backend code via GitHub push, expect the auto-build to fail; run manual `railway up` instead.
+- **Railway GitHub auto-deploys are GENUINELY BROKEN, not just noisy** - even with `watchPatterns` scoped to `backend/**`, backend pushes consistently fail healthcheck. As of 2026-05-12, fully disabled at the dashboard level (Settings → Source → "Auto deploy is disabled"). Always deploy backend via the canonical manual `railway up` sequence in the Deployment section below. `railway.toml`'s `[build].watchPatterns` is kept as belt-and-suspenders in case anyone ever re-enables auto-deploy.
 - **Live portfolio value pattern**: GreetingBar polls holding prices every 60s and computes `portfolioToday.pct`. Bubbles via `onTodayPctChange?: (pct: number | null) => void` callback up to `app/app/page.tsx` (`todayPct` state), down to `PortfolioBuilder` via `todayPct?: number | null` prop. Display formula is always `liveValue = base x (1 + todayPct / 100)`. Sidebar input shows live value when blurred, base when focused.
 - **Evening Brief defaults to collapsed**. localStorage `corvo_brief_collapsed` value `"0"` means expanded (user opted in); any other value means collapsed.
 - **PublicNav** is the single source of truth for the public nav. The homepage uses `<PublicNav scrollerRef={containerRef} />` to drive scroll-aware hide/show off its inner 100vh container. Other pages use `<PublicNav />` (no ref) which falls back to `window.scrollY`. Scroll behavior is `requestAnimationFrame` polling, NOT scroll events.
 - **PublicNav inner container** uses `max-width: 1240, padding: 0 56px` matching the hero content width. Logo aligns with the leading edge of "The advisor" headline; Get Started pill aligns with the trailing edge.
+- **`/watchlist-data` 429s in prod Railway logs are normal** - that's the rate limiter doing its job. Not a bug, do not chase. Only investigate if you see sustained spikes or 5xx errors in the same window.
 
 ## Mobile Rules
 
