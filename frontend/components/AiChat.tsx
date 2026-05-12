@@ -158,10 +158,10 @@ function TypingDots() {
   );
 }
 
-function CorvoAvatar({ size = 22 }: { size?: number }) {
+function CorvoAvatar({ size = 28 }: { size?: number }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: "var(--bg3)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <img src="/corvo-logo.png" width={size * 0.58} height={size * 0.58} alt="" />
+    <div style={{ width: size, height: size, borderRadius: "50%", background: "var(--bg3)", border: "1px solid rgba(201,168,76,0.35)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 0 6px rgba(201,168,76,0.18)" }}>
+      <img src="/corvo-logo.png" width={size * 0.72} height={size * 0.72} alt="" />
     </div>
   );
 }
@@ -1012,9 +1012,6 @@ export default function AiChat({
                 }}>
                   <img src="/corvo-logo.png" width={42} height={42} alt="Corvo" style={{ opacity: 1 }} />
                 </div>
-                <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 700, marginBottom: 8 }}>
-                  Always watching
-                </div>
                 <p style={{ fontFamily: "Space Mono, monospace", fontSize: 17, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, lineHeight: 1.2, marginBottom: 8 }}>
                   {!portfolioCtxOn
                     ? "Turn on Context for tailored advice"
@@ -1089,7 +1086,7 @@ export default function AiChat({
                   >
                     {m.role === "assistant" && (
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                        <CorvoAvatar size={20} />
+                        <CorvoAvatar size={28} />
                         <span style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)" }}>Corvo AI</span>
                         <span style={{ fontSize: 9, color: "var(--text3)" }}>{formatTime(m.timestamp)}</span>
                       </div>
@@ -1132,7 +1129,7 @@ export default function AiChat({
                   initial={false} animate={{ opacity: 1, y: 0 }}
                   style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                    <CorvoAvatar size={20} />
+                    <CorvoAvatar size={28} />
                     <span style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)" }}>Corvo AI</span>
                   </div>
                   <div style={{ padding: "8px 13px", background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "3px 16px 16px 16px" }}>
