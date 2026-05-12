@@ -64,47 +64,40 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Scroll behavior: hide on scroll down, show on scroll up. Listens on both
-  // window AND the optional inner scroller so we don't miss events if the ref
-  // populates late, and reads the actual scroll position dynamically from
-  // whichever source is the active scroll context. (Required by the homepage,
-  // which wraps everything in a 100vh overflow-auto container; other pages
-  // scroll on window.)
+  // Scroll behavior: hide on scroll down, show on scroll up.
+  //
+  // Previous versions used scroll events on window and the optional scroller,
+  // which worked on every page EXCEPT the homepage. The homepage wraps all
+  // content in a 100vh overflow-auto container that also hosts GSAP
+  // ScrollTrigger pinning - whatever combination of strict-mode timing, GSAP
+  // ownership, and React 19's deferred ref attachment broke event delivery on
+  // the container. Easier to bypass entirely: poll scrollTop in a
+  // requestAnimationFrame loop. Bulletproof and ~free at 60fps.
   useEffect(() => {
-    const onScroll = () => {
+    let raf = 0;
+    let lastY: number | null = null;
+    const tick = () => {
       const el = scrollerRef?.current ?? null;
       const currentY = el ? el.scrollTop : window.scrollY;
-      setScrolled(currentY > 8);
-      if (currentY < 10) {
-        setHidden(false);
-      } else if (currentY > prevScrollY.current + 8) {
-        setHidden(true);
-      } else if (currentY < prevScrollY.current - 4) {
-        setHidden(false);
+      if (lastY === null) {
+        lastY = currentY;
+        prevScrollY.current = currentY;
+      } else if (currentY !== lastY) {
+        setScrolled(currentY > 8);
+        if (currentY < 10) {
+          setHidden(false);
+        } else if (currentY > lastY + 8) {
+          setHidden(true);
+        } else if (currentY < lastY - 4) {
+          setHidden(false);
+        }
+        lastY = currentY;
+        prevScrollY.current = currentY;
       }
-      prevScrollY.current = currentY;
+      raf = requestAnimationFrame(tick);
     };
-    // Attach to window unconditionally; on most pages that's the scroll source.
-    window.addEventListener("scroll", onScroll, { passive: true });
-    // Also attach to the inner scroller if one was provided. Re-resolve the
-    // ref on a microtask in case it hadn't been attached when this effect
-    // first fired (parent ref-callback ordering edge case).
-    let innerEl: HTMLElement | null = null;
-    const attachInner = () => {
-      const el = scrollerRef?.current ?? null;
-      if (el && el !== innerEl) {
-        if (innerEl) innerEl.removeEventListener("scroll", onScroll);
-        innerEl = el;
-        el.addEventListener("scroll", onScroll, { passive: true });
-      }
-    };
-    attachInner();
-    const raf = (typeof window !== "undefined") ? window.requestAnimationFrame(attachInner) : 0;
-    return () => {
-      if (raf) window.cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
-      if (innerEl) innerEl.removeEventListener("scroll", onScroll);
-    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [scrollerRef]);
 
   // Escape closes the mobile drawer

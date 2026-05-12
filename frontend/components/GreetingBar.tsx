@@ -56,6 +56,9 @@ interface Props {
   portfolioValue?: number;
   hideBriefing?: boolean;
   hideTickers?: boolean;
+  // Bubble today's % change up so the sidebar input can show the live
+  // (base x (1 + pct/100)) portfolio value. Fires with null when no data.
+  onTodayPctChange?: (pct: number | null) => void;
 }
 
 function BriefSection({ label, text, delay }: { label: string; text: string; delay: number }) {
@@ -112,7 +115,7 @@ function HoldingChip({ label, pct, price }: { label: string; pct: number | null;
   );
 }
 
-export default function GreetingBar({ displayName, assets, portfolioValue, hideBriefing, hideTickers }: Props) {
+export default function GreetingBar({ displayName, assets, portfolioValue, hideBriefing, hideTickers, onTodayPctChange }: Props) {
   const [resolvedName, setResolvedName] = useState(displayName || "");
   useEffect(() => {
     if (displayName?.trim()) { setResolvedName(displayName.trim()); return; }
@@ -238,6 +241,12 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
     return { pct, dollar };
   }, [holdingPrices, assets, portfolioValue, mkt.isOpen]);
 
+  // Bubble today's pct up to the dashboard whenever it changes, so the sidebar
+  // PortfolioBuilder can show the live value.
+  useEffect(() => {
+    onTodayPctChange?.(portfolioToday?.pct ?? null);
+  }, [portfolioToday, onTodayPctChange]);
+
   const validHoldingTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
   const baseChips = holdingPrices.length > 0
     ? holdingPrices.map(h => ({ label: h.ticker, pct: h.changePct, price: h.price }))
@@ -309,10 +318,70 @@ export default function GreetingBar({ displayName, assets, portfolioValue, hideB
           </div>
         </div>
 
-        {/* ── Greeting: always visible ── */}
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--text)", margin: `0 0 ${collapsed ? 0 : 20}px`, letterSpacing: -0.5, lineHeight: 1.2, transition: "margin 0.25s ease" }}>
-          {getGreeting()}{firstName ? `, ${firstName}` : ""}.
-        </h1>
+        {/* ── Greeting + live portfolio value: always visible ── */}
+        <div
+          className="gb-greet-row"
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 16,
+            margin: `0 0 ${collapsed ? 0 : 20}px`,
+            transition: "margin 0.25s ease",
+          }}
+        >
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--text)", margin: 0, letterSpacing: -0.5, lineHeight: 1.2 }}>
+            {getGreeting()}{firstName ? `, ${firstName}` : ""}.
+          </h1>
+          {/* Live portfolio value - shows even when the brief is collapsed */}
+          {(portfolioValue ?? 0) > 0 && (
+            <div
+              className="gb-live-value"
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 12,
+                flexShrink: 0,
+                fontFamily: "'Space Mono', monospace",
+              }}
+              title="Today's estimated portfolio value"
+            >
+              <span
+                style={{
+                  fontSize: 26,
+                  fontWeight: 700,
+                  color: "var(--text)",
+                  letterSpacing: -0.5,
+                  lineHeight: 1.1,
+                }}
+              >
+                ${(portfolioValue! * (1 + (portfolioToday?.pct ?? 0) / 100)).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+              </span>
+              {portfolioToday ? (
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: portfolioToday.pct >= 0 ? "#4caf7d" : "var(--red)",
+                    letterSpacing: 0.1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {portfolioToday.dollar != null && (
+                    <>
+                      {portfolioToday.dollar >= 0 ? "+" : "-"}${Math.abs(portfolioToday.dollar).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                      <span style={{ color: "var(--text3)", margin: "0 6px", fontWeight: 400 }}>·</span>
+                    </>
+                  )}
+                  {portfolioToday.pct >= 0 ? "+" : ""}{portfolioToday.pct.toFixed(2)}%
+                </span>
+              ) : (
+                <span style={{ fontSize: 11, color: "var(--text3)" }}>{mkt.isOpen ? "loading..." : "market closed"}</span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ── Two-column content grid - collapses ── */}
         <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 2000, transition: "max-height 0.35s ease", opacity: collapsed ? 0 : 1, transitionProperty: "max-height, opacity", transitionDuration: "0.35s, 0.2s" }}>

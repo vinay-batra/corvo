@@ -1226,6 +1226,9 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     const stored = localStorage.getItem("corvo_portfolio_value");
     return stored ? Number(stored) : 50000;
   });
+  // Today's portfolio % change (bubbled up from GreetingBar) so the sidebar
+  // PortfolioBuilder can show the live (base + today's gain) value.
+  const [todayPct, setTodayPct] = useState<number | null>(null);
   // Sync portfolioInputValue from localStorage: fire on mount + cross-tab storage events
   useEffect(() => {
     const handler = () => {
@@ -2066,7 +2069,7 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       {/* Builder */}
       <div id="tour-ticker-area" style={{ flex: 1, overflow: "auto", overscrollBehavior: "none", padding: "12px 14px" }}>
-        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} />
+        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} todayPct={todayPct} />
       </div>
 
       {/* Analyze button */}
@@ -2602,6 +2605,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       perfHistory={perfHistory}
                       portfolioValue={portfolioInputValue}
                       hideTickers={hiddenCards.has("tickers")}
+                      onTodayPctChange={setTodayPct}
                     />
                   </DashReveal>
                 </div>
