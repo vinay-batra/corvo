@@ -540,30 +540,15 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
           {/* CENTER - vertical divider */}
           <div className="gb-vdiv" style={{ background: "var(--border)", height: "100%" }} />
 
-          {/* RIGHT - portfolio today + indices + holdings */}
+          {/* RIGHT - market indices + holdings marquee.
+              Previously also had a "Portfolio Today" block at the top with a
+              30px green/red percentage and dollar delta, but that data is
+              already shown next to the greeting in the always-visible
+              GreetingBar header (live value + delta + privacy toggle).
+              Having it again here read as duplication and the big 30px figure
+              also overflowed left into the divider on narrower viewports.
+              Dropped. */}
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-
-            {/* Portfolio today */}
-            <div>
-              <span style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: "var(--text3)", fontWeight: 600 }}>Portfolio Today</span>
-              {portfolioToday ? (
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 6 }}>
-                  <span className="gb-port-num" style={{ fontSize: 30, fontWeight: 700, lineHeight: 1, letterSpacing: -1, color: portfolioToday.pct >= 0 ? "#4caf7d" : "var(--red)", fontFamily: "'Space Mono', monospace" }}>
-                    {portfolioToday.pct >= 0 ? "+" : ""}{portfolioToday.pct.toFixed(2)}%
-                  </span>
-                  {portfolioToday.dollar != null && (
-                    <span style={{ fontSize: 12, color: "var(--text3)", fontFamily: "'Space Mono', monospace" }}>
-                      {portfolioToday.dollar >= 0 ? "+" : "-"}${Math.abs(portfolioToday.dollar).toLocaleString("en-US", { maximumFractionDigits: 0 })}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: "var(--text3)", fontFamily: "'Space Mono', monospace" }}>--</span>
-                  <span style={{ fontSize: 10, color: "var(--text3)" }}>{mkt.isOpen ? "loading..." : "market closed"}</span>
-                </div>
-              )}
-            </div>
 
             {/* Market indices */}
             <div>
