@@ -21,7 +21,6 @@ import PortfolioBuilder from "../../components/PortfolioBuilder";
 import Metrics from "../../components/Metrics";
 import PerformanceChart from "../../components/PerformanceChart";
 import HealthScore from "../../components/HealthScore";
-import AiInsights from "../../components/AiInsights";
 import BenchmarkComparison from "../../components/BenchmarkComparison";
 import Breakdown from "../../components/Breakdown";
 import AiChat from "../../components/AiChat";
@@ -1172,7 +1171,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [wsidLoading, setWsidLoading] = useState(false);
   const [wsidResult, setWsidResult] = useState<string | null>(null);
   const [wsidError, setWsidError] = useState<string | null>(null);
-  const DASH_CARDS = ["briefing", "tickers", "wsid", "metrics", "performance", "health", "insights", "benchmark", "allocation", "sector", "goal", "insider", "save"] as const;
+  const DASH_CARDS = ["briefing", "tickers", "wsid", "metrics", "performance", "health", "benchmark", "allocation", "sector", "goal", "insider", "save"] as const;
   type DashCard = typeof DASH_CARDS[number];
   const DASH_CARD_LABELS: Record<DashCard, string> = {
     briefing: "Daily Brief",
@@ -1181,7 +1180,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     metrics: "Key Metrics",
     performance: "Performance Chart",
     health: "Health Score",
-    insights: "AI Insights",
     benchmark: "vs Benchmark",
     allocation: "Allocation",
     sector: "Sector Exposure",
@@ -2841,7 +2839,7 @@ const { dark, toggle: toggleDark }  = useTheme();
 
 
                 {/* ═══ ANALYSIS REGION ═══ */}
-                {(!hiddenCards.has("metrics") || !hiddenCards.has("performance") || !hiddenCards.has("goal")) && (
+                {(!hiddenCards.has("metrics") || !hiddenCards.has("performance")) && (
                   <SectionHeader eyebrow="Analysis" title="Risk and returns" />
                 )}
 
@@ -2926,19 +2924,14 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </DashReveal>
                 </div>}
 
-                {/* Goal Tracker */}
-                {!hiddenCards.has("goal") && data && (
-                  <DashReveal from="up" delay={0.08}>
-                    <GoalTracker
-                      data={data}
-                      portfolioValue={portfolioInputValue}
-                      onAskAi={(msg) => { setChatInitialMessage(msg); setChatOpen(true); }}
-                    />
-                  </DashReveal>
-                )}
-
-                {/* ═══ INTELLIGENCE REGION ═══ */}
-                {(!hiddenCards.has("health") || !hiddenCards.has("insights") || !hiddenCards.has("benchmark")) && (
+                {/* ═══ INTELLIGENCE REGION ═══
+                    Goal Tracker now lives in the bottom-grid here (right
+                    column, where AI Insights used to be). Same Intelligence
+                    framing: Health Score (where you are) + Retirement (where
+                    you're heading) + vs Benchmark (how you stack up). AI
+                    Insights was removed - it duplicated the WSID action card
+                    higher up the dashboard. */}
+                {(!hiddenCards.has("health") || !hiddenCards.has("goal") || !hiddenCards.has("benchmark")) && (
                   <SectionHeader eyebrow="Intelligence" title="Where Corvo would focus" />
                 )}
 
@@ -2955,6 +2948,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                   {[
                     {
                       title: "Health Score",
+                      cardKey: "health" as const,
                       from: "left" as const, delayS: 0.1,
                       content: <HealthScore data={data} userId={userId} apiUrl={RESOLVED_API_URL} onAskAi={() => { setChatInitialMessage("Walk me through my health score - what's driving each sub-score and what specific changes would push it higher?"); setChatOpen(true); }} />,
                       sections: [
@@ -2966,18 +2960,20 @@ const { dark, toggle: toggleDark }  = useTheme();
                       ],
                     },
                     {
-                      title: "AI Insights",
+                      // GoalTracker takes AI Insights' slot. Rendered bare
+                      // (bareContent) because it provides its own card chrome -
+                      // border, status accent stripe, padding - and wrapping
+                      // it in <Card> would nest two card frames.
+                      title: "Retirement",
+                      cardKey: "goal" as const,
                       from: "right" as const, delayS: 0.1,
-                      content: <AiInsights data={data} assets={assets} period={period} onAskAi={() => setChatOpen(true)} />,
-                      sections: [
-                        { label: "Plain English", text: "AI-generated observations about your portfolio's risk, diversification, and performance characteristics." },
-                        { label: "Example", text: "The AI might flag that 3 of your 4 holdings are in the same sector, increasing concentration risk." },
-                        { label: "What's Good", text: "Use insights as a starting point for research, not as financial advice. Diversification and balance are key themes to watch." },
-                      ],
+                      bareContent: <GoalTracker data={data} portfolioValue={portfolioInputValue} onAskAi={(msg) => { setChatInitialMessage(msg); setChatOpen(true); }} />,
                     },
                     {
                       title: `vs ${benchLabel}`,
+                      cardKey: "benchmark" as const,
                       from: "left" as const, delayS: 0.05,
+                      fullWidth: true,
                       content: <BenchmarkComparison data={data} />,
                       sections: [
                         { label: "Plain English", text: `Compares your portfolio's return against ${benchLabel} over the same period.` },
@@ -2985,13 +2981,16 @@ const { dark, toggle: toggleDark }  = useTheme();
                         { label: "What's Good", text: "Consistently beating your benchmark by 2-5pp is exceptional. Even matching it while taking less risk is a win." },
                       ],
                     },
-                  ].map(({ title, content, sections, from, delayS }: { title: string; content: React.ReactNode; sections: { label: string; text: string }[]; from: "left" | "right"; delayS: number }) => {
-                    const cardKey = title === "Health Score" ? "health" : title === "AI Insights" ? "insights" : title.startsWith("vs ") ? "benchmark" : null;
-                    if (cardKey && hiddenCards.has(cardKey as DashCard)) return null;
+                  ].map(({ title, cardKey, content, bareContent, sections, from, delayS, fullWidth }: { title: string; cardKey: DashCard; content?: React.ReactNode; bareContent?: React.ReactNode; sections?: { label: string; text: string }[]; from: "left" | "right"; delayS: number; fullWidth?: boolean }) => {
+                    if (hiddenCards.has(cardKey)) return null;
                     return (
-                      <motion.div key={title} initial={false} style={{ display: "flex", flexDirection: "column", gridColumn: title.startsWith("vs ") ? "1 / -1" : undefined }}>
+                      <motion.div key={title} initial={false} style={{ display: "flex", flexDirection: "column", gridColumn: fullWidth ? "1 / -1" : undefined }}>
                         <DashReveal from={from} delay={delayS} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                          <Card style={{ marginBottom: 0, flex: 1 }}><TooltipCardHeader title={title} sections={sections} />{content}</Card>
+                          {bareContent ?? (
+                            <Card style={{ marginBottom: 0, flex: 1 }}>
+                              <TooltipCardHeader title={title} sections={sections || []} />{content}
+                            </Card>
+                          )}
                         </DashReveal>
                       </motion.div>
                     );
@@ -3423,8 +3422,8 @@ const { dark, toggle: toggleDark }  = useTheme();
               {/* Grouped sections */}
               {([
                 { label: "Overview", cards: ["briefing", "tickers", "wsid"] as DashCard[] },
-                { label: "Analysis", cards: ["metrics", "performance", "health", "insights", "benchmark", "allocation", "sector"] as DashCard[] },
-                { label: "Other", cards: ["goal", "insider", "save"] as DashCard[] },
+                { label: "Analysis", cards: ["metrics", "performance", "health", "goal", "benchmark", "allocation", "sector"] as DashCard[] },
+                { label: "Other", cards: ["insider", "save"] as DashCard[] },
               ] as { label: string; cards: DashCard[] }[]).map(group => (
                 <div key={group.label} style={{ marginBottom: 20 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "var(--font-mono)", marginBottom: 10 }}>
