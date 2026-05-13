@@ -3161,12 +3161,20 @@ const { dark, toggle: toggleDark }  = useTheme();
         />
       )}
 
-      {/* Floating AI Chat button - biggest, primary action */}
+      {/* Floating Corvo Chat button - biggest, primary action.
+          Previously rendered the text "AI" - too generic and made the button
+          look like a thin wrapper over ChatGPT. Now renders the Corvo logo
+          so the brand carries the action. Theme-aware fill swap: light theme
+          keeps the gold gradient + renders the logo as a flat black silhouette
+          via `filter: brightness(0)`; dark theme inverts to a dark fill with
+          the natural gold logo on top. Same source PNG either way - no extra
+          asset. */}
       <motion.button
         initial={false}
         id="tour-desk-chat"
         onClick={() => { setChatInitialMessage(undefined); setChatOpen(v => !v); }}
-        title="AI Chat (A)"
+        title="Ask Corvo (A)"
+        aria-label="Ask Corvo"
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5, type: "spring", damping: 20 }}
         whileHover={{ y: -2, scale: 1.04 }}
@@ -3174,17 +3182,55 @@ const { dark, toggle: toggleDark }  = useTheme();
         style={{
           position: "fixed", bottom: 24, right: 24, zIndex: 1000,
           width: 60, height: 60, borderRadius: "50%",
-          background: chatOpen ? "var(--bg3)" : "linear-gradient(155deg, #d8b15a 0%, var(--accent) 55%, rgba(184,134,11,0.95) 100%)",
-          border: chatOpen ? "0.5px solid var(--border2)" : "0.5px solid rgba(255,255,255,0.14)",
+          background: chatOpen
+            ? "var(--bg3)"
+            : dark
+              ? "linear-gradient(155deg, #1a1f2e 0%, #0a0e18 55%, #050810 100%)"
+              : "linear-gradient(155deg, #d8b15a 0%, var(--accent) 55%, rgba(184,134,11,0.95) 100%)",
+          border: chatOpen
+            ? "0.5px solid var(--border2)"
+            : dark
+              ? "0.5px solid rgba(201,168,76,0.45)"
+              : "0.5px solid rgba(255,255,255,0.14)",
           cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: chatOpen ? "0 4px 14px rgba(0,0,0,0.18)" : "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)",
+          boxShadow: chatOpen
+            ? "0 4px 14px rgba(0,0,0,0.18)"
+            : dark
+              ? "0 10px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3), 0 0 22px rgba(201,168,76,0.22)"
+              : "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)",
           transition: "background 0.2s, box-shadow 0.2s, border 0.2s",
         }}
-        onMouseEnter={e => { if (!chatOpen) e.currentTarget.style.boxShadow = "0 14px 40px rgba(184,134,11,0.6), 0 0 0 5px rgba(201,168,76,0.18), inset 0 1px 0 rgba(255,255,255,0.26)"; }}
-        onMouseLeave={e => { if (!chatOpen) e.currentTarget.style.boxShadow = "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)"; }}
+        onMouseEnter={e => {
+          if (chatOpen) return;
+          (e.currentTarget as HTMLElement).style.boxShadow = dark
+            ? "0 14px 40px rgba(0,0,0,0.55), 0 0 0 5px rgba(201,168,76,0.22), 0 0 30px rgba(201,168,76,0.3)"
+            : "0 14px 40px rgba(184,134,11,0.6), 0 0 0 5px rgba(201,168,76,0.18), inset 0 1px 0 rgba(255,255,255,0.26)";
+        }}
+        onMouseLeave={e => {
+          if (chatOpen) return;
+          (e.currentTarget as HTMLElement).style.boxShadow = dark
+            ? "0 10px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3), 0 0 22px rgba(201,168,76,0.22)"
+            : "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)";
+        }}
       >
-        <span style={{ fontFamily: "Space Mono,monospace", fontSize: 14, fontWeight: 700, color: chatOpen ? "var(--text2)" : "var(--bg)", letterSpacing: 0.6, textShadow: chatOpen ? "none" : "0 0.5px 0 rgba(255,255,255,0.28)" }}>AI</span>
+        <img
+          src="/corvo-logo.png"
+          alt=""
+          width={34}
+          height={34}
+          style={{
+            // Light theme: gold button bg, render the gold logo as flat black
+            // so it reads against the warm gold. Dark theme: dark button bg,
+            // keep the natural gold logo color. brightness(0) is the cheapest
+            // way to flatten any color image to a black silhouette while
+            // preserving transparency / antialiased edges.
+            filter: dark ? "none" : "brightness(0)",
+            opacity: chatOpen ? 0.55 : 1,
+            transition: "filter 0.2s, opacity 0.2s",
+            pointerEvents: "none",
+          }}
+        />
       </motion.button>
 
       {/* Floating Customize button - dashboard overview only, secondary */}
