@@ -386,18 +386,43 @@ export default function GoalTracker({ data, portfolioValue, onAskAi }: Props) {
   };
 
   return (
-    <motion.div initial={false} animate={{ opacity: 1 }} style={{ marginBottom: 20 }}>
-      <div style={{
-        borderRadius: 14,
-        border: "0.5px solid var(--border)",
-        borderLeft: `3px solid ${trackColor}`,
-        background: "var(--card-bg)",
-        padding: "22px 24px",
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        {/* Corner glow */}
-        <div style={{ position: "absolute", top: 0, right: 0, width: 140, height: 140, background: `radial-gradient(circle at top right, ${trackColor}12 0%, transparent 70%)`, pointerEvents: "none", borderRadius: "0 14px 0 0" }} />
+    <motion.div
+      initial={false}
+      animate={{ opacity: 1 }}
+      style={{ marginBottom: 0, height: "100%", display: "flex" }}
+    >
+      <div
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 16px rgba(0,0,0,0.2), 0 0 0 0.5px var(--border), 0 0 24px ${trackColor}22`;
+          (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)";
+          (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+        }}
+        style={{
+          // Match the dashboard's shared Card chrome (border-radius, padding,
+          // bg, shadow, hover-lift) so this card slots into the Intelligence
+          // grid without looking like a different family. The trackColor
+          // border-left stripe stays as the persistent on-track / behind
+          // status indicator - it's the equivalent of Health Score's gold
+          // CardHeader accent bar, just color-coded by status.
+          borderRadius: 14,
+          border: "0.5px solid var(--border)",
+          borderLeft: `3px solid ${trackColor}`,
+          background: "var(--card-bg)",
+          padding: "22px 24px",
+          position: "relative",
+          overflow: "hidden",
+          flex: 1,
+          boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 0 0 0.5px var(--border)",
+          transition: "box-shadow 0.18s, transform 0.18s",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Corner glow - extra chroma in the upper-right tinted by trackColor */}
+        <div style={{ position: "absolute", top: 0, right: 0, width: 140, height: 140, background: `radial-gradient(circle at top right, ${trackColor}14 0%, transparent 70%)`, pointerEvents: "none", borderRadius: "0 14px 0 0" }} />
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 22, gap: 12 }}>
