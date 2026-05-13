@@ -84,7 +84,7 @@ function AnimatedHeading({ text, accentText, style = {} }: { text: string; accen
 }
 
 // Five chapters covering everything from launch to today.
-// Each chapter summarizes a span of versions instead of listing every release.
+// Each chapter holds 6 entries, one per release across v0.1 → v0.30.
 const ERAS = [
   {
     num: "01",
@@ -93,8 +93,9 @@ const ERAS = [
     dateRange: "Mar 1 → Mar 28, 2026",
     intro: "The first build of Corvo.",
     highlights: [
-      "Portfolio builder, onboarding, and one-click preset portfolios",
-      "Sharpe ratio, max drawdown, and Monte Carlo simulation",
+      "Portfolio builder, onboarding flow, and one-click preset portfolios",
+      "Sharpe ratio, alpha, beta, and max drawdown surfaced from day one",
+      "Monte Carlo simulation engine with distribution histograms",
       "AI chat overlay that reads your actual holdings, not generic advice",
       "Health Score and Diversification Score graded across risk and stability",
       "Dividend tracker, tax loss harvesting, CSV import, PDF export, shareable card",
@@ -108,10 +109,11 @@ const ERAS = [
     dateRange: "Apr 2 → Apr 24, 2026",
     intro: "Corvo learned to talk back, install as a PWA, and stop blinding you in dark rooms.",
     highlights: [
-      "Benchmark comparison, rebalancing suggestions, and full What-If mode",
+      "Benchmark comparison against the S&P 500, NASDAQ, and Dow Jones",
+      "Rebalancing assistant with target allocations and full What-If mode",
       "PWA install, push notifications, morning AI brief, weekly digest email",
-      "Referral system, command palette (⌘K), demo mode, preset portfolios",
-      "Cash and money market tickers (VMFXX, SPAXX, FDRXX) with real yield tracking",
+      "Referral system, command palette (⌘K), demo mode, expanded preset library",
+      "Cash and money-market tickers (VMFXX, SPAXX, FDRXX) with real yield tracking",
       "Light mode by default; Learn overhaul with 15 XP levels and daily challenges",
     ],
     tags: ["AI", "PWA", "Learn", "Light Mode"],
@@ -119,47 +121,50 @@ const ERAS = [
   {
     num: "03",
     name: "Mobile, Auth & Math",
-    versions: "v0.13 → v0.17",
-    dateRange: "Apr 24 → Apr 26, 2026",
+    versions: "v0.13 → v0.18",
+    dateRange: "Apr 24 → May 1, 2026",
     intro: "Phones, sessions, and the math underneath all got serious upgrades.",
     highlights: [
-      "Full mobile overhaul across every page in the app",
-      "Critical auth fix: middleware was silently expiring sessions on every request",
+      "Full mobile overhaul across every authenticated and public tab",
+      "Critical auth fix: middleware was silently expiring sessions every request",
       "AI chat connected to live web search with word-by-word streaming responses",
-      "Monte Carlo rebuilt: 8,500 paths, 1-30 year horizons, full distribution histogram",
-      "About page, public-page redesign, and CAGR replacing simple return on the dashboard",
+      "Monte Carlo rebuilt at 8,500 paths with 1-30 year horizons and full histograms",
+      "About page launch + public-page redesign with character-by-character headings",
+      "Rebalance Assistant, Options Chain viewer, and Transaction Log",
     ],
     tags: ["Mobile", "Auth", "AI", "Monte Carlo"],
   },
   {
     num: "04",
     name: "Income, Email & Tools",
-    versions: "v0.18 → v0.22",
-    dateRange: "Apr 23 → May 6, 2026",
+    versions: "v0.19 → v0.24",
+    dateRange: "May 2 → May 10, 2026",
     intro: "Corvo grew into a real financial workbench: tax, dividends, options, and proper email.",
     highlights: [
-      "Rebalance Assistant, Options Chain viewer, and Transaction Log",
       "Email system rebuilt on Resend (welcome, weekly digest, morning briefing)",
-      "Capital Gains Estimator, Dividend Calendar, and the new /install page",
-      "Paper Trading, Peer Comparison, life events, and financial goals in onboarding",
-      "Landing page redesign with Three.js particles, 3D bento cards, and animated headings",
+      "Capital Gains Estimator and Dividend Calendar with 90-day ex-date lookahead",
+      "Paper Trading, Peer Comparison, life events + financial goals in onboarding",
+      "Landing page redesign with Three.js particles, 3D bento cards, animated headings",
+      "Tax-loss-harvesting alerts and ETF price fallbacks for tickers yfinance drops",
+      "Dashboard customizer, proactive Corvo insight card, animated analyzing state",
     ],
     tags: ["Income", "Tax", "Email", "Design"],
   },
   {
     num: "05",
     name: "The Guardian Era",
-    versions: "v0.23 → v0.25",
-    dateRange: "May 7 → May 11, 2026",
+    versions: "v0.25 → v0.30",
+    dateRange: "May 11 → May 12, 2026",
     intro: "Corvo found its voice: the AI advisor watching over your portfolio.",
     highlights: [
       "Homepage rewrite around the \"your portfolio's guardian\" positioning",
-      "Full app UI overhaul: features-page design language applied to every tab",
-      "AI chat, Daily Signal, and AI Insights prompts rewritten for sharper three-beat voice",
-      "Security sweep: closed two IDOR vulnerabilities and fixed startup secret leak",
-      "Onboarding cut 11 → 8 steps, dashboard tour cut 9 → 5 stops, branded empty states",
+      "Auth page rebuild, AI chat polish, sidebar + modal standardization across the app",
+      "Security audit: 3 IDOR closures, RLS hardening, light/dark theme pass, 330 em dashes swept",
+      "New logo: gold raven head + rising arrow; PublicNav 68px refresh; hash-anchor scroll on homepage",
+      "Day-over-day EOD snapshot cron + GoalTracker CAGR clamped to a 4-10% long-horizon band",
+      "PerformanceChart anchored to today's value, AiChat avatar polished, AI button replaced with the Corvo logo",
     ],
-    tags: ["Brand", "UI", "Security", "AI"],
+    tags: ["Brand", "UI", "Security", "Math"],
   },
 ];
 
