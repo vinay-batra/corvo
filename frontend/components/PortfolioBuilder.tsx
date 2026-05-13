@@ -231,6 +231,36 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       window.dispatchEvent(new Event("storage"));
     }
   };
+
+  // Privacy toggle: shared with GreetingBar via the corvo_value_hidden
+  // localStorage key + a custom event so clicking the eye in either spot
+  // masks both displays at once. When hidden the input renders bullets and
+  // the live-delta annotation is hidden. Clicking the input or the eye-off
+  // button unmasks (eye-off → eye).
+  const [valueHidden, setValueHidden] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem("corvo_value_hidden") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () => {
+      try { setValueHidden(localStorage.getItem("corvo_value_hidden") === "1"); } catch {}
+    };
+    window.addEventListener("corvo:value-hidden-changed", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("corvo:value-hidden-changed", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  const toggleValueHidden = () => setValueHidden(h => {
+    const next = !h;
+    try {
+      localStorage.setItem("corvo_value_hidden", next ? "1" : "0");
+      window.dispatchEvent(new CustomEvent("corvo:value-hidden-changed"));
+    } catch {}
+    return next;
+  });
   // Live (today's) value to show in the input when it's not being edited.
   const portfolioBaseNum = parseFloat(portfolioValue) || 0;
   const liveMultiplier = 1 + ((todayPct ?? 0) / 100);
@@ -696,26 +726,87 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
 
       {/* ── Portfolio Value input ──────────────────────────────────── */}
       <div style={{marginTop:6,marginBottom:16,padding:"14px 14px 12px",borderTop:"0.5px solid var(--border)",background:"linear-gradient(180deg, rgba(201,168,76,0.025) 0%, transparent 100%)",marginLeft:-14,marginRight:-14}}>
-        <div style={{fontSize:10,letterSpacing:2.5,color:C.amber,textTransform:"uppercase",fontWeight:700,fontFamily:"Space Mono,monospace",marginBottom:7}}>Portfolio Value</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
+          <span style={{fontSize:10,letterSpacing:2.5,color:C.amber,textTransform:"uppercase",fontWeight:700,fontFamily:"Space Mono,monospace"}}>Portfolio Value</span>
+          {/* Privacy toggle - mirrors the GreetingBar eye, shared via the
+              corvo:value-hidden-changed custom event so both displays mask in
+              lockstep. */}
+          <button
+            type="button"
+            onClick={toggleValueHidden}
+            aria-label={valueHidden ? "Show portfolio value" : "Hide portfolio value"}
+            title={valueHidden ? "Show portfolio value" : "Hide portfolio value"}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--text3)",
+              padding: 3,
+              display: "inline-flex",
+              alignItems: "center",
+              borderRadius: 5,
+              transition: "color 0.12s, background 0.12s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--bg3)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}
+          >
+            {valueHidden ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            )}
+          </button>
+        </div>
         <div style={{display:"flex",alignItems:"center",gap:7}}>
           <span style={{fontFamily:"Space Mono,monospace",fontSize:14,color:C.amber,lineHeight:1,flexShrink:0,fontWeight:600}}>$</span>
-          <input
-            id="portfolio-value"
-            name="portfolioValue"
-            type="number"
-            min="0"
-            step="1000"
-            value={portfolioInputDisplay}
-            onChange={e=>handlePortfolioValueChange(e.target.value)}
-            onFocus={(e) => { setPvFocused(true); e.currentTarget.select(); }}
-            onBlur={() => setPvFocused(false)}
-            placeholder="50000"
-            className="accent-input"
-            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:700, fontSize:14, padding:"7px 9px"}}
-          />
+          {valueHidden ? (
+            // When masked: render a non-editable placeholder so we don't leak
+            // the digits through the type="number" input. Clicking it
+            // unmasks via the eye toggle.
+            <button
+              type="button"
+              onClick={toggleValueHidden}
+              title="Show portfolio value"
+              style={{
+                ...INPUT_STYLE,
+                fontFamily: "Space Mono,monospace",
+                fontWeight: 700,
+                fontSize: 14,
+                padding: "7px 9px",
+                textAlign: "left",
+                cursor: "pointer",
+                color: "var(--text2)",
+                letterSpacing: 2,
+              }}
+            >
+              ••••••
+            </button>
+          ) : (
+            <input
+              id="portfolio-value"
+              name="portfolioValue"
+              type="number"
+              min="0"
+              step="1000"
+              value={portfolioInputDisplay}
+              onChange={e=>handlePortfolioValueChange(e.target.value)}
+              onFocus={(e) => { setPvFocused(true); e.currentTarget.select(); }}
+              onBlur={() => setPvFocused(false)}
+              placeholder="50000"
+              className="accent-input"
+              style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:700, fontSize:14, padding:"7px 9px"}}
+            />
+          )}
         </div>
-        {/* Live delta line - only shown when we have today's pct and a real base */}
-        {todayPct != null && portfolioBaseNum > 0 && (
+        {/* Live delta line - only shown when we have today's pct, a real base,
+            and the value isn't hidden. */}
+        {!valueHidden && todayPct != null && portfolioBaseNum > 0 && (
           <div style={{
             fontSize: 10,
             marginTop: 6,
