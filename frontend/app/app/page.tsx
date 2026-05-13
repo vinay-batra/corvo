@@ -2003,7 +2003,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           <div style={{ width: 22, height: 22, borderRadius: 6, background: aiEditorOpen ? "rgba(201,168,76,0.14)" : "rgba(201,168,76,0.08)", border: "0.5px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           </div>
-          <span style={{ fontSize: 11, color: aiEditorOpen ? "var(--accent)" : "var(--text2)", fontWeight: 700, flex: 1, textAlign: "left", letterSpacing: 1.4, textTransform: "uppercase", fontFamily: "Space Mono, monospace" }}>Edit with AI</span>
+          <span style={{ fontSize: 11, color: aiEditorOpen ? "var(--accent)" : "var(--text2)", fontWeight: 700, flex: 1, textAlign: "left", letterSpacing: 1.4, textTransform: "uppercase", fontFamily: "Space Mono, monospace" }}>Edit with Corvo</span>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             style={{ transition: "transform 0.2s", transform: aiEditorOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
             <polyline points="6 9 12 15 18 9" />
