@@ -3233,8 +3233,23 @@ const { dark, toggle: toggleDark }  = useTheme();
         />
       </motion.button>
 
-      {/* Floating Customize button - dashboard overview only, secondary */}
-      {activeTab === "overview" && (
+      {/* Floating Customize button - dashboard overview only, and only when
+          no overlay is on top of it. Settings / Profile / Alerts / Email /
+          Referral / Help all render as full-screen panels on top of the
+          dashboard (they share the same /app route - they're modal overlays,
+          not separate routes), so without these guards the customize FAB
+          stays visible behind / over the Settings panel which doesn't make
+          sense - there's nothing to customize while the user is in
+          Settings. */}
+      {activeTab === "overview"
+        && !showSettings
+        && !showProfile
+        && !showAlerts
+        && !showEmailPrefs
+        && !showReferral
+        && !showHelpModal
+        && !showGoals
+        && !showDashEditor && (
         <motion.button
           initial={false}
           id="tour-desk-customize"
