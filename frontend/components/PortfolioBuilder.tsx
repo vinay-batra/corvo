@@ -825,28 +825,68 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         <div style={{fontSize:10,color:"var(--text3)",marginTop:6,lineHeight:1.5,letterSpacing:0.1}}>
           Used for P&amp;L, tax loss harvesting, and dividend calculations
         </div>
-        {/* Reinvest dividends toggle */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:"0.5px solid var(--border)"}}>
+        {/* Reinvest dividends - rendered as a real iOS-style switch instead of
+            a pill button. The previous Yes/No pill read like a status badge
+            rather than a control, so users didn't realise it was clickable.
+            Matches the toggle spec used in Settings: 36x20 track, 16px knob
+            that slides 16px, green-filled track when on. */}
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 12,
+            paddingTop: 10,
+            borderTop: "0.5px solid var(--border)",
+            cursor: "pointer",
+            gap: 12,
+          }}
+        >
           <div>
-            <div style={{fontSize:11,color:"var(--text2)",fontWeight:600,letterSpacing:0.1}}>Reinvest dividends</div>
-            <div style={{fontSize:10,color:"var(--text3)",marginTop:2,letterSpacing:0.1}}>Affects CAGR and returns</div>
+            <div style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600, letterSpacing: 0.1 }}>Reinvest dividends</div>
+            <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2, letterSpacing: 0.1 }}>Affects CAGR and returns</div>
           </div>
-          <button
-            onClick={handleReinvestToggle}
+          <input
+            type="checkbox"
+            checked={reinvestDividends}
+            onChange={handleReinvestToggle}
+            style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
+            aria-label="Reinvest dividends"
+          />
+          <span
+            role="switch"
+            aria-checked={reinvestDividends}
             style={{
-              display:"flex",alignItems:"center",gap:6,padding:"5px 11px",borderRadius:20,
-              border:`0.5px solid ${reinvestDividends ? "rgba(76,175,125,0.45)" : "var(--border)"}`,
-              background:reinvestDividends ? "rgba(76,175,125,0.1)" : "var(--bg3)",
-              color:reinvestDividends ? "#4caf7d" : "var(--text3)",
-              fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s",
-              letterSpacing:0.4,
+              position: "relative",
+              flexShrink: 0,
+              width: 36,
+              height: 20,
+              borderRadius: 999,
+              background: reinvestDividends
+                ? "linear-gradient(180deg, rgba(76,175,125,0.95) 0%, rgba(76,175,125,0.78) 100%)"
+                : "var(--bg3)",
+              border: `0.5px solid ${reinvestDividends ? "rgba(76,175,125,0.55)" : "var(--border2)"}`,
+              boxShadow: reinvestDividends
+                ? "0 0 10px rgba(76,175,125,0.35), inset 0 1px 1px rgba(0,0,0,0.12)"
+                : "inset 0 1px 1px rgba(0,0,0,0.08)",
+              transition: "background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease",
             }}
-            onMouseEnter={e=>{e.currentTarget.style.opacity="0.85";e.currentTarget.style.transform="translateY(-0.5px)";}}
-            onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="translateY(0)";}}>
-            <span style={{width:7,height:7,borderRadius:"50%",background:reinvestDividends?"#4caf7d":"var(--text3)",transition:"background 0.15s",boxShadow:reinvestDividends?"0 0 5px rgba(76,175,125,0.6)":"none"}} />
-            {reinvestDividends ? "Yes" : "No"}
-          </button>
-        </div>
+          >
+            <span
+              style={{
+                position: "absolute",
+                top: 1.5,
+                left: reinvestDividends ? 17 : 1.5,
+                width: 16,
+                height: 16,
+                borderRadius: "50%",
+                background: "linear-gradient(180deg, #ffffff 0%, #f3f3f3 100%)",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(0,0,0,0.05)",
+                transition: "left 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              }}
+            />
+          </span>
+        </label>
       </div>
 
       {/* ── Presets Modal ─────────────────────────────────────────── */}
