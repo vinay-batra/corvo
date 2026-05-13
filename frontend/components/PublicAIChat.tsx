@@ -29,6 +29,19 @@ function PublicAIChatInner() {
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  // Watch the global data-theme attribute set by PublicNav's theme toggle.
+  // Used to drive the floating button's theme-inverse fill: gold bg + black
+  // logo in light mode, dark bg + gold logo in dark mode. MutationObserver
+  // catches PublicNav's toggle without us having to lift theme state.
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const sync = () => setDark(document.documentElement.getAttribute("data-theme") === "dark");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+
   useEffect(() => {
     if (open) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -95,29 +108,39 @@ function PublicAIChatInner() {
           borderRadius: "50%",
           background: open
             ? "var(--bg3)"
-            : "linear-gradient(155deg, #d8b15a 0%, var(--accent) 55%, rgba(184,134,11,0.95) 100%)",
-          border: open ? "0.5px solid var(--border2)" : "0.5px solid rgba(255,255,255,0.14)",
+            : dark
+              ? "linear-gradient(155deg, #1a1f2e 0%, #0a0e18 55%, #050810 100%)"
+              : "linear-gradient(155deg, #d8b15a 0%, var(--accent) 55%, rgba(184,134,11,0.95) 100%)",
+          border: open
+            ? "0.5px solid var(--border2)"
+            : dark
+              ? "0.5px solid rgba(201,168,76,0.45)"
+              : "0.5px solid rgba(255,255,255,0.14)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           boxShadow: open
             ? "0 4px 14px rgba(0,0,0,0.18)"
-            : "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)",
+            : dark
+              ? "0 10px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3), 0 0 22px rgba(201,168,76,0.22)"
+              : "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)",
           transition: "background 0.2s, box-shadow 0.2s, transform 0.2s, border 0.2s",
           transform: open ? "scale(0.96)" : "scale(1)",
         }}
         onMouseEnter={(e) => {
-          if (!open) {
-            e.currentTarget.style.transform = "translateY(-2px) scale(1.04)";
-            e.currentTarget.style.boxShadow = "0 14px 40px rgba(184,134,11,0.6), 0 0 0 5px rgba(201,168,76,0.18), inset 0 1px 0 rgba(255,255,255,0.26)";
-          }
+          if (open) return;
+          e.currentTarget.style.transform = "translateY(-2px) scale(1.04)";
+          e.currentTarget.style.boxShadow = dark
+            ? "0 14px 40px rgba(0,0,0,0.55), 0 0 0 5px rgba(201,168,76,0.22), 0 0 30px rgba(201,168,76,0.3)"
+            : "0 14px 40px rgba(184,134,11,0.6), 0 0 0 5px rgba(201,168,76,0.18), inset 0 1px 0 rgba(255,255,255,0.26)";
         }}
         onMouseLeave={(e) => {
-          if (!open) {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)";
-          }
+          if (open) return;
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = dark
+            ? "0 10px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3), 0 0 22px rgba(201,168,76,0.22)"
+            : "0 10px 32px rgba(184,134,11,0.45), 0 2px 8px rgba(184,134,11,0.25), inset 0 1px 0 rgba(255,255,255,0.22)";
         }}
       >
         {open ? (
@@ -125,7 +148,21 @@ function PublicAIChatInner() {
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         ) : (
-          <span style={{ fontFamily: "Space Mono,monospace", fontSize: 14, fontWeight: 700, color: "var(--bg)", letterSpacing: 0.6, textShadow: "0 0.5px 0 rgba(255,255,255,0.28)" }}>AI</span>
+          /* Same theme-inverse pattern as the authenticated dashboard's
+             floating button: light mode gold bg + black logo silhouette
+             via `filter: brightness(0)`, dark mode dark bg + natural gold
+             logo. One PNG source for both modes. */
+          <img
+            src="/corvo-logo.png"
+            alt=""
+            width={34}
+            height={34}
+            style={{
+              filter: dark ? "none" : "brightness(0)",
+              pointerEvents: "none",
+              transition: "filter 0.2s",
+            }}
+          />
         )}
       </button>
 
