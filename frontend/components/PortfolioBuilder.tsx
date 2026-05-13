@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { importPortfolioCsv } from "../lib/api";
 import { posthog } from "../lib/posthog";
 import { RESOLVED_API_URL } from "../lib/api";
+import { supabase } from "../lib/supabase";
 
 const API_URL = RESOLVED_API_URL;
 const C = { amber: "var(--accent)", cream: "var(--text)", cream3: "var(--text3)", border: "var(--border)", navy4: "var(--bg2)" };
@@ -411,7 +412,22 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       // suspenders style.
       const rawType = (file.type || "").toLowerCase();
       const mediaType = rawType === "image/jpg" ? "image/jpeg" : (rawType || "image/jpeg");
-      const res = await fetch(`${API_URL}/parse-portfolio-image`,{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({image_base64:b64,media_type:mediaType}) });
+      // /parse-portfolio-image is auth-protected (was made JWT-required in
+      // v0.28's IDOR closures - the backend rejects with 401 otherwise).
+      // Pull the user's access token from Supabase and forward it as a
+      // Bearer header.
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setImportError("Sign in to import a portfolio screenshot.");
+        setImportLoading(false);
+        return;
+      }
+      const res = await fetch(`${API_URL}/parse-portfolio-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ image_base64: b64, media_type: mediaType }),
+      });
       const d = await res.json();
       if (d.assets?.length > 0) {
         update(d.assets.slice(0, 20));
@@ -419,6 +435,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         // Surface the backend's specific message (unsupported type, can't read,
         // etc.) instead of a generic "No holdings found."
         setImportError(d.error);
+      } else if (d.detail) {
+        // FastAPI HTTPException error shape (e.g. rate-limit reached, 401)
+        setImportError(d.detail);
       } else {
         setImportError("Could not read holdings from this image. Try a clearer screenshot.");
       }
