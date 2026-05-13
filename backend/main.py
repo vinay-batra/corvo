@@ -2635,11 +2635,20 @@ def parse_portfolio_image(body: dict, request: Request):
 
         client = anthropic.Anthropic(api_key=api_key)
         image_b64 = body.get("image_base64", "")
-        media_type = body.get("media_type", "image/jpeg")
+        # Anthropic accepts image/jpeg, image/png, image/gif, image/webp.
+        # Browsers report "image/jpg" for some uploads even though Anthropic
+        # only accepts the canonical "image/jpeg" - normalise here so the
+        # request doesn't 400 on a perfectly valid JPEG.
+        raw_media = (body.get("media_type") or "image/jpeg").lower()
+        media_type = "image/jpeg" if raw_media in ("image/jpg", "image/jpe") else raw_media
+        if media_type not in {"image/jpeg", "image/png", "image/gif", "image/webp"}:
+            # HEIC, AVIF, BMP, TIFF, PDF, etc - tell the client clearly rather
+            # than passing through and getting an opaque Anthropic 400.
+            return {"assets": [], "error": f"Unsupported image type: {raw_media}. Use JPEG, PNG, GIF, or WebP."}
 
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1000,
+            max_tokens=2000,
             messages=[{
                 "role": "user",
                 "content": [
@@ -2649,18 +2658,57 @@ def parse_portfolio_image(body: dict, request: Request):
                     },
                     {
                         "type": "text",
-                        "text": "Extract all stock/ETF/crypto holdings from this brokerage screenshot. Return ONLY a JSON array like: [{\"ticker\": \"AAPL\", \"weight\": 0.25}]. Use percentage allocations as weights (0-1). If no percentages shown, distribute equally. Return only the JSON array, nothing else."
+                        "text": (
+                            "Read this portfolio screenshot and extract EVERY holding shown. "
+                            "Holdings can be stocks (AAPL, NVDA), ETFs (VOO, QQQ, VTI), "
+                            "mutual funds (VTSAX, FXAIX, VLCAX, VFWAX, VBTLX), money market "
+                            "funds (SPAXX, VMFXX, FDRXX), bonds, or crypto. Tickers are usually "
+                            "2-5 uppercase letters; mutual funds typically end in X.\n\n"
+                            "Lines may look like 'VTSAX – 66.07%' or 'AAPL 25%' or "
+                            "'NVDA  $12,500  (15%)' - extract the ticker symbol and the "
+                            "percentage allocation from each row.\n\n"
+                            "Return ONLY a JSON array. No prose, no markdown code fences, no "
+                            "explanation. Format:\n"
+                            "[{\"ticker\": \"VTSAX\", \"weight\": 0.6607}, "
+                            "{\"ticker\": \"VOO\", \"weight\": 0.0837}]\n\n"
+                            "Rules:\n"
+                            "- weight is the decimal fraction (66.07% → 0.6607, NOT 66.07)\n"
+                            "- include every visible holding, even tiny ones (< 1%)\n"
+                            "- if dollar amounts are shown instead of percentages, compute the "
+                            "  percentage from the total and use that\n"
+                            "- if you genuinely cannot see any holdings, return []\n"
+                            "- never return text outside the JSON array"
+                        )
                     }
                 ]
             }]
         )
         import re
         text = response.content[0].text.strip()
-        match = re.search(r'\[.*\]', text, re.DOTALL)
+        # Strip common wrappers Claude sometimes adds despite the prompt:
+        # ```json [...] ``` , ```[...]``` , leading explanations, etc.
+        text = re.sub(r"```(?:json)?\s*", "", text)
+        text = re.sub(r"```\s*$", "", text)
+        match = re.search(r"\[.*\]", text, re.DOTALL)
         if match:
-            assets = json.loads(match.group())
-            return {"assets": assets}
-        return {"assets": []}
+            try:
+                assets = json.loads(match.group())
+                if isinstance(assets, list) and assets:
+                    # Filter out malformed rows (missing ticker, NaN weight, etc.)
+                    cleaned = [
+                        {"ticker": str(a.get("ticker", "")).strip().upper(), "weight": float(a.get("weight", 0))}
+                        for a in assets
+                        if isinstance(a, dict) and a.get("ticker") and a.get("weight") is not None
+                    ]
+                    cleaned = [a for a in cleaned if a["ticker"] and a["weight"] > 0]
+                    if cleaned:
+                        return {"assets": cleaned}
+            except (json.JSONDecodeError, ValueError, TypeError) as exc:
+                print(f"[parse-portfolio-image] JSON parse failed: {exc}; raw text: {text[:200]}")
+        # Empty / malformed: log the model output so the operator can debug
+        # without raising a generic 500 to the client.
+        print(f"[parse-portfolio-image] no holdings extracted; raw text: {text[:300]}")
+        return {"assets": [], "error": "Could not read any holdings from this image. Try a clearer screenshot or one with the ticker symbols visible."}
     except Exception as e:
         print(f"Image parse error: {e}")
         raise HTTPException(status_code=500, detail="Image parse failed")

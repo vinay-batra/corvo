@@ -405,10 +405,23 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     setImportLoading(true); setImportError("");
     try {
       const b64 = await new Promise<string>((res,rej)=>{ const r=new FileReader(); r.onload=()=>res((r.result as string).split(",")[1]); r.onerror=rej; r.readAsDataURL(file); });
-      const res = await fetch(`${API_URL}/parse-portfolio-image`,{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({image_base64:b64,media_type:file.type||"image/jpeg"}) });
+      // Browsers sometimes report "image/jpg" for JPEGs even though the
+      // canonical MIME is "image/jpeg" - normalise here too. Anthropic only
+      // accepts the canonical form. Backend has the same guard belt-and-
+      // suspenders style.
+      const rawType = (file.type || "").toLowerCase();
+      const mediaType = rawType === "image/jpg" ? "image/jpeg" : (rawType || "image/jpeg");
+      const res = await fetch(`${API_URL}/parse-portfolio-image`,{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({image_base64:b64,media_type:mediaType}) });
       const d = await res.json();
-      if(d.assets?.length>0) update(d.assets.slice(0,20));
-      else setImportError("No holdings found.");
+      if (d.assets?.length > 0) {
+        update(d.assets.slice(0, 20));
+      } else if (d.error) {
+        // Surface the backend's specific message (unsupported type, can't read,
+        // etc.) instead of a generic "No holdings found."
+        setImportError(d.error);
+      } else {
+        setImportError("Could not read holdings from this image. Try a clearer screenshot.");
+      }
     } catch { setImportError("Import failed."); }
     setImportLoading(false);
   };
