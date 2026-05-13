@@ -158,13 +158,31 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
   // greeting. When on, the dollar amount and delta are replaced with bullets
   // so screenshots / over-the-shoulder reads don't leak the user's net
   // worth. Defaults to visible; persisted to localStorage `corvo_value_hidden`.
+  // Shared with PortfolioBuilder (sidebar input) via a `corvo:value-hidden-
+  // changed` custom event so clicking the eye in either spot masks both
+  // displays at once.
   const [valueHidden, setValueHidden] = useState(() => {
     if (typeof window === "undefined") return false;
     try { return localStorage.getItem("corvo_value_hidden") === "1"; } catch { return false; }
   });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () => {
+      try { setValueHidden(localStorage.getItem("corvo_value_hidden") === "1"); } catch {}
+    };
+    window.addEventListener("corvo:value-hidden-changed", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("corvo:value-hidden-changed", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
   const toggleValueHidden = () => setValueHidden(h => {
     const next = !h;
-    try { localStorage.setItem("corvo_value_hidden", next ? "1" : "0"); } catch {}
+    try {
+      localStorage.setItem("corvo_value_hidden", next ? "1" : "0");
+      window.dispatchEvent(new CustomEvent("corvo:value-hidden-changed"));
+    } catch {}
     return next;
   });
 

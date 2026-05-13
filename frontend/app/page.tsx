@@ -3286,31 +3286,35 @@ export default function Landing() {
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, []);
 
-  // Hash anchor scroll: the homepage wraps everything in a 100vh
-  // overflow-auto container (containerRef), so the browser's native "scroll
-  // to #id" doesn't work - the browser scrolls the window, but our
-  // scrollable element is the nested container. Clicking the "Features" nav
-  // link (href="/#features") would update the URL but not move anything on
-  // screen. This effect bridges the gap: on mount and on every hashchange,
-  // we find the target element and scrollTo its offset inside containerRef.
+  // Hash anchor scroll for in-page navigation only.
   //
-  // Robust version (2026-05-12): the previous one-shot 60ms timeout was being
-  // overridden by GsapHero's ScrollTrigger.refresh() that runs at +120ms post
-  // mount and can reset scroller position. Also some below-fold sections
-  // are heavy and the #features element's getBoundingClientRect doesn't
-  // resolve to its final position until layout settles. New approach:
-  //   - retry up to 20 times at 100ms intervals if element/scroller not ready
-  //   - on initial load, fire at 250ms (post-GSAP-refresh) AND again at 700ms
-  //     as a fallback in case GSAP or hydration jostled the scroll position
-  //   - on subsequent hashchange (user clicks Features in nav), smooth scroll
-  //     once (no fallback needed since layout is already settled)
-  //   - first attempt uses behavior:"auto" so a user-initiated scroll input
-  //     within the first 250-700ms doesn't cancel a smooth animation
+  // The homepage wraps everything in a 100vh overflow-auto container
+  // (containerRef), so the browser's native "scroll to #id" doesn't work -
+  // the browser scrolls the window, but our scrollable element is the nested
+  // container. This effect bridges the gap for IN-PAGE nav clicks.
+  //
+  // Initial mount behavior (2026-05-12 update): if the URL has a hash on
+  // first load (user navigated here from another page via the "Features"
+  // link or pasted /#features directly), we DO NOT auto-scroll to the
+  // section. The previous behavior landed at hero for a moment, then
+  // GSAP refresh kicked in and the scrollTo jumped down to the bento
+  // cards - which looked like a glitch. New behavior: clear the hash via
+  // history.replaceState so the URL is clean and the user lands at hero.
+  // If they want to see features they click Features in the nav, which
+  // fires a hashchange event (since the hash is now empty) and that DOES
+  // trigger the scroll.
   useEffect(() => {
     const NAV_HEIGHT = 68;
     let cleanedUp = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let attempts = 0;
+
+    // Drop the initial hash if there was one - we want the user to land at
+    // hero, not auto-scroll to a section on page load.
+    if (typeof window !== "undefined" && window.location.hash) {
+      const cleanUrl = window.location.pathname + window.location.search;
+      history.replaceState(null, "", cleanUrl);
+    }
 
     const scrollToHash = (smooth: boolean) => {
       if (cleanedUp) return;
@@ -3331,18 +3335,14 @@ export default function Landing() {
       scroller.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
     };
 
-    // Initial: wait past GSAP refresh (which fires at +120ms) before scrolling.
-    const initial = setTimeout(() => { attempts = 0; scrollToHash(false); }, 250);
-    // Fallback in case GSAP refresh or hydration disrupted the first attempt.
-    const fallback = setTimeout(() => { attempts = 0; scrollToHash(false); }, 700);
-
+    // Only listen for in-page hashchange events. User clicking Features in
+    // the nav while already on the homepage updates the hash and triggers
+    // this handler.
     const onHashChange = () => { attempts = 0; scrollToHash(true); };
     window.addEventListener("hashchange", onHashChange);
 
     return () => {
       cleanedUp = true;
-      clearTimeout(initial);
-      clearTimeout(fallback);
       if (retryTimer) clearTimeout(retryTimer);
       window.removeEventListener("hashchange", onHashChange);
     };
