@@ -16,7 +16,7 @@ export default function Footer() {
       `}</style>
       <div className="footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="/corvo-logo.png" width={22} height={22} alt="Corvo" style={{ opacity: 0.8 }} />
+          <img src="/corvo-logo.png?v=2" width={22} height={22} alt="Corvo" style={{ opacity: 0.8 }} />
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 10, fontWeight: 700, letterSpacing: 3, color: "var(--text3)" }}>CORVO</span>
           <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>© 2026 Corvo. All rights reserved.</span>
         </div>
@@ -44,7 +44,7 @@ export default function Footer() {
           dominating the footer text row above. */}
       <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
         <img
-          src="/corvo-logo.png"
+          src="/corvo-logo.png?v=2"
           alt="Corvo"
           width={64}
           height={64}

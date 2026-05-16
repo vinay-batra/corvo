@@ -15,7 +15,7 @@ export default function Loading() {
       `}</style>
 
       <img
-        src="/corvo-logo.png"
+        src="/corvo-logo.png?v=2"
         alt="Corvo"
         width={40}
         height={32}

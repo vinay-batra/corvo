@@ -30,7 +30,7 @@ export function usePushNotifications() {
     try {
       new Notification(title, {
         body,
-        icon: "/corvo-logo.svg",
+        icon: "/corvo-logo.png?v=2",
         tag: tag || title,
         silent: false,
       });

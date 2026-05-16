@@ -881,7 +881,7 @@ export default function SettingsPage({
           </button>
         )}
         <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
-        <img src="/corvo-logo.png" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
+        <img src="/corvo-logo.png?v=2" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
         <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Settings</span>
       </header>
 

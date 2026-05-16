@@ -272,7 +272,7 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
         >
         {/* Logo - left */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flexShrink: 0 }}>
-          <img src="/corvo-logo.png" width={38} height={38} alt="Corvo" style={{ filter: "drop-shadow(0 0 4px rgba(201,168,76,0.25))" }} />
+          <img src="/corvo-logo.png?v=2" width={38} height={38} alt="Corvo" style={{ filter: "drop-shadow(0 0 4px rgba(201,168,76,0.25))" }} />
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 14, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>
             CORVO
           </span>
