@@ -177,7 +177,7 @@ function AuthForm() {
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: "0 0 24px rgba(201,168,76,0.15) inset",
             }}>
-              <img src="/corvo-logo.png" width={32} height={26} alt="Corvo" style={{ opacity: 0.95 }} />
+              <img src="/corvo-logo.png?v=2" width={32} height={26} alt="Corvo" style={{ opacity: 0.95 }} />
             </div>
             <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700, letterSpacing: 5, color: C.cream }}>CORVO</span>
           </a>

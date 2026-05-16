@@ -153,7 +153,7 @@ function PublicAIChatInner() {
              via `filter: brightness(0)`, dark mode dark bg + natural gold
              logo. One PNG source for both modes. */
           <img
-            src="/corvo-logo.png"
+            src="/corvo-logo.png?v=2"
             alt=""
             width={34}
             height={34}
