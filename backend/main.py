@@ -357,6 +357,7 @@ def portfolio(
     referral_code: str = "",
     manual_returns: str = "",
     reinvest_dividends: bool = True,
+    account_type: str = "",
 ):
     ip = _client_ip(request)
     if check_rate_limit(ip, "portfolio", 30, 3600):
@@ -552,6 +553,7 @@ def portfolio(
         "period": period,
         "rf_rate": rf_rate,
         "skipped_tickers": [t for t in skipped_tickers if not is_cash_ticker(t)],
+        "account_type": account_type,
     }
 
 
@@ -2237,6 +2239,85 @@ def set_financial_goals(user_id: str, body: FinancialGoalsRequest, request: Requ
     return {"success": True}
 
 
+# ── Account type → Claude rules block ────────────────────────────────────────
+# Every AI prompt that generates portfolio advice (chat, daily-signal,
+# health-score, what-should-i-do) injects this block so recommendations stay
+# tax-context aware. The bare ticker list + weights alone don't tell the model
+# whether to suggest tax-loss harvesting, whether to worry about short-term
+# capital gains, whether RMDs apply, etc. - the account type does.
+_ACCOUNT_TYPE_RULES: dict[str, str] = {
+    "taxable_brokerage": (
+        "ACCOUNT TYPE: Taxable Brokerage. Capital gains tax applies (long-term holdings >1yr at "
+        "15-20%, short-term at ordinary income rates up to 37%). Tax-loss harvesting is valuable for "
+        "losing positions held >30 days (mind the wash-sale rule). Qualified dividends taxed at 15-20%, "
+        "ordinary dividends at marginal rate. When recommending sells, factor in holding period and "
+        "prefer trimming long-term gains over short-term."
+    ),
+    "roth_ira": (
+        "ACCOUNT TYPE: Roth IRA. All growth and qualified withdrawals are TAX-FREE. NEVER recommend "
+        "tax-loss harvesting (no tax benefit here). NEVER mention capital gains tax or short-term vs "
+        "long-term holding periods. Annual contribution limit is $7,000 (under 50) / $8,000 (50+). "
+        "Withdrawals of contributions are penalty-free; gains before age 59.5 trigger a 10% penalty "
+        "plus tax. Favor growth-tilted strategies since gains compound tax-free for decades."
+    ),
+    "traditional_ira": (
+        "ACCOUNT TYPE: Traditional IRA. Growth is TAX-DEFERRED; withdrawals taxed as ordinary income. "
+        "NEVER recommend tax-loss harvesting. NEVER mention capital gains tax. RMDs begin at age 73. "
+        "Annual contribution limit $7,000 / $8,000. Early withdrawals before 59.5 trigger a 10% "
+        "penalty plus tax. Plan around future ordinary-income brackets at withdrawal."
+    ),
+    "roth_401k": (
+        "ACCOUNT TYPE: Roth 401(k). All growth and qualified withdrawals are TAX-FREE. NEVER recommend "
+        "tax-loss harvesting. NEVER mention capital gains tax. Annual contribution limit $23,000 "
+        "(under 50) / $30,500 (50+), typically with an employer match. Withdrawals before 59.5 trigger "
+        "a 10% penalty. Favor growth-tilted strategies."
+    ),
+    "traditional_401k": (
+        "ACCOUNT TYPE: Traditional 401(k). Tax-deferred via pre-tax payroll contributions. NEVER "
+        "recommend tax-loss harvesting. NEVER mention capital gains tax. RMDs begin at 73. Annual "
+        "limit $23,000 / $30,500, typically with an employer match. Plan around future ordinary-income "
+        "brackets at withdrawal."
+    ),
+    "hsa": (
+        "ACCOUNT TYPE: HSA (Health Savings Account). Triple tax advantage: pre-tax contributions, "
+        "tax-free growth, tax-free withdrawals for qualified medical expenses. NEVER recommend "
+        "tax-loss harvesting. NEVER mention capital gains tax. Treat as a long-horizon medical / "
+        "retirement bucket. Recommend conservative allocation near anticipated medical use, growth "
+        "allocation when far from withdrawal."
+    ),
+    "529": (
+        "ACCOUNT TYPE: 529 Education Savings. Growth and withdrawals are tax-free if used for "
+        "qualified education expenses. NEVER recommend tax-loss harvesting. NEVER mention capital "
+        "gains tax. Allocation should de-risk as the education milestone approaches (glide-path: "
+        "aggressive when child is young, conservative within 3-5 years of college). Non-qualified "
+        "withdrawals trigger ordinary income tax plus a 10% penalty on gains."
+    ),
+    "custodial": (
+        "ACCOUNT TYPE: Custodial (UGMA/UTMA). Assets are owned by the minor. Subject to KIDDIE TAX: "
+        "unearned income above ~$2,600 (2025 threshold) is taxed at the parent's marginal rate. "
+        "Tax-loss harvesting CAN apply but the benefit is muted by kiddie-tax thresholds. Assets "
+        "transfer to the minor at age of majority (18 or 21 depending on state) and impact financial "
+        "aid (FAFSA counts at ~20% of value). Prefer tax-efficient ETFs and avoid high-turnover "
+        "strategies."
+    ),
+}
+
+
+def _account_type_block(account_type: str) -> str:
+    """Return the rules block for an account type, prefixed with '\\n\\n', or '' if unknown.
+
+    Designed for direct interpolation into existing prompt strings - the leading
+    blank line means the block always appears as its own paragraph without the
+    caller having to manage spacing.
+    """
+    if not account_type:
+        return ""
+    rules = _ACCOUNT_TYPE_RULES.get(account_type)
+    if not rules:
+        return ""
+    return "\n\n" + rules
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list = []
@@ -2380,6 +2461,7 @@ def chat(req: ChatRequest, request: Request):
 
     page_context_text = f"\n\nCURRENT PAGE: {req.page_context}" if req.page_context else ""
     user_context_block = f"\n\n{req.user_context}" if req.user_context else ""
+    account_type_text = _account_type_block(ctx.get("account_type", ""))
 
     # Build life events block
     life_events_text = ""
@@ -2456,7 +2538,7 @@ CURRENT PORTFOLIO:
 - Annualized Return (CAGR): {ret:.2%}
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f} (risk-free rate used: {rf_rate_ctx:.2%})
-- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{financial_goals_text}{page_context_text}
+- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{financial_goals_text}{account_type_text}{page_context_text}
 
 HOW TO RESPOND:
 • Address the user by their first name when known.
@@ -4882,11 +4964,15 @@ _health_score_cache: "OrderedDict[str, tuple[dict, str]]" = OrderedDict()
 _HEALTH_SCORE_CACHE_MAX = 5000
 
 
-def _hs_cache_key(user_id: str, tickers: list[str]) -> str:
+def _hs_cache_key(user_id: str, tickers: list[str], account_type: str = "") -> str:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     tkr_hash = "|".join(sorted(t.upper() for t in tickers))
     uid = user_id or "anon"
-    return f"{uid}:{today}:{tkr_hash}"
+    # account_type partitions the cache so the same portfolio in a Roth IRA vs
+    # a taxable brokerage doesn't share a cached health-score response (the
+    # underlying score is the same but the AI headline / actions differ).
+    at_suffix = f":{account_type}" if account_type else ""
+    return f"{uid}:{today}:{tkr_hash}{at_suffix}"
 
 
 def _hs_load_from_supabase(user_id: str, date_str: str, tkr_hash: str) -> dict | None:
@@ -4940,6 +5026,7 @@ class HealthScoreRequest(BaseModel):
     rf_rate: float = 0.04
     individual_returns: dict = {}
     portfolio_value: float | None = None
+    account_type: str = ""
 
 
 @app.post("/portfolio/health-score")
@@ -4952,19 +5039,23 @@ def portfolio_health_score(req: HealthScoreRequest, request: Request):
         weights = [1.0 / max(len(tickers), 1)] * len(tickers)
 
     # Check in-memory cache first (before expensive sector/correlation computation)
-    cache_key = _hs_cache_key(req.user_id, tickers)
+    cache_key = _hs_cache_key(req.user_id, tickers, req.account_type)
     if cache_key in _health_score_cache:
         cached, _ = _health_score_cache[cache_key]
         return cached
 
-    # Check Supabase cache
+    # Check Supabase cache. Skip when an account_type is set - the persisted
+    # cache row pre-dates this column, so reusing it would return advice that
+    # ignores the user's chosen account type. Falls back to generating fresh
+    # until the cache schema is migrated to include account_type.
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     tkr_hash = "|".join(sorted(t.upper() for t in tickers))
-    sb_cached = _hs_load_from_supabase(req.user_id, today, tkr_hash)
-    if sb_cached:
-        _health_score_cache[cache_key] = (sb_cached, today)
-        _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
-        return sb_cached
+    if not req.account_type:
+        sb_cached = _hs_load_from_supabase(req.user_id, today, tkr_hash)
+        if sb_cached:
+            _health_score_cache[cache_key] = (sb_cached, today)
+            _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
+            return sb_cached
 
     # Compute base sub-scores
     ann_ret = req.annualized_return
@@ -5086,6 +5177,7 @@ def portfolio_health_score(req: HealthScoreRequest, request: Request):
         "Every sentence must reference this user's actual tickers, weights, or metrics - generic advice is rejected. "
         "Take a position. Do not hedge with 'consider', 'might want to', or 'every situation is different'. "
         "Say what the single biggest driver of the score is, and exactly what to do about it."
+        + _account_type_block(req.account_type)
     )
 
     user_prompt = f"""Portfolio Health Score: {score}/100 ({score_label})
@@ -9146,6 +9238,7 @@ class WhatShouldIDoRequest(BaseModel):
     health_score: float | None = None
     user_goals: dict = {}
     user_id: str = ""
+    account_type: str = ""
 
 def _fetch_finnhub_quote(ticker: str, finnhub_key: str) -> dict | None:
     """Fetch a single quote from Finnhub. Returns dict with price/change_pct or None on failure."""
@@ -9387,7 +9480,7 @@ def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
 CORE PHILOSOPHY:
 Recommendations must be relevant for weeks, not just today. Never react to a single-day market move. Each action must be directly tied to the user's goals and risk tolerance. Your job is to improve the portfolio health score by addressing structural issues, not to comment on daily noise.
 
-{investor_rules}
+{investor_rules}{_account_type_block(req.account_type)}
 
 OUTPUT FORMAT (strictly follow):
 - Give exactly 2 or 3 actions. Maximum 3.
@@ -9448,6 +9541,7 @@ class DailySignalRequest(BaseModel):
     health_score: float = 0.0
     period: str = "1y"
     user_id: str = ""
+    account_type: str = ""
 
 
 @app.post("/portfolio/daily-signal")
@@ -9462,7 +9556,11 @@ def generate_daily_signal(req: DailySignalRequest, request: Request):
     sorted_pairs = sorted(zip(req.tickers, req.weights))
     portfolio_key = ":".join(f"{t},{w:.4f}" for t, w in sorted_pairs)
     today_str = datetime.now().strftime("%Y-%m-%d")
-    cache_key = f"{today_str}:{portfolio_key}"
+    # Partition by account_type so a Roth IRA and a taxable brokerage with the
+    # same holdings don't share a cached signal (TLH advice would be wrong for
+    # the Roth, growth-tilt advice would miss for the taxable account).
+    at_key = req.account_type or "default"
+    cache_key = f"{today_str}:{at_key}:{portfolio_key}"
 
     if cache_key in _daily_signal_cache:
         _daily_signal_cache.move_to_end(cache_key)
@@ -9525,7 +9623,7 @@ METRICS:
   Holdings: {n}
 
 PRIMARY ISSUES:
-{issues_str}
+{issues_str}{_account_type_block(req.account_type)}
 
 Return this exact JSON structure:
 {{

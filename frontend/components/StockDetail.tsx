@@ -9,6 +9,7 @@ import InsiderActivity from "./InsiderActivity";
 import { supabase } from "../lib/supabase";
 import { RESOLVED_API_URL } from "../lib/api";
 import { plotlyHoverlabel } from "../lib/theme";
+import { trackRecentlyViewed } from "../lib/recentlyViewed";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
 
@@ -354,6 +355,13 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
     window.dispatchEvent(new CustomEvent("corvo:watchlist-updated"));
   };
 
+  // ── Track view in recently-viewed history ──────────────────────────────────
+  // Fires immediately on ticker change so the entry exists even if the user
+  // navigates away before the info fetch resolves. The fetch handler below
+  // re-tracks with the company name once it loads (the helper de-dupes by
+  // ticker so it ends up as a single MRU entry with the name attached).
+  useEffect(() => { trackRecentlyViewed(ticker); }, [ticker]);
+
   // ── Initial stock info load ─────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true); setError(null); setInfo(null); setLivePrice(null);
@@ -362,6 +370,7 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       .then(d => {
         if (d.detail) throw new Error(d.detail);
         setInfo(d);
+        if (d.name) trackRecentlyViewed(d.ticker || ticker, d.name);
         prevPriceRef.current = d.current_price;
       })
       .catch(e => setError(e.message))

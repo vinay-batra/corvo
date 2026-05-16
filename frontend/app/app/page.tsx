@@ -38,6 +38,13 @@ import OnboardingTour from "../../components/OnboardingTour";
 import TourInviteModal from "../../components/TourInviteModal";
 import { fetchPortfolio, fetchNaturalLanguageEdit, NLEditResult } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
+import {
+  getRecentlyViewed,
+  removeRecentlyViewed,
+  subscribeRecentlyViewed,
+  type RecentlyViewedEntry,
+} from "../../lib/recentlyViewed";
+import { type AccountTypeId, DEFAULT_ACCOUNT_TYPE } from "../../lib/accountType";
 import AlertsPanel from "../../components/AlertsPanel";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
 import Watchlist from "../../components/Watchlist";
@@ -704,7 +711,16 @@ function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => vo
   const [results, setResults] = useState<{ticker:string;name:string}[]>([]);
   const [busy, setBusy] = useState(false);
   const [liveData, setLiveData] = useState<Record<string, WatchlistStockData>>({});
+  const [recent, setRecent] = useState<RecentlyViewedEntry[]>([]);
   const API = RESOLVED_API_URL;
+
+  // Subscribe to recently-viewed updates so the section reflects activity from
+  // other tabs / StockDetail opens in the same window.
+  useEffect(() => {
+    const sync = () => setRecent(getRecentlyViewed());
+    sync();
+    return subscribeRecentlyViewed(sync);
+  }, []);
 
   // Fetch live prices for cards, with localStorage cache (60s TTL)
   useEffect(() => {
@@ -812,6 +828,59 @@ function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => vo
         </div>
       ) : !q ? (
         <div style={{ position: "relative", zIndex: 1 }}>
+          {/* Recently viewed (only renders when there's at least one entry) */}
+          {recent.length > 0 && (
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Recently Viewed</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {recent.map(r => (
+                  <div
+                    key={r.ticker}
+                    onClick={() => onSelect(r.ticker)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "7px 10px 7px 12px",
+                      borderRadius: 8,
+                      border: "0.5px solid var(--border)",
+                      background: "var(--bg2)",
+                      cursor: "pointer",
+                      transition: "border-color 0.15s, background 0.15s, transform 0.15s",
+                      minWidth: 0,
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLDivElement).style.background = "var(--bg3)";
+                      (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(184,134,11,0.4)";
+                      (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLDivElement).style.background = "var(--bg2)";
+                      (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)";
+                      (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                      <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 700, color: "var(--accent)", lineHeight: 1 }}>{r.ticker}</span>
+                      {r.name && (
+                        <span style={{ fontSize: 9, color: "var(--text3)", marginTop: 3, maxWidth: 92, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); removeRecentlyViewed(r.ticker); }}
+                      title="Remove from history"
+                      aria-label={`Remove ${r.ticker} from recently viewed`}
+                      style={{ width: 16, height: 16, padding: 0, borderRadius: 4, border: "none", background: "transparent", color: "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.12s, color 0.12s", flexShrink: 0 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,92,92,0.12)"; e.currentTarget.style.color = "#e05c5c"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}
+                    >
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {/* Animated stat cards grid */}
           <div>
             <p style={{ fontSize: 9, letterSpacing: 1.8, color: "var(--text3)", textTransform: "uppercase", marginBottom: 10 }}>Live Market</p>
@@ -1258,6 +1327,25 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     return () => window.removeEventListener("storage", handler);
   }, []);
 
+  // Account type for the current portfolio (Brokerage, Roth IRA, etc.).
+  // Persisted to localStorage so it survives a refresh, and threaded into
+  // every downstream AI prompt (chat, daily-signal, health-score, WSID) so
+  // recommendations are tax-context aware.
+  const [accountType, setAccountTypeState] = useState<AccountTypeId>(DEFAULT_ACCOUNT_TYPE);
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_account_type") : null;
+    if (stored && stored !== accountType) {
+      setAccountTypeState(stored as AccountTypeId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const setAccountType = (id: AccountTypeId) => {
+    setAccountTypeState(id);
+    if (typeof window !== "undefined") {
+      try { localStorage.setItem("corvo_account_type", id); } catch {}
+    }
+  };
+
 
   const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
@@ -1478,7 +1566,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 setLoading(true);
                 setAnalysisStep(0);
                 try {
-                  const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "");
+                  const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "", true, accountType);
                   if (cancelled) return;
                   if (result && !result.error) {
                     setAnalysisStep(ANALYSIS_STEPS.length);
@@ -1548,7 +1636,7 @@ const { dark, toggle: toggleDark }  = useTheme();
     if (errorDismissRef.current) clearTimeout(errorDismissRef.current);
     try {
       const pendingRef = referralCodeRef.current;
-      const result = await fetchPortfolio(valid, period, benchmark, userId || "", pendingRef, reinvestDividends);
+      const result = await fetchPortfolio(valid, period, benchmark, userId || "", pendingRef, reinvestDividends, accountType);
       // Handle backend error responses (e.g. no price data for all tickers)
       if (result.error) {
         setErrorMsg(result.error);
@@ -1646,6 +1734,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         health_score: data?.health_score ?? null,
         user_goals: goals || {},
         user_id: userId || "",
+        account_type: accountType,
       };
       const res = await fetch(`${API}/what-should-i-do`, {
         method: "POST",
@@ -1984,7 +2073,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       {/* Logo → homepage */}
       <div className="c-sidebar-logo" style={{ ...S.sidebarTop, borderLeft: "3px solid var(--accent)", paddingLeft: 13 }}>
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/corvo-logo.png" width={34} height={34} alt="Corvo" style={{ flexShrink: 0, filter: "drop-shadow(0 0 4px rgba(201,168,76,0.25))" }} />
+          <img src="/corvo-logo.png?v=2" width={34} height={34} alt="Corvo" style={{ flexShrink: 0, filter: "drop-shadow(0 0 4px rgba(201,168,76,0.25))" }} />
           <div style={S.logo}>CORVO</div>
         </Link>
       </div>
@@ -2065,7 +2154,7 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       {/* Builder */}
       <div id="tour-ticker-area" style={{ flex: 1, overflow: "auto", overscrollBehavior: "none", padding: "12px 14px" }}>
-        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} todayPct={todayPct} />
+        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} todayPct={todayPct} accountType={accountType} onAccountTypeChange={setAccountType} />
       </div>
 
       {/* Analyze button */}
@@ -2112,7 +2201,7 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       {/* Saved portfolios */}
       <div style={{ ...S.section, borderBottom: "none" }}>
-        <SavedPortfolios assets={assets} data={data} onLoad={(a: any) => setAssets(a)} />
+        <SavedPortfolios assets={assets} data={data} accountType={accountType} onLoad={(a, at) => { setAssets(a); setAccountType(at); }} />
       </div>
 
     </>
@@ -2950,7 +3039,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       title: "Health Score",
                       cardKey: "health" as const,
                       from: "left" as const, delayS: 0.1,
-                      content: <HealthScore data={data} userId={userId} apiUrl={RESOLVED_API_URL} onAskAi={() => { setChatInitialMessage("Walk me through my health score - what's driving each sub-score and what specific changes would push it higher?"); setChatOpen(true); }} />,
+                      content: <HealthScore data={data} userId={userId} apiUrl={RESOLVED_API_URL} accountType={accountType} onAskAi={() => { setChatInitialMessage("Walk me through my health score - what's driving each sub-score and what specific changes would push it higher?"); setChatOpen(true); }} />,
                       sections: [
                         { label: "Plain English", text: "A composite score from 0-100 that grades your portfolio on returns, risk-adjusted performance, stability, and resilience." },
                         { label: "Example", text: "Score 78 = Good. Strong returns and Sharpe ratio, but some volatility keeping it from Excellent." },
@@ -3145,6 +3234,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           data={data}
           assets={assets}
           goals={goals}
+          accountType={accountType}
           initialMessage={chatInitialMessage}
           currentPage={{
             overview:  "portfolio dashboard (overview tab)",
@@ -3214,7 +3304,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         }}
       >
         <img
-          src="/corvo-logo.png"
+          src="/corvo-logo.png?v=2"
           alt=""
           width={34}
           height={34}

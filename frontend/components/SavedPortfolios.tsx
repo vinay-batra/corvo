@@ -2,21 +2,25 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
+import { type AccountTypeId, isAccountTypeId, DEFAULT_ACCOUNT_TYPE, getAccountType } from "../lib/accountType";
 
 const LS_KEY = "corvo_saved_portfolios";
 const HISTORY_KEY_PREFIX = "corvo_history_";
 const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", border: "var(--border)", cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)" };
 interface Asset { ticker: string; weight: number; }
-interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; }
+interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; }
 
 /** Map a Supabase portfolios row → local Portfolio */
 function fromDb(row: any): Portfolio {
   const tickers: string[] = row.tickers ?? [];
   const weights: number[] = row.weights ?? [];
+  const accountType: AccountTypeId =
+    isAccountTypeId(row.account_type) ? row.account_type : DEFAULT_ACCOUNT_TYPE;
   return {
     id: row.id,
     name: row.name,
     assets: tickers.map((t, i) => ({ ticker: t, weight: weights[i] ?? 0 })),
+    accountType,
   };
 }
 
@@ -28,6 +32,7 @@ function toDb(p: Portfolio, userId: string) {
     name: p.name,
     tickers: p.assets.map(a => a.ticker),
     weights: p.assets.map(a => a.weight),
+    account_type: p.accountType,
     updated_at: new Date().toISOString(),
   };
 }
@@ -77,7 +82,12 @@ function saveLocal(portfolios: Portfolio[]) {
   } catch {}
 }
 
-export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asset[]; data: any; onLoad: (a: Asset[]) => void }) {
+export default function SavedPortfolios({ assets, data, accountType, onLoad }: {
+  assets: Asset[];
+  data: any;
+  accountType: AccountTypeId;
+  onLoad: (a: Asset[], accountType: AccountTypeId) => void;
+}) {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -131,6 +141,7 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
       id: crypto.randomUUID(),
       name: name.trim(),
       assets,
+      accountType,
     };
 
     if (user) {
@@ -204,11 +215,19 @@ export default function SavedPortfolios({ assets, data, onLoad }: { assets: Asse
           {portfolios.map(p => (
             <motion.div key={p.id} initial={false} animate={{ opacity: 1 }}
               style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 11px", background: "var(--bg2)", borderRadius: 10, border: `0.5px solid ${C.border}`, borderLeft: `2px solid transparent`, cursor: "pointer", transition: "all 0.15s", position: "relative" }}
-              onClick={() => onLoad(p.assets)}
+              onClick={() => onLoad(p.assets, p.accountType)}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.borderLeftColor = "var(--accent)"; e.currentTarget.style.background = "rgba(201,168,76,0.05)"; e.currentTarget.style.transform = "translateX(1px)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.borderLeftColor = "transparent"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.transform = "translateX(0)"; }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: C.cream2, margin: "0 0 3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: -0.1 }}>{p.name}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: C.cream2, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: -0.1, flex: 1, minWidth: 0 }}>{p.name}</p>
+                  {p.accountType !== DEFAULT_ACCOUNT_TYPE && (
+                    <span title={getAccountType(p.accountType).label}
+                      style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.8, color: C.amber, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 4, padding: "1px 5px", fontFamily: "Space Mono, monospace", flexShrink: 0, textTransform: "uppercase" }}>
+                      {getAccountType(p.accountType).short}
+                    </span>
+                  )}
+                </div>
                 <p style={{ fontSize: 10, color: C.cream3, margin: 0, fontFamily: "Space Mono, monospace", letterSpacing: 0.2 }}>
                   {p.assets.slice(0, 3).map((a: Asset) => a.ticker).join(" · ")}
                   {p.assets.length > 3 ? ` +${p.assets.length - 3}` : ""}
