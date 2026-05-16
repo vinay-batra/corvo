@@ -8,7 +8,7 @@ const LS_KEY = "corvo_saved_portfolios";
 const HISTORY_KEY_PREFIX = "corvo_history_";
 const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", border: "var(--border)", cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)" };
 interface Asset { ticker: string; weight: number; }
-interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; }
+interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; }
 
 /** Map a Supabase portfolios row → local Portfolio */
 function fromDb(row: any): Portfolio {
@@ -21,6 +21,7 @@ function fromDb(row: any): Portfolio {
     name: row.name,
     assets: tickers.map((t, i) => ({ ticker: t, weight: weights[i] ?? 0 })),
     accountType,
+    updatedAt: row.updated_at || row.created_at,
   };
 }
 
@@ -35,6 +36,26 @@ function toDb(p: Portfolio, userId: string) {
     account_type: p.accountType,
     updated_at: new Date().toISOString(),
   };
+}
+
+// "Analyzed 3 days ago", "Analyzed today", "Analyzed yesterday" - short
+// relative timestamp shown on each Saved chip so the user knows how stale
+// the analysis is without having to click in.
+function relativeAnalyzed(iso: string | undefined): string {
+  if (!iso) return "Never analyzed";
+  const then = new Date(iso).getTime();
+  if (isNaN(then)) return "Never analyzed";
+  const diffMs = Date.now() - then;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return "Analyzed today";
+  if (diffDays === 1) return "Analyzed yesterday";
+  if (diffDays < 7) return `Analyzed ${diffDays} days ago`;
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return `Analyzed ${weeks}w ago`;
+  }
+  const months = Math.floor(diffDays / 30);
+  return `Analyzed ${months}mo ago`;
 }
 
 function computeHealth(data: any): number {
@@ -94,6 +115,12 @@ export default function SavedPortfolios({ assets, data, accountType, onLoad }: {
   // can leave the live value pinned to the previously-loaded portfolio.
   onLoad: (a: Asset[], accountType: AccountTypeId, portfolioId: string, portfolioName: string) => void;
 }) {
+  // Match the active assets against saved portfolios so the matching chip
+  // can be visually highlighted as "you're viewing this one right now".
+  // Ticker-set match (sorted, ignoring weights) - if user has tweaked
+  // weights on a saved portfolio, the chip still reads as active since the
+  // portfolio identity is the holdings, not the exact weights.
+  const activeTickersKey = assets.map(a => a.ticker).filter(Boolean).sort().join(",");
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -217,37 +244,75 @@ export default function SavedPortfolios({ assets, data, accountType, onLoad }: {
       {portfolios.length === 0 ? (
         <p style={{ fontSize: 11, color: C.cream3, textAlign: "center", padding: "10px 0", letterSpacing: 0.1 }}>No saved portfolios</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          {portfolios.map(p => (
-            <motion.div key={p.id} initial={false} animate={{ opacity: 1 }}
-              style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 11px", background: "var(--bg2)", borderRadius: 10, border: `0.5px solid ${C.border}`, borderLeft: `2px solid transparent`, cursor: "pointer", transition: "all 0.15s", position: "relative" }}
-              onClick={() => onLoad(p.assets, p.accountType, p.id, p.name)}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.borderLeftColor = "var(--accent)"; e.currentTarget.style.background = "rgba(201,168,76,0.05)"; e.currentTarget.style.transform = "translateX(1px)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.borderLeftColor = "transparent"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.transform = "translateX(0)"; }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: C.cream2, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: -0.1, flex: 1, minWidth: 0 }}>{p.name}</p>
-                  {p.accountType !== DEFAULT_ACCOUNT_TYPE && (
-                    <span title={getAccountType(p.accountType).label}
-                      style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.8, color: C.amber, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 4, padding: "1px 5px", fontFamily: "Space Mono, monospace", flexShrink: 0, textTransform: "uppercase" }}>
-                      {getAccountType(p.accountType).short}
-                    </span>
-                  )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {portfolios.map(p => {
+            const pKey = p.assets.map(a => a.ticker).filter(Boolean).sort().join(",");
+            const isActive = !!pKey && pKey === activeTickersKey;
+            return (
+              <motion.div key={p.id} initial={false} animate={{ opacity: 1 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  padding: "10px 11px",
+                  background: isActive ? "rgba(201,168,76,0.06)" : "var(--bg2)",
+                  borderRadius: 10,
+                  border: `0.5px solid ${isActive ? "rgba(201,168,76,0.45)" : C.border}`,
+                  borderLeft: `2px solid ${isActive ? "var(--accent)" : "transparent"}`,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  position: "relative",
+                  boxShadow: isActive ? "0 0 12px rgba(201,168,76,0.14)" : "none",
+                }}
+                onClick={() => onLoad(p.assets, p.accountType, p.id, p.name)}
+                onMouseEnter={e => {
+                  if (isActive) return;
+                  e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)";
+                  e.currentTarget.style.borderLeftColor = "var(--accent)";
+                  e.currentTarget.style.background = "rgba(201,168,76,0.05)";
+                  e.currentTarget.style.transform = "translateX(1px)";
+                }}
+                onMouseLeave={e => {
+                  if (isActive) return;
+                  e.currentTarget.style.borderColor = C.border;
+                  e.currentTarget.style.borderLeftColor = "transparent";
+                  e.currentTarget.style.background = "var(--bg2)";
+                  e.currentTarget.style.transform = "translateX(0)";
+                }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: isActive ? C.amber : C.cream2, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: -0.1, flex: 1, minWidth: 0 }}>{p.name}</p>
+                    {p.accountType !== DEFAULT_ACCOUNT_TYPE && (
+                      <span title={getAccountType(p.accountType).label}
+                        style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.8, color: C.amber, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", borderRadius: 4, padding: "1px 5px", fontFamily: "Space Mono, monospace", flexShrink: 0, textTransform: "uppercase" }}>
+                        {getAccountType(p.accountType).short}
+                      </span>
+                    )}
+                    {isActive && (
+                      <span title="Active portfolio"
+                        style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.8, color: "#4caf7d", background: "rgba(76,175,125,0.1)", border: "0.5px solid rgba(76,175,125,0.3)", borderRadius: 4, padding: "1px 5px", fontFamily: "Space Mono, monospace", flexShrink: 0, textTransform: "uppercase" }}>
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: 10, color: C.cream3, margin: 0, fontFamily: "Space Mono, monospace", letterSpacing: 0.2 }}>
+                    {p.assets.slice(0, 3).map((a: Asset) => a.ticker).join(" · ")}
+                    {p.assets.length > 3 ? ` +${p.assets.length - 3}` : ""}
+                  </p>
+                  <p style={{ fontSize: 9.5, color: "var(--text-muted)", margin: "5px 0 0", letterSpacing: 0.1 }}>
+                    {relativeAnalyzed(p.updatedAt)}
+                  </p>
                 </div>
-                <p style={{ fontSize: 10, color: C.cream3, margin: 0, fontFamily: "Space Mono, monospace", letterSpacing: 0.2 }}>
-                  {p.assets.slice(0, 3).map((a: Asset) => a.ticker).join(" · ")}
-                  {p.assets.length > 3 ? ` +${p.assets.length - 3}` : ""}
-                </p>
-              </div>
-              <button onClick={e => { e.stopPropagation(); setDeleteConfirm(p.id); }}
-                style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", padding: "3px 5px", lineHeight: 1, flexShrink: 0, transition: "all 0.12s", borderRadius: 4, display: "flex" }}
-                onMouseEnter={e => { e.currentTarget.style.color = "var(--red)"; e.currentTarget.style.background = "rgba(224,92,92,0.08)"; }}
-                onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}
-                title="Delete portfolio">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </motion.div>
-          ))}
+                <button onClick={e => { e.stopPropagation(); setDeleteConfirm(p.id); }}
+                  style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", padding: "3px 5px", lineHeight: 1, flexShrink: 0, transition: "all 0.12s", borderRadius: 4, display: "flex" }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--red)"; e.currentTarget.style.background = "rgba(224,92,92,0.08)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}
+                  title="Delete portfolio">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
