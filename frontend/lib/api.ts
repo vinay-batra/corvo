@@ -32,7 +32,7 @@ export async function authHeaders(extra: Record<string, string> = {}): Promise<H
   return headers;
 }
 
-export async function fetchPortfolio(assets: any[], period: string, benchmark = "^GSPC", userId = "", referralCode = "", reinvestDividends = true) {
+export async function fetchPortfolio(assets: any[], period: string, benchmark = "^GSPC", userId = "", referralCode = "", reinvestDividends = true, accountType = "") {
   const total = assets.reduce((sum, a) => sum + a.weight, 0);
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
@@ -45,6 +45,7 @@ export async function fetchPortfolio(assets: any[], period: string, benchmark = 
     referralCode ? `referral_code=${encodeURIComponent(referralCode)}` : "",
     hasManual ? `manual_returns=${encodeURIComponent(manualReturns)}` : "",
     !reinvestDividends ? `reinvest_dividends=false` : "",
+    accountType ? `account_type=${encodeURIComponent(accountType)}` : "",
   ].filter(Boolean).join("&");
   const res = await fetch(
     `${RESOLVED_API_URL}/portfolio?tickers=${tickers}&weights=${weights}&period=${period}&benchmark=${encodeURIComponent(benchmark)}${extras ? "&" + extras : ""}`
@@ -269,6 +270,7 @@ export async function fetchDailySignal(params: {
   health_score: number;
   period?: string;
   user_id?: string;
+  account_type?: string;
 }): Promise<DailySignal> {
   const res = await fetch(`${RESOLVED_API_URL}/portfolio/daily-signal`, {
     method: "POST",

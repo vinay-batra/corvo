@@ -123,11 +123,13 @@ export default function HealthScore({
   data,
   userId,
   apiUrl,
+  accountType,
   onAskAi,
 }: {
   data: any;
   userId?: string | null;
   apiUrl?: string;
+  accountType?: string;
   onAskAi?: () => void;
 }) {
   const ref = useRef(null);
@@ -156,13 +158,14 @@ export default function HealthScore({
         max_drawdown: data.max_drawdown ?? 0,
         rf_rate: data.rf_rate ?? 0.04,
         individual_returns: data.individual_returns ?? {},
+        account_type: accountType || "",
       }),
     })
       .then((r) => r.json())
       .then((d: HsData) => { setHsData(d); setLoading(false); })
       .catch(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickersKey, userId]);
+  }, [tickersKey, userId, accountType]);
 
   const score = hsData?.score ?? fallbackScore;
   const headline = hsData?.headline ?? "";

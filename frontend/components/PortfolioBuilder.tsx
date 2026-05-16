@@ -6,6 +6,7 @@ import { importPortfolioCsv } from "../lib/api";
 import { posthog } from "../lib/posthog";
 import { RESOLVED_API_URL } from "../lib/api";
 import { supabase } from "../lib/supabase";
+import { ACCOUNT_TYPES, type AccountTypeId, getAccountType, DEFAULT_ACCOUNT_TYPE } from "../lib/accountType";
 
 const API_URL = RESOLVED_API_URL;
 const C = { amber: "var(--accent)", cream: "var(--text)", cream3: "var(--text3)", border: "var(--border)", navy4: "var(--bg2)" };
@@ -200,9 +201,15 @@ interface Props {
   // edit; the input snaps to the base on focus, and saves user input as the
   // new base on change.
   todayPct?: number | null;
+  // Account type for the current portfolio. Controls tax-context rules
+  // injected into every AI prompt downstream (TLH, cap-gains, RMDs, etc.).
+  // Optional - callers like the onboarding flow that don't surface tax
+  // context can omit both and the selector won't render.
+  accountType?: AccountTypeId;
+  onAccountTypeChange?: (id: AccountTypeId) => void;
 }
 
-export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct }: Props) {
+export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange }: Props) {
   const update = onAssetsChange || setAssets || (() => {});
   const [dark, setDark] = useState(true);
   const [active, setActive] = useState<number|null>(null);
@@ -857,6 +864,63 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         <div style={{fontSize:10,color:"var(--text3)",marginTop:6,lineHeight:1.5,letterSpacing:0.1}}>
           Used for P&amp;L, tax loss harvesting, and dividend calculations
         </div>
+        {/* Account type - changes how Corvo's AI reasons about tax (TLH,
+            cap-gains, RMDs, contribution limits, kiddie-tax, etc.). Persisted
+            with the portfolio so each saved account stays separately scoped.
+            Only rendered when a change handler is provided - callers that
+            don't care about tax context (onboarding flow) can omit it. */}
+        {onAccountTypeChange && (
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "0.5px solid var(--border)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
+            <div>
+              <div style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600, letterSpacing: 0.1 }}>Account type</div>
+              <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2, letterSpacing: 0.1 }}>Shapes tax-aware advice</div>
+            </div>
+            <select
+              id="portfolio-account-type"
+              name="accountType"
+              value={accountType}
+              onChange={e => onAccountTypeChange(e.target.value as AccountTypeId)}
+              aria-label="Account type"
+              style={{
+                ...INPUT_STYLE,
+                width: "auto",
+                maxWidth: 180,
+                fontFamily: "Space Mono,monospace",
+                fontSize: 11,
+                fontWeight: 600,
+                padding: "5px 8px",
+                cursor: "pointer",
+                colorScheme: dark ? "dark" : "light",
+              }}
+            >
+              <optgroup label="Taxable">
+                {ACCOUNT_TYPES.filter(t => t.group === "Taxable").map(t => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Retirement">
+                {ACCOUNT_TYPES.filter(t => t.group === "Retirement").map(t => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Health">
+                {ACCOUNT_TYPES.filter(t => t.group === "Health").map(t => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Education">
+                {ACCOUNT_TYPES.filter(t => t.group === "Education").map(t => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+          <div style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.5, letterSpacing: 0.1 }}>
+            {getAccountType(accountType).tagline}
+          </div>
+        </div>
+        )}
         {/* Reinvest dividends - rendered as a real iOS-style switch instead of
             a pill button. The previous Yes/No pill read like a status badge
             rather than a control, so users didn't realise it was clickable.

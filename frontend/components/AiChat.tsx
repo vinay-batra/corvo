@@ -161,7 +161,7 @@ function TypingDots() {
 function CorvoAvatar({ size = 28 }: { size?: number }) {
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: "var(--bg3)", border: "1px solid rgba(201,168,76,0.35)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 0 6px rgba(201,168,76,0.18)" }}>
-      <img src="/corvo-logo.png" width={size * 0.72} height={size * 0.72} alt="" />
+      <img src="/corvo-logo.png?v=2" width={size * 0.72} height={size * 0.72} alt="" />
     </div>
   );
 }
@@ -176,6 +176,7 @@ export default function AiChat({
   pageContext,
   currentPage,
   extraContext,
+  accountType,
   onClose,
 }: {
   data?: any;
@@ -185,6 +186,7 @@ export default function AiChat({
   pageContext?: string;
   currentPage?: string;
   extraContext?: string;
+  accountType?: string;
   onClose?: () => void;
 }) {
   // Use refs for values used inside async functions to avoid stale closures
@@ -285,6 +287,7 @@ export default function AiChat({
     portfolio_value:      data?.portfolio_value,
     individual_returns:   data?.individual_returns,
     beta:                 data?.beta,
+    account_type:         accountType || "",
     user_goals: goals ? {
       age: goals.age, salary: goals.salary, invested: goals.invested,
       monthly_contribution: goals.monthlyContribution, retirement_age: goals.retirementAge,
@@ -934,7 +937,7 @@ export default function AiChat({
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
             }}>
-              <img src="/corvo-logo.png" width={22} height={22} alt="" style={{ opacity: 1 }} />
+              <img src="/corvo-logo.png?v=2" width={22} height={22} alt="" style={{ opacity: 1 }} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1, minWidth: 0 }}>
               <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text)", letterSpacing: -0.2 }}>Corvo</span>
@@ -1014,7 +1017,7 @@ export default function AiChat({
                   margin: "0 auto 14px",
                   boxShadow: "0 0 24px rgba(201,168,76,0.15) inset, 0 6px 20px rgba(201,168,76,0.10)",
                 }}>
-                  <img src="/corvo-logo.png" width={42} height={42} alt="Corvo" style={{ opacity: 1 }} />
+                  <img src="/corvo-logo.png?v=2" width={42} height={42} alt="Corvo" style={{ opacity: 1 }} />
                 </div>
                 <p style={{ fontFamily: "Space Mono, monospace", fontSize: 17, fontWeight: 700, color: "var(--text)", letterSpacing: -0.5, lineHeight: 1.2, marginBottom: 8 }}>
                   {!portfolioCtxOn
