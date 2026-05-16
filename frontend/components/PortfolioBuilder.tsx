@@ -221,9 +221,15 @@ interface Props {
   // having to lift everything into the parent. Default "holdings" preserves
   // pre-tabs behavior for callers (onboarding) that don't know about tabs.
   view?: "holdings" | "account";
+  // Whether the active portfolio is saved (matches a row in `portfolios`).
+  // When false + assets exist, the Account tab surfaces a small "Save this
+  // portfolio to track day-over-day" hint under the Portfolio Value card
+  // since day-over-day persistence only works for saved portfolios (the EOD
+  // snapshot cron is keyed by portfolio_id).
+  isSaved?: boolean;
 }
 
-export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange, liveBaseValue, view = "holdings" }: Props) {
+export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange, liveBaseValue, view = "holdings", isSaved = false }: Props) {
   const update = onAssetsChange || setAssets || (() => {});
   const [dark, setDark] = useState(true);
   const [active, setActive] = useState<number|null>(null);
@@ -508,9 +514,14 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       {view === "holdings" && (<>
-      {/* ── Sticky header ─────────────────────────────────────────── */}
+      {/* ── Sticky header ───────────────────────────────────────────
+           top: 44px offsets below the v0.36 sticky tab nav (Holdings /
+           Account / Saved) so this header stacks underneath the tabs
+           instead of overlapping them when the user scrolls within the
+           sidebar. zIndex 14 sits below the tabs' zIndex 15 as
+           belt-and-suspenders. */}
       <div style={{
-        position:"sticky", top:0, zIndex:20,
+        position:"sticky", top:44, zIndex:14,
         background:"var(--bg2)",
         marginLeft:-14, marginRight:-14, marginTop:-12,
         padding:"12px 14px 10px",
@@ -901,6 +912,31 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             {todayPct >= 0 ? "+" : ""}{todayPct.toFixed(2)}% today
             <span style={{ color: "var(--text3)", margin: "0 5px" }}>·</span>
             <span style={{ color: "var(--text3)" }}>base ${effectiveBaseNum.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+          </div>
+        )}
+        {/* "Save to track day-over-day" hint - only when the portfolio is
+            unsaved AND has holdings. Day-over-day ratcheting requires the
+            EOD snapshot cron which is keyed by portfolio_id, so unsaved
+            portfolios display the seed value untouched until they're saved. */}
+        {!isSaved && assets.filter(a => a.ticker && a.weight > 0).length > 0 && (
+          <div style={{
+            fontSize: 10,
+            marginTop: 8,
+            padding: "7px 9px",
+            background: "rgba(201,168,76,0.06)",
+            border: "0.5px dashed rgba(201,168,76,0.3)",
+            borderRadius: 6,
+            color: "var(--text3)",
+            lineHeight: 1.45,
+            letterSpacing: 0.1,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+            <span><span style={{ color: "var(--accent)", fontWeight: 600 }}>Save</span> this portfolio in the Saved tab to track day-over-day.</span>
           </div>
         )}
         {/* Account type - changes how Corvo's AI reasons about tax (TLH,

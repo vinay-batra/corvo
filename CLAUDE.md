@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.36 (May 16, 2026) - tabbed sidebar redesign (Mock C). Holdings / Account / Saved each get the sidebar's full width as their own tab. Analyze flows right below tab content, no flex:1 spacer pinning it to the bottom. Account type dropdown becomes a 2x4 grid of selectable cards. Frontend only.**
+**Last shipped: v0.37 (May 16, 2026) - tabbed sidebar polish + close v0.34 audit follow-ups. Frontend only.**
+
+v0.37 cleans up everything left over from v0.36 (tabbed sidebar) and closes the deferred audit items from v0.34. Five tightenings. (1) The Holdings sticky header was overlapping the v0.36 sticky tab nav - both lived at `top: 0` of the now-shared scroll container, and the Holdings header sat on top because its zIndex was higher. Fix: Holdings sticky header pinned to `top: 44px` (below the tab nav height) with zIndex 14 (below the tab nav's 15) so it stacks correctly. (2) Saving a brand-new portfolio whose ticker set matched the active assets used to leave savedPortfolioId stuck on null until the next page reload (auto-detect effect's deps were `[assets, userId]` - neither changed on save). Now a new `savedPortfolioRefreshTick` state bumps on every `corvo:portfolio-saved` window event, and the auto-detect deps include it - so a save instantly triggers re-detection and perfHistory starts ratcheting from the new portfolio's snapshots. (3) Account tab gains a small dashed-border hint under the Portfolio Value card: "Save this portfolio in the Saved tab to track day-over-day." Only renders when `!isSaved && assets.length > 0`. Explains the gap between the input seed and the live value for users who haven't saved yet. (4) Saved chip cards get a relative "Analyzed N days ago / today / yesterday / Xw ago" timestamp pulled from `updated_at`. (5) Saved chip cards now highlight the active portfolio (the one whose ticker set matches the current assets) with a gold left border, gold-tinted background, soft glow, and a green ACTIVE badge - so users always know which saved portfolio they're viewing.
 
 v0.36 implements the tabbed sidebar redesign user picked from a 6-option brainstorm (between Mock C "tabbed sidebar" and Mock D "bottom config strip"). Three sidebar tabs now: HOLDINGS (the asset rows + add/equalize + sticky weight status), ACCOUNT (Portfolio Value card + 8-card Account Type grid + Reinvest toggle), SAVED (the SavedPortfolios chip cards). Each gets the sidebar's full width without competing with the other two. Tab nav is sticky at the top of the sidebar's scroll region so it stays visible while users scroll through long lists. PortfolioBuilder gained a new `view: "holdings" | "account"` prop so a single component instance still owns the state but only renders the active tab's section. Account type selector swapped from a native `<select>` with optgroups to a 2x4 grid of selectable cards (uses the new `chip` field in `lib/accountType.ts` for tight chip-friendly summaries like "Tax-free + match", "Kiddie tax applies") - all 8 options + their tax framing visible at once instead of hidden behind a click. The big change per user feedback: removed `flex: 1` from the tab content wrapper so the Analyze button flows immediately below the content with no awkward dead space above it; outer sidebar wrapper's overflow flipped from `hidden` to `overflow-y: auto` so the whole sidebar scrolls when content exceeds viewport (instead of the previous flex-fill-with-inner-scroll pattern). Edit-with-Corvo kept at its current location above the tabs (it's a global tool that should be reachable from any tab); could move into Holdings later if you want it more contextual.
 
@@ -273,9 +275,27 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.36
+- Version: v0.37
 
 ## What Was Built
+
+### v0.37 (May 16, 2026) - tabbed sidebar polish + close v0.34 audit follow-ups
+
+**Holdings sticky header offset under the new tab nav**
+- v0.36 added a sticky tab nav (Holdings / Account / Saved) at the top of the sidebar's scroll region with `position: sticky, top: 0, zIndex: 15`. The Holdings tab's internal sticky header (count chip + weight status + utility menu) also had `top: 0` but with `zIndex: 20`, so it rendered ON TOP of the tab nav whenever the user scrolled within Holdings. Fix: Holdings header now pinned to `top: 44px` (height of the tab nav) with `zIndex: 14` so it stacks correctly underneath. Both headers stay sticky as designed.
+
+**perfHistory refetch after a brand-new save (closes audit issue #4 from v0.34)**
+- The auto-detect effect that maps active assets to a `savedPortfolioId` had deps `[assets, userId]`. When the user clicked Save on a previously-unsaved portfolio, neither dep changed - so savedPortfolioId stayed null, perfHistory stayed empty, and the live value display kept falling back to the user-input seed instead of ratcheting from EOD snapshots (which were now being written for that new portfolio).
+- Fix: new `savedPortfolioRefreshTick` state, bumped via a `corvo:portfolio-saved` window-event listener (SavedPortfolios already dispatches this event on save - now app/app/page.tsx listens for it too). Added to the auto-detect effect's deps. A save fires the event → tick bumps → effect re-runs → detection finds the new portfolio → savedPortfolioId updates → perfHistory effect fires → liveBaseValue starts ratcheting. No page reload required.
+
+**"Save to track day-over-day" hint on unsaved portfolios**
+- New prop `isSaved?: boolean` on PortfolioBuilder, threaded from `app/app/page.tsx` as `!!savedPortfolioId`. When the Account tab is visible AND the portfolio is unsaved AND there's at least one holding, a small dashed-border hint card renders under the Portfolio Value: a gold bookmark icon + "Save this portfolio in the Saved tab to track day-over-day." Explains why the live value isn't ratcheting yet (the EOD snapshot cron is keyed by portfolio_id - unsaved portfolios never get snapshots written). Vanishes the moment the user saves.
+
+**Saved chip cards: relative timestamps**
+- Each Saved chip now shows "Analyzed today" / "Analyzed yesterday" / "Analyzed 3 days ago" / "Analyzed 2w ago" / "Analyzed 3mo ago" underneath the ticker list. Pulled from `updated_at` on the portfolios row (already written by the toDb mapper on every save). New `relativeAnalyzed(iso)` helper handles the fallback to "Never analyzed" for rows without a timestamp. `Portfolio.updatedAt` was added to the interface and to `fromDb` to pull `row.updated_at || row.created_at`.
+
+**Saved chip cards: active portfolio highlight**
+- Cards now compute `isActive = ticker set matches active assets` and styling-fork accordingly: gold left border (was transparent border-left), gold-tinted background (was bg2), `0 0 12px rgba(201,168,76,0.14)` soft glow (was none), name text shifts to gold (was cream2). A small green "ACTIVE" badge sits next to the account-type badge. Hover state suppressed on the active card so it doesn't visually "click" when hovered. User always knows which saved portfolio is loaded right now.
 
 ### v0.36 (May 16, 2026) - tabbed sidebar redesign (Mock C)
 

@@ -1822,6 +1822,19 @@ const { dark, toggle: toggleDark }  = useTheme();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
+  // Tick that bumps on every `corvo:portfolio-saved` event so the auto-detect
+  // effect below re-runs after a fresh save. Without this, saving a brand-new
+  // portfolio whose ticker set matches the active assets doesn't update
+  // savedPortfolioId until the next page reload - and perfHistory /
+  // liveBaseValue stay stuck on the seed instead of starting to ratchet from
+  // the new portfolio's EOD snapshots. (Audit issue #4, deferred from v0.34.)
+  const [savedPortfolioRefreshTick, setSavedPortfolioRefreshTick] = useState(0);
+  useEffect(() => {
+    const handler = () => setSavedPortfolioRefreshTick(t => t + 1);
+    window.addEventListener("corvo:portfolio-saved", handler);
+    return () => window.removeEventListener("corvo:portfolio-saved", handler);
+  }, []);
+
   // ── Detect saved portfolio from assets (pre-analysis) ───────────────────────
   useEffect(() => {
     if (!assets.length) { setSavedPortfolioId(null); setSavedPortfolioName(""); return; }
@@ -1850,7 +1863,9 @@ const { dark, toggle: toggleDark }  = useTheme();
         else { setSavedPortfolioId(null); setSavedPortfolioName(""); }
       } catch { setSavedPortfolioId(null); setSavedPortfolioName(""); }
     })();
-  }, [assets, userId]);
+    // savedPortfolioRefreshTick in the deps re-runs detection after a save
+    // event fires, so a brand-new save immediately updates savedPortfolioId.
+  }, [assets, userId, savedPortfolioRefreshTick]);
 
   // Load portfolio performance history when savedPortfolioId is known
   useEffect(() => {
@@ -2256,6 +2271,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             accountType={accountType}
             onAccountTypeChange={setAccountType}
             liveBaseValue={liveBaseValue}
+            isSaved={!!savedPortfolioId}
           />
         )}
         {sidebarTab === "saved" && (
