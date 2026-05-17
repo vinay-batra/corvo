@@ -94,7 +94,7 @@ const SECTIONS = [
       },
       {
         q: "Is Corvo free?",
-        a: "Yes, Corvo is completely free during the beta period. A Pro tier is coming soon with unlimited AI chat, advanced analytics, and priority support. Beta users will get early access and locked-in pricing.",
+        a: "Yes. Corvo's core features are free forever, not just during beta. A Pro tier is coming soon with extras for power users: unlimited AI chat, brokerage sync via Plaid, SMS price alerts, and priority support. The free plan stays free.",
       },
       {
         q: "Do I need a brokerage account?",
