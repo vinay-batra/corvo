@@ -763,10 +763,24 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         )}
       </div>
 
-      {/* ── Portfolio Value input ──────────────────────────────────── */}
+      {/* ── ACCOUNT section ────────────────────────────────────────────
+           Master container for the three portfolio-level controls that
+           every other UI patch (Reinvest, Portfolio Value, Account type)
+           used to fight for space at the bottom of the sidebar. Now
+           grouped under one gold "ACCOUNT" eyebrow so the section reads
+           parallel to HOLDINGS / SAVED. The PORTFOLIO VALUE sub-eyebrow
+           was demoted to a regular cream label since two stacked gold
+           eyebrows in 80px of sidebar looked busy.
+      */}
       <div style={{marginTop:6,marginBottom:16,padding:"14px 14px 12px",borderTop:"0.5px solid var(--border)",background:"linear-gradient(180deg, rgba(201,168,76,0.025) 0%, transparent 100%)",marginLeft:-14,marginRight:-14}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
-          <span style={{fontSize:10,letterSpacing:2.5,color:C.amber,textTransform:"uppercase",fontWeight:700,fontFamily:"Space Mono,monospace"}}>Portfolio Value</span>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:12}}>
+          <span style={{fontSize:10,letterSpacing:2.5,color:C.amber,textTransform:"uppercase",fontWeight:700,fontFamily:"Space Mono,monospace"}}>Account</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:7}}>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600, letterSpacing: 0.1 }}>Portfolio value</div>
+            <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2, letterSpacing: 0.1 }}>Used for P&amp;L and tax math</div>
+          </div>
           {/* Privacy toggle - mirrors the GreetingBar eye, shared via the
               corvo:value-hidden-changed custom event so both displays mask in
               lockstep. */}
@@ -785,6 +799,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               alignItems: "center",
               borderRadius: 5,
               transition: "color 0.12s, background 0.12s",
+              flexShrink: 0,
             }}
             onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.background = "var(--bg3)"; }}
             onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}
@@ -861,9 +876,6 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             <span style={{ color: "var(--text3)" }}>base ${portfolioBaseNum.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
           </div>
         )}
-        <div style={{fontSize:10,color:"var(--text3)",marginTop:6,lineHeight:1.5,letterSpacing:0.1}}>
-          Used for P&amp;L, tax loss harvesting, and dividend calculations
-        </div>
         {/* Account type - changes how Corvo's AI reasons about tax (TLH,
             cap-gains, RMDs, contribution limits, kiddie-tax, etc.). Persisted
             with the portfolio so each saved account stays separately scoped.
