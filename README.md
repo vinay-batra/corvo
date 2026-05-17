@@ -23,11 +23,12 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Sharpe ratio computed with the live `^IRX` T-bill rate as the risk-free rate
 - Portfolio health score graded across returns, risk, stability, and resilience
 - Max drawdown, alpha, beta, and volatility
-- Monte Carlo simulation with exactly 10,000 paths and a 1 to 30 year projection horizon
+- Monte Carlo simulation with exactly 10,000 paths and a 1 to 30 year projection horizon. Rendered as a true fan chart: 250 sample paths drawn as semi-transparent hairlines behind the 5th-95th and 25th-75th percentile bands so you see actual variance, including realistic loss scenarios, instead of an abstract median + smooth band. Uses Student-t (df=6) innovations for empirical fat tails so 2008/2020/2022-style drawdowns appear at realistic frequency.
 - Benchmark comparison versus the S&P 500, NASDAQ, and Dow Jones
 - Sector exposure breakdown with visual allocation chart
 - Correlation heatmap across all holdings
 - What-If analysis to test portfolio changes side by side before committing
+- Per-holding account type tagging: each holding in the sidebar Holdings tab can be tagged with its own account type (Taxable Brokerage, Roth IRA, Traditional IRA, Roth 401(k), Traditional 401(k), HSA, 529, Custodial). A single portfolio can mix account types so AI tax advice routes per bucket: no tax-loss harvesting in Roth, capital gains only apply to Taxable, contribution limits and RMDs surfaced for retirement wrappers. Untagged holdings inherit the portfolio default.
 
 ### AI Tools
 - AI portfolio chat powered by Claude with full portfolio context, web search, persistent history, and conversation management
@@ -40,8 +41,9 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Goal Tracker: projects retirement and milestone savings with Monte Carlo
 
 ### Simulations
-- Monte Carlo engine running exactly 10,000 paths per simulation
-- 1 to 30 year projection horizon with percentile bands
+- Monte Carlo engine running exactly 10,000 paths per simulation, using Student-t (df=6) innovations for realistic fat-tail variance rather than the rosier-than-real Gaussian assumption
+- 1 to 30 year projection horizon with percentile bands plus 250 individual sample paths drawn as a fan so the user sees real distribution, including loss scenarios
+- Honest labeling: "Worst 5%" / "Best 5%" instead of "Bear / Bull Case" so positive worst-case percentiles aren't dressed up as losses, and VaR / Expected Shortfall cards flip green when the worst-5% is genuinely positive
 - Retirement simulator with configurable spending, contribution, and target balance
 - Advanced settings for return assumptions, inflation rate, and withdrawal strategy
 
