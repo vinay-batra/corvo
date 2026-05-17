@@ -7,19 +7,27 @@ import { type AccountTypeId, isAccountTypeId, DEFAULT_ACCOUNT_TYPE, getAccountTy
 const LS_KEY = "corvo_saved_portfolios";
 const HISTORY_KEY_PREFIX = "corvo_history_";
 const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", border: "var(--border)", cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)" };
-interface Asset { ticker: string; weight: number; }
+interface Asset { ticker: string; weight: number; accountType?: AccountTypeId; }
 interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; }
 
 /** Map a Supabase portfolios row → local Portfolio */
 function fromDb(row: any): Portfolio {
   const tickers: string[] = row.tickers ?? [];
   const weights: number[] = row.weights ?? [];
+  const holdingAccountTypes: string[] = row.holding_account_types ?? [];
   const accountType: AccountTypeId =
     isAccountTypeId(row.account_type) ? row.account_type : DEFAULT_ACCOUNT_TYPE;
   return {
     id: row.id,
     name: row.name,
-    assets: tickers.map((t, i) => ({ ticker: t, weight: weights[i] ?? 0 })),
+    assets: tickers.map((t, i) => {
+      const tag = holdingAccountTypes[i];
+      return {
+        ticker: t,
+        weight: weights[i] ?? 0,
+        accountType: tag && isAccountTypeId(tag) ? tag : undefined,
+      };
+    }),
     accountType,
     updatedAt: row.updated_at || row.created_at,
   };
@@ -33,6 +41,10 @@ function toDb(p: Portfolio, userId: string) {
     name: p.name,
     tickers: p.assets.map(a => a.ticker),
     weights: p.assets.map(a => a.weight),
+    // Empty string in the array = "use portfolio default". Always-write the
+    // full array (even when all entries are empty) so updates wipe stale
+    // tags rather than silently preserving them.
+    holding_account_types: p.assets.map(a => a.accountType ?? ""),
     account_type: p.accountType,
     updated_at: new Date().toISOString(),
   };

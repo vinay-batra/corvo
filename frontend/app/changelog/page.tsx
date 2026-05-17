@@ -128,7 +128,7 @@ const ERAS = [
       "Full mobile overhaul across every authenticated and public tab",
       "Critical auth fix: middleware was silently expiring sessions every request",
       "AI chat connected to live web search with word-by-word streaming responses",
-      "Monte Carlo rebuilt at 8,500 paths with 1-30 year horizons and full histograms",
+      "Monte Carlo rebuilt at 10,000 paths with 1-30 year horizons and full histograms",
       "About page launch + public-page redesign with character-by-character headings",
       "Rebalance Assistant, Options Chain viewer, and Transaction Log",
     ],

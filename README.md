@@ -23,7 +23,7 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Sharpe ratio computed with the live `^IRX` T-bill rate as the risk-free rate
 - Portfolio health score graded across returns, risk, stability, and resilience
 - Max drawdown, alpha, beta, and volatility
-- Monte Carlo simulation with exactly 8,500 paths and a 1 to 30 year projection horizon
+- Monte Carlo simulation with exactly 10,000 paths and a 1 to 30 year projection horizon
 - Benchmark comparison versus the S&P 500, NASDAQ, and Dow Jones
 - Sector exposure breakdown with visual allocation chart
 - Correlation heatmap across all holdings
@@ -40,7 +40,7 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Goal Tracker: projects retirement and milestone savings with Monte Carlo
 
 ### Simulations
-- Monte Carlo engine running exactly 8,500 paths per simulation
+- Monte Carlo engine running exactly 10,000 paths per simulation
 - 1 to 30 year projection horizon with percentile bands
 - Retirement simulator with configurable spending, contribution, and target balance
 - Advanced settings for return assumptions, inflation rate, and withdrawal strategy

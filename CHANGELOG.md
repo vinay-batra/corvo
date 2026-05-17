@@ -87,7 +87,7 @@ All notable changes to Corvo are documented here.
 - **Rate-limit IP source switched to `X-Forwarded-For`** so Railway's proxy doesn't collapse all clients to a single bucket.
 - **LRU caps on 8 in-process caches** (`RATE_LIMITS`, `_image_parse_daily`, `_market_per_ticker_cache`, `_sectors_cache`, `_dividends_cache`, `_options_cache`, `_health_score_cache`, `_daily_signal_cache`) via shared `_cap_dict` helper.
 - **Added rate limits** to `/prices`, `/search-ticker`, `/market-summary`, `/market-brief`, `/market-driver`, `/earnings-calendar`, `/earnings/transcript/{ticker}`, and `/portfolio/health-score`.
-- **Enforced canonical Monte Carlo path count**: `/montecarlo/insight` and `/retirement-simulation` now force `req.simulations = 8500` regardless of client input.
+- **Enforced canonical Monte Carlo path count**: `/montecarlo/insight` and `/retirement-simulation` now force `req.simulations = 10000` regardless of client input. (Bumped from 8,500 in v0.41 alongside Student-t fat-tail innovations + 250 sample paths for the fan chart.)
 - **`backend/.env` untracked from git**. The leaked Anthropic key has been rotated; older history still retains it.
 
 ### Supabase migrations
@@ -121,7 +121,7 @@ All notable changes to Corvo are documented here.
 
 ### Added
 - **AI chat overhaul:** web search enabled (`web_search` tool on `claude-sonnet-4-6`), streaming responses, available on every page, context-aware portfolio data injected, confident advisor tone enforced
-- **Monte Carlo overhaul:** 1-30 year horizon selector, exactly 8,500 simulation paths, monthly GBM steps, advanced settings panel (contributions, inflation, fees, tax drag), histogram distribution view, confidence intervals - state persists across tab switches and theme changes
+- **Monte Carlo overhaul:** 1-30 year horizon selector, exactly 10,000 simulation paths (bumped from 8,500 in v0.41), Student-t fat-tail innovations with 250 sample paths returned for the frontend fan chart, monthly GBM steps, advanced settings panel (contributions, inflation, fees, tax drag), histogram distribution view, confidence intervals - state persists across tab switches and theme changes
 - **Rebalance Assistant:** drift table showing current vs. target allocation, AI-generated rebalance plan, goal-aware advice, "Continue in AI chat" button
 - **Options Chain Viewer:** calls and puts table with delta (Black-Scholes), IV, volume, open interest, ITM highlighting, per-column plain-English tooltips, Max Pain section
 - **Transaction Log:** buy/sell trade logging, cost basis tracking, realized P&L calculation, sortable table

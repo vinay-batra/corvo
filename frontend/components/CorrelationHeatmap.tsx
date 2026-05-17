@@ -2,11 +2,9 @@
 
 import { memo, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
 import { fetchCorrelation } from "../lib/api";
 import ErrorState from "./ErrorState";
 import EmptyState from "./EmptyState";
-import InfoModal from "./InfoModal";
 import { cssVar } from "../lib/theme";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,38 +47,28 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
     return () => clearTimeout(t);
   }, [loading]);
 
+  // Rendered bare: the parent <Card><TooltipCardHeader/></Card> on the
+  // Simulations tab already provides card chrome, title, and tooltip. We
+  // used to render our own card-in-card chrome plus a duplicate header,
+  // which made the section look broken.
   if (assets.length < 2) {
     return (
-      <motion.div
-        // initial={false} is required - do not remove
-        initial={false} animate={{ opacity: 1 }}
-        style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "22px 24px" }}>
-        <EmptyState
-          icon="⊞"
-          title="Add 2+ assets to see correlation"
-          message="Correlation analysis requires at least two holdings to compare."
-          minHeight={160}
-        />
-      </motion.div>
+      <EmptyState
+        icon="⊞"
+        title="Add 2+ assets to see correlation"
+        message="Correlation analysis requires at least two holdings to compare."
+        minHeight={160}
+      />
     );
   }
 
   return (
-    <motion.div
-      // initial={false} is required - do not remove
-      initial={false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1 }}
-      style={{ background: "var(--bg-card)", border: "1px solid var(--border-dim)", borderRadius: 14, padding: "22px 24px", position: "relative", overflow: "hidden" }}
-    >
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, var(--purple), transparent)", opacity: 0.5 }} />
-      {showSpinner && data && <div style={{ position: "absolute", top: 14, right: 16, width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: "#a78bfa", borderRadius: "50%", animation: "spin 0.8s linear infinite", zIndex: 2 }} />}
-      <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>Correlation <InfoModal title="Correlation" sections={[{ label: "Plain English", text: "Shows how closely pairs of holdings move together. Values range from -1 (perfectly opposite) to +1 (move in lockstep). 0 means no statistical relationship." }, { label: "Example", text: "NVDA and AMD might show 0.85 correlation -- when one rises, the other usually does too. BND (bonds) vs NVDA might be -0.2, offering true diversification." }, { label: "What's Good?", text: "Lower correlations between holdings mean better diversification. A portfolio where everything is highly correlated (above 0.8) offers little protection in a broad selloff." }]} /></p>
-
+    <div style={{ position: "relative" }}>
+      {showSpinner && data && <div style={{ position: "absolute", top: -2, right: 0, width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite", zIndex: 2 }} />}
       <style>{`@keyframes corrPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
       {loading && !data ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "6px 0" }}>
-          <div style={{ height: 200, borderRadius: 6, background: "rgba(255,255,255,0.06)", animation: "corrPulse 1.5s ease-in-out infinite" }} />
+          <div style={{ height: 220, borderRadius: 6, background: "var(--bg3)", animation: "corrPulse 1.5s ease-in-out infinite" }} />
         </div>
       ) : fetchError ? (
         <ErrorState
@@ -89,7 +77,6 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
           minHeight={240}
         />
       ) : data ? (
-        <>
         <Plot
           data={[{
             z: data.matrix,
@@ -97,9 +84,9 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
             y: data.tickers,
             type: "heatmap",
             colorscale: [
-              [0, "#ff4060"],
-              [0.5, "#0a1020"],
-              [1, "#00ffa0"],
+              [0, dark ? "#e05c5c" : "#c0392b"],
+              [0.5, dark ? "#0d1525" : "#f5f5f0"],
+              [1, dark ? "#5cb88a" : "#2d7a52"],
             ],
             zmin: -1,
             zmax: 1,
@@ -111,25 +98,24 @@ const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: 
             colorbar: {
               thickness: 10,
               len: 0.8,
-              tickcolor: dark ? "rgba(226,232,240,0.3)" : "rgba(0,0,0,0.3)",
-              tickfont: { color: dark ? "rgba(226,232,240,0.3)" : "#7a7a78", size: 9 },
+              tickcolor: dark ? "rgba(232,224,204,0.4)" : "rgba(0,0,0,0.4)",
+              tickfont: { color: dark ? "rgba(232,224,204,0.6)" : "#4a4a4a", size: 9 },
               outlinecolor: "transparent",
             },
           } as any]}
           layout={{
             paper_bgcolor: "transparent",
             plot_bgcolor: "transparent",
-            font: { color: dark ? "rgba(226,232,240,0.5)" : "#4a4a4a", family: "Space Grotesk", size: 11 },
-            margin: { t: 8, b: 40, l: 56, r: 60 },
+            font: { color: dark ? "rgba(232,224,204,0.7)" : "#4a4a4a", family: "Inter", size: 11 },
+            margin: { t: 8, b: 40, l: 64, r: 60 },
             xaxis: { tickcolor: "transparent", gridcolor: "transparent", linecolor: "transparent" },
             yaxis: { tickcolor: "transparent", gridcolor: "transparent", linecolor: "transparent", autorange: "reversed" },
           }}
           config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
-          style={{ width: "100%", height: isMobile ? 240 : 260 }}
+          style={{ width: "100%", height: isMobile ? 260 : 300 }}
         />
-        </>
       ) : null}
-    </motion.div>
+    </div>
   );
 });
 

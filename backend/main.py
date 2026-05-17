@@ -2358,6 +2358,86 @@ _ACCOUNT_TYPE_RULES: dict[str, str] = {
 }
 
 
+_ACCOUNT_TYPE_LABELS: dict[str, str] = {
+    "taxable_brokerage": "Taxable Brokerage",
+    "roth_ira": "Roth IRA",
+    "traditional_ira": "Traditional IRA",
+    "roth_401k": "Roth 401(k)",
+    "traditional_401k": "Traditional 401(k)",
+    "hsa": "HSA",
+    "529": "529",
+    "custodial": "Custodial (UGMA/UTMA)",
+}
+
+
+def _build_account_type_text(
+    portfolio_account_type: str,
+    holding_account_types: list,
+    tickers: list,
+    weights: list,
+) -> tuple[str, str]:
+    """Return (portfolio_rules_block, per_holding_buckets_block).
+
+    Portfolio-level block is the existing single-account rules paragraph (kept
+    for backwards compat). Per-holding bucket block is a summary of which
+    holdings live in which account-type bucket, with the relevant rules block
+    appended for each bucket that has at least one holding. Both blocks are
+    designed for direct interpolation into the prompt string.
+    """
+    portfolio_block = _account_type_block(portfolio_account_type)
+
+    # No per-holding tags means classic v0.32 behavior: just the portfolio
+    # rules paragraph, no bucket breakdown.
+    if not holding_account_types or not any(holding_account_types):
+        return portfolio_block, ""
+
+    default_type = portfolio_account_type or "taxable_brokerage"
+    buckets: dict[str, list[tuple[str, float]]] = {}
+    for i, t in enumerate(tickers):
+        if not t:
+            continue
+        w = float(weights[i]) if i < len(weights) else 0.0
+        tag = holding_account_types[i] if i < len(holding_account_types) else ""
+        bucket = tag if tag else default_type
+        buckets.setdefault(bucket, []).append((t, w))
+
+    # Single bucket = same as portfolio-level; no bucket breakdown needed.
+    if len(buckets) <= 1:
+        return portfolio_block, ""
+
+    lines = [
+        "",
+        "",
+        "PER-HOLDING ACCOUNT BUCKETS (user has tagged individual holdings):",
+    ]
+    for bucket_id, items in buckets.items():
+        label = _ACCOUNT_TYPE_LABELS.get(bucket_id, bucket_id)
+        bucket_weight = sum(w for _, w in items)
+        items_str = ", ".join(f"{t} ({w:.1%})" for t, w in items)
+        lines.append(f"- {label} ({bucket_weight:.1%} of portfolio): {items_str}")
+
+    lines.append("")
+    lines.append(
+        "BUCKETED TAX RULES: When you discuss tax-loss harvesting, capital gains, "
+        "RMDs, or contribution limits, scope your advice to the relevant bucket. Do "
+        "not suggest tax-loss harvesting a Roth/401(k)/HSA/529 holding. Treat "
+        "long-term gains, wash-sale rules, and dividend taxation as applying only "
+        "to the Taxable bucket. When recommending rebalancing or trimming, prefer "
+        "executing in the most tax-efficient bucket first (cap gains and TLH in "
+        "Taxable; tax-free rebalancing inside Roth/Trad IRA, 401k, HSA, 529)."
+    )
+
+    for bucket_id in buckets:
+        rules = _ACCOUNT_TYPE_RULES.get(bucket_id)
+        if rules:
+            label = _ACCOUNT_TYPE_LABELS.get(bucket_id, bucket_id)
+            lines.append("")
+            lines.append(f"-- {label} bucket rules --")
+            lines.append(rules)
+
+    return portfolio_block, "\n".join(lines)
+
+
 def _account_type_block(account_type: str) -> str:
     """Return the rules block for an account type, prefixed with '\\n\\n', or '' if unknown.
 
@@ -2398,7 +2478,15 @@ class ChatRequest(BaseModel):
 # token minimum cacheable prefix for Haiku 4.5 by including detailed fact-
 # grounding and uncertainty rules - these also harden Haiku against the
 # hallucination patterns it is more prone to than Sonnet.
-_CHAT_STATIC_SYSTEM = """You are Corvo: the AI advisor watching over this investor's portfolio. You have their full data, financial profile, saved portfolios, alerts, and targets. You are not a generic chatbot, you are this user's portfolio guardian, and every answer should feel personal to their exact holdings. The user's live portfolio data, profile, and page context follow this block.
+_CHAT_STATIC_SYSTEM = """You are Corvo: the AI advisor watching over this investor's portfolio. You have their full data, financial profile, saved portfolios, alerts, and targets. You are this user's portfolio guardian first; every portfolio-related answer should feel personal to their exact holdings. The user's live portfolio data, profile, and page context follow this block.
+
+WHAT YOU CAN HELP WITH (do NOT refuse these):
+- Anything about the user's portfolio, holdings, weights, risk, allocations, tax strategy, retirement planning, market context, individual tickers, sectors, fundamentals, news, macro.
+- Questions about Corvo itself: who built it, who the founder is, why Corvo exists, what features it has, pricing, how the AI works, what data sources are used. Corvo was built by Vinay Batra, a high school sophomore (16, USA) who started building Corvo because no existing tool gave retail investors institutional-grade analytics in plain English. The product is solo-founded; the engineering, design, AI prompts, and writing are all his. If asked about the founder, the company, or the product's origin, answer directly and briefly (1-3 sentences) and then offer to return to the user's portfolio.
+- General financial education when the user asks a how-it-works question (Sharpe ratio, CAGR, options Greeks, etc.). Answer briefly, then tie it back to their portfolio when possible.
+- Greetings, small talk, thank-yous: respond naturally in 1 sentence and pivot back to the portfolio.
+
+ONLY REFUSE if the user is asking for something dangerous, illegal, unrelated to finance/investing/Corvo, or beyond your scope (e.g. medical advice, legal contracts, writing their college essay). When you do refuse, do it in one sentence and pivot back to their portfolio - never deliver a long disclaimer.
 
 HOW TO RESPOND:
 - Address the user by their first name when known.
@@ -2676,7 +2764,11 @@ def chat(req: ChatRequest, request: Request):
 
     page_context_text = f"\n\nCURRENT PAGE: {req.page_context}" if req.page_context else ""
     user_context_block = f"\n\n{req.user_context}" if req.user_context else ""
-    account_type_text = _account_type_block(ctx.get("account_type", ""))
+    portfolio_account_type = ctx.get("account_type", "")
+    holding_account_types = ctx.get("holding_account_types") or []
+    account_type_text, account_type_buckets_text = _build_account_type_text(
+        portfolio_account_type, holding_account_types, tickers, weights
+    )
 
     # Build life events block
     life_events_text = ""
@@ -2753,7 +2845,7 @@ CURRENT PORTFOLIO:
 - Annualized Return (CAGR): {ret:.2%}
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f} (risk-free rate used: {rf_rate_ctx:.2%})
-- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{financial_goals_text}{account_type_text}{page_context_text}"""
+- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{financial_goals_text}{account_type_text}{account_type_buckets_text}{page_context_text}"""
 
     # Split system into a cached static block and a per-request dynamic block.
     # The static block is identical bytes across every /chat call, so Anthropic's
@@ -2831,8 +2923,27 @@ CURRENT PORTFOLIO:
             yield f"data: {_json.dumps({'done': True, 'messages_used': messages_used_now, 'messages_limit': _daily_limit if _user_id else None})}\n\n"
 
         except Exception as e:
-            print(f"Chat stream error: {e}")
-            yield f"data: {_json.dumps({'error': 'Chat error. Please try again.'})}\n\n"
+            # Log the full exception class + message so Railway logs are
+            # useful when debugging. Map common upstream-API failures to
+            # plain-English messages instead of the opaque "Chat error.
+            # Please try again." that we used to emit for everything.
+            import traceback as _tb
+            print(f"Chat stream error ({type(e).__name__}): {e}")
+            print(_tb.format_exc())
+            _err_text = str(e).lower()
+            if "rate" in _err_text and "limit" in _err_text:
+                _user_msg = "Anthropic rate limit hit. Try again in a few seconds."
+            elif "overloaded" in _err_text or "529" in _err_text or "503" in _err_text:
+                _user_msg = "AI provider is overloaded right now. Try again in a moment."
+            elif "timeout" in _err_text or "timed out" in _err_text:
+                _user_msg = "Response timed out. Retry?"
+            elif "context" in _err_text and ("length" in _err_text or "window" in _err_text or "tokens" in _err_text):
+                _user_msg = "Conversation got too long. Start a new chat?"
+            elif "invalid" in _err_text and "api" in _err_text and "key" in _err_text:
+                _user_msg = "Server config issue. Logged."
+            else:
+                _user_msg = "Chat error. Please try again."
+            yield f"data: {_json.dumps({'error': _user_msg})}\n\n"
 
     from fastapi.responses import StreamingResponse as _SR
     return _SR(

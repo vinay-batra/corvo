@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.39 (May 17, 2026) - GreetingBar right column redesign (Mock A from a 3-mock brainstorm). Markets become sparkline cards; Holdings becomes a vertical scrollable list that stretches to fill column height. Frontend only.**
+**Last shipped: v0.41 (May 17, 2026) - 4 feedback-driven fixes. (1) Per-holding account-type tagging in the PortfolioBuilder chevron-expand (mixed-account portfolios). (2) Correlation + Drawdown charts on Simulations tab no longer double-render their own card chrome inside the parent Card. (3) Monte Carlo bumped 8,500 -> 10,000 paths everywhere (code, copy, blogs, metadata); rebuilt with Student-t (df=6) fat-tail innovations and 250 sample paths returned as `paths_sample` so the chart renders a true fan with visible loss scenarios; "Bear Case" labels renamed to honest "Worst 5%" / "Best 5%"; VaR/ES cards now flip green when the worst-5% percentile is genuinely positive instead of pretending it's a loss; the "decline by X%" insight text fixed to read "even the worst 5% still gained X%" when applicable. (4) /chat system prompt loosened to allow Corvo company / founder / how-it-works questions; chat error handler now classifies the upstream exception into a plain-English message instead of swallowing every failure as "Chat error. Please try again."**
+
+**Last shipped before: v0.39 (May 17, 2026) - GreetingBar right column redesign (Mock A from a 3-mock brainstorm). Markets become sparkline cards; Holdings becomes a vertical scrollable list that stretches to fill column height. Frontend only.**
 
 v0.39 fixes a layout problem the user caught with a screenshot: the GreetingBar's right column was crammed at the top (Markets + Holdings stacked at top of a 230px column, briefing on the left filling the full card height, big empty space below them) and the horizontal Holdings marquee was overflowing past the divider on narrower viewports, leaking partial tickers ("72 -0.28%") into the briefing-side gutter. Built three direction mocks (Mock A balanced column, Mock B Markets-in-header, Mock C drop-the-divider), user picked Mock A. Implemented: (1) Markets switched from the pill-style IndexChip to a new MarketCard - same label + pct, plus a 36x18 mini sparkline pulled from the existing `/watchlist-data` response's `sparkline` array (the field was already populated by the backend; the GreetingBar was just ignoring it). The state shape moved from `{spy, qqq, dia}` to a typed `IndexPrice[]` so each index carries its own label, ticker, price, pct, and sparkline. (2) Holdings switched from the horizontal auto-scrolling marquee (with its rAF-driven step loop, paused/resumed on hover, doubled-chip trick for seamless wrap) to a vertical scrollable list of HoldingRow cards (dot + ticker + price + pct). The wrapper has `flex: 1 1 0, minHeight: 0, overflowY: auto` so it stretches to fill the column's remaining height, scrolls within the column when the list is long, and never overflows horizontally. (3) Removed all the marquee infrastructure: `chipsScrollRef`, `chipsPausedRef`, `chipsManualTimerRef`, `chipsExpectedScrollRef`, the step animation useEffect (~25 lines), `doubledChips`, the IndexChip + HoldingChip components, and the unused `useRef` import. Net: ~80 fewer lines, no more overflow leak, right column balances the briefing left column visually.
 
@@ -223,7 +225,7 @@ Key routes already implemented:
 - Vinay uses Claude Code inside VS Code, not standalone terminal
 - Supabase client must always be imported from `lib/supabase.ts` singleton, never instantiated inline - inline clients omit `cookieOptions` and cause sessions to expire on browser close
 - `middleware.ts` must exist at the frontend repo root and call `supabase.auth.getUser()` on every request - without it, SSR pages receive expired JWTs and users get silently logged out
-- Monte Carlo simulations always run exactly 8,500 paths - never 5,000 or any other number
+- Monte Carlo simulations always run exactly 10,000 paths - never 5,000, 8,500, or any other number. Bumped from 8,500 in v0.41 alongside Student-t (df=6) fat-tail innovations + a 250-path stratified sample returned as `paths_sample` so the frontend renders a true fan chart instead of just percentile bands. The artificial 8% equity sigma floor that used to live in `/montecarlo` + the 0% mu floor in `/portfolio/retirement-simulation` were both removed so historical loss-prone portfolios actually project negative outcomes in the bear band.
 - `overscroll-behavior: none` must be set globally in `globals.css` on `html`, `body`, and all major layout containers - never remove this
 - AI chat endpoint (`POST /chat`) uses `claude-sonnet-4-6` with `web_search` tool enabled and streaming responses
 - Never use `animate={{ opacity: 0 }}` or `animate={{ y: X }}` together with `whileInView` - use inline CSS `opacity: 0` and `transform` for the initial hidden state instead; combining both causes the animation to fire immediately and skip the scroll trigger
@@ -279,7 +281,7 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.39
+- Version: v0.41
 
 ## What Was Built
 
@@ -640,7 +642,7 @@ Existing users get a fresh fetch on their next visit because the URL is genuinel
 - New `_client_ip(request)` helper reads X-Forwarded-For first, so rate limit buckets work per-client behind Railway's proxy (was per-deployment global)
 - `check_rate_limit` uses OrderedDict with LRU eviction capped at 50000 keys. `_image_parse_daily` capped at 5000. `_market_per_ticker_cache` capped at 500.
 - Rate limits added to `/prices`, `/search-ticker`, `/market-summary`, `/market-brief`, `/market-driver`, `/earnings-calendar`, `/earnings/transcript/{ticker}`, `/portfolio/health-score`
-- `/montecarlo/insight` and `/portfolio/retirement-simulation` now force `req.simulations = 8500` regardless of client input (was a critical rule violation per CLAUDE.md)
+- `/montecarlo/insight` and `/portfolio/retirement-simulation` now force `req.simulations = 10000` regardless of client input (was a critical rule violation per CLAUDE.md; bumped from 8500 in v0.41)
 - Push notification title emoji removed
 - 8 background loops gain staggered startup delays (30 to 240s) to avoid yfinance dogpiles on cold boot
 - 6 bare `except:` clauses promoted to `except Exception:`

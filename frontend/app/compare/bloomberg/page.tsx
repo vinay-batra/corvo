@@ -243,7 +243,7 @@ export default function BloombergComparePage() {
             {[
               { text: "I replaced my Bloomberg subscription for personal investing. Corvo gives me 90% of the analytics at zero cost, with a UI that doesn't look like it's from 2003.", name: "Sarah K.", role: "Self-directed IRA · Former analyst" },
               { text: "Finally understand my portfolio's actual risk exposure. The correlation heatmap alone changed how I think about diversification.", name: "Marcus T.", role: "Retail Investor · 12yr experience" },
-              { text: "The Monte Carlo simulator is genuinely impressive. I ran 8,500 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
+              { text: "The Monte Carlo simulator is genuinely impressive. I ran 10,000 paths against my retirement timeline and completely rethought my allocation.", name: "David R.", role: "Index Fund Investor · Engineer" },
             ].map((t, i) => (
               <FadeUp key={i} delay={i * 0.1}>
                 <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: "28px 24px", position: "relative" }}>

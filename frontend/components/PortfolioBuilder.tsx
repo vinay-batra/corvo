@@ -159,6 +159,62 @@ function WeightInput({ weight, onCommit, inputStyle }: { weight: number; onCommi
   );
 }
 
+// Per-holding account-type selector. Lives inside the chevron-expand row
+// next to Avg Cost / Purchase Date. Native <select> with optgroups by tax
+// category - same UX vocabulary the v0.32 portfolio-level dropdown used so
+// users don't have to learn two pickers.
+function HoldingAccountTypeSelector({
+  assetIndex,
+  currentValue,
+  portfolioDefault,
+  onChange,
+  dark,
+}: {
+  assetIndex: number;
+  currentValue: AccountTypeId | undefined;
+  portfolioDefault: AccountTypeId;
+  onChange: (i: number, v: string) => void;
+  dark: boolean;
+}) {
+  const grouped: Record<string, typeof ACCOUNT_TYPES> = {};
+  for (const t of ACCOUNT_TYPES) {
+    (grouped[t.group] ||= []).push(t);
+  }
+  const orderedGroups = ["Taxable", "Retirement", "Health", "Education"] as const;
+  const defaultMeta = ACCOUNT_TYPES.find(t => t.id === portfolioDefault);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 160, maxWidth: 240 }}>
+      <label style={LABEL_STYLE} htmlFor={`holding-account-${assetIndex}`}>Account Type</label>
+      <select
+        id={`holding-account-${assetIndex}`}
+        name={`holdingAccount-${assetIndex}`}
+        value={currentValue ?? ""}
+        onChange={e => onChange(assetIndex, e.target.value)}
+        style={{
+          ...INPUT_STYLE,
+          fontFamily: "inherit",
+          padding: "5px 8px",
+          colorScheme: dark ? "dark" : "light",
+          cursor: "pointer",
+        }}
+      >
+        <option value="">
+          Use portfolio default{defaultMeta ? ` (${defaultMeta.short})` : ""}
+        </option>
+        {orderedGroups.map(group => (
+          grouped[group] && grouped[group].length > 0 ? (
+            <optgroup key={group} label={group}>
+              {grouped[group].map(t => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </optgroup>
+          ) : null
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // Shared input styles
 const INPUT_STYLE: React.CSSProperties = {
   background: "var(--input-bg)",
@@ -187,6 +243,13 @@ interface Asset {
   purchasePrice?: number;
   purchaseDate?: string;
   manualReturn?: number;
+  // Per-holding account type. When set, AI prompts read this instead of
+  // the portfolio-level accountType so a single saved portfolio can mix
+  // taxable + Roth + 401k holdings and have tax advice routed per-bucket
+  // (e.g. tax-loss-harvest the taxable VTI lot but not the Roth one).
+  // Leaving this unset means "use the portfolio-level accountType for this
+  // holding" - the default behavior for users who don't care to tag.
+  accountType?: AccountTypeId;
 }
 interface Result { ticker: string; name: string; exchange: string; type: string; }
 interface Props {
@@ -403,6 +466,12 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   };
   const updatePurchaseDate = (i: number, v: string) => {
     const n=[...assets]; n[i]={...n[i],purchaseDate:v===''?undefined:v}; update(n);
+  };
+  const updateAccountType = (i: number, v: string) => {
+    const n=[...assets];
+    // Empty string -> clear per-holding tag (falls back to portfolio default)
+    n[i]={...n[i], accountType: v === '' ? undefined : (v as AccountTypeId)};
+    update(n);
   };
   const updateManualReturn = (i: number, v: string) => {
     const n=[...assets];
@@ -718,25 +787,34 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                     transition={{duration:0.15}}
                     style={{overflow:"hidden",paddingLeft:10,marginTop:8}}>
                     {isCash ? (
-                      /* Cash: annual return only */
-                      <div style={{display:"flex",flexDirection:"column",gap:2,maxWidth:120}}>
-                        <label style={LABEL_STYLE}>Annual Return</label>
-                        <div style={{display:"flex",alignItems:"center",gap:5}}>
-                          <input
-                            id={`manual-return-${i}`}
-                            name={`manualReturn-${i}`}
-                            type="number" min="0" max="100" step="0.1"
-                            placeholder="e.g. 4.5"
-                            value={a.manualReturn ?? ""}
-                            onChange={e=>updateManualReturn(i,e.target.value)}
-                            style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace"}}
-                          />
-                          <span style={{fontSize:13,color:"var(--text2)",flexShrink:0}}>%</span>
+                      /* Cash: annual return + per-holding account type */
+                      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                        <div style={{display:"flex",flexDirection:"column",gap:2,maxWidth:120}}>
+                          <label style={LABEL_STYLE}>Annual Return</label>
+                          <div style={{display:"flex",alignItems:"center",gap:5}}>
+                            <input
+                              id={`manual-return-${i}`}
+                              name={`manualReturn-${i}`}
+                              type="number" min="0" max="100" step="0.1"
+                              placeholder="e.g. 4.5"
+                              value={a.manualReturn ?? ""}
+                              onChange={e=>updateManualReturn(i,e.target.value)}
+                              style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace"}}
+                            />
+                            <span style={{fontSize:13,color:"var(--text2)",flexShrink:0}}>%</span>
+                          </div>
                         </div>
+                        <HoldingAccountTypeSelector
+                          assetIndex={i}
+                          currentValue={a.accountType}
+                          portfolioDefault={accountType}
+                          onChange={updateAccountType}
+                          dark={dark}
+                        />
                       </div>
                     ) : (
-                      /* Non-cash: avg cost + purchase date */
-                      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      /* Non-cash: avg cost + purchase date + per-holding account type */
+                      <div style={{display:"flex",flexDirection:"column",gap:10}}>
                         <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
                           <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:100,flex:"1 1 100px",maxWidth:160}}>
                             <label style={LABEL_STYLE}>Avg Cost $</label>
@@ -765,7 +843,14 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                             />
                           </div>
                         </div>
-                        <p style={{fontSize:11,color:"var(--text-muted)",margin:0,lineHeight:1.4}}>Used for P&L, tax loss harvesting, and dividend calculations.</p>
+                        <HoldingAccountTypeSelector
+                          assetIndex={i}
+                          currentValue={a.accountType}
+                          portfolioDefault={accountType}
+                          onChange={updateAccountType}
+                          dark={dark}
+                        />
+                        <p style={{fontSize:11,color:"var(--text-muted)",margin:0,lineHeight:1.4}}>Avg cost &amp; date feed P&amp;L, tax-loss harvesting, and dividend calculations. Account tag routes Corvo&#39;s tax advice per holding.</p>
                       </div>
                     )}
                   </motion.div>
