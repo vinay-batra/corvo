@@ -298,7 +298,7 @@ const PRO_EXTRAS = [
 const FAQS = [
   {
     q: "Is Corvo really free?",
-    a: "Yes, 100% free during the beta period. No credit card required, no trial period, no hidden fees. You get full access to all current features just by signing up.",
+    a: "Yes. The free plan is free forever, not a beta promo. No credit card, no trial period, no hidden fees. Full access to portfolio analysis, AI chat (with daily limits), Monte Carlo, health scores, morning briefings - all of it - just by signing up. Pro is a future paid tier with extras (unlimited chat, Plaid brokerage sync, SMS alerts), but the free plan stays.",
   },
   {
     q: "When will Pro launch, and how much will it cost?",
@@ -384,7 +384,7 @@ function PricingCard({
           textTransform: "uppercase",
           fontFamily: "Space Mono, monospace",
         }}>
-          {isPro ? "Coming Soon" : "Free Forever in Beta"}
+          {isPro ? "Coming Soon" : "Free Forever"}
         </span>
       </div>
 
@@ -727,7 +727,7 @@ export default function PricingPage() {
             marginBottom: 12,
             letterSpacing: 0.2,
           }}>
-            Free during beta. Pro coming soon.
+            Corvo's core features are free forever. Pro adds extras for power users.
           </p>
         </ScrollReveal>
       </section>
