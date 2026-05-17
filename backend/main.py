@@ -2341,6 +2341,102 @@ class ChatRequest(BaseModel):
             raise HTTPException(status_code=400, detail="Message too long (max 4000 characters)")
 
 
+# Static system prompt for /chat. Identical bytes across every call and every
+# user so Anthropic's prompt cache can hit on it. Anything user- or portfolio-
+# specific lives in the dynamic block built per request. Kept above the 2048-
+# token minimum cacheable prefix for Haiku 4.5 by including detailed fact-
+# grounding and uncertainty rules - these also harden Haiku against the
+# hallucination patterns it is more prone to than Sonnet.
+_CHAT_STATIC_SYSTEM = """You are Corvo: the AI advisor watching over this investor's portfolio. You have their full data, financial profile, saved portfolios, alerts, and targets. You are not a generic chatbot, you are this user's portfolio guardian, and every answer should feel personal to their exact holdings. The user's live portfolio data, profile, and page context follow this block.
+
+HOW TO RESPOND:
+- Address the user by their first name when known.
+- Never say "I don't know which page you're on", "could you tell me more about your portfolio", or "I don't have access to your data". All context is provided.
+- Maximum 150-200 words per response. Hard limit.
+- Lead with the direct answer or recommendation in the first 1-2 sentences. Never recap what the user asked. Never open with "great question", "let me break this down", "happy to help", "absolutely", or any other filler.
+- When making a recommendation, follow the Corvo pattern: (1) what you see in their portfolio, (2) why it matters for them specifically, (3) what to consider doing. Compress this into 3-4 sentences total, not headers, not bullets, just prose that flows through the three beats.
+- Use their actual numbers (CAGR, weights, prices, dollar amounts when portfolio_value is known) but do not list every analyst target for every ticker unless asked.
+- Write like a sharp analyst giving a quick take in a meeting, not a written report. Be direct: "NVDA will struggle here because X", not "it depends on many factors". Take a position.
+- Never hedge with "this isn't financial advice", "consider consulting", "do your own research", "every situation is different", or similar safety filler. Just give the take.
+- Never say "Let me pull up the latest data" or similar filler. Just answer.
+- State the analysis period when discussing returns. Compare to benchmark when available.
+- Verify weights before stating them. If equally weighted, say so. Never single out one holding as "the largest" when multiple share the same weight.
+- Never confuse cash/money market positions with equity.
+- Reference the investor's goals, age, and timeline in every substantive response.
+- When the user asks about their alerts or price targets, use the ACTIVE PRICE ALERTS and PRICE TARGETS data when provided.
+- No bullet points or lists unless the user explicitly asks for a list. Write in plain prose only.
+- No headers, no sub-sections, no bold formatting.
+- No em dashes. No asterisks. No emoji.
+- NEVER write "Not financial advice" or any disclaimer anywhere in your response. Ever. Not at the end, not in the middle, not at all. Zero exceptions.
+
+FACT GROUNDING (critical, follow strictly):
+- The portfolio data, profile, and metrics below are the ONLY source of truth about this user. Never invent numbers, weights, or facts that are not in the provided context.
+- When stating a number, quote it exactly. Do not round 14.3% to 14% to make it cleaner. Do not approximate a Sharpe of 2.88 to "around 3". Use the precise values shown.
+- Do not invent prices, price targets, or analyst ratings. Do not name analyst firms (Goldman, Morgan Stanley, JPMorgan, etc.) or quote specific target prices unless they are present in the data above or returned by a web search in this same turn.
+- Do not assert what a stock did "today", "yesterday", or "last week" unless web search confirms it in this turn. If web search is not available or returned no relevant result, say you cannot verify recent price action and answer from the metrics above.
+- Do not invent news, earnings, product launches, M&A, executive changes, or company events. Either ground the claim in a web search result returned this turn or omit it entirely.
+- Do not estimate weights as percentages other than what is provided. If the user has 24.7% NVDA per the data, never say "around 25%" or "about a quarter". Quote 24.7%.
+- When discussing valuation (P/E, forward earnings, market cap, dividend yield), either pull the number from a web search result this turn or say you can check current valuation if asked. Never assert a stale or guessed number.
+- When the user asks "should I buy more X" the answer is grounded in (a) their stated risk tolerance, (b) their current weighting in X, (c) their goal horizon. Not in your guess at the stock's near-term direction.
+- If two pieces of data conflict (for example, INDIVIDUAL RETURNS vs implied performance from weights), trust the explicit numbers in the metrics block, not your inference.
+
+WEB SEARCH USAGE:
+- A web search tool MAY OR MAY NOT be available on any given turn. If it is, use it for: live prices, "today" or "this week" market context, recent earnings or news, analyst consensus, macro data (Fed, CPI, jobs report). Otherwise, work from the provided portfolio context only.
+- If web search is unavailable and the user asks for live or recent data, say so plainly in one short clause: "I don't have live market data this turn, but based on your metrics: ..." then deliver the best partial answer from the static context.
+- Never fabricate a search result. Never paraphrase what an analyst report "probably said". Never invent a headline or quote.
+- If you do use web search, the answer must be grounded in what the search actually returned. Do not pad with unsupported claims.
+
+WHEN UNCERTAIN, BE EXPLICIT:
+- If your answer requires data you don't have, say what's missing in one short clause, then give the best partial answer you can from what's available.
+- Better to say "I'd need to check current SPY level to compare your YTD return" than to make up a SPY return number.
+- Better to say "I don't see your cost basis here" than to guess a cost basis.
+- Never bluff with confidence on a fact you cannot verify. The user's trust is the product.
+
+ROAST MODE: When the user says "Roast my portfolio", you are a ruthless hedge fund PM with zero patience for retail mistakes. Never compliment returns. Never say "genuinely impressive" or "you are getting paid well". Only attack. Pick apart every holding by name, why the sizing is wrong, why the thesis is flawed. If their Sharpe is embarrassing, call it embarrassing. If they are dangerously concentrated, destroy them for it. Use their actual tickers and exact percentages from the data, never invented ones. Sound like you have seen this mistake a hundred times and are sick of it. End with one sentence so brutal they screenshot it. Zero disclaimers."""
+
+
+# Keyword set that flips web_search ON for a given /chat turn. Most chats are
+# pure portfolio analysis (no live data needed) so search defaults off, saving
+# ~$0.01 per turn on the web_search tool fee. Anything time-sensitive,
+# news/earnings/analyst-related, or macro flips it on.
+_CHAT_SEARCH_KEYWORDS = (
+    # time markers
+    "today", "yesterday", "this week", "this month", "this year",
+    "recent", "recently", "latest", "current", "currently",
+    "right now", "lately", " now ", "ytd", "year to date", "this quarter",
+    # news / events
+    "news", "earnings", "report", "release", "guidance",
+    "beat", "missed", " miss ", "estimate", "estimates",
+    "upgrade", "downgrade", "price target", "consensus", "rating", "ratings",
+    "analyst", "analysts", "buy rating", "sell rating",
+    "headline", "article", "story", "announcement",
+    # macro
+    "fed", "fomc", "rate cut", "rate hike", "interest rate", "interest rates",
+    "cpi", "ppi", "inflation", "gdp", "unemployment", "jobs report",
+    "payroll", "payrolls", "fed meeting", "fed minutes", "powell",
+    # search verbs
+    "search", "look up", "find out", "check the news",
+    "what's happening", "what is happening", "what happened",
+    # price / valuation questions
+    "price of", "trading at", "stock price", "share price",
+    "market cap", "p/e ratio", "pe ratio", "forward pe",
+    "dividend yield",
+    # event verbs that imply live data
+    "moved", "moving", "jumped", "dropped", "fell", "surged", "rallied", "plunged",
+    "broke out", "sold off", "rebounded",
+)
+
+
+def _chat_needs_search(message: str) -> bool:
+    """Return True when the user's message references live data, news, or
+    other content that warrants the web_search tool. False otherwise so we
+    save the per-search tool fee on pure-analysis turns."""
+    if not message:
+        return False
+    msg = " " + message.lower() + " "
+    return any(kw in msg for kw in _CHAT_SEARCH_KEYWORDS)
+
+
 @app.post("/chat")
 def chat(req: ChatRequest, request: Request):
     import json as _json
@@ -2534,7 +2630,7 @@ def chat(req: ChatRequest, request: Request):
         if _goal_parts:
             financial_goals_text = "\n\nFINANCIAL GOALS: " + "; ".join(_goal_parts) + "\n(Factor these into advice: retirement goal means prioritize growth and tax efficiency; emergency fund means flag that cash reserves should come before investing more; home down payment means flag liquidity needs and keep funds accessible; college savings means consider 529 plans and time horizon; passive income goal means consider dividend stocks, REITs, and covered calls; paying off debt means weigh debt payoff rate vs expected market returns; major purchase timeline means flag liquidity and capital preservation.)"
 
-    system = f"""You are Corvo: the AI advisor watching over this investor's portfolio. You have their full data, financial profile, saved portfolios, alerts, and targets. You also have web search for current prices, historical events, earnings, analyst ratings, news, and any market data needed. You are not a generic chatbot - you are this user's portfolio guardian, and every answer should feel personal to their exact holdings.{user_context_block}
+    dynamic_context = f"""{user_context_block}
 
 CURRENT PORTFOLIO:
 - Holdings{weights_note}: {holdings_str}
@@ -2542,48 +2638,63 @@ CURRENT PORTFOLIO:
 - Annualized Return (CAGR): {ret:.2%}
 - Annualized Volatility: {vol:.2%}
 - Sharpe Ratio: {sharpe:.2f} (risk-free rate used: {rf_rate_ctx:.2%})
-- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{financial_goals_text}{account_type_text}{page_context_text}
+- Max Drawdown: {dd:.2%}{portfolio_value_text}{benchmark_text}{health_text}{beta_text}{individual_returns_text}{tied_largest_note}{market_text}{investor_profile}{life_events_text}{financial_goals_text}{account_type_text}{page_context_text}"""
 
-HOW TO RESPOND:
-• Address the user by their first name when known.
-• Never say "I don't know which page you're on", "could you tell me more about your portfolio", or "I don't have access to your data" - all context is provided above.
-• Maximum 150-200 words per response. Hard limit.
-• Lead with the direct answer or recommendation in the first 1-2 sentences. Never recap what the user asked. Never open with "great question", "let me break this down", "happy to help", "absolutely", or any other filler.
-• When making a recommendation, follow the Corvo pattern: (1) what you see in their portfolio, (2) why it matters for them specifically, (3) what to consider doing. Compress this into 3-4 sentences total - not headers, not bullets, just prose that flows through the three beats.
-• Use their actual numbers (CAGR, weights, prices, dollar amounts when portfolio_value is known) but do not list every analyst target for every ticker unless asked.
-• Write like a sharp analyst giving a quick take in a meeting, not a written report. Be direct: "NVDA will struggle here because X" - not "it depends on many factors". Take a position.
-• Never hedge with "this isn't financial advice", "consider consulting", "do your own research", "every situation is different", or similar safety filler. Just give the take.
-• Never say "Let me pull up the latest data" or similar filler. Just answer.
-• Use web search to back up claims about market conditions, historical price action, earnings, analyst consensus, and economic events. Never say "I don't have access to" or "I can't check" - search instead.
-• Use the user's actual numbers (CAGR, weights, prices, dollar amounts when portfolio_value is known) but do not list every analyst target for every ticker unless asked.
-• State the analysis period when discussing returns. Compare to benchmark when available.
-• Verify weights before stating them. If equally weighted, say so. Never single out one holding as "the largest" when multiple share the same weight.
-• Never confuse cash/money market positions with equity.
-• Reference the investor's goals, age, and timeline in every substantive response.
-• When the user asks about their alerts or price targets, use the ACTIVE PRICE ALERTS and PRICE TARGETS data above.
-• No bullet points or lists unless the user explicitly asks for a list. Write in plain prose only.
-• No headers, no sub-sections, no bold formatting.
-• No em dashes. No asterisks. No emoji.
-• NEVER write "Not financial advice" or any disclaimer anywhere in your response. Ever. Not at the end, not in the middle, not at all. Zero exceptions.
-
-ROAST MODE: When the user says "Roast my portfolio", you are a ruthless hedge fund PM with zero patience for retail mistakes. Never compliment returns. Never say "genuinely impressive" or "you are getting paid well". Only attack. Pick apart every holding by name - why the sizing is wrong, why the thesis is flawed. If their Sharpe is embarrassing, call it embarrassing. If they are dangerously concentrated, destroy them for it. Use their actual tickers and exact percentages. Sound like you have seen this mistake a hundred times and are sick of it. End with one sentence so brutal they screenshot it. Zero disclaimers."""
+    # Split system into a cached static block and a per-request dynamic block.
+    # The static block is identical bytes across every /chat call, so Anthropic's
+    # prompt cache turns the second-and-later read into ~0.1x input cost on that
+    # prefix. 1h ttl chosen so the entry stays warm even if traffic gaps briefly.
+    system_blocks = [
+        {
+            "type": "text",
+            "text": _CHAT_STATIC_SYSTEM,
+            "cache_control": {"type": "ephemeral", "ttl": "1h"},
+        },
+        {"type": "text", "text": dynamic_context},
+    ]
 
     messages = [{"role": h["role"], "content": h["content"]} for h in req.history]
+    # Cache the conversation prefix on the last history message so subsequent
+    # turns reuse the prior messages instead of paying full input cost on the
+    # whole transcript. Self-gates: prefixes under 1024 tokens pay full price.
+    if messages:
+        _last_idx = len(messages) - 1
+        _last = messages[_last_idx]
+        _last_content = _last.get("content")
+        if isinstance(_last_content, str):
+            messages[_last_idx] = {
+                "role": _last["role"],
+                "content": [
+                    {
+                        "type": "text",
+                        "text": _last_content,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+            }
     messages.append({"role": "user", "content": req.message})
 
     _user_id = req.user_id
     _daily_count = daily_count
     _daily_limit = daily_limit
 
+    # Conditional web_search: most chats are pure portfolio analysis and don't
+    # need live data. Per-search fees (~$0.01) only get charged on turns where
+    # the user actually asked for something time-sensitive.
+    _stream_kwargs = {
+        "model": "claude-haiku-4-5-20251001",
+        "max_tokens": 600,
+        "system": system_blocks,
+        "messages": messages,
+    }
+    if _chat_needs_search(req.message):
+        _stream_kwargs["tools"] = [
+            {"type": "web_search_20250305", "name": "web_search"}
+        ]
+
     def generate():
         try:
-            with client.messages.stream(
-                model="claude-sonnet-4-6",
-                max_tokens=1024,
-                system=system,
-                messages=messages,
-                tools=[{"type": "web_search_20250305", "name": "web_search"}],
-            ) as stream:
+            with client.messages.stream(**_stream_kwargs) as stream:
                 for text in stream.text_stream:
                     # Strip em dashes and asterisks inline
                     cleaned = text.replace(" - ", ",").replace("*", "")
@@ -7124,6 +7235,24 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
     subject = f"Your morning briefing for {today_str}"
     sent = failed = skipped = 0
     loop = asyncio.get_event_loop()
+    finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
+
+    # SPY is the same number for every user, so fetch it once at the start of
+    # the fire instead of N times inside the per-user loop. Saves N-1 Finnhub
+    # quote calls per morning fire.
+    market_note = ""
+    if finnhub_key:
+        spy_q = await loop.run_in_executor(None, _finnhub_quote, "SPY")
+        if spy_q and spy_q.get("dp") is not None:
+            sp = spy_q["dp"]
+            market_note = f"The S&P 500 is {'up' if sp >= 0 else 'down'} {abs(sp):.2f}% today."
+
+    # Per-fire teaser cache. Users with identical portfolios + identical
+    # portfolio_change + identical top_mover produce identical Haiku output,
+    # so we collapse them to one Claude call per unique (composition, pct,
+    # mover, market_note) tuple. With 17 users on bespoke portfolios this is
+    # often a no-op, but it's free correctness when shapes do match.
+    teaser_cache: dict[str, str] = {}
 
     for uid in user_ids:
         try:
@@ -7134,11 +7263,9 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
                 continue
             email, display_name, tickers, weights = data
             email_theme = await loop.run_in_executor(None, _fetch_email_theme, uid)
-            finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
             print(f"[morning-brief-email] user={uid} email={email} tickers={tickers} finnhub_key_present={bool(finnhub_key)}")
             portfolio_change = None
             top_mover = ""
-            market_note = ""
 
             if finnhub_key:
                 def _fetch_morning_data():
@@ -7158,10 +7285,6 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
                     mv = max(changes.items(), key=lambda x: abs(x[1]))
                     mv_dir = "up" if mv[1] >= 0 else "down"
                     top_mover = f"{mv[0]} is {mv_dir} {abs(mv[1]):.2f}% so far today."
-                spy_q = await loop.run_in_executor(None, _finnhub_quote, "SPY")
-                if spy_q and spy_q.get("dp") is not None:
-                    sp = spy_q["dp"]
-                    market_note = f"The S&P 500 is {'up' if sp >= 0 else 'down'} {abs(sp):.2f}% today."
 
             if portfolio_change is None:
                 print(f"[morning-brief-email] skip {uid}: portfolio_change is None - FINNHUB_API_KEY missing or all quotes returned no data")
@@ -7170,12 +7293,30 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
 
             sign = "+" if portfolio_change >= 0 else ""
             pct_str = f"{sign}{portfolio_change:.2f}%"
-            prompt = (
-                f"Write 2 sharp sentences for a morning portfolio email to {display_name}. "
-                f"Their portfolio is {pct_str} today. {market_note} {top_mover} "
-                "Be direct. Use only the numbers given. No em dashes, no asterisks, no markdown."
-            )
-            teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 90)
+
+            # Dedup teaser by portfolio composition + the dynamic bits the
+            # prompt actually references. The user's name is intentionally not
+            # in the prompt (it lives in the email heading) so this cache key
+            # is safe.
+            teaser_key = "|".join([
+                ",".join(sorted(tickers)),
+                pct_str,
+                top_mover,
+                market_note,
+            ])
+            if teaser_key in teaser_cache:
+                teaser = teaser_cache[teaser_key]
+            else:
+                prompt = (
+                    "Write 2 sharp sentences for the body of a morning portfolio email. "
+                    f"The user's portfolio is {pct_str} today. {market_note} {top_mover} "
+                    "Be direct. Do not include a salutation or the user's name. "
+                    "Use only the numbers given. Do not invent prices, ratings, or news. "
+                    "No em dashes, no asterisks, no markdown."
+                )
+                teaser = await loop.run_in_executor(None, _haiku_teaser, prompt, 90)
+                if teaser:
+                    teaser_cache[teaser_key] = teaser
             if not teaser:
                 teaser = f"Your portfolio is {pct_str} today. {market_note}"
             mono_color = "#1a1918" if email_theme == "light" else "#e8e0cc"
@@ -7199,7 +7340,7 @@ async def send_morning_briefing_emails(target_user_id=None) -> dict:
             print(f"[morning-brief-email] error for {uid}: {e}")
             failed += 1
 
-    print(f"[morning-brief-email] done: sent={sent} failed={failed} skipped={skipped}")
+    print(f"[morning-brief-email] done: sent={sent} failed={failed} skipped={skipped} teaser_cache_size={len(teaser_cache)}")
     return {"sent": sent, "failed": failed, "skipped": skipped}
 
 
@@ -9361,11 +9502,33 @@ def _horizon_category(years: int | None) -> str:
     return "very short-term (under 1 year)"
 
 
+_wsid_cache: "OrderedDict[str, dict]" = OrderedDict()
+_WSID_CACHE_MAX = 500
+
+
 @app.post("/what-should-i-do")
 def what_should_i_do(req: WhatShouldIDoRequest, request: Request):
     ip = _client_ip(request)
     if check_rate_limit(ip, "what-should-i-do", 10, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded.")
+
+    # Same-day response cache, keyed by user + portfolio shape + period +
+    # account_type. The prompt itself tells the model recommendations must hold
+    # for weeks not days, so reusing the same answer across repeated clicks in
+    # a session is the correct behavior. Different users hit different cache
+    # entries because investor_rules vary with their Supabase profile.
+    if req.tickers and req.weights and len(req.tickers) == len(req.weights):
+        _sorted_pairs = sorted(zip(req.tickers, req.weights))
+        _portfolio_key = ":".join(f"{t},{w:.4f}" for t, w in _sorted_pairs)
+        _today_str = datetime.now().strftime("%Y-%m-%d")
+        _at_key = req.account_type or "default"
+        _uid = req.user_id or "anon"
+        _wsid_cache_key = f"{_today_str}:{_uid}:{_at_key}:{req.period}:{_portfolio_key}"
+        if _wsid_cache_key in _wsid_cache:
+            _wsid_cache.move_to_end(_wsid_cache_key)
+            return _wsid_cache[_wsid_cache_key]
+    else:
+        _wsid_cache_key = None
 
     finnhub_key = os.environ.get("FINNHUB_API_KEY", "")
 
@@ -9525,7 +9688,13 @@ MARKET CONTEXT (background only, never a reason to act):
     )
     raw = response.content[0].text.strip()
     result = clean_ai_response(raw)
-    return {"recommendations": result}
+    payload = {"recommendations": result}
+    if _wsid_cache_key:
+        _wsid_cache[_wsid_cache_key] = payload
+        _wsid_cache.move_to_end(_wsid_cache_key)
+        while len(_wsid_cache) > _WSID_CACHE_MAX:
+            _wsid_cache.popitem(last=False)
+    return payload
 
 
 # Daily Signal
@@ -9693,6 +9862,10 @@ _PERIOD_YEARS: dict[str, float] = {
 }
 
 
+_rebalance_cache: "OrderedDict[str, dict]" = OrderedDict()
+_REBALANCE_CACHE_MAX = 500
+
+
 @app.post("/portfolio/rebalance")
 def portfolio_rebalance(req: RebalanceRequest, request: Request):
     ip = _client_ip(request)
@@ -9701,6 +9874,21 @@ def portfolio_rebalance(req: RebalanceRequest, request: Request):
 
     if not req.tickers or not req.weights or len(req.tickers) != len(req.weights):
         raise HTTPException(status_code=422, detail="tickers and weights must be non-empty and equal length.")
+
+    # Same-day response cache, keyed by user + target weights + period +
+    # portfolio_value bucket. Rebalance recommendations are explicitly stable
+    # over weeks per the prompt, so reusing them across repeated clicks is the
+    # right call. portfolio_value bucketed to the nearest $1k so trivial value
+    # nudges don't bust the cache.
+    _rb_sorted = sorted(zip(req.tickers, req.weights))
+    _rb_portfolio_key = ":".join(f"{t},{w:.4f}" for t, w in _rb_sorted)
+    _rb_pv_bucket = int((req.portfolio_value or 10000.0) // 1000)
+    _rb_today = datetime.now().strftime("%Y-%m-%d")
+    _rb_uid = req.user_id or "anon"
+    _rb_cache_key = f"{_rb_today}:{_rb_uid}:{req.period}:{_rb_pv_bucket}:{_rb_portfolio_key}"
+    if _rb_cache_key in _rebalance_cache:
+        _rebalance_cache.move_to_end(_rb_cache_key)
+        return _rebalance_cache[_rb_cache_key]
 
     # Pull user profile from Supabase, fall back to request payload
     sb_goals = _fetch_user_goals_from_supabase(req.user_id) if req.user_id else {}
@@ -9830,5 +10018,10 @@ Overall portfolio: annualized return {req.portfolio_return:.2%}, volatility {req
     )
     raw = response.content[0].text.strip()
     plan = clean_ai_response(raw)
-    return {"holdings": holdings, "plan": plan}
+    payload = {"holdings": holdings, "plan": plan}
+    _rebalance_cache[_rb_cache_key] = payload
+    _rebalance_cache.move_to_end(_rb_cache_key)
+    while len(_rebalance_cache) > _REBALANCE_CACHE_MAX:
+        _rebalance_cache.popitem(last=False)
+    return payload
 
