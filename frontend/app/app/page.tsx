@@ -1273,6 +1273,12 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [nlError, setNlError] = useState<string | null>(null);
   const [nlPending, setNlPending] = useState<NLEditResult | null>(null);
   const [aiEditorOpen, setAiEditorOpen] = useState(false);
+  // Sidebar tab (v0.36 tabbed sidebar redesign). Routes the Builder area
+  // between Holdings (PortfolioBuilder view="holdings"), Account
+  // (PortfolioBuilder view="account") and Saved (SavedPortfolios). The
+  // Analyze button always renders right after the active tab's content -
+  // no flex:1 spacer between, no bottom pin.
+  const [sidebarTab, setSidebarTab] = useState<"holdings" | "account" | "saved">("holdings");
   const [newsSubTab, setNewsSubTab] = useState<"news" | "earnings" | "events">("news");
   const [showStockCompare, setShowStockCompare] = useState(false);
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
@@ -2176,17 +2182,102 @@ const { dark, toggle: toggleDark }  = useTheme();
         )}
       </div>
 
-      {/* Builder */}
-      <div id="tour-ticker-area" style={{ flex: 1, overflow: "auto", overscrollBehavior: "none", padding: "12px 14px" }}>
-        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} todayPct={todayPct} accountType={accountType} onAccountTypeChange={setAccountType} liveBaseValue={liveBaseValue} />
+      {/* Sidebar tabs - Holdings / Account / Saved. Sticky at top of the
+          sidebar's scroll region so the tabs stay visible while users
+          scroll through a long Holdings list or a long Saved list. */}
+      <div style={{ display: "flex", borderBottom: "0.5px solid var(--border)", background: "var(--bg2)", position: "sticky", top: 0, zIndex: 15, padding: "0 8px" }}>
+        {(["holdings", "account", "saved"] as const).map(tab => {
+          const isActive = sidebarTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setSidebarTab(tab)}
+              style={{
+                flex: 1,
+                padding: "13px 6px 11px",
+                background: "transparent",
+                border: "none",
+                color: isActive ? "var(--accent)" : "var(--text3)",
+                fontFamily: "Space Mono, monospace",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                textTransform: "uppercase",
+                cursor: "pointer",
+                position: "relative",
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = "var(--text)"; }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = "var(--text3)"; }}
+            >
+              {tab}
+              {isActive && (
+                <span style={{
+                  position: "absolute",
+                  left: 6,
+                  right: 6,
+                  bottom: -0.5,
+                  height: 2.5,
+                  background: "linear-gradient(90deg, rgba(201,168,76,0.6) 0%, var(--accent) 50%, rgba(201,168,76,0.6) 100%)",
+                  borderRadius: 1.5,
+                  boxShadow: "0 0 8px rgba(201,168,76,0.4)",
+                }} />
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Analyze button */}
-      <div style={{ padding: "10px 14px", borderTop: "0.5px solid var(--border)" }}>
+      {/* Active tab content - natural height. No flex:1 wrapper so Analyze
+          flows immediately below; no awkward gap between content and
+          the Analyze button when content is short. */}
+      <div id="tour-ticker-area" style={{ padding: "12px 14px" }}>
+        {sidebarTab === "holdings" && (
+          <PortfolioBuilder
+            view="holdings"
+            assets={assets}
+            onAssetsChange={setAssets}
+            onAnalyze={handleAnalyze}
+            loading={loading}
+            todayPct={todayPct}
+            accountType={accountType}
+            onAccountTypeChange={setAccountType}
+            liveBaseValue={liveBaseValue}
+          />
+        )}
+        {sidebarTab === "account" && (
+          <PortfolioBuilder
+            view="account"
+            assets={assets}
+            onAssetsChange={setAssets}
+            onAnalyze={handleAnalyze}
+            loading={loading}
+            todayPct={todayPct}
+            accountType={accountType}
+            onAccountTypeChange={setAccountType}
+            liveBaseValue={liveBaseValue}
+          />
+        )}
+        {sidebarTab === "saved" && (
+          <SavedPortfolios
+            assets={assets}
+            data={data}
+            accountType={accountType}
+            onLoad={(a, at, id, name) => {
+              setAssets(a);
+              setAccountType(at);
+              setSavedPortfolioId(id);
+              setSavedPortfolioName(name);
+            }}
+          />
+        )}
+      </div>
+
+      {/* Analyze button - flows naturally right after the tab content. */}
+      <div style={{ padding: "0 14px 14px" }}>
         {(() => {
           const validA = assets.filter(a => a.ticker && a.weight > 0);
           const totalW = validA.reduce((s, a) => s + a.weight, 0);
-          // Allow fraction weights (sum ≈ 1) or integer weights (sum ≈ 100) gracefully
           const isOver = totalW > 1.015 || totalW > 101.5;
           const isBalanced = validA.length === 0 || !isOver;
           const hasHoldings = validA.length > 0;
@@ -2221,27 +2312,6 @@ const { dark, toggle: toggleDark }  = useTheme();
             </>
           );
         })()}
-      </div>
-
-      {/* Saved portfolios */}
-      <div style={{ ...S.section, borderBottom: "none" }}>
-        <SavedPortfolios
-          assets={assets}
-          data={data}
-          accountType={accountType}
-          onLoad={(a, at, id, name) => {
-            setAssets(a);
-            setAccountType(at);
-            // Setting savedPortfolioId synchronously triggers the perfHistory
-            // refetch effect, which drives liveBaseValue, which drives the
-            // GreetingBar live value display. Without this the previously
-            // active portfolio's base value lingered, so every portfolio
-            // looked like the same dollar delta no matter which one you
-            // picked (v0.34 bug surfaced by Vinay 2026-05-16).
-            setSavedPortfolioId(id);
-            setSavedPortfolioName(name);
-          }}
-        />
       </div>
 
     </>
@@ -2327,7 +2397,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       <div
         id="tour-desk-sidebar"
         className="c-sidebar"
-        style={{ width: "clamp(260px, 22vw, 340px)", flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
+        style={{ width: "clamp(260px, 22vw, 340px)", flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflowY: "auto", overflowX: "hidden", position: "relative" }}>
         {SidebarInner()}
       </div>
 

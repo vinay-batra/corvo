@@ -215,9 +215,15 @@ interface Props {
   // seed (corvo_portfolio_value) becomes purely a "first run" seed and a
   // manual override - once snapshots accumulate, they take over.
   liveBaseValue?: number;
+  // Which tab's content to render. The tabbed sidebar (v0.36) routes
+  // Holdings + Account into different sub-views of this same component, so
+  // both sections share state (account type, live value, assets) without
+  // having to lift everything into the parent. Default "holdings" preserves
+  // pre-tabs behavior for callers (onboarding) that don't know about tabs.
+  view?: "holdings" | "account";
 }
 
-export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange, liveBaseValue }: Props) {
+export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange, liveBaseValue, view = "holdings" }: Props) {
   const update = onAssetsChange || setAssets || (() => {});
   const [dark, setDark] = useState(true);
   const [active, setActive] = useState<number|null>(null);
@@ -501,6 +507,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     <div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
+      {view === "holdings" && (<>
       {/* ── Sticky header ─────────────────────────────────────────── */}
       <div style={{
         position:"sticky", top:0, zIndex:20,
@@ -777,7 +784,9 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
           </button>
         )}
       </div>
+      </>)}
 
+      {view === "account" && (<>
       {/* ── ACCOUNT section ────────────────────────────────────────────
            Master container for the three portfolio-level controls that
            every other UI patch (Reinvest, Portfolio Value, Account type)
@@ -895,59 +904,67 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
           </div>
         )}
         {/* Account type - changes how Corvo's AI reasons about tax (TLH,
-            cap-gains, RMDs, contribution limits, kiddie-tax, etc.). Persisted
-            with the portfolio so each saved account stays separately scoped.
-            Only rendered when a change handler is provided - callers that
-            don't care about tax context (onboarding flow) can omit it. */}
+            cap-gains, RMDs, contribution limits, kiddie-tax, etc.). Rendered
+            as a 2x4 grid of selectable cards so all 8 options + their tax
+            framing are visible at once - the previous native <select> hid
+            the framing behind clicks. Only rendered when a change handler
+            is provided - callers that don't care about tax context
+            (onboarding flow) can omit it. */}
         {onAccountTypeChange && (
         <div style={{ marginTop: 12, paddingTop: 10, borderTop: "0.5px solid var(--border)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
-            <div>
-              <div style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600, letterSpacing: 0.1 }}>Account type</div>
-              <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2, letterSpacing: 0.1 }}>Shapes tax-aware advice</div>
-            </div>
-            <select
-              id="portfolio-account-type"
-              name="accountType"
-              value={accountType}
-              onChange={e => onAccountTypeChange(e.target.value as AccountTypeId)}
-              aria-label="Account type"
-              style={{
-                ...INPUT_STYLE,
-                width: "auto",
-                maxWidth: 180,
-                fontFamily: "Space Mono,monospace",
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "5px 8px",
-                cursor: "pointer",
-                colorScheme: dark ? "dark" : "light",
-              }}
-            >
-              <optgroup label="Taxable">
-                {ACCOUNT_TYPES.filter(t => t.group === "Taxable").map(t => (
-                  <option key={t.id} value={t.id}>{t.label}</option>
-                ))}
-              </optgroup>
-              <optgroup label="Retirement">
-                {ACCOUNT_TYPES.filter(t => t.group === "Retirement").map(t => (
-                  <option key={t.id} value={t.id}>{t.label}</option>
-                ))}
-              </optgroup>
-              <optgroup label="Health">
-                {ACCOUNT_TYPES.filter(t => t.group === "Health").map(t => (
-                  <option key={t.id} value={t.id}>{t.label}</option>
-                ))}
-              </optgroup>
-              <optgroup label="Education">
-                {ACCOUNT_TYPES.filter(t => t.group === "Education").map(t => (
-                  <option key={t.id} value={t.id}>{t.label}</option>
-                ))}
-              </optgroup>
-            </select>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600, letterSpacing: 0.1 }}>Account type</div>
+            <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2, letterSpacing: 0.1 }}>Shapes tax-aware advice</div>
           </div>
-          <div style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.5, letterSpacing: 0.1 }}>
-            {getAccountType(accountType).tagline}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {ACCOUNT_TYPES.map(t => {
+              const isActive = t.id === accountType;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => onAccountTypeChange(t.id)}
+                  title={`${t.label} - ${t.tagline}`}
+                  style={{
+                    padding: "9px 10px",
+                    background: isActive ? "rgba(201,168,76,0.1)" : "var(--bg3)",
+                    border: isActive ? "0.5px solid var(--accent)" : "0.5px solid var(--border)",
+                    borderRadius: 8,
+                    textAlign: "left",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    boxShadow: isActive ? "0 0 12px rgba(201,168,76,0.18)" : "none",
+                  }}
+                  onMouseEnter={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)";
+                      e.currentTarget.style.background = "rgba(201,168,76,0.04)";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.borderColor = "var(--border)";
+                      e.currentTarget.style.background = "var(--bg3)";
+                    }
+                  }}
+                >
+                  <div style={{
+                    fontFamily: "Space Mono, monospace",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    color: isActive ? "var(--accent)" : "var(--text)",
+                    textTransform: "uppercase",
+                  }}>{t.short}</div>
+                  <div style={{
+                    fontSize: 9,
+                    color: "var(--text-muted)",
+                    marginTop: 3,
+                    lineHeight: 1.3,
+                  }}>{t.chip}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
         )}
@@ -1014,6 +1031,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
           </span>
         </label>
       </div>
+      </>)}
 
       {/* ── Presets Modal ─────────────────────────────────────────── */}
       <AnimatePresence initial={false}>
