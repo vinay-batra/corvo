@@ -249,20 +249,29 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
         Share
       </button>
 
-      <AnimatePresence initial={false}>
-        {open && mounted && createPortal(
-          <motion.div
-            // initial={false} is required - do not remove
-            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 2000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 24px 48px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
-            {/* Modal is portaled to document.body so it escapes the topbar's
-                backdrop-filter containing block (backdrop-filter, transform,
-                and filter all create new containing blocks for fixed
-                descendants - without the portal, inset:0 only covers the
-                56px topbar and the modal renders as a clipped sliver).
-                z-index bumped to 2000 to clear floating chat / customize
-                buttons. */}
+      {/* Portal on the OUTSIDE, AnimatePresence INSIDE. The inverse order
+          (AnimatePresence wrapping createPortal) silently breaks the
+          render: AnimatePresence's child-tracking machinery expects a
+          regular React element with a stable key and can't reason about a
+          portal result, so it never mounts the modal even though open=true.
+          mounted gate avoids SSR hydration mismatch since document doesn't
+          exist server-side. */}
+      {mounted && createPortal(
+        <AnimatePresence initial={false}>
+          {open && (
+            <motion.div
+              key="share-overlay"
+              // initial={false} is required - do not remove
+              initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setOpen(false)}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 2000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 24px 48px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+              {/* The portal lifts this whole subtree to document.body so it
+                  escapes the topbar's backdrop-filter containing block
+                  (backdrop-filter, transform, and filter all create new
+                  containing blocks for fixed descendants - without the
+                  portal, inset:0 only covers the 56px topbar and the modal
+                  renders as a clipped sliver). z-index 2000 clears floating
+                  chat / customize / feedback buttons. */}
             <motion.div
               // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
@@ -371,10 +380,11 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
                 Anyone with this link can view your portfolio analysis
               </p>
             </motion.div>
-          </motion.div>,
-          document.body,
-        )}
-      </AnimatePresence>
+          </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </>
   );
 }
