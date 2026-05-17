@@ -94,7 +94,7 @@ const SECTIONS = [
       },
       {
         q: "Is Corvo free?",
-        a: "Yes. Corvo's core features are free forever, not just during beta. Two paid tiers are coming: Pro ($9/month) adds unlimited AI chat, Plaid brokerage sync, SMS alerts, and tax-loss harvesting suggestions and ships with a 14-day free trial; Elite ($29/month) adds multi-account aggregation, real-time streaming prices, and quarterly portfolio review PDFs. The free plan stays free either way.",
+        a: "Yes. Corvo's core features are free forever, not just during beta. Three tiers, named after SEC investor classifications: Retail (free, what every signup gets), Accredited ($9/month, coming soon - adds unlimited AI chat, Plaid brokerage sync, SMS alerts, options Greeks, tax-loss harvesting, and ships with a 14-day free trial), and Institutional ($29/month, coming soon - adds multi-account aggregation, real-time streaming prices, factor model decomposition, quarterly 1:1 strategy calls, and year-end CPA-ready reports). Retail stays free either way.",
       },
       {
         q: "Do I need a brokerage account?",
@@ -144,7 +144,7 @@ const SECTIONS = [
     items: [
       {
         q: "How many AI chat messages do I get?",
-        a: "Free accounts get 15 AI chat messages per day. You can earn up to 40 daily messages by referring friends, with each successful referral adding extra daily quota. Pro subscribers get unlimited messages.",
+        a: "Retail accounts get 15 AI chat messages per day. You can earn up to 40 daily messages by referring friends, with each successful referral adding extra daily quota. Accredited and Institutional subscribers get unlimited messages.",
       },
       {
         q: "Can I ask the AI anything?",
@@ -153,15 +153,19 @@ const SECTIONS = [
     ],
   },
   {
-    category: "Pro",
+    category: "Paid tiers",
     items: [
       {
-        q: "What is Corvo Pro?",
-        a: "Corvo Pro is the upcoming paid tier designed for serious investors. It includes unlimited AI chat, advanced analytics (tax loss harvesting, options chain analysis, multi-portfolio tracking), real-time alerts, priority support, and early access to every new feature.",
+        q: "What is Corvo Accredited?",
+        a: "Accredited ($9/month) is the upcoming paid tier for the engaged self-directed investor. It adds unlimited AI chat, brokerage sync via Plaid (auto-update holdings), SMS price alerts, tax-loss harvesting suggestions with wash-sale-safe replacement tickers, options chain analysis with Greeks, intraday refresh, custom benchmarks, backtesting on saved portfolios, custom PDF reports, and priority email support. Ships with a 14-day free trial.",
       },
       {
-        q: "When is Pro launching?",
-        a: "Soon. We're finishing the final features before launch. Join the waitlist from the homepage to get notified the moment Pro is available, and to lock in early-bird pricing before the public launch.",
+        q: "What is Corvo Institutional?",
+        a: "Institutional ($29/month) is the upcoming top tier for households running serious money across multiple wrappers. It adds everything in Accredited plus multi-account aggregation (spouse, custodial, retirement wrappers in one net-worth view), real-time streaming prices, API access for Sheets / Excel pulls, quarterly portfolio review PDFs, year-end TLH + capital-gains reports formatted for your CPA, concierge TLH execution plans, factor model decomposition (Fama-French five-factor + momentum), custom alerts on any metric, a quarterly 30-minute 1:1 strategy call, white-glove onboarding, and direct founder access.",
+      },
+      {
+        q: "When are Accredited and Institutional launching?",
+        a: "Soon. We're finishing the final features before launch. Join the waitlist from the pricing page to lock in founding-member pricing - the launch price stays yours forever, even if we raise rates after.",
       },
     ],
   },
