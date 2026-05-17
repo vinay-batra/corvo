@@ -903,7 +903,7 @@ export default function PricingPage() {
             marginBottom: 12,
             letterSpacing: 0.2,
           }}>
-            Retail is free forever. Accredited and Institutional add extras for power users and households running serious money.
+            Retail stays free. Two paid tiers coming soon.
           </p>
         </ScrollReveal>
       </section>
