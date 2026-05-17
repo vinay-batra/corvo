@@ -270,6 +270,23 @@ function WaitlistCapture() {
   );
 }
 
+type PlanId = "free" | "pro" | "elite";
+
+interface PricingPlan {
+  id: PlanId;
+  badge: string;
+  name: string;
+  price: string;
+  priceSuffix?: string;
+  tagline: string;
+  trialNote?: string;
+  ctaLabel: string;
+  ctaKind: "signup" | "waitlist";
+  featuresHeader: string;
+  features: string[];
+  highlight?: boolean;
+}
+
 const FREE_FEATURES = [
   "Full portfolio analysis: Sharpe, CAGR, volatility, max drawdown",
   "Daily Signal - one AI recommendation tailored to your portfolio",
@@ -280,7 +297,8 @@ const FREE_FEATURES = [
   "Earnings calendar and insider activity tracking",
   "Morning brief + weekly digest emails",
   "CSV import from Fidelity, Schwab, Robinhood",
-  "Monte Carlo simulation with 1-30 year retirement horizon",
+  "Monte Carlo simulation with 1-30 year retirement horizon, fan chart + Student-t fat tails",
+  "Per-holding account type tagging (Roth / 401k / HSA / 529)",
   "PWA install with push notifications and price alerts",
 ];
 
@@ -291,26 +309,85 @@ const PRO_EXTRAS = [
   "Tax loss harvesting suggestions with replacement tickers",
   "Multiple saved portfolios with side-by-side comparison",
   "Custom PDF reports with your branding",
-  "Priority support",
+  "Priority email support",
   "Early access to new features",
+];
+
+const ELITE_EXTRAS = [
+  "Multi-account aggregation: spouse, custodial, all your wrappers in one net-worth view",
+  "Real-time streaming prices (no 15-minute delay)",
+  "Quarterly portfolio review delivered as a polished PDF",
+  "Year-end tax-loss harvesting + capital-gains report formatted for your CPA",
+  "White-glove onboarding call to import your full book",
+  "Direct line to the founder for product feedback",
+  "First access to every new feature, ahead of Pro",
+];
+
+const PRICING_PLANS: PricingPlan[] = [
+  {
+    id: "free",
+    badge: "Free Forever",
+    name: "Free",
+    price: "$0",
+    priceSuffix: "/month",
+    tagline: "Everything you need to start investing smarter.",
+    ctaLabel: "Get Started Free →",
+    ctaKind: "signup",
+    featuresHeader: "What's included",
+    features: FREE_FEATURES,
+  },
+  {
+    id: "pro",
+    badge: "Most Popular",
+    name: "Pro",
+    price: "$9",
+    priceSuffix: "/month",
+    tagline: "For investors who want the full picture, with hands-off brokerage sync.",
+    trialNote: "Starts with a 14-day free trial. Cancel anytime.",
+    ctaLabel: "Join Waitlist",
+    ctaKind: "waitlist",
+    featuresHeader: "Everything in Free, plus",
+    features: PRO_EXTRAS,
+    highlight: true,
+  },
+  {
+    id: "elite",
+    badge: "Coming Soon",
+    name: "Elite",
+    price: "$29",
+    priceSuffix: "/month",
+    tagline: "For serious portfolios: family aggregation, real-time data, white-glove support.",
+    ctaLabel: "Join Waitlist",
+    ctaKind: "waitlist",
+    featuresHeader: "Everything in Pro, plus",
+    features: ELITE_EXTRAS,
+  },
 ];
 
 const FAQS = [
   {
     q: "Is Corvo really free?",
-    a: "Yes. The free plan is free forever, not a beta promo. No credit card, no trial period, no hidden fees. Full access to portfolio analysis, AI chat (with daily limits), Monte Carlo, health scores, morning briefings - all of it - just by signing up. Pro is a future paid tier with extras (unlimited chat, Plaid brokerage sync, SMS alerts), but the free plan stays.",
+    a: "Yes. The free plan is free forever, not a beta promo. No credit card, no trial period, no hidden fees. Full access to portfolio analysis, AI chat (with daily limits), Monte Carlo, health scores, morning briefings - all of it - just by signing up. Pro and Elite are paid tiers with extras (unlimited chat, Plaid brokerage sync, multi-account aggregation, real-time data), but the free plan stays.",
   },
   {
-    q: "When will Pro launch, and how much will it cost?",
-    a: "We're still working out the exact pricing. We'll offer early-bird pricing to everyone on the waitlist, typically 30-50% off the regular rate, locked in forever.",
+    q: "How is the 14-day Pro trial structured?",
+    a: "When Pro launches, every new Pro signup starts with 14 days of full access at no cost. No credit card required up front. At the end of the trial you decide whether to convert to $9/month or fall back to the free plan, which always stays available. No surprise charges, no auto-trap.",
+  },
+  {
+    q: "What's the difference between Pro and Elite?",
+    a: "Pro is for self-directed retail investors who want hands-off brokerage sync, unlimited AI chat, SMS alerts, and tax-loss harvesting suggestions. Elite is for households with multiple accounts (spouse + custodial + retirement wrappers in one net-worth view), real-time streaming prices, quarterly portfolio review PDFs, and a year-end CPA-ready report. Most users will be happiest on Pro; Elite is built for the small minority running serious money across multiple wrappers.",
+  },
+  {
+    q: "When will Pro and Elite launch, and how much will they cost?",
+    a: "Pricing is shown above: Pro $9/month, Elite $29/month. Both are pre-launch right now. Everyone on the waitlist gets founding-member pricing locked in - typically 30-50% off the regular rate, forever.",
   },
   {
     q: "Will my free account be grandfathered in?",
-    a: "Current beta users will retain access to all features available today even after Pro launches. Features added exclusively for Pro will require an upgrade.",
+    a: "Current free users retain access to every feature available today even after Pro / Elite launch. Features added exclusively for paid tiers will require an upgrade, but nothing on the free plan today gets pulled away.",
   },
   {
     q: "What payment methods will you accept?",
-    a: "We plan to accept all major credit cards via Stripe. No long-term contracts, cancel anytime.",
+    a: "All major credit cards via Stripe. Monthly billing only, no long-term contracts, cancel anytime from settings.",
   },
   {
     q: "Is there a student or non-profit discount?",
@@ -320,75 +397,114 @@ const FAQS = [
 
 /* ─── Pricing Card ─── */
 function PricingCard({
-  isPro,
+  plan,
   delay,
 }: {
-  isPro: boolean;
+  plan: PricingPlan;
   delay: number;
 }) {
   const { ref, visible } = useReveal(0.1);
+  const highlighted = !!plan.highlight;
 
   return (
     <div
       ref={ref}
+      className={`pricing-card-wrap${highlighted ? " pricing-card-wrap-highlight" : ""}`}
       style={{
         position: "relative",
-        flex: "1 1 320px",
-        maxWidth: 400,
+        flex: "1 1 300px",
+        maxWidth: 360,
+        // The highlighted middle card lifts ~12px and scales 1.04 to anchor
+        // the eye via Rule of 3: with three cards side-by-side and the
+        // middle one visually elevated, users gravitate to it as the
+        // "obvious choice." On mobile the lift collapses (CSS override).
+        transform: highlighted ? "translateY(-12px) scale(1.04)" : undefined,
+        zIndex: highlighted ? 2 : 1,
       }}
     >
-      {/* Gold glow halo behind card */}
+      {/* Gold glow halo behind card - stronger on the highlighted middle tier */}
       <div aria-hidden style={{
         position: "absolute",
         inset: -40,
         borderRadius: 36,
-        background: "radial-gradient(ellipse 68% 58% at 50% 55%, rgba(201,168,76,0.28), rgba(201,168,76,0.08) 45%, transparent 75%)",
+        background: highlighted
+          ? "radial-gradient(ellipse 75% 65% at 50% 55%, rgba(201,168,76,0.38), rgba(201,168,76,0.10) 50%, transparent 78%)"
+          : "radial-gradient(ellipse 60% 50% at 50% 55%, rgba(201,168,76,0.18), rgba(201,168,76,0.04) 45%, transparent 75%)",
         filter: "blur(40px)",
         pointerEvents: "none",
         zIndex: 0,
       }} />
+
+      {/* MOST POPULAR floating badge - only on the highlighted tier */}
+      {highlighted && (
+        <div aria-hidden style={{
+          position: "absolute",
+          top: -14,
+          left: "50%",
+          transform: "translateX(-50%)",
+          padding: "5px 14px",
+          background: "linear-gradient(180deg, #d4b863 0%, #c9a84c 60%, #a8893a 100%)",
+          color: "#0a0e14",
+          fontSize: 9,
+          letterSpacing: "0.24em",
+          fontWeight: 700,
+          fontFamily: "Space Mono, monospace",
+          textTransform: "uppercase",
+          borderRadius: 100,
+          boxShadow: "0 6px 18px rgba(201,168,76,0.45), 0 0 0 0.5px rgba(201,168,76,0.65)",
+          whiteSpace: "nowrap",
+          zIndex: 3,
+        }}>
+          {plan.badge}
+        </div>
+      )}
+
     <div
-      className={isPro ? "pricing-card pricing-card-pro" : "pricing-card pricing-card-free"}
+      className={`pricing-card pricing-card-${plan.id}`}
       style={{
         width: "100%",
-        background: isPro
-          ? "linear-gradient(180deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 60%, transparent 100%), var(--card-bg)"
+        background: highlighted
+          ? "linear-gradient(180deg, rgba(201,168,76,0.08) 0%, rgba(201,168,76,0.02) 60%, transparent 100%), var(--card-bg)"
           : "var(--card-bg)",
-        border: isPro
-          ? "1px solid rgba(201,168,76,0.4)"
+        border: highlighted
+          ? "1px solid rgba(201,168,76,0.5)"
           : "0.5px solid var(--border)",
         borderRadius: 20,
-        padding: "28px 28px 32px",
+        padding: "28px 26px 30px",
         position: "relative",
         zIndex: 1,
         overflow: "visible",
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(32px)",
         transition: `opacity 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.75s cubic-bezier(0.16,1,0.3,1) ${delay}s, box-shadow 0.3s, border-color 0.3s`,
-        boxShadow: isPro
-          ? "0 1px 3px rgba(0,0,0,0.05), 0 16px 48px rgba(201,168,76,0.10), 0 0 0 0.5px rgba(201,168,76,0.18)"
+        boxShadow: highlighted
+          ? "0 1px 3px rgba(0,0,0,0.06), 0 22px 60px rgba(201,168,76,0.16), 0 0 0 0.5px rgba(201,168,76,0.28)"
           : "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06), 0 0 0 0.5px var(--border)",
       }}
     >
-      {/* Header: status pill + plan name */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-        <span style={{
-          fontSize: 9,
-          letterSpacing: "0.22em",
-          fontWeight: 700,
-          color: isPro ? "#c9a84c" : "var(--text3)",
-          background: isPro ? "rgba(201,168,76,0.10)" : "var(--bg3)",
-          border: isPro ? "0.5px solid rgba(201,168,76,0.3)" : "0.5px solid var(--border)",
-          borderRadius: 100,
-          padding: "4px 10px",
-          textTransform: "uppercase",
-          fontFamily: "Space Mono, monospace",
-        }}>
-          {isPro ? "Coming Soon" : "Free Forever"}
-        </span>
-      </div>
+      {/* Header: status pill (only on non-highlighted tiers - the highlighted
+          one already gets the floating MOST POPULAR badge above) */}
+      {!highlighted && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+          <span style={{
+            fontSize: 9,
+            letterSpacing: "0.22em",
+            fontWeight: 700,
+            color: plan.id === "free" ? "var(--text3)" : "#c9a84c",
+            background: plan.id === "free" ? "var(--bg3)" : "rgba(201,168,76,0.10)",
+            border: plan.id === "free" ? "0.5px solid var(--border)" : "0.5px solid rgba(201,168,76,0.3)",
+            borderRadius: 100,
+            padding: "4px 10px",
+            textTransform: "uppercase",
+            fontFamily: "Space Mono, monospace",
+          }}>
+            {plan.badge}
+          </span>
+        </div>
+      )}
+      {highlighted && <div style={{ height: 18 }} />}
 
-      {/* Plan name - bigger, more prominent */}
+      {/* Plan name */}
       <h3 style={{
         fontFamily: "Space Mono, monospace",
         fontSize: 25, fontWeight: 700,
@@ -397,7 +513,7 @@ function PricingCard({
         marginBottom: 12,
         lineHeight: 1.1,
       }}>
-        {isPro ? "Pro" : "Free"}
+        {plan.name}
       </h3>
 
       {/* Price block */}
@@ -406,20 +522,34 @@ function PricingCard({
           fontFamily: "Space Mono, monospace",
           fontSize: 48, fontWeight: 700,
           letterSpacing: -2.5,
-          color: isPro ? "#c9a84c" : "var(--text)",
+          color: plan.id === "free" ? "var(--text)" : "#c9a84c",
           lineHeight: 1,
         }}>
-          {isPro ? "$9" : "$0"}
+          {plan.price}
         </span>
-        <span style={{ fontSize: 14, color: "var(--text3)", fontFamily: "Space Mono, monospace", letterSpacing: 0.3 }}>/month</span>
+        {plan.priceSuffix && (
+          <span style={{ fontSize: 14, color: "var(--text3)", fontFamily: "Space Mono, monospace", letterSpacing: 0.3 }}>{plan.priceSuffix}</span>
+        )}
       </div>
 
-      <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 24, lineHeight: 1.55, maxWidth: 320 }}>
-        {isPro ? "For investors who want the full picture." : "Everything you need to start investing smarter."}
+      <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: plan.trialNote ? 10 : 24, lineHeight: 1.55, maxWidth: 320 }}>
+        {plan.tagline}
       </p>
 
+      {/* 14-day free trial line - only when set (lives on Pro). Endowment-
+          effect framing: users mentally "own" Pro for 14 days, then giving
+          it up feels like a loss. */}
+      {plan.trialNote && (
+        <p style={{ fontSize: 12, color: "#c9a84c", fontWeight: 600, marginBottom: 22, letterSpacing: 0.1, display: "flex", alignItems: "center", gap: 6 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          {plan.trialNote}
+        </p>
+      )}
+
       {/* CTA */}
-      {isPro ? (
+      {plan.ctaKind === "waitlist" ? (
         <WaitlistCapture />
       ) : (
         <Link
@@ -441,7 +571,7 @@ function PricingCard({
           onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.08)"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 22px rgba(201,168,76,0.35)"; }}
           onMouseLeave={e => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(201,168,76,0.25)"; }}
         >
-          Get Started Free →
+          {plan.ctaLabel}
         </Link>
       )}
 
@@ -449,13 +579,13 @@ function PricingCard({
       <div style={{ height: "0.5px", background: "var(--border)", margin: "24px 0 18px" }} />
 
       {/* Features heading */}
-      <p style={{ fontSize: 9, letterSpacing: "0.22em", color: isPro ? "#c9a84c" : "var(--text3)", textTransform: "uppercase", marginBottom: 16, fontFamily: "Space Mono, monospace", fontWeight: 700 }}>
-        {isPro ? "Everything in Free, plus" : "What's included"}
+      <p style={{ fontSize: 9, letterSpacing: "0.22em", color: plan.id === "free" ? "var(--text3)" : "#c9a84c", textTransform: "uppercase", marginBottom: 16, fontFamily: "Space Mono, monospace", fontWeight: 700 }}>
+        {plan.featuresHeader}
       </p>
 
       {/* Feature list */}
       <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-        {(isPro ? PRO_EXTRAS : FREE_FEATURES).map((f, i) => (
+        {plan.features.map((f, i) => (
           <FeatureItem key={f} text={f} delay={delay + 0.08 + i * 0.04} />
         ))}
       </div>
@@ -663,9 +793,19 @@ export default function PricingPage() {
           box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 24px 60px rgba(201,168,76,0.18), 0 0 0 0.5px rgba(201,168,76,0.35) !important;
           border-color: rgba(201,168,76,0.65) !important;
         }
+        .pricing-card-elite:hover {
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 20px 50px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(201,168,76,0.18) !important;
+          border-color: rgba(201,168,76,0.25) !important;
+        }
+        @media (max-width: 900px) {
+          /* Below 900px the 3-card row gets cramped. Drop the highlight lift
+             + scale so all three cards sit on a single visual baseline (and
+             eventually stack at 768). */
+          .pricing-card-wrap-highlight { transform: none !important; }
+        }
         @media (max-width: 768px) {
-          .pricing-cards { flex-direction: column !important; align-items: stretch !important; gap: 32px !important; }
-          .pricing-cards > * { width: 100% !important; max-width: 100% !important; flex: none !important; }
+          .pricing-cards { flex-direction: column !important; align-items: stretch !important; gap: 40px !important; }
+          .pricing-cards > * { width: 100% !important; max-width: 100% !important; flex: none !important; transform: none !important; }
           .nav-links { display: none !important; }
           .pricing-section { padding: 56px 20px 80px !important; }
           .pricing-section-inner { padding: 0 !important; }
@@ -733,20 +873,22 @@ export default function PricingPage() {
       </section>
 
       {/* PRICING CARDS */}
-      <section className="pricing-section" style={{ position: "relative", zIndex: 1, padding: "20px 24px 140px" }}>
+      <section className="pricing-section" style={{ position: "relative", zIndex: 1, padding: "40px 24px 140px" }}>
         <div
           className="pricing-cards"
           style={{
             display: "flex",
             gap: 24,
-            maxWidth: 880,
+            maxWidth: 1200,
             margin: "0 auto",
             justifyContent: "center",
+            alignItems: "stretch",
             flexWrap: "wrap",
           }}
         >
-          <PricingCard isPro={false} delay={0} />
-          <PricingCard isPro={true} delay={0.12} />
+          {PRICING_PLANS.map((plan, i) => (
+            <PricingCard key={plan.id} plan={plan} delay={i * 0.1} />
+          ))}
         </div>
       </section>
 
