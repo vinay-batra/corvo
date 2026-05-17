@@ -228,7 +228,7 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
           padding: "0 12px", background: "transparent",
           border: "0.5px solid var(--border)", borderRadius: 8,
           color: "var(--text3)", fontSize: 11, fontFamily: "var(--font-mono)",
-          cursor: "pointer", letterSpacing: 0.5, whiteSpace: "nowrap",
+          fontWeight: 600, cursor: "pointer", letterSpacing: 0.5, whiteSpace: "nowrap",
           transition: "all 0.15s",
         }}
         onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--text)"; }}
@@ -247,12 +247,19 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
             // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 24px 48px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+            {/* Modal content. Tall content (the rendered preview canvas can
+                add 300+px) used to push the modal off the top of the
+                viewport when the overlay used alignItems:center and had no
+                scroll: nothing was reachable. Now the overlay itself scrolls
+                and the modal anchors to the top with a 24px gap, so the
+                whole panel is always reachable regardless of viewport
+                height. */}
             <motion.div
               // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
               onClick={e => e.stopPropagation()}
-              style={{ background: "var(--card-bg)", border: "1px solid var(--border2)", borderRadius: 16, padding: 28, width: "100%", maxWidth: "min(480px, 95vw)", position: "relative" }}>
+              style={{ background: "var(--card-bg)", border: "1px solid var(--border2)", borderRadius: 16, padding: 28, width: "100%", maxWidth: "min(480px, 95vw)", position: "relative", marginTop: "min(24px, 4vh)" }}>
 
               {/* Close */}
               <button onClick={() => setOpen(false)}
