@@ -39,6 +39,39 @@ Pure prompt-engineering on `backend/main.py` /chat. No code paths changed, no sc
 
 ---
 
+## v0.40 - May 17, 2026 - API cost reduction (Haiku 4.5 chat + caching + dedup) + quality verification
+
+Commits: [293aae5](https://github.com/vinay-batra/corvo/commit/293aae5) (API cost base), [d7c79bd](https://github.com/vinay-batra/corvo/commit/d7c79bd) (em-dash + word-boundary regex). User added $14 in Anthropic credits; this work drops per-chat cost roughly 5-15x depending on whether the turn needs live data, and adds server-side response caches on two previously-uncached endpoints. Anti-hallucination rules in the system prompt verified via direct quality testing against the live API.
+
+### Added
+- **Anthropic prompt caching on `/chat`.** Split the per-request system prompt into two blocks: a static `_CHAT_STATIC_SYSTEM` constant (identical bytes across every call and every user) sent with `cache_control: {type: "ephemeral", ttl: "1h"}`, and a dynamic block carrying portfolio data + investor profile + page context that bypasses the cache. Conversation history's last entry also gets `cache_control: ephemeral` so multi-turn prefixes hit cache after the first turn. Direct probing surfaced that Haiku 4.5's empirical prompt-cache minimum is ~6000 tokens (not the documented 2048); the static prompt is sized at 6261 tokens to clear it. Sonnet 4.6 docs say 1024 minimum and caches cleanly at that size.
+- **Server-side response cache on `/what-should-i-do`.** Was firing a fresh Sonnet call on every click. Now uses an `OrderedDict` keyed by `{date}:{user_id}:{account_type}:{period}:{portfolio_shape}`. Day-level freshness matches the prompt's "recommendations must hold for weeks not days" instruction. Capped at 500 entries with LRU eviction.
+- **Server-side response cache on `/portfolio/rebalance`.** Same pattern. Key includes `portfolio_value` bucketed to $1k so trivial value nudges don't bust the cache.
+- **Conditional `web_search` tool on `/chat`.** Tool is attached per-turn only when the user's message contains keywords from `_CHAT_SEARCH_KEYWORDS` (time markers, news / earnings / analyst / macro / price-action terms). Pure-analysis turns drop the tool to save the ~$0.01 per-search fee. Matched via pre-compiled `_CHAT_SEARCH_RE` with `(?<![a-z0-9])kw(?![a-z0-9])` word-boundary lookbehind/lookahead, so "sharpe ratio" doesn't false-match "pe ratio" and "feedback" doesn't false-match "fed".
+- **Anti-hallucination rules in the `/chat` system prompt.** New `FACT GROUNDING`, `WEB SEARCH USAGE`, and `WHEN UNCERTAIN, BE EXPLICIT` sections forbid invented prices, analyst targets, P/E numbers, news, earnings, M&A, executive changes. Rules also explicitly handle the case where web_search is unavailable: the model is required to say "I don't have live market data this turn, but based on your metrics: ..." rather than fabricating. Quality testing confirmed the model correctly refuses to invent Goldman Sachs price targets, admits when it lacks data, and grounds claims in real numbers.
+- **Test suite at `/tmp/test_corvo_chat.py`** for direct prompt-quality verification against the live Anthropic API. Covers keyword detection (15 cases), basic advice, three hallucination probes, ROAST MODE length compliance, search-query gating, and prompt-cache activation. Extracts `_CHAT_STATIC_SYSTEM` directly from `backend/main.py` via regex so the test never drifts from what we ship. Runs in ~$0.30 of API spend. Not part of the deploy artifact; kept locally as a regression check.
+
+### Changed
+- **`/chat` model swapped Sonnet 4.6 → Haiku 4.5 (`claude-haiku-4-5-20251001`).** Per-message Anthropic cost on tool-free chats drops from ~$0.03-0.05 (Sonnet + always-on web_search) to ~$0.003-0.012 depending on whether the turn needs live data. Haiku 4.5 handles the prompt structure fine when given concrete fact-grounding rules and example exchanges. Anti-hallucination rules added in the same patch (see Added) compensate for the smaller model being more prone to invention than Sonnet was.
+- **`/chat` `max_tokens` cut 1024 → 600.** The 150-200 word hard limit needs ~260 output tokens; 600 leaves 2.3x headroom for verbose responses without paying for output that would be truncated by the prompt rule anyway.
+- **`send_morning_briefing_emails` hoists the SPY quote fetch out of the per-user loop.** SPY's daily change is the same number for every user but was being fetched N times. Now fetched once at the start of the fire. Saves N-1 Finnhub quote calls per morning. Also added a per-fire `teaser_cache: dict[str, str]` keyed by `{ticker_set}:{pct_str}:{top_mover}:{market_note}` so users with identical portfolio composition + same daily move share one Haiku call instead of N. Removed `display_name` from the prompt (it already lives in the email heading, not the body) so the cache key is safe to dedup on.
+- **Em dash post-processor on the `/chat` stream.** Previous post-processor only stripped ` - ` (hyphen with spaces). Haiku 4.5 produces literal `—` (U+2014) and `–` (U+2013) more often than Sonnet did, so the stream now also replaces those characters with `", "`. Prompt rule strengthened with explicit reference to the U+2014 codepoint.
+- **ROAST MODE length cap tightened** (further expanded in v0.42). The 200-word "hard limit" was being treated as soft; roasts were running 230-254 words. Added explicit "stop at 200, cut the thought short rather than spill past the limit. This applies to ROAST MODE too" in the HOW TO RESPOND rules. v0.42 layered a 180-word example roast on top as a length anchor.
+
+### Quality verification (15/15 keyword cases + 6/6 prompt tests pass)
+- Anti-hall probe: model refused to invent a Goldman Sachs NVDA price target when search was unavailable: "I don't have analyst commentary or specific price targets in your portfolio data, and I can't pull that without a web search this turn."
+- Anti-hall probe: model used web_search when asked about current P/E and grounded the answer in real returned data (`45.97 as of May 15, 2026`) rather than guessing.
+- Anti-hall probe: model answered the "should I add bonds?" question from portfolio metrics only and did not invent Fed/CPI/rate numbers (search wasn't triggered).
+- Format compliance: zero em dashes, zero asterisks, zero disclaimers across all 6 test responses.
+- ROAST MODE: 182 words (under the 200-word hard cap), no mid-sentence truncation.
+- Prompt cache: `cache_read=6254` tokens on the second tool-free call (full prefix hit).
+- Sample response (basic advice): "Trim it. Your 30.0% NVDA weight is outsized for a moderate-risk wealth-building goal over 37 years. Yes, NVDA delivered 78.4% CAGR over the last year, but a concentration that high means a 20% drawdown in NVDA wipes 6% off your total portfolio in one move..." (154 words, Corvo 3-beat pattern, references investor profile).
+
+### Note on local `backend/.env`
+- Local `.env` had a stale `ANTHROPIC_API_KEY` (401-ing). Synced to the live Railway value so local `uvicorn` runs work. Gitignored, not committed.
+
+---
+
 ## v0.30 - May 12, 2026 - dashboard polish, day-over-day cron, logo overhaul, math fixes, brand-forward AI
 
 ### Added
