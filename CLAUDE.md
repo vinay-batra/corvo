@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.37 (May 16, 2026) - tabbed sidebar polish + close v0.34 audit follow-ups. Frontend only.**
+**Last shipped: v0.38 (May 17, 2026) - Edit-with-Corvo moves into the Holdings tab (per user feedback: "the edit with AI thing only applies to holdings, so it should be in that holdings section"). Frontend only.**
+
+v0.38 finishes the tabbed sidebar redesign. Edit-with-Corvo used to live as sidebar-wide chrome between the Logo and the tab nav (so it was visible regardless of which tab was active). Per direct user feedback, it now lives INSIDE the Holdings tab as the top section there - since the NL commands it runs only mutate holdings, the editor only makes sense in that context. Account and Saved tabs no longer surface it. Visual: bleeds to sidebar edges (marginLeft/Right -14, marginTop -12) so it sits flush under the sticky tab nav, matching its pre-v0.38 top-of-sidebar look but now scoped to one tab. The Holdings tab order is: Edit-with-Corvo (top, collapsible) -> sticky Holdings header (count + weight status + utility menu) -> asset rows -> Add Asset + Equalize buttons -> Analyze button flows below. All other tabs unchanged. State (nlCommand, nlLoading, nlError, nlPending) still lives in app/app/page.tsx; only the JSX moved.
 
 v0.37 cleans up everything left over from v0.36 (tabbed sidebar) and closes the deferred audit items from v0.34. Five tightenings. (1) The Holdings sticky header was overlapping the v0.36 sticky tab nav - both lived at `top: 0` of the now-shared scroll container, and the Holdings header sat on top because its zIndex was higher. Fix: Holdings sticky header pinned to `top: 44px` (below the tab nav height) with zIndex 14 (below the tab nav's 15) so it stacks correctly. (2) Saving a brand-new portfolio whose ticker set matched the active assets used to leave savedPortfolioId stuck on null until the next page reload (auto-detect effect's deps were `[assets, userId]` - neither changed on save). Now a new `savedPortfolioRefreshTick` state bumps on every `corvo:portfolio-saved` window event, and the auto-detect deps include it - so a save instantly triggers re-detection and perfHistory starts ratcheting from the new portfolio's snapshots. (3) Account tab gains a small dashed-border hint under the Portfolio Value card: "Save this portfolio in the Saved tab to track day-over-day." Only renders when `!isSaved && assets.length > 0`. Explains the gap between the input seed and the live value for users who haven't saved yet. (4) Saved chip cards get a relative "Analyzed N days ago / today / yesterday / Xw ago" timestamp pulled from `updated_at`. (5) Saved chip cards now highlight the active portfolio (the one whose ticker set matches the current assets) with a gold left border, gold-tinted background, soft glow, and a green ACTIVE badge - so users always know which saved portfolio they're viewing.
 
@@ -275,9 +277,17 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.37
+- Version: v0.38
 
 ## What Was Built
+
+### v0.38 (May 17, 2026) - Edit-with-Corvo into Holdings tab
+
+**Edit-with-Corvo moves from sidebar-chrome to Holdings tab content**
+- v0.36 left Edit-with-Corvo as a global sidebar section between the Logo and the new tab nav, so it was visible on every tab. v0.38 moves it inside the Holdings tab as the top section there, since the NL commands it runs only mutate holdings - the editor only makes sense in that context. Account tab is now purely tax/value config; Saved tab is purely portfolio list. The Edit-with-Corvo collapsible row is gone from the sidebar chrome entirely.
+- Bleeds to sidebar edges (marginLeft/Right -14, marginTop -12) so it sits flush under the sticky tab nav, matching its pre-v0.38 look as a top-of-sidebar section. marginBottom: 14 gives 14px of space between it and the sticky Holdings header below (collapses with the sticky header's marginTop: -12 down to ~2px in flow but renders fine).
+- Holdings tab order: Edit-with-Corvo (collapsible, top) -> sticky Holdings header (count + weight status + ... util menu) -> asset rows -> Add Asset + Equalize buttons. Analyze button still flows immediately below the tab content per the v0.37 layout fix.
+- State (`nlCommand`, `nlLoading`, `nlError`, `nlPending`, `aiEditorOpen`) still lives in `app/app/page.tsx` SidebarInner closure. Only the JSX moved into the `{sidebarTab === "holdings" && (...)}` branch. NL preview modal (rendered at the page root) still triggers from the same state, unaffected.
 
 ### v0.37 (May 16, 2026) - tabbed sidebar polish + close v0.34 audit follow-ups
 
