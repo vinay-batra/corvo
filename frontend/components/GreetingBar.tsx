@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { RESOLVED_API_URL } from "../lib/api";
@@ -47,7 +47,8 @@ function computeMarketStatus() {
 
 type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
 interface MarketSummary { market: string; holdings: string; context: string; outlook?: string; }
-interface HoldingPrice { ticker: string; price: number | null; changePct: number | null; }
+interface HoldingPrice { ticker: string; price: number | null; changePct: number | null; sparkline: number[]; }
+interface IndexPrice { label: string; ticker: string; price: number | null; changePct: number | null; sparkline: number[]; }
 
 interface Props {
   displayName: string;
@@ -87,42 +88,75 @@ function BriefSection({ label, text, delay }: { label: string; text: string; del
   );
 }
 
-function IndexChip({ label, pct }: { label: string; pct: number | null }) {
+// Tiny SVG sparkline. Renders a polyline of `data` normalized to the viewBox.
+// Color is the up/down red/green based on first vs last point. Returns an
+// invisible-but-present <svg> for too-short series so the layout doesn't
+// jump when data arrives.
+function Sparkline({ data, width = 36, height = 18 }: { data: number[]; width?: number; height?: number }) {
+  if (!data || data.length < 2) return <svg width={width} height={height} style={{ flexShrink: 0 }} />;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * (height - 2) - 1; // 1px padding top/bottom
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const up = data[data.length - 1] >= data[0];
+  const stroke = up ? "#4caf7d" : "var(--red)";
+  return (
+    <svg width={width} height={height} style={{ flexShrink: 0, display: "block" }}>
+      <polyline points={points} fill="none" stroke={stroke} strokeWidth={1.2} strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// Single market index card (S&P 500, Nasdaq, Dow). Label on the left, tiny
+// sparkline in the middle, pct change on the right. Replaces the v0.36
+// IndexChip pill - same data, more visual signal at a glance.
+function MarketCard({ label, pct, sparkline }: { label: string; pct: number | null; sparkline: number[] }) {
   const up   = pct == null ? null : pct >= 0;
   const sign = up == null ? "" : up ? "+" : "-";
   const vCol = up == null ? "var(--text3)" : up ? "#4caf7d" : "var(--red)";
-  const bg   = up == null ? "var(--bg2)"   : up ? "rgba(76,175,125,0.07)" : "rgba(224,92,92,0.07)";
-  const bdr  = up == null ? "var(--border)" : up ? "rgba(76,175,125,0.22)" : "rgba(224,92,92,0.22)";
   const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace", fontVariantNumeric: "tabular-nums" };
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 30, padding: "0 10px", borderRadius: 8, border: `0.5px solid ${bdr}`, background: bg, boxSizing: "border-box" as const }}>
-      <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" as const, color: "var(--text3)" }}>{label}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 13px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 9, transition: "border-color 0.15s" }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(201,168,76,0.3)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; }}>
+      <span style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" as const, color: "var(--text3)", flex: 1 }}>{label}</span>
+      <Sparkline data={sparkline} />
       {pct != null
-        ? <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: vCol }}>{sign}{Math.abs(pct).toFixed(2)}%</span>
-        : <span style={{ ...mono, fontSize: 11, color: "var(--text3)" }}>--</span>
+        ? <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: vCol, minWidth: 56, textAlign: "right" }}>{sign}{Math.abs(pct).toFixed(2)}%</span>
+        : <span style={{ ...mono, fontSize: 11, color: "var(--text3)", minWidth: 56, textAlign: "right" }}>--</span>
       }
     </div>
   );
 }
 
-function HoldingChip({ label, pct, price }: { label: string; pct: number | null; price?: number | null }) {
+// Single holding row in the vertical Holdings list. Replaces the v0.36
+// horizontal marquee chip - same data, but stacks vertically so the right
+// column can stretch to balance the briefing on the left and the AI-
+// generated text in the marquee never overflows into the divider.
+function HoldingRow({ label, pct, price, dotColor }: { label: string; pct: number | null; price?: number | null; dotColor: string }) {
   const up   = pct == null ? null : pct >= 0;
   const sign = up == null ? "" : up ? "+" : "-";
   const vCol = up == null ? "var(--text3)" : up ? "#4caf7d" : "var(--red)";
-  const bg   = up == null ? "var(--bg2)"   : up ? "rgba(76,175,125,0.07)" : "rgba(224,92,92,0.07)";
-  const bdr  = up == null ? "var(--border)" : up ? "rgba(76,175,125,0.22)" : "rgba(224,92,92,0.22)";
   const mono: React.CSSProperties = { fontFamily: "'Space Mono', monospace", fontVariantNumeric: "tabular-nums" };
   const fmtPrice = (v: number) => Math.abs(v) >= 1000 ? v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v.toFixed(2);
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 28, padding: "0 9px", borderRadius: 7, flexShrink: 0, border: `0.5px solid ${bdr}`, background: bg }}>
-      <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" as const, color: "var(--text3)" }}>{label}</span>
-      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        {price != null && <span style={{ ...mono, fontSize: 10, color: "var(--text3)" }}>${fmtPrice(price)}</span>}
-        {pct != null
-          ? <span style={{ ...mono, fontSize: 10, fontWeight: 700, color: vCol }}>{sign}{Math.abs(pct).toFixed(2)}%</span>
-          : <span style={{ ...mono, fontSize: 10, color: "var(--text3)" }}>--</span>
-        }
-      </div>
+    <div style={{ display: "grid", gridTemplateColumns: "6px 1fr auto auto", alignItems: "center", gap: 10, padding: "8px 11px", background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "default", transition: "border-color 0.15s, background 0.15s" }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(201,168,76,0.3)"; (e.currentTarget as HTMLDivElement).style.background = "rgba(201,168,76,0.04)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLDivElement).style.background = "var(--bg3)"; }}>
+      <div style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, boxShadow: `0 0 6px ${dotColor}` }} />
+      <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "var(--accent)", letterSpacing: "-0.2px" }}>{label}</span>
+      {price != null
+        ? <span style={{ ...mono, fontSize: 10, color: "var(--text3)" }}>${fmtPrice(price)}</span>
+        : <span style={{ ...mono, fontSize: 10, color: "var(--text3)" }}>--</span>
+      }
+      {pct != null
+        ? <span style={{ ...mono, fontSize: 10.5, fontWeight: 700, color: vCol, minWidth: 50, textAlign: "right" }}>{sign}{Math.abs(pct).toFixed(2)}%</span>
+        : <span style={{ ...mono, fontSize: 10.5, color: "var(--text3)", minWidth: 50, textAlign: "right" }}>--</span>
+      }
     </div>
   );
 }
@@ -209,49 +243,37 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
     return () => controller.abort();
   }, [assets]);
 
-  const [indexPrices, setIndexPrices] = useState<{ spy: number | null; qqq: number | null; dia: number | null }>({ spy: null, qqq: null, dia: null });
+  const [indexData, setIndexData] = useState<IndexPrice[]>([
+    { label: "S&P 500", ticker: "^GSPC", price: null, changePct: null, sparkline: [] },
+    { label: "Nasdaq",  ticker: "^IXIC", price: null, changePct: null, sparkline: [] },
+    { label: "Dow",     ticker: "^DJI",  price: null, changePct: null, sparkline: [] },
+  ]);
   useEffect(() => {
     const load = async () => {
       try {
         const r = await fetch(`${API_URL}/watchlist-data?tickers=^GSPC,^IXIC,^DJI`);
         const d = await r.json();
         const results = d.results || [];
-        const spy = results.find((x: any) => x.ticker === "^GSPC");
-        const qqq = results.find((x: any) => x.ticker === "^IXIC");
-        const dia = results.find((x: any) => x.ticker === "^DJI");
-        setIndexPrices({ spy: spy?.change_pct ?? null, qqq: qqq?.change_pct ?? null, dia: dia?.change_pct ?? null });
+        const next: IndexPrice[] = [
+          { label: "S&P 500", ticker: "^GSPC" },
+          { label: "Nasdaq",  ticker: "^IXIC" },
+          { label: "Dow",     ticker: "^DJI"  },
+        ].map(meta => {
+          const row = results.find((x: any) => x.ticker === meta.ticker);
+          return {
+            ...meta,
+            price: row?.price == null ? null : Number(row.price),
+            changePct: row?.change_pct == null ? null : Number(row.change_pct),
+            sparkline: Array.isArray(row?.sparkline) ? row.sparkline.map(Number).filter((n: number) => Number.isFinite(n)) : [],
+          };
+        });
+        setIndexData(next);
       } catch {}
     };
     load(); const id = setInterval(load, 60000); return () => clearInterval(id);
   }, []);
 
   const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
-  const chipsScrollRef = useRef<HTMLDivElement>(null);
-  const chipsPausedRef = useRef(false);
-  const chipsManualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const chipsExpectedScrollRef = useRef(0);
-
-  useEffect(() => {
-    let rafId: number;
-    const step = () => {
-      const el = chipsScrollRef.current;
-      if (el && el.scrollWidth > el.clientWidth) {
-        const halfWidth = el.scrollWidth / 2;
-        const actual = el.scrollLeft, expected = chipsExpectedScrollRef.current;
-        if (Math.abs(actual - expected) > 1.5) {
-          chipsPausedRef.current = true; chipsExpectedScrollRef.current = actual;
-          if (chipsManualTimerRef.current) clearTimeout(chipsManualTimerRef.current);
-          chipsManualTimerRef.current = setTimeout(() => { chipsPausedRef.current = false; }, 2000);
-        } else if (!chipsPausedRef.current) {
-          let next = actual + 0.5; if (next >= halfWidth) next -= halfWidth;
-          el.scrollLeft = next; chipsExpectedScrollRef.current = next;
-        }
-      }
-      rafId = requestAnimationFrame(step);
-    };
-    rafId = requestAnimationFrame(step);
-    return () => { cancelAnimationFrame(rafId); if (chipsManualTimerRef.current) clearTimeout(chipsManualTimerRef.current); };
-  }, []);
 
   useEffect(() => {
     const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
@@ -284,6 +306,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
           ticker: s.ticker,
           price: s.price == null ? null : Number(s.price),
           changePct: s.change_pct == null ? null : Number(s.change_pct),
+          sparkline: Array.isArray(s.sparkline) ? s.sparkline.map(Number).filter((n: number) => Number.isFinite(n)) : [],
         })));
       } catch (e: any) {
         // AbortError is expected during cleanup, not a real failure.
@@ -344,10 +367,14 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
   }, [perfHistory]);
 
   const validHoldingTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
-  const baseChips = holdingPrices.length > 0
-    ? holdingPrices.map(h => ({ label: h.ticker, pct: h.changePct, price: h.price }))
-    : validHoldingTickers.map(t => ({ label: t, pct: null as number | null, price: null }));
-  const doubledChips = [...baseChips, ...baseChips];
+  // Per-ticker rows for the vertical Holdings list. Drives the new MarketCard
+  // grid (Mock A). Falls back to skeleton rows (null price, null pct) when
+  // the watchlist-data fetch hasn't resolved yet, keyed by the user's saved
+  // tickers so the row count is stable across loads.
+  const holdingRows = validHoldingTickers.map(t => {
+    const hp = holdingPrices.find(h => h.ticker === t);
+    return { ticker: t, price: hp?.price ?? null, pct: hp?.changePct ?? null };
+  });
 
   const hasBriefContent = market && (market.market || market.context || market.holdings || market.outlook);
 
@@ -646,37 +673,41 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
           {/* CENTER - vertical divider */}
           <div className="gb-vdiv" style={{ background: "var(--border)", height: "100%" }} />
 
-          {/* RIGHT - market indices + holdings marquee.
-              Previously also had a "Portfolio Today" block at the top with a
-              30px green/red percentage and dollar delta, but that data is
-              already shown next to the greeting in the always-visible
-              GreetingBar header (live value + delta + privacy toggle).
-              Having it again here read as duplication and the big 30px figure
-              also overflowed left into the divider on narrower viewports.
-              Dropped. */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {/* RIGHT - market indices (top) + holdings vertical list (bottom).
+              v0.39 redesign (Mock A): Markets are now per-card with mini
+              sparklines + pct. Holdings became a vertical scrollable list
+              instead of an auto-scrolling horizontal marquee - the marquee
+              overflowed past the divider on narrower viewports (user-
+              reported, with screenshot), and stacked the data at the top
+              of the right column leaving empty space below. Holdings list
+              has min-width:0 + overflow-y:auto so long ticker lists scroll
+              within the column without leaking out. The wrapper uses
+              `flex: 1 1 0` on holdings + `min-height: 0` so the right
+              column stretches vertically to balance the briefing on the
+              left. */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
 
             {/* Market indices */}
             <div>
               <span style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: "var(--text3)", fontWeight: 600, display: "block", marginBottom: 8 }}>Markets</span>
-              {indexPrices.spy === null ? (
+              {indexData.every(d => d.changePct == null) ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  {[1, 2, 3].map(i => <div key={i} style={{ height: 30, borderRadius: 8, background: "var(--bg3)", animation: "gb-pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.1}s` }} />)}
+                  {[1, 2, 3].map(i => <div key={i} style={{ height: 38, borderRadius: 9, background: "var(--bg3)", animation: "gb-pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.1}s` }} />)}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <IndexChip label="S&P 500" pct={indexPrices.spy} />
-                  <IndexChip label="Nasdaq"  pct={indexPrices.qqq} />
-                  <IndexChip label="Dow"     pct={indexPrices.dia} />
+                  {indexData.map(idx => (
+                    <MarketCard key={idx.ticker} label={idx.label} pct={idx.changePct} sparkline={idx.sparkline} />
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Holdings marquee */}
+            {/* Holdings vertical list - stretches to fill remaining height */}
             {!hideTickers && validHoldingTickers.length > 0 && (
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                  <span style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: "var(--text3)", fontWeight: 600 }}>Holdings</span>
+              <div style={{ display: "flex", flexDirection: "column", flex: "1 1 0", minHeight: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexShrink: 0 }}>
+                  <span style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: "var(--text3)", fontWeight: 600 }}>Your Holdings</span>
                   {mkt.isOpen && (
                     <>
                       <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4caf7d", animation: "gb-live-pulse 2s ease-in-out infinite", flexShrink: 0 }} />
@@ -684,14 +715,15 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
                     </>
                   )}
                 </div>
-                <div style={{ position: "relative", overflow: "hidden" }}>
-                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 20, background: "linear-gradient(to right,var(--card-bg),transparent)", zIndex: 1, pointerEvents: "none" }} />
-                  <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 20, background: "linear-gradient(to left,var(--card-bg),transparent)", zIndex: 1, pointerEvents: "none" }} />
-                  <div ref={chipsScrollRef} style={{ display: "flex", gap: 5, overflowX: "auto", flexWrap: "nowrap", scrollbarWidth: "none" as any }}
-                    onMouseEnter={() => { chipsPausedRef.current = true; }}
-                    onMouseLeave={() => { chipsPausedRef.current = false; }}>
-                    {doubledChips.map((chip, i) => <HoldingChip key={i} label={chip.label} pct={chip.pct} price={chip.price} />)}
-                  </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5, overflowY: "auto", flex: 1, minHeight: 0, paddingRight: 2, scrollbarWidth: "thin" as any }}>
+                  {holdingRows.map((row, i) => {
+                    const dotColor = i === 0 ? "var(--accent)" :
+                      i === 1 ? "rgba(201,168,76,0.7)" :
+                      i === 2 ? "rgba(201,168,76,0.5)" :
+                      i === 3 ? "rgba(201,168,76,0.35)" :
+                      "rgba(201,168,76,0.25)";
+                    return <HoldingRow key={row.ticker} label={row.ticker} pct={row.pct} price={row.price} dotColor={dotColor} />;
+                  })}
                 </div>
               </div>
             )}
