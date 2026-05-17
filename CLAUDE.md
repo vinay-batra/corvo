@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.42 (May 17, 2026) - /chat system prompt expansion. ~95 lines added to `backend/main.py` /chat system prompt: 14 example exchanges as length + tone anchors (concentration question, what to buy, missing data, panic sell, single-stock loss, cash deployment, extreme weights, lucky-vs-skilled CAGR, jargon definition, web-search-unavailable, multi-portfolio user, crash prediction, rebalance trigger, tax-loss harvesting), 6 edge-case handlers (empty portfolio / single holding / 100% cash / negative one-year return / Sharpe <0.5 with positive return / aggressive past 60), tone calibration anchors (too cautious / too aggressive / too formal vs Corvo voice with explicit good-bad pairs), and a 160-190 word target / 200 hard ceiling for roast mode plus a 180-word example roast. Pure prompt-engineering, no code or schema changes.**
+**Last shipped: v0.43 (May 17, 2026) - 17-commit polish bundle covering pricing tier rename + 3-tier launch (Retail / Accredited / Institutional with founding-member pricing + 14-day trial messaging), PerformanceChart footer-toolbar redesign (orphan Why? button consolidated with chart-level controls below the chart), SharePortfolio modal portal fix (escaped topbar backdrop-filter containing block so it actually renders over the full viewport), GreetingBar sparkline color now matches today's pct instead of 7-day trend, dashboard tour refresh (5 -> 6 stops with new WSID action-plan stop + sidebar copy updated for v0.36+ tabbed sidebar + tabs description updated for new order), public nav + dashboard tab order both reordered to match buyer funnel / user flow, try-without-signup demo flow (3 sample portfolios load into the full dashboard via /app?demo=<slug>, anon chat capped at 5 messages, demo banner with sign-up CTA), trust signals reinstated (homepage SecurityTrustSection + signup-page trust strip), Monte Carlo user-gated run button + % alongside $ in scenario table. Plus today's two final touches: removed the duplicate 3-card hero demo row (the floating Try a quick analysis widget already covered that intent, and two parallel demo paths diluted each other - the /app?demo=<slug> URLs stay wired for shareable links / outreach), and added wheel-to-horizontal scroll on the testimonial carousel so vertical mouse-wheel motion moves the cards left/right instead of scrolling past the section.**
 
 **Last shipped before: v0.41 (May 17, 2026) - 4 feedback-driven fixes. (1) Per-holding account-type tagging in the PortfolioBuilder chevron-expand (mixed-account portfolios). (2) Correlation + Drawdown charts on Simulations tab no longer double-render their own card chrome inside the parent Card. (3) Monte Carlo bumped 8,500 -> 10,000 paths everywhere (code, copy, blogs, metadata); rebuilt with Student-t (df=6) fat-tail innovations and 250 sample paths returned as `paths_sample` so the chart renders a true fan with visible loss scenarios; "Bear Case" labels renamed to honest "Worst 5%" / "Best 5%"; VaR/ES cards now flip green when the worst-5% percentile is genuinely positive instead of pretending it's a loss; the "decline by X%" insight text fixed to read "even the worst 5% still gained X%" when applicable. (4) /chat system prompt loosened to allow Corvo company / founder / how-it-works questions; chat error handler now classifies the upstream exception into a plain-English message instead of swallowing every failure as "Chat error. Please try again."**
 
@@ -283,9 +283,61 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.42
+- Version: v0.43
 
 ## What Was Built
+
+### v0.43 (May 17, 2026) - 17-commit polish bundle
+
+Rolls up everything shipped after v0.42 without a version bump. Buckets:
+
+**Pricing (rename + 3-tier launch + copy fixes)**
+- Tiers renamed Free / Pro / Elite -> Retail / Accredited / Institutional (SEC investor classifications - cleaner mapping to who each tier serves than generic SaaS rungs).
+- Both paid tiers now show "Coming Soon" pill in-card; Accredited keeps the floating gold "MOST POPULAR" badge above the card so the Rule-of-3 anchor still works.
+- New preLaunchNote field on both paid tiers: "Founding members lock in $9/month forever" / "$29/month forever" - loss-aversion framing to drive waitlist conversion.
+- Feature lists expanded: Retail (all live features), Accredited (added options Greeks, intraday refresh, custom benchmarks, backtesting), Institutional (added API access, concierge TLH execution, custom alerts on any metric, Fama-French factor model decomposition, quarterly 1:1 strategy call).
+- Hero subtext cut 22 words -> 7 ("Retail stays free. Two paid tiers coming soon.").
+- Plaid messaging cleanup: dropped "(no 15-minute delay)" parenthetical from Institutional features.
+
+**PerformanceChart redesign**
+- Stripped the chart-internal sub-header row (legend + saved-line toggles + %/$ + Custom range) and consolidated everything into a single footer row below the Plot: legend swatches + saved-line toggles + %/$ toggle + Custom range button on left, Max drawdown chip + Why? button on right. Fixes the original complaint where Why? was orphaned bottom-left while a wall of controls piled up top-right.
+- Custom-date picker now opens below the footer instead of above the chart (so toggling Custom range doesn't push the chart down each time).
+- Benchmark legend swatch rebuilt as an SVG dashed line matching the chart's dot-dashed benchmark trace.
+
+**SharePortfolio modal**
+- Real root cause finally fixed: the topbar uses `backdrop-filter: blur(14px) saturate(140%)` which per CSS spec creates a new containing block for `position: fixed` descendants. So the share modal's `inset: 0` was being contained by the 56px topbar, producing a thin-sliver render with no dark overlay covering the page. Fix: render the modal via `createPortal(document.body)` so it escapes the containing block entirely. Bumped z-index 100 -> 2000 to clear floating chat / customize / feedback buttons.
+- Got the AnimatePresence nesting right on the second try: portal must be on the OUTSIDE, AnimatePresence INSIDE - the inverse silently breaks the modal because AnimatePresence's child-tracking can't reason about a portal return value.
+- Share button now has `fontWeight: 600` to match Export (was missing, rendering at default 400 - the visible weight mismatch).
+- Modal overlay switched to `alignItems: flex-start + overflowY: auto` so tall content scrolls within the overlay instead of being pushed off-screen.
+
+**GreetingBar sparkline color fix**
+- The mini market sparklines were colored by `data[last] >= data[0]` (7-day trend direction) but the percentage pill next to each card showed today's 1-day change. Mismatch produced green sparklines next to red percentages (and vice versa). Sparkline now takes a `pct` prop and colors from that, so the line shape still shows the 7-day trend but the color matches the pct pill on the same card.
+
+**Dashboard tour refresh**
+- Last tightened in v0.29; seven shipments since drifted three stops out of sync. Step 1 (sidebar) rewritten for the v0.36+ tabbed sidebar + per-holding account-type tagging + Edit-with-Corvo NL editor. Step 2 (Daily Brief) added mention of the 2-line collapsed teaser. Step 3 (Tabs) updated for the new tab order + removed the stale "AI insights" reference.
+- New Step 3 ("Today's Plan") inserted between Daily Brief and Tabs, anchored to the WSID action card (added `id="tour-desk-wsid"`). Frames it as the dashboard's main action surface. Desktop tour goes 5 -> 6 stops; mobile stays at 4.
+
+**Nav reorder**
+- Public nav: Install moved from #2 to #7 so the funnel reads product -> cost -> resources -> company -> questions -> get-it-on-your-phone (Install at #2 broke the funnel - users hit "how do I install?" before "what does it cost?"). New order: Features / Pricing / Changelog / Blog / About / FAQ / Install.
+- Dashboard tabs: swapped Stocks <-> Simulations. Old order put Stocks (research mode for finding new tickers) before Simulations (projection of what you already own). New flow: owned -> projected -> discover -> context. New order: Dashboard / Positions / Simulations / Stocks / News.
+
+**Try-without-signup demo flow**
+- New `lib/demoPortfolios.ts` defines 3 preset portfolios with stable slugs (`bogleheads` / `nvda-growth` / `dividend-income`). URLs `/app?demo=<slug>` auto-load the preset assets, run `fetchPortfolio`, and render a sticky gold demo banner at the top of the main content area with a Sign-up-free CTA. Banner gated on `!userId` so it disappears the moment they log in.
+- `?portfolio=<base64>` shared URLs also auto-run analysis now (used to just populate the sidebar).
+- AiChat caps anonymous users at 5 messages via a `corvo_anon_chat_count` localStorage counter. Past 5 the input area becomes a "Sign up to keep chatting" panel.
+- The 3-card hero entry point that linked to these URLs was shipped briefly then removed (see below) - the URLs themselves stay wired for shareable links / email campaigns / support outreach.
+
+**Trust signals reinstated**
+- Homepage `SecurityTrustSection` was defined but never rendered (stale "removed" comment). Wired back in between testimonials and final CTA. 4 cards: bank-grade encryption / never sold or shared / no credit card required / cancel anytime.
+- Auth signup page gained a small inline trust strip below inputs with 3 SVG icons + claims (encryption / never sell / cancel anytime). Renders on signup mode only.
+
+**Monte Carlo UX**
+- User-gated Run button: MC no longer auto-fires on tab load. Empty state shows a prominent "Run Simulation" CTA inside a dashed gold container. After results, a small "Re-run -" button sits next to the horizon selector. Lets users pick a horizon first without burning a backend call.
+- Scenario table change column now shows both $ and %: "+$7,946 (+15.9%)". Same sign / color treatment, formatted to 1 decimal place.
+
+**Today's final two touches**
+- Removed the 3-card hero demo row entirely. The floating "Try a quick analysis" widget on the right side of the hero already covered the "try without signing up" intent, and two parallel demo paths diluted each other. The /app?demo=<slug> URLs + demo banner + anon chat cap stay wired in `lib/demoPortfolios.ts` for shareable links and outreach campaigns.
+- Wheel-to-horizontal scroll on the testimonial carousel. Vertical mouse-wheel motion over the cards now translates to `scrollLeft` movement instead of scrolling past the section. Non-passive `wheel` listener (passive: false so it can preventDefault). Only intercepts when `|deltaY| > |deltaX|` so trackpad horizontal swipes pass through normally.
 
 ### v0.42 (May 17, 2026) - /chat system prompt expansion
 
