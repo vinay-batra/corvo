@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.35 (May 16, 2026) - fix "same daily delta across every portfolio" bug + remove PortfolioSwitcher (per user feedback). Frontend only.**
+**Last shipped: v0.36 (May 16, 2026) - tabbed sidebar redesign (Mock C). Holdings / Account / Saved each get the sidebar's full width as their own tab. Analyze flows right below tab content, no flex:1 spacer pinning it to the bottom. Account type dropdown becomes a 2x4 grid of selectable cards. Frontend only.**
+
+v0.36 implements the tabbed sidebar redesign user picked from a 6-option brainstorm (between Mock C "tabbed sidebar" and Mock D "bottom config strip"). Three sidebar tabs now: HOLDINGS (the asset rows + add/equalize + sticky weight status), ACCOUNT (Portfolio Value card + 8-card Account Type grid + Reinvest toggle), SAVED (the SavedPortfolios chip cards). Each gets the sidebar's full width without competing with the other two. Tab nav is sticky at the top of the sidebar's scroll region so it stays visible while users scroll through long lists. PortfolioBuilder gained a new `view: "holdings" | "account"` prop so a single component instance still owns the state but only renders the active tab's section. Account type selector swapped from a native `<select>` with optgroups to a 2x4 grid of selectable cards (uses the new `chip` field in `lib/accountType.ts` for tight chip-friendly summaries like "Tax-free + match", "Kiddie tax applies") - all 8 options + their tax framing visible at once instead of hidden behind a click. The big change per user feedback: removed `flex: 1` from the tab content wrapper so the Analyze button flows immediately below the content with no awkward dead space above it; outer sidebar wrapper's overflow flipped from `hidden` to `overflow-y: auto` so the whole sidebar scrolls when content exceeds viewport (instead of the previous flex-fill-with-inner-scroll pattern). Edit-with-Corvo kept at its current location above the tabs (it's a global tool that should be reachable from any tab); could move into Holdings later if you want it more contextual.
 
 v0.35 is a hotfix on top of v0.34. Two issues. (1) After clicking any saved portfolio in the sidebar SavedPortfolios component, the live value at the top of the dashboard ($XX,XXX +$Y · +Z%) stayed pinned to the FIRST portfolio loaded - same delta dollar + same delta pct regardless of which portfolio was actually selected. Root cause: `SavedPortfolios.onLoad` signature was `(assets, accountType)` so when the user clicked a portfolio, the dashboard's onLoad handler set assets + accountType but NEVER set `savedPortfolioId`. The async auto-detect useEffect on `[assets, userId]` (line ~1820 in app/app/page.tsx) was supposed to pick this up but the async Supabase fetch raced against the GreetingBar polling and frequently lost - so perfHistory stayed empty, liveBaseValue fell back to portfolioInputValue, and the displayed live value was `seed * (1 + todayPct)` for every portfolio using the same seed. Fix: widened `SavedPortfolios.onLoad` to `(assets, accountType, portfolioId, portfolioName)` so the dashboard sets savedPortfolioId synchronously on click → perfHistory effect fires → liveBaseValue recomputes against the new portfolio's snapshots. (2) GreetingBar's holdingPrices polling had a stale-fetch race: if user clicked portfolio A then B before A's `/watchlist-data` fetch resolved, A's response could land AFTER B's and overwrite holdingPrices with A's data, pinning portfolioToday to A's pct movements. Fixed with AbortController + cancel flag + clearing holdingPrices on assets change. (3) Removed PortfolioSwitcher entirely per user feedback - the sidebar SavedPortfolios component is the single source of truth for portfolio switching going forward.
 
@@ -271,9 +273,34 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.35
+- Version: v0.36
 
 ## What Was Built
+
+### v0.36 (May 16, 2026) - tabbed sidebar redesign (Mock C)
+
+**Tabbed sidebar (the redesign user picked)**
+- The sidebar previously stacked everything vertically: Logo, Edit with Corvo, PortfolioBuilder (which itself contained Holdings + Account sub-sections), Analyze button, SavedPortfolios. Each section competed for vertical space, the Account section got squeezed at the bottom of PortfolioBuilder, and the Saved cards sat below the Analyze button feeling like an afterthought.
+- Now: three sticky tabs at the top of the sidebar's scroll region (`HOLDINGS · ACCOUNT · SAVED`), one tab content at a time, with the Analyze button flowing immediately below whatever tab is active. No flex:1 wrapper means no dead space between content and the button - per direct user feedback ("just make sure not to pin analyze all the way at the bottom there shouldnt be all that empty space between the stuff and analyze button").
+- Tab nav: gold underline glow on the active tab (matches the dashboard top tabs visual vocabulary). Inactive tabs hover-brighten to var(--text). Position sticky at top: 0 so tabs stay visible while scrolling through a long Holdings list or a long Saved list.
+
+**PortfolioBuilder gained a `view: "holdings" | "account"` prop**
+- One component instance still owns all the state (assets, account type, live base value, polling effects). The new `view` prop wraps each top-level section in `{view === "X" && (<>...</>)}` so the parent can route Holdings + Account into different tabs. Default value `"holdings"` preserves backwards compat for the onboarding flow that doesn't know about tabs.
+- The sticky Holdings header (count chip + weight status + utility menu) only renders in the Holdings view. The Portfolio Value card + Account Type grid + Reinvest toggle only render in the Account view. Modals (Presets, CSV import, NL Edit preview) render regardless of view so triggers from Holdings still work mid-modal even if user switches tabs.
+
+**Account type dropdown -> 2x4 grid of selectable cards**
+- The native `<select>` with 4 optgroups (Taxable / Retirement / Health / Education) is gone. Replaced with a 2-column grid of 8 selectable cards. Each card shows the short label in gold Space Mono (`BROKERAGE`, `ROTH IRA`, etc.) + a tight chip-friendly tax framing summary underneath (`TLH + cap gains apply`, `Tax-free growth`, `Pre-tax + match`, `Kiddie tax applies`, etc.).
+- Active card: gold border + soft 12px gold glow + accent-tinted text. Hover state: gold-tint background + accent-30 border. Title attribute on each card surfaces the full label + tagline.
+- New `chip` field on `AccountTypeMeta` in `frontend/lib/accountType.ts` carries the tight chip text - under 28 chars per spec. The full `tagline` is preserved for the dashboard pill tooltip + any future detail surfaces.
+
+**Sidebar wrapper overflow flipped**
+- Outer sidebar `overflow: hidden` -> `overflowY: auto, overflowX: hidden`. Previously the Builder area was flex:1 + overflow:auto so it filled the sidebar height and scrolled internally. That model is what caused the dead space above Analyze when content was short. New model: whole sidebar scrolls as one column, tabs stay sticky at top, Analyze sits at the natural end of tab content.
+
+**SavedPortfolios moved out of the standalone bottom section**
+- Previously SavedPortfolios rendered as its own section below the Analyze button. Now it renders inside the Saved tab. Same component, same onLoad signature (passes `assets, accountType, portfolioId, portfolioName` so savedPortfolioId updates synchronously per v0.35). Has more vertical breathing room now that it owns the sidebar's full width when active.
+
+**Edit-with-Corvo kept at its current location**
+- The collapsible "Edit with Corvo" NL input row stays above the tabs (between the Logo and the tab nav). It's a global tool that works regardless of which tab is active, so it makes sense as sidebar chrome rather than tab content. Could move into the Holdings tab as a footer button in a future iteration if you want it more contextual.
 
 ### v0.35 (May 16, 2026) - hotfix: same-delta-across-portfolios bug + remove PortfolioSwitcher
 
