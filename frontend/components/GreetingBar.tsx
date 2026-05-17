@@ -89,10 +89,15 @@ function BriefSection({ label, text, delay }: { label: string; text: string; del
 }
 
 // Tiny SVG sparkline. Renders a polyline of `data` normalized to the viewBox.
-// Color is the up/down red/green based on first vs last point. Returns an
-// invisible-but-present <svg> for too-short series so the layout doesn't
-// jump when data arrives.
-function Sparkline({ data, width = 36, height = 18 }: { data: number[]; width?: number; height?: number }) {
+// `pct` drives the color so the line matches today's percent-change pill on
+// the same card. The sparkline data is the last 7 daily closes (a different
+// time window than today's pct), so coloring it from first-vs-last of the
+// data array used to produce mismatched cards: green 7-day trend with a red
+// -1.24% today, etc. Reading color from `pct` instead keeps the card visually
+// coherent at a glance. The line shape still shows the 7-day trend.
+// Returns an invisible-but-present <svg> for too-short series so the layout
+// doesn't jump when data arrives.
+function Sparkline({ data, pct, width = 36, height = 18 }: { data: number[]; pct: number | null; width?: number; height?: number }) {
   if (!data || data.length < 2) return <svg width={width} height={height} style={{ flexShrink: 0 }} />;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -102,8 +107,7 @@ function Sparkline({ data, width = 36, height = 18 }: { data: number[]; width?: 
     const y = height - ((v - min) / range) * (height - 2) - 1; // 1px padding top/bottom
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ");
-  const up = data[data.length - 1] >= data[0];
-  const stroke = up ? "#4caf7d" : "var(--red)";
+  const stroke = pct == null ? "var(--text3)" : pct >= 0 ? "#4caf7d" : "var(--red)";
   return (
     <svg width={width} height={height} style={{ flexShrink: 0, display: "block" }}>
       <polyline points={points} fill="none" stroke={stroke} strokeWidth={1.2} strokeLinejoin="round" strokeLinecap="round" />
@@ -124,7 +128,7 @@ function MarketCard({ label, pct, sparkline }: { label: string; pct: number | nu
       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(201,168,76,0.3)"; }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; }}>
       <span style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" as const, color: "var(--text3)", flex: 1 }}>{label}</span>
-      <Sparkline data={sparkline} />
+      <Sparkline data={sparkline} pct={pct} />
       {pct != null
         ? <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: vCol, minWidth: 56, textAlign: "right" }}>{sign}{Math.abs(pct).toFixed(2)}%</span>
         : <span style={{ ...mono, fontSize: 11, color: "var(--text3)", minWidth: 56, textAlign: "right" }}>--</span>
