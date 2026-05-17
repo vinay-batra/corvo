@@ -2691,6 +2691,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       portfolioValue={portfolioInputValue}
                       hideTickers={hiddenCards.has("tickers")}
                       onTodayPctChange={setTodayPct}
+                      accountType={accountType}
                     />
                   </DashReveal>
                 </div>

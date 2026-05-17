@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { RESOLVED_API_URL } from "../lib/api";
+import { type AccountTypeId, getAccountType, DEFAULT_ACCOUNT_TYPE } from "../lib/accountType";
 
 const API_URL = RESOLVED_API_URL;
 
@@ -64,6 +65,12 @@ interface Props {
   // Bubble today's % change up so the sidebar input can show the live
   // (base x (1 + pct/100)) portfolio value. Fires with null when no data.
   onTodayPctChange?: (pct: number | null) => void;
+  // Account type for the currently-loaded portfolio. Rendered as a small
+  // gold pill next to the live value so the user always knows which tax
+  // lens the AI is reasoning through (Roth IRA, HSA, etc.). When omitted
+  // or set to the default (taxable_brokerage), the pill still renders so
+  // the visual is consistent across every portfolio.
+  accountType?: AccountTypeId;
 }
 
 function BriefSection({ label, text, delay }: { label: string; text: string; delay: number }) {
@@ -120,7 +127,9 @@ function HoldingChip({ label, pct, price }: { label: string; pct: number | null;
   );
 }
 
-export default function GreetingBar({ displayName, assets, portfolioValue, perfHistory, hideBriefing, hideTickers, onTodayPctChange }: Props) {
+export default function GreetingBar({ displayName, assets, portfolioValue, perfHistory, hideBriefing, hideTickers, onTodayPctChange, accountType }: Props) {
+  const resolvedAccountType = accountType || DEFAULT_ACCOUNT_TYPE;
+  const accountMeta = getAccountType(resolvedAccountType);
   const [resolvedName, setResolvedName] = useState(displayName || "");
   useEffect(() => {
     if (displayName?.trim()) { setResolvedName(displayName.trim()); return; }
@@ -485,7 +494,57 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
                   </svg>
                 )}
               </button>
+              {/* Account type pill - tells the user which tax lens the AI is
+                  reasoning through (Roth IRA, HSA, etc.). Always renders so
+                  there's no "what account am I in?" ambiguity. Hover surfaces
+                  the full label + tagline via the title attribute. */}
+              <span
+                title={`${accountMeta.label} - ${accountMeta.tagline}`}
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  color: "var(--accent)",
+                  background: "rgba(201,168,76,0.1)",
+                  border: "0.5px solid rgba(201,168,76,0.3)",
+                  borderRadius: 5,
+                  padding: "3px 7px",
+                  marginLeft: 4,
+                  flexShrink: 0,
+                  cursor: "default",
+                  alignSelf: "center",
+                }}
+              >
+                {accountMeta.short}
+              </span>
             </div>
+          )}
+          {/* Fallback pill: shown when portfolioValue is 0 / unset so the
+              user still sees the account context before they've set a base
+              value. Lives outside the gb-live-value conditional above. */}
+          {!((portfolioValue ?? 0) > 0) && (
+            <span
+              title={`${accountMeta.label} - ${accountMeta.tagline}`}
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: 1,
+                textTransform: "uppercase",
+                color: "var(--accent)",
+                background: "rgba(201,168,76,0.1)",
+                border: "0.5px solid rgba(201,168,76,0.3)",
+                borderRadius: 5,
+                padding: "3px 7px",
+                flexShrink: 0,
+                cursor: "default",
+                alignSelf: "center",
+              }}
+            >
+              {accountMeta.short}
+            </span>
           )}
         </div>
 
