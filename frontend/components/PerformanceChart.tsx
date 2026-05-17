@@ -238,97 +238,15 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
     <motion.div
       // initial={false} is required - do not remove
       initial={false} transition={{ duration: 0.5 }} style={{ overflow: "hidden", width: "100%", minWidth: 0 }}>
-      {/* Header row */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-        <p style={{ fontSize: 9, letterSpacing: 2.5, color: legendFg, textTransform: "uppercase" }}>
-          Performance vs {benchLabel}
-        </p>
-        <div style={{ display: "flex", gap: 12, fontSize: 10, color: legendFg, alignItems: "center", flexWrap: "wrap" }}>
-          {/* Saved line toggles */}
-          {savedLines.map(l => (
-            <button key={l.id} onClick={() => toggleSavedLine(l.id)}
-              title={`Toggle ${l.name}`}
-              style={{
-                display: "flex", alignItems: "center", gap: 5, fontSize: 10, cursor: "pointer",
-                background: l.visible ? "rgba(255,255,255,0.04)" : "transparent",
-                border: `0.5px solid ${l.visible ? l.color + "55" : "var(--border)"}`,
-                borderRadius: 5, padding: "2px 8px", color: l.visible ? l.color : legendFg,
-                transition: "all 0.15s",
-              }}>
-              <span style={{ width: 12, height: 2, background: l.visible ? l.color : "transparent", border: l.visible ? "none" : `1px solid ${legendFg}`, display: "inline-block", borderRadius: 1 }} />
-              {l.name}
-            </button>
-          ))}
-          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 14, height: 2, background: amber, display: "inline-block", borderRadius: 1 }} />
-            Portfolio
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 14, height: 2, background: fc, display: "inline-block", borderRadius: 1 }} />
-            {benchLabel}
-          </span>
-          {/* $ / % view toggle - only when portfolio value is known */}
-          {portfolioValue != null && portfolioValue > 0 && (
-            <div style={{ display: "flex", borderRadius: 5, overflow: "hidden", border: "0.5px solid var(--border)" }}>
-              {(["%" , "$"] as const).map(mode => (
-                <button key={mode}
-                  onClick={() => setShowDollars(mode === "$")}
-                  style={{
-                    padding: "2px 8px", fontSize: 9, cursor: "pointer", border: "none",
-                    background: (mode === "$") === showDollars ? "var(--accent)" : "transparent",
-                    color: (mode === "$") === showDollars ? "var(--bg)" : legendFg,
-                    fontFamily: "var(--font-mono)", fontWeight: 700, transition: "all 0.15s",
-                  }}>
-                  {mode}
-                </button>
-              ))}
-            </div>
-          )}
-          {/* Custom date range toggle */}
-          {onCustomDateChange && (
-            <button
-              onClick={() => setShowCustomPicker(p => !p)}
-              style={{
-                padding: "2px 8px", fontSize: 9, borderRadius: 5,
-                border: `0.5px solid ${customDateRange ? "rgba(184,134,11,0.4)" : "var(--border)"}`,
-                background: customDateRange ? "rgba(184,134,11,0.08)" : "transparent",
-                color: customDateRange ? "var(--accent)" : legendFg,
-                cursor: "pointer", transition: "all 0.15s",
-              }}>
-              {customDateRange ? "Custom: on" : "Custom range"}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Custom date picker */}
-      {showCustomPicker && onCustomDateChange && (
-        <motion.div
-          // initial={false} is required - do not remove
-          initial={false}
-          style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap", padding: "10px 12px", background: "rgba(184,134,11,0.04)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 8 }}>
-          <span style={{ fontSize: 10, color: legendFg, flexShrink: 0 }}>From</span>
-          <input type="date" value={localStart} onChange={e => {
-            const v = e.target.value;
-            setLocalStart(v);
-            if (v && localEnd && v <= localEnd) onCustomDateChange?.({ start: v, end: localEnd });
-          }}
-            style={{ padding: "4px 8px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text)", outline: "none", cursor: "pointer" }} />
-          <span style={{ fontSize: 10, color: legendFg, flexShrink: 0 }}>to</span>
-          <input type="date" value={localEnd} onChange={e => {
-            const v = e.target.value;
-            setLocalEnd(v);
-            if (localStart && v && localStart <= v) onCustomDateChange?.({ start: localStart, end: v });
-          }}
-            style={{ padding: "4px 8px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text)", outline: "none", cursor: "pointer" }} />
-          {customDateRange && (
-            <button onClick={handleClearCustomRange}
-              style={{ padding: "4px 10px", fontSize: 11, background: "transparent", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text3)", cursor: "pointer" }}>
-              Clear
-            </button>
-          )}
-        </motion.div>
-      )}
+      {/* The chart used to have its own header row above the Plot (legend +
+          saved-line toggles + %/$ + Custom range). That row stacked under the
+          parent Card's header (period buttons + benchmark + What-If) and made
+          the top right feel like a wall of controls, plus left the Max
+          drawdown "Why?" chip orphaned bottom-left. v0.42 redesign moved
+          everything chart-internal into a single footer row below the Plot:
+          legend / %/$ / Custom range on the left, Max drawdown insight on the
+          right. The Card header stays clean (Performance title + period +
+          benchmark + What-If). */}
 
       <Plot
         data={traces}
@@ -368,24 +286,130 @@ const PerformanceChart = memo(function PerformanceChart({ data, period = "1y", s
         useResizeHandler
       />
 
-      {/* Drawdown hint */}
-      {ddDate && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-          <div style={{ width: 14, height: 1, borderTop: "1.5px dashed var(--red)", opacity: 0.6 }} />
-          <span style={{ fontSize: 9, color: "var(--red)", opacity: 0.7 }}>
-            Max drawdown: {ddDate}
+      {/* Unified footer row: legend + saved lines + %/$ + Custom range on
+          the left, Max drawdown insight on the right. Wraps cleanly on
+          narrow viewports because every child is in a single flex row with
+          flexWrap. */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        gap: 14, marginTop: 12, paddingTop: 10, borderTop: "0.5px solid var(--border)",
+        flexWrap: "wrap",
+      }}>
+        {/* LEFT cluster: legend swatches + saved-line toggles + %/$ + Custom range */}
+        <div style={{ display: "flex", gap: 12, fontSize: 10, color: legendFg, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 14, height: 2, background: amber, display: "inline-block", borderRadius: 1 }} />
+            Portfolio
           </span>
-          {onExplainDrawdown && (
+          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            {/* Dotted swatch matches the benchmark line's `dash: "dot"`
+                style on the chart so the legend reads as the same line. */}
+            <svg width={14} height={4} aria-hidden style={{ display: "inline-block" }}>
+              <line x1="0" y1="2" x2="14" y2="2" stroke={fc} strokeWidth={1.5} strokeDasharray="2 2" strokeLinecap="round" />
+            </svg>
+            {benchLabel}
+          </span>
+          {savedLines.map(l => (
+            <button key={l.id} onClick={() => toggleSavedLine(l.id)}
+              title={`Toggle ${l.name}`}
+              style={{
+                display: "flex", alignItems: "center", gap: 5, fontSize: 10, cursor: "pointer",
+                background: l.visible ? "rgba(255,255,255,0.04)" : "transparent",
+                border: `0.5px solid ${l.visible ? l.color + "55" : "var(--border)"}`,
+                borderRadius: 5, padding: "2px 8px", color: l.visible ? l.color : legendFg,
+                transition: "all 0.15s",
+              }}>
+              <span style={{ width: 12, height: 2, background: l.visible ? l.color : "transparent", border: l.visible ? "none" : `1px solid ${legendFg}`, display: "inline-block", borderRadius: 1 }} />
+              {l.name}
+            </button>
+          ))}
+          {/* $ / % view toggle - only when portfolio value is known */}
+          {portfolioValue != null && portfolioValue > 0 && (
+            <div style={{ display: "flex", borderRadius: 5, overflow: "hidden", border: "0.5px solid var(--border)" }}>
+              {(["%", "$"] as const).map(mode => (
+                <button key={mode}
+                  onClick={() => setShowDollars(mode === "$")}
+                  style={{
+                    padding: "2px 8px", fontSize: 9, cursor: "pointer", border: "none",
+                    background: (mode === "$") === showDollars ? "var(--accent)" : "transparent",
+                    color: (mode === "$") === showDollars ? "var(--bg)" : legendFg,
+                    fontFamily: "var(--font-mono)", fontWeight: 700, transition: "all 0.15s",
+                  }}>
+                  {mode}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Custom date range toggle */}
+          {onCustomDateChange && (
             <button
-              onClick={() => onExplainDrawdown(ddDate)}
-              style={{ fontSize: 9, color: "var(--accent)", background: "none", border: "0.5px solid rgba(184,134,11,0.3)", borderRadius: 4, padding: "1px 6px", cursor: "pointer", transition: "border-color 0.15s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.3)"; }}
-            >
-              Why?
+              onClick={() => setShowCustomPicker(p => !p)}
+              style={{
+                padding: "2px 8px", fontSize: 9, borderRadius: 5,
+                border: `0.5px solid ${customDateRange ? "rgba(184,134,11,0.4)" : "var(--border)"}`,
+                background: customDateRange ? "rgba(184,134,11,0.08)" : "transparent",
+                color: customDateRange ? "var(--accent)" : legendFg,
+                cursor: "pointer", transition: "all 0.15s",
+              }}>
+              {customDateRange ? "Custom: on" : "Custom range"}
             </button>
           )}
         </div>
+
+        {/* RIGHT cluster: Max drawdown insight chip + Why button. Only renders
+            when there's a real max-drawdown date to annotate - if the chart
+            doesn't have one yet (still loading), the left cluster expands to
+            fill the row. */}
+        {ddDate && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 9px", background: "rgba(224,92,92,0.06)", border: "0.5px solid rgba(224,92,92,0.25)", borderRadius: 6 }}>
+              <div style={{ width: 12, height: 1, borderTop: "1.5px dashed var(--red)", opacity: 0.7 }} />
+              <span style={{ fontSize: 10, color: "var(--red)", fontWeight: 600 }}>Max drawdown · {ddDate}</span>
+            </div>
+            {onExplainDrawdown && (
+              <button
+                onClick={() => onExplainDrawdown(ddDate)}
+                title="Ask Corvo what drove this drawdown"
+                style={{ fontSize: 10, fontWeight: 600, color: "var(--accent)", background: "rgba(184,134,11,0.06)", border: "0.5px solid rgba(184,134,11,0.3)", borderRadius: 6, padding: "3px 10px", cursor: "pointer", transition: "border-color 0.15s, background 0.15s" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.background = "rgba(184,134,11,0.14)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(184,134,11,0.3)"; e.currentTarget.style.background = "rgba(184,134,11,0.06)"; }}
+              >
+                Why?
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Custom date picker - opens below the footer when the Custom range
+          toggle is active. Inline above the chart would push the chart down
+          on every toggle and feel jumpy; below it keeps the chart steady. */}
+      {showCustomPicker && onCustomDateChange && (
+        <motion.div
+          // initial={false} is required - do not remove
+          initial={false}
+          style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, flexWrap: "wrap", padding: "10px 12px", background: "rgba(184,134,11,0.04)", border: "0.5px solid rgba(184,134,11,0.15)", borderRadius: 8 }}>
+          <span style={{ fontSize: 10, color: legendFg, flexShrink: 0 }}>From</span>
+          <input type="date" value={localStart} onChange={e => {
+            const v = e.target.value;
+            setLocalStart(v);
+            if (v && localEnd && v <= localEnd) onCustomDateChange?.({ start: v, end: localEnd });
+          }}
+            style={{ padding: "4px 8px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text)", outline: "none", cursor: "pointer" }} />
+          <span style={{ fontSize: 10, color: legendFg, flexShrink: 0 }}>to</span>
+          <input type="date" value={localEnd} onChange={e => {
+            const v = e.target.value;
+            setLocalEnd(v);
+            if (localStart && v && localStart <= v) onCustomDateChange?.({ start: localStart, end: v });
+          }}
+            style={{ padding: "4px 8px", fontSize: 11, background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text)", outline: "none", cursor: "pointer" }} />
+          {customDateRange && (
+            <button onClick={handleClearCustomRange}
+              style={{ padding: "4px 10px", fontSize: 11, background: "transparent", border: "0.5px solid var(--border)", borderRadius: 6, color: "var(--text3)", cursor: "pointer" }}>
+              Clear
+            </button>
+          )}
+        </motion.div>
       )}
     </motion.div>
   );
