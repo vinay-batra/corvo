@@ -638,7 +638,7 @@ function BentoMonteCarloCard({ delay = 0 }: { delay?: number }) {
   return (
     <BentoCard delay={delay} style={{ gridArea: "montecarlo", padding: "28px" }}>
       <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>Monte Carlo Simulation</p>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>See your future in 8,500 paths</h3>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>See your future in 10,000 paths</h3>
       <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Simulate outcomes based on your actual volatility and correlation.</p>
       <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "14px" }}>
         <svg width="100%" height="110" viewBox="0 0 280 110" preserveAspectRatio="none">
@@ -1361,7 +1361,7 @@ function DemoPreview() {
   const lines = [
     "Analyzing AAPL · MSFT · NVDA · VOO...",
     "Computing Sharpe ratio: 0.66  done",
-    "Running 8,500 Monte Carlo paths  done",
+    "Running 10,000 Monte Carlo paths  done",
     "AI insight ready: high tech concentration detected",
   ];
   return (
@@ -2335,7 +2335,7 @@ function InteractiveDemoWidget({ onDemoStart }: { onDemoStart?: (active: boolean
                     </div>
                   ))}
                   <p style={{ fontSize: 9, color: "var(--text3)", marginTop: 6, lineHeight: 1.5 }}>
-                    Based on simplified projection. Full Monte Carlo runs 8,500 scenarios.
+                    Based on simplified projection. Full Monte Carlo runs 10,000 scenarios.
                   </p>
                 </div>
               )}
@@ -2485,7 +2485,7 @@ function GrowthCalculatorSection() {
 
           {/* Disclaimer + CTA */}
           <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.7, marginBottom: 24, textAlign: "center" as const }}>
-            These are estimates based on historical S&amp;P 500 average returns. Corvo runs 8,500 Monte Carlo simulations for your actual portfolio.
+            These are estimates based on historical S&amp;P 500 average returns. Corvo runs 10,000 Monte Carlo simulations for your actual portfolio.
           </p>
           <div style={{ textAlign: "center" as const }}>
             <Link href="/app" className="cta cta-shimmer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 32px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "var(--accent)", color: "var(--bg)", textDecoration: "none", letterSpacing: 0.2 }}>
@@ -3374,7 +3374,7 @@ export default function Landing() {
         browserRequirements: "Requires JavaScript",
         offers: { "@type": "Offer", price: "0", priceCurrency: "USD", availability: "https://schema.org/InStock" },
         featureList: [
-          "Monte Carlo simulation with 8500 scenarios",
+          "Monte Carlo simulation with 10000 scenarios",
           "Sharpe ratio and portfolio health score",
           "AI-powered portfolio analysis chat",
           "Real-time price alerts",

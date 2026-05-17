@@ -1165,7 +1165,7 @@ function generateCorvoInsight(data: any, assets: { ticker: string; weight: numbe
 }
 
 export default function AppPage() {
-  const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number; purchaseDate?: string }[]>([]);
+  const [assets, setAssets]               = useState<{ ticker: string; weight: number; purchasePrice?: number; purchaseDate?: string; accountType?: AccountTypeId }[]>([]);
   const [portfolioStale, setPortfolioStale] = useState(false);
   const lastAnalyzedAssetsRef             = useRef<string>("");
   const [period, setPeriod]               = useState("1y");
@@ -3307,14 +3307,14 @@ const { dark, toggle: toggleDark }  = useTheme();
                 </div>
                 <DashReveal from="up" delay={0}>
                   <Card key="mc-card"><TooltipCardHeader title="Monte Carlo Simulation" sections={[
-                    { label: "What it shows", text: "Monte Carlo simulation runs 8,500 randomized scenarios based on your portfolio's historical returns and volatility. The bands show the range of possible outcomes, not guarantees." },
+                    { label: "What it shows", text: "Monte Carlo simulation runs 10,000 randomized scenarios based on your portfolio's historical returns and volatility. The shaded bands show where the middle 50% and middle 90% of outcomes land; the faint lines behind them are 250 of the actual sample paths so you can see the variation, including loss scenarios." },
                     { label: "Horizon control", text: "Select 1 to 30 years. Shorter horizons are more precise; longer horizons show the compounding range but with wider uncertainty." },
                   ]} /><MonteCarloChart key="mc-chart" assets={assets} period={period} portfolioValue={portfolioInputValue} /></Card>
                 </DashReveal>
                 <DashReveal from="up" delay={0.1}>
                   <Card key="retire-card" style={{ marginTop: 16 }}>
                     <TooltipCardHeader title="What if I Retire in X Years?" sections={[
-                      { label: "What it shows", text: "Runs 8,500 Monte Carlo scenarios projecting your portfolio to retirement. The confidence interval and histogram show the full distribution of outcomes in today's dollars." },
+                      { label: "What it shows", text: "Runs 10,000 Monte Carlo scenarios projecting your portfolio to retirement. The confidence interval and histogram show the full distribution of outcomes in today's dollars." },
                       { label: "How it works", text: "Uses your current holdings, historical volatility, and long-term expected returns. Advanced settings let you model contributions, inflation, fees, and tax drag." },
                       { label: "Interpreting results", text: "Results are inflation-adjusted by default. The median is the most likely single outcome. The confidence interval captures the realistic range across most scenarios." },
                     ]} />

@@ -105,7 +105,8 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
         p95: data.final_p95,
         ruin_probability: data.ruin_probability ?? 0,
         expected_shortfall: data.expected_shortfall ?? data.final_p5,
-        simulations: data.simulations ?? 8500,
+        simulations: data.simulations ?? 10000,
+        loss_probability: data.loss_probability ?? Math.max(0, 1 - (data.positive_prob ?? 1)),
         years: data.years ?? simYears,
       }),
       signal: controller.signal,
@@ -156,7 +157,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
 
   const simCount: string = data?.simulations != null
     ? Number(data.simulations).toLocaleString()
-    : "8,500";
+    : "10,000";
 
   const horizonLabel = horizonYears === 1 ? "1 year" : `${horizonYears} years`;
 
@@ -214,13 +215,23 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
     },
   ] : [];
 
-  const varPct  = data ? Math.abs((data.final_p5 ?? 0) * 100).toFixed(1) : null;
-  const esPct   = data ? Math.abs((data.expected_shortfall ?? data.final_p5 ?? 0) * 100).toFixed(1) : null;
+  // The "worst-5%" raw value (signed). When negative this is a loss; when
+  // positive it means even the worst-5% scenarios still gained, and we should
+  // surface that honestly instead of pretending it's a loss.
+  const p5Raw = data ? (data.final_p5 ?? 0) * 100 : 0;
+  const esRaw = data ? (data.expected_shortfall ?? data.final_p5 ?? 0) * 100 : 0;
+  const varHasLoss = p5Raw < 0;
+  const esHasLoss = esRaw < 0;
+  const varPct = data ? Math.abs(p5Raw).toFixed(1) : null;
+  const esPct = data ? Math.abs(esRaw).toFixed(1) : null;
   const ruinPct = data
     ? data.ruin_probability != null
       ? (data.ruin_probability * 100).toFixed(1)
       : "0.0"
     : null;
+  const lossProbPct = data
+    ? Math.round(((data.loss_probability ?? Math.max(0, 1 - (data.positive_prob ?? 1))) * 100))
+    : 0;
 
   const mcAmber  = dark ? C.amber : "#b8860b";
   const mcFc     = dark ? "rgba(232,224,204,0.75)" : "#4a4a4a";
@@ -291,10 +302,11 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
           {/* Legend */}
           <div style={{ display: "flex", gap: 20, marginBottom: 12, flexWrap: "wrap" }}>
             {[
-              { label: "5th - 95th pct",  fill: true,  linec: amberOuterLine, bg: amberOuter },
-              { label: "25th - 75th pct", fill: true,  linec: amberOuterLine, bg: amberInner },
-              { label: "Median",          fill: false, color: amberBright, thick: true },
-              { label: "Breakeven",       fill: false, color: "rgba(59,130,246,0.6)", dashed: true },
+              { label: "Sample paths",     fill: false, color: dark ? "rgba(232,224,204,0.22)" : "rgba(60,60,60,0.25)", thick: false },
+              { label: "5th - 95th pct",   fill: true,  linec: amberOuterLine, bg: amberOuter },
+              { label: "25th - 75th pct",  fill: true,  linec: amberOuterLine, bg: amberInner },
+              { label: "Median",           fill: false, color: amberBright, thick: true },
+              { label: "Breakeven",        fill: false, color: "rgba(59,130,246,0.6)", dashed: true },
             ].map((l, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {l.fill ? (
@@ -303,7 +315,7 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
                   <svg width="18" height="10">
                     <line x1="0" y1="5" x2="18" y2="5"
                       stroke={l.color}
-                      strokeWidth={l.thick ? 2.5 : 1.5}
+                      strokeWidth={l.thick ? 2.5 : 1}
                       strokeDasharray={l.dashed ? "4 2" : undefined} />
                   </svg>
                 )}
@@ -313,16 +325,31 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
           </div>
 
           {/*
-            Fan chart: filled areas between percentile bands.
-            [0] p5  - outer bottom boundary (no fill)
-            [1] p95 - outer top boundary (fill="tonexty" → fills p5-p95, very transparent amber)
-            [2] p25 - inner bottom boundary (no fill)
-            [3] p75 - inner top boundary (fill="tonexty" → fills p25-p75, more opaque amber)
-            [4] p50 - median line (bright amber, no fill)
-            [5] breakeven at y=0 (blue dashed)
+            Fan chart structure (back-to-front draw order):
+            [0..N-1] sample paths: ~250 hairline traces of individual GBM
+                     paths so the user can see actual variance, including
+                     losses, instead of just an abstract median + band.
+            [N]      p5  outer bottom boundary (no fill)
+            [N+1]    p95 outer top boundary (fill="tonexty" → fills p5-p95)
+            [N+2]    p25 inner bottom boundary (no fill)
+            [N+3]    p75 inner top boundary (fill="tonexty" → fills p25-p75)
+            [N+4]    p50 median line (bright amber, no fill)
+            [N+5]    breakeven at y=0 (blue dashed)
           */}
           <Plot
             data={[
+              // Sample paths: drawn behind the bands so they read as ambient
+              // texture. Color chosen to be visible but not compete with the
+              // amber bands; opacity stacked across 250 lines reads as a fog.
+              ...(((data?.paths_sample as number[][] | undefined) || []).map((pathPct) => ({
+                x: xLabels,
+                y: pathPct.map((v) => v * 100),
+                type: "scatter",
+                mode: "lines",
+                line: { color: dark ? "rgba(232,224,204,0.07)" : "rgba(60,60,60,0.10)", width: 0.6 },
+                hoverinfo: "skip",
+                showlegend: false,
+              } as any))),
               {
                 x: xLabels, y: band("p5"),
                 type: "scatter", mode: "lines",
@@ -402,10 +429,12 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
                 <strong style={{ color: Number(p50) >= 0 ? mcAmber : C.red }}>
                   {Number(p50) >= 0 ? "+" : ""}{p50}%
                 </strong>.{" "}
-                {Number(p5!) < -15
+                {p5Raw < -15
                   ? `Worst-case downside is ${p5}%. Ensure you can absorb this before it occurs.`
+                  : p5Raw < 0
+                  ? `Worst 5% of scenarios still see a ${p5}% loss; sequence-of-returns risk applies.`
                   : Number(p95!) > 30
-                  ? `Best-case upside reaches +${p95}%, though only 5% of paths achieve that outcome.`
+                  ? `Even the worst 5% of scenarios stay positive at +${p5}%, while the best 5% reach +${p95}%.`
                   : `The range from ${p5}% to +${p95}% reflects your portfolio's uncertainty over this period.`}
               </p>
             </motion.div>
@@ -438,27 +467,44 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
                       const pv = portfolioValue;
                       const fmtDollar = (n: number) => "$" + Math.round(n).toLocaleString();
                       const midRet = (a: number, b: number) => (a + b) / 2;
+                      // Use "Worst 5%" / "Best 5%" instead of "Bear Case" /
+                      // "Bull Case" so the labels don't promise losses or
+                      // gains that the underlying percentile may not deliver
+                      // (e.g. an all-VTSAX 30y portfolio's 5th percentile is
+                      // often still positive). The row's accent color flips
+                      // red/green based on the actual sign below.
                       const scenarios = [
-                        { name: "Bear Case",     prob: "5%",  mult: data.final_p5 ?? 0, color: C.red, bg: "rgba(224,92,92,0.06)" },
-                        { name: "Below Average", prob: "20%", mult: midRet(data.final_p5 ?? 0, data.final_p25 ?? 0), color: dark ? "#c9a84c" : "#b8860b", bg: dark ? "rgba(201,168,76,0.04)" : "rgba(184,134,11,0.04)" },
-                        { name: "Average",       prob: "50%", mult: data.final_p50 ?? 0, color: "var(--text2)", bg: "transparent" },
-                        { name: "Above Average", prob: "20%", mult: midRet(data.final_p75 ?? 0, data.final_p95 ?? 0), color: "#7dc98f", bg: "rgba(92,184,138,0.04)" },
-                        { name: "Bull Case",     prob: "5%",  mult: data.final_p95 ?? 0, color: C.green, bg: "rgba(92,184,138,0.08)" },
+                        { name: "Worst 5%",      prob: "5%",  mult: data.final_p5 ?? 0, neutralColor: C.red },
+                        { name: "Below Average", prob: "20%", mult: midRet(data.final_p5 ?? 0, data.final_p25 ?? 0), neutralColor: dark ? "#c9a84c" : "#b8860b" },
+                        { name: "Median",        prob: "50%", mult: data.final_p50 ?? 0, neutralColor: "var(--text2)" },
+                        { name: "Above Average", prob: "20%", mult: midRet(data.final_p75 ?? 0, data.final_p95 ?? 0), neutralColor: "#7dc98f" },
+                        { name: "Best 5%",       prob: "5%",  mult: data.final_p95 ?? 0, neutralColor: C.green },
                       ];
                       return scenarios.map((s, i) => {
                         const ending = pv * (1 + s.mult);
                         const change = ending - pv;
                         const positive = change >= 0;
                         const valColor = positive ? C.green : C.red;
+                        // Override the static neutralColor for the worst/best
+                        // edges so they read green when the percentile is
+                        // genuinely positive (instead of being painted red
+                        // out of muscle memory).
+                        const scenarioColor = (i === 0 || i === 4)
+                          ? valColor
+                          : s.neutralColor;
+                        const scenarioBg = positive
+                          ? "rgba(92,184,138,0.05)"
+                          : "rgba(224,92,92,0.06)";
+                        const rowBg = (i === 0 || i === 4) ? scenarioBg : (i === 2 ? "transparent" : "rgba(201,168,76,0.04)");
                         return (
-                          <tr key={i} style={{ background: s.bg }}>
+                          <tr key={i} style={{ background: rowBg }}>
                             <td>
                               <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-                                <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-                                <span style={{ color: s.color, fontWeight: 600 }}>{s.name}</span>
+                                <span style={{ width: 8, height: 8, borderRadius: "50%", background: scenarioColor, flexShrink: 0 }} />
+                                <span style={{ color: scenarioColor, fontWeight: 600 }}>{s.name}</span>
                               </span>
                             </td>
-                            <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: s.color }}>{s.prob}</td>
+                            <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: scenarioColor }}>{s.prob}</td>
                             <td style={{ fontFamily: "Space Mono, monospace", color: "var(--text2)" }}>{fmtDollar(pv)}</td>
                             <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: valColor }}>{fmtDollar(ending)}</td>
                             <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: valColor }}>{positive ? "+$" : "-$"}{Math.round(Math.abs(change)).toLocaleString()}</td>
@@ -480,17 +526,21 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
             {[
               {
                 label: `Value at Risk (VaR 95%)`,
-                value: `-${varPct}%`,
-                subtext: `Max expected loss over ${horizonLabel} with 95% confidence`,
-                color: C.red,
-                tooltip: { title: "Value at Risk (VaR 95%)", sections: [{ label: "Plain English", text: `The maximum expected loss over ${horizonLabel} with 95% confidence based on simulated scenarios.` }, { label: "Example", text: "VaR of 18% on a $100K portfolio means there is a 95% chance you will not lose more than $18K over this period." }, { label: "What's Good?", text: "Lower is better. Under 15% is relatively safe for most investors. Above 30% suggests high risk concentration." }] },
+                value: varHasLoss ? `-${varPct}%` : `+${varPct}%`,
+                subtext: varHasLoss
+                  ? `Max expected loss over ${horizonLabel} with 95% confidence`
+                  : `Even the worst 5% of scenarios end above starting value`,
+                color: varHasLoss ? C.red : C.green,
+                tooltip: { title: "Value at Risk (VaR 95%)", sections: [{ label: "Plain English", text: `The 5th-percentile outcome over ${horizonLabel}: 95% of simulated scenarios end better than this number, 5% end worse.` }, { label: "Example", text: "VaR of -18% on a $100K portfolio means there is a 95% chance you will not lose more than $18K over this period. A positive VaR means even the worst 5% of paths still gained." }, { label: "What's Good?", text: "When negative, lower (closer to 0) is better; under 15% loss is relatively safe. A positive VaR signals a low-risk portfolio over the chosen horizon, though longer horizons widen the band." }] },
               },
               {
                 label: "Expected Shortfall",
-                value: `-${esPct}%`,
-                subtext: "Average loss across the worst 5% of scenarios",
-                color: "#e07a5f",
-                tooltip: { title: "Expected Shortfall (CVaR)", sections: [{ label: "Plain English", text: "The average loss across the worst 5% of simulated scenarios. Goes beyond VaR to show how bad things can get when they go wrong." }, { label: "Example", text: "If VaR is 18%, Expected Shortfall might be 25% -- the average of all the worst outcomes beyond that threshold." }, { label: "What's Good?", text: "Compare to VaR. If Expected Shortfall is much larger than VaR, the loss distribution has a fat tail, meaning extreme losses could be severe." }] },
+                value: esHasLoss ? `-${esPct}%` : `+${esPct}%`,
+                subtext: esHasLoss
+                  ? "Average loss across the worst 5% of scenarios"
+                  : "Average gain across the worst 5% of scenarios (no loss tail)",
+                color: esHasLoss ? "#e07a5f" : C.green,
+                tooltip: { title: "Expected Shortfall (CVaR)", sections: [{ label: "Plain English", text: "The average outcome across the worst 5% of simulated scenarios. Goes beyond VaR to show how bad things can get when they go wrong, or how shallow the downside actually is." }, { label: "Example", text: "If VaR is -18%, Expected Shortfall might be -25% (the average of all the worst outcomes beyond that threshold). If your VaR is positive, ES will be too, meaning your portfolio has no realistic loss tail at this horizon." }, { label: "What's Good?", text: "When negative, compare to VaR: if ES is much larger, the loss distribution has a fat tail. When positive, the portfolio is well-diversified or holds long enough to outrun short-term drawdowns." }] },
               },
               {
                 label: "Probability of Ruin",
@@ -526,10 +576,13 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.8 }}>{insight}</p>
             ) : (
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.8 }}>
-                Based on {data.simulations?.toLocaleString() ?? "8,500"} simulations, there is a{" "}
-                <strong style={{ color: mcAmber }}>{positiveProb}% chance of positive returns</strong> over {horizonLabel}.{" "}
-                In the worst case scenario, the portfolio could decline by{" "}
-                <strong style={{ color: C.red }}>{varPct}%</strong>.
+                Based on {data.simulations?.toLocaleString() ?? "10,000"} simulations, there is a{" "}
+                <strong style={{ color: mcAmber }}>{positiveProb}% chance of positive returns</strong> over {horizonLabel}{lossProbPct > 0 ? ` (${lossProbPct}% chance of a loss)` : ""}.{" "}
+                {varHasLoss ? (
+                  <>In the worst 5% of scenarios, the portfolio declines by <strong style={{ color: C.red }}>{varPct}%</strong>.</>
+                ) : (
+                  <>Even the worst 5% of scenarios still end positive at <strong style={{ color: C.green }}>+{varPct}%</strong>.</>
+                )}
               </p>
             )}
           </motion.div>

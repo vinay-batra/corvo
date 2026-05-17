@@ -540,7 +540,7 @@ export default function RetirementSimulator({
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontSize: 11, color: "var(--text3)" }}>
-                Running 8,500 scenarios over {years} years...
+                Running 10,000 scenarios over {years} years...
               </span>
               <span style={{ fontSize: 11, fontFamily: "Space Mono, monospace", color: amberColor }}>
                 {Math.round(progress)}%

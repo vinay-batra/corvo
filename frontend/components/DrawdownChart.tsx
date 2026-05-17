@@ -2,7 +2,6 @@
 
 import { memo, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
 import { fetchDrawdown } from "../lib/api";
 import ErrorState from "./ErrorState";
 
@@ -46,37 +45,27 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
     return () => clearTimeout(t);
   }, [loading]);
 
+  // Rendered bare: the parent <Card><TooltipCardHeader/></Card> on the
+  // Simulations tab already provides the card chrome + title + tooltip. We
+  // used to duplicate both, which made the section look broken (card-in-card
+  // + duplicate "Drawdown Chart" header). Now only the chart + the max-loss
+  // pill render here.
   return (
-    <motion.div
-      // initial={false} is required - do not remove
-      initial={false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      style={{
-        background: "var(--bg-card)",
-        border: "1px solid var(--border-dim)",
-        borderRadius: 14,
-        padding: "22px 24px",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg, transparent, var(--red), transparent)", opacity: 0.5 }} />
-      {showSpinner && data && <div style={{ position: "absolute", top: 14, right: 16, width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: "var(--red)", borderRadius: "50%", animation: "spin 0.8s linear infinite", zIndex: 2 }} />}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase" }}>Drawdown Chart</p>
-        {data && Array.isArray(data.drawdown) && data.drawdown.length > 0 && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--red)", letterSpacing: 0, fontWeight: 700 }}>
+    <div style={{ position: "relative" }}>
+      {showSpinner && data && <div style={{ position: "absolute", top: -2, right: 0, width: 12, height: 12, border: "1.5px solid var(--border2)", borderTopColor: "var(--red)", borderRadius: "50%", animation: "spin 0.8s linear infinite", zIndex: 2 }} />}
+      {data && Array.isArray(data.drawdown) && data.drawdown.length > 0 && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--red)", letterSpacing: 0, fontWeight: 700, background: "rgba(192,57,43,0.08)", border: "0.5px solid rgba(192,57,43,0.25)", borderRadius: 6, padding: "3px 9px" }}>
             Max: {(Math.min(...(data.drawdown as number[]).map((v: number) => v ?? 0)) * 100).toFixed(2)}%
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       <style>{`@keyframes ddPulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
       {loading && !data ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "6px 0" }}>
-          <div style={{ height: 180, borderRadius: 6, background: "rgba(255,255,255,0.06)", animation: "ddPulse 1.5s ease-in-out infinite" }} />
-          <div style={{ height: 11, width: "30%", borderRadius: 4, background: "rgba(255,255,255,0.06)", animation: "ddPulse 1.5s ease-in-out infinite" }} />
+          <div style={{ height: 180, borderRadius: 6, background: "var(--bg3)", animation: "ddPulse 1.5s ease-in-out infinite" }} />
+          <div style={{ height: 11, width: "30%", borderRadius: 4, background: "var(--bg3)", animation: "ddPulse 1.5s ease-in-out infinite" }} />
         </div>
       ) : fetchError ? (
         <ErrorState
@@ -85,7 +74,6 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
           minHeight={220}
         />
       ) : data ? (
-        <>
         <Plot
           data={[{
             x: data.dates,
@@ -93,27 +81,28 @@ const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: 
             type: "scatter",
             mode: "lines",
             name: "Drawdown",
-            line: { color: "#ff4060", width: 1.5 },
+            line: { color: "var(--red)", width: 1.5 },
             fill: "tozeroy",
-            fillcolor: "rgba(255,64,96,0.1)",
+            fillcolor: "rgba(192,57,43,0.10)",
           }]}
           layout={{
             paper_bgcolor: "transparent",
             plot_bgcolor: "transparent",
-            font: { color: dark ? "rgba(226,232,240,0.4)" : "#4a4a4a", family: "Space Grotesk", size: 10 },
+            font: { color: dark ? "rgba(232,224,204,0.55)" : "#4a4a4a", family: "Inter", size: 10 },
             margin: { t: 0, b: 32, l: 52, r: 16 },
             xaxis: { gridcolor: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)", tickcolor: "transparent" },
             yaxis: { gridcolor: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.07)", linecolor: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)", tickcolor: "transparent", tickformat: ".1%" },
             showlegend: false,
             hovermode: "x unified",
-            hoverlabel: { bgcolor: "#0a1020", bordercolor: "rgba(255,64,96,0.3)", font: { color: "#e2e8f0", family: "Space Grotesk", size: 11 } },
+            hoverlabel: { bgcolor: dark ? "#0a1020" : "#ffffff", bordercolor: "rgba(192,57,43,0.3)", font: { color: dark ? "#e2e8f0" : "#1a1a1a", family: "Inter", size: 11 } },
           }}
           config={{ displayModeBar: false, responsive: true, scrollZoom: false }}
-          style={{ width: "100%", height: isMobile ? 200 : 220 }}
+          style={{ width: "100%", height: isMobile ? 200 : 240 }}
         />
-        </>
-      ) : null}
-    </motion.div>
+      ) : (
+        <p style={{ fontSize: 11, color: "var(--text3)", padding: "20px 0", textAlign: "center" }}>Add holdings to see drawdown history.</p>
+      )}
+    </div>
   );
 });
 

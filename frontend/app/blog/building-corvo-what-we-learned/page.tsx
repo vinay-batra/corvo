@@ -101,7 +101,7 @@ export default function BuildingCorvoWhatWeLearnedPage() {
         make a better decision about their portfolio, it did not belong in the product.
       </p>
       <p>
-        Third, real metrics. Sharpe ratio with a live risk-free rate. Monte Carlo with 8,500 paths.
+        Third, real metrics. Sharpe ratio with a live risk-free rate. Monte Carlo with 10,000 paths.
         Max drawdown calculated from actual price history. Tax loss harvesting with real wash-sale
         rule logic. If a feature was worth including, it was worth calculating correctly. Approximate
         answers to important questions are worse than no answers, because they create false confidence.

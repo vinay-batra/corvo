@@ -261,6 +261,11 @@ export default function AiChat({
   const liveTickers = assets?.map((a: any) => a.ticker).filter(Boolean) || [];
   const liveTotal = assets?.reduce((s: number, a: any) => s + (a.weight ?? 0), 0) || 1;
   const liveWeights = assets?.map((a: any) => (a.weight ?? 0) / liveTotal) || [];
+  // Per-holding account-type tags (v0.39+). Parallel to tickers/weights;
+  // empty string means "no tag, use portfolio default". Backend buckets
+  // holdings by account_type when at least one tag differs from the
+  // portfolio default so tax advice routes per bucket.
+  const liveHoldingAccountTypes = assets?.map((a: any) => (a.accountType as string | undefined) ?? "") || [];
 
   // Reset suggestions when portfolio tickers change. Multiplier was hardcoded
   // to 4 even though SUGGESTION_SETS has 3 entries - on a 25% roll you'd land
@@ -288,6 +293,7 @@ export default function AiChat({
     individual_returns:   data?.individual_returns,
     beta:                 data?.beta,
     account_type:         accountType || "",
+    holding_account_types: liveHoldingAccountTypes,
     user_goals: goals ? {
       age: goals.age, salary: goals.salary, invested: goals.invested,
       monthly_contribution: goals.monthlyContribution, retirement_age: goals.retirementAge,

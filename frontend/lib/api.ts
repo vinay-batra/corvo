@@ -77,7 +77,7 @@ export async function fetchMonteCarlo(assets: any[], period: string, years: numb
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
   const res = await fetch(
-    `${RESOLVED_API_URL}/montecarlo?tickers=${tickers}&weights=${weights}&period=${period}&simulations=8500&years=${years}`
+    `${RESOLVED_API_URL}/montecarlo?tickers=${tickers}&weights=${weights}&period=${period}&simulations=10000&years=${years}`
   );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
