@@ -434,10 +434,36 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
               </svg>
             </button>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: "var(--bg3)", border: "0.5px solid var(--border)", flexShrink: 0 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: mkt.dot, boxShadow: mkt.isOpen ? "0 0 7px rgba(76,175,125,0.65)" : mkt.isPre ? "0 0 7px rgba(201,168,76,0.5)" : "none" }} />
-            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text2)" }}>{mkt.label}</span>
-            <span style={{ fontSize: 10, color: "var(--text3)" }}>{mkt.sub}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            {/* Account-type pill - moved from the live-value row in v0.40 since
+                it was making that row too wide on narrower viewports and
+                spilling content past the vertical divider. Lives in the
+                header now where portfolio metadata fits naturally next to
+                the market-status pill. */}
+            <span
+              title={`${accountMeta.label} - ${accountMeta.tagline}`}
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: 1,
+                textTransform: "uppercase",
+                color: "var(--accent)",
+                background: "rgba(201,168,76,0.1)",
+                border: "0.5px solid rgba(201,168,76,0.3)",
+                borderRadius: 5,
+                padding: "3px 7px",
+                flexShrink: 0,
+                cursor: "default",
+              }}
+            >
+              {accountMeta.short}
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: "var(--bg3)", border: "0.5px solid var(--border)", flexShrink: 0 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: mkt.dot, boxShadow: mkt.isOpen ? "0 0 7px rgba(76,175,125,0.65)" : mkt.isPre ? "0 0 7px rgba(201,168,76,0.5)" : "none" }} />
+              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text2)" }}>{mkt.label}</span>
+              <span style={{ fontSize: 10, color: "var(--text3)" }}>{mkt.sub}</span>
+            </div>
           </div>
         </div>
 
@@ -550,57 +576,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
                   </svg>
                 )}
               </button>
-              {/* Account type pill - tells the user which tax lens the AI is
-                  reasoning through (Roth IRA, HSA, etc.). Always renders so
-                  there's no "what account am I in?" ambiguity. Hover surfaces
-                  the full label + tagline via the title attribute. */}
-              <span
-                title={`${accountMeta.label} - ${accountMeta.tagline}`}
-                style={{
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: 9,
-                  fontWeight: 700,
-                  letterSpacing: 1,
-                  textTransform: "uppercase",
-                  color: "var(--accent)",
-                  background: "rgba(201,168,76,0.1)",
-                  border: "0.5px solid rgba(201,168,76,0.3)",
-                  borderRadius: 5,
-                  padding: "3px 7px",
-                  marginLeft: 4,
-                  flexShrink: 0,
-                  cursor: "default",
-                  alignSelf: "center",
-                }}
-              >
-                {accountMeta.short}
-              </span>
             </div>
-          )}
-          {/* Fallback pill: shown when portfolioValue is 0 / unset so the
-              user still sees the account context before they've set a base
-              value. Lives outside the gb-live-value conditional above. */}
-          {!((portfolioValue ?? 0) > 0) && (
-            <span
-              title={`${accountMeta.label} - ${accountMeta.tagline}`}
-              style={{
-                fontFamily: "'Space Mono', monospace",
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: 1,
-                textTransform: "uppercase",
-                color: "var(--accent)",
-                background: "rgba(201,168,76,0.1)",
-                border: "0.5px solid rgba(201,168,76,0.3)",
-                borderRadius: 5,
-                padding: "3px 7px",
-                flexShrink: 0,
-                cursor: "default",
-                alignSelf: "center",
-              }}
-            >
-              {accountMeta.short}
-            </span>
           )}
         </div>
 
@@ -703,10 +679,14 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
               )}
             </div>
 
-            {/* Holdings vertical list - stretches to fill remaining height */}
+            {/* Holdings vertical list - natural height, scrolls when long.
+                v0.39's flex:1 attempt to stretch to fill the right column
+                collapsed in some viewport contexts and the rows rendered at
+                zero height (user-reported). v0.40 falls back to natural
+                height with maxHeight + overflow so the rows always render. */}
             {!hideTickers && validHoldingTickers.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", flex: "1 1 0", minHeight: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexShrink: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                   <span style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: "var(--text3)", fontWeight: 600 }}>Your Holdings</span>
                   {mkt.isOpen && (
                     <>
@@ -715,7 +695,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
                     </>
                   )}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, overflowY: "auto", flex: 1, minHeight: 0, paddingRight: 2, scrollbarWidth: "thin" as any }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 360, overflowY: "auto", paddingRight: 2, scrollbarWidth: "thin" as any }}>
                   {holdingRows.map((row, i) => {
                     const dotColor = i === 0 ? "var(--accent)" :
                       i === 1 ? "rgba(201,168,76,0.7)" :
