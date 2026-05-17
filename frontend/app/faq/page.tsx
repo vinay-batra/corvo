@@ -94,7 +94,7 @@ const SECTIONS = [
       },
       {
         q: "Is Corvo free?",
-        a: "Yes. Corvo's core features are free forever, not just during beta. A Pro tier is coming soon with extras for power users: unlimited AI chat, brokerage sync via Plaid, SMS price alerts, and priority support. The free plan stays free.",
+        a: "Yes. Corvo's core features are free forever, not just during beta. Two paid tiers are coming: Pro ($9/month) adds unlimited AI chat, Plaid brokerage sync, SMS alerts, and tax-loss harvesting suggestions and ships with a 14-day free trial; Elite ($29/month) adds multi-account aggregation, real-time streaming prices, and quarterly portfolio review PDFs. The free plan stays free either way.",
       },
       {
         q: "Do I need a brokerage account?",
