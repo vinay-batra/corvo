@@ -70,6 +70,7 @@ import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
 import LearnPage from "../learn/page";
 import GoalTracker from "../../components/GoalTracker";
+import PortfolioSwitcher from "../../components/PortfolioSwitcher";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -1351,6 +1352,30 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
   const [perfHistory, setPerfHistory] = useState<PerfSnapshot[]>([]);
+
+  // Live base value for the portfolio display. Solves the "resets every day to
+  // the seed" bug: when EOD snapshots exist for the active saved portfolio,
+  // the most recent snapshot strictly BEFORE today becomes the implicit base
+  // that today's % change builds on. So Monday +1% to $5,100 is persisted by
+  // the EOD cron, and Tuesday's live value = $5,100 x (1 + Tuesday's pct),
+  // not seed x (1 + Tuesday's pct). Falls back to the user's input seed when
+  // no snapshots exist (new portfolio, unsaved portfolio, or cron hasn't
+  // written one yet).
+  const liveBaseValue = useMemo(() => {
+    if (perfHistory.length > 0) {
+      const today = new Date().toISOString().slice(0, 10);
+      // Walk newest-first; pick the first snapshot strictly before today.
+      // Today's own snapshot is skipped because it already bakes in today's
+      // pct - using it as a base and multiplying by todayPct would double-count.
+      for (let i = perfHistory.length - 1; i >= 0; i--) {
+        const d = perfHistory[i]?.date?.slice(0, 10);
+        const v = perfHistory[i]?.portfolio_value;
+        if (d && d < today && v && v > 0) return v;
+      }
+    }
+    return portfolioInputValue;
+  }, [perfHistory, portfolioInputValue]);
+
   const [perfRange, setPerfRange] = useState<PerfRange>("ALL");
   const [perfLoading, setPerfLoading] = useState(false);
   const autoSnapshotAttemptedRef = useRef<string | null>(null);
@@ -2154,7 +2179,7 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       {/* Builder */}
       <div id="tour-ticker-area" style={{ flex: 1, overflow: "auto", overscrollBehavior: "none", padding: "12px 14px" }}>
-        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} todayPct={todayPct} accountType={accountType} onAccountTypeChange={setAccountType} />
+        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} onAnalyze={handleAnalyze} loading={loading} todayPct={todayPct} accountType={accountType} onAccountTypeChange={setAccountType} liveBaseValue={liveBaseValue} />
       </div>
 
       {/* Analyze button */}
@@ -2532,6 +2557,19 @@ const { dark, toggle: toggleDark }  = useTheme();
               </motion.div>
             )}
           </AnimatePresence>
+          {/* Per-account portfolio switcher - inline chip row showing the
+              user's saved portfolios with their account-type badges. Self-
+              hides when the user has 0 or 1 portfolios. Lives above the tab
+              AnimatePresence so it persists across tab switches (positions,
+              stocks, simulations all benefit from being able to flip the
+              active portfolio without going back to overview). Skipped on
+              Learn (separate learning module, no portfolio context). */}
+          {activeTab !== "learn" && (
+            <PortfolioSwitcher
+              activeAssets={assets}
+              onLoad={(a, at) => { setAssets(a); setAccountType(at); }}
+            />
+          )}
           <AnimatePresence initial={false} mode="wait">
             {activeTab === "stocks" ? (
               <motion.div key="stocks" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
@@ -2688,7 +2726,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       portfolioData={data}
                       assets={assets}
                       perfHistory={perfHistory}
-                      portfolioValue={portfolioInputValue}
+                      portfolioValue={liveBaseValue}
                       hideTickers={hiddenCards.has("tickers")}
                       onTodayPctChange={setTodayPct}
                       accountType={accountType}
