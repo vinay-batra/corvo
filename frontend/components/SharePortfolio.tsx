@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SharePortfolioProps {
@@ -178,6 +179,13 @@ function downloadCardAsImage(
 export default function SharePortfolio({ data, assets, period }: SharePortfolioProps) {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
+  // Portal target: must render to document.body so the modal escapes the
+  // topbar's backdrop-filter, which creates a containing block for fixed
+  // descendants (same effect as transform). Without the portal the overlay's
+  // inset:0 covers only the 56px topbar, producing a thin sliver bug.
+  // mounted gate avoids SSR mismatch since document doesn't exist server-side.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   if (!data) return null;
 
@@ -242,19 +250,19 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
       </button>
 
       <AnimatePresence initial={false}>
-        {open && (
+        {open && mounted && createPortal(
           <motion.div
             // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 100, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 24px 48px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
-            {/* Modal content. Tall content (the rendered preview canvas can
-                add 300+px) used to push the modal off the top of the
-                viewport when the overlay used alignItems:center and had no
-                scroll: nothing was reachable. Now the overlay itself scrolls
-                and the modal anchors to the top with a 24px gap, so the
-                whole panel is always reachable regardless of viewport
-                height. */}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 2000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 24px 48px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+            {/* Modal is portaled to document.body so it escapes the topbar's
+                backdrop-filter containing block (backdrop-filter, transform,
+                and filter all create new containing blocks for fixed
+                descendants - without the portal, inset:0 only covers the
+                56px topbar and the modal renders as a clipped sliver).
+                z-index bumped to 2000 to clear floating chat / customize
+                buttons. */}
             <motion.div
               // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
@@ -363,7 +371,8 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
                 Anyone with this link can view your portfolio analysis
               </p>
             </motion.div>
-          </motion.div>
+          </motion.div>,
+          document.body,
         )}
       </AnimatePresence>
     </>
