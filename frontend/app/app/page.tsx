@@ -70,7 +70,6 @@ import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
 import LearnPage from "../learn/page";
 import GoalTracker from "../../components/GoalTracker";
-import PortfolioSwitcher from "../../components/PortfolioSwitcher";
 
 const TABS = [
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
@@ -2226,7 +2225,23 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       {/* Saved portfolios */}
       <div style={{ ...S.section, borderBottom: "none" }}>
-        <SavedPortfolios assets={assets} data={data} accountType={accountType} onLoad={(a, at) => { setAssets(a); setAccountType(at); }} />
+        <SavedPortfolios
+          assets={assets}
+          data={data}
+          accountType={accountType}
+          onLoad={(a, at, id, name) => {
+            setAssets(a);
+            setAccountType(at);
+            // Setting savedPortfolioId synchronously triggers the perfHistory
+            // refetch effect, which drives liveBaseValue, which drives the
+            // GreetingBar live value display. Without this the previously
+            // active portfolio's base value lingered, so every portfolio
+            // looked like the same dollar delta no matter which one you
+            // picked (v0.34 bug surfaced by Vinay 2026-05-16).
+            setSavedPortfolioId(id);
+            setSavedPortfolioName(name);
+          }}
+        />
       </div>
 
     </>
@@ -2557,19 +2572,6 @@ const { dark, toggle: toggleDark }  = useTheme();
               </motion.div>
             )}
           </AnimatePresence>
-          {/* Per-account portfolio switcher - inline chip row showing the
-              user's saved portfolios with their account-type badges. Self-
-              hides when the user has 0 or 1 portfolios. Lives above the tab
-              AnimatePresence so it persists across tab switches (positions,
-              stocks, simulations all benefit from being able to flip the
-              active portfolio without going back to overview). Skipped on
-              Learn (separate learning module, no portfolio context). */}
-          {activeTab !== "learn" && (
-            <PortfolioSwitcher
-              activeAssets={assets}
-              onLoad={(a, at) => { setAssets(a); setAccountType(at); }}
-            />
-          )}
           <AnimatePresence initial={false} mode="wait">
             {activeTab === "stocks" ? (
               <motion.div key="stocks" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>

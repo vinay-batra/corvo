@@ -86,7 +86,13 @@ export default function SavedPortfolios({ assets, data, accountType, onLoad }: {
   assets: Asset[];
   data: any;
   accountType: AccountTypeId;
-  onLoad: (a: Asset[], accountType: AccountTypeId) => void;
+  // Pass the saved portfolio's id + name back so the dashboard can set
+  // savedPortfolioId synchronously - critical for perfHistory to refetch
+  // and the live value to ratchet day-over-day from the right snapshot.
+  // Without this, savedPortfolioId only updates via an async auto-detect
+  // useEffect on assets changes, which races against the polling fetch and
+  // can leave the live value pinned to the previously-loaded portfolio.
+  onLoad: (a: Asset[], accountType: AccountTypeId, portfolioId: string, portfolioName: string) => void;
 }) {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [saving, setSaving] = useState(false);
@@ -215,7 +221,7 @@ export default function SavedPortfolios({ assets, data, accountType, onLoad }: {
           {portfolios.map(p => (
             <motion.div key={p.id} initial={false} animate={{ opacity: 1 }}
               style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 11px", background: "var(--bg2)", borderRadius: 10, border: `0.5px solid ${C.border}`, borderLeft: `2px solid transparent`, cursor: "pointer", transition: "all 0.15s", position: "relative" }}
-              onClick={() => onLoad(p.assets, p.accountType)}
+              onClick={() => onLoad(p.assets, p.accountType, p.id, p.name)}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; e.currentTarget.style.borderLeftColor = "var(--accent)"; e.currentTarget.style.background = "rgba(201,168,76,0.05)"; e.currentTarget.style.transform = "translateX(1px)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.borderLeftColor = "transparent"; e.currentTarget.style.background = "var(--bg2)"; e.currentTarget.style.transform = "translateX(0)"; }}>
               <div style={{ flex: 1, minWidth: 0 }}>
