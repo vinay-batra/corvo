@@ -10,6 +10,7 @@ import pandas as pd
 import math
 import os
 import json
+import re
 import traceback
 import requests
 from datetime import datetime, timezone
@@ -637,7 +638,7 @@ def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
 
 
 @app.get("/montecarlo")
-def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 8500, years: int = 5):
+def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 10000, years: int = 5):
     import re as _re
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
@@ -649,7 +650,7 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
             raise HTTPException(status_code=400, detail=f"Invalid ticker format: {t}")
     if period not in ("1mo", "3mo", "6mo", "1y", "2y", "3y", "5y", "10y", "ytd", "max"):
         raise HTTPException(status_code=400, detail="Invalid period")
-    simulations = 8500  # always use canonical count
+    simulations = 10000  # always use canonical count
     years = max(1, min(30, years))
 
     if weights:
@@ -697,16 +698,20 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
     port_returns = returns.values @ np.array(avail_w)
 
     mu_daily = float(np.mean(port_returns))
-    sigma_daily = float(np.std(port_returns))
+    sigma_daily_hist = float(np.std(port_returns))
 
-    # Override mu with long-term asset-class expected returns so recent bull/bear runs
-    # don't distort forward projections. Individual stocks cap at 10% to prevent recent
-    # high-return periods (e.g. NVDA bull run) from producing absurd 30-year projections.
+    # Long-term asset-class expected returns used as a sanity anchor so recent
+    # bull/bear runs don't distort forward projections. Individual stocks are
+    # capped at 10% upside (recent NVDA-style runs produce absurd 30y projections
+    # otherwise) but no floor - if a stock has lost money historically that
+    # signal should flow through to the simulation.
     ASSET_CLASS_MU = {
         "BND": 0.04, "AGG": 0.04, "TLT": 0.04, "IEF": 0.035, "SHY": 0.03,
         "SGOV": 0.045, "BIL": 0.04, "VBTLX": 0.04, "LQD": 0.045, "HYG": 0.055,
         "GLD": 0.05, "IAU": 0.05, "SLV": 0.04, "DJP": 0.04,
-        "SPY": 0.10, "VOO": 0.10, "VTI": 0.10, "IWM": 0.09, "QQQ": 0.11,
+        "SPY": 0.095, "VOO": 0.095, "VTI": 0.095, "IWM": 0.085, "QQQ": 0.105,
+        "VTSAX": 0.095, "VFIAX": 0.095, "VLCAX": 0.095, "VFWAX": 0.085,
+        "VXUS": 0.075,
     }
 
     weighted_mu = 0.0
@@ -716,41 +721,60 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         elif t in ASSET_CLASS_MU:
             asset_mu = ASSET_CLASS_MU[t]
         else:
-            # Cap individual stock historical returns at 10% annual to prevent
-            # recent bull-market periods from distorting long-term projections
+            # Use historical, capped at 10% upside, allowed to be negative if
+            # the asset has genuinely lost money over the analysis period.
             asset_mu = min(mu_daily * 252, 0.10)
         weighted_mu += w * asset_mu
 
-    mu_daily = weighted_mu / 252
+    mu_annual = weighted_mu  # before fees / drag, used as the GBM drift
 
-    # Cash-aware sigma: money market funds have near-zero volatility; don't apply
-    # the equity minimum floor (8%) to portfolios that are mostly cash
+    # Sigma comes from realized historical returns. The artificial 8% equity
+    # floor that used to live here suppressed real-world variance enough that
+    # the 5th-percentile fan band never showed losses for diversified
+    # portfolios. Now we let history speak; cash positions still get a tiny
+    # 0.1% sigma so they don't drag the equity portion to zero.
     cash_weight = sum(avail_w[i] for i, t in enumerate(available) if is_cash_ticker(t))
     if cash_weight >= 0.99:
-        sigma_daily = 0.001 / np.sqrt(252)
+        sigma_annual = 0.001
     elif cash_weight > 0:
-        equity_sigma = max(sigma_daily, 0.08 / np.sqrt(252))
-        cash_sigma = 0.001 / np.sqrt(252)
-        sigma_daily = equity_sigma * (1 - cash_weight) + cash_sigma * cash_weight
+        equity_sigma = sigma_daily_hist * np.sqrt(252)
+        sigma_annual = equity_sigma * (1 - cash_weight) + 0.001 * cash_weight
     else:
-        sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
+        sigma_annual = sigma_daily_hist * np.sqrt(252)
 
-    # Hard cap at 12% annual return (prevents absurd results over long horizons;
-    # 25% cap was producing +100000% over 30 years)
-    mu_daily = min(mu_daily, 0.12 / 252)
+    # Hard cap drift at 10% (compounding for 30 years past this point gets
+    # unrealistic). Hard cap sigma at 60% so a single meme-stock portfolio
+    # doesn't fan out beyond what's plottable - real sigma above this still
+    # gets visualized, just clipped at the edges.
+    mu_annual = float(min(mu_annual, 0.10))
+    sigma_annual = float(min(max(sigma_annual, 0.005), 0.60))
 
-    mu = mu_daily * 252
-    sigma = sigma_daily * np.sqrt(252)
-
-    # Use monthly steps (12/year) for memory efficiency across all horizon lengths
+    # Monthly time steps - granular enough for a fan chart but cheap enough to
+    # run 10k paths at 30y in well under a second.
     steps_per_year = 12
     horizon = years * steps_per_year
     dt = 1.0 / steps_per_year
 
+    mu_step = mu_annual * dt
+    sigma_step = sigma_annual * np.sqrt(dt)
+
+    # Student-t innovations (df=6) give the fat tails real markets show, so
+    # crashes like 2008 / 2020 / 2022 appear in the path sample at realistic
+    # frequency rather than being a >5-sigma "impossible" event the Gaussian
+    # model would never produce. df=6 is calibrated from empirical S&P 500
+    # monthly returns; smaller df = fatter tails. Scale by sqrt((df-2)/df) so
+    # variance still equals sigma_step^2.
     rng = np.random.default_rng()
-    Z = rng.standard_normal((simulations, horizon))
-    daily_factors = np.exp((mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * Z)
-    path_values = np.cumprod(daily_factors, axis=1)
+    df_t = 6.0
+    t_scale = float(np.sqrt((df_t - 2.0) / df_t))
+    raw_t = rng.standard_t(df_t, size=(simulations, horizon))
+    Z = raw_t * t_scale
+
+    # GBM step: log-return ~ N(mu - 0.5*sigma^2, sigma) per step, but with
+    # Student-t innovations instead of Gaussian.
+    log_returns = (mu_step - 0.5 * sigma_step ** 2) + sigma_step * Z
+    path_log = np.cumsum(log_returns, axis=1)
+    path_values = np.exp(path_log)
 
     final_vals = path_values[:, -1]
 
@@ -772,12 +796,23 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         "p95": safe_list(np.percentile(paths_pct, 95, axis=0).tolist()),
     }
 
+    # Sample a uniform-random slice of paths for the fan chart. 250 paths is
+    # enough lines to read as a fan visually without making Plotly choke on
+    # 10k overlapping traces. Stratified sample (every Nth row of a shuffled
+    # index) so the sample covers the full distribution, not just the median.
+    sample_count = min(250, simulations)
+    shuffled_idx = rng.permutation(simulations)
+    sample_idx = shuffled_idx[:sample_count]
+    sample_paths = paths_pct[sample_idx, :]
+    paths_sample = [safe_list(row.tolist()) for row in sample_paths]
+
     ruin_threshold = 0.5
     ruin_probability = safe_float(float(np.mean(final_vals < ruin_threshold)))
     worst_5pct_mask = final_vals <= np.percentile(final_vals, 5)
     expected_shortfall = safe_float(
         float(np.mean(final_vals[worst_5pct_mask]) - 1.0) if worst_5pct_mask.any() else p5
     )
+    loss_probability = safe_float(float(np.mean(final_vals < 1.0)))
 
     return {
         "horizon": horizon,
@@ -790,10 +825,14 @@ def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y"
         "final_p75": p75,
         "final_p95": p95,
         "bands": pct_bands,
+        "paths_sample": paths_sample,
         "positive_prob": positive_prob,
+        "loss_probability": loss_probability,
         "max_loss": max_loss,
         "ruin_probability": ruin_probability,
         "expected_shortfall": expected_shortfall,
+        "mu_annual": safe_float(mu_annual),
+        "sigma_annual": safe_float(sigma_annual),
     }
 
 
@@ -804,8 +843,9 @@ class MonteCarloInsightRequest(BaseModel):
     p95: float
     ruin_probability: float
     expected_shortfall: float
-    simulations: int = 8500
+    simulations: int = 10000
     years: int = 1
+    loss_probability: float = 0.0
 
 
 @app.post("/montecarlo/insight")
@@ -814,7 +854,7 @@ def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
     if check_rate_limit(ip, "montecarlo-insight", 15, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     # Enforce canonical path count regardless of what the client sends
-    req.simulations = 8500
+    req.simulations = 10000
 
     import anthropic
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -828,17 +868,18 @@ def montecarlo_insight(req: MonteCarloInsightRequest, request: Request):
     p5_pct = round(req.p5 * 100, 1)
     p50_pct = round(req.p50 * 100, 1)
     p95_pct = round(req.p95 * 100, 1)
+    loss_pct = round(req.loss_probability * 100, 1)
 
     horizon_label = f"{req.years} year" if req.years == 1 else f"{req.years} years"
     prompt = (
         f"A portfolio was simulated {req.simulations} times over {horizon_label}. Results: "
-        f"{req.positive_prob}% of simulations ended with positive returns. "
+        f"{req.positive_prob}% of simulations ended positive; {loss_pct:.1f}% ended in a loss. "
         f"Median outcome: {p50_pct:+.1f}%. "
-        f"Worst 5% of scenarios: below {p5_pct:.1f}% (average of worst 5%: {es_pct:.1f}%). "
+        f"Worst 5% of scenarios: below {p5_pct:+.1f}% (average of worst 5%: {es_pct:+.1f}%). "
         f"Best 5% of scenarios: above {p95_pct:+.1f}%. "
-        f"Probability of losing more than 50%: {ruin_pct:.1f}%. "
+        f"Probability of losing more than half: {ruin_pct:.1f}%. "
         f"Write 2-3 plain English sentences for the investor. Start with 'Based on {req.simulations:,} simulations'. "
-        f"Reference the {horizon_label} horizon in your response. Be direct and specific. No markdown, no bullet points, no disclaimers."
+        f"Reference the {horizon_label} horizon. Be honest about the worst-5% number: if it is positive, frame it as 'even the worst 5% of scenarios still gained X%' instead of inventing losses; if it is negative, name the loss in plain percent. Be direct and specific. No markdown, no bullet points, no disclaimers."
     )
 
     resp = client.messages.create(
@@ -855,7 +896,7 @@ class RetirementSimRequest(BaseModel):
     weights: list[float]
     current_value: float
     years_to_retirement: int
-    simulations: int = 8500
+    simulations: int = 10000
     period: str = "5y"
     contribution: float = 0.0
     inflation_rate: float = 2.5
@@ -871,7 +912,7 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     # Enforce canonical path count regardless of client input (prevents both
     # cheap probes and DoS via giant sim counts).
-    req.simulations = 8500
+    req.simulations = 10000
 
     if not req.tickers or len(req.tickers) != len(req.weights):
         raise HTTPException(status_code=400, detail="Tickers and weights must be non-empty and equal length.")
@@ -933,32 +974,42 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
     port_total_growth = float((1.0 + pd.Series(port_returns)).prod())
     port_cagr = max(-0.99, port_total_growth ** (1.0 / n_years_hist) - 1.0)
 
-    # Use portfolio historical CAGR directly, capped at 12% nominal.
-    # port_cagr is the geometric (compounded) annual return over the price history period  - 
-    # more accurate than arithmetic mean * 252, especially for volatile portfolios.
-    # Floor at 0% to prevent negative forward projections from short bad-period snapshots.
-    mu_annual = min(max(port_cagr, 0.0), 0.12)
+    # Use portfolio historical CAGR directly, capped at 10% upside. The old 0%
+    # floor was wrong - it masked portfolios with genuinely poor historical
+    # performance behind a "we'll assume you break even" assumption. If a
+    # portfolio has lost money historically, the projection should reflect
+    # that risk rather than paper it over.
+    mu_annual = min(port_cagr, 0.10)
 
-    # Cash-aware sigma: don't apply equity volatility floor to cash-heavy portfolios
+    # Sigma straight from history. The artificial 8% equity floor that used
+    # to live here suppressed real variance enough that bear-case retirement
+    # outcomes were unrealistically rosy.
     cash_weight = sum(avail_w[i] for i, t in enumerate(available) if is_cash_ticker(t))
     if cash_weight >= 0.99:
-        sigma_daily = 0.001 / np.sqrt(252)
+        sigma_annual = 0.001
     elif cash_weight > 0:
-        equity_sigma = max(sigma_daily, 0.08 / np.sqrt(252))
-        cash_sigma = 0.001 / np.sqrt(252)
-        sigma_daily = equity_sigma * (1 - cash_weight) + cash_sigma * cash_weight
+        equity_sigma = sigma_daily * np.sqrt(252)
+        sigma_annual = equity_sigma * (1 - cash_weight) + 0.001 * cash_weight
     else:
-        sigma_daily = max(sigma_daily, 0.08 / np.sqrt(252))
+        sigma_annual = sigma_daily * np.sqrt(252)
 
-    sigma_annual = sigma_daily * np.sqrt(252)
+    # Hard cap sigma at 60% so a meme-stock-only portfolio doesn't blow up
+    # the histogram bins, but otherwise let history speak.
+    sigma_annual = float(min(max(sigma_annual, 0.005), 0.60))
 
     # Adjust for fees and tax drag (reduce annual return)
     effective_mu = mu_annual - (req.fee_rate / 100.0) - (req.tax_drag / 100.0)
 
-    # Run 8500 annual-step GBM paths with contributions
+    # Run 10000 annual-step paths with contributions, using Student-t (df=6)
+    # innovations for realistic fat tails so 2008/2020/2022-style years appear
+    # at empirically observed frequency rather than as 5-sigma "impossible"
+    # events the Gaussian model would never produce.
     horizon_years = req.years_to_retirement
     rng = np.random.default_rng()
-    Z = rng.standard_normal((req.simulations, horizon_years))
+    df_t = 6.0
+    t_scale = float(np.sqrt((df_t - 2.0) / df_t))
+    raw_t = rng.standard_t(df_t, size=(req.simulations, horizon_years))
+    Z = raw_t * t_scale
     annual_factors = np.exp((effective_mu - 0.5 * sigma_annual ** 2) + sigma_annual * Z)
 
     values = np.full(req.simulations, req.current_value, dtype=float)
@@ -2352,7 +2403,7 @@ _CHAT_STATIC_SYSTEM = """You are Corvo: the AI advisor watching over this invest
 HOW TO RESPOND:
 - Address the user by their first name when known.
 - Never say "I don't know which page you're on", "could you tell me more about your portfolio", or "I don't have access to your data". All context is provided.
-- Maximum 150-200 words per response. Hard limit.
+- Maximum 150 to 200 words per response. Hard cap. If you reach 200 words, stop. Cut the thought short rather than spill past the limit. This applies to ROAST MODE too.
 - Lead with the direct answer or recommendation in the first 1-2 sentences. Never recap what the user asked. Never open with "great question", "let me break this down", "happy to help", "absolutely", or any other filler.
 - When making a recommendation, follow the Corvo pattern: (1) what you see in their portfolio, (2) why it matters for them specifically, (3) what to consider doing. Compress this into 3-4 sentences total, not headers, not bullets, just prose that flows through the three beats.
 - Use their actual numbers (CAGR, weights, prices, dollar amounts when portfolio_value is known) but do not list every analyst target for every ticker unless asked.
@@ -2366,7 +2417,8 @@ HOW TO RESPOND:
 - When the user asks about their alerts or price targets, use the ACTIVE PRICE ALERTS and PRICE TARGETS data when provided.
 - No bullet points or lists unless the user explicitly asks for a list. Write in plain prose only.
 - No headers, no sub-sections, no bold formatting.
-- No em dashes. No asterisks. No emoji.
+- NEVER use em dashes ("—", U+2014) or en dashes ("–", U+2013). They are banned. Use commas, periods, semicolons, or parentheses. A post-processor strips them but if you produce them anyway the replacement looks jarring. Just do not write them.
+- No asterisks. No emoji.
 - NEVER write "Not financial advice" or any disclaimer anywhere in your response. Ever. Not at the end, not in the middle, not at all. Zero exceptions.
 
 FACT GROUNDING (critical, follow strictly):
@@ -2392,21 +2444,80 @@ WHEN UNCERTAIN, BE EXPLICIT:
 - Better to say "I don't see your cost basis here" than to guess a cost basis.
 - Never bluff with confidence on a fact you cannot verify. The user's trust is the product.
 
+RESPONSE EXAMPLES (reference patterns, not templates):
+
+Good (specific, grounded, position-taking):
+User: "Should I trim NVDA?"
+You: "Trim it. Your 30.0% NVDA weight is outsized for a moderate-risk wealth-building goal over 37 years. Yes, NVDA delivered 78.4% CAGR over the last year, but a concentration that high means a 20% drawdown in NVDA wipes 6% off your total portfolio in one move. Consider trimming to 18 to 22% and rotating into VOO or a sector-uncorrelated holding."
+
+Good (uncertainty, no bluffing):
+User: "What did Goldman Sachs say about Apple last week?"
+You: "I don't have analyst commentary in your portfolio data and no web search this turn. What I can say: your AAPL position at 5.0% is small enough that even a meaningful rating change would barely move your portfolio Sharpe. If you want me to check live analyst views, ask again with words like today or recent and I will search."
+
+Good (grounded numbers, no rounding):
+User: "How concentrated am I?"
+You: "Top-heavy. NVDA at 30.0% plus MSFT at 25.0% means 55.0% of your portfolio rides on two megacap tech names. Your Sharpe of 1.42 is good for now, but it is propped up by NVDA's 78.4% CAGR which will not repeat. Bring tech below 45% to make the Sharpe defensible going forward."
+
+Bad (invented facts, do not produce):
+"Goldman Sachs upgraded Apple to a $250 price target on Tuesday." (no search returned this)
+"NVDA's forward P/E sits around 30x." (no number was provided)
+"The Fed cut rates 25 bps last week." (no search confirmed this)
+"Earnings beat estimates by 8 cents." (no data point in context)
+
+Bad (rounded or fudged numbers, do not produce):
+"Your NVDA at around 30%." Say 30.0% exactly.
+"Your portfolio is up roughly 22%." Say 22.40% exactly.
+"Sharpe around 1.5." Say 1.42 exactly.
+
+Bad (filler, hedging, disclaimers, do not produce):
+"Great question, let me break this down."
+"It depends on many factors, but generally..."
+"This is not financial advice. Consider consulting a professional."
+"Every situation is different, so do your own research."
+
+ADDITIONAL GROUNDING RULES:
+- The user may ask follow-up questions that reference earlier turns. Treat prior assistant turns as your own words; do not contradict your own previous analysis on this user's portfolio unless they changed the holdings.
+- When the user has multiple saved portfolios, the CURRENT PORTFOLIO block below shows the active one. Do not reason about a different portfolio unless the user explicitly asks about it.
+- If the user mentions a ticker that is NOT in their current portfolio (e.g., "should I buy TSLA?"), evaluate it as an addition against their current allocation. Compare to existing holdings by sector, correlation, and how it changes concentration. Reference the actual current weights.
+- If the user asks about a single holding's performance, lead with that holding's individual CAGR from INDIVIDUAL RETURNS in the metrics block. Not the portfolio CAGR.
+- When discussing benchmark comparison, use the exact "benchmark_return" value from the metrics. Do not approximate.
+- If the metrics block lists a Beta value, use it when discussing market sensitivity. Do not estimate Beta from sector composition; the provided value is authoritative.
+- If a metric is missing from the context (e.g., no beta provided), say "your beta is not shown in this view" rather than estimating one.
+- The user's portfolio_value is the source of truth for dollar conversions. If they ask "how much would I make if NVDA doubled?", compute 30.0% of portfolio_value, multiply by 1.0 to get current NVDA dollars, then by 2.0 for the doubled scenario. Show your math in plain prose, not as a formula block.
+- When the user asks "how am I doing?", use the Sharpe + benchmark comparison together, not just CAGR. A high CAGR with mediocre Sharpe means lucky risk, not skill.
+- If the portfolio_value is set to 0 or null, the user hasn't input a value. Don't fabricate dollar amounts. Say "your portfolio value isn't set yet" if they ask about dollar gains or losses.
+
+CONVERSATION CONTINUITY:
+- If the user's previous turn established context (e.g., "I'm thinking about retiring at 50 instead of 65"), carry that forward through the rest of the conversation. Do not require them to repeat it.
+- Do not start every response by re-summarizing their portfolio. The user knows their holdings. Get to the answer.
+- If you used web search in a prior turn and got a result, you can reference it in this turn ("the SPY level I checked earlier was X"), but do not invent that you "remember" facts you weren't given.
+
+WHAT NOT TO DO ON ANY TURN:
+- Do not write "Based on your portfolio data..." as a lead-in. Just write the answer.
+- Do not write "Looking at your holdings..." as a lead-in. Just write the answer.
+- Do not write "I notice that..." as a lead-in. Just write the answer.
+- Do not write a 200-word setup followed by a 1-sentence recommendation. Lead with the recommendation.
+- Do not list every holding when the question is about one or two of them.
+- Do not output numbered lists (1., 2., 3.) when the user did not ask for steps.
+- Do not write a closing paragraph that re-summarizes what you just said. End on the last substantive sentence.
+
 ROAST MODE: When the user says "Roast my portfolio", you are a ruthless hedge fund PM with zero patience for retail mistakes. Never compliment returns. Never say "genuinely impressive" or "you are getting paid well". Only attack. Pick apart every holding by name, why the sizing is wrong, why the thesis is flawed. If their Sharpe is embarrassing, call it embarrassing. If they are dangerously concentrated, destroy them for it. Use their actual tickers and exact percentages from the data, never invented ones. Sound like you have seen this mistake a hundred times and are sick of it. End with one sentence so brutal they screenshot it. Zero disclaimers."""
 
 
 # Keyword set that flips web_search ON for a given /chat turn. Most chats are
 # pure portfolio analysis (no live data needed) so search defaults off, saving
 # ~$0.01 per turn on the web_search tool fee. Anything time-sensitive,
-# news/earnings/analyst-related, or macro flips it on.
+# news/earnings/analyst-related, or macro flips it on. Matched as whole words
+# so "pe ratio" doesn't fire on "sharpe ratio" and "fed" doesn't fire on
+# "feedback".
 _CHAT_SEARCH_KEYWORDS = (
     # time markers
     "today", "yesterday", "this week", "this month", "this year",
     "recent", "recently", "latest", "current", "currently",
-    "right now", "lately", " now ", "ytd", "year to date", "this quarter",
+    "right now", "lately", "now", "ytd", "year to date", "this quarter",
     # news / events
     "news", "earnings", "report", "release", "guidance",
-    "beat", "missed", " miss ", "estimate", "estimates",
+    "beat", "missed", "miss", "estimate", "estimates",
     "upgrade", "downgrade", "price target", "consensus", "rating", "ratings",
     "analyst", "analysts", "buy rating", "sell rating",
     "headline", "article", "story", "announcement",
@@ -2415,7 +2526,7 @@ _CHAT_SEARCH_KEYWORDS = (
     "cpi", "ppi", "inflation", "gdp", "unemployment", "jobs report",
     "payroll", "payrolls", "fed meeting", "fed minutes", "powell",
     # search verbs
-    "search", "look up", "find out", "check the news",
+    "search", "look up", "find out",
     "what's happening", "what is happening", "what happened",
     # price / valuation questions
     "price of", "trading at", "stock price", "share price",
@@ -2426,6 +2537,11 @@ _CHAT_SEARCH_KEYWORDS = (
     "broke out", "sold off", "rebounded",
 )
 
+_CHAT_SEARCH_RE = re.compile(
+    r"(?<![a-z0-9])(?:" + "|".join(re.escape(kw) for kw in _CHAT_SEARCH_KEYWORDS) + r")(?![a-z0-9])",
+    re.IGNORECASE,
+)
+
 
 def _chat_needs_search(message: str) -> bool:
     """Return True when the user's message references live data, news, or
@@ -2433,8 +2549,7 @@ def _chat_needs_search(message: str) -> bool:
     save the per-search tool fee on pure-analysis turns."""
     if not message:
         return False
-    msg = " " + message.lower() + " "
-    return any(kw in msg for kw in _CHAT_SEARCH_KEYWORDS)
+    return bool(_CHAT_SEARCH_RE.search(message))
 
 
 @app.post("/chat")
@@ -2696,8 +2811,16 @@ CURRENT PORTFOLIO:
         try:
             with client.messages.stream(**_stream_kwargs) as stream:
                 for text in stream.text_stream:
-                    # Strip em dashes and asterisks inline
-                    cleaned = text.replace(" - ", ",").replace("*", "")
+                    # Strip em dashes, en dashes, asterisks inline. Haiku 4.5
+                    # tends to insert em dashes even with explicit "no em
+                    # dashes" rules, so the post-processor is load-bearing.
+                    cleaned = (
+                        text
+                        .replace("—", ", ")
+                        .replace("–", ", ")
+                        .replace(" - ", ", ")
+                        .replace("*", "")
+                    )
                     if cleaned:
                         yield f"data: {_json.dumps({'chunk': cleaned})}\n\n"
 
