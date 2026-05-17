@@ -23,29 +23,28 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Sharpe ratio computed with the live `^IRX` T-bill rate as the risk-free rate
 - Portfolio health score graded across returns, risk, stability, and resilience
 - Max drawdown, alpha, beta, and volatility
-- Monte Carlo simulation with exactly 10,000 paths and a 1 to 30 year projection horizon. Rendered as a true fan chart: 250 sample paths drawn as semi-transparent hairlines behind the 5th-95th and 25th-75th percentile bands so you see actual variance, including realistic loss scenarios, instead of an abstract median + smooth band. Uses Student-t (df=6) innovations for empirical fat tails so 2008/2020/2022-style drawdowns appear at realistic frequency.
+- Monte Carlo simulation with 10,000 fat-tail paths and a 1-30 year horizon, rendered as a true fan chart (see Simulations below for details)
 - Benchmark comparison versus the S&P 500, NASDAQ, and Dow Jones
 - Sector exposure breakdown with visual allocation chart
 - Correlation heatmap across all holdings
 - What-If analysis to test portfolio changes side by side before committing
-- Per-holding account type tagging: each holding in the sidebar Holdings tab can be tagged with its own account type (Taxable Brokerage, Roth IRA, Traditional IRA, Roth 401(k), Traditional 401(k), HSA, 529, Custodial). A single portfolio can mix account types so AI tax advice routes per bucket: no tax-loss harvesting in Roth, capital gains only apply to Taxable, contribution limits and RMDs surfaced for retirement wrappers. Untagged holdings inherit the portfolio default.
+- Per-holding account type tagging: tag each holding with its own account type (Taxable, Roth IRA, Traditional IRA, Roth/Traditional 401(k), HSA, 529, Custodial) so a single portfolio can mix accounts. AI tax advice routes per bucket - no TLH suggestions inside Roth/401k, cap gains only in Taxable, RMDs surfaced for retirement wrappers. Untagged holdings inherit the portfolio default.
 
 ### AI Tools
-- AI portfolio chat powered by Claude with full portfolio context, web search, persistent history, and conversation management
-- What Should I Do Today: on-demand AI action plan that pulls live prices, portfolio metrics, and your goal profile to surface 2-3 specific moves (with rationale) you'd consider this week. The dashboard's top-of-fold action card
-- Morning briefing: a daily AI-generated summary of macro news and portfolio-relevant developments (defaults to collapsed; expand via chevron)
-- "What should I do today?" - a single-click, direct action recommendation based on your current holdings
-- Rebalance assistant with target allocation suggestions and drift analysis
-- Natural language portfolio editor: describe a change in plain English and Corvo applies it
-- Earnings impact preview: AI analysis of how upcoming earnings could affect your positions
-- Goal Tracker: projects retirement and milestone savings with Monte Carlo
+- **AI portfolio chat** powered by Claude Haiku 4.5 with full portfolio context, persistent history, conditional web search (only attached when the message references live data / news / macro), and 1-hour prompt caching on the static system block. Anti-hallucination rules forbid invented prices, analyst targets, news, or earnings - the model must ground every fact-claim in the provided context or a returned web search
+- **What should I do today?** - on-demand, single-click AI action plan that pulls live prices, portfolio metrics, and your goal profile to surface 2-3 specific moves with rationale. The dashboard's top-of-fold action card
+- **Morning briefing**: daily AI summary of macro news and portfolio-relevant developments (defaults to collapsed; expand via chevron)
+- **Rebalance assistant** with drift table, target allocation suggestions, and a "Continue in AI chat" handoff
+- **Natural language portfolio editor**: describe a change in plain English ("trim NVDA to 15%, add VXUS at 10%") and Corvo applies it after a preview
+- **Earnings impact preview**: AI analysis of how upcoming earnings could affect your positions
+- **Goal Tracker**: projects retirement and milestone savings with Monte Carlo, with the projected CAGR clamped to a realistic 4-10% long-horizon band so single hot or cold years don't dominate the math
 
 ### Simulations
-- Monte Carlo engine running exactly 10,000 paths per simulation, using Student-t (df=6) innovations for realistic fat-tail variance rather than the rosier-than-real Gaussian assumption
-- 1 to 30 year projection horizon with percentile bands plus 250 individual sample paths drawn as a fan so the user sees real distribution, including loss scenarios
-- Honest labeling: "Worst 5%" / "Best 5%" instead of "Bear / Bull Case" so positive worst-case percentiles aren't dressed up as losses, and VaR / Expected Shortfall cards flip green when the worst-5% is genuinely positive
-- Retirement simulator with configurable spending, contribution, and target balance
-- Advanced settings for return assumptions, inflation rate, and withdrawal strategy
+- Monte Carlo engine running exactly 10,000 paths per simulation, using Student-t (df=6) innovations for empirical fat tails so 2008/2020/2022-style drawdowns appear at realistic frequency rather than as 5-sigma "impossible" events
+- True fan chart: 250 individual sample paths drawn as semi-transparent hairlines behind the 5th-95th and 25th-75th percentile bands so the user sees actual variance including loss scenarios, not just a smooth abstract band
+- Honest labeling: "Worst 5%" and "Best 5%" instead of "Bear / Bull Case"; VaR and Expected Shortfall cards flip green when the worst-5% percentile is genuinely positive rather than pretending it's a loss
+- Retirement simulator with configurable contributions, inflation, fees, tax drag, and confidence level
+- 1-30 year projection horizon with percentile bands and a 40-bin outcome histogram
 
 ### Income and Tax
 - Dividend Calendar with 90-day ex-date lookahead, early-warning flags, and projected income total
@@ -100,7 +99,7 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 | Backend | FastAPI (Python), single-file `backend/main.py` |
 | Database | Supabase (PostgreSQL) with Row-Level Security and `get_leaderboard` SECURITY DEFINER RPC |
 | Auth | Supabase Auth with Cloudflare Turnstile CAPTCHA, JWT-verified per-request via `_verify_jwt_user` helper |
-| AI | Anthropic Claude (`claude-sonnet-4-6`) with streaming and `web_search` tool |
+| AI | Anthropic Claude: Haiku 4.5 for `/chat` (streaming, conditional `web_search`, 1h prompt caching since v0.40), Sonnet 4.6 for analytical endpoints (`/what-should-i-do`, `/portfolio/health-score`, `/portfolio/daily-signal`, `/montecarlo/insight`) |
 | Market Data | yfinance, Finnhub fallback for news |
 | Email | Resend (morning briefing, week in review, monthly summary, market close summary, price alerts) |
 | Push | VAPID web push |
