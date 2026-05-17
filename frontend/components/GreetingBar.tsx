@@ -255,19 +255,48 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
 
   useEffect(() => {
     const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
-    if (!validTickers.length) { setHoldingPrices([]); return; }
+    // Always clear holdingPrices on assets change so the portfolioToday
+    // useMemo below doesn't briefly compute against the previous portfolio's
+    // ticker data. Without this, switching from a portfolio of [AAPL, MSFT]
+    // to [GOOGL, AMZN] would have the new useMemo iterate over the new
+    // tickers but find no matches in the stale holdingPrices, masking the
+    // race - except in the case where the two portfolios overlap on any
+    // ticker, where the overlapping ticker's stale change_pct could leak
+    // into the new portfolio's display until the fetch resolves.
+    setHoldingPrices([]);
+    if (!validTickers.length) return;
+    // AbortController + cancel flag are belt-and-suspenders. If the user
+    // clicks portfolio A then quickly portfolio B, A's in-flight fetch
+    // could resolve AFTER B's fetch and overwrite holdingPrices with A's
+    // data (race condition). The cancel flag stops the stale setState; the
+    // AbortController stops the underlying request.
+    let cancelled = false;
+    const controller = new AbortController();
     const load = async () => {
       try {
-        const r = await fetch(`${API_URL}/watchlist-data?tickers=${validTickers.join(",")}`);
+        const r = await fetch(
+          `${API_URL}/watchlist-data?tickers=${validTickers.join(",")}`,
+          { signal: controller.signal }
+        );
         const d = await r.json();
+        if (cancelled) return;
         setHoldingPrices((d.results || []).map((s: any) => ({
           ticker: s.ticker,
           price: s.price == null ? null : Number(s.price),
           changePct: s.change_pct == null ? null : Number(s.change_pct),
         })));
-      } catch {}
+      } catch (e: any) {
+        // AbortError is expected during cleanup, not a real failure.
+        if (e?.name === "AbortError") return;
+      }
     };
-    load(); const id = setInterval(load, 60000); return () => clearInterval(id);
+    load();
+    const id = setInterval(load, 60000);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearInterval(id);
+    };
   }, [assets]);
 
   const portfolioToday = useMemo(() => {
