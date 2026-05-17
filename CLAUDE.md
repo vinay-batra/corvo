@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.38 (May 17, 2026) - Edit-with-Corvo moves into the Holdings tab (per user feedback: "the edit with AI thing only applies to holdings, so it should be in that holdings section"). Frontend only.**
+**Last shipped: v0.39 (May 17, 2026) - GreetingBar right column redesign (Mock A from a 3-mock brainstorm). Markets become sparkline cards; Holdings becomes a vertical scrollable list that stretches to fill column height. Frontend only.**
+
+v0.39 fixes a layout problem the user caught with a screenshot: the GreetingBar's right column was crammed at the top (Markets + Holdings stacked at top of a 230px column, briefing on the left filling the full card height, big empty space below them) and the horizontal Holdings marquee was overflowing past the divider on narrower viewports, leaking partial tickers ("72 -0.28%") into the briefing-side gutter. Built three direction mocks (Mock A balanced column, Mock B Markets-in-header, Mock C drop-the-divider), user picked Mock A. Implemented: (1) Markets switched from the pill-style IndexChip to a new MarketCard - same label + pct, plus a 36x18 mini sparkline pulled from the existing `/watchlist-data` response's `sparkline` array (the field was already populated by the backend; the GreetingBar was just ignoring it). The state shape moved from `{spy, qqq, dia}` to a typed `IndexPrice[]` so each index carries its own label, ticker, price, pct, and sparkline. (2) Holdings switched from the horizontal auto-scrolling marquee (with its rAF-driven step loop, paused/resumed on hover, doubled-chip trick for seamless wrap) to a vertical scrollable list of HoldingRow cards (dot + ticker + price + pct). The wrapper has `flex: 1 1 0, minHeight: 0, overflowY: auto` so it stretches to fill the column's remaining height, scrolls within the column when the list is long, and never overflows horizontally. (3) Removed all the marquee infrastructure: `chipsScrollRef`, `chipsPausedRef`, `chipsManualTimerRef`, `chipsExpectedScrollRef`, the step animation useEffect (~25 lines), `doubledChips`, the IndexChip + HoldingChip components, and the unused `useRef` import. Net: ~80 fewer lines, no more overflow leak, right column balances the briefing left column visually.
 
 v0.38 finishes the tabbed sidebar redesign. Edit-with-Corvo used to live as sidebar-wide chrome between the Logo and the tab nav (so it was visible regardless of which tab was active). Per direct user feedback, it now lives INSIDE the Holdings tab as the top section there - since the NL commands it runs only mutate holdings, the editor only makes sense in that context. Account and Saved tabs no longer surface it. Visual: bleeds to sidebar edges (marginLeft/Right -14, marginTop -12) so it sits flush under the sticky tab nav, matching its pre-v0.38 top-of-sidebar look but now scoped to one tab. The Holdings tab order is: Edit-with-Corvo (top, collapsible) -> sticky Holdings header (count + weight status + utility menu) -> asset rows -> Add Asset + Equalize buttons -> Analyze button flows below. All other tabs unchanged. State (nlCommand, nlLoading, nlError, nlPending) still lives in app/app/page.tsx; only the JSX moved.
 
@@ -277,9 +279,33 @@ Key routes already implemented:
 - Railway URL: `web-production-7a78d.up.railway.app`
 - Live site: `corvo.capital`
 - GitHub: `vinay-batra/corvo`
-- Version: v0.38
+- Version: v0.39
 
 ## What Was Built
+
+### v0.39 (May 17, 2026) - GreetingBar right column redesign (Mock A)
+
+**Problem (user-reported, with screenshot)**
+- GreetingBar's right column (Markets + Holdings, 230px wide) was crammed at the top of the column while the briefing on the left filled the full card height. Big empty space below Markets/Holdings.
+- The horizontal Holdings marquee was overflowing past the vertical divider on narrower viewports, leaking partial tickers like "72 -0.28%" into the briefing-side gutter.
+
+**3-mock brainstorm**
+- Mock A: balanced right column - Markets as sparkline cards, Holdings as vertical scrollable list that stretches via flex:1.
+- Mock B: Markets move to header chips, right column becomes Holdings-only.
+- Mock C: drop the divider entirely, briefing fills card, Markets+Holdings strip at footer.
+- User picked Mock A.
+
+**Markets sparkline cards**
+- New `MarketCard` component replaces the v0.36 `IndexChip` pill. Same label + pct, plus a 36x18 mini SVG sparkline rendered by a new inline `Sparkline` helper. The sparkline color (green/red) is derived from first vs last data point.
+- Sparkline data already comes from the backend's `/watchlist-data` endpoint - the response has a `sparkline` array per ticker that the GreetingBar was previously ignoring. State shape moved from `{spy, qqq, dia}` to a typed `IndexPrice[]` carrying label + ticker + price + pct + sparkline per index.
+
+**Holdings vertical list**
+- New `HoldingRow` component replaces the v0.36 `HoldingChip` marquee chip. Grid layout: 6px dot + ticker (gold Space Mono) + price + pct. Hover: gold border + tinted bg.
+- Wrapper has `flex: 1 1 0, minHeight: 0, overflowY: auto` so it stretches to fill the column's remaining height (balancing the briefing column on the left) AND scrolls vertically within the column when the user has many holdings. No more horizontal overflow.
+- "Live" green pulse dot kept next to the Holdings eyebrow when market is open.
+
+**Cleanup**
+- Removed `chipsScrollRef`, `chipsPausedRef`, `chipsManualTimerRef`, `chipsExpectedScrollRef`, the 25-line marquee step `useEffect` (rAF loop with manual-pause-on-scroll detection), `doubledChips` (the array doubling trick for seamless wrap), the old `IndexChip` + `HoldingChip` components, and the now-unused `useRef` import. Net: ~80 fewer lines.
 
 ### v0.38 (May 17, 2026) - Edit-with-Corvo into Holdings tab
 
