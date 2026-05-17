@@ -10,7 +10,6 @@ import type gsapType from "gsap";
 import type { ScrollTrigger as ScrollTriggerType } from "gsap/ScrollTrigger";
 import type { SplitText as SplitTextType } from "gsap/SplitText";
 import { RESOLVED_API_URL } from "../lib/api";
-import { DEMO_PORTFOLIOS, demoPortfolioHref } from "../lib/demoPortfolios";
 
 // GSAP is heavy and only ever runs client-side. Defer loading until the first
 // component that needs it (AnimatedHero useEffect) calls loadGsap(). Avoids
@@ -2669,8 +2668,30 @@ function TestimonialHorizontalCarousel() {
       }
     };
 
+    // Wheel-to-horizontal: vertical mouse-wheel motion translates into
+    // horizontal scroll over the carousel. Without this, users hovering the
+    // section get vertical page scroll (they expect the cards to move
+    // horizontally). Trackpad horizontal swipes already work via deltaX
+    // pass-through, so we only intercept when deltaY dominates and deltaX
+    // is tiny - keeps regular vertical scroll past the section possible by
+    // moving the cursor off the carousel. Must be non-passive (passive:
+    // false) to call preventDefault.
+    const handleWheel = (e: WheelEvent) => {
+      // Translate deltaY into horizontal scroll only when the user is
+      // wheeling primarily vertically (i.e. they don't already have a
+      // horizontal trackpad gesture in flight).
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    };
+
     el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      el.removeEventListener("wheel", handleWheel);
+    };
   }, []);
 
   const scrollBy = (dir: number) => {
@@ -3147,54 +3168,14 @@ function GsapHero({
             )}
           </div>
 
-          {/* Try-it-now demo cards: 3 preset portfolios that anonymous visitors
-              can open in a fully-rendered dashboard without signing up.
-              Removes the "I'd have to sign up to see what this thing does"
-              friction point that kills conversion on cold visits. Each card
-              auto-runs analysis on the preset's holdings, shows the demo
-              banner with sign-up CTA, and caps chat at 5 anon messages. */}
-          <div className="hero-demo-row" style={{ marginTop: 22 }}>
-            <p style={{ fontSize: 10, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", fontFamily: "Space Mono, monospace", fontWeight: 700, marginBottom: 10 }}>
-              Or try it on a sample portfolio - no signup
-            </p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {DEMO_PORTFOLIOS.map(demo => (
-                <Link key={demo.slug} href={demoPortfolioHref(demo.slug)}
-                  className="hero-demo-card"
-                  style={{
-                    flex: "1 1 180px",
-                    minWidth: 0,
-                    padding: "11px 14px",
-                    background: "var(--card-bg)",
-                    border: "0.5px solid var(--border)",
-                    borderRadius: 10,
-                    textDecoration: "none",
-                    color: "var(--text)",
-                    transition: "border-color 0.15s, transform 0.15s, box-shadow 0.15s",
-                    display: "block",
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(201,168,76,0.5)";
-                    (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-2px)";
-                    (e.currentTarget as HTMLAnchorElement).style.boxShadow = "0 6px 18px rgba(201,168,76,0.12)";
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border)";
-                    (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)";
-                    (e.currentTarget as HTMLAnchorElement).style.boxShadow = "none";
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", letterSpacing: -0.1 }}>{demo.name}</span>
-                    <span style={{ fontSize: 11, color: "var(--accent)" }}>→</span>
-                  </div>
-                  <p style={{ fontSize: 10, color: "var(--text3)", margin: 0, lineHeight: 1.4 }}>
-                    {demo.archetype}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </div>
+          {/* Demo-card row removed - it visually competed with the floating
+              "Try a quick analysis" widget on the right side of the hero
+              and gave users two parallel demo paths that diluted each
+              other. The /app?demo=<slug> URLs and the dashboard demo
+              banner remain wired in lib/demoPortfolios.ts so the
+              infrastructure can be reused for shareable links / email
+              campaigns / support outreach without re-building from
+              scratch. */}
 
           <div
             ref={statsRef}

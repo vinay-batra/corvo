@@ -4,7 +4,7 @@
 
 [Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js 16 · FastAPI · Supabase · All Rights Reserved
 
-Current release: **v0.42** (May 17, 2026)
+Current release: **v0.43** (May 17, 2026)
 
 ---
 
