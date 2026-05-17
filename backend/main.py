@@ -2270,13 +2270,17 @@ _ACCOUNT_TYPE_RULES: dict[str, str] = {
         "ACCOUNT TYPE: Roth 401(k). All growth and qualified withdrawals are TAX-FREE. NEVER recommend "
         "tax-loss harvesting. NEVER mention capital gains tax. Annual contribution limit $23,000 "
         "(under 50) / $30,500 (50+), typically with an employer match. Withdrawals before 59.5 trigger "
-        "a 10% penalty. Favor growth-tilted strategies."
+        "a 10% penalty. Favor growth-tilted strategies. MUST name the 'Roth 401(k)' wrapper in the "
+        "rationale at least once and frame the recommendation around tax-free compounding or employer "
+        "match - generic advice that could apply to any account is rejected."
     ),
     "traditional_401k": (
         "ACCOUNT TYPE: Traditional 401(k). Tax-deferred via pre-tax payroll contributions. NEVER "
         "recommend tax-loss harvesting. NEVER mention capital gains tax. RMDs begin at 73. Annual "
         "limit $23,000 / $30,500, typically with an employer match. Plan around future ordinary-income "
-        "brackets at withdrawal."
+        "brackets at withdrawal. MUST name the 'Traditional 401(k)' wrapper in the rationale at least "
+        "once and frame the recommendation around tax-deferred compounding, RMD planning, or pre-tax "
+        "contribution leverage - generic advice that could apply to any account is rejected."
     ),
     "hsa": (
         "ACCOUNT TYPE: HSA (Health Savings Account). Triple tax advantage: pre-tax contributions, "
@@ -4975,13 +4979,14 @@ def _hs_cache_key(user_id: str, tickers: list[str], account_type: str = "") -> s
     return f"{uid}:{today}:{tkr_hash}{at_suffix}"
 
 
-def _hs_load_from_supabase(user_id: str, date_str: str, tkr_hash: str) -> dict | None:
+def _hs_load_from_supabase(user_id: str, date_str: str, tkr_hash: str, account_type: str = "") -> dict | None:
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
         return None
     try:
         resp = requests.get(
             f"{SUPABASE_URL}/rest/v1/health_score_cache"
-            f"?user_id=eq.{user_id}&date=eq.{date_str}&tickers_hash=eq.{tkr_hash}&select=score,headline,actions",
+            f"?user_id=eq.{user_id}&date=eq.{date_str}&tickers_hash=eq.{tkr_hash}"
+            f"&account_type=eq.{account_type}&select=score,headline,actions",
             headers=_sb_headers(), timeout=5,
         )
         if resp.status_code == 200:
@@ -4994,7 +4999,7 @@ def _hs_load_from_supabase(user_id: str, date_str: str, tkr_hash: str) -> dict |
     return None
 
 
-def _hs_save_to_supabase(user_id: str, date_str: str, tkr_hash: str, result: dict):
+def _hs_save_to_supabase(user_id: str, date_str: str, tkr_hash: str, result: dict, account_type: str = ""):
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id:
         return
     try:
@@ -5005,6 +5010,7 @@ def _hs_save_to_supabase(user_id: str, date_str: str, tkr_hash: str, result: dic
                 "user_id": user_id,
                 "date": date_str,
                 "tickers_hash": tkr_hash,
+                "account_type": account_type,
                 "score": result["score"],
                 "headline": result["headline"],
                 "actions": result["actions"],
@@ -5044,18 +5050,17 @@ def portfolio_health_score(req: HealthScoreRequest, request: Request):
         cached, _ = _health_score_cache[cache_key]
         return cached
 
-    # Check Supabase cache. Skip when an account_type is set - the persisted
-    # cache row pre-dates this column, so reusing it would return advice that
-    # ignores the user's chosen account type. Falls back to generating fresh
-    # until the cache schema is migrated to include account_type.
+    # Check Supabase cache, partitioned by account_type after the v0.34
+    # migration (20260516010000_health_score_cache_account_type.sql) widened
+    # the unique constraint to include account_type. Same portfolio in
+    # different tax wrappers no longer collides.
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     tkr_hash = "|".join(sorted(t.upper() for t in tickers))
-    if not req.account_type:
-        sb_cached = _hs_load_from_supabase(req.user_id, today, tkr_hash)
-        if sb_cached:
-            _health_score_cache[cache_key] = (sb_cached, today)
-            _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
-            return sb_cached
+    sb_cached = _hs_load_from_supabase(req.user_id, today, tkr_hash, req.account_type)
+    if sb_cached:
+        _health_score_cache[cache_key] = (sb_cached, today)
+        _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
+        return sb_cached
 
     # Compute base sub-scores
     ann_ret = req.annualized_return
@@ -5256,7 +5261,7 @@ Rules:
     result = {"score": score, "headline": headline, "actions": actions, "cached": False}
     _health_score_cache[cache_key] = (result, today)
     _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
-    _hs_save_to_supabase(req.user_id, today, tkr_hash, result)
+    _hs_save_to_supabase(req.user_id, today, tkr_hash, result, req.account_type)
 
     return result
 

@@ -207,9 +207,17 @@ interface Props {
   // context can omit both and the selector won't render.
   accountType?: AccountTypeId;
   onAccountTypeChange?: (id: AccountTypeId) => void;
+  // Effective base value derived upstream from EOD portfolio_snapshots
+  // (yesterday's close), with fallback to the user's input seed. When
+  // provided, the live portfolio value display = liveBaseValue x (1 +
+  // todayPct/100), so the dashboard ratchets day-over-day like Fidelity
+  // instead of snapping back to the seed every market open. The localStorage
+  // seed (corvo_portfolio_value) becomes purely a "first run" seed and a
+  // manual override - once snapshots accumulate, they take over.
+  liveBaseValue?: number;
 }
 
-export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange }: Props) {
+export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange, liveBaseValue }: Props) {
   const update = onAssetsChange || setAssets || (() => {});
   const [dark, setDark] = useState(true);
   const [active, setActive] = useState<number|null>(null);
@@ -270,14 +278,21 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     return next;
   });
   // Live (today's) value to show in the input when it's not being edited.
-  const portfolioBaseNum = parseFloat(portfolioValue) || 0;
+  // Two bases:
+  //  - portfolioSeedNum: the user's input value (localStorage seed). Edited
+  //    via this input when focused. Stays put across sessions.
+  //  - effectiveBaseNum: the implicit base today's % change builds on. Prefers
+  //    yesterday's EOD snapshot (via liveBaseValue prop) so the value
+  //    ratchets day-over-day. Falls back to the seed when no snapshots exist.
+  const portfolioSeedNum = parseFloat(portfolioValue) || 0;
+  const effectiveBaseNum = liveBaseValue && liveBaseValue > 0 ? liveBaseValue : portfolioSeedNum;
   const liveMultiplier = 1 + ((todayPct ?? 0) / 100);
-  const portfolioLiveNum = portfolioBaseNum * liveMultiplier;
+  const portfolioLiveNum = effectiveBaseNum * liveMultiplier;
   const portfolioInputDisplay =
-    pvFocused || !todayPct || portfolioBaseNum <= 0
+    pvFocused || effectiveBaseNum <= 0
       ? portfolioValue
       : Math.round(portfolioLiveNum).toString();
-  const portfolioDeltaDollar = portfolioLiveNum - portfolioBaseNum;
+  const portfolioDeltaDollar = portfolioLiveNum - effectiveBaseNum;
 
   // Reinvest dividends toggle - persisted to localStorage
   const [reinvestDividends, setReinvestDividendsState] = useState<boolean>(true);
@@ -859,8 +874,11 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
           )}
         </div>
         {/* Live delta line - only shown when we have today's pct, a real base,
-            and the value isn't hidden. */}
-        {!valueHidden && todayPct != null && portfolioBaseNum > 0 && (
+            and the value isn't hidden. "Base" here is the EOD-snapshot-derived
+            value (yesterday's close), not the user's input seed, so the math
+            reads as "live = base x (1 + today's pct)" with both numbers
+            traceable. */}
+        {!valueHidden && todayPct != null && effectiveBaseNum > 0 && (
           <div style={{
             fontSize: 10,
             marginTop: 6,
@@ -873,7 +891,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             <span style={{ color: "var(--text3)", margin: "0 5px" }}>·</span>
             {todayPct >= 0 ? "+" : ""}{todayPct.toFixed(2)}% today
             <span style={{ color: "var(--text3)", margin: "0 5px" }}>·</span>
-            <span style={{ color: "var(--text3)" }}>base ${portfolioBaseNum.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+            <span style={{ color: "var(--text3)" }}>base ${effectiveBaseNum.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
           </div>
         )}
         {/* Account type - changes how Corvo's AI reasons about tax (TLH,
