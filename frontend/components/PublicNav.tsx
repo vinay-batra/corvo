@@ -69,13 +69,23 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
   }, []);
 
   // Scroll behavior: hide on scroll down past 80px, show on scroll up.
-  // Pure requestAnimationFrame loop (Lark pattern) - compares each tick
-  // against the previous tick with +/- 4px dead zones. The 80px gate
-  // keeps the nav visible while the user is still in the hero region.
+  //
+  // Accumulates per-frame deltas instead of comparing the current frame
+  // against the previous frame. macOS trackpad scrolls at ~1-3 px/frame,
+  // so a fixed N-px frame-diff threshold (like +/- 4 or +/- 8) never
+  // trips during smooth scrolls and the nav stays stuck. The accumulator
+  // sums tiny per-frame deltas until they cross +/- 12 px in one
+  // direction, then fires; reverses direction by resetting on sign flip,
+  // so jitter cancels and intentional gestures register. y < 80 force-
+  // shows the nav so the hero always has it visible.
+  //
   // readY() falls back to scrollerRef.current.scrollTop when the homepage
   // passes its overflow container in - window.scrollY is always 0 there.
   useEffect(() => {
     let raf = 0;
+    let accum = 0;
+    let hiddenLocal = false;
+    let scrolledLocal = false;
     const readY = (): number => {
       const el = scrollerRef?.current ?? null;
       return el ? el.scrollTop : (typeof window !== "undefined" ? window.scrollY : 0);
@@ -83,9 +93,21 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
     const tick = () => {
       const y = readY();
       const prev = prevScrollY.current;
-      setScrolled(y > 8);
-      if (y > 80 && y > prev + 4) setHidden(true);
-      else if (y < prev - 4 || y < 80) setHidden(false);
+      const delta = y - prev;
+      const wantScrolled = y > 8;
+      if (wantScrolled !== scrolledLocal) {
+        scrolledLocal = wantScrolled;
+        setScrolled(wantScrolled);
+      }
+      if (y < 80) {
+        accum = 0;
+        if (hiddenLocal) { hiddenLocal = false; setHidden(false); }
+      } else if (delta !== 0) {
+        if ((delta > 0) !== (accum > 0)) accum = 0;
+        accum += delta;
+        if (accum > 12 && !hiddenLocal) { hiddenLocal = true; setHidden(true); }
+        else if (accum < -12 && hiddenLocal) { hiddenLocal = false; setHidden(false); }
+      }
       prevScrollY.current = y;
       raf = requestAnimationFrame(tick);
     };
