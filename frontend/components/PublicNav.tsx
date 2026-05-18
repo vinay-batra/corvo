@@ -68,73 +68,29 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Scroll behavior: hide on scroll down, show on scroll up.
-  //
-  // Belt-and-suspenders: a requestAnimationFrame poll AND a scroll-event
-  // listener feed into the same `update` function. The rAF loop catches
-  // GSAP-driven programmatic scrolls + cases where scroll events aren't
-  // firing (some browser inconsistencies on overflow containers). The
-  // scroll listener catches fast scrolls that exceed the 8px frame-diff
-  // threshold the rAF loop uses. Whichever wins, the nav slides.
+  // Scroll behavior: hide on scroll down past 80px, show on scroll up.
+  // Pure requestAnimationFrame loop (Lark pattern) - compares each tick
+  // against the previous tick with +/- 4px dead zones. The 80px gate
+  // keeps the nav visible while the user is still in the hero region.
+  // readY() falls back to scrollerRef.current.scrollTop when the homepage
+  // passes its overflow container in - window.scrollY is always 0 there.
   useEffect(() => {
     let raf = 0;
-    let lastY = -1;
-    let scrollTarget: HTMLElement | Window | null = null;
-    let attachTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const update = (currentY: number) => {
-      if (lastY < 0) {
-        lastY = currentY;
-        prevScrollY.current = currentY;
-        return;
-      }
-      if (currentY === lastY) return;
-      setScrolled(currentY > 8);
-      if (currentY < 10) {
-        setHidden(false);
-      } else if (currentY > lastY + 8) {
-        setHidden(true);
-      } else if (currentY < lastY - 4) {
-        setHidden(false);
-      }
-      lastY = currentY;
-      prevScrollY.current = currentY;
-    };
-
     const readY = (): number => {
       const el = scrollerRef?.current ?? null;
       return el ? el.scrollTop : (typeof window !== "undefined" ? window.scrollY : 0);
     };
-
     const tick = () => {
-      update(readY());
+      const y = readY();
+      const prev = prevScrollY.current;
+      setScrolled(y > 8);
+      if (y > 80 && y > prev + 4) setHidden(true);
+      else if (y < prev - 4 || y < 80) setHidden(false);
+      prevScrollY.current = y;
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-
-    // Attach a scroll listener once the ref is populated. Retry briefly if
-    // the ref isn't ready yet on first commit.
-    const onScroll = () => update(readY());
-    let attachAttempts = 0;
-    const tryAttach = () => {
-      const el = scrollerRef?.current;
-      if (el) {
-        scrollTarget = el;
-      } else if (attachAttempts++ < 10) {
-        attachTimer = setTimeout(tryAttach, 80);
-        return;
-      } else {
-        scrollTarget = typeof window !== "undefined" ? window : null;
-      }
-      scrollTarget?.addEventListener("scroll", onScroll as EventListener, { passive: true });
-    };
-    tryAttach();
-
-    return () => {
-      cancelAnimationFrame(raf);
-      if (attachTimer) clearTimeout(attachTimer);
-      scrollTarget?.removeEventListener("scroll", onScroll as EventListener);
-    };
+    return () => cancelAnimationFrame(raf);
   }, [scrollerRef]);
 
   // Escape closes the mobile drawer
