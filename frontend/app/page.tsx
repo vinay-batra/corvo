@@ -2585,16 +2585,6 @@ function HorizontalTestiCard({ t, i }: { t: { text: string; name: string; role: 
       transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}`,
       position: "relative",
     }}>
-      {/* Gold glow halo behind testimonial card */}
-      <div aria-hidden style={{
-        position: "absolute",
-        inset: -50,
-        borderRadius: 40,
-        background: "radial-gradient(ellipse 70% 60% at 50% 55%, rgba(var(--accent-rgb), 0.45), rgba(var(--accent-rgb), 0.14) 40%, transparent 75%)",
-        filter: "blur(48px)",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
       <div style={{
         position: "relative",
         padding: "36px 36px 28px",
