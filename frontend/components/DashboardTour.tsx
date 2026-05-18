@@ -248,21 +248,28 @@ function getDesktopStops(_tabCount: number): TourStop[] {
       id: "tour-desk-sidebar",
       label: "Portfolio",
       title: "Build your portfolio here",
-      description: "Type any ticker, set its weight, and enter your total portfolio value. Hit New Analysis and Corvo fetches live prices, calculates your Sharpe ratio, health score, and runs every model instantly.",
+      description: "Three tabs run the sidebar: Holdings (add tickers, set weights, tag each one as Roth / 401k / HSA / 529 / Taxable), Account (your portfolio value + global tax context), Saved (one-click reload of any portfolio you've kept). Edit-with-Corvo at the top lets you describe a change in plain English (\"trim NVDA to 15%\") and apply it instantly. Hit New Analysis to run Sharpe, Monte Carlo, health score, and every model at once.",
       Illus: IllusBars,
     },
     {
       id: "tour-desk-brief",
       label: "Daily Brief",
       title: "Your daily brief, every morning",
-      description: "Every time you open the dashboard Corvo shows a personalized brief: what the market did, how your specific holdings were affected, and what to watch next. It updates automatically. Collapse it with the chevron if you want a cleaner view.",
+      description: "Every time you open the dashboard Corvo shows a personalized brief: what the market did, how your specific holdings were affected, and what to watch next. Updates automatically. Collapsed it shows a 2-line teaser so the dashboard stays clean; expand with the chevron when you want the full read.",
       Illus: IllusLine,
+    },
+    {
+      id: "tour-desk-wsid",
+      label: "Today's Plan",
+      title: "What should I do today?",
+      description: "Click this card any time you want a concrete action plan. Corvo pulls live prices, your full metrics, and your goal profile, then surfaces 2-3 specific moves to consider this week with the reasoning behind each. This is the dashboard's main action surface - the rest of the page is the data backing it up.",
+      Illus: IllusChat,
     },
     {
       id: "tour-desk-tabs",
       label: "Tabs",
       title: "Five tabs, everything you need",
-      description: "Dashboard for your overview and AI insights. Positions for holdings breakdown, tax info, and transactions. Stocks for deep research on any ticker. Simulations for Monte Carlo and drawdown. News filtered to exactly your holdings.",
+      description: "Dashboard for your overview, Health Score, and goal projections. Positions for the holdings breakdown, tax info, and transactions. Simulations for Monte Carlo fan charts, drawdown, and correlation. Stocks for deep research on any ticker. News filtered to exactly your holdings.",
       Illus: IllusTabs,
       placement: "bottom",
     },
@@ -285,8 +292,8 @@ function getDesktopStops(_tabCount: number): TourStop[] {
 }
 
 const MOBILE_STOPS: TourStop[] = [
-  { id: "tour-mob-hamburger", label: "Sidebar", title: "Your portfolio lives here", description: "Tap the menu to open the sidebar. Add tickers, set weights, enter your portfolio value, then hit New Analysis to run the full analysis." },
-  { id: "tour-mob-tabs",      label: "Tabs",    title: "Five tabs, everything you need", description: "Dashboard for your overview. Positions for tax and holdings detail. Stocks for research. Simulations for Monte Carlo. News filtered to your exact holdings." },
+  { id: "tour-mob-hamburger", label: "Sidebar", title: "Your portfolio lives here", description: "Tap the menu to open the sidebar. Holdings tab to add tickers and tag accounts (Roth / 401k / HSA / Taxable). Account tab for your portfolio value. Saved tab for one-click reload of any portfolio you've kept. Hit New Analysis when you're ready." },
+  { id: "tour-mob-tabs",      label: "Tabs",    title: "Five tabs, everything you need", description: "Dashboard for your overview and Health Score. Positions for tax and holdings detail. Simulations for Monte Carlo and drawdown. Stocks for research on any ticker. News filtered to your exact holdings." },
   { id: "tour-desk-chat",     label: "AI",      title: "Your AI advisor, always on", description: "The gold button is Corvo's AI. Ask anything about your portfolio, request a roast, or explore what-if scenarios. It has your full analysis in context." },
   { id: "tour-mob-topbar-actions", label: "Top bar", title: "Alerts, theme, export, and settings", description: "Everything in the top-right corner lives here: price alerts, light/dark toggle, CSV export, and your avatar menu for settings, email preferences, and profile." },
 ];

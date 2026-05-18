@@ -2834,7 +2834,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 )}
 
                 {/* What Should I Do Today */}
-                {!hiddenCards.has("wsid") && <div style={{ opacity: loadedVis(250) ? 1 : 0, transform: loadedVis(250) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
+                {!hiddenCards.has("wsid") && <div id="tour-desk-wsid" style={{ opacity: loadedVis(250) ? 1 : 0, transform: loadedVis(250) ? "none" : "translateY(16px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
                 <DashReveal from="left" delay={0.05}>
                 <div style={{ marginBottom: 20 }}>
                   <div
