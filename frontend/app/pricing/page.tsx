@@ -270,7 +270,7 @@ function WaitlistCapture() {
   );
 }
 
-type PlanId = "retail" | "accredited" | "institutional";
+type PlanId = "lite" | "pro" | "max";
 
 interface PricingPlan {
   id: PlanId;
@@ -288,12 +288,7 @@ interface PricingPlan {
   highlight?: boolean;
 }
 
-// Tier names use the SEC investor classifications (Retail / Accredited /
-// Institutional) so the progression reads as a real-world investing escalation
-// rather than a generic Free / Pro / Elite SaaS ladder. Founding members
-// locking in lifetime pricing on Accredited + Institutional gets called out
-// inline so pre-launch interest doesn't read as a placeholder.
-const RETAIL_FEATURES = [
+const LITE_FEATURES = [
   "Full portfolio analysis: Sharpe, CAGR, volatility, max drawdown",
   "Monte Carlo simulation with 1-30 year horizon, fan chart + Student-t fat tails",
   "Daily Signal - one AI recommendation tailored to your portfolio",
@@ -311,7 +306,7 @@ const RETAIL_FEATURES = [
   "PWA install with push notifications and price alerts",
 ];
 
-const ACCREDITED_EXTRAS = [
+const PRO_EXTRAS = [
   "Unlimited AI chat messages (no daily caps)",
   "Brokerage sync via Plaid (auto-update holdings)",
   "SMS price alerts",
@@ -319,14 +314,14 @@ const ACCREDITED_EXTRAS = [
   "Multiple saved portfolios with side-by-side comparison",
   "Custom benchmarks (any ticker, not just SPY / QQQ / DIA)",
   "Options chain analysis with Greeks (delta, gamma, theta, vega)",
-  "Intraday price refresh (every 15 min vs end-of-day on Retail)",
+  "Intraday price refresh (every 15 min vs end-of-day on Lite)",
   "Backtesting on saved portfolios (historical what-if)",
   "Custom PDF reports with your branding",
   "Priority email support",
   "Early access to new features",
 ];
 
-const INSTITUTIONAL_EXTRAS = [
+const MAX_EXTRAS = [
   "Multi-account aggregation: spouse, custodial, all your wrappers in one net-worth view",
   "Real-time streaming prices",
   "API access for custom workflows and Google Sheets / Excel pulls",
@@ -338,26 +333,26 @@ const INSTITUTIONAL_EXTRAS = [
   "Quarterly 30-minute 1:1 portfolio strategy call with the Corvo team",
   "White-glove onboarding call to import your full book",
   "Direct line to the founder for product feedback",
-  "First access to every new feature, ahead of Accredited",
+  "First access to every new feature, ahead of Pro",
 ];
 
 const PRICING_PLANS: PricingPlan[] = [
   {
-    id: "retail",
+    id: "lite",
     badge: "Free Forever",
-    name: "Retail",
+    name: "Lite",
     price: "$0",
     priceSuffix: "/month",
     tagline: "Everything a self-directed investor needs to manage and analyze their portfolio.",
     ctaLabel: "Get Started Free →",
     ctaKind: "signup",
     featuresHeader: "What's included",
-    features: RETAIL_FEATURES,
+    features: LITE_FEATURES,
   },
   {
-    id: "accredited",
+    id: "pro",
     badge: "Coming Soon",
-    name: "Accredited",
+    name: "Pro",
     price: "$9",
     priceSuffix: "/month",
     tagline: "For the engaged investor who wants hands-off brokerage sync and the full AI advisor.",
@@ -365,49 +360,45 @@ const PRICING_PLANS: PricingPlan[] = [
     preLaunchNote: "Founding members lock in $9/month forever.",
     ctaLabel: "Join Waitlist",
     ctaKind: "waitlist",
-    featuresHeader: "Everything in Retail, plus",
-    features: ACCREDITED_EXTRAS,
+    featuresHeader: "Everything in Lite, plus",
+    features: PRO_EXTRAS,
     highlight: true,
   },
   {
-    id: "institutional",
+    id: "max",
     badge: "Coming Soon",
-    name: "Institutional",
+    name: "Max",
     price: "$29",
     priceSuffix: "/month",
     tagline: "For serious portfolios: family aggregation, real-time data, dedicated support.",
     preLaunchNote: "Founding members lock in $29/month forever.",
     ctaLabel: "Join Waitlist",
     ctaKind: "waitlist",
-    featuresHeader: "Everything in Accredited, plus",
-    features: INSTITUTIONAL_EXTRAS,
+    featuresHeader: "Everything in Pro, plus",
+    features: MAX_EXTRAS,
   },
 ];
 
 const FAQS = [
   {
-    q: "Why Retail / Accredited / Institutional?",
-    a: "We named the tiers after the SEC's own investor classifications so the progression mirrors real investing escalation. Retail is anyone with a brokerage account. Accredited is the engaged investor with more capital and more sophisticated needs. Institutional is the household running serious money across multiple wrappers. The names map to who the tier actually serves rather than generic Free / Pro / Elite SaaS rungs.",
-  },
-  {
     q: "Is Corvo really free?",
-    a: "Yes. The Retail plan is free forever, not a beta promo. No credit card, no trial period, no hidden fees. Full access to portfolio analysis, AI chat (with daily limits), Monte Carlo, health scores, morning briefings - all of it - just by signing up. Accredited and Institutional are paid tiers with extras (unlimited chat, Plaid brokerage sync, multi-account aggregation, real-time data), but Retail stays.",
+    a: "Yes. The Lite plan is free forever, not a beta promo. No credit card, no trial period, no hidden fees. Full access to portfolio analysis, AI chat (with daily limits), Monte Carlo, health scores, morning briefings - all of it - just by signing up. Pro and Max are paid tiers with extras (unlimited chat, Plaid brokerage sync, multi-account aggregation, real-time data), but Lite stays.",
   },
   {
-    q: "How is the 14-day Accredited free trial structured?",
-    a: "When Accredited launches, every new signup starts with 14 days of full access at no cost. No credit card required up front. At the end of the trial you decide whether to convert to $9/month or fall back to Retail, which always stays free. No surprise charges, no auto-trap.",
+    q: "How is the 14-day Pro free trial structured?",
+    a: "When Pro launches, every new signup starts with 14 days of full access at no cost. No credit card required up front. At the end of the trial you decide whether to convert to $9/month or fall back to Lite, which always stays free. No surprise charges, no auto-trap.",
   },
   {
-    q: "What's the difference between Accredited and Institutional?",
-    a: "Accredited is for the self-directed investor who wants hands-off brokerage sync, unlimited AI chat, SMS alerts, options Greeks, and tax-loss harvesting suggestions. Institutional is for households with multiple accounts (spouse + custodial + retirement wrappers in one net-worth view), real-time streaming prices, factor model decomposition, quarterly 1:1 strategy calls, and year-end CPA-ready reports. Most users will be happiest on Accredited; Institutional is built for the small minority running serious money across multiple wrappers.",
+    q: "What's the difference between Pro and Max?",
+    a: "Pro is for the self-directed investor who wants hands-off brokerage sync, unlimited AI chat, SMS alerts, options Greeks, and tax-loss harvesting suggestions. Max is for households with multiple accounts (spouse + custodial + retirement wrappers in one net-worth view), real-time streaming prices, factor model decomposition, quarterly 1:1 strategy calls, and year-end CPA-ready reports. Most users will be happiest on Pro; Max is built for the small minority running serious money across multiple wrappers.",
   },
   {
-    q: "When will Accredited and Institutional launch, and how much will they cost?",
-    a: "Pricing is shown above: Accredited $9/month, Institutional $29/month. Both are pre-launch right now. Everyone on the waitlist gets founding-member pricing locked in at signup - that price stays yours forever, even if we raise rates after launch.",
+    q: "When will Pro and Max launch, and how much will they cost?",
+    a: "Pricing is shown above: Pro $9/month, Max $29/month. Both are pre-launch right now. Everyone on the waitlist gets founding-member pricing locked in at signup - that price stays yours forever, even if we raise rates after launch.",
   },
   {
-    q: "Will my Retail account be grandfathered in?",
-    a: "Current Retail users retain access to every feature available today even after Accredited / Institutional launch. Features added exclusively for paid tiers will require an upgrade, but nothing on the Retail plan today gets pulled away.",
+    q: "Will my Lite account be grandfathered in?",
+    a: "Current Lite users retain access to every feature available today even after Pro / Max launch. Features added exclusively for paid tiers will require an upgrade, but nothing on the Lite plan today gets pulled away.",
   },
   {
     q: "What payment methods will you accept?",
@@ -519,9 +510,9 @@ function PricingCard({
           fontSize: 9,
           letterSpacing: "0.22em",
           fontWeight: 700,
-          color: plan.id === "retail" ? "var(--text3)" : "#c9a84c",
-          background: plan.id === "retail" ? "var(--bg3)" : "rgba(201,168,76,0.10)",
-          border: plan.id === "retail" ? "0.5px solid var(--border)" : "0.5px solid rgba(201,168,76,0.3)",
+          color: plan.id === "lite" ? "var(--text3)" : "#c9a84c",
+          background: plan.id === "lite" ? "var(--bg3)" : "rgba(201,168,76,0.10)",
+          border: plan.id === "lite" ? "0.5px solid var(--border)" : "0.5px solid rgba(201,168,76,0.3)",
           borderRadius: 100,
           padding: "4px 10px",
           textTransform: "uppercase",
@@ -549,7 +540,7 @@ function PricingCard({
           fontFamily: "Space Mono, monospace",
           fontSize: 48, fontWeight: 700,
           letterSpacing: -2.5,
-          color: plan.id === "retail" ? "var(--text)" : "#c9a84c",
+          color: plan.id === "lite" ? "var(--text)" : "#c9a84c",
           lineHeight: 1,
         }}>
           {plan.price}
@@ -563,7 +554,7 @@ function PricingCard({
         {plan.tagline}
       </p>
 
-      {/* 14-day free trial line - only when set (lives on Accredited).
+      {/* 14-day free trial line - only when set (lives on Pro).
           Endowment-effect framing: users mentally "own" the tier for 14
           days, so giving it up feels like a loss. */}
       {plan.trialNote && (
@@ -615,7 +606,7 @@ function PricingCard({
       <div style={{ height: "0.5px", background: "var(--border)", margin: "24px 0 18px" }} />
 
       {/* Features heading */}
-      <p style={{ fontSize: 9, letterSpacing: "0.22em", color: plan.id === "retail" ? "var(--text3)" : "#c9a84c", textTransform: "uppercase", marginBottom: 16, fontFamily: "Space Mono, monospace", fontWeight: 700 }}>
+      <p style={{ fontSize: 9, letterSpacing: "0.22em", color: plan.id === "lite" ? "var(--text3)" : "#c9a84c", textTransform: "uppercase", marginBottom: 16, fontFamily: "Space Mono, monospace", fontWeight: 700 }}>
         {plan.featuresHeader}
       </p>
 
@@ -646,7 +637,7 @@ function FoundingMemberSection() {
               Be a founding member
             </h2>
             <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.8, maxWidth: 480, margin: "0 auto 12px", fontWeight: 300 }}>
-              Accredited and Institutional are coming soon. Founding members lock in <strong style={{ color: "#c9a84c", fontWeight: 600 }}>their launch price forever</strong>. Join the waitlist now before pricing moves up.
+              Pro and Max are coming soon. Founding members lock in <strong style={{ color: "#c9a84c", fontWeight: 600 }}>their launch price forever</strong>. Join the waitlist now before pricing moves up.
             </p>
             <p style={{ fontSize: 12, color: "rgba(201,168,76,0.55)", marginBottom: 32 }}>
               127 people already on the waitlist
@@ -821,15 +812,15 @@ export default function PricingPage() {
         .pricing-card:hover {
           transform: translateY(-6px) !important;
         }
-        .pricing-card-retail:hover {
+        .pricing-card-lite:hover {
           box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 20px 50px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(201,168,76,0.18) !important;
           border-color: rgba(201,168,76,0.25) !important;
         }
-        .pricing-card-accredited:hover {
+        .pricing-card-pro:hover {
           box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 24px 60px rgba(201,168,76,0.18), 0 0 0 0.5px rgba(201,168,76,0.35) !important;
           border-color: rgba(201,168,76,0.65) !important;
         }
-        .pricing-card-institutional:hover {
+        .pricing-card-max:hover {
           box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 20px 50px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(201,168,76,0.18) !important;
           border-color: rgba(201,168,76,0.25) !important;
         }
@@ -903,7 +894,7 @@ export default function PricingPage() {
             marginBottom: 12,
             letterSpacing: 0.2,
           }}>
-            Retail stays free. Two paid tiers coming soon.
+            Lite stays free. Two paid tiers coming soon.
           </p>
         </ScrollReveal>
       </section>

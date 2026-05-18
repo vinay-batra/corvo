@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Focus
 <!-- UPDATE THIS at the end of every session so the next one knows where to pick up -->
 
-**Last shipped: v0.43 (May 17, 2026) - 17-commit polish bundle covering pricing tier rename + 3-tier launch (Retail / Accredited / Institutional with founding-member pricing + 14-day trial messaging), PerformanceChart footer-toolbar redesign (orphan Why? button consolidated with chart-level controls below the chart), SharePortfolio modal portal fix (escaped topbar backdrop-filter containing block so it actually renders over the full viewport), GreetingBar sparkline color now matches today's pct instead of 7-day trend, dashboard tour refresh (5 -> 6 stops with new WSID action-plan stop + sidebar copy updated for v0.36+ tabbed sidebar + tabs description updated for new order), public nav + dashboard tab order both reordered to match buyer funnel / user flow, try-without-signup demo flow (3 sample portfolios load into the full dashboard via /app?demo=<slug>, anon chat capped at 5 messages, demo banner with sign-up CTA), trust signals reinstated (homepage SecurityTrustSection + signup-page trust strip), Monte Carlo user-gated run button + % alongside $ in scenario table. Plus today's two final touches: removed the duplicate 3-card hero demo row (the floating Try a quick analysis widget already covered that intent, and two parallel demo paths diluted each other - the /app?demo=<slug> URLs stay wired for shareable links / outreach), and added wheel-to-horizontal scroll on the testimonial carousel so vertical mouse-wheel motion moves the cards left/right instead of scrolling past the section.**
+**Last shipped: v0.43 (May 17, 2026) - 17-commit polish bundle covering pricing tier rename + 3-tier launch (Lite / Pro / Max with founding-member pricing + 14-day trial messaging), PerformanceChart footer-toolbar redesign (orphan Why? button consolidated with chart-level controls below the chart), SharePortfolio modal portal fix (escaped topbar backdrop-filter containing block so it actually renders over the full viewport), GreetingBar sparkline color now matches today's pct instead of 7-day trend, dashboard tour refresh (5 -> 6 stops with new WSID action-plan stop + sidebar copy updated for v0.36+ tabbed sidebar + tabs description updated for new order), public nav + dashboard tab order both reordered to match buyer funnel / user flow, try-without-signup demo flow (3 sample portfolios load into the full dashboard via /app?demo=<slug>, anon chat capped at 5 messages, demo banner with sign-up CTA), trust signals reinstated (homepage SecurityTrustSection + signup-page trust strip), Monte Carlo user-gated run button + % alongside $ in scenario table. Plus today's two final touches: removed the duplicate 3-card hero demo row (the floating Try a quick analysis widget already covered that intent, and two parallel demo paths diluted each other - the /app?demo=<slug> URLs stay wired for shareable links / outreach), and added wheel-to-horizontal scroll on the testimonial carousel so vertical mouse-wheel motion moves the cards left/right instead of scrolling past the section.**
 
 **Last shipped before: v0.41 (May 17, 2026) - 4 feedback-driven fixes. (1) Per-holding account-type tagging in the PortfolioBuilder chevron-expand (mixed-account portfolios). (2) Correlation + Drawdown charts on Simulations tab no longer double-render their own card chrome inside the parent Card. (3) Monte Carlo bumped 8,500 -> 10,000 paths everywhere (code, copy, blogs, metadata); rebuilt with Student-t (df=6) fat-tail innovations and 250 sample paths returned as `paths_sample` so the chart renders a true fan with visible loss scenarios; "Bear Case" labels renamed to honest "Worst 5%" / "Best 5%"; VaR/ES cards now flip green when the worst-5% percentile is genuinely positive instead of pretending it's a loss; the "decline by X%" insight text fixed to read "even the worst 5% still gained X%" when applicable. (4) /chat system prompt loosened to allow Corvo company / founder / how-it-works questions; chat error handler now classifies the upstream exception into a plain-English message instead of swallowing every failure as "Chat error. Please try again."**
 
@@ -146,7 +146,7 @@ Migrations live in `supabase/migrations/`. Apply them manually in the Supabase d
 
 ### Repository layout
 ```
-portfolio_v2/
+corvo/
  frontend/ Next.js app (Vercel)
  app/app/page.tsx main authenticated dashboard - all state lives here
  app/page.tsx public homepage - has its own inline nav
@@ -224,7 +224,6 @@ Key routes already implemented:
 - All colors use CSS variables only - never hardcode dark colors
 - SVG icons only - no emoji icons
 - Always add "Commit and push." to the end of every Claude Code prompt
-- Vinay uses Claude Code inside VS Code, not standalone terminal
 - Supabase client must always be imported from `lib/supabase.ts` singleton, never instantiated inline - inline clients omit `cookieOptions` and cause sessions to expire on browser close
 - `middleware.ts` must exist at the frontend repo root and call `supabase.auth.getUser()` on every request - without it, SSR pages receive expired JWTs and users get silently logged out
 - Monte Carlo simulations always run exactly 10,000 paths - never 5,000, 8,500, or any other number. Bumped from 8,500 in v0.41 alongside Student-t (df=6) fat-tail innovations + a 250-path stratified sample returned as `paths_sample` so the frontend renders a true fan chart instead of just percentile bands. The artificial 8% equity sigma floor that used to live in `/montecarlo` + the 0% mu floor in `/portfolio/retirement-simulation` were both removed so historical loss-prone portfolios actually project negative outcomes in the bear band.
@@ -292,12 +291,12 @@ Key routes already implemented:
 Rolls up everything shipped after v0.42 without a version bump. Buckets:
 
 **Pricing (rename + 3-tier launch + copy fixes)**
-- Tiers renamed Free / Pro / Elite -> Retail / Accredited / Institutional (SEC investor classifications - cleaner mapping to who each tier serves than generic SaaS rungs).
-- Both paid tiers now show "Coming Soon" pill in-card; Accredited keeps the floating gold "MOST POPULAR" badge above the card so the Rule-of-3 anchor still works.
+- Tiers renamed to Lite / Pro / Max.
+- Both paid tiers now show "Coming Soon" pill in-card; Pro keeps the floating gold "MOST POPULAR" badge above the card so the Rule-of-3 anchor still works.
 - New preLaunchNote field on both paid tiers: "Founding members lock in $9/month forever" / "$29/month forever" - loss-aversion framing to drive waitlist conversion.
-- Feature lists expanded: Retail (all live features), Accredited (added options Greeks, intraday refresh, custom benchmarks, backtesting), Institutional (added API access, concierge TLH execution, custom alerts on any metric, Fama-French factor model decomposition, quarterly 1:1 strategy call).
-- Hero subtext cut 22 words -> 7 ("Retail stays free. Two paid tiers coming soon.").
-- Plaid messaging cleanup: dropped "(no 15-minute delay)" parenthetical from Institutional features.
+- Feature lists expanded: Lite (all live features), Pro (added options Greeks, intraday refresh, custom benchmarks, backtesting), Max (added API access, concierge TLH execution, custom alerts on any metric, Fama-French factor model decomposition, quarterly 1:1 strategy call).
+- Hero subtext cut 22 words -> 7 ("Lite stays free. Two paid tiers coming soon.").
+- Plaid messaging cleanup: dropped "(no 15-minute delay)" parenthetical from Max features.
 
 **PerformanceChart redesign**
 - Stripped the chart-internal sub-header row (legend + saved-line toggles + %/$ + Custom range) and consolidated everything into a single footer row below the Plot: legend swatches + saved-line toggles + %/$ toggle + Custom range button on left, Max drawdown chip + Why? button on right. Fixes the original complaint where Why? was orphaned bottom-left while a wall of controls piled up top-right.
@@ -857,7 +856,7 @@ Existing users get a fresh fetch on their next visit because the URL is genuinel
 - **Frontend**: push to `main` - Vercel auto-deploys
 - **Backend deploy**: always use this exact sequence:
  ```
- mkdir -p /tmp/corvo-deploy2/backend && cp ~/Downloads/portfolio_v2/backend/main.py /tmp/corvo-deploy2/backend/ && cp ~/Downloads/portfolio_v2/backend/requirements.txt /tmp/corvo-deploy2/backend/ && cd ~/Downloads/portfolio_v2 && railway up --detach --path-as-root /tmp/corvo-deploy2
+ mkdir -p /tmp/corvo-deploy2/backend && cp ~/Downloads/corvo/backend/main.py /tmp/corvo-deploy2/backend/ && cp ~/Downloads/corvo/backend/requirements.txt /tmp/corvo-deploy2/backend/ && cd ~/Downloads/corvo && railway up --detach --path-as-root /tmp/corvo-deploy2
  ```
 - Railway project has `Root Directory = backend` in settings - upload must have a `backend/` subfolder
 - Railway GitHub integration is BROKEN - always deploy manually
