@@ -155,7 +155,7 @@ const ERAS = [
   {
     num: "05",
     name: "Sidebar Redesign & Launch Prep",
-    versions: "v0.35 → v0.43",
+    versions: "v0.35 → v0.44",
     dateRange: "May 16 → May 18, 2026",
     intro: "The sidebar got the tabbed redesign users picked from a 6-mock brainstorm. AI got cheaper and sharper. Pricing got real. Trust got rebuilt.",
     highlights: [
@@ -165,8 +165,9 @@ const ERAS = [
       "Per-holding account-type tagging + Monte Carlo rebuilt with Student-t fat tails and a 250-path fan chart + Correlation + Drawdown chart fixes + /chat loosened to answer founder / company questions",
       "/chat system prompt expansion: 14 example exchanges + 6 edge-case handlers + tone-calibration anchors + roast-mode length cap with a 180-word example",
       "Pricing tier rename Free / Pro / Elite → Lite / Pro / Max with 14-day trial + founding-member pricing; PerformanceChart footer toolbar; SharePortfolio portal fix; dashboard tour refresh + WSID stop; public-nav + dashboard-tab reorders; try-without-signup demo URLs; trust signals reinstated; MC Run button + % alongside $; wheel-to-horizontal testimonials carousel",
+      "v0.44 polish + integrity bundle: waitlist-member framing replaces founding-member copy on both paid tiers + the lower waitlist section; /chat system prompt got a hard anti-preamble block (no 'Let me think', no meta-references to the instructions); /portfolio rejects unknown tickers (e.g. typos like 'PENIS') with a clear error instead of fabricating a fake 4.5% return series; bento grid + testimonial sections swapped their per-card halos for one unified glow each; new global AmbientOrbs component renders Lark-style fixed-position gold halos in dark mode only; testimonials carousel now arrows-only (wheel/swipe scroll removed)",
     ],
-    tags: ["Sidebar", "AI Cost", "Monte Carlo", "Pricing", "Trust"],
+    tags: ["Sidebar", "AI Cost", "Monte Carlo", "Pricing", "Trust", "AI Integrity"],
   },
 ];
 
