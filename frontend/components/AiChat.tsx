@@ -212,6 +212,17 @@ export default function AiChat({
   const [messagesUsed, setMessagesUsed]   = useState(0);
   const [messagesLimit, setMessagesLimit] = useState(15);
   const [limitReached, setLimitReached]   = useState(false);
+  // Anon-mode message count. Anonymous visitors (demo URLs, shared portfolio
+  // links) get capped at 5 chat messages before being prompted to sign up.
+  // Counter is per-browser via localStorage so a reload doesn't reset it.
+  // Cleared the moment they log in (userId becomes truthy).
+  const ANON_CHAT_LIMIT = 5;
+  const [anonChatCount, setAnonChatCount] = useState(0);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { setAnonChatCount(Number(localStorage.getItem("corvo_anon_chat_count")) || 0); } catch {}
+  }, []);
+  const anonLimitReached = !userId && anonChatCount >= ANON_CHAT_LIMIT;
   const [referralCopied, setReferralCopied] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
 
@@ -583,6 +594,11 @@ export default function AiChat({
   const send = async (text?: string) => {
     const msg = (text || input).trim();
     if (!msg || loading) return;
+    // Anon-cap guard: 5 messages then signup wall. The render side disables
+    // the textarea when anonLimitReached is true, but guarding here too
+    // protects against keyboard-shortcut sends that bypass the disabled
+    // button.
+    if (!userId && anonChatCount >= ANON_CHAT_LIMIT) return;
     posthog.capture("chat_message_sent");
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
@@ -591,6 +607,13 @@ export default function AiChat({
     const nextHistory = [...messages, userMsg];
     setMessages(nextHistory);
     setLoading(true);
+    if (!userId) {
+      // Increment anon counter immediately so concurrent sends don't slip
+      // past the cap. localStorage persists so a page reload doesn't reset.
+      const next = anonChatCount + 1;
+      setAnonChatCount(next);
+      try { localStorage.setItem("corvo_anon_chat_count", String(next)); } catch {}
+    }
 
     try {
       const tickers: string[] = (portfolioCtxOn && (portfolioContext as any).tickers) || [];
@@ -1157,7 +1180,25 @@ export default function AiChat({
 
         {/* ── Input area ── */}
         <div style={{ flexShrink: 0, borderTop: "0.5px solid var(--border)", padding: "10px 12px", background: "var(--bg)" }}>
-          {limitReached ? (
+          {anonLimitReached ? (
+            <motion.div
+              // initial={false} is required - do not remove
+              initial={false} animate={{ opacity: 1, y: 0 }}
+              style={{ background: "rgba(184,134,11,.07)", border: "0.5px solid rgba(184,134,11,.22)", borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Zap size={13} style={{ color: "var(--accent)" }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>Sign up to keep chatting</span>
+              </div>
+              <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6, marginBottom: 10 }}>
+                You&apos;ve used your {ANON_CHAT_LIMIT} demo messages. Free accounts get 15 / day plus full portfolio analysis, Monte Carlo, and saved portfolios.
+              </p>
+              <a
+                href="/auth?mode=signup"
+                style={{ display: "block", width: "100%", padding: "9px", fontSize: 12, fontWeight: 700, borderRadius: 7, background: "var(--accent)", color: "var(--bg)", textAlign: "center", textDecoration: "none", letterSpacing: 0.3 }}>
+                Sign up free →
+              </a>
+            </motion.div>
+          ) : limitReached ? (
             <motion.div
               // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }}

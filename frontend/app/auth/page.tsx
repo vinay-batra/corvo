@@ -287,6 +287,39 @@ function AuthForm() {
           )}
         </div>
 
+        {/* Trust strip: only on signup mode. Three quick claims to lower the
+            "is it safe to give my email + portfolio data to this thing?"
+            friction at the moment of decision. Sits below inputs, above the
+            captcha so it's read before the user looks for the submit button.
+            SVG icons (no emojis per CLAUDE.md rule). */}
+        {mode === "signup" && (
+          <div style={{
+            display: "flex", gap: 12, marginBottom: 16, padding: "10px 12px",
+            background: "rgba(201,168,76,0.04)", border: "0.5px solid rgba(201,168,76,0.15)",
+            borderRadius: 8, flexWrap: "wrap", alignItems: "center", justifyContent: "center",
+          }}>
+            {[
+              {
+                icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+                text: "Bank-grade encryption",
+              },
+              {
+                icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>,
+                text: "We never sell your data",
+              },
+              {
+                icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>,
+                text: "Cancel anytime",
+              },
+            ].map((item, i) => (
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, color: C.cream3, fontWeight: 500, letterSpacing: 0.2 }}>
+                <span aria-hidden style={{ color: C.amber }}>{item.icon}</span>
+                {item.text}
+              </span>
+            ))}
+          </div>
+        )}
+
         {mode === "login" && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer" }}>
