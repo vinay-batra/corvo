@@ -432,83 +432,6 @@ function BentoWatchlistCard({ delay = 0 }: { delay?: number }) {
   );
 }
 
-/* ─── Learn & Earn XP bento card ─── */
-function BentoLearnCard({ delay = 0 }: { delay?: number }) {
-  const { ref, visible } = useReveal(0.1);
-  const [xp, setXp] = useState(0);
-  const [visChecks, setVisChecks] = useState(0);
-  useEffect(() => {
-    if (!visible) return;
-    let frame: number;
-    const animate = () => {
-      const start = performance.now();
-      const tick = (now: number) => {
-        const p = Math.min((now - start) / 1500, 1);
-        setXp(Math.floor(2840 * (1 - Math.pow(1 - p, 3))));
-        if (p < 1) frame = requestAnimationFrame(tick);
-      };
-      frame = requestAnimationFrame(tick);
-    };
-    animate();
-    const id = setInterval(animate, 5000);
-    return () => { clearInterval(id); cancelAnimationFrame(frame); };
-  }, [visible]);
-  useEffect(() => {
-    if (!visible) return;
-    const run = () => {
-      setVisChecks(0);
-      let count = 0;
-      const inner = setInterval(() => {
-        count++;
-        setVisChecks(count);
-        if (count >= 3) clearInterval(inner);
-      }, 500);
-      return inner;
-    };
-    let inner = run();
-    const outer = setInterval(() => {
-      clearInterval(inner);
-      inner = run();
-    }, 5000);
-    return () => { clearInterval(inner); clearInterval(outer); };
-  }, [visible]);
-  return (
-    <BentoCard delay={delay} style={{ gridArea: "learnxp", padding: "28px" }}>
-      <div ref={ref} style={{ position: "absolute" }} />
-      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>Learn & Earn XP</p>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Level up your knowledge</h3>
-      <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>Finance lessons that earn XP and unlock real features.</p>
-      <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div>
-            <p style={{ fontSize: 7, letterSpacing: 2, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", marginBottom: 4 }}>Level 7 · Portfolio Pro</p>
-            <p style={{ fontFamily: "Space Mono,monospace", fontSize: 24, fontWeight: 700, color: "var(--accent)", letterSpacing: -1 }}>{xp.toLocaleString()} XP</p>
-          </div>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M11.5 2L3.5 12h6L8 18 16.5 8h-6L11.5 2z" stroke="var(--accent)" strokeWidth="1.4" strokeLinejoin="round" fill="rgba(var(--accent-rgb),0.18)"/></svg>
-          </div>
-        </div>
-        <div style={{ height: 5, background: "var(--bg3)", borderRadius: 3, overflow: "clip", marginBottom: 12 }}>
-          <div style={{ height: "100%", width: "0%", background: "linear-gradient(90deg, var(--accent), var(--accent))", borderRadius: 3, animation: visible ? "xpLoop 5s ease-in-out infinite" : "none" }} />
-        </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {["Risk Basics", "Diversification", "Options"].map((b, i) => (
-            <div key={i} style={{
-              fontSize: 9, padding: "4px 9px", borderRadius: 6,
-              background: i < 2 ? "rgba(var(--accent-rgb),0.1)" : "var(--bg3)",
-              color: i < 2 ? "var(--accent)" : "rgba(232,224,204,0.6)",
-              border: i < 2 ? "1px solid rgba(var(--accent-rgb),0.18)" : "1px solid var(--border)",
-              opacity: visChecks > i ? 1 : 0,
-              transform: visChecks > i ? "translateY(0)" : "translateY(5px)",
-              transition: "opacity 0.35s ease, transform 0.35s ease",
-            }}>{b}</div>
-          ))}
-        </div>
-      </div>
-    </BentoCard>
-  );
-}
-
 /* ─── Stock Deep Dives bento card ─── */
 const API_URL_PUBLIC = RESOLVED_API_URL;
 
@@ -3414,7 +3337,6 @@ export default function Landing() {
         @keyframes drawChart{to{stroke-dashoffset:0}}
         @keyframes skeletonPulse{0%,100%{opacity:0.4}50%{opacity:0.9}}
         @keyframes drawLoopLine{0%,3%{stroke-dashoffset:1}65%,87%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
-        @keyframes xpLoop{0%,5%{width:0%}55%,82%{width:72%}92%,100%{width:0%}}
         @keyframes demospin{to{transform:rotate(360deg)}}
         @keyframes orbDrift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.08)}66%{transform:translate(-40px,50px) scale(0.94)}}
         @keyframes orbDriftCenter{0%,100%{transform:translateX(-50%) translate(0,0) scale(1)}33%{transform:translateX(-50%) translate(40px,-30px) scale(1.06)}66%{transform:translateX(-50%) translate(-30px,40px) scale(0.96)}}
@@ -3543,14 +3465,13 @@ export default function Landing() {
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Always watching</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(30px,4.4vw,56px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2.5, lineHeight: 1.05 }}>What Corvo watches<br />for you</h2>
           </ScrollReveal>
-          <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist exportshare" "learnxp deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
+          <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist exportshare" "deepdives deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
             <ScrollReveal from="left"  distance={30} delay={0.0}  style={{ gridArea: "portfolio",   height: "100%" }}><BentoPortfolioCard  delay={0} /></ScrollReveal>
             <ScrollReveal from="up"    distance={30} delay={0.1}  style={{ gridArea: "aichat",      height: "100%" }}><BentoAIChatCard     delay={0} /></ScrollReveal>
             <ScrollReveal from="right" distance={30} delay={0.2}  style={{ gridArea: "watchlist",   height: "100%" }}><BentoWatchlistCard  delay={0} /></ScrollReveal>
             <ScrollReveal from="left"  distance={30} delay={0.3}  style={{ gridArea: "montecarlo",  height: "100%" }}><BentoMonteCarloCard delay={0} /></ScrollReveal>
             <ScrollReveal from="up"    distance={30} delay={0.4}  style={{ gridArea: "exportshare", height: "100%" }}><BentoExportCard     delay={0} /></ScrollReveal>
-            <ScrollReveal from="right" distance={30} delay={0.5}  style={{ gridArea: "learnxp",     height: "100%" }}><BentoLearnCard      delay={0} /></ScrollReveal>
-            <ScrollReveal from="left"  distance={30} delay={0.6}  style={{ gridArea: "deepdives",   height: "100%" }}><BentoDeepDivesCard  delay={0} /></ScrollReveal>
+            <ScrollReveal from="left"  distance={30} delay={0.5}  style={{ gridArea: "deepdives",   height: "100%" }}><BentoDeepDivesCard  delay={0} /></ScrollReveal>
           </div>
         </div>
       </section>
