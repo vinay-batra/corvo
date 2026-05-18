@@ -79,21 +79,26 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
   // so jitter cancels and intentional gestures register. y < 80 force-
   // shows the nav so the hero always has it visible.
   //
-  // readY() falls back to scrollerRef.current.scrollTop when the homepage
-  // passes its overflow container in - window.scrollY is always 0 there.
+  // Both an rAF poll AND a scroll event listener call the same update()
+  // function. Either path being noisy is fine - the accumulator gates
+  // the actual state changes. Belt-and-suspenders covers programmatic
+  // scrolls (rAF wins) and ensures a real fallback when refs settle late
+  // (scroll event wins). readY() falls back to scrollerRef.current
+  // .scrollTop when the homepage passes its overflow container in -
+  // window.scrollY is always 0 there since nothing scrolls the document.
   useEffect(() => {
     let raf = 0;
     let accum = 0;
+    let lastY = 0;
     let hiddenLocal = false;
     let scrolledLocal = false;
     const readY = (): number => {
       const el = scrollerRef?.current ?? null;
       return el ? el.scrollTop : (typeof window !== "undefined" ? window.scrollY : 0);
     };
-    const tick = () => {
+    const update = () => {
       const y = readY();
-      const prev = prevScrollY.current;
-      const delta = y - prev;
+      const delta = y - lastY;
       const wantScrolled = y > 8;
       if (wantScrolled !== scrolledLocal) {
         scrolledLocal = wantScrolled;
@@ -103,16 +108,42 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
         accum = 0;
         if (hiddenLocal) { hiddenLocal = false; setHidden(false); }
       } else if (delta !== 0) {
-        if ((delta > 0) !== (accum > 0)) accum = 0;
+        if (accum !== 0 && (delta > 0) !== (accum > 0)) accum = 0;
         accum += delta;
         if (accum > 12 && !hiddenLocal) { hiddenLocal = true; setHidden(true); }
         else if (accum < -12 && hiddenLocal) { hiddenLocal = false; setHidden(false); }
       }
+      lastY = y;
       prevScrollY.current = y;
+    };
+    const tick = () => {
+      update();
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    let scroller: HTMLElement | Window | null = null;
+    let attempts = 0;
+    let attachTimer: ReturnType<typeof setTimeout> | null = null;
+    const tryAttach = () => {
+      const el = scrollerRef?.current;
+      if (el) {
+        scroller = el;
+      } else if (scrollerRef !== undefined && attempts++ < 12) {
+        attachTimer = setTimeout(tryAttach, 80);
+        return;
+      } else {
+        scroller = typeof window !== "undefined" ? window : null;
+      }
+      scroller?.addEventListener("scroll", update, { passive: true });
+    };
+    tryAttach();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      if (attachTimer) clearTimeout(attachTimer);
+      scroller?.removeEventListener("scroll", update);
+    };
   }, [scrollerRef]);
 
   // Escape closes the mobile drawer
