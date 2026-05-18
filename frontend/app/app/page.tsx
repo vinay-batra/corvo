@@ -72,10 +72,15 @@ import LearnPage from "../learn/page";
 import GoalTracker from "../../components/GoalTracker";
 
 const TABS = [
+  // Owned -> projected -> discover -> context. Dashboard + Positions cover
+  // "what I have", Simulations projects it forward, Stocks is research mode
+  // for what to add, News closes the loop with market context. Previous
+  // order put Stocks (research) before Simulations (projection) which
+  // didn't match the user's natural flow.
   { id: "overview",   label: "Dashboard",  Icon: LayoutDashboard,  href: null },
   { id: "positions",  label: "Positions",  Icon: CandlestickChart, href: null },
-  { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
   { id: "simulate",    label: "Simulations", Icon: FlaskConical,  href: null },
+  { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
   { id: "news",        label: "News",        Icon: Newspaper,     href: null },
   // watchlist and learn tabs hidden - code preserved, add back to TABS to restore
 ] as const;
