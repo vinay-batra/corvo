@@ -236,7 +236,10 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
   );
 }
 
-/* ─── Bento Card base - static gold glow behind + 3D mouse-tilt ─── */
+/* ─── Bento Card base - 3D mouse-tilt only. The gold glow is a single
+   unified halo on the parent section (search "BENTO UNIFIED GLOW"), not
+   per-card, so the cards sit on one even wash instead of seven uneven
+   patches. ─── */
 function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
   const innerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
@@ -267,32 +270,6 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
       style={{ gridArea, height: "100%", position: "relative", perspective: 900 }}
     >
-      {/* Static gold glow behind the card - large soft halo */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: -64,
-          borderRadius: 48,
-          background: "radial-gradient(ellipse 70% 60% at 50% 55%, rgba(var(--accent-rgb), 0.55), rgba(var(--accent-rgb), 0.22) 35%, rgba(var(--accent-rgb), 0.06) 60%, transparent 80%)",
-          filter: "blur(56px)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
-      {/* Tighter inner glow for depth */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: -12,
-          borderRadius: 28,
-          background: "radial-gradient(ellipse 75% 65% at 50% 55%, rgba(var(--accent-rgb), 0.35), transparent 70%)",
-          filter: "blur(24px)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
       {/* Inner card with 3D tilt */}
       <div
         ref={innerRef}
@@ -3571,8 +3548,27 @@ export default function Landing() {
       <FeaturedInBar />
 
       {/* ─── FEATURE SHOWCASE: BENTO GRID ─── */}
-      <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "140px 56px 140px" }}>
-        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+      <section id="features" className="sec-pad" style={{ position: "relative", zIndex: 1, padding: "140px 56px 140px", overflow: "clip" }}>
+        {/* BENTO UNIFIED GLOW - single soft gold halo behind the whole grid
+            instead of one per card. Heavy blur + low opacity keeps it
+            ambient so it reads as a wash, not as a spotlight on any one
+            card. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "min(1100px, 90%)",
+            height: "75%",
+            background: "radial-gradient(ellipse 65% 55% at 50% 50%, rgba(var(--accent-rgb), 0.22), rgba(var(--accent-rgb), 0.08) 50%, transparent 80%)",
+            filter: "blur(90px)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <div style={{ maxWidth: 1180, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <ScrollReveal from="up" distance={30} style={{ textAlign: "center", marginBottom: 64 }}>
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Always watching</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(30px,4.4vw,56px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2.5, lineHeight: 1.05 }}>What Corvo watches<br />for you</h2>
