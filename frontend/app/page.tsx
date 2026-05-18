@@ -2635,29 +2635,9 @@ function TestimonialHorizontalCarousel() {
       }
     };
 
-    // Wheel-to-horizontal: vertical mouse-wheel motion translates into
-    // horizontal scroll over the carousel. Without this, users hovering the
-    // section get vertical page scroll (they expect the cards to move
-    // horizontally). Trackpad horizontal swipes already work via deltaX
-    // pass-through, so we only intercept when deltaY dominates and deltaX
-    // is tiny - keeps regular vertical scroll past the section possible by
-    // moving the cursor off the carousel. Must be non-passive (passive:
-    // false) to call preventDefault.
-    const handleWheel = (e: WheelEvent) => {
-      // Translate deltaY into horizontal scroll only when the user is
-      // wheeling primarily vertically (i.e. they don't already have a
-      // horizontal trackpad gesture in flight).
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault();
-        el.scrollLeft += e.deltaY;
-      }
-    };
-
     el.addEventListener("scroll", handleScroll, { passive: true });
-    el.addEventListener("wheel", handleWheel, { passive: false });
     return () => {
       el.removeEventListener("scroll", handleScroll);
-      el.removeEventListener("wheel", handleWheel);
     };
   }, []);
 
@@ -2706,7 +2686,7 @@ function TestimonialHorizontalCarousel() {
         className="testi-scroll-container"
         style={{
           display: "flex",
-          overflowX: "auto",
+          overflowX: "hidden",
           scrollBehavior: "smooth",
           gap: 20,
           padding: "20px 56px 40px",
