@@ -634,10 +634,10 @@ function FoundingMemberSection() {
               <span style={{ fontSize: 10, letterSpacing: 2, color: "#c9a84c", textTransform: "uppercase" }}>Limited Spots</span>
             </div>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3.5vw,34px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 14, lineHeight: 1.2 }}>
-              Be a founding member
+              Join the waitlist
             </h2>
             <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.8, maxWidth: 480, margin: "0 auto 12px", fontWeight: 300 }}>
-              Pro and Max are coming soon. Founding members lock in <strong style={{ color: "#c9a84c", fontWeight: 600 }}>their launch price forever</strong>. Join the waitlist now before pricing moves up.
+              Pro and Max are coming soon. Waitlist members lock in <strong style={{ color: "#c9a84c", fontWeight: 600 }}>their launch price forever</strong>. Join now before pricing moves up.
             </p>
             <p style={{ fontSize: 12, color: "rgba(201,168,76,0.55)", marginBottom: 32 }}>
               127 people already on the waitlist
@@ -646,7 +646,7 @@ function FoundingMemberSection() {
               <WaitlistCapture />
             </div>
             <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 16 }}>
-              No spam. Founding pricing is locked at signup, forever.
+              No spam. Waitlist pricing is locked at signup, forever.
             </p>
           </div>
         </div>
