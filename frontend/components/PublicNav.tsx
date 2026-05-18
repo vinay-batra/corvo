@@ -30,13 +30,17 @@ function useTheme() {
 // Flat link list - 7 items, in display order.
 interface NavLinkDef { href: string; label: string; external?: boolean; }
 const NAV_LINKS: NavLinkDef[] = [
+  // Order tracks the buyer funnel: product -> cost -> resources -> company ->
+  // questions -> get-it-on-your-phone. Install used to sit at #2 which broke
+  // the funnel (users hit "how do I install?" before "what does it cost?");
+  // Install now lives at the end as a post-decision step.
   { href: "/#features",  label: "Features",  external: true }, // anchor on the homepage
-  { href: "/install",    label: "Install" },
   { href: "/pricing",    label: "Pricing" },
   { href: "/changelog",  label: "Changelog" },
   { href: "/blog",       label: "Blog" },
   { href: "/about",      label: "About" },
   { href: "/faq",        label: "FAQ" },
+  { href: "/install",    label: "Install" },
 ];
 
 interface PublicNavProps {
