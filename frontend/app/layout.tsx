@@ -8,6 +8,7 @@ import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import InstallBanner from "@/components/InstallBanner";
 import { ToastProvider } from "@/components/Toast";
 import ConditionalParticleCanvas from "@/components/ConditionalParticleCanvas";
+import AmbientOrbs from "@/components/AmbientOrbs";
 import PublicAIChatLoader from "@/components/PublicAIChatLoader";
 import FeedbackButton from "@/components/FeedbackButton";
 
@@ -73,6 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           "featureList": ["Portfolio Analysis", "Monte Carlo Simulation", "AI Chat", "Health Score", "Tax Loss Harvesting"]
         }) }} />
         <ConditionalParticleCanvas />
+        <AmbientOrbs />
         <Suspense>
           <PostHogProvider>
             <ToastProvider>

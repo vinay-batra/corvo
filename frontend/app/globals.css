@@ -42,6 +42,13 @@ body {
   display: none !important;
 }
 
+/* AmbientOrbs renders fixed-position gold halos in dark mode only. In light
+   mode the orbs read as muddy yellow smudges over the cream background, so
+   they're hidden entirely there. The component itself is mounted globally
+   from app/layout.tsx (excluded from /app and /learn). */
+.ambient-orbs { display: none; }
+[data-theme="dark"] .ambient-orbs { display: block; }
+
 /* ── Light mode (default) ── */
 :root {
   --bg:          #ffffff;
