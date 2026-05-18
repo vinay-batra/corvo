@@ -45,6 +45,7 @@ import {
   type RecentlyViewedEntry,
 } from "../../lib/recentlyViewed";
 import { type AccountTypeId, DEFAULT_ACCOUNT_TYPE } from "../../lib/accountType";
+import { getDemoPortfolio } from "../../lib/demoPortfolios";
 import AlertsPanel from "../../components/AlertsPanel";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
 import Watchlist from "../../components/Watchlist";
@@ -1231,6 +1232,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [showAlerts, setShowAlerts]         = useState(false);
   const [showEmailPrefs, setShowEmailPrefs]     = useState(false);
   const [unsubscribeMode, setUnsubscribeMode]   = useState(false);
+  // Tracks which preset demo (if any) is loaded via ?demo=<slug>. Drives
+  // the floating "You're viewing the X demo" banner + analytics. Cleared
+  // when the user signs up, edits a holding, or hits New Analysis (so
+  // their own customized portfolio doesn't keep the demo label).
+  const [activeDemoSlug, setActiveDemoSlug]     = useState<string | null>(null);
   const [showReferral, setShowReferral]         = useState(false);
   const [errorMsg, setErrorMsg]                 = useState<string | null>(null);
   const [skippedTickers, setSkippedTickers]     = useState<string[]>([]);
@@ -1491,7 +1497,9 @@ const { dark, toggle: toggleDark }  = useTheme();
       setTimeout(() => setShowDashboardTour(true), 1000);
     }
 
-    // Portfolio sharing via base64 URL param
+    // Portfolio sharing via base64 URL param. Auto-runs analysis so anon
+    // visitors hitting a shared link land on a fully-rendered dashboard,
+    // not an empty sidebar that needs a click to populate.
     const portfolioParam = params.get("portfolio");
     if (portfolioParam) {
       try {
@@ -1499,6 +1507,12 @@ const { dark, toggle: toggleDark }  = useTheme();
         if (Array.isArray(decoded) && decoded.length > 0) {
           setAssets(decoded);
           setShowGoals(false);
+          setLoading(true);
+          setData(null);
+          fetchPortfolio(decoded, "1y", "^GSPC")
+            .then((result: any) => { setData(result); setTabWithDir("overview"); })
+            .catch(() => { setErrorMsg("Failed to load the shared portfolio. Try again or build your own."); })
+            .finally(() => setLoading(false));
         }
       } catch {}
     }
@@ -1509,23 +1523,25 @@ const { dark, toggle: toggleDark }  = useTheme();
       setShowEmailPrefs(true);
     }
 
-    // Demo mode
-    if (params.get("demo") === "true") {
-      posthog.capture("demo_mode_started");
-      const demoAssets = [
-        { ticker: "SPY", weight: 0.40 },
-        { ticker: "QQQ", weight: 0.30 },
-        { ticker: "GLD", weight: 0.15 },
-        { ticker: "BND", weight: 0.15 },
-      ];
-      setAssets(demoAssets);
-      setShowGoals(false);
-      setLoading(true);
-      setData(null);
-      fetchPortfolio(demoAssets, "1y", "^GSPC")
-        .then((result: any) => { setData(result); setTabWithDir("overview"); })
-        .catch(() => { setErrorMsg("Demo failed to load. Please try again."); })
-        .finally(() => setLoading(false));
+    // Demo mode via slug: /app?demo=bogleheads (or nvda-growth / dividend-income).
+    // Replaces the old ?demo=true boolean (only one preset, no naming). New
+    // form looks up the slug in DEMO_PORTFOLIOS, auto-runs analysis, and
+    // the demo banner reads the slug to render the right title.
+    const demoSlug = params.get("demo");
+    if (demoSlug) {
+      const preset = getDemoPortfolio(demoSlug);
+      if (preset) {
+        posthog.capture("demo_mode_started", { slug: preset.slug });
+        setActiveDemoSlug(preset.slug);
+        setAssets(preset.assets);
+        setShowGoals(false);
+        setLoading(true);
+        setData(null);
+        fetchPortfolio(preset.assets, "1y", "^GSPC")
+          .then((result: any) => { setData(result); setTabWithDir("overview"); })
+          .catch(() => { setErrorMsg("Demo failed to load. Please try again."); })
+          .finally(() => setLoading(false));
+      }
     }
 
     // Load nav profile and (on first visit per session) redirect to /onboarding if not yet complete
@@ -2597,6 +2613,60 @@ const { dark, toggle: toggleDark }  = useTheme();
 
         {/* Content */}
         <main ref={contentRef} className="c-content" style={S.content}>
+          {/* Demo-mode banner: shows when an anon visitor lands on a preset
+              demo URL (/app?demo=bogleheads etc). Drives sign-up by framing
+              the experience as a sample they can't save. Hidden the moment
+              they sign up (userId becomes truthy). */}
+          {activeDemoSlug && !userId && (() => {
+            const demo = getDemoPortfolio(activeDemoSlug);
+            if (!demo) return null;
+            return (
+              <div style={{
+                margin: "0 0 16px",
+                padding: "12px 16px",
+                background: "linear-gradient(90deg, rgba(201,168,76,0.1) 0%, rgba(201,168,76,0.04) 80%, transparent)",
+                border: "0.5px solid rgba(201,168,76,0.3)",
+                borderLeft: "3px solid var(--accent)",
+                borderRadius: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                flexWrap: "wrap",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                  <span style={{ fontSize: 9, letterSpacing: 2, color: "var(--accent)", textTransform: "uppercase", fontFamily: "var(--font-mono)", fontWeight: 700, background: "rgba(201,168,76,0.12)", padding: "3px 8px", borderRadius: 4, whiteSpace: "nowrap" }}>Demo</span>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 13, color: "var(--text)", fontWeight: 600, margin: 0, lineHeight: 1.3 }}>
+                      You&apos;re viewing the {demo.name} demo
+                    </p>
+                    <p style={{ fontSize: 11, color: "var(--text3)", margin: "2px 0 0", lineHeight: 1.4 }}>
+                      Sign up free to save this portfolio, edit holdings, and unlock unlimited AI chat.
+                    </p>
+                  </div>
+                </div>
+                <Link href="/auth?mode=signup" style={{
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  background: "var(--accent)",
+                  color: "var(--bg)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  letterSpacing: 0.3,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                  transition: "filter 0.15s, transform 0.15s",
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.08)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  Sign up free →
+                </Link>
+              </div>
+            );
+          })()}
+
           {/* Setup banner (shown when user skipped onboarding) */}
           <AnimatePresence initial={false}>
             {showSetupBanner && (
