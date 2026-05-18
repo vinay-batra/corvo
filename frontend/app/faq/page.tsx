@@ -94,7 +94,7 @@ const SECTIONS = [
       },
       {
         q: "Is Corvo free?",
-        a: "Yes. Corvo's core features are free forever, not just during beta. Three tiers, named after SEC investor classifications: Retail (free, what every signup gets), Accredited ($9/month, coming soon - adds unlimited AI chat, Plaid brokerage sync, SMS alerts, options Greeks, tax-loss harvesting, and ships with a 14-day free trial), and Institutional ($29/month, coming soon - adds multi-account aggregation, real-time streaming prices, factor model decomposition, quarterly 1:1 strategy calls, and year-end CPA-ready reports). Retail stays free either way.",
+        a: "Yes. Corvo's core features are free forever, not just during beta. Three tiers: Lite (free, what every signup gets), Pro ($9/month, coming soon - adds unlimited AI chat, Plaid brokerage sync, SMS alerts, options Greeks, tax-loss harvesting, and ships with a 14-day free trial), and Max ($29/month, coming soon - adds multi-account aggregation, real-time streaming prices, factor model decomposition, quarterly 1:1 strategy calls, and year-end CPA-ready reports). Lite stays free either way.",
       },
       {
         q: "Do I need a brokerage account?",
@@ -144,7 +144,7 @@ const SECTIONS = [
     items: [
       {
         q: "How many AI chat messages do I get?",
-        a: "Retail accounts get 15 AI chat messages per day. You can earn up to 40 daily messages by referring friends, with each successful referral adding extra daily quota. Accredited and Institutional subscribers get unlimited messages.",
+        a: "Lite accounts get 15 AI chat messages per day. You can earn up to 40 daily messages by referring friends, with each successful referral adding extra daily quota. Pro and Max subscribers get unlimited messages.",
       },
       {
         q: "Can I ask the AI anything?",
@@ -156,15 +156,15 @@ const SECTIONS = [
     category: "Paid tiers",
     items: [
       {
-        q: "What is Corvo Accredited?",
-        a: "Accredited ($9/month) is the upcoming paid tier for the engaged self-directed investor. It adds unlimited AI chat, brokerage sync via Plaid (auto-update holdings), SMS price alerts, tax-loss harvesting suggestions with wash-sale-safe replacement tickers, options chain analysis with Greeks, intraday refresh, custom benchmarks, backtesting on saved portfolios, custom PDF reports, and priority email support. Ships with a 14-day free trial.",
+        q: "What is Corvo Pro?",
+        a: "Pro ($9/month) is the upcoming paid tier for the engaged self-directed investor. It adds unlimited AI chat, brokerage sync via Plaid (auto-update holdings), SMS price alerts, tax-loss harvesting suggestions with wash-sale-safe replacement tickers, options chain analysis with Greeks, intraday refresh, custom benchmarks, backtesting on saved portfolios, custom PDF reports, and priority email support. Ships with a 14-day free trial.",
       },
       {
-        q: "What is Corvo Institutional?",
-        a: "Institutional ($29/month) is the upcoming top tier for households running serious money across multiple wrappers. It adds everything in Accredited plus multi-account aggregation (spouse, custodial, retirement wrappers in one net-worth view), real-time streaming prices, API access for Sheets / Excel pulls, quarterly portfolio review PDFs, year-end TLH + capital-gains reports formatted for your CPA, concierge TLH execution plans, factor model decomposition (Fama-French five-factor + momentum), custom alerts on any metric, a quarterly 30-minute 1:1 strategy call, white-glove onboarding, and direct founder access.",
+        q: "What is Corvo Max?",
+        a: "Max ($29/month) is the upcoming top tier for households running serious money across multiple wrappers. It adds everything in Pro plus multi-account aggregation (spouse, custodial, retirement wrappers in one net-worth view), real-time streaming prices, API access for Sheets / Excel pulls, quarterly portfolio review PDFs, year-end TLH + capital-gains reports formatted for your CPA, concierge TLH execution plans, factor model decomposition (Fama-French five-factor + momentum), custom alerts on any metric, a quarterly 30-minute 1:1 strategy call, white-glove onboarding, and direct founder access.",
       },
       {
-        q: "When are Accredited and Institutional launching?",
+        q: "When are Pro and Max launching?",
         a: "Soon. We're finishing the final features before launch. Join the waitlist from the pricing page to lock in founding-member pricing - the launch price stays yours forever, even if we raise rates after.",
       },
     ],

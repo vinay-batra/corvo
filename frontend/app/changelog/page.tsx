@@ -164,7 +164,7 @@ const ERAS = [
       "API cost reduction: /chat moved to Haiku 4.5 (~5x cheaper) with 1h prompt caching + conditional web_search + server-side response caches on /what-should-i-do and /portfolio/rebalance",
       "Per-holding account-type tagging + Monte Carlo rebuilt with Student-t fat tails and a 250-path fan chart + Correlation + Drawdown chart fixes + /chat loosened to answer founder / company questions",
       "/chat system prompt expansion: 14 example exchanges + 6 edge-case handlers + tone-calibration anchors + roast-mode length cap with a 180-word example",
-      "Pricing tier rename Free / Pro / Elite → Retail / Accredited / Institutional with 14-day trial + founding-member pricing; PerformanceChart footer toolbar; SharePortfolio portal fix; dashboard tour refresh + WSID stop; public-nav + dashboard-tab reorders; try-without-signup demo URLs; trust signals reinstated; MC Run button + % alongside $; wheel-to-horizontal testimonials carousel",
+      "Pricing tier rename Free / Pro / Elite → Lite / Pro / Max with 14-day trial + founding-member pricing; PerformanceChart footer toolbar; SharePortfolio portal fix; dashboard tour refresh + WSID stop; public-nav + dashboard-tab reorders; try-without-signup demo URLs; trust signals reinstated; MC Run button + % alongside $; wheel-to-horizontal testimonials carousel",
     ],
     tags: ["Sidebar", "AI Cost", "Monte Carlo", "Pricing", "Trust"],
   },

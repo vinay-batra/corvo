@@ -202,9 +202,9 @@ ALLOWED_ORIGINS=http://localhost:3000
 - **Canonical Railway deploy:**
  ```bash
  mkdir -p /tmp/corvo-deploy2/backend \
- && cp ~/Downloads/portfolio_v2/backend/main.py /tmp/corvo-deploy2/backend/ \
- && cp ~/Downloads/portfolio_v2/backend/requirements.txt /tmp/corvo-deploy2/backend/ \
- && cd ~/Downloads/portfolio_v2 \
+ && cp ~/Downloads/corvo/backend/main.py /tmp/corvo-deploy2/backend/ \
+ && cp ~/Downloads/corvo/backend/requirements.txt /tmp/corvo-deploy2/backend/ \
+ && cd ~/Downloads/corvo \
  && railway up --detach --path-as-root /tmp/corvo-deploy2
  ```
 - Railway starts the service with `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT` (defined in `railway.toml`). Never run `railway up` from inside `/backend` - the canonical sequence shapes the upload root to include a `backend/` subdir so the start command resolves correctly.
