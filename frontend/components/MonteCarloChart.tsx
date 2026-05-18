@@ -38,6 +38,14 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
   const [simYears, setSimYears] = useState(5);
   // Track the last key we actually ran for - prevents re-runs from stable-but-recreated prop refs
   const simKeyRef = useRef<string>("");
+  // User-gated run: Monte Carlo no longer auto-fires on mount or on horizon
+  // change. The user clicks "Run Simulation" (or "Re-run") to trigger it.
+  // Lets the user pick a horizon first without burning a backend call,
+  // and prevents simulations stacking up when the user navigates between
+  // tabs. Increments any time a run is requested; the fetch effect keys
+  // off this counter alongside (assets, period, simYears) so changing the
+  // horizon doesn't re-fetch until the user clicks Run again.
+  const [runRequested, setRunRequested] = useState(0);
 
   useEffect(() => {
     const check = () => setDark(document.documentElement.dataset.theme !== "light");
@@ -53,25 +61,42 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  // Cache-restore effect: when assets/period/years change, restore from
+  // cache if there's a hit (so tab switches re-show the prior result), but
+  // don't ever AUTO-FETCH. The user must click Run.
   useEffect(() => {
     if (!assets.length) return;
     const newKey =
       assets.map(a => `${a.ticker}:${Number(a.weight).toFixed(4)}`).sort().join(",") +
       "|" + period +
-      "|" + simYears +
-      "|" + retryCount;
-    if (newKey === simKeyRef.current) return;
-    simKeyRef.current = newKey;
+      "|" + simYears;
+    if (newKey === simKeyRef.current && data) return;
 
-    // Restore from cache first - avoids re-fetching on tab switch or remount
     const cached = _mcDataCache.get(newKey);
     if (cached) {
+      simKeyRef.current = newKey;
       setData(cached);
       const cachedInsight = _mcInsightCache.get(newKey);
       if (cachedInsight) setInsight(cachedInsight);
       return;
     }
+    // No cache hit AND no run requested -> show the Run button (data stays null).
+    if (newKey !== simKeyRef.current) {
+      setData(null);
+      setInsight(null);
+    }
+  }, [assets, period, simYears, data]);
 
+  // Run effect: fires when the user clicks Run / Re-run (runRequested bumps)
+  // or hits retry (retryCount bumps). Skips when assets are empty.
+  useEffect(() => {
+    if (runRequested === 0 && retryCount === 0) return;
+    if (!assets.length) return;
+    const newKey =
+      assets.map(a => `${a.ticker}:${Number(a.weight).toFixed(4)}`).sort().join(",") +
+      "|" + period +
+      "|" + simYears;
+    simKeyRef.current = newKey;
     setLoading(true);
     setFetchError(false);
     setInsight(null);
@@ -82,7 +107,8 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
       })
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
-  }, [assets, period, simYears, retryCount]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runRequested, retryCount]);
 
   // Fetch Claude insight after simulation data loads (skip if already cached)
   useEffect(() => {
@@ -257,9 +283,9 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
         .mc-table tr:last-child td{border-bottom:none}
       `}</style>
 
-      {/* Years selector */}
+      {/* Horizon selector + Run button row */}
       <div style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
           <span style={{ fontSize: 10, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase", marginRight: 4 }}>Horizon</span>
           {YEARS_OPTIONS.map(y => (
             <button
@@ -276,13 +302,34 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
               }}
             >{y}yr</button>
           ))}
+          {/* Run / Re-run button: small inline when results exist, prominent
+              empty-state CTA renders below if no data yet. Click bumps
+              runRequested which the run effect listens to. Disabled while
+              already loading. */}
+          {data && !loading && (
+            <button
+              onClick={() => setRunRequested(c => c + 1)}
+              style={{
+                marginLeft: "auto",
+                padding: "4px 14px", fontSize: 11,
+                fontFamily: "Space Mono, monospace", fontWeight: 700,
+                background: "rgba(201,168,76,0.08)",
+                color: dark ? C.amber : "#b8860b",
+                border: "0.5px solid rgba(201,168,76,0.35)", borderRadius: 6,
+                cursor: "pointer", transition: "all 0.12s",
+                letterSpacing: 0.5,
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.18)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,168,76,0.08)"; }}
+            >Re-run →</button>
+          )}
         </div>
         <p style={{ fontSize: 11, color: "var(--text3)", margin: 0, lineHeight: 1.55 }}>
           The further into the future you simulate, the wider the range of outcomes. Predictions become less precise over longer horizons.
         </p>
       </div>
 
-      {/* Chart or loader */}
+      {/* Chart or loader or empty-state Run button */}
       {loading ? (
         <div style={{ height: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
           <div style={{ width: 26, height: 26, border: "1.5px solid rgba(201,168,76,0.2)", borderTopColor: dark ? C.amber : "#b8860b", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
@@ -294,6 +341,40 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
           onRetry={() => setRetryCount(c => c + 1)}
           minHeight={300}
         />
+      ) : !data ? (
+        // Empty state: prominent Run button. The user picks a horizon then
+        // hits Run; until then we don't auto-fire the simulation so they
+        // can't burn a backend call by accident or by tab-switching.
+        <div style={{ height: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, background: "linear-gradient(180deg, rgba(201,168,76,0.04) 0%, transparent 80%)", borderRadius: 12, border: "0.5px dashed rgba(201,168,76,0.25)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={dark ? C.amber : "#b8860b"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
+            <span style={{ fontSize: 10, letterSpacing: 2.5, color: dark ? C.amber : "#b8860b", textTransform: "uppercase", fontFamily: "Space Mono, monospace", fontWeight: 700 }}>Monte Carlo</span>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--text2)", textAlign: "center", maxWidth: 380, margin: 0, lineHeight: 1.55 }}>
+            Project {assets.length || 0} {assets.length === 1 ? "holding" : "holdings"} forward {simYears} {simYears === 1 ? "year" : "years"} across 10,000 simulated paths with Student-t fat tails.
+          </p>
+          <button
+            onClick={() => setRunRequested(c => c + 1)}
+            disabled={!assets.length}
+            style={{
+              padding: "10px 28px", fontSize: 12, fontWeight: 700,
+              fontFamily: "Space Mono, monospace",
+              background: assets.length ? "var(--accent)" : "var(--bg3)",
+              color: assets.length ? "var(--bg)" : "var(--text3)",
+              border: "none", borderRadius: 10,
+              cursor: assets.length ? "pointer" : "not-allowed",
+              letterSpacing: 0.5,
+              boxShadow: assets.length ? "0 4px 14px rgba(201,168,76,0.3)" : "none",
+              transition: "filter 0.15s, transform 0.15s, box-shadow 0.15s",
+            }}
+            onMouseEnter={e => { if (assets.length) { e.currentTarget.style.filter = "brightness(1.08)"; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 8px 22px rgba(201,168,76,0.4)"; }}}
+            onMouseLeave={e => { if (assets.length) { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(201,168,76,0.3)"; }}}
+          >
+            {assets.length ? "Run Simulation →" : "Add holdings first"}
+          </button>
+        </div>
       ) : data ? (
         <motion.div
           // initial={false} is required - do not remove
@@ -507,7 +588,12 @@ const MonteCarloChart = memo(function MonteCarloChart({ assets, period, portfoli
                             <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: scenarioColor }}>{s.prob}</td>
                             <td style={{ fontFamily: "Space Mono, monospace", color: "var(--text2)" }}>{fmtDollar(pv)}</td>
                             <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: valColor }}>{fmtDollar(ending)}</td>
-                            <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: valColor }}>{positive ? "+$" : "-$"}{Math.round(Math.abs(change)).toLocaleString()}</td>
+                            <td style={{ fontFamily: "Space Mono, monospace", fontWeight: 700, color: valColor }}>
+                              {positive ? "+$" : "-$"}{Math.round(Math.abs(change)).toLocaleString()}
+                              <span style={{ fontWeight: 500, marginLeft: 6, opacity: 0.75, fontSize: 10 }}>
+                                ({positive ? "+" : "-"}{Math.abs(s.mult * 100).toFixed(1)}%)
+                              </span>
+                            </td>
                           </tr>
                         );
                       });
