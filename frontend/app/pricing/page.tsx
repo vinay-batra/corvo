@@ -328,7 +328,7 @@ const ACCREDITED_EXTRAS = [
 
 const INSTITUTIONAL_EXTRAS = [
   "Multi-account aggregation: spouse, custodial, all your wrappers in one net-worth view",
-  "Real-time streaming prices (no 15-minute delay)",
+  "Real-time streaming prices",
   "API access for custom workflows and Google Sheets / Excel pulls",
   "Quarterly portfolio review delivered as a polished PDF",
   "Year-end tax-loss harvesting + capital-gains report formatted for your CPA",
