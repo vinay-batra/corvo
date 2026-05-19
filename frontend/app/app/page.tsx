@@ -2397,7 +2397,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           .c-content{padding:12px 10px!important;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
           #tour-desk-chat{display:flex!important;bottom:24px!important;right:24px!important;width:56px!important;height:56px!important}
-          #tour-desk-customize{bottom:30px!important;right:138px!important;width:40px!important;height:40px!important}
+          #tour-desk-customize{bottom:24px!important;right:138px!important;width:40px!important;height:40px!important}
           .c-alloc-row{flex-direction:column!important}
           .c-alloc-row>*{flex:none!important;width:100%!important}
           .c-mob-bar #usermenu-btn>span{display:none!important}
@@ -3547,7 +3547,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.96 }}
           style={{
-            position: "fixed", bottom: 32, right: 152, zIndex: 1000,
+            position: "fixed", bottom: 24, right: 152, zIndex: 1000,
             width: 44, height: 44, borderRadius: "50%",
             background: "var(--bg2)",
             border: "0.5px solid var(--border)",

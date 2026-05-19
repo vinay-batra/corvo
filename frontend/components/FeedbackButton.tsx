@@ -68,7 +68,7 @@ export default function FeedbackButton() {
           }
           .corvo-feedback-btn {
             width: 40px !important; height: 40px !important;
-            bottom: 30px !important; right: 88px !important;
+            bottom: 24px !important; right: 88px !important;
           }
           #tour-desk-customize {
             width: 40px !important; height: 40px !important;
@@ -89,7 +89,7 @@ export default function FeedbackButton() {
         className="corvo-feedback-btn"
         style={{
           position: "fixed",
-          bottom: 32,
+          bottom: 24,
           right: 96,
           zIndex: 1000,
           width: 44, height: 44,
