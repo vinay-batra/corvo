@@ -11,6 +11,7 @@ import math
 import os
 import json
 import re
+import secrets
 import traceback
 import requests
 from datetime import datetime, timezone
@@ -2016,9 +2017,18 @@ def _sb_headers():
 
 
 def _require_admin_key(request: Request) -> None:
-    """Raise 401 unless X-Admin-Key header matches SUPABASE_SERVICE_ROLE_KEY."""
+    """Raise 401 unless X-Admin-Key header matches SUPABASE_SERVICE_ROLE_KEY.
+
+    Uses secrets.compare_digest() for constant-time comparison so the key
+    length cannot be inferred from response timing. Also short-circuits
+    when SUPABASE_SERVICE_KEY itself is empty - the previous bare `!=`
+    would have let an attacker pass an empty X-Admin-Key header if the
+    env var ever rolled to empty/unset, since "" == "" is true.
+    """
     key = request.headers.get("X-Admin-Key", "")
-    if not SUPABASE_SERVICE_KEY or key != SUPABASE_SERVICE_KEY:
+    if not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if not secrets.compare_digest(key, SUPABASE_SERVICE_KEY):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
@@ -3172,8 +3182,11 @@ def generate_questions(req: GenerateQuestionsRequest, request: Request):
 def parse_portfolio_image(body: dict, request: Request):
     # Auth-required: verify JWT and use the token-derived user_id as the quota key
     user_id = _verify_jwt_user(request)
-    # Optional ip rate limit too, to cap anonymous client churn at the proxy
-    check_rate_limit(_client_ip(request), "parse-portfolio-image", 30, 3600)
+    # Optional ip rate limit too, to cap anonymous client churn at the proxy.
+    # check_rate_limit returns True when the bucket is exhausted - it does NOT
+    # raise on its own, so the call must be wrapped to actually deny.
+    if check_rate_limit(_client_ip(request), "parse-portfolio-image", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded for image parsing. Try again in an hour.")
     # Per-user daily limit: max 10 per day
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     record = _image_parse_daily.get(user_id)
@@ -5391,7 +5404,15 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
     if 0 < valid_weight < 1.0:
         raw_value = raw_value / valid_weight  # normalise for partially available tickers
 
-    today = datetime.now(timezone.utc).date().isoformat()
+    # ET, not UTC. The EOD cron fires at 4:15 PM ET (= 20:15 UTC during EDT,
+    # 21:15 during EST). Using UTC here meant a 4:15 PM ET snapshot on
+    # weekday N was being stamped with the UTC date of weekday N - fine in
+    # most months but ambiguous near midnight ET (e.g. after-hours manual
+    # triggers or DST transitions could roll the date to N+1 and create
+    # duplicate-key collisions on the upsert). Normalising to ET aligns the
+    # snapshot date with the trading day the data describes.
+    from zoneinfo import ZoneInfo
+    today = datetime.now(ZoneInfo("America/New_York")).date().isoformat()
 
     # ── Get first snapshot as the base ────────────────────────────────────────
     first_resp = requests.get(
