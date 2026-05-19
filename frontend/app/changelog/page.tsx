@@ -83,7 +83,7 @@ function AnimatedHeading({ text, accentText, style = {} }: { text: string; accen
   );
 }
 
-// Five chapters covering everything from launch to today (v0.1 → v0.43).
+// Five chapters covering everything from launch to today (v0.1 → v0.45).
 // Each chapter is a thematic summary of a version range, not 1:1 to a single
 // release. We over-summarize where needed so all updates land somewhere on
 // the page without it becoming a dump.
@@ -155,8 +155,8 @@ const ERAS = [
   {
     num: "05",
     name: "Sidebar Redesign & Launch Prep",
-    versions: "v0.35 → v0.44",
-    dateRange: "May 16 → May 18, 2026",
+    versions: "v0.35 → v0.45",
+    dateRange: "May 16 → May 19, 2026",
     intro: "The sidebar got the tabbed redesign users picked from a 6-mock brainstorm. AI got cheaper and sharper. Pricing got real. Trust got rebuilt.",
     highlights: [
       "Tabbed sidebar redesign (Holdings / Account / Saved) + Edit-with-Corvo NL editor moved into Holdings + sticky tab nav + perfHistory refetch on save",
@@ -166,8 +166,9 @@ const ERAS = [
       "/chat system prompt expansion: 14 example exchanges + 6 edge-case handlers + tone-calibration anchors + roast-mode length cap with a 180-word example",
       "Pricing tier rename Free / Pro / Elite → Lite / Pro / Max with 14-day trial + founding-member pricing; PerformanceChart footer toolbar; SharePortfolio portal fix; dashboard tour refresh + WSID stop; public-nav + dashboard-tab reorders; try-without-signup demo URLs; trust signals reinstated; MC Run button + % alongside $; wheel-to-horizontal testimonials carousel",
       "v0.44 polish + integrity bundle: waitlist-member framing replaces founding-member copy on both paid tiers + the lower waitlist section; /chat system prompt got a hard anti-preamble block (no 'Let me think', no meta-references to the instructions); /portfolio rejects unknown tickers (e.g. typos like 'PENIS') with a clear error instead of fabricating a fake 4.5% return series; bento grid + testimonial sections swapped their per-card halos for one unified glow each; new global AmbientOrbs component renders Lark-style fixed-position gold halos in dark mode only; testimonials carousel now arrows-only (wheel/swipe scroll removed)",
+      "v0.45 homepage scroll-nav, bento polish, /learn purge: PublicNav hide-on-scroll-down / show-on-scroll-up finally works on the homepage (rebuilt with a per-frame delta accumulator + rAF poll + scroll event listener; root cause was the .page-fadein wrapper retaining a transform via animation-fill-mode: both, which created a containing block that broke position:fixed on the nav - keyframe is opacity-only now); 3D tilt jitter on bento cards near edges fixed by moving mouse handlers to the outer (untransformed) wrapper so the hit-test loop can't form; dead 'Learn & Earn XP' bento card removed (XP feature was cut in v0.24 but the marketing card still advertised it) and replaced with a 1-block Daily Brief inbox-preview card; standalone /learn route fully removed (every reference purged); CSP frame-src 'none' alongside vercel.live fixed (browser was ignoring the directive)",
     ],
-    tags: ["Sidebar", "AI Cost", "Monte Carlo", "Pricing", "Trust", "AI Integrity"],
+    tags: ["Sidebar", "AI Cost", "Monte Carlo", "Pricing", "Trust", "AI Integrity", "Scroll Nav", "Route Cleanup"],
   },
 ];
 

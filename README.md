@@ -4,7 +4,7 @@
 
 [Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js 16 · FastAPI · Supabase · All Rights Reserved
 
-Current release: **v0.44** (May 18, 2026)
+Current release: **v0.45** (May 19, 2026)
 
 ---
 
@@ -68,13 +68,6 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - Price alerts with browser push notification support
 - All email preferences individually configurable from the settings page
 
-### Learn (hidden from main nav as of v0.24, code preserved)
-- XP system with 15 progression levels
-- Structured lessons with worked examples across investing, options, tax, and risk topics
-- Daily challenges with timed scoring
-- Global leaderboard backed by a column-restricted `get_leaderboard` SECURITY DEFINER RPC (no profile-column leaks)
-- Arcade with financial mini-games
-
 ### Branding
 - Gold raven head + rising arrow logo (since v0.29). Master at `frontend/public/corvo-logo.png` (717×717 transparent PNG)
 - Full favicon and home-screen icon set: 16, 32, 48, 180, 192, 512 px PNGs + multi-resolution `favicon.ico`
@@ -86,7 +79,7 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 - The Dashboard tab itself is split into four scroll-revealed regions: Overview (daily brief, Today's Signal, "What should I do today?"), Analysis (metrics, performance, goal), Intelligence (health, AI insights, vs benchmark), Composition (allocation, sector, insider)
 - Income & Tax and Transactions are sections within the Positions tab - not standalone tabs
 - Paper Trade was removed from the product in v0.24 and the routes, frontend component, and Supabase tables were fully purged in v0.28
-- Watchlist and Learn tabs are hidden from the active `TABS` list in v0.24 (component code preserved)
+- Watchlist tab is hidden from the active `TABS` list (component code preserved). The Learn tab + standalone `/learn` route were fully removed in v0.45 (route files deleted, every back-reference purged)
 
 ---
 
