@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-const HIDDEN_PATHS = ["/app", "/learn"];
+const HIDDEN_PATHS = ["/app"];
 
 export default function AmbientOrbs() {
   const pathname = usePathname();

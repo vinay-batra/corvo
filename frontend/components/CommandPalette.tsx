@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutDashboard, ShieldAlert, FlaskConical, Newspaper, GraduationCap, MessageSquare, Eye, Moon, Sun, Search, Command } from "lucide-react";
+import { LayoutDashboard, ShieldAlert, FlaskConical, Newspaper, MessageSquare, Eye, Moon, Sun, Search, Command } from "lucide-react";
 
 export interface PaletteAction {
   id: string;
@@ -51,13 +51,6 @@ export default function CommandPalette({ open, onClose, tabs, onTab, onStockSear
       description: "Theme",
       icon: dark ? <Sun size={14} /> : <Moon size={14} />,
       onSelect: () => { onToggleDark(); onClose(); },
-    },
-    {
-      id: "learn",
-      label: "Go to Learn",
-      description: "Open Learn page",
-      icon: <GraduationCap size={14} />,
-      onSelect: () => { window.location.href = "/learn"; },
     },
   ];
 

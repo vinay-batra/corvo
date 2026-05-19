@@ -69,7 +69,6 @@ import CorrelationHeatmap from "../../components/CorrelationHeatmap";
 import DrawdownChart from "../../components/DrawdownChart";
 import SharePortfolio from "../../components/SharePortfolio";
 import ShareImageModal from "../../components/ShareImageModal";
-import LearnPage from "../learn/page";
 import GoalTracker from "../../components/GoalTracker";
 
 const TABS = [
@@ -83,7 +82,7 @@ const TABS = [
   { id: "simulate",    label: "Simulations", Icon: FlaskConical,  href: null },
   { id: "stocks",     label: "Stocks",     Icon: CandlestickChart, href: null },
   { id: "news",        label: "News",        Icon: Newspaper,     href: null },
-  // watchlist and learn tabs hidden - code preserved, add back to TABS to restore
+  // watchlist tab hidden - code preserved, add back to TABS to restore
 ] as const;
 
 const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
@@ -93,7 +92,6 @@ const MOB_TAB_ICONS: Record<string, React.ReactNode> = {
   simulate:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
   news:        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>,
   watchlist:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-  learn:        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
 };
 
 const PERIODS = ["6mo", "1y", "2y", "5y"];
@@ -1216,7 +1214,6 @@ export default function AppPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [goals, setGoals]                 = useState<any>(null);
-  const [learnResetKey, setLearnResetKey] = useState(0);
   const [showGoals, setShowGoals]         = useState(false);
   const [showTour, setShowTour]           = useState(false);
   const [showSetupBanner, setShowSetupBanner] = useState(false);
@@ -3422,12 +3419,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                   </Card>
                 </DashReveal>
               </motion.div>
-            ) : activeTab === "learn" ? (
-              <motion.div key="learn" initial={false} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDir * -24 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
-                <DashReveal from="up" delay={0}>
-                  <LearnPage resetKey={learnResetKey} />
-                </DashReveal>
-              </motion.div>
             ) : null}
           </AnimatePresence>
         </main>
@@ -3449,7 +3440,6 @@ const { dark, toggle: toggleDark }  = useTheme();
             news:      "portfolio dashboard (news tab)",
             watchlist: "portfolio dashboard (watchlist tab)",
             simulate:  "portfolio dashboard (Monte Carlo simulations tab)",
-            learn:     "portfolio dashboard (learn tab)",
             stocks:    "portfolio dashboard (stock detail overlay)",
           }[activeTab] || `portfolio dashboard (${activeTab} tab)`}
           extraContext={!reinvestDividends ? "Note: This user does NOT reinvest dividends. The CAGR shown is price return only, excluding dividend income. Factor this into any return or income advice." : undefined}

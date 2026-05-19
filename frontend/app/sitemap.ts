@@ -3,7 +3,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: 'https://corvo.capital', lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
     { url: 'https://corvo.capital/app', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
-    { url: 'https://corvo.capital/learn', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: 'https://corvo.capital/pricing', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
     { url: 'https://corvo.capital/demo', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: 'https://corvo.capital/blog', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
