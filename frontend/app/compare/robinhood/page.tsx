@@ -33,7 +33,6 @@ const FEATURES: [string, boolean, boolean][] = [
   ["Custom Price & % Alerts",             true,  true],
   ["Sector Exposure Analysis",            true,  false],
   ["Tax Loss Harvesting",                 true,  true],
-  ["Learn & Earn Gamification",           true,  false],
   ["Screenshot Import",                   true,  false],
   ["Multi-Broker Portfolio View",         true,  false],
   ["CSV Import",                          true,  true],
@@ -108,8 +107,8 @@ export default function RobinhoodComparePage() {
               },
               {
                 icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>,
-                title: "Built for learning, not FOMO",
-                body: "Robinhood's UX is designed to maximize engagement and trading. Corvo is designed to help you make better long-term decisions, with a Learn & Earn system that builds your investing knowledge.",
+                title: "Built for long-term decisions, not FOMO",
+                body: "Robinhood's UX is designed to maximize engagement and trading. Corvo is designed to help you make better long-term decisions, with AI-powered analysis that explains the risk you're actually taking.",
               },
             ].map((card, i) => (
               <FadeUp key={i} delay={i * 0.1}>
@@ -210,7 +209,7 @@ export default function RobinhoodComparePage() {
                 <p style={{ fontFamily: "Space Mono,monospace", fontSize: 52, fontWeight: 700, color: "#c9a84c", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>$0</p>
                 <p style={{ fontSize: 13, color: "rgba(201,168,76,0.4)", marginBottom: 24 }}>always free · no credit card</p>
                 <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10 }}>
-                  {["AI portfolio chat", "Monte Carlo simulation", "Sharpe ratio & risk metrics", "Multi-broker aggregation", "Learn & Earn gamification"].map((f, i) => (
+                  {["AI portfolio chat", "Monte Carlo simulation", "Sharpe ratio & risk metrics", "Multi-broker aggregation", "Tax loss harvesting"].map((f, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                       <span style={{ fontSize: 12, color: "rgba(232,224,204,0.55)" }}>{f}</span>

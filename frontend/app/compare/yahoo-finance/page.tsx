@@ -33,7 +33,6 @@ const FEATURES: [string, boolean, boolean][] = [
   ["Custom Price & % Alerts",             true,  true],
   ["Sector Exposure Analysis",            true,  true],
   ["Tax Loss Harvesting Suggestions",     true,  false],
-  ["Learn & Earn Gamification",           true,  false],
   ["Screenshot Import",                   true,  false],
   ["Ad-Free Experience",                  true,  false],
   ["CSV Import",                          true,  false],

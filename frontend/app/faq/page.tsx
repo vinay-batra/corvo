@@ -130,10 +130,6 @@ const SECTIONS = [
         a: "AI insights are educational and informational only, not financial advice. They're based on historical data and statistical models. Markets are unpredictable, and past performance never guarantees future results. Always consult a qualified financial advisor before making investment decisions.",
       },
       {
-        q: "How does the Learn page work?",
-        a: "The Learn section features interactive investing lessons organized by topic (fundamentals, risk, options, etc.). Complete lessons to earn XP, level up, take daily challenges, and play investing mini-games. It's designed to build real financial literacy, not just throw definitions at you.",
-      },
-      {
         q: "What is tax loss harvesting?",
         a: "Tax loss harvesting means strategically selling losing positions to realize a capital loss, which offsets taxable gains elsewhere in your portfolio. Corvo identifies harvesting candidates in your portfolio and suggests replacement securities with similar exposure that avoid IRS wash sale rules.",
       },

@@ -7,7 +7,7 @@ import { RESOLVED_API_URL } from "../lib/api";
 function Ring({ score, size = 115 }: { score: number; size?: number }) {
   const r = (size - 12) / 2, circ = 2 * Math.PI * r, offset = circ - (score / 100) * circ;
   const label = score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Fair" : "Weak";
-  const ringColor = score >= 75 ? "#4caf7d" : score >= 50 ? "#b8860b" : "var(--red)";
+  const ringColor = score >= 75 ? "var(--green)" : score >= 50 ? "var(--accent)" : "var(--red)";
   const glowColor = score >= 75 ? "rgba(76,175,125,0.35)" : score >= 50 ? "rgba(184,134,11,0.35)" : "rgba(224,92,92,0.35)";
   const fontSize = Math.round(size * 0.25);
   const gradId = `ring-grad-${score}`;
@@ -106,7 +106,7 @@ function localSubScores(data: any): { label: string; score: number }[] {
 }
 
 function SubScoreRow({ label, score }: { label: string; score: number }) {
-  const color = score >= 80 ? "#4caf7d" : score >= 60 ? "#b8860b" : "var(--red)";
+  const color = score >= 80 ? "var(--green)" : score >= 60 ? "var(--accent)" : "var(--red)";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <span style={{ fontSize: 10, color: "var(--text3)", minWidth: 84 }}>{label}</span>
@@ -213,7 +213,7 @@ export default function HealthScore({
           style={{
             width: "100%", padding: "9px", borderRadius: 8,
             background: "rgba(76,175,125,0.08)", border: "0.5px solid rgba(76,175,125,0.25)",
-            color: "#4caf7d", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            color: "var(--green)", fontSize: 12, fontWeight: 600, cursor: "pointer",
             letterSpacing: 0.2, transition: "all 0.15s",
           }}
           onMouseEnter={e => { e.currentTarget.style.background = "rgba(76,175,125,0.14)"; }}

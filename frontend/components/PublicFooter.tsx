@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 const PRODUCT_LINKS = [
   { label: "Features", href: "/#features" },
@@ -49,22 +50,23 @@ export default function PublicFooter() {
         <div className="pf-right" style={{ display: "flex", gap: 48, alignItems: "flex-start" }}>
           <div>
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "var(--text2)", marginBottom: 14 }}>Product</div>
-            {PRODUCT_LINKS.map(({ label, href }) => (
-              <a key={label} href={href} className="pf-link">{label}</a>
-            ))}
+            {PRODUCT_LINKS.map(({ label, href }) =>
+              href.startsWith("http") || href.startsWith("/#") ? (
+                <a key={label} href={href} className="pf-link">{label}</a>
+              ) : (
+                <Link key={label} href={href} className="pf-link">{label}</Link>
+              )
+            )}
           </div>
           <div>
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "var(--text2)", marginBottom: 14 }}>Legal &amp; More</div>
-            {LEGAL_LINKS.map(({ label, href, external }) => (
-              <a
-                key={label}
-                href={href}
-                className="pf-link"
-                {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              >
-                {label}
-              </a>
-            ))}
+            {LEGAL_LINKS.map(({ label, href, external }) =>
+              external ? (
+                <a key={label} href={href} className="pf-link" target="_blank" rel="noopener noreferrer">{label}</a>
+              ) : (
+                <Link key={label} href={href} className="pf-link">{label}</Link>
+              )
+            )}
           </div>
         </div>
 

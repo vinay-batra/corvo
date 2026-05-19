@@ -166,7 +166,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
       </button>
       <div style={{
         overflow: "clip",
-        maxHeight: open ? 200 : 0,
+        maxHeight: open ? "1000px" : 0,
         transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
       }}>
         <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.8, paddingBottom: 20 }}>{a}</p>
@@ -180,7 +180,8 @@ function WaitlistCapture() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const submit = async () => {
-    if (!email.trim() || status !== "idle") return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim()) || status !== "idle") return;
     setStatus("loading");
     try {
       const res = await fetch(`${API_URL}/notify-me`, {
@@ -639,9 +640,6 @@ function FoundingMemberSection() {
             <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.8, maxWidth: 480, margin: "0 auto 12px", fontWeight: 300 }}>
               Pro and Max are coming soon. Waitlist members lock in <strong style={{ color: "#c9a84c", fontWeight: 600 }}>their launch price forever</strong>. Join now before pricing moves up.
             </p>
-            <p style={{ fontSize: 12, color: "rgba(201,168,76,0.55)", marginBottom: 32 }}>
-              127 people already on the waitlist
-            </p>
             <div style={{ maxWidth: 440, margin: "0 auto" }}>
               <WaitlistCapture />
             </div>
@@ -776,6 +774,8 @@ function FeatureVoteSection() {
                   </div>
                   <button
                     onClick={() => handleVote(f.id)}
+                    aria-label={hasVoted ? `Remove vote for ${f.label}` : `Upvote ${f.label}`}
+                    aria-pressed={hasVoted}
                     style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: hasVoted ? "rgba(201,168,76,0.1)" : "var(--bg3)", border: `0.5px solid ${hasVoted ? "rgba(201,168,76,0.3)" : "var(--border)"}`, borderRadius: 8, cursor: "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = hasVoted ? "rgba(201,168,76,0.06)" : "rgba(201,168,76,0.08)"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = hasVoted ? "rgba(201,168,76,0.1)" : "var(--bg3)"; }}
@@ -824,10 +824,10 @@ export default function PricingPage() {
           box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 20px 50px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(201,168,76,0.18) !important;
           border-color: rgba(201,168,76,0.25) !important;
         }
-        @media (max-width: 900px) {
-          /* Below 900px the 3-card row gets cramped. Drop the highlight lift
+        @media (max-width: 768px) {
+          /* Below 768px the 3-card row gets cramped. Drop the highlight lift
              + scale so all three cards sit on a single visual baseline (and
-             eventually stack at 768). */
+             eventually stack). */
           .pricing-card-wrap-highlight { transform: none !important; }
         }
         @media (max-width: 768px) {

@@ -370,7 +370,7 @@ function BentoAIChatCard({ delay = 0 }: { delay?: number }) {
           <p style={{ fontSize: 11, color: "var(--text)" }}>Am I taking too much risk?</p>
         </div>
         <div style={{ background: "rgba(var(--accent-rgb),0.06)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: "12px 12px 12px 2px", padding: "10px 13px", display: "flex", gap: 8, minHeight: 56 }}>
-          <img src="/corvo-logo.png?v=2" width={12} height={10} alt="" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
+          <img src="/corvo-logo.png?v=2" width={12} height={10} alt="" aria-hidden="true" style={{ marginTop: 2, opacity: 0.7, flexShrink: 0 }} />
           <p style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.65 }}>
             {displayed}
             {displayed.length < FULL_TEXT.length && (
@@ -923,7 +923,7 @@ function StockTeaserSection() {
             </div>
             {/* AI insight */}
             <div style={{ padding: "14px 20px", borderTop: "1px solid var(--border)", background: "rgba(var(--accent-rgb),0.03)", display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <img src="/corvo-logo.png?v=2" width={14} height={11} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
+              <img src="/corvo-logo.png?v=2" width={14} height={11} alt="" aria-hidden="true" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
               <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.65, fontStyle: "italic" as const }}>{result.insight}</p>
             </div>
             {/* CTA */}
@@ -993,7 +993,7 @@ function VisualComparisonSection() {
           <div style={{ background: "var(--bg2)", height: "100%", padding: "22px 20px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(var(--accent-rgb),0.1)", paddingBottom: 10, marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <img src="/corvo-logo.png?v=2" width={16} height={13} alt="" />
+                <img src="/corvo-logo.png?v=2" width={16} height={13} alt="" aria-hidden="true" />
                 <span style={{ fontFamily: "Space Mono,monospace", fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "var(--accent)" }}>CORVO</span>
               </div>
               <span style={{ fontSize: 10, color: "var(--green)", fontWeight: 700, background: "rgba(92,184,138,0.1)", border: "1px solid rgba(92,184,138,0.3)", padding: "2px 8px", borderRadius: 4 }}>$0/mo</span>
@@ -1019,7 +1019,7 @@ function VisualComparisonSection() {
               </svg>
             </div>
             <div style={{ background: "rgba(var(--accent-rgb),0.05)", border: "1px solid rgba(var(--accent-rgb),0.12)", borderRadius: 8, padding: "9px 12px", display: "flex", gap: 7, alignItems: "flex-start" }}>
-              <img src="/corvo-logo.png?v=2" width={11} height={9} alt="" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
+              <img src="/corvo-logo.png?v=2" width={11} height={9} alt="" aria-hidden="true" style={{ marginTop: 3, opacity: 0.7, flexShrink: 0 }} />
               <p style={{ fontSize: 10, color: "var(--text2)", lineHeight: 1.6 }}>Strong cash flow and buyback program supports price stability.</p>
             </div>
           </div>
@@ -1098,7 +1098,7 @@ function TestimonialCard({ text, name, role, delay }: { text: string; name: stri
 /* ─── Mobile Testimonial Carousel ─── */
 const MOBILE_TESTIMONIALS = [
   { text: "finally an app that does everything in one place. had robinhood, google sheets, and three different websites open at once haha. Corvo pretty much replaced all of them", name: "Jake M.", role: "Casual investor" },
-  { text: "The UI is actually really clean. Didn't expect it to look this good for a free tool.", name: "Aisha :)", role: "Self-taught Investor" },
+  { text: "The UI is actually really clean. Didn't expect it to look this good for a free tool.", name: "Aisha", role: "Self-taught Investor" },
   { text: "i check it every week just to see what's new. it keeps getting better and you can tell these guys actually care about it", name: "Chris R.", role: "Long-term Investor" },
   { text: "I really like the morning emails, quick recap of my portfolio before I even do anything.", name: "Dev M. Patel", role: "Casual investor" },
   { text: "I just ran the Monte Carlo and the other sims and it completely changed how I think about my retirement, its actually crazy. I did not realize how exposed I was.", name: "Tyler", role: "Active Trader" },
@@ -2539,7 +2539,7 @@ function SecurityTrustSection() {
 /* ─── 3D Testimonial Carousel ─── */
 const TESTIMONIALS_3D = [
   { text: "finally an app that does everything in one place. had robinhood, google sheets, and three different websites open at once haha. Corvo pretty much replaced all of them", name: "Jake M.", role: "Casual investor" },
-  { text: "The UI is actually really clean. Didn't expect it to look this good for a free tool.", name: "Aisha :)", role: "Self-taught Investor" },
+  { text: "The UI is actually really clean. Didn't expect it to look this good for a free tool.", name: "Aisha", role: "Self-taught Investor" },
   { text: "i check it every week just to see what's new. it keeps getting better and you can tell these guys actually care about it", name: "Chris R.", role: "Long-term Investor" },
   { text: "I really like the morning emails, quick recap of my portfolio before I even do anything.", name: "Dev M. Patel", role: "Casual investor" },
   { text: "I just ran the Monte Carlo and the other sims and it completely changed how I think about my retirement, its actually crazy. I did not realize how exposed I was.", name: "Tyler", role: "Active Trader" },
@@ -3159,10 +3159,10 @@ function GsapHero({
             willChange: "transform, opacity",
           }}>
             <span style={{ position: "relative", display: "inline-flex", width: 8, height: 8 }}>
-              <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#e05c5c", animation: "pdot 1.4s ease-in-out infinite" }} />
+              <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--red)", animation: "pdot 1.4s ease-in-out infinite" }} />
               <span style={{ position: "absolute", inset: -4, borderRadius: "50%", background: "rgba(224,92,92,0.35)", animation: "pdot 1.4s ease-in-out infinite" }} />
             </span>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.6, color: "#e05c5c", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.6, color: "var(--red)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
               Risk flagged
             </span>
             <span style={{ width: 1, height: 12, background: "rgba(224,92,92,0.25)" }} />

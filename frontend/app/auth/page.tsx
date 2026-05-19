@@ -275,12 +275,12 @@ function AuthForm() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {mode === "reset" && <p style={{ fontSize: 13, color: C.cream2, marginBottom: 6 }}>Enter your email to reset your password.</p>}
           {mode === "magic" && <p style={{ fontSize: 13, color: C.cream2, marginBottom: 6 }}>We'll send you a one-click sign-in link. No password needed.</p>}
-          <input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)}
+          <input type="email" aria-label="Email address" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)}
             onFocus={() => setFocused("email")} onBlur={() => setFocused(null)}
             onKeyDown={e => (mode === "magic" || mode === "reset") && e.key === "Enter" && handle()}
             style={inputStyle("email")} />
           {(mode === "login" || mode === "signup") && (
-            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+            <input type="password" aria-label="Password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handle()}
               onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
               style={inputStyle("password")} />

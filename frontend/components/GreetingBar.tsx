@@ -340,9 +340,13 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
         coveredWeight += asset.weight;
       }
     }
-    // Need data for at least half the portfolio weight to show a meaningful number
-    if (coveredWeight / totalWeight < 0.5) return null;
+    // Need data for at least half the portfolio weight to show a meaningful
+    // number. Belt-and-suspenders: also require coveredWeight > 0 even though
+    // the >=0.5 ratio above implies it - if totalWeight is 0 the ratio is
+    // NaN (0/0) which compares false to <0.5 and we'd divide-by-zero below.
+    if (totalWeight <= 0 || coveredWeight <= 0 || coveredWeight / totalWeight < 0.5) return null;
     const pct = weightedPct / coveredWeight;
+    if (!Number.isFinite(pct)) return null;
     if (Math.abs(pct) < 0.005 && !mkt.isOpen) return null; // hide 0.00% when market closed
     const dollar = (portfolioValue ?? 0) > 0 ? ((portfolioValue as number) * pct / 100) : null;
     return { pct, dollar };

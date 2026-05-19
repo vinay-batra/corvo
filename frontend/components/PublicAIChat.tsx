@@ -324,6 +324,7 @@ function PublicAIChatInner() {
             <button
               onClick={send}
               disabled={loading || !input.trim()}
+              aria-label="Send message"
               style={{
                 width: 36,
                 height: 36,
@@ -338,7 +339,7 @@ function PublicAIChatInner() {
                 transition: "background 0.2s",
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0e14" strokeWidth="2.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" strokeWidth="2.5">
                 <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
               </svg>
             </button>

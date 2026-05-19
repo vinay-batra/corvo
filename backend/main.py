@@ -516,10 +516,16 @@ def portfolio(
 
     # Annualized stats - CAGR and 252-day vol
     total_return = safe_float(float((1 + port_returns).prod() - 1))
-    n_years = len(port_returns) / 252
-    ann_return = safe_float((1 + total_return) ** (1 / n_years) - 1) if n_years > 0 else total_return
-    ann_vol = safe_float(np.std(port_returns) * np.sqrt(252))
-    sharpe = safe_float((ann_return - rf_rate) / ann_vol) if ann_vol > 0 else 0.0
+    if len(port_returns) < 10:
+        # Not enough data for reliable annualized stats
+        ann_return = total_return
+        ann_vol = 0.0
+        sharpe = 0.0
+    else:
+        n_years = len(port_returns) / 252
+        ann_return = safe_float((1 + total_return) ** (1 / n_years) - 1) if n_years > 0 else total_return
+        ann_vol = safe_float(np.std(port_returns) * np.sqrt(252))
+        sharpe = safe_float((ann_return - rf_rate) / ann_vol) if ann_vol > 0 else 0.0
 
     # Max drawdown
     cum = np.cumprod(1 + port_returns)
@@ -1994,7 +2000,7 @@ Rules:
         raise
     except Exception as e:
         print(f"Report generation error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Report generation temporarily unavailable")
 
 
 # ── Daily chat limit helpers ───────────────────────────────────────────────────
@@ -3487,8 +3493,12 @@ class WelcomeEmailRequest(BaseModel):
 
 
 @app.post("/send-welcome-email")
-def send_welcome_email(req: WelcomeEmailRequest):
+def send_welcome_email(req: WelcomeEmailRequest, request: Request):
     """Send a welcome email to a new Corvo user via Resend."""
+    # Security: require a valid JWT whose user_id matches the request body user_id
+    token_user_id = _verify_jwt_user(request)
+    if req.user_id and token_user_id != req.user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     print(f"[send-welcome-email] called")
     name = req.display_name or req.email.split("@")[0]
     html = _welcome_email_html(name=name, user_id=req.user_id or "", email_theme="light")
@@ -3725,7 +3735,7 @@ def stock_detail(ticker: str, request: Request):
         }
     except Exception as e:
         print(f"Stock detail error for {ticker}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Stock data temporarily unavailable")
 
 
 @app.get("/stock/{ticker}/history")
@@ -3764,7 +3774,8 @@ def stock_history(ticker: str, period: str = "1y", request: Request = None):
             "volumes": vols,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Stock history error for {ticker}: {e}")
+        raise HTTPException(status_code=500, detail="Stock data temporarily unavailable")
 
 
 # ── Analyst targets endpoint ───────────────────────────────────────────────────
@@ -4667,8 +4678,16 @@ def unsubscribe(user_id: str = "", request: Request = None):
 
 
 @app.get("/email/unsubscribe", response_class=HTMLResponse)
-def email_unsubscribe_type(user_id: str = "", type: str = ""):
+def email_unsubscribe_type(user_id: str = "", type: str = "", request: Request = None):
     """Unsubscribe a user from a single email type. Called directly from email links."""
+    # Security: verify JWT so only the account owner can trigger unsubscribe
+    if request is not None:
+        try:
+            token_user_id = _verify_jwt_user(request)
+        except HTTPException:
+            raise HTTPException(status_code=401, detail="Authentication required to unsubscribe")
+        # Use the user_id from the verified token (ignore query param to prevent IDOR)
+        user_id = token_user_id
     VALID_COLUMNS = {"morning_briefing", "week_in_review", "monthly_summary", "price_alerts", "market_close_summary"}
     LABEL_MAP = {
         "morning_briefing":    "Morning Briefing",
@@ -5405,7 +5424,7 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
         "cumulative_return": round(cumulative_return, 6),
     }
     patch_resp = requests.patch(
-        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots?portfolio_id=eq.{req.portfolio_id}&date=eq.{today}",
+        f"{SUPABASE_URL}/rest/v1/portfolio_snapshots?portfolio_id=eq.{req.portfolio_id}&date=eq.{today}&user_id=eq.{req.user_id}",
         headers={**_sb_headers(), "Prefer": "return=minimal"},
         json=payload,
         timeout=10,
@@ -7161,7 +7180,8 @@ async def market_brief_endpoint(force: bool = False, request: Request = None):
         _market_brief_cache["ts"] = now
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Market brief generation error: {e}")
+        raise HTTPException(status_code=500, detail="Market brief temporarily unavailable")
 
 
 def _gen_price_target_recommendation(ticker: str, current_price: float, target_price: float, direction: str) -> str:
@@ -10214,7 +10234,8 @@ Return this exact JSON structure:
     except json.JSONDecodeError:
         raise HTTPException(status_code=502, detail="Signal generation returned invalid JSON.")
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Signal generation failed: {str(e)}")
+        print(f"Daily signal generation error: {e}")
+        raise HTTPException(status_code=502, detail="Signal generation temporarily unavailable")
 
 
 # ── Rebalance Assistant ────────────────────────────────────────────────────────

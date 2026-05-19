@@ -322,12 +322,12 @@ function AnalysisSteps({ externalStep }: { externalStep?: number }) {
               <div key={label} style={{ display: "flex", alignItems: "center", gap: 13, padding: "9px 2px", opacity: done ? 0.65 : active ? 1 : 0.22, transition: "opacity 0.25s ease", borderBottom: "0.5px solid rgba(201,168,76,0.06)" }}>
                 <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                   background: done ? "rgba(92,184,125,0.14)" : active ? "rgba(201,168,76,0.14)" : "transparent",
-                  border: `1px solid ${done ? "#5cb88a" : active ? "var(--accent)" : "var(--border)"}`,
+                  border: `1px solid ${done ? "var(--green)" : active ? "var(--accent)" : "var(--border)"}`,
                   transition: "all 0.25s",
                   boxShadow: active ? "0 0 10px rgba(201,168,76,0.4)" : "none",
                   animation: active ? "step-pulse 1.6s ease-in-out infinite" : "none",
                 }}>
-                  {done && <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {done && <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="var(--green)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   {active && !done && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 6px rgba(201,168,76,0.7)" }} />}
                 </div>
                 <span style={{ fontSize: 12, color: active ? "var(--text)" : "var(--text3)", fontWeight: active ? 600 : 500, transition: "color 0.2s", letterSpacing: 0.1 }}>{label}</span>
@@ -342,9 +342,9 @@ function AnalysisSteps({ externalStep }: { externalStep?: number }) {
 
           {/* AI insights step - final step, stays active until results arrive */}
           <div style={{ display: "flex", alignItems: "center", gap: 13, padding: "11px 2px", marginTop: 4 }}>
-            <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${allDone ? "#5cb88a" : "var(--accent)"}`, background: allDone ? "rgba(92,184,125,0.14)" : "rgba(201,168,76,0.14)", transition: "all 0.3s", boxShadow: !allDone ? "0 0 10px rgba(201,168,76,0.4)" : "none", animation: !allDone ? "step-pulse 1.6s ease-in-out infinite" : "none" }}>
+            <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${allDone ? "var(--green)" : "var(--accent)"}`, background: allDone ? "rgba(92,184,125,0.14)" : "rgba(201,168,76,0.14)", transition: "all 0.3s", boxShadow: !allDone ? "0 0 10px rgba(201,168,76,0.4)" : "none", animation: !allDone ? "step-pulse 1.6s ease-in-out infinite" : "none" }}>
               {allDone
-                ? <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#5cb88a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                ? <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="var(--green)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 : <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
                     {[0,1,2].map(j => <div key={j} style={{ width: 2.5, height: 2.5, borderRadius: "50%", background: "var(--accent)", animation: `step-dot 1.2s ease-in-out infinite`, animationDelay: `${j * 0.18}s` }} />)}
                   </div>
@@ -452,10 +452,22 @@ function useCurrency() {
         }
       }
       const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+      if (!res.ok) throw new Error(`exchangerate-api HTTP ${res.status}`);
       const data = await res.json();
+      const r = data?.rates?.[cur];
+      // If the API returns no rate for the selected currency, fall back to
+      // USD (rate=1) rather than silently pretending the foreign currency
+      // trades 1:1 to USD - that would display wildly wrong dollar values.
+      if (typeof r !== "number" || !Number.isFinite(r) || r <= 0) {
+        setRate(1);
+        return;
+      }
       sessionStorage.setItem(RATES_CACHE_KEY, JSON.stringify({ ts: Date.now(), rates: data.rates }));
-      setRate(data.rates[cur] ?? 1);
-    } catch {}
+      setRate(r);
+    } catch {
+      // Network or parse failure: keep USD parity rather than show wrong math.
+      setRate(1);
+    }
   };
 
   const setCurrency = (cur: string) => {
@@ -558,7 +570,7 @@ function PortfolioPerformanceTrend({
   loading: boolean;
   portfolioName: string;
 }) {
-  const AMBER = "#b8860b";
+  const AMBER = "var(--accent)";
   const filtered = (() => {
     if (range === "ALL") return history;
     const cutoff = new Date();
@@ -700,7 +712,7 @@ function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }
   const pts = data.map((v, i) => `${(i / (data.length - 1)) * W},${H - ((v - min) / range) * H}`).join(" ");
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="mini-sparkline" style={{ overflow: "hidden", flexShrink: 0, display: "block" }}>
-      <polyline points={pts} fill="none" stroke={positive ? "#5cb88a" : "#e05c5c"} strokeWidth="1.5" strokeLinejoin="round" />
+      <polyline points={pts} fill="none" stroke={positive ? "var(--green)" : "var(--red)"} strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -872,7 +884,7 @@ function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => vo
                       title="Remove from history"
                       aria-label={`Remove ${r.ticker} from recently viewed`}
                       style={{ width: 16, height: 16, padding: 0, borderRadius: 4, border: "none", background: "transparent", color: "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.12s, color 0.12s", flexShrink: 0 }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,92,92,0.12)"; e.currentTarget.style.color = "#e05c5c"; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,92,92,0.12)"; e.currentTarget.style.color = "var(--red)"; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}
                     >
                       <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -912,7 +924,7 @@ function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => vo
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{fmtPrice(s?.price ?? null)}</span>
                       {s?.change_pct != null && (
-                        <span style={{ fontSize: 10, fontWeight: 600, color: pos ? "#5cb88a" : "#e05c5c" }}>{fmtPct(s.change_pct)}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: pos ? "var(--green)" : "var(--red)" }}>{fmtPct(s.change_pct)}</span>
                       )}
                     </div>
                   </motion.div>
@@ -1037,7 +1049,7 @@ const TopbarActions = memo(function TopbarActions({
       {/* AI Report generation toast */}
       {aiToast && (
         <div style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", zIndex: 9999, background: "var(--card-bg)", border: "0.5px solid rgba(201,168,76,0.4)", borderRadius: 10, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 4px 24px rgba(0,0,0,0.4)", pointerEvents: "none" }}>
-          <div style={{ width: 12, height: 12, border: "1.5px solid rgba(201,168,76,0.3)", borderTopColor: "#c9a84c", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+          <div style={{ width: 12, height: 12, border: "1.5px solid rgba(201,168,76,0.3)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: "var(--text2)", whiteSpace: "nowrap" }}>Generating your AI report... this may take a minute.</span>
         </div>
       )}
@@ -1216,7 +1228,6 @@ export default function AppPage() {
   const [showSetupBanner, setShowSetupBanner] = useState(false);
   const [showProfile, setShowProfile]     = useState(false);
   const [showSettings, setShowSettings]   = useState(false);
-  const [benchOpen, setBenchOpen]         = useState(false);
   const [localBenchmark, setLocalBenchmark] = useState("^GSPC");
   const [localBenchmarkSeries, setLocalBenchmarkSeries] = useState<{ ticker: string; cumulative: number[] } | null>(null);
   const [sidebarOpen, setSidebarOpen]     = useState(false);
@@ -1235,6 +1246,9 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [errorMsg, setErrorMsg]                 = useState<string | null>(null);
   const [skippedTickers, setSkippedTickers]     = useState<string[]>([]);
   const errorDismissRef                         = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Clear the auto-dismiss timeout on unmount so the deferred setErrorMsg(null)
+  // doesn't fire after the dashboard unmounts (would log a React warning).
+  useEffect(() => () => { if (errorDismissRef.current) clearTimeout(errorDismissRef.current); }, []);
   const tourNeededRef                           = useRef<boolean>(false);
   const [alertCount, setAlertCount]   = useState(0);
   const [whatIfOpen, setWhatIfOpen] = useState(false);
@@ -1358,7 +1372,6 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   };
 
 
-  const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
   const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
   const [perfHistory, setPerfHistory] = useState<PerfSnapshot[]>([]);
@@ -1494,11 +1507,26 @@ const { dark, toggle: toggleDark }  = useTheme();
     // Portfolio sharing via base64 URL param. Auto-runs analysis so anon
     // visitors hitting a shared link land on a fully-rendered dashboard,
     // not an empty sidebar that needs a click to populate.
+    //
+    // The base64 payload is user-controlled (shared via URL), so validate
+    // shape strictly before handing to fetchPortfolio - a malformed entry
+    // would otherwise crash deeper in the analysis pipeline or render
+    // bogus rows in the sidebar. Ticker regex matches the backend's
+    // `^[\^A-Z0-9.\-=]{1,12}$` for parity.
     const portfolioParam = params.get("portfolio");
     if (portfolioParam) {
       try {
         const decoded = JSON.parse(atob(portfolioParam));
-        if (Array.isArray(decoded) && decoded.length > 0) {
+        const TICKER_RE = /^[\^A-Z0-9.\-=]{1,12}$/;
+        const isValidAsset = (a: unknown): a is { ticker: string; weight: number } =>
+          typeof a === "object" && a !== null
+          && typeof (a as { ticker: unknown }).ticker === "string"
+          && TICKER_RE.test((a as { ticker: string }).ticker.toUpperCase())
+          && typeof (a as { weight: unknown }).weight === "number"
+          && Number.isFinite((a as { weight: number }).weight)
+          && (a as { weight: number }).weight >= 0
+          && (a as { weight: number }).weight <= 1;
+        if (Array.isArray(decoded) && decoded.length > 0 && decoded.length <= 30 && decoded.every(isValidAsset)) {
           setAssets(decoded);
           setShowGoals(false);
           setLoading(true);
@@ -1507,8 +1535,10 @@ const { dark, toggle: toggleDark }  = useTheme();
             .then((result: any) => { setData(result); setTabWithDir("overview"); })
             .catch(() => { setErrorMsg("Failed to load the shared portfolio. Try again or build your own."); })
             .finally(() => setLoading(false));
+        } else {
+          setErrorMsg("Invalid portfolio link - the data is malformed or contains unsupported tickers.");
         }
-      } catch {}
+      } catch { setErrorMsg("Invalid portfolio link - the URL may be corrupted."); }
     }
 
     // Unsubscribe from digest via email link
@@ -2061,17 +2091,6 @@ const { dark, toggle: toggleDark }  = useTheme();
       return saved.some((p: any) => (p.tickers || p.assets?.map((a: any) => a.ticker) || []).sort().join(",") === currentTickers);
     } catch { return false; }
   })();
-  // Load watchlist tickers for right panel
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("corvo_watchlist");
-      if (raw) {
-        const arr = JSON.parse(raw);
-        setWatchlistTickers((Array.isArray(arr) ? arr : []).map((e: any) => typeof e === "string" ? e : e.ticker).filter(Boolean));
-      }
-    } catch {}
-  }, []);
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
@@ -2248,7 +2267,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                                 </button>
                               : null}
                         </div>
-                        {nlError && <p style={{ fontSize: 11, color: "#e05c5c", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>}
+                        {nlError && <p style={{ fontSize: 11, color: "var(--red)", marginTop: 5, lineHeight: 1.4 }}>{nlError}</p>}
                         {chips.length > 0 && (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 12 }}>
                             {chips.map(chip => (
@@ -2333,7 +2352,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 {loading ? "Analyzing..." : hasSavedPortfolios ? "New Analysis" : "Analyze"}
               </motion.button>
               {hasHoldings && !isBalanced && (
-                <p style={{ fontSize: 11, color: "#e05c5c", textAlign: "center", marginTop: 5, lineHeight: 1.4 }}>
+                <p style={{ fontSize: 11, color: "var(--red)", textAlign: "center", marginTop: 5, lineHeight: 1.4 }}>
                   Weights must total 100% before analyzing.
                   {" "}<span style={{ color: "var(--accent)", cursor: "pointer", textDecoration: "underline" }}
                     onClick={() => {
@@ -2718,14 +2737,14 @@ const { dark, toggle: toggleDark }  = useTheme();
                 initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 className="c-banner"
                 style={{ border: "0.5px solid rgba(224,92,92,0.4)", borderRadius: 10, padding: "12px 16px", background: "rgba(224,92,92,0.07)", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <span className="c-banner-text" style={{ fontSize: 13, color: "#e05c5c" }}>{errorMsg}</span>
+                <span className="c-banner-text" style={{ fontSize: 13, color: "var(--red)" }}>{errorMsg}</span>
                 <div className="c-banner-actions" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                   <button onClick={() => handleAnalyze()}
-                    style={{ padding: "5px 12px", fontSize: 11, borderRadius: 6, border: "0.5px solid rgba(224,92,92,0.4)", background: "transparent", color: "#e05c5c", cursor: "pointer" }}>
+                    style={{ padding: "5px 12px", fontSize: 11, borderRadius: 6, border: "0.5px solid rgba(224,92,92,0.4)", background: "transparent", color: "var(--red)", cursor: "pointer" }}>
                     Try again
                   </button>
                   <button onClick={() => setErrorMsg(null)}
-                    style={{ width: 22, height: 22, borderRadius: 6, border: "none", background: "rgba(224,92,92,0.12)", color: "#e05c5c", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    style={{ width: 22, height: 22, borderRadius: 6, border: "none", background: "rgba(224,92,92,0.12)", color: "var(--red)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
@@ -3468,7 +3487,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           background: chatOpen
             ? "var(--bg3)"
             : dark
-              ? "linear-gradient(155deg, #1a1f2e 0%, #0a0e18 55%, #050810 100%)"
+              ? "linear-gradient(155deg, var(--bg2) 0%, var(--bg) 55%, var(--bg) 100%)"
               : "linear-gradient(155deg, #d8b15a 0%, var(--accent) 55%, rgba(184,134,11,0.95) 100%)",
           border: chatOpen
             ? "0.5px solid var(--border2)"
@@ -3733,7 +3752,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                             {DASH_CARD_LABELS[card]}
                           </span>
                           {/* Toggle pill */}
-                          <div style={{ position: "relative", width: 32, height: 18, borderRadius: 9, background: on ? "#5cb88a" : "var(--border2)", transition: "background 0.2s", flexShrink: 0, marginLeft: 10 }}>
+                          <div style={{ position: "relative", width: 32, height: 18, borderRadius: 9, background: on ? "var(--green)" : "var(--border2)", transition: "background 0.2s", flexShrink: 0, marginLeft: 10 }}>
                             <span style={{ position: "absolute", top: 2, left: on ? 16 : 2, width: 14, height: 14, borderRadius: "50%", background: "var(--toggle-knob)", transition: "left 0.15s", boxShadow: "var(--toggle-knob-shadow)" }} />
                           </div>
                         </button>
@@ -3819,13 +3838,13 @@ const { dark, toggle: toggleDark }  = useTheme();
                     const delta = (after ?? 0) - (before ?? 0);
                     const isNew = before === null;
                     const isRemoved = after === null;
-                    const deltaColor = delta > 0.05 ? "#5cb88a" : delta < -0.05 ? "#e05c5c" : "var(--text3)";
+                    const deltaColor = delta > 0.05 ? "var(--green)" : delta < -0.05 ? "var(--red)" : "var(--text3)";
                     return (
                       <div key={t} style={{ display: "grid", gridTemplateColumns: "1fr 56px 10px 56px 56px", alignItems: "center", padding: "7px 12px", borderBottom: rowIdx < allTickers.length - 1 ? "0.5px solid var(--border)" : "none", background: isNew ? "rgba(92,184,138,0.04)" : isRemoved ? "rgba(224,92,92,0.04)" : "transparent" }}>
                         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, fontWeight: 600, color: "var(--text)" }}>{t}</span>
-                          {isNew && <span style={{ fontSize: 8, letterSpacing: 0.8, color: "#5cb88a", background: "rgba(92,184,138,0.12)", padding: "1px 5px", borderRadius: 3 }}>NEW</span>}
-                          {isRemoved && <span style={{ fontSize: 8, letterSpacing: 0.8, color: "#e05c5c", background: "rgba(224,92,92,0.12)", padding: "1px 5px", borderRadius: 3 }}>OUT</span>}
+                          {isNew && <span style={{ fontSize: 8, letterSpacing: 0.8, color: "var(--green)", background: "rgba(92,184,138,0.12)", padding: "1px 5px", borderRadius: 3 }}>NEW</span>}
+                          {isRemoved && <span style={{ fontSize: 8, letterSpacing: 0.8, color: "var(--red)", background: "rgba(224,92,92,0.12)", padding: "1px 5px", borderRadius: 3 }}>OUT</span>}
                         </span>
                         <span style={{ fontFamily: "Space Mono, monospace", fontSize: 11, color: "var(--text3)", textAlign: "right" }}>{before !== null ? `${before.toFixed(1)}%` : "--"}</span>
                         <span style={{ fontSize: 9, color: "var(--text3)", textAlign: "center" }}>→</span>
@@ -3851,7 +3870,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       <div style={{ fontFamily: "Space Mono, monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
                         <span style={{ color: "var(--text3)" }}>{m.before}</span>
                         <span style={{ color: "var(--text3)", fontSize: 9 }}>→</span>
-                        <span style={{ color: m.improved ? "#5cb88a" : m.after === m.before ? "var(--text2)" : "#e05c5c", fontWeight: 700 }}>{m.after}</span>
+                        <span style={{ color: m.improved ? "var(--green)" : m.after === m.before ? "var(--text2)" : "var(--red)", fontWeight: 700 }}>{m.after}</span>
                       </div>
                     </div>
                   ))}

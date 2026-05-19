@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
@@ -15,7 +13,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
         .blog-card:hover{border-color:rgba(201,168,76,0.25);background:var(--bg2);transform:translateY(-2px);box-shadow:0 16px 48px rgba(0,0,0,0.4)}
         .toc-link{display:block;padding:6px 0 6px 12px;font-size:12px;color:var(--text3);text-decoration:none;border-left:2px solid transparent;transition:all 0.2s;line-height:1.45}
         .toc-link:hover{color:var(--text2);border-left-color:rgba(201,168,76,0.3)}
-        .toc-link.active{color:#c9a84c;border-left-color:#c9a84c}
+        .toc-link.active{color:var(--accent);border-left-color:var(--accent)}
         .prose h2{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.8px;margin:48px 0 16px;line-height:1.25}
         .prose h3{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--text);letter-spacing:-0.4px;margin:32px 0 12px}
         .prose p{font-size:16px;line-height:1.82;color:var(--text2);margin-bottom:20px;font-weight:300}
@@ -23,7 +21,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
         .prose li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px;font-weight:300}
         .prose strong{color:var(--text);font-weight:600}
         .prose table{width:100%;border-collapse:collapse;margin:32px 0;font-size:13px}
-        .prose th{text-align:left;padding:10px 16px;background:rgba(201,168,76,0.08);color:#c9a84c;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(201,168,76,0.15)}
+        .prose th{text-align:left;padding:10px 16px;background:rgba(201,168,76,0.08);color:var(--accent);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(201,168,76,0.15)}
         .prose td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text2)}
         .prose tr:last-child td{border-bottom:none}
         .prose tr:nth-child(even) td{background:var(--bg2)}

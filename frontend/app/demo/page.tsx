@@ -481,105 +481,6 @@ function Step4Panel({ active }: { active: boolean }) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   STEP 5: Learn
-───────────────────────────────────────────────────────── */
-const LESSONS = [
-  { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>, title: "Portfolio Diversification", xp: 50, done: true },
-  { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>, title: "Understanding Sharpe Ratio", xp: 75, done: true },
-  { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>, title: "Monte Carlo Methods", xp: 100, active: true },
-  { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7" fill="none"/></svg>, title: "Dollar-Cost Averaging", xp: 60, locked: true },
-];
-const QUIZ_Q = "What does a Sharpe ratio above 1.5 generally indicate?";
-const QUIZ_OPTS = ["High portfolio risk", "Strong risk-adjusted returns", "Negative performance", "Low volatility only"];
-const CORRECT = 1;
-
-function Step5Panel({ active }: { active: boolean }) {
-  const [answered, setAnswered] = useState<number | null>(null);
-  const [xpStarted, setXpStarted] = useState(false);
-  const xp = useCountUp(450, xpStarted, 900);
-  const [showXp, setShowXp] = useState(false);
-
-  useEffect(() => {
-    if (!active) { setAnswered(null); setXpStarted(false); setShowXp(false); return; }
-    const t = setTimeout(() => setXpStarted(true), 400);
-    return () => clearTimeout(t);
-  }, [active]);
-
-  const answer = (i: number) => {
-    if (answered !== null) return;
-    setAnswered(i);
-    if (i === CORRECT) setShowXp(true);
-  };
-
-  const xpPct = Math.min(100, (xp / 600) * 100);
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%" }}>
-      {/* XP bar */}
-      <div style={{ padding: "10px 14px", background: C.bg4, border: `1px solid ${C.border}`, borderRadius: 10 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 11, color: C.cream, fontWeight: 600 }}>Analyst Level</span>
-          </div>
-          <span style={{ fontSize: 11, color: C.amber, fontFamily: "'Space Mono', monospace", fontWeight: 600 }}>
-            {Math.round(xp)} / 600 XP
-          </span>
-        </div>
-        <div style={{ height: 6, background: C.border, borderRadius: 3, overflow: "hidden" }}>
-          <motion.div style={{ height: "100%", background: `linear-gradient(90deg, ${C.amber}, #f0c060)`, borderRadius: 3 }}
-            initial={false} animate={{ width: `${xpPct}%` }} transition={{ duration: 0.9, ease: "easeOut" }} />
-        </div>
-        {showXp && (
-          <motion.div
-            // initial={false} is required - do not remove
-            initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            style={{ marginTop: 6, fontSize: 11, color: C.amber, fontWeight: 600 }}>
-            +100 XP earned!
-          </motion.div>
-        )}
-      </div>
-
-      {/* Lesson list */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {LESSONS.map((l, i) => (
-          <motion.div key={l.title} initial={false} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-            style={{ padding: "10px 12px", background: l.active ? C.amberBg : C.bg4, border: `1px solid ${l.active ? C.amberBd : C.border}`, borderRadius: 10, opacity: l.locked ? 0.45 : 1 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 5, color: l.locked ? C.cream3 : l.active ? C.amber : C.cream2 }}>{l.locked ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> : l.icon}</div>
-            <div style={{ fontSize: 11, color: C.cream, fontWeight: 500, lineHeight: 1.35 }}>{l.title}</div>
-            <div style={{ fontSize: 9, color: l.done ? C.green : l.active ? C.amber : C.cream3, marginTop: 4, fontWeight: 600 }}>
-              {l.done ? "Completed" : l.active ? "In Progress" : `${l.xp} XP`}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Daily challenge */}
-      <div style={{ flex: 1, padding: 14, background: C.bg4, border: `1px solid ${C.border}`, borderRadius: 12 }}>
-        <div style={{ fontSize: 9, color: C.amber, letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>DAILY CHALLENGE</div>
-        <div style={{ fontSize: 12, color: C.cream, lineHeight: 1.5, marginBottom: 12 }}>{QUIZ_Q}</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {QUIZ_OPTS.map((opt, i) => {
-            const isCorrect = i === CORRECT;
-            const isChosen = i === answered;
-            const revealed = answered !== null;
-            const bg = revealed ? (isCorrect ? "rgba(76,175,125,0.15)" : isChosen ? "rgba(224,92,92,0.1)" : C.bg) : "rgba(255,255,255,0.03)";
-            const border = revealed ? (isCorrect ? "rgba(76,175,125,0.4)" : isChosen ? "rgba(224,92,92,0.3)" : C.border) : C.border;
-            const color = revealed ? (isCorrect ? C.green : isChosen ? C.red : C.cream3) : C.cream2;
-            return (
-              <button key={opt} onClick={() => answer(i)}
-                style={{ padding: "7px 10px", background: bg, border: `1px solid ${border}`, borderRadius: 8, color, fontSize: 11, textAlign: "left", cursor: answered === null ? "pointer" : "default", transition: "all 0.2s", fontFamily: "inherit" }}>
-                <span style={{ marginRight: 6, opacity: 0.6 }}>{String.fromCharCode(65 + i)}.</span>{opt}
-                {revealed && isCorrect && <svg style={{ float: "right", marginTop: 2 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────
    STEP 6: CTA
 ───────────────────────────────────────────────────────── */
 function useCountUpCta(target: number, active: boolean, duration = 2000) {
@@ -733,13 +634,6 @@ const STEPS = [
     panel: Step4Panel,
   },
   {
-    title: "Learn",
-    subtitle: "Level up your investing knowledge",
-    desc: "AI-powered lessons tailored to your level. Earn XP, hit daily challenges, and build real investing knowledge, from diversification to derivatives, at your own pace.",
-    icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>,
-    panel: Step5Panel,
-  },
-  {
     title: "Get Started",
     subtitle: "You've seen what Corvo can do",
     desc: "",
@@ -863,11 +757,6 @@ export default function DemoPage() {
                   {step === 3 && (
                     <div style={{ padding: "10px 14px", background: C.amberBg, border: `1px solid ${C.amberBd}`, borderRadius: 10, fontSize: 11, color: C.amber }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.9V17h8v-2.1A7 7 0 0012 2z"/></svg> Prices update live every second. Watch them tick</span>
-                    </div>
-                  )}
-                  {step === 4 && (
-                    <div style={{ padding: "10px 14px", background: C.amberBg, border: `1px solid ${C.amberBd}`, borderRadius: 10, fontSize: 11, color: C.amber }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.9V17h8v-2.1A7 7 0 0012 2z"/></svg> Answer the challenge question to earn XP</span>
                     </div>
                   )}
                 </div>
