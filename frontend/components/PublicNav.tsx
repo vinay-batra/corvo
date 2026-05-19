@@ -52,7 +52,15 @@ interface PublicNavProps {
 
 export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+  // null = auth state not yet known. PublicNav is rendered inline on every
+  // marketing page (not in a shared layout) so it unmounts/remounts on every
+  // client-side navigation. Before v0.45 loggedIn defaulted to false, which
+  // caused a brief "Log in / Get Started" flash on every page nav before
+  // supabase.auth.getUser() resolved and swapped in the UserMenu. We now seed
+  // from a localStorage cache so the right side renders correctly on first
+  // paint, and gate the auth area on a defined state so first-ever visits
+  // render a stable-width placeholder instead of guessing wrong.
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const prevScrollY = useRef(0);
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -61,9 +69,24 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
   const { canInstall, install } = usePWAInstall();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+    // Hydrate optimistic state from localStorage so the auth area paints
+    // correctly on remount (page nav). null stays null on a totally fresh
+    // browser - the placeholder is then visible for the brief window before
+    // supabase.auth.getUser() returns.
+    try {
+      const cached = localStorage.getItem("corvo_logged_in");
+      if (cached === "1") setLoggedIn(true);
+      else if (cached === "0") setLoggedIn(false);
+    } catch {}
+    supabase.auth.getUser().then(({ data }) => {
+      const li = !!data.user;
+      setLoggedIn(li);
+      try { localStorage.setItem("corvo_logged_in", li ? "1" : "0"); } catch {}
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setLoggedIn(!!session?.user);
+      const li = !!session?.user;
+      setLoggedIn(li);
+      try { localStorage.setItem("corvo_logged_in", li ? "1" : "0"); } catch {}
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -350,8 +373,11 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
               </button>
             )}
 
-            {/* Auth area */}
-            {loggedIn ? (
+            {/* Auth area. Hidden until loggedIn is known (boolean, not null)
+                so first-ever visits don't briefly render the wrong state. */}
+            {loggedIn === null ? (
+              <div aria-hidden style={{ width: 168, height: 36, opacity: 0 }} />
+            ) : loggedIn ? (
               <UserMenu />
             ) : (
               <>
@@ -456,8 +482,9 @@ export default function PublicNav({ scrollerRef }: PublicNavProps = {}) {
             </button>
           )}
 
-          {/* Auth row */}
-          {!loggedIn && (
+          {/* Auth row. Same null-gate as desktop so the buttons don't flash
+              into the drawer before we know if the user is signed in. */}
+          {loggedIn === false && (
             <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
               <Link href="/auth" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "13px", textAlign: "center", fontSize: 13, color: "var(--text2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 10 }}>Log in</Link>
               <Link href="/auth?mode=signup" onClick={() => setMobileOpen(false)} style={{ flex: 1, padding: "13px", textAlign: "center", fontSize: 13, fontWeight: 600, color: "var(--bg)", textDecoration: "none", background: "var(--accent)", borderRadius: 9999 }}>Get Started</Link>

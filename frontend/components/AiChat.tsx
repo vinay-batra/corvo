@@ -79,17 +79,23 @@ const SUGGESTION_SETS: string[][] = [
 // ── Markdown renderer ─────────────────────────────────────────────────────────
 
 function MessageContent({ content }: { content: string }) {
+  // Defensive client-side strip. Backend already runs `.replace("*", "")` on
+  // every chunk it streams, but a mid-stream chunk boundary or a future
+  // regression could let stray asterisks slip through. We render
+  // ` `**bold**` ` as <strong>, drop any leftover unmatched `*` characters,
+  // and leave inline-code backticks untouched.
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let i = 0;
 
+  const stripStray = (s: string) => s.replace(/\*/g, "");
   const parseInline = (text: string): React.ReactNode =>
     text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((part, pi) => {
       if (part.startsWith("**") && part.endsWith("**"))
-        return <strong key={pi} style={{ color: "var(--text)", fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
+        return <strong key={pi} style={{ color: "var(--text)", fontWeight: 600 }}>{stripStray(part.slice(2, -2))}</strong>;
       if (part.startsWith("`") && part.endsWith("`"))
         return <code key={pi} style={{ fontFamily: "monospace", fontSize: 11, color: "var(--accent)", background: "var(--bg2)", padding: "1px 5px", borderRadius: 4 }}>{part.slice(1, -1)}</code>;
-      return part;
+      return stripStray(part);
     });
 
   while (i < lines.length) {
@@ -242,10 +248,20 @@ export default function AiChat({
   const [isMobile, setIsMobile]             = useState(false);
 
   const bottomRef  = useRef<HTMLDivElement>(null);
+  const lastUserMsgRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
   const renameRef  = useRef<HTMLInputElement>(null);
   const panelRef   = useRef<HTMLDivElement>(null);
   const initialMessageSentRef = useRef(false);
+  // Tracks whether the user has manually scrolled up during a stream so we
+  // stop auto-following. Reset to true (= follow) when they hit the bottom
+  // again or send a new message.
+  const followBottomRef = useRef(true);
+  // Snapshot of messages.length so we can detect "last update was a new user
+  // message" vs "last update was an assistant chunk on an existing turn".
+  const prevMsgCountRef = useRef(0);
+  const prevLastRoleRef = useRef<"user" | "assistant" | null>(null);
 
   // Mobile detection - useLayoutEffect runs before paint, eliminating the SSR flash
   useLayoutEffect(() => {
@@ -482,9 +498,54 @@ export default function AiChat({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Scroll behavior - the previous "always scroll to bottom on every messages
+  // update" pulled the user to the end of long AI responses, forcing them to
+  // scroll back up to read from the top. New behavior:
+  //   1. When a new user message is appended, scroll it to the TOP of the
+  //      visible area so the reader naturally reads downward into the
+  //      streamed response.
+  //   2. While an assistant response is streaming, only auto-follow the
+  //      bottom if the user was already at the bottom when streaming began.
+  //      If they scrolled up, leave them where they are.
+  //   3. A manual scroll back to the bottom re-engages auto-follow.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+    const prevCount = prevMsgCountRef.current;
+    const prevLastRole = prevLastRoleRef.current;
+    const lastRole = messages.length ? messages[messages.length - 1].role : null;
+    const justAddedUser = messages.length > prevCount && lastRole === "user";
+    const justStartedAssistant = prevLastRole === "user" && lastRole === "assistant" && messages.length > prevCount;
+
+    if (justAddedUser) {
+      // Re-engage auto-follow for the new turn and pin the user's question
+      // to the top of the viewport.
+      followBottomRef.current = true;
+      // wait a frame so the DOM has the new bubble before scrolling
+      requestAnimationFrame(() => {
+        lastUserMsgRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } else if (justStartedAssistant) {
+      // First chunk of a new assistant turn. Don't yank the view - the user
+      // is presumably looking at their question that we just scrolled to.
+      // Just record that we're now in stream-follow mode contingent on the
+      // user staying near the bottom.
+    } else if (lastRole === "assistant" && followBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMsgCountRef.current = messages.length;
+    prevLastRoleRef.current = lastRole;
+  }, [messages]);
+
+  // Re-engage auto-follow if the user scrolls back to the bottom manually.
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      followBottomRef.current = distFromBottom < 40; // ~one line of slop
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (editingConvId) renameRef.current?.focus();
@@ -1034,7 +1095,7 @@ export default function AiChat({
         )}
 
         {/* ── Messages ── */}
-        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "none", minHeight: 0 }}>
+        <div ref={messagesContainerRef} style={{ flex: 1, overflowY: "auto", overscrollBehavior: "none", minHeight: 0 }}>
           {messages.length === 0 ? (
             /* Empty state */
             <div style={{ padding: "32px 14px 20px" }}>
@@ -1113,9 +1174,19 @@ export default function AiChat({
             /* Message thread */
             <div style={{ padding: "12px 12px", display: "flex", flexDirection: "column", gap: 14 }}>
               <AnimatePresence initial={false}>
-                {messages.map((m, i) => (
+                {messages.map((m, i) => {
+                  // Tag the most recent user message so the scroll effect
+                  // can snap it to the top of the viewport when a new turn
+                  // begins. The streaming assistant response then flows
+                  // downward from that anchor instead of yanking the user
+                  // to the bottom of a long reply.
+                  const isLastUser = m.role === "user"
+                    && (i === messages.length - 1
+                        || messages.slice(i + 1).every(mm => mm.role === "assistant"));
+                  return (
                   <motion.div
                     key={i}
+                    ref={isLastUser ? lastUserMsgRef : undefined}
                     initial={false}
                     animate={{ opacity: 1, x: 0, y: 0 }}
                     transition={{ duration: 0.16, ease: "easeOut" }}
@@ -1157,7 +1228,8 @@ export default function AiChat({
                       )}
                     </div>
                   </motion.div>
-                ))}
+                  );
+                })}
               </AnimatePresence>
 
               {loading && messages[messages.length - 1]?.role !== "assistant" && (

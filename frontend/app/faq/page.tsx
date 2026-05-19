@@ -357,13 +357,21 @@ function FAQAIChat() {
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
             }}>
-              {msg.content}
+              {/* Strip stray asterisks from assistant output. Backend strips
+                  on stream but the FAQ page is a thin client and has no
+                  markdown parser, so leftover ** would render literally. */}
+              {msg.role === "assistant" ? msg.content.replace(/\*/g, "") : msg.content}
             </div>
           </div>
         ))}
         {loading && (
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <div style={{ padding: "10px 16px", borderRadius: "12px 12px 12px 3px", background: "var(--bg3)", border: "1px solid var(--bg3)", fontSize: 18, color: "var(--text3)", letterSpacing: 2 }}>...</div>
+            <div style={{ padding: "12px 16px", borderRadius: "12px 12px 12px 3px", background: "var(--bg3)", border: "1px solid var(--bg3)", display: "flex", alignItems: "center", gap: 5, height: 16 }} aria-label="Corvo is thinking" role="status">
+              <span className="faq-think-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", animation: "faq-think 1.2s infinite ease-in-out", animationDelay: "0s" }} />
+              <span className="faq-think-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", animation: "faq-think 1.2s infinite ease-in-out", animationDelay: "0.18s" }} />
+              <span className="faq-think-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", animation: "faq-think 1.2s infinite ease-in-out", animationDelay: "0.36s" }} />
+              <style>{`@keyframes faq-think { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.45; } 40% { transform: scale(1); opacity: 1; } }`}</style>
+            </div>
           </div>
         )}
         <div ref={bottomRef} />

@@ -164,14 +164,6 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
 
             <div style={{ height: "0.5px", background: "var(--border)", margin: "2px 6px 4px" }} />
 
-            {/* My Account */}
-            <Link href="/account" onClick={() => setOpen(false)} style={itemStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-              My Account
-            </Link>
-
             {/* Replay Tour (in-app only) */}
             {onReplayTour && (
               <button onClick={() => { setOpen(false); onReplayTour(); }} style={itemStyle}
