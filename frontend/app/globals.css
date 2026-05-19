@@ -513,7 +513,11 @@ input::placeholder { color: var(--text3); }
 .cta-shimmer:active:not(:disabled) { transform: scale(0.97) !important; }
 
 /* ── Page fade-in on first load ── */
-@keyframes page-fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+/* Opacity-only. A transform on this wrapper (even translateY(0)) creates */
+/* a containing block for fixed descendants - which breaks PublicNav's   */
+/* position:fixed (the nav scrolls with the container instead of staying */
+/* pinned to the viewport). The 8px slide-up was barely visible anyway.  */
+@keyframes page-fadein { from { opacity: 0; } to { opacity: 1; } }
 .page-fadein { animation: page-fadein 0.45s ease-out both; }
 
 /* ── Mobile responsive ───────────────────────────────────────────── */

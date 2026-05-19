@@ -241,14 +241,26 @@ function StatItem({ target, suffix, label, delay, borderRight }: { target: numbe
    per-card, so the cards sit on one even wash instead of seven uneven
    patches. ─── */
 function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
+  const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
+  // Handlers live on the OUTER wrapper, not the inner card.
+  //
+  // Previously these were on the inner div, which gets rotateX/rotateY
+  // applied to it. Near the edges the rotation visually shifts the
+  // card's painted edge inward, the mouse falls off the inner div, the
+  // mouseleave handler snaps the transform back via the 0.35s
+  // transition, the edge sweeps back across the mouse during that
+  // ease-back, mousemove fires again, and the whole thing oscillates
+  // 5-10 Hz. The outer wrapper's layout box never moves (it's just a
+  // perspective host), so attaching mouse handlers here gives a stable
+  // hit-test surface and the loop can't form.
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const cx = e.clientX, cy = e.clientY;
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
-      if (!innerRef.current) return;
-      const rect = innerRef.current.getBoundingClientRect();
+      if (!outerRef.current || !innerRef.current) return;
+      const rect = outerRef.current.getBoundingClientRect();
       const px = ((cx - rect.left) / rect.width) - 0.5;
       const py = ((cy - rect.top) / rect.height) - 0.5;
       const rotY = px * 8;
@@ -263,18 +275,19 @@ function BentoCard({ children, style = {}, delay = 0 }: { children: React.ReactN
   const { gridArea, ...restStyle } = style as any;
   return (
     <motion.div
+      ref={outerRef}
       // initial={{ opacity: 0, y: 30 }} is required - do not remove
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.6, ease: ANIM_EASE, delay }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       style={{ gridArea, height: "100%", position: "relative", perspective: 900 }}
     >
-      {/* Inner card with 3D tilt */}
+      {/* Inner card with 3D tilt. No mouse handlers here - see comment above. */}
       <div
         ref={innerRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
         className="bento-card-inner"
         style={{
           background: "var(--card-bg)",
@@ -636,6 +649,46 @@ function BentoExportCard({ delay = 0 }: { delay?: number }) {
             <div key={i} style={{ background: "rgba(var(--accent-rgb),0.05)", borderRadius: 5, padding: "5px 6px", border: "1px solid rgba(var(--accent-rgb),0.09)" }}>
               <p style={{ fontSize: 5.5, letterSpacing: 0.8, color: "rgba(232,224,204,0.6)", fontFamily: "Space Mono,monospace", marginBottom: 3, textTransform: "uppercase" }}>{stat.label}</p>
               <p style={{ fontSize: 9, fontWeight: 700, color: stat.color, fontFamily: "Space Mono,monospace" }}>{stat.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </BentoCard>
+  );
+}
+
+/* ─── Daily Brief bento card ─── */
+function BentoDailyBriefCard({ delay = 0 }: { delay?: number }) {
+  return (
+    <BentoCard delay={delay} style={{ gridArea: "dailybrief", padding: "28px" }}>
+      <p style={{ fontSize: 9, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase", marginBottom: 10 }}>Daily Brief</p>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 6, letterSpacing: -0.5 }}>Your morning briefing</h3>
+      <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 18, lineHeight: 1.6 }}>AI-summarized portfolio, delivered to your inbox at every market open.</p>
+      <div data-theme="dark" style={{ background: "#080b10", borderRadius: 12, padding: "14px", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+        {/* Inbox header strip */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", boxShadow: "0 0 6px rgba(92,184,138,0.6)", display: "inline-block" }} />
+            <span style={{ fontSize: 7, letterSpacing: 1.8, color: "rgba(232,224,204,0.6)", textTransform: "uppercase", fontFamily: "Space Mono,monospace" }}>Inbox</span>
+          </div>
+          <span style={{ fontSize: 9, color: "rgba(232,224,204,0.55)", fontFamily: "Space Mono,monospace" }}>8:30 AM ET</span>
+        </div>
+        {/* Subject + sender */}
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 3, letterSpacing: -0.2 }}>Today's portfolio brief</p>
+          <p style={{ fontSize: 9, color: "rgba(232,224,204,0.5)", fontFamily: "Space Mono,monospace" }}>brief@corvo.capital</p>
+        </div>
+        {/* Body bullets */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+          {[
+            { tag: "NVDA",   pct: "+2.4%",   note: "pre-market, largest position",        color: "var(--green)" },
+            { tag: "TECH",   pct: "67%",     note: "of book, above 50% target",            color: "var(--accent)" },
+            { tag: "TLH",    pct: "-$1.4k",  note: "captured, VOO lot eligible",           color: "var(--red)" },
+          ].map((row, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ fontFamily: "Space Mono,monospace", fontSize: 8, fontWeight: 700, color: "rgba(232,224,204,0.55)", letterSpacing: 1, minWidth: 30 }}>{row.tag}</span>
+              <span style={{ fontFamily: "Space Mono,monospace", fontSize: 11, fontWeight: 700, color: row.color, minWidth: 48 }}>{row.pct}</span>
+              <span style={{ fontSize: 10, color: "rgba(232,224,204,0.7)", lineHeight: 1.4 }}>{row.note}</span>
             </div>
           ))}
         </div>
@@ -3465,13 +3518,14 @@ export default function Landing() {
             <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 18 }}>Always watching</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(30px,4.4vw,56px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2.5, lineHeight: 1.05 }}>What Corvo watches<br />for you</h2>
           </ScrollReveal>
-          <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist exportshare" "deepdives deepdives deepdives"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
+          <div className="bento-grid" style={{ display: "grid", gridTemplateAreas: `"portfolio portfolio montecarlo" "aichat watchlist exportshare" "deepdives deepdives dailybrief"`, gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 14 }}>
             <ScrollReveal from="left"  distance={30} delay={0.0}  style={{ gridArea: "portfolio",   height: "100%" }}><BentoPortfolioCard  delay={0} /></ScrollReveal>
             <ScrollReveal from="up"    distance={30} delay={0.1}  style={{ gridArea: "aichat",      height: "100%" }}><BentoAIChatCard     delay={0} /></ScrollReveal>
             <ScrollReveal from="right" distance={30} delay={0.2}  style={{ gridArea: "watchlist",   height: "100%" }}><BentoWatchlistCard  delay={0} /></ScrollReveal>
             <ScrollReveal from="left"  distance={30} delay={0.3}  style={{ gridArea: "montecarlo",  height: "100%" }}><BentoMonteCarloCard delay={0} /></ScrollReveal>
             <ScrollReveal from="up"    distance={30} delay={0.4}  style={{ gridArea: "exportshare", height: "100%" }}><BentoExportCard     delay={0} /></ScrollReveal>
             <ScrollReveal from="left"  distance={30} delay={0.5}  style={{ gridArea: "deepdives",   height: "100%" }}><BentoDeepDivesCard  delay={0} /></ScrollReveal>
+            <ScrollReveal from="right" distance={30} delay={0.6}  style={{ gridArea: "dailybrief",  height: "100%" }}><BentoDailyBriefCard delay={0} /></ScrollReveal>
           </div>
         </div>
       </section>
