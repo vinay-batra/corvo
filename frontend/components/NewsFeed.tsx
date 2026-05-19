@@ -164,7 +164,7 @@ export default function NewsFeed({ tickers: tickersProp, assets: assetsProp }: P
           >
             {articles.map((article, i) => (
               <motion.a
-                key={i}
+                key={article.url || `${article.headline}-${i}`}
                 href={article.url || "#"}
                 target="_blank"
                 rel="noopener noreferrer"

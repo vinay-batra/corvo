@@ -304,7 +304,7 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
                     <p style={{ fontSize: 9, letterSpacing: 2, color: "var(--text3)", textTransform: "uppercase", marginBottom: 4 }}>Portfolio</p>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {assets.map((a, i) => (
-                        <span key={i} style={{ fontSize: 10, fontFamily: "Space Mono,monospace", color: "var(--accent)", background: "rgba(var(--accent-rgb), 0.1)", padding: "2px 7px", borderRadius: 4 }}>
+                        <span key={`${a.ticker}-${i}`} style={{ fontSize: 10, fontFamily: "Space Mono,monospace", color: "var(--accent)", background: "rgba(var(--accent-rgb), 0.1)", padding: "2px 7px", borderRadius: 4 }}>
                           {a.ticker} {(a.weight * 100).toFixed(0)}%
                         </span>
                       ))}

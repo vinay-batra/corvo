@@ -7,15 +7,14 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   LayoutDashboard, ShieldAlert, FlaskConical, Newspaper,
-  MessageSquare, Eye, PanelLeftOpen,
-  Sun, Moon, CandlestickChart, Sparkles, BookOpen,
-  Calendar, CheckCircle2, ClipboardList, TrendingUp,
+  MessageSquare,
+  Sun, Moon, CandlestickChart, Sparkles,
+  Calendar,
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
 import InfoModal from "../../components/InfoModal";
 import StockDetail from "../../components/StockDetail";
-import { OverviewSkeleton } from "../../components/SkeletonLoader";
-import { useSoundEffects, unlockAudio, SOUND_KEY } from "../../hooks/useSoundEffects";
+import { useSoundEffects, unlockAudio } from "../../hooks/useSoundEffects";
 import { usePWAInstall } from "../../hooks/usePWAInstall";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import Metrics from "../../components/Metrics";
@@ -36,7 +35,7 @@ import GoalsModal from "../../components/GoalsModal";
 import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import TourInviteModal from "../../components/TourInviteModal";
-import { fetchPortfolio, fetchNaturalLanguageEdit, NLEditResult } from "../../lib/api";
+import { fetchPortfolio, fetchNaturalLanguageEdit, NLEditResult, RESOLVED_API_URL } from "../../lib/api";
 import { supabase } from "../../lib/supabase";
 import {
   getRecentlyViewed,
@@ -49,13 +48,11 @@ import { getDemoPortfolio } from "../../lib/demoPortfolios";
 import AlertsPanel from "../../components/AlertsPanel";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
 import Watchlist from "../../components/Watchlist";
-import MarketBrief from "../../components/MarketBrief";
 import EmailPreferences from "../../components/EmailPreferences";
 import ReferralModal from "../../components/ReferralModal";
 import SettingsPage from "../settings/page";
 import GreetingBar from "../../components/GreetingBar";
 import KeyboardShortcutsModal from "../../components/KeyboardShortcutsModal";
-import { RESOLVED_API_URL } from "../../lib/api";
 import PositionsTab from "../../components/PositionsTab";
 import TransactionsTab from "../../components/TransactionsTab";
 import RetirementSimulator from "../../components/RetirementSimulator";
@@ -1574,7 +1571,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       // restores the portfolio - no sessionStorage gate that would break re-entry.
       if (!hadLocalRestoreRef.current) {
         const urlParams = new URLSearchParams(window.location.search);
-        const hasUrlOverride = !!urlParams.get("portfolio") || urlParams.get("demo") === "true";
+        const hasUrlOverride = !!urlParams.get("portfolio") || !!urlParams.get("demo");
         if (!hasUrlOverride) {
           try {
             // Note: do NOT select 'period' - that column does not exist in the table.
@@ -1669,7 +1666,7 @@ const { dark, toggle: toggleDark }  = useTheme();
 
       // Redirect to /onboarding unless viewing a shared portfolio or demo
       const params2 = new URLSearchParams(window.location.search);
-      if (!params2.get("portfolio") && params2.get("demo") !== "true") {
+      if (!params2.get("portfolio") && !params2.get("demo")) {
         window.location.replace("/onboarding");
       }
     })();
@@ -2397,7 +2394,7 @@ const { dark, toggle: toggleDark }  = useTheme();
           .c-content{padding:12px 10px!important;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
           .c-ai-tab{height:calc(100dvh - 136px)!important}
           #tour-desk-chat{display:flex!important;bottom:24px!important;right:24px!important;width:56px!important;height:56px!important}
-          #tour-desk-customize{bottom:24px!important;right:138px!important;width:40px!important;height:40px!important}
+          #tour-desk-customize{bottom:24px!important;right:136px!important;width:40px!important;height:40px!important}
           .c-alloc-row{flex-direction:column!important}
           .c-alloc-row>*{flex:none!important;width:100%!important}
           .c-mob-bar #usermenu-btn>span{display:none!important}

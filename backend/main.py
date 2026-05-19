@@ -653,7 +653,12 @@ def correlation(tickers: str = "AAPL,MSFT", period: str = "1y"):
 
 
 @app.get("/montecarlo")
-def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 10000, years: int = 5):
+def montecarlo(tickers: str = "AAPL,MSFT", weights: str = "", period: str = "1y", simulations: int = 10000, years: int = 5, request: Request = None):
+    # Rate limit: yfinance-heavy + numpy-heavy + 10k paths per call. Same cap
+    # as /montecarlo/insight (15/hr) since both paths flow through this body
+    # once the insight endpoint reuses the simulator.
+    if request is not None and check_rate_limit(_client_ip(request), "montecarlo", 15, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded for Monte Carlo. Try again in an hour.")
     import re as _re
     tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not tickers_list:
@@ -4592,8 +4597,16 @@ def watchlist_data(tickers: str, request: Request):
 
 
 @app.get("/unsubscribe", response_class=HTMLResponse)
-def unsubscribe(user_id: str = ""):
+def unsubscribe(user_id: str = "", request: Request = None):
     """Unsubscribe user from all Corvo emails by disabling all email_preferences toggles."""
+    # Security: verify JWT so only the account owner can trigger unsubscribe
+    if request is not None:
+        try:
+            token_user_id = _verify_jwt_user(request)
+        except HTTPException:
+            raise HTTPException(status_code=401, detail="Authentication required to unsubscribe")
+        # Use the user_id from the verified token (ignore query param to prevent IDOR)
+        user_id = token_user_id
     success = False
     if user_id and SUPABASE_URL and SUPABASE_SERVICE_KEY:
         try:

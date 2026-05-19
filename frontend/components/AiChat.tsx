@@ -890,6 +890,7 @@ export default function AiChat({
                               <input
                                 id="conversation-rename"
                                 name="title"
+                                aria-label="Rename conversation"
                                 ref={renameRef}
                                 value={editingTitle}
                                 onChange={e => setEditingTitle(e.target.value)}
