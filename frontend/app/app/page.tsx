@@ -1411,8 +1411,80 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   // user lands on the dashboard.
   const [localSnapshotTick, setLocalSnapshotTick] = useState(0);
 
+  // ── Seed anchor (the user-facing "starting value" model) ─────────────────
+  // The user types a seed (e.g. $50,000) expecting it to be a STARTING value
+  // that grows with the market over time, not a "today's value" that gets
+  // overwritten on every reload. Track per-ticker-set the original seed +
+  // the date it was first set. liveBaseValue then anchors growth to that
+  // date instead of treating the seed as today's value.
+  //
+  // - User types $50k for portfolio "h" on May 17 -> anchor = { seed: 50000, date: "2026-05-17" }.
+  // - May 20 with market up 1.5% over those 3 days -> liveBaseValue = 50000 * (1 + cumulativeYesterday / 1 + cumulativeAtAnchor) -> $50,750ish.
+  // - User changes seed manually -> anchor resets to today with the new value.
+  // - User clears localStorage -> falls back to old "seed = today's value" behavior.
+  useEffect(() => {
+    if (!tickerSetKey || !(portfolioInputValue > 0)) return;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const all: Record<string, { seed: number; date: string }> =
+        JSON.parse(localStorage.getItem("corvo_seed_anchors") || "{}");
+      const existing = all[tickerSetKey];
+      if (!existing) {
+        all[tickerSetKey] = { seed: portfolioInputValue, date: today };
+        localStorage.setItem("corvo_seed_anchors", JSON.stringify(all));
+        setLocalSnapshotTick(t => t + 1);
+      } else if (Math.abs(existing.seed - portfolioInputValue) > 0.01) {
+        // User manually changed the seed - reset anchor to today with the new value.
+        all[tickerSetKey] = { seed: portfolioInputValue, date: today };
+        localStorage.setItem("corvo_seed_anchors", JSON.stringify(all));
+        setLocalSnapshotTick(t => t + 1);
+      }
+    } catch {}
+  }, [tickerSetKey, portfolioInputValue]);
+
   const liveBaseValue = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
+
+    // Anchor-based growth: highest preference because it matches the user's
+    // expectation of "I typed $50k weeks ago, show me what it's worth now".
+    // Uses the analyzed portfolio's cumulative-returns array to compute how
+    // much the portfolio has grown from the anchor date to yesterday's close.
+    // The system used to ignore time entirely and re-display the seed every
+    // load, which made saved portfolios analyzed weeks ago look frozen at
+    // their original input value even though the market had moved.
+    if (tickerSetKey && data && Array.isArray(data.dates) && Array.isArray(data.portfolio_cumulative)) {
+      try {
+        const anchors: Record<string, { seed: number; date: string }> =
+          JSON.parse(localStorage.getItem("corvo_seed_anchors") || "{}");
+        const anchor = anchors[tickerSetKey];
+        if (anchor && anchor.seed > 0 && anchor.date) {
+          const dates: string[] = data.dates;
+          const cumulative: number[] = data.portfolio_cumulative;
+          const anchorDate = anchor.date.slice(0, 10);
+          // Anchor index: first dates entry >= anchor date. If the data
+          // doesn't go back as far as the anchor, anchorIdx = 0 (treat
+          // start-of-data as the effective anchor, which is conservative).
+          let anchorIdx = 0;
+          for (let i = 0; i < dates.length; i++) {
+            if (dates[i].slice(0, 10) >= anchorDate) { anchorIdx = i; break; }
+          }
+          // Yesterday index: most recent dates entry strictly before today.
+          let yesterdayIdx = -1;
+          for (let i = dates.length - 1; i >= 0; i--) {
+            if (dates[i].slice(0, 10) < today) { yesterdayIdx = i; break; }
+          }
+          if (anchorIdx >= 0 && yesterdayIdx > anchorIdx
+              && anchorIdx < cumulative.length && yesterdayIdx < cumulative.length) {
+            const cumAtAnchor = cumulative[anchorIdx];
+            const cumYesterday = cumulative[yesterdayIdx];
+            // growth factor from anchor to yesterday's close.
+            const factor = (1 + cumYesterday) / (1 + cumAtAnchor);
+            const base = anchor.seed * factor;
+            if (base > 0 && Number.isFinite(base)) return base;
+          }
+        }
+      } catch {}
+    }
 
     // First preference: server-side portfolio_snapshots (saved portfolios with
     // the EOD cron writing one row per weekday at 4:15 PM ET). Walk
@@ -1462,7 +1534,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
     }
 
     return portfolioInputValue;
-  }, [perfHistory, portfolioInputValue, tickerSetKey, localSnapshotTick]);
+  }, [perfHistory, portfolioInputValue, tickerSetKey, localSnapshotTick, data]);
 
   // Persist liveBaseValue to localStorage whenever it resolves to an
   // authoritative value (i.e. perfHistory OR local snapshot, not the seed
