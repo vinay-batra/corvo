@@ -1444,8 +1444,54 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
       } catch {}
     }
 
+    // Sticky-base fallback. Saved portfolios have a race window during cold
+    // reload: perfHistory starts at [] for a few seconds while
+    // /portfolio/history is fetching. In that window the seed (50k) would
+    // briefly flash through before the real base resolves. Same problem any
+    // time savedPortfolioId becomes null momentarily and clears perfHistory.
+    // We persist the last authoritative liveBaseValue we saw (per ticker
+    // set) and use it as the final pre-seed fallback so the displayed value
+    // stays stable across reloads instead of yanking back to the seed.
+    if (tickerSetKey) {
+      try {
+        const sticky: Record<string, { value: number; ts: number }> =
+          JSON.parse(localStorage.getItem("corvo_sticky_base_values") || "{}");
+        const entry = sticky[tickerSetKey];
+        if (entry && entry.value > 0) return entry.value;
+      } catch {}
+    }
+
     return portfolioInputValue;
   }, [perfHistory, portfolioInputValue, tickerSetKey, localSnapshotTick]);
+
+  // Persist liveBaseValue to localStorage whenever it resolves to an
+  // authoritative value (i.e. perfHistory OR local snapshot, not the seed
+  // fallback). The persisted value is the fast-path fallback above so cold
+  // reloads of saved portfolios render the right value on first frame
+  // without flashing through the seed during the perfHistory fetch.
+  useEffect(() => {
+    if (!tickerSetKey) return;
+    if (!liveBaseValue || liveBaseValue <= 0) return;
+    // Don't persist the seed itself - that's what we're trying to AVOID
+    // displaying during reloads. Only persist when liveBaseValue came from
+    // perfHistory or the local snapshot cache (i.e. not equal to the seed
+    // by exact value match).
+    if (Math.abs(liveBaseValue - portfolioInputValue) < 0.01) return;
+    try {
+      const sticky: Record<string, { value: number; ts: number }> =
+        JSON.parse(localStorage.getItem("corvo_sticky_base_values") || "{}");
+      sticky[tickerSetKey] = { value: liveBaseValue, ts: Date.now() };
+      // Cap at 20 ticker sets, LRU-evict by oldest timestamp.
+      const keys = Object.keys(sticky);
+      if (keys.length > 20) {
+        const sorted = keys
+          .map(k => ({ k, ts: sticky[k].ts || 0 }))
+          .sort((a, b) => a.ts - b.ts);
+        for (const { k } of sorted.slice(0, keys.length - 20)) delete sticky[k];
+      }
+      localStorage.setItem("corvo_sticky_base_values", JSON.stringify(sticky));
+    } catch {}
+  }, [liveBaseValue, tickerSetKey, portfolioInputValue]);
 
   // Write today's live value to the local snapshot cache whenever an analysis
   // has resolved AND we have today's pct (so the captured value reflects what
