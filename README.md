@@ -4,7 +4,7 @@
 
 [Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js 16 · FastAPI · Supabase · All Rights Reserved
 
-Current release: **v0.45** (May 19, 2026)
+Current release: **v0.46** (May 19, 2026) — frontend live on Vercel; backend changes committed but blocked on a Railway outage at the time of release
 
 ---
 
