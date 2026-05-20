@@ -1395,20 +1395,90 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   // not seed x (1 + Tuesday's pct). Falls back to the user's input seed when
   // no snapshots exist (new portfolio, unsaved portfolio, or cron hasn't
   // written one yet).
+  // Stable key for the current ticker set (insertion order independent) so
+  // the local-snapshot cache below can find entries for "this same portfolio"
+  // across reloads regardless of how the user re-ordered the rows.
+  const tickerSetKey = useMemo(() => {
+    return assets
+      .filter(a => a.ticker && a.weight > 0)
+      .map(a => a.ticker)
+      .sort()
+      .join(",");
+  }, [assets]);
+
+  // Bumped whenever the local snapshot cache writer fires, so liveBaseValue's
+  // useMemo re-runs and picks up the freshly-written entry the next time the
+  // user lands on the dashboard.
+  const [localSnapshotTick, setLocalSnapshotTick] = useState(0);
+
   const liveBaseValue = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    // First preference: server-side portfolio_snapshots (saved portfolios with
+    // the EOD cron writing one row per weekday at 4:15 PM ET). Walk
+    // newest-first and pick the first snapshot strictly before today - today's
+    // own snapshot already bakes in today's pct, so using it as base would
+    // double-count when multiplied by todayPct downstream.
     if (perfHistory.length > 0) {
-      const today = new Date().toISOString().slice(0, 10);
-      // Walk newest-first; pick the first snapshot strictly before today.
-      // Today's own snapshot is skipped because it already bakes in today's
-      // pct - using it as a base and multiplying by todayPct would double-count.
       for (let i = perfHistory.length - 1; i >= 0; i--) {
         const d = perfHistory[i]?.date?.slice(0, 10);
         const v = perfHistory[i]?.portfolio_value;
         if (d && d < today && v && v > 0) return v;
       }
     }
+
+    // Fallback: localStorage snapshot cache. Unsaved portfolios never hit the
+    // server-side cron (snapshots are keyed by portfolio_id) so before this
+    // fallback the live value reset to the input seed on every reload. Now
+    // the analyze flow writes today's live value into this cache, and on the
+    // next trading day it reads as "yesterday's close" and the value ratchets
+    // forward instead of resetting to the seed.
+    if (tickerSetKey) {
+      try {
+        const cache: Record<string, { date: string; value: number }[]> =
+          JSON.parse(localStorage.getItem("corvo_local_snapshots") || "{}");
+        const arr = cache[tickerSetKey] || [];
+        for (let i = arr.length - 1; i >= 0; i--) {
+          if (arr[i].date < today && arr[i].value > 0) return arr[i].value;
+        }
+      } catch {}
+    }
+
     return portfolioInputValue;
-  }, [perfHistory, portfolioInputValue]);
+  }, [perfHistory, portfolioInputValue, tickerSetKey, localSnapshotTick]);
+
+  // Write today's live value to the local snapshot cache whenever an analysis
+  // has resolved AND we have today's pct (so the captured value reflects what
+  // the user is actually seeing on screen, not just the seed). The cache is
+  // keyed by ticker set so two different portfolios don't overwrite each
+  // other. Today's entry is updated in place on every re-analyze so the
+  // freshest captured value persists. Bounded to 20 ticker sets x 60 days to
+  // keep localStorage under control.
+  useEffect(() => {
+    if (!data || todayPct == null || !tickerSetKey || !(portfolioInputValue > 0)) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const liveValue = portfolioInputValue * (1 + todayPct / 100);
+    if (!Number.isFinite(liveValue) || liveValue <= 0) return;
+    try {
+      const raw = localStorage.getItem("corvo_local_snapshots") || "{}";
+      const cache: Record<string, { date: string; value: number }[]> = JSON.parse(raw);
+      const arr = (cache[tickerSetKey] || []).filter(e => e.date !== today);
+      arr.push({ date: today, value: liveValue });
+      cache[tickerSetKey] = arr.slice(-60);
+      // Cap the number of distinct ticker sets we track. If we're over the
+      // cap, drop the entries with the oldest most-recent-date (the cache is
+      // a dict so we sort the keys by their newest entry).
+      const keys = Object.keys(cache);
+      if (keys.length > 20) {
+        const sortedByNewest = keys
+          .map(k => ({ k, newest: (cache[k][cache[k].length - 1]?.date) || "" }))
+          .sort((a, b) => a.newest.localeCompare(b.newest));
+        for (const { k } of sortedByNewest.slice(0, keys.length - 20)) delete cache[k];
+      }
+      localStorage.setItem("corvo_local_snapshots", JSON.stringify(cache));
+      setLocalSnapshotTick(t => t + 1);
+    } catch {}
+  }, [data, todayPct, tickerSetKey, portfolioInputValue]);
 
   const [perfRange, setPerfRange] = useState<PerfRange>("ALL");
   const [perfLoading, setPerfLoading] = useState(false);
