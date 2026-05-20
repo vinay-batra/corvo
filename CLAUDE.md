@@ -917,10 +917,32 @@ Existing users get a fresh fetch on their next visit because the URL is genuinel
 ## Deployment
 
 - **Frontend**: push to `main` - Vercel auto-deploys
-- **Backend deploy**: always use this exact sequence:
+- **Backend deploy** (current, on Railway): always use this exact sequence:
  ```
  mkdir -p /tmp/corvo-deploy2/backend && cp ~/Downloads/corvo/backend/main.py /tmp/corvo-deploy2/backend/ && cp ~/Downloads/corvo/backend/requirements.txt /tmp/corvo-deploy2/backend/ && cd ~/Downloads/corvo && railway up --detach --path-as-root /tmp/corvo-deploy2
  ```
 - Railway project has `Root Directory = backend` in settings - upload must have a `backend/` subfolder
 - Railway GitHub integration is BROKEN - always deploy manually
 - Plain `railway up` times out (.git is 146MB)
+
+### Fly.io migration (prepared, not active)
+
+Railway's GCP dependency keeps causing outages (May 19, 2026 GCP block being the latest). A Fly.io cutover is queued in `backend/Dockerfile` + `backend/fly.toml` + `backend/.dockerignore`. None of those files are read by Railway; they only matter when `fly launch` / `fly deploy` is invoked. Until cutover, Railway is still the live backend at `web-production-7a78d.up.railway.app`.
+
+**To flip when ready (~30-60 min once `flyctl` is installed and authed):**
+
+1. `cd backend && fly launch --copy-config --no-deploy` - pick org, accept `corvo-backend` slug (or override), accept `iad` region.
+2. Set every secret with `fly secrets set` - the full set lives at the top of CLAUDE.md (ANTHROPIC_API_KEY, FINNHUB_API_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY, SENTRY_DSN, CACHE_BUST). Pull current values from the Railway dashboard before tearing it down.
+3. `fly deploy` from `backend/`. First build takes ~3-5 min (numpy/pandas/scipy + curl_cffi compile from source on the deps stage). Subsequent deploys ride the Docker layer cache and finish in <60s.
+4. Check health: `curl https://corvo-backend.fly.dev/health` should return `{"status":"ok"}`.
+5. Vercel: update `NEXT_PUBLIC_API_URL` env var to the Fly URL. Redeploy frontend.
+6. Update CLAUDE.md + README.md `web-production-7a78d.up.railway.app` references to the new Fly URL.
+7. Sanity test on production: portfolio analyze, AI chat, FAQ AI, dashboard load, push notifications.
+8. Leave the Railway project up for 30 days as a fallback before deleting.
+
+**Why Fly over the alternatives** (Render, Cloud Run, DigitalOcean App Platform): persistent VMs that don't auto-stop, native Docker, free hobby tier covers current load, and the 8 asyncio background loops in the FastAPI lifespan keep running idle (Cloud Run scales to zero and would silently kill them).
+
+**Constraints to remember in the Fly config**:
+- `auto_stop_machines = "off"` and `min_machines_running = 1` are load-bearing - the background loops would die during traffic lulls otherwise.
+- Single worker (`--workers 1`) is intentional - 8 background loops × N workers = N-way duplicate Supabase writes.
+- 1GB memory floor - 512MB OOMs on portfolios with many tickers because numpy + pandas + a few cached frames blow past the cap.

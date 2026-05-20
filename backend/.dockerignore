@@ -1,0 +1,42 @@
+# Keep the Docker build context tight - only main.py + requirements.txt
+# actually need to be copied. Everything else is dev cruft or test data.
+
+.env
+.env.*
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenvs
+venv/
+env/
+.venv/
+.env/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local dev artifacts
+*.log
+*.sqlite
+*.db
+node_modules/
+.next/
+
+# Anything Railway-specific (Fly doesn't need these)
+railway.toml
+Procfile

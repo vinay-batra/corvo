@@ -1,0 +1,54 @@
+# Dormant Fly.io app config - prepared for migration off Railway.
+# Until `fly launch` / `fly deploy` is run against this directory, nothing
+# in this file is read. Railway deploys (Procfile + railway.toml) continue
+# to work unchanged.
+#
+# When you do cut over, the planned app name is `corvo-backend`. If that
+# name is taken, run `fly launch --copy-config --no-deploy` and pick a new
+# slug; the rest of the config still applies.
+
+app = "corvo-backend"
+primary_region = "iad"  # Ashburn, VA - closest to Vinay (PA) + Supabase US-East
+
+[build]
+  # Use the Dockerfile next to this file (backend/Dockerfile).
+  dockerfile = "Dockerfile"
+
+[env]
+  # Logging. Actual secrets (ANTHROPIC_API_KEY, SUPABASE_*, RESEND_*,
+  # VAPID_*, FINNHUB_API_KEY, SENTRY_DSN, CACHE_BUST) live in `fly secrets`
+  # and never appear in this file - set them with:
+  #   fly secrets set ANTHROPIC_API_KEY=sk-... SUPABASE_URL=... ...
+  # See README.md or CLAUDE.md for the full list.
+  PYTHONUNBUFFERED = "1"
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Background-task constraint: the FastAPI lifespan spins up 8 asyncio
+  # loops (price_alert_loop, eod_portfolio_snapshot_loop, the email loops,
+  # etc.) that must keep running while traffic is idle. Auto-stop would
+  # let them die between requests.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  # Healthcheck mirrors what Railway used. /health returns 200 + a payload
+  # whenever the FastAPI app is up.
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"  # numpy + pandas + a few yfinance frames in memory; 512mb was OOMing in tests
