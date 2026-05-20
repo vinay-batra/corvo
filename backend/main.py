@@ -42,11 +42,23 @@ MAX_RATE_LIMIT_KEYS = 50000
 
 
 def _client_ip(request: "Request") -> str:
-    """Return the originating client IP, preferring X-Forwarded-For so we get
-    a per-client bucket even when the app sits behind Railway's proxy."""
-    fwd = (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+    """Return the originating client IP, trusting only the proxy's view.
+
+    The leftmost X-Forwarded-For value is set by the client itself and can be
+    spoofed - a malicious client sending `X-Forwarded-For: 1.2.3.4` would
+    bypass every IP-based rate limit on every endpoint, because Railway
+    appends its observed peer IP rather than replacing the header. Reading
+    the RIGHTMOST entry gives us the proxy's own observation of who
+    connected, which can't be forged from the outside.
+
+    Falls back to X-Real-IP and finally to the TCP peer if no forwarding
+    headers are present (local dev, direct hits).
+    """
+    fwd = request.headers.get("X-Forwarded-For") or ""
     if fwd:
-        return fwd
+        parts = [p.strip() for p in fwd.split(",") if p.strip()]
+        if parts:
+            return parts[-1]
     real = (request.headers.get("X-Real-IP") or "").strip()
     if real:
         return real
@@ -1315,6 +1327,41 @@ ETF_SECTORS: dict[str, str] = {
 
 _sectors_cache: "OrderedDict[str, tuple[dict, float]]" = OrderedDict()
 _SECTORS_CACHE_MAX = 1000
+
+# Per-ticker sector cache, keyed by ticker (uppercase). 1-hour TTL.
+# Used by /portfolio/health-score so a 10-stock portfolio doesn't fan out
+# into 10 sequential blocking yf.Ticker(t).info calls (each ~200-2000ms).
+# After the first request, every subsequent request reads from memory.
+_ticker_sector_cache: "OrderedDict[str, tuple[str, float]]" = OrderedDict()
+_TICKER_SECTOR_CACHE_MAX = 2000
+_TICKER_SECTOR_TTL = 3600
+
+
+def _lookup_ticker_sector(ticker: str) -> str:
+    """Resolve a ticker's sector. Cached per-ticker for 1 hour. Falls back
+    to ETF_SECTORS for known funds and to 'Mutual Fund' / 'Other' for
+    unknown tickers without hitting yfinance.
+    """
+    t = ticker.upper()
+    cached = _ticker_sector_cache.get(t)
+    if cached:
+        sector, ts = cached
+        if time.time() - ts < _TICKER_SECTOR_TTL:
+            return sector
+    # Cheap lookups first
+    if t in ETF_SECTORS:
+        sector = ETF_SECTORS[t]
+    elif len(t) == 5 and t.endswith("X"):
+        sector = "Mutual Fund"
+    else:
+        try:
+            info = yf.Ticker(t).info or {}
+            sector = info.get("sector") or "Other"
+        except Exception:
+            sector = "Other"
+    _ticker_sector_cache[t] = (sector, time.time())
+    _cap_dict(_ticker_sector_cache, _TICKER_SECTOR_CACHE_MAX)
+    return sector
 
 
 def _cap_dict(d: "OrderedDict | dict", max_size: int) -> None:
@@ -5071,8 +5118,15 @@ def delete_price_alert(alert_id: str, user_id: str, request: Request):
     return {"ok": True}
 
 
-async def check_price_alerts():
-    """Check all untriggered price alerts against current prices."""
+def check_price_alerts():
+    """Check all untriggered price alerts against current prices.
+
+    Synchronous on purpose. The body makes blocking `requests.get/patch`
+    and `yf.download` calls that would otherwise stall the asyncio event
+    loop for seconds. The loop driver calls this via
+    `await asyncio.to_thread(check_price_alerts)` so the work happens on
+    a worker thread.
+    """
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         return
     try:
@@ -5588,14 +5642,13 @@ def portfolio_health_score(req: HealthScoreRequest, request: Request):
     vS = min(max((1 - vol / 0.6) * 100, 0), 100)
     dS = min(max((1 + dd / 0.5) * 100, 0), 100)
 
-    # Compute sector concentration from yfinance
+    # Compute sector concentration. Uses the per-ticker sector cache so
+    # warm requests don't fan out into N blocking yf.Ticker(t).info calls.
+    # First-ever cold request still hits yfinance for unknown tickers, but
+    # at most once per ticker per hour across the whole process.
     sector_map: dict[str, float] = {}
     for ticker, w in zip(tickers, weights):
-        try:
-            info = yf.Ticker(ticker).info
-            sector = info.get("sector") or ETF_SECTORS.get(ticker, "Other")
-        except Exception:
-            sector = ETF_SECTORS.get(ticker, "Other")
+        sector = _lookup_ticker_sector(ticker)
         sector_map[sector] = sector_map.get(sector, 0.0) + w
 
     max_sector_pct = max(sector_map.values()) if sector_map else 0.0
@@ -6029,11 +6082,13 @@ def get_portfolio_history(portfolio_id: str, request: Request):
 
 
 @app.get("/portfolio/calc-history")
-def calc_portfolio_history(tickers: str, weights: str, period: str = "max"):
+def calc_portfolio_history(tickers: str, weights: str, period: str = "max", request: Request = None):
     """
     Compute historical portfolio cumulative returns from yfinance data.
     Used as a fallback when portfolio_snapshots are not yet available.
     """
+    if request is not None and check_rate_limit(_client_ip(request), "calc-history", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded for portfolio history. Try again in an hour.")
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not ticker_list:
         return {"dates": [], "cumulative_returns": []}
@@ -6192,12 +6247,18 @@ def portfolio_tax_loss(
     weights: str = "",
     purchase_prices: str = "",
     portfolio_value: float = 10000.0,
+    request: Request = None,
 ):
     """
     For each ticker, compare current price vs purchase price.
     For tickers at a loss, suggest a wash-sale-safe replacement and AI reasoning.
     Returns: { losses: [{ticker, loss_pct, loss_dollars, suggested_replacement, reasoning}], total_harvestable_loss }
     """
+    # Calls yfinance per-ticker plus an Anthropic completion per loss row, so
+    # the per-IP cap is the only defense against abuse since the endpoint
+    # doesn't require auth (no user data is read).
+    if request is not None and check_rate_limit(_client_ip(request), "tax-loss", 20, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded for tax-loss analysis. Try again in an hour.")
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not ticker_list:
         return {"losses": [], "total_harvestable_loss": 0.0}
@@ -6381,6 +6442,7 @@ def portfolio_capital_gains(
     portfolio_value: float = 10000.0,
     ltcg_rate: int = 15,
     stcg_rate: int = 22,
+    request: Request = None,
 ):
     """
     For each ticker with a cost basis, compute unrealized gain/loss, classify ST vs LT,
@@ -6388,6 +6450,8 @@ def portfolio_capital_gains(
     ltcg_rate: 0, 15, or 20 (caller selects based on income bracket)
     stcg_rate: 22 (ordinary income; default middle bracket)
     """
+    if request is not None and check_rate_limit(_client_ip(request), "capital-gains", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded for capital-gains estimator. Try again in an hour.")
     from datetime import date, timedelta
 
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
@@ -7230,8 +7294,13 @@ def _gen_price_target_recommendation(ticker: str, current_price: float, target_p
         return ""
 
 
-async def check_price_targets():
-    """Check all untriggered price targets against current prices."""
+def check_price_targets():
+    """Check all untriggered price targets against current prices.
+
+    Synchronous on purpose, same as check_price_alerts - sync requests +
+    yfinance + Anthropic calls would otherwise block the event loop.
+    Loop driver calls via asyncio.to_thread.
+    """
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         return
     try:
@@ -7281,10 +7350,10 @@ async def check_price_targets():
                         timeout=5,
                     )
 
-                    # Generate AI recommendation (run in executor to avoid blocking)
-                    recommendation = await asyncio.get_event_loop().run_in_executor(
-                        None, _gen_price_target_recommendation, ticker, current_price, target_price, direction
-                    )
+                    # Generate AI recommendation. Synchronous - this function
+                    # is now driven from a worker thread (asyncio.to_thread),
+                    # so no executor wrapping needed.
+                    recommendation = _gen_price_target_recommendation(ticker, current_price, target_price, direction)
 
                     notif_title = f"Price target hit: {ticker}"
                     direction_word = "reached" if direction == "above" else "fallen to"
@@ -7377,11 +7446,13 @@ async def price_alert_loop():
     await asyncio.sleep(30)
     while True:
         try:
-            await check_price_alerts()
+            # Run blocking I/O on a worker thread so we don't stall the loop
+            # for the multi-second yfinance + Supabase + Resend round-trips.
+            await asyncio.to_thread(check_price_alerts)
         except Exception as e:
             print(f"[alerts] loop error: {e}")
         try:
-            await check_price_targets()
+            await asyncio.to_thread(check_price_targets)
         except Exception as e:
             print(f"[price-targets] loop error: {e}")
         await asyncio.sleep(60)

@@ -2,7 +2,7 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
-import { RESOLVED_API_URL } from "../lib/api";
+import { RESOLVED_API_URL, getAuthToken } from "../lib/api";
 
 function Ring({ score, size = 115 }: { score: number; size?: number }) {
   const r = (size - 12) / 2, circ = 2 * Math.PI * r, offset = circ - (score / 100) * circ;
@@ -145,25 +145,37 @@ export default function HealthScore({
     if (!data || !data.tickers?.length) return;
     const base = apiUrl || RESOLVED_API_URL;
     setLoading(true);
-    fetch(`${base}/portfolio/health-score`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: userId || "",
-        tickers: data.tickers || [],
-        weights: data.weights || [],
-        annualized_return: data.annualized_return ?? 0,
-        portfolio_volatility: data.portfolio_volatility ?? 0,
-        sharpe_ratio: data.sharpe_ratio ?? 0,
-        max_drawdown: data.max_drawdown ?? 0,
-        rf_rate: data.rf_rate ?? 0.04,
-        individual_returns: data.individual_returns ?? {},
-        account_type: accountType || "",
-      }),
-    })
+    let cancelled = false;
+    (async () => {
+      // Attach the Supabase JWT so the cache key is tied to the verified
+      // user, and the backend can correlate health-score requests with the
+      // authenticated session rather than trusting a body-provided user_id.
+      const token = await getAuthToken();
+      if (cancelled) return;
+      fetch(`${base}/portfolio/health-score`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          user_id: userId || "",
+          tickers: data.tickers || [],
+          weights: data.weights || [],
+          annualized_return: data.annualized_return ?? 0,
+          portfolio_volatility: data.portfolio_volatility ?? 0,
+          sharpe_ratio: data.sharpe_ratio ?? 0,
+          max_drawdown: data.max_drawdown ?? 0,
+          rf_rate: data.rf_rate ?? 0.04,
+          individual_returns: data.individual_returns ?? {},
+          account_type: accountType || "",
+        }),
+      })
       .then((r) => r.json())
-      .then((d: HsData) => { setHsData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then((d: HsData) => { if (!cancelled) { setHsData(d); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    })();
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickersKey, userId, accountType]);
 

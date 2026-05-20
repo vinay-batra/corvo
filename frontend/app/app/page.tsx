@@ -755,31 +755,42 @@ function StocksSearch({ onSelect, middleContent }: { onSelect: (t: string) => vo
       if (cached?.ts && Date.now() - cached.ts < TTL) return; // fresh - skip background fetch
     } catch {}
 
+    const ctrl = new AbortController();
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     const doFetch = () =>
-      fetch(url)
+      fetch(url, { signal: ctrl.signal })
         .then(r => r.json())
         .then(d => {
+          if (cancelled) return;
           const results: WatchlistStockData[] = d.results ?? [];
           if (results.length === 0) throw new Error("empty results");
           applyData(results);
           try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: results, ts: Date.now() })); } catch {}
         });
     doFetch().catch(() => {
-      setTimeout(() => doFetch().catch(() => {}), 1000);
+      if (!cancelled) retryTimer = setTimeout(() => { if (!cancelled) doFetch().catch(() => {}); }, 1000);
     });
+    return () => { cancelled = true; ctrl.abort(); if (retryTimer) clearTimeout(retryTimer); };
   }, [API]);
 
   useEffect(() => {
     if (!q) { setResults([]); return; }
+    // AbortController + cancel flag stop stale results from overwriting a
+    // newer query's response. Without this, typing fast caused the older
+    // request's reply to land last and clobber the latest results.
+    const ctrl = new AbortController();
+    let cancelled = false;
     const t = setTimeout(async () => {
+      if (cancelled) return;
       setBusy(true);
       try {
-        const r = await fetch(`${API}/search-ticker?q=${encodeURIComponent(q)}`);
+        const r = await fetch(`${API}/search-ticker?q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
         const d = await r.json();
-        setResults((d.results || []).slice(0, 8));
-      } catch {} finally { setBusy(false); }
+        if (!cancelled) setResults((d.results || []).slice(0, 8));
+      } catch {} finally { if (!cancelled) setBusy(false); }
     }, 300);
-    return () => clearTimeout(t);
+    return () => { cancelled = true; ctrl.abort(); clearTimeout(t); };
   }, [q]);
 
   const fmtPrice = (p: number | null) => p == null ? "-" : p >= 1000 ? `$${p.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : `$${p.toFixed(2)}`;
@@ -1811,9 +1822,16 @@ const { dark, toggle: toggleDark }  = useTheme();
         user_id: userId || "",
         account_type: accountType,
       };
+      // Attach the Supabase JWT so the backend can authenticate the request
+      // and tie the result to the verified caller. Without this the user_id
+      // in the body is just a hint that can be spoofed.
+      const { data: { session: wsidSession } } = await supabase.auth.getSession();
       const res = await fetch(`${API}/what-should-i-do`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(wsidSession?.access_token ? { "Authorization": `Bearer ${wsidSession.access_token}` } : {}),
+        },
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -2083,14 +2101,20 @@ const { dark, toggle: toggleDark }  = useTheme();
   }, [userId]);
 
 
-  const isPortfolioSaved = (() => {
+  // Memoised so we only parse localStorage when assets change, instead of
+  // on every render (the IIFE form reran JSON.parse + scanned the saved-
+  // portfolios array on every state update). savedPortfolioRefreshTick is
+  // bumped by the `corvo:portfolio-saved` listener, so a new save still
+  // invalidates this. The empty string in the dep array is intentional - we
+  // only need a token that changes when the user-saved list mutates.
+  const isPortfolioSaved = useMemo(() => {
     if (!assets.length) return false;
     try {
       const saved = JSON.parse(localStorage.getItem("corvo_saved_portfolios") || "[]");
       const currentTickers = assets.map(a => a.ticker).sort().join(",");
       return saved.some((p: any) => (p.tickers || p.assets?.map((a: any) => a.ticker) || []).sort().join(",") === currentTickers);
     } catch { return false; }
-  })();
+  }, [assets, savedPortfolioRefreshTick]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
