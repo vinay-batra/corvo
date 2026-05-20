@@ -7,13 +7,8 @@ const cspHeader = [
   "default-src 'self'",
   // 'unsafe-inline' kept here intentionally. Removing it in App Router
   // requires a nonce-based CSP from a proxy.ts file, which forces every
-  // page to be dynamically rendered on each request (no static
-  // optimization, no CDN caching, higher server cost per request). That
-  // tradeoff isn't worth the marginal XSS reduction at our current scale.
-  // The experimental SRI flag below adds integrity verification to all
-  // Next.js-generated bundles as a layer of defense without sacrificing
-  // static rendering. If we eventually outgrow that tradeoff, the path
-  // forward is in node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md
+  // page to be dynamically rendered on each request. The path forward
+  // is in node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md
   // (move CSP to proxy.ts, add 'nonce-${nonce}' and 'strict-dynamic',
   // call connection() in pages that must be dynamic).
   // unsafe-eval intentionally omitted.
@@ -40,17 +35,6 @@ const cspHeader = [
 
 const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: false },
-  experimental: {
-    // Subresource Integrity: Next.js generates SHA-256 hashes for every
-    // built JS bundle and emits `integrity="sha256-..."` on the <script>
-    // tags. Browsers verify the hash before executing - if a CDN ever
-    // serves a tampered asset (cache poisoning, MITM on a stale TLS cert,
-    // a compromised dependency), the script is rejected. Pairs with the
-    // tightened CSP above so even if 'unsafe-inline' is bypassed via some
-    // future Next.js change, the actual loaded scripts still have to
-    // match a known hash.
-    sri: { algorithm: "sha256" },
-  },
   async headers() {
     return [
       {
