@@ -16,8 +16,15 @@ const cspHeader = [
   // child-src / default-src 'self'), blocking the Vercel Live feedback
   // iframe and logging a console warning.
   "frame-src https://vercel.live",
+  // Clickjacking defense: only let Corvo itself (and the Vercel Live preview
+  // toolbar that we use on preview deploys) iframe Corvo pages. Without this
+  // directive the X-Frame-Options=DENY equivalent isn't enforced and an
+  // attacker page could iframe /app + overlay an invisible button over the
+  // user's actual Save / Delete actions.
+  "frame-ancestors 'self' https://vercel.live",
   "object-src 'none'",
   "base-uri 'self'",
+  "form-action 'self'",
 ].join("; ");
 
 const nextConfig: NextConfig = {

@@ -177,7 +177,7 @@ export default function HealthScore({
     })();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickersKey, userId, accountType]);
+  }, [tickersKey, userId, accountType, apiUrl]);
 
   const score = hsData?.score ?? fallbackScore;
   const headline = hsData?.headline ?? "";

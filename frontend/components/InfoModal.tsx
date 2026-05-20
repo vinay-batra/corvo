@@ -34,8 +34,11 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
     return () => window.removeEventListener("keydown", handleEsc);
   }, [open]);
 
-  const openModal = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Optional event arg so the keyboard handler can invoke this without
+  // synthesising a fake MouseEvent. Mouse path still stops propagation;
+  // keyboard path skips that since there's no surrounding click to swallow.
+  const openModal = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     window.dispatchEvent(new CustomEvent("corvo:modal-open", { detail: { id: idRef.current } }));
     setOpen(true);
   };
@@ -44,12 +47,24 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
     <>
       <span
         onClick={openModal}
+        role="button"
+        tabIndex={0}
+        aria-label="Open explanation"
+        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(); } }}
         style={{ display: "inline-flex", alignItems: "center", cursor: "pointer", flexShrink: 0, alignSelf: "center" }}
       >
         {children ?? (
           <button
+            type="button"
+            aria-label="Open explanation"
             style={{
+              // Visual circle stays 16x16 so the inline-with-label hint
+              // doesn't dominate the row, but padding pushes the
+              // pointer/touch hit area to 24x24 (close enough to the
+              // WCAG 44x44 spec for an inline secondary control without
+              // disrupting metric-row layout).
               width: 16, height: 16, minWidth: 16, minHeight: 16, borderRadius: "50%",
+              padding: 4, boxSizing: "content-box",
               border: "0.5px solid var(--border2)",
               background: "transparent", cursor: "pointer",
               display: "inline-flex", alignItems: "center", justifyContent: "center",

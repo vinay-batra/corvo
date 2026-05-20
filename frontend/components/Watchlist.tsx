@@ -475,7 +475,7 @@ export default function Watchlist() {
                   onClick={() => setSwitcherOpen(o => !o)}
                   style={{ flex: 1, display: "flex", alignItems: "center", gap: 9, padding: "9px 13px", background: "var(--bg3)", border: `0.5px solid ${switcherOpen ? "rgba(184,134,11,0.4)" : "var(--border2)"}`, borderRadius: 9, cursor: "pointer", transition: "border-color 0.15s" }}>
                   <ListIcon iconKey={activeList?.icon || "folder"} size={14} color="var(--accent)" />
-                  <span style={{ flex: 1, textAlign: "left", fontSize: 15, fontWeight: 700, color: "var(--accent)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: -0.2 }}>
+                  <span title={activeList?.name ?? "Watchlist"} style={{ flex: 1, textAlign: "left", fontSize: 15, fontWeight: 700, color: "var(--accent)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: -0.2 }}>
                     {activeList?.name ?? "Watchlist"}
                   </span>
                   {activeItems.length > 0 && (
@@ -506,7 +506,7 @@ export default function Watchlist() {
                         onMouseLeave={e => { e.currentTarget.style.background = isActive ? "rgba(184,134,11,0.05)" : "transparent"; }}
                         onClick={() => { setActiveListId(list.id); setSwitcherOpen(false); }}>
                         <ListIcon iconKey={list.icon || "folder"} size={12} color={isActive ? "var(--accent)" : "var(--text3)"} />
-                        <span style={{ flex: 1, fontSize: 12, color: isActive ? "var(--text)" : "var(--text2)", fontWeight: isActive ? 500 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{list.name}</span>
+                        <span title={list.name} style={{ flex: 1, fontSize: 12, color: isActive ? "var(--text)" : "var(--text2)", fontWeight: isActive ? 500 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{list.name}</span>
                         {count > 0 && <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0 }}>{count} {count === 1 ? "asset" : "assets"}</span>}
                         <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
                           <button onClick={e => { e.stopPropagation(); startRename(list.id, list.name, list.icon); }}

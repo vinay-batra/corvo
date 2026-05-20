@@ -140,7 +140,7 @@ const ERAS = [
     name: "Guardian Voice & Security",
     versions: "v0.25 → v0.31",
     dateRange: "May 11 → May 12, 2026",
-    intro: "Corvo found its voice — the AI advisor watching over your portfolio — and hardened the surface beneath it.",
+    intro: "Corvo found its voice as the AI advisor watching over your portfolio, and hardened the surface beneath it.",
     highlights: [
       "Homepage rewrite around the guardian-advisor positioning plus auth-page rebuild and app-wide UI standardization",
       "Security audit: 3 IDOR closures, RLS hardening, light/dark theme pass, 330 em dashes swept, leaked secrets rotated",

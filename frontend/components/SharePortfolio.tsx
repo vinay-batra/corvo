@@ -278,9 +278,16 @@ export default function SharePortfolio({ data, assets, period }: SharePortfolioP
               onClick={e => e.stopPropagation()}
               style={{ background: "var(--card-bg)", border: "1px solid var(--border2)", borderRadius: 16, padding: 28, width: "100%", maxWidth: "min(480px, 95vw)", position: "relative", marginTop: "min(24px, 4vh)" }}>
 
-              {/* Close */}
-              <button onClick={() => setOpen(false)}
-                style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }}>
+              {/* Close. 32x32 hit area (well above the 24x24 dense-modal
+                  floor) so finger taps land reliably on mobile; visible
+                  X stays 12x12 to keep the corner uncluttered. */}
+              <button
+                type="button"
+                aria-label="Close share dialog"
+                onClick={() => setOpen(false)}
+                style={{ position: "absolute", top: 8, right: 8, width: 32, height: 32, background: "none", border: "none", color: "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, borderRadius: 6, transition: "background 0.15s, color 0.15s" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--bg3)"; e.currentTarget.style.color = "var(--accent)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text3)"; }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
 

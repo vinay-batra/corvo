@@ -529,14 +529,24 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
               {!valueHidden && (
                 portfolioToday ? (
                   <span
+                    aria-label={`Today ${portfolioToday.pct >= 0 ? "up" : "down"} ${Math.abs(portfolioToday.pct).toFixed(2)} percent${portfolioToday.dollar != null ? ", " + (portfolioToday.dollar >= 0 ? "gain " : "loss ") + "$" + Math.abs(portfolioToday.dollar).toFixed(0) : ""}`}
                     style={{
                       fontSize: 13,
                       fontWeight: 600,
                       color: portfolioToday.pct >= 0 ? "#4caf7d" : "var(--red)",
                       letterSpacing: 0.1,
                       whiteSpace: "nowrap",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
+                    {/* Direction arrow alongside the color/sign so colorblind
+                        users still see up vs down at a glance. The sign
+                        characters (+ / -) inside the literal also help. */}
+                    <span aria-hidden style={{ fontSize: 9, lineHeight: 1, fontWeight: 700 }}>
+                      {portfolioToday.pct >= 0 ? "▲" : "▼"}
+                    </span>
                     {portfolioToday.dollar != null && (
                       <>
                         {portfolioToday.dollar >= 0 ? "+" : "-"}${Math.abs(portfolioToday.dollar).toLocaleString("en-US", { maximumFractionDigits: 0 })}

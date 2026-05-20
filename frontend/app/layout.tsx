@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('corvo_theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){}})();` }} />
-        {/* Canonical set per-page via metadata.alternates.canonical — no global override here */}
+        {/* Canonical set per-page via metadata.alternates.canonical - no global override here */}
         <meta name="theme-color" content="#c9a84c" />
       </head>
       <body style={{ margin: 0 }}>

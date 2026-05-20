@@ -955,6 +955,16 @@ def retirement_simulation(req: RetirementSimRequest, request: Request):
 
     if not req.tickers or len(req.tickers) != len(req.weights):
         raise HTTPException(status_code=400, detail="Tickers and weights must be non-empty and equal length.")
+    # Input bounds: prevent NaN / Infinity / numeric-bomb inputs from
+    # allocating absurd numpy arrays or producing garbage output.
+    if len(req.tickers) > 30:
+        raise HTTPException(status_code=400, detail="Too many tickers (max 30).")
+    if not (0 < req.current_value <= 1e9) or not math.isfinite(req.current_value):
+        raise HTTPException(status_code=400, detail="current_value must be between 0 and 1,000,000,000.")
+    if not (0 <= req.contribution <= 1e8) or not math.isfinite(req.contribution):
+        raise HTTPException(status_code=400, detail="contribution must be between 0 and 100,000,000.")
+    if not (0 < req.years_to_retirement <= 80):
+        raise HTTPException(status_code=400, detail="years_to_retirement must be between 1 and 80.")
     if req.years_to_retirement < 1 or req.years_to_retirement > 60:
         raise HTTPException(status_code=400, detail="years_to_retirement must be between 1 and 60.")
     if req.current_value <= 0:
@@ -1376,7 +1386,11 @@ def _cap_dict(d: "OrderedDict | dict", max_size: int) -> None:
 @app.get("/portfolio/sectors")
 def portfolio_sectors(tickers: str = "AAPL", weights: str = "", request: Request = None):
     """Return sector exposure aggregated by weight. Cached per ticker+weight combo for 1 hour."""
-    cache_key = f"{tickers}|{weights}"
+    # Normalise + sort to dedupe trivially different keys ("aapl,msft" vs
+    # "AAPL,MSFT" vs "MSFT,AAPL") into a single cache row. The earlier raw
+    # key let two requests for the same portfolio land in different cache
+    # buckets if a client typed lowercase or reordered tickers.
+    cache_key = f"{tickers.upper()}|{weights}"
     if cache_key in _sectors_cache:
         cached_result, cached_ts = _sectors_cache[cache_key]
         if time.time() - cached_ts < 3600:
@@ -2322,6 +2336,10 @@ def set_life_events(user_id: str, body: LifeEventsRequest, request: Request):
         raise HTTPException(status_code=403, detail="Not authorized")
     if not SUPABASE_URL:
         raise HTTPException(status_code=503, detail="Database not configured")
+    # Cap the array length so a malicious client can't OOM us by sending
+    # a million entries that we'd then serialise and write to Supabase.
+    if not isinstance(body.life_events, list) or len(body.life_events) > 50:
+        raise HTTPException(status_code=400, detail="life_events must be a list of at most 50 entries.")
     resp = requests.patch(
         f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}",
         headers={**_sb_headers(), "Prefer": "return=minimal"},
@@ -5033,8 +5051,11 @@ def create_price_target(req: PriceTargetCreate, request: Request):
     direction = _normalize_direction(req.direction)
     if not direction:
         raise HTTPException(status_code=400, detail=f"direction must be 'above' or 'below', got '{req.direction}'")
-    if req.target_price <= 0:
-        raise HTTPException(status_code=400, detail="target_price must be positive")
+    # Upper bound + finiteness check: prevent NaN/Infinity/1e308 inputs from
+    # poisoning the row (json serialization breaks on Infinity, and stored
+    # NaN compares false to everything so the alert never fires).
+    if not (0 < req.target_price <= 1e10) or not math.isfinite(req.target_price):
+        raise HTTPException(status_code=400, detail="target_price must be a finite positive number under 10 billion")
     if not req.ticker.strip():
         raise HTTPException(status_code=400, detail="ticker is required")
     resp = requests.post(
@@ -5070,6 +5091,8 @@ def update_price_target(target_id: str, user_id: str, target_price: float, direc
     direction = _normalize_direction(direction) or direction
     if direction not in ("above", "below"):
         raise HTTPException(status_code=400, detail=f"direction must be 'above' or 'below', got '{direction}'")
+    if not (0 < target_price <= 1e10) or not math.isfinite(target_price):
+        raise HTTPException(status_code=400, detail="target_price must be a finite positive number under 10 billion")
     resp = requests.patch(
         f"{SUPABASE_URL}/rest/v1/price_targets?id=eq.{target_id}&user_id=eq.{user_id}",
         headers={**_sb_headers(), "Prefer": "return=minimal"},

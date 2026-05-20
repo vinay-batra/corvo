@@ -1460,27 +1460,41 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         if (anchor && anchor.seed > 0 && anchor.date) {
           const dates: string[] = data.dates;
           const cumulative: number[] = data.portfolio_cumulative;
-          const anchorDate = anchor.date.slice(0, 10);
-          // Anchor index: first dates entry >= anchor date. If the data
-          // doesn't go back as far as the anchor, anchorIdx = 0 (treat
-          // start-of-data as the effective anchor, which is conservative).
-          let anchorIdx = 0;
-          for (let i = 0; i < dates.length; i++) {
-            if (dates[i].slice(0, 10) >= anchorDate) { anchorIdx = i; break; }
-          }
-          // Yesterday index: most recent dates entry strictly before today.
-          let yesterdayIdx = -1;
-          for (let i = dates.length - 1; i >= 0; i--) {
-            if (dates[i].slice(0, 10) < today) { yesterdayIdx = i; break; }
-          }
-          if (anchorIdx >= 0 && yesterdayIdx > anchorIdx
-              && anchorIdx < cumulative.length && yesterdayIdx < cumulative.length) {
-            const cumAtAnchor = cumulative[anchorIdx];
-            const cumYesterday = cumulative[yesterdayIdx];
-            // growth factor from anchor to yesterday's close.
-            const factor = (1 + cumYesterday) / (1 + cumAtAnchor);
-            const base = anchor.seed * factor;
-            if (base > 0 && Number.isFinite(base)) return base;
+          // Length-mismatch guard: backend usually aligns these but a
+          // yfinance partial fill mid-period or a missing ticker can leave
+          // one array shorter than the other. Skip anchor math if so to
+          // avoid OOB reads or stale-row matching.
+          if (dates.length === cumulative.length && dates.length > 0) {
+            const anchorDate = anchor.date.slice(0, 10);
+            // Anchor index: first dates entry >= anchor date. If the data
+            // doesn't go back as far as the anchor, anchorIdx = 0 (treat
+            // start-of-data as the effective anchor, which is conservative).
+            let anchorIdx = 0;
+            for (let i = 0; i < dates.length; i++) {
+              if (dates[i].slice(0, 10) >= anchorDate) { anchorIdx = i; break; }
+            }
+            // Yesterday index: most recent dates entry strictly before today.
+            let yesterdayIdx = -1;
+            for (let i = dates.length - 1; i >= 0; i--) {
+              if (dates[i].slice(0, 10) < today) { yesterdayIdx = i; break; }
+            }
+            if (anchorIdx >= 0 && yesterdayIdx > anchorIdx) {
+              const cumAtAnchor = cumulative[anchorIdx];
+              const cumYesterday = cumulative[yesterdayIdx];
+              const denom = 1 + cumAtAnchor;
+              // Division-by-zero / NaN guard: a -100% cumulative at the
+              // anchor date (denom = 0) would blow up. Also reject NaN /
+              // non-finite inputs.
+              if (
+                Number.isFinite(cumAtAnchor)
+                && Number.isFinite(cumYesterday)
+                && Math.abs(denom) > 1e-9
+              ) {
+                const factor = (1 + cumYesterday) / denom;
+                const base = anchor.seed * factor;
+                if (base > 0 && Number.isFinite(base)) return base;
+              }
+            }
           }
         }
       } catch {}
