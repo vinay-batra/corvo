@@ -17,9 +17,27 @@ export async function middleware(request: NextRequest) {
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options as Parameters<typeof supabaseResponse.cookies.set>[2])
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // Force-hardened cookie flags. supabase/ssr's defaults are
+            // sane (Lax + httpOnly) but were not explicitly recorded in
+            // code, so a future Supabase release could change them
+            // without our review. Lax over Strict because the magic-link
+            // and OAuth callback flows depend on cookies being sent on
+            // top-level GET navigations from email clients and OAuth
+            // providers; Strict would log the user out on that hop.
+            // Lax still blocks cross-site POST CSRF, which is the actual
+            // threat for our state-changing endpoints. secure=true
+            // requires HTTPS in production; flagged true only when not
+            // in dev so localhost still works.
+            const hardened: CookieOptions = {
+              ...(options ?? {}),
+              httpOnly: true,
+              sameSite: "lax",
+              secure: process.env.NODE_ENV === "production",
+              path: options?.path ?? "/",
+            };
+            supabaseResponse.cookies.set(name, value, hardened as Parameters<typeof supabaseResponse.cookies.set>[2]);
+          });
         },
       },
     }

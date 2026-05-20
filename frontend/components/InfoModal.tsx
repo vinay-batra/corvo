@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import useReturnFocus from "../hooks/useReturnFocus";
 
 interface Section {
   label: string;
@@ -18,6 +19,10 @@ interface InfoModalProps {
 export default function InfoModal({ title, sections, children }: InfoModalProps) {
   const [open, setOpen] = useState(false);
   const idRef = useRef(`info-modal-${Math.random().toString(36).slice(2)}`);
+  // On close, return focus to the trigger element so keyboard users land
+  // back on the "?" button (or whatever opened the modal) instead of at
+  // document body.
+  useReturnFocus(open);
 
   useEffect(() => {
     const handleOtherOpen = (e: Event) => {

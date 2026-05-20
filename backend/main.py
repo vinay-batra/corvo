@@ -12,6 +12,7 @@ import os
 import json
 import re
 import secrets
+import threading
 import traceback
 import requests
 from datetime import datetime, timezone
@@ -39,6 +40,18 @@ print(f"[startup] deployed at {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:
 from collections import OrderedDict
 RATE_LIMITS: "OrderedDict[str, list[float]]" = OrderedDict()
 MAX_RATE_LIMIT_KEYS = 50000
+
+# Single coarse-grained lock guarding every read-modify-write on the in-memory
+# caches (RATE_LIMITS, _sectors_cache, _ticker_sector_cache, _dividends_cache,
+# _image_parse_daily, _market_per_ticker_cache, _health_score_cache,
+# _wsid_cache, _daily_signal_cache, _rebalance_cache). FastAPI runs sync
+# handlers in a thread pool so two concurrent requests can race the same dict
+# slot; without the lock both sides could decide the cache is empty, both
+# fetch from yfinance / Anthropic, and both write - wasted upstream calls and
+# (more importantly) an LRU-eviction loop that mutates length under another
+# reader. One process-wide lock is fine at our scale (~17 users); if
+# contention ever shows up in traces, split per-cache.
+_caches_lock = threading.RLock()
 
 
 def _client_ip(request: "Request") -> str:
@@ -69,20 +82,21 @@ def check_rate_limit(ip: str, endpoint: str, max_requests: int, window_seconds: 
     """Return True if this request should be rate-limited (i.e. blocked)."""
     key = f"{ip}:{endpoint}"
     now = time.time()
-    timestamps = RATE_LIMITS.get(key, [])
-    # Drop timestamps outside the window
-    timestamps = [t for t in timestamps if now - t < window_seconds]
-    if len(timestamps) >= max_requests:
+    with _caches_lock:
+        timestamps = RATE_LIMITS.get(key, [])
+        # Drop timestamps outside the window
+        timestamps = [t for t in timestamps if now - t < window_seconds]
+        if len(timestamps) >= max_requests:
+            RATE_LIMITS[key] = timestamps
+            RATE_LIMITS.move_to_end(key)
+            return True
+        timestamps.append(now)
         RATE_LIMITS[key] = timestamps
         RATE_LIMITS.move_to_end(key)
-        return True
-    timestamps.append(now)
-    RATE_LIMITS[key] = timestamps
-    RATE_LIMITS.move_to_end(key)
-    # LRU eviction so the dict cannot grow unbounded
-    while len(RATE_LIMITS) > MAX_RATE_LIMIT_KEYS:
-        RATE_LIMITS.popitem(last=False)
-    return False
+        # LRU eviction so the dict cannot grow unbounded
+        while len(RATE_LIMITS) > MAX_RATE_LIMIT_KEYS:
+            RATE_LIMITS.popitem(last=False)
+        return False
 
 if os.getenv("SENTRY_DSN"):
     sentry_sdk.init(
@@ -124,8 +138,17 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Explicit method allowlist (was "*"). The IDOR closures in v0.45 / v0.46
+    # already authorise the security-relevant routes via JWT, so this is
+    # defense-in-depth - cuts off any future state-changing verb we don't
+    # actually use from succeeding cross-origin preflight.
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    # Explicit header allowlist. "*" was permissive enough to let an attacker
+    # script include arbitrary custom headers in a CORS preflight if combined
+    # with another bug. We only actually consume the standard set plus our
+    # Bearer token and the admin header.
+    allow_headers=["Authorization", "Content-Type", "X-Admin-Key", "X-Requested-With"],
+    max_age=3600,
 )
 
 PERIOD_MAP = {"6mo": "6mo", "1y": "1y", "2y": "2y", "5y": "5y"}
@@ -1353,12 +1376,16 @@ def _lookup_ticker_sector(ticker: str) -> str:
     unknown tickers without hitting yfinance.
     """
     t = ticker.upper()
-    cached = _ticker_sector_cache.get(t)
+    # Cheap read under lock - just a dict.get. Network call (yfinance) and
+    # the write happen OUTSIDE the lock so we don't block other requests on
+    # a slow upstream. Concurrent misses for the same ticker still both
+    # fetch (small wasted work) but the cache state stays consistent.
+    with _caches_lock:
+        cached = _ticker_sector_cache.get(t)
     if cached:
         sector, ts = cached
         if time.time() - ts < _TICKER_SECTOR_TTL:
             return sector
-    # Cheap lookups first
     if t in ETF_SECTORS:
         sector = ETF_SECTORS[t]
     elif len(t) == 5 and t.endswith("X"):
@@ -1369,8 +1396,9 @@ def _lookup_ticker_sector(ticker: str) -> str:
             sector = info.get("sector") or "Other"
         except Exception:
             sector = "Other"
-    _ticker_sector_cache[t] = (sector, time.time())
-    _cap_dict(_ticker_sector_cache, _TICKER_SECTOR_CACHE_MAX)
+    with _caches_lock:
+        _ticker_sector_cache[t] = (sector, time.time())
+        _cap_dict(_ticker_sector_cache, _TICKER_SECTOR_CACHE_MAX)
     return sector
 
 
@@ -2174,54 +2202,35 @@ def insert_chat_usage(user_id: str):
 
 
 def process_referral_bonus(user_id: str, referral_code: str):
-    """On a user's first portfolio analysis, give the referrer +5 bonus messages (max 25 bonus)."""
+    """On a user's first portfolio analysis, credit the referrer with +5
+    bonus messages (capped at 25). Atomic via the credit_referral_bonus
+    Postgres RPC - prior version was two PATCH calls that could race when
+    a single referrer had two concurrent first-analysis events from
+    different referees (both would read the same current_bonus and both
+    write current+5, netting +5 instead of +10).
+    """
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not user_id or not referral_code:
         return
     try:
-        # Check if this user has already been counted as a referral
-        chk = requests.get(
-            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}&select=referral_credited",
-            headers=_sb_headers(), timeout=5,
-        )
-        if chk.status_code != 200:
-            return
-        rows = chk.json()
-        if not rows or rows[0].get("referral_credited"):
-            return  # already credited or user not found
-
-        # Find referrer: referral_code is first 8 hex chars of their UUID (without dashes)
-        ref_prefix = f"{referral_code[:8]}-"  # UUID starts with "XXXXXXXX-"
-        ref_resp = requests.get(
-            f"{SUPABASE_URL}/rest/v1/profiles?id=ilike.{ref_prefix}%&select=id,bonus_messages_per_day",
-            headers=_sb_headers(), timeout=5,
-        )
-        if ref_resp.status_code != 200:
-            return
-        ref_rows = ref_resp.json()
-        if not ref_rows:
-            return
-        referrer_id = ref_rows[0]["id"]
-        if referrer_id == user_id:
-            return  # self-referral guard
-
-        current_bonus = int(ref_rows[0].get("bonus_messages_per_day") or 0)
-        new_bonus = min(current_bonus + 5, 25)
-
-        # Increment referrer bonus
-        requests.patch(
-            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{referrer_id}",
-            headers={**_sb_headers(), "Prefer": "return=minimal"},
-            json={"bonus_messages_per_day": new_bonus, "updated_at": datetime.now(timezone.utc).isoformat()},
+        r = requests.post(
+            f"{SUPABASE_URL}/rest/v1/rpc/credit_referral_bonus",
+            headers=_sb_headers(),
+            json={
+                "p_referred_user_id": user_id,
+                "p_referrer_code": referral_code,
+            },
             timeout=5,
         )
-        # Mark referred user as credited
-        requests.patch(
-            f"{SUPABASE_URL}/rest/v1/profiles?id=eq.{user_id}",
-            headers={**_sb_headers(), "Prefer": "return=minimal"},
-            json={"referral_credited": True, "updated_at": datetime.now(timezone.utc).isoformat()},
-            timeout=5,
-        )
-        print(f"[referral] credited referrer {referrer_id} +5 bonus (total: {new_bonus}) for new user {user_id}")
+        if r.status_code != 200:
+            print(f"[referral] RPC HTTP {r.status_code}: {r.text[:200]}")
+            return
+        result = r.json() or {}
+        if result.get("credited"):
+            print(f"[referral] credited via RPC: referrer={result.get('referrer_id')} bonus={result.get('new_bonus')} new_user={user_id}")
+        else:
+            # 'reason' fields: already_credited_or_not_found, referrer_not_found,
+            # self_referral, invalid_code. Logged for ops visibility, not an error.
+            print(f"[referral] not credited: {result.get('reason')} new_user={user_id} code={referral_code[:8]}")
     except Exception as e:
         print(f"[referral] process_referral_bonus error: {e}")
 
@@ -4243,11 +4252,14 @@ def market_summary(tickers: str = Query(default=""), request: Request = None):
     ticker_key = ",".join(sorted(user_tickers))
 
     # Check per-ticker cache first. Cap to 500 entries with LRU eviction.
-    cached = _market_per_ticker_cache.get(ticker_key)
-    if cached and time.time() - cached.get("ts", 0) < 60:
-        return cached
-    while len(_market_per_ticker_cache) > 500:
-        _market_per_ticker_cache.pop(next(iter(_market_per_ticker_cache)))
+    # Read + eviction under the global cache lock so a concurrent writer
+    # can't mutate length while we iterate or stale-overwrite a fresher row.
+    with _caches_lock:
+        cached = _market_per_ticker_cache.get(ticker_key)
+        if cached and time.time() - cached.get("ts", 0) < 60:
+            return cached
+        while len(_market_per_ticker_cache) > 500:
+            _market_per_ticker_cache.pop(next(iter(_market_per_ticker_cache)))
 
     # Refresh base market data (indexes + news) if stale
     now = time.time()
@@ -4476,7 +4488,8 @@ Hard rules: no em dashes, no asterisks, no markdown, no vague market jargon. Wri
         "vix": round(vix_val, 1),
         "ts": time.time(),
     }
-    _market_per_ticker_cache[ticker_key] = result
+    with _caches_lock:
+        _market_per_ticker_cache[ticker_key] = result
     return result
 
 
@@ -5639,9 +5652,10 @@ def portfolio_health_score(req: HealthScoreRequest, request: Request):
 
     # Check in-memory cache first (before expensive sector/correlation computation)
     cache_key = _hs_cache_key(req.user_id, tickers, req.account_type)
-    if cache_key in _health_score_cache:
-        cached, _ = _health_score_cache[cache_key]
-        return cached
+    with _caches_lock:
+        if cache_key in _health_score_cache:
+            cached, _ = _health_score_cache[cache_key]
+            return cached
 
     # Check Supabase cache, partitioned by account_type after the v0.34
     # migration (20260516010000_health_score_cache_account_type.sql) widened
@@ -5651,8 +5665,9 @@ def portfolio_health_score(req: HealthScoreRequest, request: Request):
     tkr_hash = "|".join(sorted(t.upper() for t in tickers))
     sb_cached = _hs_load_from_supabase(req.user_id, today, tkr_hash, req.account_type)
     if sb_cached:
-        _health_score_cache[cache_key] = (sb_cached, today)
-        _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
+        with _caches_lock:
+            _health_score_cache[cache_key] = (sb_cached, today)
+            _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
         return sb_cached
 
     # Compute base sub-scores
@@ -5851,8 +5866,9 @@ Rules:
         actions = []
 
     result = {"score": score, "headline": headline, "actions": actions, "cached": False}
-    _health_score_cache[cache_key] = (result, today)
-    _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
+    with _caches_lock:
+        _health_score_cache[cache_key] = (result, today)
+        _cap_dict(_health_score_cache, _HEALTH_SCORE_CACHE_MAX)
     _hs_save_to_supabase(req.user_id, today, tkr_hash, result, req.account_type)
 
     return result
