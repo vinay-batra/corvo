@@ -172,14 +172,14 @@ const ERAS = [
     name: "Launch Prep & Polish",
     versions: "v0.42 → v0.47",
     dateRange: "May 17 → May 20, 2026",
-    intro: "Pricing got real, the AI got sharper, trust got rebuilt, every rough edge got sanded down, the audit backlog hit zero, and a parallel backend on Fly.io stands by for the next Railway hiccup.",
+    intro: "Pricing got real, the AI got sharper, every rough edge got sanded down, and a parallel backend on Fly.io stands by for the next Railway hiccup.",
     highlights: [
-      "Pricing tier rename to Lite / Pro / Max with waitlist-member framing, vote buttons, trust signals reinstated",
-      "Homepage scroll-nav, bento card tilt, and dead Learn route all finally fixed; new Daily Brief bento card; nav-flicker on page change resolved by caching auth state; portfolio value now ratchets from a seed anchor so it tracks market growth over time instead of resetting to your input every reload",
-      "AI advisor sharpening: roast-mode length cap, anti-preamble block, defensive ** stripping client-side, FAQ thinking-dots animation, no more scroll-yank to the bottom of long responses",
-      "Three-session security pass: spoofable X-Forwarded-For, blocking sync-in-async loops, N-call yfinance fanout on Health Score, missing JWT on WSID + HealthScore, rate-limit holes, admin-key timing attack, input bounds on retirement-sim + price-targets + life-events, CSP frame-ancestors, cache thread-safety with RLock, referral race fixed via Postgres RPC, cookie hardening, CORS tightened",
-      "Privacy + Terms refreshed; /account page removed; toast errors no longer auto-dismiss and gain a manual close button; orphan components deleted; modal focus returns to trigger element on close; colorblind direction arrows on daily delta",
-      "Fly.io migration prepared (dormant Dockerfile + fly.toml + cutover runbook) so the next Railway outage is a 30-minute flip, not a scramble",
+      "Pricing tier rename to Lite / Pro / Max with waitlist framing and trust signals reinstated",
+      "Homepage scroll-nav fixed, bento card tilt jitter killed, /learn route fully purged",
+      "Day-over-day portfolio value ratchets from EOD snapshots instead of resetting to seed",
+      "AI advisor sharpened: roast-mode cap, anti-preamble guard, no more scroll-yank on long responses",
+      "Three-session security pass: IDOR closures, blocking-loop fixes, RLS hardening, audit backlog cleared",
+      "Fly.io migration prepared so the next Railway outage is a 30-minute flip, not a scramble",
     ],
     tags: ["Pricing", "AI Integrity", "Security", "Polish", "Infra"],
   },
@@ -266,7 +266,7 @@ export default function ChangelogPage() {
           {/* Scroll hint */}
           <div style={{ textAlign: "center", marginBottom: 36, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
             <span style={{ fontSize: 10, letterSpacing: "0.22em", color: "var(--text3)", fontFamily: "Space Mono, monospace", textTransform: "uppercase", fontWeight: 600 }}>
-              Five chapters · scroll
+              Six chapters · scroll
             </span>
             <svg width="22" height="10" viewBox="0 0 22 10" fill="none">
               <path d="M2 5h17M14 1l4 4-4 4" stroke="var(--text3)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
