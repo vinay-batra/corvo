@@ -41,8 +41,13 @@ export default function FeedbackButton() {
       setSubmitted(true);
       setMessage("");
       setTimeout(() => { setSubmitted(false); setOpen(false); }, 2200);
-    } catch {
-      setError("Could not submit. Please try again.");
+    } catch (e: unknown) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Feedback submit failed:", e);
+      }
+      const err = e as { message?: string; code?: string };
+      const detail = err?.message || err?.code || "Unknown error";
+      setError(`Could not submit: ${detail}`);
     }
     setSubmitting(false);
   };
