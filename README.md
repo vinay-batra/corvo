@@ -4,7 +4,7 @@
 
 [Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js 16 · FastAPI · Supabase · All Rights Reserved
 
-Current release: **v0.47** (May 20, 2026) — frontend and backend both live; Railway recovered and the full v0.45/v0.46/v0.47 backend payload is shipped
+Current release: **v0.48** (May 22, 2026) — emergency hotfix: removed experimental SRI from `next.config.ts` (was blocking every JS chunk and leaving the site blank for ~24h), shipped a missing RLS migration for `public.feedback` so the bug-report widget submits work again, and surfaced real Supabase errors in the FeedbackButton catch block so future regressions don't get swallowed.
 
 ---
 
@@ -75,7 +75,7 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 
 ### Navigation Structure (as of v0.29)
 - **Public nav** is the shared `PublicNav` component used on every public page including the homepage. 68 px height, content-aligned inner container (matches the hero's 1240 max-width). 7 flat top-level links: Features (homepage anchor) · Install · Pricing · Changelog · Blog · About · FAQ. Theme toggle and Get Started rounded pill on the right. Scroll-aware hide on scroll down / show on scroll up (driven by `requestAnimationFrame` polling - works uniformly on the homepage's 100vh container and on regular `window`-scrolling pages).
-- **Dashboard tabs**: Dashboard · Positions · Stocks · Simulations · News
+- **Dashboard tabs** (v0.43+ funnel order): Dashboard · Positions · Simulations · Stocks · News
 - The Dashboard tab itself is split into four scroll-revealed regions: Overview (daily brief, Today's Signal, "What should I do today?"), Analysis (metrics, performance, goal), Intelligence (health, AI insights, vs benchmark), Composition (allocation, sector, insider)
 - Income & Tax and Transactions are sections within the Positions tab - not standalone tabs
 - Paper Trade was removed from the product in v0.24 and the routes, frontend component, and Supabase tables were fully purged in v0.28
