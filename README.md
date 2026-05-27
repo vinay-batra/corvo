@@ -4,7 +4,7 @@
 
 [Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js 16 · FastAPI · Supabase · All Rights Reserved
 
-Current release: **v0.48** (May 22, 2026) — emergency hotfix: removed experimental SRI from `next.config.ts` (was blocking every JS chunk and leaving the site blank for ~24h), shipped a missing RLS migration for `public.feedback` so the bug-report widget submits work again, and surfaced real Supabase errors in the FeedbackButton catch block so future regressions don't get swallowed.
+Current release: **v0.49** (May 27, 2026) — per-account settings + brief context + import loading + portfolio-value education. Each saved portfolio now carries its own portfolio value, account type, and reinvest-dividends preference (two new Supabase migrations); the dashboard brief shows an "As of Friday, May 22 · Updates Monday at 9:30 AM ET" pill when the data is stale so users don't mistake yesterday's brief for live coverage; the brief AI prompt now tax-frames by account_type (Roth users stop getting TLH advice in the brief); screenshot import gets a visible loading state with spinner + skeleton rows; and a one-time popup explains how the portfolio value works the first time a user edits it.
 
 ---
 
