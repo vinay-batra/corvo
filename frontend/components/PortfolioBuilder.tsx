@@ -311,6 +311,17 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   // today's gain so the input shows the live current portfolio value.
   const [portfolioValue, setPortfolioValueState] = useState<string>("50000");
   const [pvFocused, setPvFocused] = useState(false);
+  // First-time education modal. Fires once - the very first time the user
+  // actually edits the Portfolio Value input - to explain that the number
+  // they enter is treated as today's starting balance and day-over-day
+  // tracking only begins at the next market open. localStorage flag
+  // `corvo_pv_first_set_seen` flips to "1" after the first show so it
+  // never re-appears.
+  const [firstSetModalOpen, setFirstSetModalOpen] = useState(false);
+  // Snapshot of the input value when the field gained focus, so the blur
+  // handler can tell "user actually changed it" apart from "they tabbed
+  // through without editing".
+  const pvAtFocusRef = useRef<string>("");
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_portfolio_value") : null;
     if (stored) setPortfolioValueState(stored);
@@ -321,6 +332,24 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       localStorage.setItem("corvo_portfolio_value", v);
       window.dispatchEvent(new Event("storage"));
     }
+  };
+  // Decide whether to fire the first-time popup. Called on blur so we don't
+  // show it mid-keystroke; gated on (a) the user actually changing the
+  // value, (b) the new value being positive and finite, and (c) the
+  // localStorage flag being unset. Marking seen happens here so the modal
+  // never fires twice even if dismissed without clicking the CTA.
+  const maybeShowFirstSetModal = () => {
+    if (typeof window === "undefined") return;
+    try {
+      if (localStorage.getItem("corvo_pv_first_set_seen") === "1") return;
+    } catch { return; }
+    const before = pvAtFocusRef.current;
+    const after = portfolioValue;
+    if (!after || after === before) return;
+    const numericAfter = parseFloat(after);
+    if (!Number.isFinite(numericAfter) || numericAfter <= 0) return;
+    setFirstSetModalOpen(true);
+    try { localStorage.setItem("corvo_pv_first_set_seen", "1"); } catch {}
   };
 
   // Privacy toggle: shared with GreetingBar via the corvo_value_hidden
@@ -1030,8 +1059,17 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               step="1000"
               value={portfolioInputDisplay}
               onChange={e=>handlePortfolioValueChange(e.target.value)}
-              onFocus={(e) => { setPvFocused(true); e.currentTarget.select(); }}
-              onBlur={() => setPvFocused(false)}
+              onFocus={(e) => {
+                setPvFocused(true);
+                // Snapshot the value at focus so blur can decide whether
+                // the user actually edited it (vs tabbed through). Use
+                // the live displayed value rather than the bare base
+                // so a user who tabs in and out without typing won't
+                // trip the first-time popup.
+                pvAtFocusRef.current = portfolioInputDisplay;
+                e.currentTarget.select();
+              }}
+              onBlur={() => { setPvFocused(false); maybeShowFirstSetModal(); }}
               placeholder="50000"
               className="accent-input"
               style={{...INPUT_STYLE, fontFamily:"Space Mono,monospace", fontWeight:700, fontSize:14, padding:"7px 9px"}}
@@ -1379,6 +1417,94 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   </div>
                 )}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── First-time Portfolio Value education modal ──────────────────
+           Fires exactly once - the first time the user actually edits the
+           Portfolio Value field. Marks seen in localStorage so it never
+           appears again. Explains the value-as-starting-balance + next-
+           market-open ratcheting model so users don't expect the number
+           they typed at 2pm to instantly reflect today's gains. */}
+      <AnimatePresence initial={false}>
+        {firstSetModalOpen && (
+          <motion.div
+            initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+            onClick={() => setFirstSetModalOpen(false)}>
+            <motion.div
+              initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              onClick={e => e.stopPropagation()}
+              role="dialog" aria-modal="true" aria-labelledby="pv-first-set-title"
+              style={{
+                background: "var(--card-bg)",
+                border: "0.5px solid var(--border2)",
+                borderTop: "2px solid var(--accent)",
+                borderRadius: 14,
+                padding: "26px 26px 22px",
+                maxWidth: 420, width: "100%",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 32px rgba(201,168,76,0.08)",
+              }}>
+              {/* Gold eyebrow + title pair, matching the InfoModal pattern */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 9, background: "rgba(201,168,76,0.12)", border: "0.5px solid rgba(201,168,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <div>
+                  <p style={{ fontSize: 9, letterSpacing: 2.2, color: C.amber, margin: 0, fontFamily: "Space Mono, monospace", fontWeight: 700, textTransform: "uppercase" }}>Heads up</p>
+                  <p id="pv-first-set-title" style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", margin: "1px 0 0", letterSpacing: -0.2 }}>Setting your portfolio value</p>
+                </div>
+              </div>
+
+              {/* Three short stanzas - keep each under one line of prose so the
+                  modal stays digestible at a glance. */}
+              <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.6, margin: "0 0 10px" }}>
+                Corvo treats this number as today&apos;s <strong style={{ color: "var(--text)" }}>starting balance</strong>. Day-over-day tracking kicks in at the next market open, so the value won&apos;t change today.
+              </p>
+              <p style={{ fontSize: 12.5, color: "var(--text2)", lineHeight: 1.6, margin: "0 0 16px" }}>
+                For the cleanest tracking, set the exact value <strong style={{ color: "var(--text)" }}>right after market close</strong> (4:00 PM ET) so today&apos;s gains are already baked in.
+              </p>
+
+              {/* Tip strip - subtle dashed border, gold accent dot, secondary
+                  text. Lifts the actionable nuance out of the body without
+                  needing a second CTA. */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 9, padding: "10px 12px", border: "0.5px dashed rgba(201,168,76,0.32)", borderRadius: 8, background: "rgba(201,168,76,0.04)", marginBottom: 18 }}>
+                <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: C.amber, flexShrink: 0, marginTop: 6, boxShadow: "0 0 6px rgba(201,168,76,0.5)" }} />
+                <p style={{ fontSize: 11, color: "var(--text2)", margin: 0, lineHeight: 1.55 }}>
+                  Save this portfolio in the <span style={{ color: C.amber, fontWeight: 700 }}>Saved</span> tab to lock the value in. Tomorrow&apos;s opening balance picks up where today closed.
+                </p>
+              </div>
+
+              <button
+                autoFocus
+                onClick={() => setFirstSetModalOpen(false)}
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: C.amber,
+                  color: "var(--bg)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: 1.4,
+                  textTransform: "uppercase",
+                  fontFamily: "Space Mono, monospace",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  boxShadow: "0 0 14px rgba(201,168,76,0.25)",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 0 18px rgba(201,168,76,0.4)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 0 14px rgba(201,168,76,0.25)"; }}
+              >
+                Got it
+              </button>
             </motion.div>
           </motion.div>
         )}

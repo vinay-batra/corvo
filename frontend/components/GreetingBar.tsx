@@ -103,11 +103,20 @@ interface Props {
 function BriefAsOfPill({ asOfLabel, nextUpdateLabel, isStale }: { asOfLabel?: string; nextUpdateLabel?: string; isStale?: boolean }) {
   if (!asOfLabel) return null;
   const stale = !!isStale;
+  // Strip a leading "Updates " on the backend label so we don't render
+  // "Updates Updates throughout the trading day" - the live-state copy
+  // historically wrote a full sentence into that field and the prefix is
+  // re-added below for the stale path. Safe defensive trim either way.
+  const nextClean = (nextUpdateLabel || "").replace(/^updates\s+/i, "").trim();
   return (
     <div
       role="note"
-      aria-label={stale ? `Brief is from ${asOfLabel}. ${nextUpdateLabel || ""}.` : `Brief is live. ${nextUpdateLabel || ""}.`}
+      aria-label={stale ? `Brief is from ${asOfLabel}.${nextClean ? ` Updates ${nextClean}.` : ""}` : "Brief is live, updating throughout the trading day."}
       style={{
+        // alignSelf so the pill stays content-sized inside flex-column
+        // parents (otherwise it stretches to 100% width because flex
+        // children default to align-items: stretch on the cross axis).
+        alignSelf: "flex-start",
         display: "inline-flex",
         alignItems: "center",
         gap: 7,
@@ -121,20 +130,25 @@ function BriefAsOfPill({ asOfLabel, nextUpdateLabel, isStale }: { asOfLabel?: st
         background: stale ? "rgba(201,168,76,0.1)" : "rgba(76,175,125,0.08)",
         border: `0.5px solid ${stale ? "rgba(201,168,76,0.32)" : "rgba(76,175,125,0.25)"}`,
         color: stale ? "var(--accent)" : "#4caf7d",
+        whiteSpace: "nowrap",
         marginBottom: 8,
       }}
     >
-      {/* Status dot - gold ring when stale, green pulse when live */}
       {stale ? (
-        <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 6px rgba(201,168,76,0.6)" }} />
-      ) : (
-        <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#4caf7d", animation: "gb-live-pulse 2s ease-in-out infinite" }} />
-      )}
-      <span>As of {asOfLabel}</span>
-      {nextUpdateLabel && (
         <>
-          <span aria-hidden style={{ color: "var(--text3)", letterSpacing: 0 }}>·</span>
-          <span style={{ color: stale ? "var(--accent)" : "var(--text3)" }}>Updates {nextUpdateLabel}</span>
+          <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 6px rgba(201,168,76,0.6)", flexShrink: 0 }} />
+          <span>As of {asOfLabel}</span>
+          {nextClean && (
+            <>
+              <span aria-hidden style={{ color: "var(--text3)", letterSpacing: 0 }}>·</span>
+              <span style={{ color: "var(--accent)" }}>Updates {nextClean}</span>
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#4caf7d", animation: "gb-live-pulse 2s ease-in-out infinite", flexShrink: 0 }} />
+          <span>Live now</span>
         </>
       )}
     </div>
