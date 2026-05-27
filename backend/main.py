@@ -4476,6 +4476,80 @@ Hard rules: no em dashes, no asterisks, no markdown, no vague market jargon. Wri
         except Exception as e:
             print(f"market-summary AI error: {e}")
 
+    # ── "As of" + next-update labels ──────────────────────────────────────
+    # The brief always loads, but when the market hasn't opened yet OR it's
+    # a weekend the data is from the LAST trading session, not today. Users
+    # had no way to tell - they'd see a 9am Monday brief and assume it was
+    # live, when it was really Friday's close. So surface the actual trading
+    # day the brief reflects plus when fresh market data is expected.
+    #
+    # is_stale = market is currently closed AND the last completed session
+    # is on a different calendar date than today. The frontend conditionally
+    # makes the date pill more prominent when stale.
+    try:
+        from datetime import date as _date_cls, time as _time_cls, timedelta as _td
+        from zoneinfo import ZoneInfo as _ZI
+        _et_now = datetime.now(_ZI("America/New_York"))
+        _et_date = _et_now.date()
+        _et_mins = _et_now.hour * 60 + _et_now.minute
+        _MO, _MC = 9 * 60 + 30, 16 * 60
+        _is_weekday = _et_now.weekday() < 5
+        _is_open = _is_weekday and _MO <= _et_mins < _MC
+
+        def _last_trading_date() -> _date_cls:
+            # Today already had (or is mid-) a completed trading session?
+            if _is_weekday and _et_mins >= _MC:
+                return _et_date
+            # Walk backward to the previous weekday.
+            d = _et_date - _td(days=1)
+            while d.weekday() >= 5:
+                d -= _td(days=1)
+            return d
+
+        def _next_market_open() -> datetime:
+            # Today's open is still ahead?
+            if _is_weekday and _et_mins < _MO:
+                return datetime.combine(_et_date, _time_cls(9, 30), tzinfo=_ZI("America/New_York"))
+            # Otherwise next weekday's open.
+            d = _et_date + _td(days=1)
+            while d.weekday() >= 5:
+                d += _td(days=1)
+            return datetime.combine(d, _time_cls(9, 30), tzinfo=_ZI("America/New_York"))
+
+        if _is_open:
+            as_of_label = "Live"
+            as_of_iso = _et_date.isoformat()
+            next_update_label = "Updates throughout the trading day"
+            is_stale = False
+        else:
+            _last_td = _last_trading_date()
+            _is_today = _last_td == _et_date
+            # "today" only ever fires post-close on a weekday, where the
+            # current session is the most recent completed one.
+            as_of_label = "today's close" if _is_today else _last_td.strftime("%A, %B ") + str(_last_td.day)
+            as_of_iso = _last_td.isoformat()
+
+            _nxt = _next_market_open()
+            _nxt_date = _nxt.date()
+            if _nxt_date == _et_date:
+                next_update_label = "Today at 9:30 AM ET"
+            elif _nxt_date == _et_date + _td(days=1):
+                next_update_label = "Tomorrow at 9:30 AM ET"
+            else:
+                next_update_label = _nxt.strftime("%A") + " at 9:30 AM ET"
+            # Brief is "stale" when the market is closed AND the brief
+            # reflects a past calendar day. Post-close on a weekday still
+            # reflects today, so we don't want to label it as stale.
+            is_stale = not _is_today
+    except Exception as _e:
+        # Defensive: never let the date math sink the response. Frontend
+        # treats missing labels as "no banner, fall back to existing UI".
+        print(f"market-summary as-of error: {_e}")
+        as_of_label = ""
+        as_of_iso = ""
+        next_update_label = ""
+        is_stale = False
+
     result = {
         "market": market_text,
         "holdings": holdings_text,
@@ -4487,6 +4561,10 @@ Hard rules: no em dashes, no asterisks, no markdown, no vague market jargon. Wri
         "dia_pct": round(dia_pct, 2),
         "vix": round(vix_val, 1),
         "ts": time.time(),
+        "as_of_label": as_of_label,
+        "as_of_iso": as_of_iso,
+        "next_update_label": next_update_label,
+        "is_stale": is_stale,
     }
     with _caches_lock:
         _market_per_ticker_cache[ticker_key] = result

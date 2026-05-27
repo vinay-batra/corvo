@@ -2132,6 +2132,38 @@ const { dark, toggle: toggleDark }  = useTheme();
     // event fires, so a brand-new save immediately updates savedPortfolioId.
   }, [assets, userId, savedPortfolioRefreshTick]);
 
+  // ── Persist portfolio_value back to the saved portfolio ────────────────────
+  // When a saved portfolio is active and the user edits the sidebar Portfolio
+  // Value input, debounce-write the new number to the portfolios row so
+  // re-loading that portfolio later (or from a different device) shows the
+  // value they last entered for THIS account - not a single shared seed.
+  // Skipped when no saved portfolio is active OR the value is non-positive
+  // (those go to the localStorage seed only). Skipped on the very first
+  // update after a portfolio load: the load handler itself writes the value
+  // from the saved row, so the first post-load tick would just re-write the
+  // same number back. lastPersistedRef gates that.
+  const lastPersistedPvRef = useRef<{ portfolioId: string | null; value: number | null }>({ portfolioId: null, value: null });
+  useEffect(() => {
+    if (!savedPortfolioId || !userId) return;
+    if (!(portfolioInputValue > 0)) return;
+    const last = lastPersistedPvRef.current;
+    if (last.portfolioId === savedPortfolioId && last.value === portfolioInputValue) return;
+    const id = setTimeout(async () => {
+      try {
+        await supabase
+          .from("portfolios")
+          .update({ portfolio_value: portfolioInputValue, updated_at: new Date().toISOString() })
+          .eq("id", savedPortfolioId)
+          .eq("user_id", userId);
+        lastPersistedPvRef.current = { portfolioId: savedPortfolioId, value: portfolioInputValue };
+      } catch {
+        // Network / RLS error - we keep the localStorage seed so the
+        // session-local display is still right; next edit retries.
+      }
+    }, 600);
+    return () => clearTimeout(id);
+  }, [savedPortfolioId, userId, portfolioInputValue]);
+
   // Load portfolio performance history when savedPortfolioId is known
   useEffect(() => {
     if (!savedPortfolioId || !userId) { setPerfHistory([]); return; }
@@ -2544,11 +2576,36 @@ const { dark, toggle: toggleDark }  = useTheme();
             assets={assets}
             data={data}
             accountType={accountType}
-            onLoad={(a, at, id, name) => {
+            currentPortfolioValue={portfolioInputValue}
+            onLoad={(a, at, id, name, pv) => {
               setAssets(a);
               setAccountType(at);
               setSavedPortfolioId(id);
               setSavedPortfolioName(name);
+              // Per-saved-portfolio value: each saved portfolio carries
+              // its own dollar amount now (added 2026-05-27). Apply it to
+              // the live state + localStorage seed + fire the storage event
+              // so PortfolioBuilder (sidebar input) and GreetingBar both
+              // re-read in lockstep. If the saved row is older than the
+              // migration (pv null), leave the existing seed alone so we
+              // don't snap the display to $0.
+              if (pv != null && Number.isFinite(pv) && pv > 0) {
+                setPortfolioInputValue(pv);
+                try {
+                  localStorage.setItem("corvo_portfolio_value", String(pv));
+                  window.dispatchEvent(new Event("storage"));
+                } catch {}
+                // Seed the persist-back ref so the value we just LOADED
+                // doesn't immediately get PATCHed back to Supabase as if
+                // the user had edited it. Only subsequent edits should
+                // round-trip.
+                lastPersistedPvRef.current = { portfolioId: id, value: pv };
+              } else {
+                // Older row with no saved value - the localStorage seed
+                // stays, but mark this portfolio as needing a first write
+                // on the next user edit so the value gets captured.
+                lastPersistedPvRef.current = { portfolioId: id, value: null };
+              }
             }}
           />
         )}

@@ -46,7 +46,24 @@ function computeMarketStatus() {
 }
 
 type PerfSnapshot = { date: string; portfolio_value: number; cumulative_return: number };
-interface MarketSummary { market: string; holdings: string; context: string; outlook?: string; }
+interface MarketSummary {
+  market: string;
+  holdings: string;
+  context: string;
+  outlook?: string;
+  // Date context for the brief. Backend marks `is_stale` true whenever the
+  // market is currently closed AND the brief reflects a past calendar day
+  // (pre-market on a weekday, weekend, holiday). When stale, the frontend
+  // surfaces a prominent "AS OF FRI · UPDATES MON 9:30 AM ET" line so the
+  // user doesn't mistake yesterday's brief for live data. When live (during
+  // RTH), the same line shows a quieter "LIVE · UPDATES THROUGHOUT THE
+  // TRADING DAY" instead. All three label fields may be empty strings on a
+  // pre-deploy backend - the renderer treats that as "skip the banner".
+  as_of_label?: string;
+  as_of_iso?: string;
+  next_update_label?: string;
+  is_stale?: boolean;
+}
 interface HoldingPrice { ticker: string; price: number | null; changePct: number | null; sparkline: number[]; }
 interface IndexPrice { label: string; ticker: string; price: number | null; changePct: number | null; sparkline: number[]; }
 
@@ -72,6 +89,56 @@ interface Props {
   // or set to the default (taxable_brokerage), the pill still renders so
   // the visual is consistent across every portfolio.
   accountType?: AccountTypeId;
+}
+
+// Small "AS OF X · UPDATES Y" line that sits above the brief. The default
+// briefing experience is collapsed (just a 2-line teaser), and the cached
+// content is from the LAST trading session whenever the market is currently
+// closed - so on a Saturday morning, the brief reads as if it were live,
+// when it's really Friday's close. Now: every brief carries an explicit
+// date pill. Gold-tinted + obvious when stale (market currently closed and
+// the brief is from a previous calendar day), dim and informational when
+// the data is live. Returns null when the backend hasn't shipped the new
+// fields yet (so the pill silently no-ops on older deployments).
+function BriefAsOfPill({ asOfLabel, nextUpdateLabel, isStale }: { asOfLabel?: string; nextUpdateLabel?: string; isStale?: boolean }) {
+  if (!asOfLabel) return null;
+  const stale = !!isStale;
+  return (
+    <div
+      role="note"
+      aria-label={stale ? `Brief is from ${asOfLabel}. ${nextUpdateLabel || ""}.` : `Brief is live. ${nextUpdateLabel || ""}.`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        fontFamily: "'Space Mono', monospace",
+        fontSize: 9.5,
+        letterSpacing: 1.4,
+        textTransform: "uppercase",
+        fontWeight: 700,
+        padding: "4px 9px",
+        borderRadius: 5,
+        background: stale ? "rgba(201,168,76,0.1)" : "rgba(76,175,125,0.08)",
+        border: `0.5px solid ${stale ? "rgba(201,168,76,0.32)" : "rgba(76,175,125,0.25)"}`,
+        color: stale ? "var(--accent)" : "#4caf7d",
+        marginBottom: 8,
+      }}
+    >
+      {/* Status dot - gold ring when stale, green pulse when live */}
+      {stale ? (
+        <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 6px rgba(201,168,76,0.6)" }} />
+      ) : (
+        <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#4caf7d", animation: "gb-live-pulse 2s ease-in-out infinite" }} />
+      )}
+      <span>As of {asOfLabel}</span>
+      {nextUpdateLabel && (
+        <>
+          <span aria-hidden style={{ color: "var(--text3)", letterSpacing: 0 }}>·</span>
+          <span style={{ color: stale ? "var(--accent)" : "var(--text3)" }}>Updates {nextUpdateLabel}</span>
+        </>
+      )}
+    </div>
+  );
 }
 
 function BriefSection({ label, text, delay }: { label: string; text: string; delay: number }) {
@@ -603,32 +670,43 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
             just "Good evening, X" when the brief is closed. Clicking the
             preview expands the full brief. Hidden when there's no brief
             content (initial load, fetch error) or when the brief is already
-            expanded. */}
+            expanded.
+            v0.49 (2026-05-27): a small "AS OF FRI · UPDATES MON 9:30 AM
+            ET" pill sits above the teaser whenever the brief is from a
+            past trading day, so weekend / pre-market users don't mistake
+            yesterday's brief for live coverage. */}
         {collapsed && !hideBriefing && market?.market && (
-          <div
-            onClick={toggleCollapsed}
-            role="button"
-            tabIndex={0}
-            onKeyDown={e => { if (e.key === "Enter" || e.key === " ") toggleCollapsed(); }}
-            title="Expand brief"
-            style={{
-              fontSize: 12.5,
-              color: "var(--text3)",
-              lineHeight: 1.55,
-              cursor: "pointer",
-              maxWidth: 720,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              marginTop: 6,
-              marginBottom: 4,
-              transition: "color 0.15s",
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = "var(--text2)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = "var(--text3)"; }}
-          >
-            {market.market}
+          <div style={{ marginTop: 6, marginBottom: 4 }}>
+            {market.as_of_label && (
+              <BriefAsOfPill
+                asOfLabel={market.as_of_label}
+                nextUpdateLabel={market.next_update_label}
+                isStale={market.is_stale}
+              />
+            )}
+            <div
+              onClick={toggleCollapsed}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") toggleCollapsed(); }}
+              title="Expand brief"
+              style={{
+                fontSize: 12.5,
+                color: "var(--text3)",
+                lineHeight: 1.55,
+                cursor: "pointer",
+                maxWidth: 720,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = "var(--text2)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = "var(--text3)"; }}
+            >
+              {market.market}
+            </div>
           </div>
         )}
 
@@ -645,6 +723,16 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
                 ))
               ) : hasBriefContent ? (
                 <>
+                  {/* Date pill at the very top of the expanded brief, mirror
+                      of the one on the collapsed teaser so the context
+                      doesn't disappear when the user opens the full brief. */}
+                  {market!.as_of_label && (
+                    <BriefAsOfPill
+                      asOfLabel={market!.as_of_label}
+                      nextUpdateLabel={market!.next_update_label}
+                      isStale={market!.is_stale}
+                    />
+                  )}
                   {market!.market && <BriefSection label="Markets Today" text={market!.market} delay={0} />}
                   {market!.context && (
                     <><div style={{ height: "0.5px", background: "var(--border)", opacity: 0.5 }} /><BriefSection label="What Drove It" text={market!.context} delay={0.05} /></>

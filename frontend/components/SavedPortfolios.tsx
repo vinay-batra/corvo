@@ -8,7 +8,7 @@ const LS_KEY = "corvo_saved_portfolios";
 const HISTORY_KEY_PREFIX = "corvo_history_";
 const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", border: "var(--border)", cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)" };
 interface Asset { ticker: string; weight: number; accountType?: AccountTypeId; }
-interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; }
+interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; portfolioValue?: number | null; }
 
 /** Map a Supabase portfolios row → local Portfolio */
 function fromDb(row: any): Portfolio {
@@ -17,6 +17,15 @@ function fromDb(row: any): Portfolio {
   const holdingAccountTypes: string[] = row.holding_account_types ?? [];
   const accountType: AccountTypeId =
     isAccountTypeId(row.account_type) ? row.account_type : DEFAULT_ACCOUNT_TYPE;
+  // portfolio_value is per-saved-portfolio (added in
+  // 20260527000000_portfolios_portfolio_value.sql). Rows that pre-date the
+  // migration have NULL here; the caller falls back to the localStorage
+  // seed (corvo_portfolio_value) in that case so old portfolios don't snap
+  // to $0 when re-loaded.
+  const rawValue = row.portfolio_value;
+  const portfolioValue: number | null =
+    rawValue == null || rawValue === "" ? null
+      : Number.isFinite(Number(rawValue)) ? Number(rawValue) : null;
   return {
     id: row.id,
     name: row.name,
@@ -30,6 +39,7 @@ function fromDb(row: any): Portfolio {
     }),
     accountType,
     updatedAt: row.updated_at || row.created_at,
+    portfolioValue,
   };
 }
 
@@ -46,6 +56,10 @@ function toDb(p: Portfolio, userId: string) {
     // tags rather than silently preserving them.
     holding_account_types: p.assets.map(a => a.accountType ?? ""),
     account_type: p.accountType,
+    // null is intentional - leaves the column unset so we can tell "user
+    // hasn't picked a value yet" apart from "user picked $0" downstream
+    // (the seed fallback only fires on null, not on 0).
+    portfolio_value: p.portfolioValue == null ? null : Number(p.portfolioValue),
     updated_at: new Date().toISOString(),
   };
 }
@@ -115,17 +129,25 @@ function saveLocal(portfolios: Portfolio[]) {
   } catch {}
 }
 
-export default function SavedPortfolios({ assets, data, accountType, onLoad }: {
+export default function SavedPortfolios({ assets, data, accountType, currentPortfolioValue, onLoad }: {
   assets: Asset[];
   data: any;
   accountType: AccountTypeId;
-  // Pass the saved portfolio's id + name back so the dashboard can set
-  // savedPortfolioId synchronously - critical for perfHistory to refetch
+  // The live portfolio value the user has entered for the currently active
+  // portfolio. Captured into the new portfolio row on save() so each saved
+  // portfolio carries its own value, instead of every account sharing the
+  // single localStorage seed. Optional - when omitted, save() writes null
+  // and the loader falls back to the seed on re-open.
+  currentPortfolioValue?: number | null;
+  // Pass the saved portfolio's id + name + value back so the dashboard can
+  // set savedPortfolioId synchronously - critical for perfHistory to refetch
   // and the live value to ratchet day-over-day from the right snapshot.
   // Without this, savedPortfolioId only updates via an async auto-detect
   // useEffect on assets changes, which races against the polling fetch and
   // can leave the live value pinned to the previously-loaded portfolio.
-  onLoad: (a: Asset[], accountType: AccountTypeId, portfolioId: string, portfolioName: string) => void;
+  // portfolioValue arrives as null for portfolios saved before the column
+  // migration; the dashboard keeps the existing seed in that case.
+  onLoad: (a: Asset[], accountType: AccountTypeId, portfolioId: string, portfolioName: string, portfolioValue: number | null) => void;
 }) {
   // Match the active assets against saved portfolios so the matching chip
   // can be visually highlighted as "you're viewing this one right now".
@@ -187,6 +209,10 @@ export default function SavedPortfolios({ assets, data, accountType, onLoad }: {
       name: name.trim(),
       assets,
       accountType,
+      // Snapshot whatever the user currently has in the sidebar Portfolio
+      // Value input. If the prop is omitted (older callsite), pass null so
+      // the column stays unset and the seed fallback takes over.
+      portfolioValue: currentPortfolioValue == null ? null : Number(currentPortfolioValue),
     };
 
     if (user) {
@@ -276,7 +302,7 @@ export default function SavedPortfolios({ assets, data, accountType, onLoad }: {
                   position: "relative",
                   boxShadow: isActive ? "0 0 12px rgba(201,168,76,0.14)" : "none",
                 }}
-                onClick={() => onLoad(p.assets, p.accountType, p.id, p.name)}
+                onClick={() => onLoad(p.assets, p.accountType, p.id, p.name, p.portfolioValue ?? null)}
                 onMouseEnter={e => {
                   if (isActive) return;
                   e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)";

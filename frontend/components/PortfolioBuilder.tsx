@@ -658,6 +658,66 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
 
       {importError&&<p style={{fontSize:10,color:"var(--red)",margin:"8px 0"}}>{importError}</p>}
 
+      {/* ── Import-from-screenshot loading state ─────────────────────
+           Before this card, the only feedback during the ~5s
+           Claude-vision parse was the overflow-menu label flipping to
+           "Importing..." - which the user couldn't see because the
+           overflow menu closes on click. So clicking Import looked like
+           clicking a dead button. Now: a visible status card with a
+           spinner, an explanation of what's happening, and 3 shimmering
+           skeleton rows so the user knows holdings are about to land. */}
+      {importLoading && (
+        <div style={{
+          marginTop: 10,
+          padding: "14px 14px",
+          background: "var(--bg2)",
+          border: "0.5px solid rgba(201,168,76,0.3)",
+          borderLeft: "2px solid var(--accent)",
+          borderRadius: 10,
+          boxShadow: "0 0 14px rgba(201,168,76,0.08)",
+        }} role="status" aria-live="polite" aria-label="Importing portfolio from screenshot">
+          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+            <div style={{
+              width: 18, height: 18, flexShrink: 0,
+              border: "1.5px solid rgba(201,168,76,0.22)",
+              borderTopColor: "var(--accent)",
+              borderRadius: "50%",
+              animation: "spin 0.7s linear infinite",
+            }} />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p style={{ fontSize: 11, fontFamily: "Space Mono, monospace", letterSpacing: 1.6, color: C.amber, fontWeight: 700, margin: 0, textTransform: "uppercase" }}>Reading screenshot</p>
+              <p style={{ fontSize: 10.5, color: "var(--text3)", margin: "3px 0 0", lineHeight: 1.4 }}>Detecting tickers and weights. Takes a few seconds.</p>
+            </div>
+          </div>
+          {/* Skeleton placeholder rows so the user sees the shape of what's
+              about to fill in. Three rows = the most common short portfolio
+              import size; longer imports just extend the list naturally
+              when the response lands. */}
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+            {[78, 66, 84].map((w, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "8px 10px",
+                background: "var(--bg3)",
+                border: "0.5px solid var(--border)",
+                borderRadius: 7,
+                opacity: 0.85,
+              }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(201,168,76,0.4)", animation: "pb-import-pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.18}s` }} />
+                <div style={{ flex: 1, height: 9, borderRadius: 3, background: "var(--bg2)", overflow: "hidden", position: "relative" }}>
+                  <div style={{ position: "absolute", inset: 0, width: `${w}%`, background: "linear-gradient(90deg, transparent, rgba(201,168,76,0.18), transparent)", animation: "pb-import-shimmer 1.4s ease-in-out infinite", animationDelay: `${i * 0.18}s` }} />
+                </div>
+                <div style={{ width: 38, height: 9, borderRadius: 3, background: "var(--bg2)", opacity: 0.7 }} />
+              </div>
+            ))}
+          </div>
+          <style>{`
+            @keyframes pb-import-pulse { 0%,100% { opacity: 0.35 } 50% { opacity: 1 } }
+            @keyframes pb-import-shimmer { 0% { transform: translateX(-100%) } 100% { transform: translateX(220%) } }
+          `}</style>
+        </div>
+      )}
+
       {/* ── Asset list ────────────────────────────────────────────── */}
       <div style={{marginTop:4, paddingTop:12}}>
       <AnimatePresence initial={false}>
