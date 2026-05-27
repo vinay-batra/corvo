@@ -2164,6 +2164,50 @@ const { dark, toggle: toggleDark }  = useTheme();
     return () => clearTimeout(id);
   }, [savedPortfolioId, userId, portfolioInputValue]);
 
+  // ── Persist account_type + reinvest_dividends back to the saved portfolio ──
+  // Same pattern as portfolio_value above. account_type is the tax-context
+  // lens the AI reasons through; reinvest_dividends affects CAGR display + AI
+  // dividend-related advice. Both used to live in localStorage globally,
+  // which meant changing them on a Roth IRA also flipped them on a separate
+  // Brokerage that was just sharing the same key. Now per-portfolio.
+  // lastPersistedSettingsRef gates the same "don't re-write what we just
+  // loaded" check the portfolio_value effect uses.
+  const lastPersistedSettingsRef = useRef<{ portfolioId: string | null; accountType: AccountTypeId | null; reinvest: boolean | null }>({
+    portfolioId: null, accountType: null, reinvest: null,
+  });
+  useEffect(() => {
+    if (!savedPortfolioId || !userId) return;
+    const last = lastPersistedSettingsRef.current;
+    if (
+      last.portfolioId === savedPortfolioId
+      && last.accountType === accountType
+      && last.reinvest === reinvestDividends
+    ) return;
+    const id = setTimeout(async () => {
+      try {
+        await supabase
+          .from("portfolios")
+          .update({
+            account_type: accountType,
+            reinvest_dividends: reinvestDividends,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", savedPortfolioId)
+          .eq("user_id", userId);
+        lastPersistedSettingsRef.current = {
+          portfolioId: savedPortfolioId,
+          accountType,
+          reinvest: reinvestDividends,
+        };
+      } catch {
+        // Same fallback semantics as portfolio_value: localStorage carries
+        // the session-local change so the AI prompts pick it up; next
+        // toggle retries the persist.
+      }
+    }, 400);
+    return () => clearTimeout(id);
+  }, [savedPortfolioId, userId, accountType, reinvestDividends]);
+
   // Load portfolio performance history when savedPortfolioId is known
   useEffect(() => {
     if (!savedPortfolioId || !userId) { setPerfHistory([]); return; }
@@ -2577,7 +2621,8 @@ const { dark, toggle: toggleDark }  = useTheme();
             data={data}
             accountType={accountType}
             currentPortfolioValue={portfolioInputValue}
-            onLoad={(a, at, id, name, pv) => {
+            currentReinvestDividends={reinvestDividends}
+            onLoad={(a, at, id, name, pv, reinvest) => {
               setAssets(a);
               setAccountType(at);
               setSavedPortfolioId(id);
@@ -2606,6 +2651,22 @@ const { dark, toggle: toggleDark }  = useTheme();
                 // on the next user edit so the value gets captured.
                 lastPersistedPvRef.current = { portfolioId: id, value: null };
               }
+              // Per-saved-portfolio reinvest-dividends toggle. PortfolioBuilder
+              // reads localStorage on mount + on the storage event, so writing
+              // the loaded value here updates both displays.
+              try {
+                localStorage.setItem("corvo_reinvest_dividends", reinvest ? "true" : "false");
+                window.dispatchEvent(new Event("storage"));
+              } catch {}
+              setReinvestDividends(reinvest);
+              // Same persist-gate as portfolioValue. Seed the ref with
+              // (id, reinvest) so the load doesn't immediately re-write
+              // the same value back; only subsequent user toggles persist.
+              lastPersistedSettingsRef.current = {
+                portfolioId: id,
+                accountType: at,
+                reinvest,
+              };
             }}
           />
         )}

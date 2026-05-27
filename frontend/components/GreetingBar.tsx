@@ -309,10 +309,19 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
     const controller = new AbortController();
     setSummaryLoading(true); setMarket(null);
     const tickerParam = assets.map(a => a.ticker).filter(Boolean).join(",");
-    const url = tickerParam ? `${API_URL}/market-summary?tickers=${encodeURIComponent(tickerParam)}` : `${API_URL}/market-summary`;
+    // Pass account_type so the brief's "Your Portfolio" paragraph
+    // frames the holdings through the right tax lens (Roth IRA -> no
+    // TLH talk, HSA -> no cap-gains talk, Brokerage -> normal). Falls
+    // back to the default brokerage on the backend when empty.
+    const atParam = resolvedAccountType && resolvedAccountType !== DEFAULT_ACCOUNT_TYPE
+      ? `&account_type=${encodeURIComponent(resolvedAccountType)}`
+      : "";
+    const url = tickerParam
+      ? `${API_URL}/market-summary?tickers=${encodeURIComponent(tickerParam)}${atParam}`
+      : (atParam ? `${API_URL}/market-summary?${atParam.slice(1)}` : `${API_URL}/market-summary`);
     fetch(url, { signal: controller.signal }).then(r => r.json()).then(d => { setMarket(d ?? null); setSummaryLoading(false); }).catch(e => { if (e?.name !== "AbortError") setSummaryLoading(false); });
     return () => controller.abort();
-  }, [assets]);
+  }, [assets, resolvedAccountType]);
 
   const [indexData, setIndexData] = useState<IndexPrice[]>([
     { label: "S&P 500", ticker: "^GSPC", price: null, changePct: null, sparkline: [] },

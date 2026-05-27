@@ -8,7 +8,7 @@ const LS_KEY = "corvo_saved_portfolios";
 const HISTORY_KEY_PREFIX = "corvo_history_";
 const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", border: "var(--border)", cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)" };
 interface Asset { ticker: string; weight: number; accountType?: AccountTypeId; }
-interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; portfolioValue?: number | null; }
+interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; portfolioValue?: number | null; reinvestDividends?: boolean; }
 
 /** Map a Supabase portfolios row → local Portfolio */
 function fromDb(row: any): Portfolio {
@@ -26,6 +26,12 @@ function fromDb(row: any): Portfolio {
   const portfolioValue: number | null =
     rawValue == null || rawValue === "" ? null
       : Number.isFinite(Number(rawValue)) ? Number(rawValue) : null;
+  // reinvest_dividends defaults to true at the DB level (migration
+  // 20260527010000) so legacy rows automatically pick up the historical
+  // implicit default. Treat any non-false value (null, undefined,
+  // missing column on a pre-deploy backend) as true so the toggle never
+  // silently flips off after a portfolio load.
+  const reinvestDividends: boolean = row.reinvest_dividends === false ? false : true;
   return {
     id: row.id,
     name: row.name,
@@ -40,6 +46,7 @@ function fromDb(row: any): Portfolio {
     accountType,
     updatedAt: row.updated_at || row.created_at,
     portfolioValue,
+    reinvestDividends,
   };
 }
 
@@ -60,6 +67,10 @@ function toDb(p: Portfolio, userId: string) {
     // hasn't picked a value yet" apart from "user picked $0" downstream
     // (the seed fallback only fires on null, not on 0).
     portfolio_value: p.portfolioValue == null ? null : Number(p.portfolioValue),
+    // Same default-true semantics as fromDb. Always write an explicit
+    // boolean so the column never goes null and we don't rely on the
+    // DB default after the first write.
+    reinvest_dividends: p.reinvestDividends === false ? false : true,
     updated_at: new Date().toISOString(),
   };
 }
@@ -129,7 +140,7 @@ function saveLocal(portfolios: Portfolio[]) {
   } catch {}
 }
 
-export default function SavedPortfolios({ assets, data, accountType, currentPortfolioValue, onLoad }: {
+export default function SavedPortfolios({ assets, data, accountType, currentPortfolioValue, currentReinvestDividends, onLoad }: {
   assets: Asset[];
   data: any;
   accountType: AccountTypeId;
@@ -139,15 +150,24 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
   // single localStorage seed. Optional - when omitted, save() writes null
   // and the loader falls back to the seed on re-open.
   currentPortfolioValue?: number | null;
-  // Pass the saved portfolio's id + name + value back so the dashboard can
-  // set savedPortfolioId synchronously - critical for perfHistory to refetch
-  // and the live value to ratchet day-over-day from the right snapshot.
-  // Without this, savedPortfolioId only updates via an async auto-detect
-  // useEffect on assets changes, which races against the polling fetch and
-  // can leave the live value pinned to the previously-loaded portfolio.
+  // The live reinvest-dividends toggle state for the currently active
+  // portfolio. Same pattern as currentPortfolioValue: snapshotted into the
+  // new portfolio row on save() so each saved portfolio carries its own
+  // preference instead of every account sharing the single localStorage
+  // toggle.
+  currentReinvestDividends?: boolean;
+  // Pass the saved portfolio's id + name + value + reinvest back so the
+  // dashboard can apply per-portfolio settings synchronously on click.
+  // savedPortfolioId is critical for perfHistory to refetch and the live
+  // value to ratchet day-over-day from the right snapshot. Without it,
+  // savedPortfolioId only updates via an async auto-detect useEffect on
+  // assets changes, which races against the polling fetch and can leave
+  // the live value pinned to the previously-loaded portfolio.
   // portfolioValue arrives as null for portfolios saved before the column
   // migration; the dashboard keeps the existing seed in that case.
-  onLoad: (a: Asset[], accountType: AccountTypeId, portfolioId: string, portfolioName: string, portfolioValue: number | null) => void;
+  // reinvestDividends defaults to true (matching the historical implicit
+  // default + DB column default) so it's always a real boolean.
+  onLoad: (a: Asset[], accountType: AccountTypeId, portfolioId: string, portfolioName: string, portfolioValue: number | null, reinvestDividends: boolean) => void;
 }) {
   // Match the active assets against saved portfolios so the matching chip
   // can be visually highlighted as "you're viewing this one right now".
@@ -213,6 +233,9 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
       // Value input. If the prop is omitted (older callsite), pass null so
       // the column stays unset and the seed fallback takes over.
       portfolioValue: currentPortfolioValue == null ? null : Number(currentPortfolioValue),
+      // Snapshot reinvest-dividends. If omitted, default true matches the
+      // historical implicit default + the DB column default.
+      reinvestDividends: currentReinvestDividends === false ? false : true,
     };
 
     if (user) {
@@ -302,7 +325,7 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
                   position: "relative",
                   boxShadow: isActive ? "0 0 12px rgba(201,168,76,0.14)" : "none",
                 }}
-                onClick={() => onLoad(p.assets, p.accountType, p.id, p.name, p.portfolioValue ?? null)}
+                onClick={() => onLoad(p.assets, p.accountType, p.id, p.name, p.portfolioValue ?? null, p.reinvestDividends === false ? false : true)}
                 onMouseEnter={e => {
                   if (isActive) return;
                   e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)";

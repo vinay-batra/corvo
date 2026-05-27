@@ -4239,17 +4239,31 @@ _market_base_cache: dict = {"indexes": {}, "headlines": [], "ts": 0.0}
 _market_per_ticker_cache: dict = {}
 
 @app.get("/market-summary")
-def market_summary(tickers: str = Query(default=""), request: Request = None):
+def market_summary(tickers: str = Query(default=""), account_type: str = Query(default=""), request: Request = None):
     """Return structured AI market brief (market/holdings/context) + raw index values.
     Accepts optional ?tickers=BND,SPY,... to include per-holding performance.
-    Base market data cached 5 min globally; per-ticker AI results cached 5 min each."""
+    Accepts optional ?account_type=roth_ira (or any other AccountTypeId) so the
+    "Your Portfolio" section of the brief frames the holdings paragraph
+    through the correct tax lens - the same way /chat, /portfolio/health-score,
+    /what-should-i-do, and /portfolio/daily-signal already do via the shared
+    _account_type_block helper. Without this, the brief used to write generic
+    prose regardless of whether the user was in a Roth IRA (no TLH talk, no
+    cap-gains talk, lean into tax-free compounding) or a Brokerage.
+    Base market data cached 5 min globally; per-ticker AI results cached 5 min
+    each, partitioned by account_type so the same portfolio in two account
+    types doesn't share a cached brief."""
     global _market_base_cache, _market_per_ticker_cache
 
     if request is not None and check_rate_limit(_client_ip(request), "market-summary", 30, 3600):
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
 
     user_tickers = [t.strip().upper() for t in tickers.split(",") if t.strip()] if tickers else []
-    ticker_key = ",".join(sorted(user_tickers))
+    # Partition the cache by account_type so a Roth IRA reading of [AAPL, MSFT]
+    # doesn't return the cached Brokerage reading of the same tickers. Empty
+    # account_type falls back to the legacy keying (no suffix), preserving
+    # cache hits for pre-deploy callers.
+    at_key = account_type.strip().lower() if account_type else ""
+    ticker_key = ",".join(sorted(user_tickers)) + (f"|at={at_key}" if at_key else "")
 
     # Check per-ticker cache first. Cap to 500 entries with LRU eviction.
     # Read + eviction under the global cache lock so a concurrent writer
@@ -4436,13 +4450,20 @@ def market_summary(tickers: str = Query(default=""), request: Request = None):
             else:
                 watch_data_block = "No earnings reports due within the next 14 days for this portfolio."
 
+            # Tax-context block - same helper the 4 other Claude endpoints
+            # use. Tells the model "this is a Roth IRA, never mention TLH or
+            # cap gains, lean into tax-free compounding" (or the equivalent
+            # for HSA, 529, Brokerage, etc.). Empty string when account_type
+            # was not provided, preserving the pre-deploy behavior.
+            account_type_block = _account_type_block(at_key)
+
             prompt = f"""Market data:
 S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, VIX {vix_val:.1f}.
 Top news headlines: {news_str}
 
 {holdings_block}
 
-{watch_data_block}
+{watch_data_block}{account_type_block}
 
 Return a JSON object with exactly these four string keys. Each value must be 2-3 sentences of plain prose.
 
@@ -4450,7 +4471,7 @@ Return a JSON object with exactly these four string keys. Each value must be 2-3
 
 "market_driver": Explain specifically what caused the move. Name the actual event: if earnings, name the company and whether it beat or missed. If a Fed statement, say what was said. If a CPI or jobs report, give the number and whether it surprised. If a geopolitical or political event, name it plainly. Do not say things like "sentiment remained constructive" or "risk appetite improved" or "tailwinds persisted". Say what actually happened. 2-3 sentences.
 
-"holdings": {holdings_key_desc}
+"holdings": {holdings_key_desc} Apply the account-type rules above when framing this paragraph - never give Brokerage-style tax-loss-harvesting or capital-gains advice in a tax-sheltered account, and conversely use the tax-free or RMD framing where appropriate.
 
 "outlook": Use the upcoming earnings data above. If any holding reports within 14 days, name it specifically (e.g. "TTWO reports in 3 days"), say what to watch for in that report, and close with what it means for the portfolio. If no earnings are due, pick the most relevant near-term market event from the news and explain what to watch. 2-3 sentences.
 
