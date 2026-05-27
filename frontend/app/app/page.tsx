@@ -2598,6 +2598,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               accountType={accountType}
               onAccountTypeChange={setAccountType}
               liveBaseValue={liveBaseValue}
+              savedPortfolioId={savedPortfolioId}
             />
           </>
         )}
@@ -2613,6 +2614,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             onAccountTypeChange={setAccountType}
             liveBaseValue={liveBaseValue}
             isSaved={!!savedPortfolioId}
+            savedPortfolioId={savedPortfolioId}
           />
         )}
         {sidebarTab === "saved" && (

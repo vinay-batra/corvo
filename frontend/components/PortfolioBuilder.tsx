@@ -290,9 +290,15 @@ interface Props {
   // since day-over-day persistence only works for saved portfolios (the EOD
   // snapshot cron is keyed by portfolio_id).
   isSaved?: boolean;
+  // The id of the currently-active saved portfolio (or null/undefined for
+  // an unsaved one). Used as the cache key for the first-time Portfolio
+  // Value education modal so it fires once per portfolio rather than once
+  // globally - users with multiple accounts (Roth + Brokerage + UTMA) get
+  // the same explainer for each one the first time they enter a value.
+  savedPortfolioId?: string | null;
 }
 
-export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange, liveBaseValue, view = "holdings", isSaved = false }: Props) {
+export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange, liveBaseValue, view = "holdings", isSaved = false, savedPortfolioId = null }: Props) {
   const update = onAssetsChange || setAssets || (() => {});
   const [dark, setDark] = useState(true);
   const [active, setActive] = useState<number|null>(null);
@@ -311,17 +317,25 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   // today's gain so the input shows the live current portfolio value.
   const [portfolioValue, setPortfolioValueState] = useState<string>("50000");
   const [pvFocused, setPvFocused] = useState(false);
-  // First-time education modal. Fires once - the very first time the user
-  // actually edits the Portfolio Value input - to explain that the number
-  // they enter is treated as today's starting balance and day-over-day
-  // tracking only begins at the next market open. localStorage flag
-  // `corvo_pv_first_set_seen` flips to "1" after the first show so it
-  // never re-appears.
+  // First-time education modal. Fires once PER PORTFOLIO - the very first
+  // time the user actually edits the Portfolio Value input for a given
+  // saved portfolio (and once for the unsaved state). Localstorage key
+  // `corvo_pv_first_set_seen_v2` stores a JSON array of portfolio ids
+  // we've already shown the modal for. v1 key was a single boolean - we
+  // intentionally don't honor it so users with multiple accounts get the
+  // explainer for each one regardless of v1 state. Manual opens (via the
+  // info button next to the Portfolio value label) also add to the set,
+  // so a user who clicked help without editing won't see it auto-fire
+  // later for the same portfolio.
   const [firstSetModalOpen, setFirstSetModalOpen] = useState(false);
   // Snapshot of the input value when the field gained focus, so the blur
   // handler can tell "user actually changed it" apart from "they tabbed
   // through without editing".
   const pvAtFocusRef = useRef<string>("");
+  // Stable identifier for the current portfolio for first-set tracking.
+  // Saved portfolios use their UUID; unsaved uses the sentinel "unsaved"
+  // so the modal fires once for the unsaved-portfolio onboarding state too.
+  const portfolioSeenKey = savedPortfolioId || "unsaved";
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_portfolio_value") : null;
     if (stored) setPortfolioValueState(stored);
@@ -333,23 +347,50 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
       window.dispatchEvent(new Event("storage"));
     }
   };
+  // Read the seen-set from localStorage; tolerates corrupt JSON / wrong shapes
+  // by falling back to an empty set so the modal still works.
+  const readPvSeenSet = (): Set<string> => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem("corvo_pv_first_set_seen_v2");
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return new Set();
+      return new Set(parsed.filter((x): x is string => typeof x === "string"));
+    } catch { return new Set(); }
+  };
+  const markPvSeen = (key: string) => {
+    if (typeof window === "undefined" || !key) return;
+    try {
+      const set = readPvSeenSet();
+      if (set.has(key)) return;
+      set.add(key);
+      localStorage.setItem("corvo_pv_first_set_seen_v2", JSON.stringify([...set]));
+    } catch {}
+  };
   // Decide whether to fire the first-time popup. Called on blur so we don't
   // show it mid-keystroke; gated on (a) the user actually changing the
-  // value, (b) the new value being positive and finite, and (c) the
-  // localStorage flag being unset. Marking seen happens here so the modal
-  // never fires twice even if dismissed without clicking the CTA.
+  // value, (b) the new value being positive and finite, and (c) this
+  // portfolio not already being in the seen set. Marking seen happens here
+  // so the modal never fires twice for the same portfolio.
   const maybeShowFirstSetModal = () => {
     if (typeof window === "undefined") return;
-    try {
-      if (localStorage.getItem("corvo_pv_first_set_seen") === "1") return;
-    } catch { return; }
+    if (readPvSeenSet().has(portfolioSeenKey)) return;
     const before = pvAtFocusRef.current;
     const after = portfolioValue;
     if (!after || after === before) return;
     const numericAfter = parseFloat(after);
     if (!Number.isFinite(numericAfter) || numericAfter <= 0) return;
     setFirstSetModalOpen(true);
-    try { localStorage.setItem("corvo_pv_first_set_seen", "1"); } catch {}
+    markPvSeen(portfolioSeenKey);
+  };
+  // Manual open via the info button next to the Portfolio Value label.
+  // Idempotent-adds to the seen set so the auto-trigger doesn't also fire
+  // later for the same portfolio - if you've clicked the help button
+  // you've already seen the modal for this account.
+  const openFirstSetModalManually = () => {
+    setFirstSetModalOpen(true);
+    markPvSeen(portfolioSeenKey);
   };
 
   // Privacy toggle: shared with GreetingBar via the corvo_value_hidden
@@ -987,7 +1028,38 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
         </div>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:7}}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600, letterSpacing: 0.1 }}>Portfolio value</div>
+            <div style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600, letterSpacing: 0.1, display: "inline-flex", alignItems: "center", gap: 6 }}>
+              Portfolio value
+              {/* Info button - reopens the first-time PV education modal on
+                  demand for users who forget how the tracking model works.
+                  Also serves as the discoverability cue: a "?" next to the
+                  label hints that there's something to explain. */}
+              <button
+                type="button"
+                onClick={openFirstSetModalManually}
+                aria-label="How portfolio value tracking works"
+                title="How portfolio value tracking works"
+                style={{
+                  width: 15, height: 15,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  borderRadius: "50%",
+                  background: "rgba(201,168,76,0.1)",
+                  border: "0.5px solid rgba(201,168,76,0.32)",
+                  color: C.amber,
+                  cursor: "pointer",
+                  padding: 0,
+                  lineHeight: 1,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  fontFamily: "Space Mono, monospace",
+                  transition: "background 0.15s, border-color 0.15s, transform 0.12s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,76,0.2)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.55)"; e.currentTarget.style.transform = "scale(1.08)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(201,168,76,0.1)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.32)"; e.currentTarget.style.transform = "scale(1)"; }}
+              >
+                ?
+              </button>
+            </div>
             <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2, letterSpacing: 0.1 }}>Used for P&amp;L and tax math</div>
           </div>
           {/* Privacy toggle - mirrors the GreetingBar eye, shared via the
