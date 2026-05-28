@@ -7,14 +7,14 @@ export interface TocItem { id: string; title: string }
 export interface RelatedPost { slug: string; title: string; category: string; categoryColor: string; readTime: string; excerpt: string }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Strategy: "#c9a84c",
+  Strategy: "var(--accent)",
   Education: "#8eb4c8",
   Product: "#5cb88a",
   Markets: "#e07b5c",
 };
 
 function categoryColor(cat: string) {
-  return CATEGORY_COLORS[cat] ?? "#c9a84c";
+  return CATEGORY_COLORS[cat] ?? "var(--accent)";
 }
 
 interface BlogPostProps {
@@ -55,7 +55,7 @@ export default function BlogPost({ title, date, readTime, category, description,
       <div className="blog-hero-pad" style={{ padding: "80px 56px 48px", maxWidth: 1200, margin: "0 auto", animation: "fadein 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
           <Link href="/blog" style={{ fontSize: 12, color: "var(--text3)", textDecoration: "none", transition: "color 0.2s" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#c9a84c")}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
             onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}>
             Blog
           </Link>
@@ -105,7 +105,7 @@ export default function BlogPost({ title, date, readTime, category, description,
           <div style={{ marginTop: 32, padding: "20px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 12 }}>
             <p style={{ fontSize: 11, color: "var(--text)", fontWeight: 600, marginBottom: 8, lineHeight: 1.4 }}>Analyze your own portfolio</p>
             <p style={{ fontSize: 10, color: "var(--text3)", marginBottom: 14, lineHeight: 1.55 }}>Free institutional-grade portfolio analytics.</p>
-            <Link href="/auth?mode=signup" style={{ display: "block", textAlign: "center" as const, padding: "9px 16px", background: "#c9a84c", borderRadius: 8, fontSize: 11, fontWeight: 700, color: "#0a0e14", textDecoration: "none" }}>Get started free</Link>
+            <Link href="/auth?mode=signup" style={{ display: "block", textAlign: "center" as const, padding: "9px 16px", background: "var(--accent)", borderRadius: 8, fontSize: 11, fontWeight: 700, color: "var(--bg)", textDecoration: "none" }}>Get started free</Link>
           </div>
         </aside>
       </div>
@@ -113,7 +113,7 @@ export default function BlogPost({ title, date, readTime, category, description,
       {/* Related posts */}
       {related.length > 0 && (
         <div className="blog-related-pad" style={{ borderTop: "1px solid var(--border)", padding: "64px 56px 0", maxWidth: 1200, margin: "0 auto" }}>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 32 }}>Related Articles</p>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 32 }}>Related Articles</p>
           <div className="blog-cards-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(related.length, 3)},1fr)`, gap: 20, marginBottom: 80 }}>
             {related.map(post => (
               <Link key={post.slug} href={`/blog/${post.slug}`} className="blog-card" style={{ textDecoration: "none" }}>
@@ -137,7 +137,7 @@ export function CtaBox({ text = "Try this in Corvo free", href = "/app" }: { tex
       <p style={{ fontSize: 14, color: "var(--text3)", marginBottom: 24, lineHeight: 1.7, fontWeight: 300 }}>
         Corvo calculates these metrics automatically for your real holdings. Free, no subscription required.
       </p>
-      <Link href={href} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 32px", background: "#c9a84c", borderRadius: 10, fontSize: 14, fontWeight: 700, color: "#0a0e14", textDecoration: "none" }}>
+      <Link href={href} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 32px", background: "var(--accent)", borderRadius: 10, fontSize: 14, fontWeight: 700, color: "var(--bg)", textDecoration: "none" }}>
         {text} →
       </Link>
     </div>

@@ -51,19 +51,19 @@ export default function YahooFinanceComparePage() {
       <section className="cmp-section" style={{ paddingTop: 140, paddingBottom: 96, paddingLeft: 48, paddingRight: 48, textAlign: "center", position: "relative" }}>
         <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 800, height: 500, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 65%)", pointerEvents: "none" }} />
         <FadeUp>
-          <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 20 }}>Comparison · Yahoo Finance vs Corvo</p>
+          <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 20 }}>Comparison · Yahoo Finance vs Corvo</p>
           <h1 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(28px,4.5vw,58px)", fontWeight: 700, color: "var(--text)", letterSpacing: -2.5, lineHeight: 1.1, maxWidth: 820, margin: "0 auto 24px" }}>
             Corvo vs Yahoo Finance:<br />
-            <span style={{ color: "#c9a84c" }}>Which is better for retail investors?</span>
+            <span style={{ color: "var(--accent)" }}>Which is better for retail investors?</span>
           </h1>
           <p style={{ fontSize: "clamp(15px,1.8vw,18px)", color: "rgba(232,224,204,0.5)", maxWidth: 580, margin: "0 auto 44px", lineHeight: 1.8, fontWeight: 300 }}>
             Yahoo Finance is a great starting point. But when you want real portfolio analytics: AI insights, risk metrics, Monte Carlo simulation, Corvo goes far deeper, completely free.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/auth?mode=signup" style={{ padding: "15px 40px", borderRadius: 12, background: "#c9a84c", color: "var(--bg)", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
+            <Link href="/auth?mode=signup" style={{ padding: "15px 40px", borderRadius: 12, background: "var(--accent)", color: "var(--bg)", fontSize: 14, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
               Try Corvo Free →
             </Link>
-            <a href="#comparison" style={{ padding: "15px 40px", borderRadius: 12, border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c", fontSize: 14, fontWeight: 500, textDecoration: "none", background: "transparent" }}>
+            <a href="#comparison" style={{ padding: "15px 40px", borderRadius: 12, border: "1px solid rgba(201,168,76,0.3)", color: "var(--accent)", fontSize: 14, fontWeight: 500, textDecoration: "none", background: "transparent" }}>
               See comparison ↓
             </a>
           </div>
@@ -79,7 +79,7 @@ export default function YahooFinanceComparePage() {
             </div>
             <div style={{ display: "flex", alignItems: "center", fontSize: 22, color: "rgba(232,224,204,0.2)" }}>vs</div>
             <div style={{ background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 14, padding: "20px 36px", textAlign: "center", boxShadow: "0 0 60px rgba(201,168,76,0.06)" }}>
-              <p style={{ fontFamily: "Space Mono,monospace", fontSize: 36, fontWeight: 700, color: "#c9a84c", letterSpacing: -2, marginBottom: 4 }}>$0<span style={{ fontSize: 16, fontWeight: 400, color: "rgba(201,168,76,0.6)" }}>/mo</span></p>
+              <p style={{ fontFamily: "Space Mono,monospace", fontSize: 36, fontWeight: 700, color: "var(--accent)", letterSpacing: -2, marginBottom: 4 }}>$0<span style={{ fontSize: 16, fontWeight: 400, color: "rgba(201,168,76,0.6)" }}>/mo</span></p>
               <p style={{ fontSize: 11, letterSpacing: 1.5, color: "rgba(201,168,76,0.5)", textTransform: "uppercase" }}>Corvo · Always Free</p>
             </div>
           </div>
@@ -90,23 +90,23 @@ export default function YahooFinanceComparePage() {
       <section className="cmp-section" style={{ padding: "0 48px 96px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Key Differences</p>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 14 }}>Key Differences</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>Where Corvo goes further</h2>
           </FadeUp>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20 }}>
             {[
               {
-                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a9 9 0 100 18A9 9 0 0012 2z"/><path d="M12 8v4l3 3"/></svg>,
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a9 9 0 100 18A9 9 0 0012 2z"/><path d="M12 8v4l3 3"/></svg>,
                 title: "AI that understands your portfolio",
                 body: "Yahoo Finance shows you data. Corvo's AI synthesizes it, telling you if your tech concentration is too high, what your Sharpe ratio means, and how to rebalance. It knows your exact holdings.",
               },
               {
-                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
                 title: "Real risk analytics, not just quotes",
                 body: "Yahoo Finance Premium gives you better charts and screeners. Corvo gives you Sharpe ratio, max drawdown, correlation heatmaps, and Monte Carlo simulation: the analytics that actually matter for your portfolio.",
               },
               {
-                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>,
+                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>,
                 title: "Zero ads, zero upsells",
                 body: "Yahoo Finance's free tier is ad-heavy. Their paid tier still sells premium data upgrades. Corvo is fully featured from day one: no ads, no paywalls, no upgrade prompts.",
               },
@@ -128,7 +128,7 @@ export default function YahooFinanceComparePage() {
       <section id="comparison" className="cmp-section" style={{ padding: "0 48px 96px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Feature Comparison</p>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 14 }}>Feature Comparison</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>Head-to-head breakdown</h2>
           </FadeUp>
           <FadeUp delay={0.1}>
@@ -137,7 +137,7 @@ export default function YahooFinanceComparePage() {
                 <thead>
                   <tr>
                     <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 10, letterSpacing: 2, color: "rgba(232,224,204,0.3)", textTransform: "uppercase", borderBottom: "1px solid rgba(201,168,76,0.08)", fontWeight: 400 }}>Feature</th>
-                    <th style={{ padding: "14px 16px", textAlign: "center", fontSize: 11, fontWeight: 700, color: "#c9a84c", borderBottom: "2px solid rgba(201,168,76,0.4)", borderLeft: "1px solid rgba(201,168,76,0.18)", borderRight: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.05)", boxShadow: "0 0 40px rgba(201,168,76,0.04)", width: 130 }}>
+                    <th style={{ padding: "14px 16px", textAlign: "center", fontSize: 11, fontWeight: 700, color: "var(--accent)", borderBottom: "2px solid rgba(201,168,76,0.4)", borderLeft: "1px solid rgba(201,168,76,0.18)", borderRight: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.05)", boxShadow: "0 0 40px rgba(201,168,76,0.04)", width: 130 }}>
                       Corvo
                       <span style={{ display: "block", fontSize: 8, letterSpacing: 1.5, color: "rgba(201,168,76,0.5)", fontWeight: 400, marginTop: 2 }}>FREE</span>
                     </th>
@@ -159,7 +159,7 @@ export default function YahooFinanceComparePage() {
                     >
                       <td style={{ padding: "13px 20px", fontSize: 13, color: "rgba(232,224,204,0.6)", fontWeight: 300 }}>{label}</td>
                       <td style={{ padding: "13px 16px", textAlign: "center", borderLeft: "1px solid rgba(201,168,76,0.18)", borderRight: "1px solid rgba(201,168,76,0.18)", background: "rgba(201,168,76,0.03)", fontSize: 15 }}>
-                        {corvo ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
+                        {corvo ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
                       </td>
                       <td style={{ padding: "13px 16px", textAlign: "center", fontSize: 14 }}>
                         {yahoo ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5cb88a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ color: "rgba(255,255,255,0.2)", lineHeight: 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>}
@@ -180,7 +180,7 @@ export default function YahooFinanceComparePage() {
       <section className="cmp-section" style={{ padding: "0 48px 96px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 56 }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Pricing</p>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 14 }}>Pricing</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>More features. Less cost.</h2>
           </FadeUp>
           <div className="cmp-pricing-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 24, alignItems: "center" }}>
@@ -204,14 +204,14 @@ export default function YahooFinanceComparePage() {
             </FadeUp>
             <FadeUp delay={0.1}>
               <div style={{ background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 20, padding: "40px 36px", textAlign: "center", boxShadow: "0 0 80px rgba(201,168,76,0.05)", position: "relative" }}>
-                <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "#c9a84c", color: "var(--bg)", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, padding: "4px 16px", borderRadius: 20, textTransform: "uppercase", whiteSpace: "nowrap" }}>Deeper analytics</div>
+                <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "var(--accent)", color: "var(--bg)", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, padding: "4px 16px", borderRadius: 20, textTransform: "uppercase", whiteSpace: "nowrap" }}>Deeper analytics</div>
                 <p style={{ fontSize: 11, letterSpacing: 2, color: "rgba(201,168,76,0.5)", textTransform: "uppercase", marginBottom: 16 }}>Corvo</p>
-                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 52, fontWeight: 700, color: "#c9a84c", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>$0</p>
+                <p style={{ fontFamily: "Space Mono,monospace", fontSize: 52, fontWeight: 700, color: "var(--accent)", letterSpacing: -3, lineHeight: 1, marginBottom: 8 }}>$0</p>
                 <p style={{ fontSize: 13, color: "rgba(201,168,76,0.4)", marginBottom: 24 }}>always free · no credit card</p>
                 <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10 }}>
                   {["AI portfolio chat", "Monte Carlo simulation", "Sharpe ratio & risk metrics", "Correlation heatmap", "Tax loss harvesting"].map((f, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                       <span style={{ fontSize: 12, color: "rgba(232,224,204,0.55)" }}>{f}</span>
                     </div>
                   ))}
@@ -226,7 +226,7 @@ export default function YahooFinanceComparePage() {
       <section className="cmp-section" style={{ padding: "0 48px 96px" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <FadeUp style={{ textAlign: "center", marginBottom: 48 }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Real Stories</p>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 14 }}>Real Stories</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(22px,3vw,36px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5 }}>Why investors upgrade from Yahoo Finance</h2>
           </FadeUp>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 20 }}>
@@ -255,14 +255,14 @@ export default function YahooFinanceComparePage() {
         <FadeUp>
           <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: 24, padding: "72px 48px", boxShadow: "0 0 100px rgba(201,168,76,0.04)", position: "relative", overflow: "clip" }}>
             <div style={{ position: "absolute", top: "-30%", left: "50%", transform: "translateX(-50%)", width: 400, height: 300, background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 16 }}>Ready to Switch?</p>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 16 }}>Ready to Switch?</p>
             <h2 style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(24px,3.5vw,42px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, marginBottom: 16, lineHeight: 1.2 }}>
               It takes 60 seconds.
             </h2>
             <p style={{ fontSize: 15, color: "rgba(232,224,204,0.4)", marginBottom: 44, lineHeight: 1.8, fontWeight: 300 }}>
               Get the analytics Yahoo Finance doesn't offer: AI insights, Monte Carlo simulation, real risk metrics. All free.
             </p>
-            <Link href="/auth?mode=signup" style={{ display: "inline-block", padding: "16px 48px", borderRadius: 12, background: "#c9a84c", color: "var(--bg)", fontSize: 15, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
+            <Link href="/auth?mode=signup" style={{ display: "inline-block", padding: "16px 48px", borderRadius: 12, background: "var(--accent)", color: "var(--bg)", fontSize: 15, fontWeight: 700, textDecoration: "none", letterSpacing: 0.2 }}>
               Get Started Free →
             </Link>
             <p style={{ fontSize: 11, color: "rgba(232,224,204,0.18)", marginTop: 20 }}>No credit card required · Takes 60 seconds to connect your portfolio</p>

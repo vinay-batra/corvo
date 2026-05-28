@@ -36,7 +36,7 @@ const RELATED: RelatedPost[] = [
     slug: "portfolio-diversification-guide",
     title: "The Complete Guide to Portfolio Diversification in 2026",
     category: "Strategy",
-    categoryColor: "#c9a84c",
+    categoryColor: "var(--accent)",
     readTime: "8 min read",
     excerpt: "True diversification is about correlation, not the number of holdings. Here is how to measure it.",
   },
@@ -44,7 +44,7 @@ const RELATED: RelatedPost[] = [
     slug: "bloomberg-alternative",
     title: "The Best Free Bloomberg Alternative in 2026",
     category: "Strategy",
-    categoryColor: "#c9a84c",
+    categoryColor: "var(--accent)",
     readTime: "5 min read",
     excerpt: "Bloomberg costs $24,000 a year. Here is what retail investors actually need instead.",
   },
@@ -81,7 +81,7 @@ export default function SharpeRatioPage() {
 
       <h2 id="the-formula">The Formula Explained</h2>
       <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 14, padding: "28px 36px", margin: "28px 0", textAlign: "center" as const }}>
-        <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(14px,2.5vw,20px)", color: "#c9a84c", letterSpacing: -0.3, marginBottom: 12 }}>
+        <p style={{ fontFamily: "Space Mono,monospace", fontSize: "clamp(14px,2.5vw,20px)", color: "var(--accent)", letterSpacing: -0.3, marginBottom: 12 }}>
           Sharpe Ratio = (R<sub>p</sub> - R<sub>f</sub>) / σ<sub>p</sub>
         </p>
         <p style={{ fontSize: 11, color: "rgba(232,224,204,0.4)", letterSpacing: 0.3 }}>

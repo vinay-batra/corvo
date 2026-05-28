@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import ParticleCanvas from "./ParticleCanvas";
 
-const HIDDEN_PATHS = ["/app", "/learn"];
+const HIDDEN_PATHS = ["/app"];
 
 export default function ConditionalParticleCanvas() {
   const pathname = usePathname();

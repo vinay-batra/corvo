@@ -247,8 +247,8 @@ export default function ChangelogPage() {
       <div className="cl-hero" style={{ textAlign: "center", padding: "140px 56px 80px" }}>
         <ScrollReveal from="up" delay={0}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.4)", borderRadius: 24, marginBottom: 28, background: "rgba(201,168,76,0.08)" }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
-            <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>What's new</span>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
+            <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>What's new</span>
           </div>
         </ScrollReveal>
         <AnimatedHeading text="Every release," accentText="in order." style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(32px,4.4vw,60px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.12, marginBottom: 16, textAlign: "center" }} />
@@ -404,7 +404,7 @@ export default function ChangelogPage() {
       <div className="cl-footer" style={{ borderTop: "1px solid var(--bg3)", padding: "100px 56px 140px" }}>
         <ScrollReveal from="up" delay={0}>
           <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
-            <p style={{ fontSize: 9, letterSpacing: 3, color: "#c9a84c", textTransform: "uppercase", marginBottom: 14 }}>Stay in the loop</p>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 14 }}>Stay in the loop</p>
             <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 32px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1, marginBottom: 10, lineHeight: 1.2 }}>
               Subscribe to updates
             </h2>
@@ -431,7 +431,7 @@ export default function ChangelogPage() {
                 <button
                   onClick={submit}
                   disabled={status === "loading"}
-                  style={{ padding: "14px 24px", background: "#c9a84c", border: "none", borderRadius: 12, color: "var(--bg)", fontSize: 13, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, transition: "filter 0.15s, opacity 0.2s", opacity: status === "loading" ? 0.8 : 1 }}
+                  style={{ padding: "14px 24px", background: "var(--accent)", border: "none", borderRadius: 12, color: "var(--bg)", fontSize: 13, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, transition: "filter 0.15s, opacity 0.2s", opacity: status === "loading" ? 0.8 : 1 }}
                   onMouseEnter={e => { if (status !== "loading") (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; }}>
                   {status === "loading" ? "..." : "Subscribe Free"}

@@ -224,7 +224,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
             background: open ? "rgba(201,168,76,0.12)" : "var(--bg3)",
             border: `1px solid ${open ? "rgba(201,168,76,0.25)" : "var(--bg3)"}`,
             fontSize: 16,
-            color: open ? "#c9a84c" : "var(--text3)",
+            color: open ? "var(--accent)" : "var(--text3)",
             transition: "background 0.2s, border-color 0.2s, color 0.2s",
           }}
         >
@@ -326,7 +326,7 @@ function FAQAIChat() {
     >
       {/* Header */}
       <div style={{ padding: "18px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: "#c9a84c", flexShrink: 0 }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Mono,monospace", fontSize: 12, fontWeight: 700, color: "var(--accent)", flexShrink: 0 }}>
           C
         </div>
         <div>
@@ -348,7 +348,7 @@ function FAQAIChat() {
               maxWidth: "78%",
               padding: "10px 14px",
               borderRadius: msg.role === "user" ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
-              background: msg.role === "user" ? "#c9a84c" : "var(--bg3)",
+              background: msg.role === "user" ? "var(--accent)" : "var(--bg3)",
               border: msg.role === "assistant" ? "1px solid var(--bg3)" : "none",
               fontSize: 13,
               lineHeight: 1.65,
@@ -392,7 +392,7 @@ function FAQAIChat() {
         <button
           onClick={send}
           disabled={loading || !input.trim()}
-          style={{ padding: "0 18px", height: 42, borderRadius: 10, background: loading || !input.trim() ? "rgba(201,168,76,0.25)" : "#c9a84c", border: "none", cursor: loading || !input.trim() ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.2s, filter 0.15s" }}
+          style={{ padding: "0 18px", height: 42, borderRadius: 10, background: loading || !input.trim() ? "rgba(201,168,76,0.25)" : "var(--accent)", border: "none", cursor: loading || !input.trim() ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.2s, filter 0.15s" }}
           onMouseEnter={e => { if (!loading && input.trim()) (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; }}
         >
@@ -454,8 +454,8 @@ export default function FaqPage() {
             }}
           />
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", border: "1px solid rgba(201,168,76,0.4)", borderRadius: 24, marginBottom: 28, background: "rgba(201,168,76,0.08)" }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", display: "inline-block", animation: "pdot 2s infinite" }} />
-            <span style={{ fontSize: 10, letterSpacing: 2.5, color: "#c9a84c", textTransform: "uppercase" }}>Help</span>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pdot 2s infinite" }} />
+            <span style={{ fontSize: 10, letterSpacing: 2.5, color: "var(--accent)", textTransform: "uppercase" }}>Help</span>
           </div>
           <AnimatedHeading text="Common questions," accentText="answered." style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(32px,4.4vw,60px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.12, marginBottom: 16 }} />
         </ScrollReveal>
@@ -486,7 +486,7 @@ export default function FaqPage() {
                 style={{
                   fontSize: 9,
                   letterSpacing: 3,
-                  color: "#c9a84c",
+                  color: "var(--accent)",
                   textTransform: "uppercase",
                   marginBottom: 4,
                   fontFamily: "Space Mono, monospace",

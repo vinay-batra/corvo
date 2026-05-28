@@ -3871,6 +3871,8 @@ _analyst_targets_cache: dict[str, tuple[dict, float]] = {}
 @app.get("/analyst-targets/{ticker}")
 def analyst_targets_endpoint(ticker: str, request: Request):
     """Analyst consensus price targets from Finnhub /stock/price-target and /stock/recommendation."""
+    if request is not None and check_rate_limit(_client_ip(request), "analyst-targets", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     import time as _time_at
     ticker = ticker.upper().strip()
     now = _time_at.time()
@@ -3965,6 +3967,8 @@ _insider_cache: dict[str, tuple[dict, float]] = {}
 @app.get("/insider-activity/{ticker}")
 def insider_activity_endpoint(ticker: str, request: Request):
     """SEC Form 4 insider transactions. Finnhub primary (6-month window), yfinance fallback. 1-hour cache."""
+    if request is not None and check_rate_limit(_client_ip(request), "insider-activity", 30, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     import time as _time_ins
     from datetime import timedelta
     ticker = ticker.upper().strip()
@@ -6134,6 +6138,8 @@ def portfolio_peer_comparison(
     user_volatility: float = 0.0,
     user_max_drawdown: float = 0.0,
 ):
+    if request is not None and check_rate_limit(_client_ip(request), "peer-comparison", 20, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     _verify_jwt_user(request)
 
     now = time.time()
@@ -6725,11 +6731,14 @@ def portfolio_dividend_calendar(
     tickers: str = "AAPL",
     weights: str = "",
     portfolio_value: float = 10000.0,
+    request: Request = None,
 ):
     """
     For each ticker, fetch the next ex-dividend date and pay date via yfinance.
     Returns a 90-day forward calendar of upcoming dividend events sorted by ex-date.
     """
+    if request is not None and check_rate_limit(_client_ip(request), "dividend-calendar", 20, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
     from datetime import date, timedelta
 
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]

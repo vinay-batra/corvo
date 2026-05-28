@@ -38,7 +38,7 @@ const POSTS = [
     date: "April 8, 2026",
     readTime: "5 min read",
     category: "Strategy",
-    categoryColor: "#c9a84c",
+    categoryColor: "var(--accent)",
     excerpt: "Bloomberg costs $24,000 a year. Corvo is free. Here is what you are actually missing from a professional terminal, and what you are not.",
   },
   {
@@ -56,7 +56,7 @@ const POSTS = [
     date: "April 2, 2026",
     readTime: "8 min read",
     category: "Strategy",
-    categoryColor: "#c9a84c",
+    categoryColor: "var(--accent)",
     excerpt: "Most investors think they are diversified. Most are wrong. True diversification is about correlation, not the number of holdings. Here is how to measure it properly.",
   },
   {
@@ -127,7 +127,7 @@ export default function BlogFilteredPosts() {
                   padding: "6px 16px", borderRadius: 24, fontSize: 11, letterSpacing: 0.5, cursor: "pointer",
                   background: isActive ? "rgba(201,168,76,0.12)" : "var(--bg3)",
                   border: `1px solid ${isActive ? "rgba(201,168,76,0.3)" : "var(--border)"}`,
-                  color: isActive ? "#c9a84c" : "var(--text3)",
+                  color: isActive ? "var(--accent)" : "var(--text3)",
                   transition: "all 0.15s",
                   outline: "none",
                 }}
