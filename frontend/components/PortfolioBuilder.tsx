@@ -317,6 +317,10 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   // today's gain so the input shows the live current portfolio value.
   const [portfolioValue, setPortfolioValueState] = useState<string>("50000");
   const [pvFocused, setPvFocused] = useState(false);
+  // Mirror of pvFocused readable inside the stable storage-sync listener
+  // below without re-registering the listener on every focus change.
+  const pvFocusedRef = useRef(false);
+  useEffect(() => { pvFocusedRef.current = pvFocused; }, [pvFocused]);
   // First-time education modal. Fires once PER PORTFOLIO - the very first
   // time the user actually edits the Portfolio Value input for a given
   // saved portfolio (and once for the unsaved state). Localstorage key
@@ -336,9 +340,29 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   // Saved portfolios use their UUID; unsaved uses the sentinel "unsaved"
   // so the modal fires once for the unsaved-portfolio onboarding state too.
   const portfolioSeenKey = savedPortfolioId || "unsaved";
+  // Read corvo_portfolio_value on mount AND keep it in sync afterward. The
+  // dashboard writes this key + fires a storage event whenever a saved
+  // portfolio is loaded (switching accounts) - without this listener the
+  // sidebar input only read the value once on mount and then went stale, so
+  // every account appeared to share one value. The focus guard prevents a
+  // stray event from clobbering what the user is actively typing.
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_portfolio_value") : null;
-    if (stored) setPortfolioValueState(stored);
+    const sync = () => {
+      if (pvFocusedRef.current) return;
+      const stored = typeof window !== "undefined" ? localStorage.getItem("corvo_portfolio_value") : null;
+      if (stored !== null) setPortfolioValueState(stored);
+    };
+    sync();
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", sync);
+      window.addEventListener("corvo:portfolio-value-changed", sync);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", sync);
+        window.removeEventListener("corvo:portfolio-value-changed", sync);
+      }
+    };
   }, []);
   const handlePortfolioValueChange = (v: string) => {
     setPortfolioValueState(v);
@@ -1133,12 +1157,14 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               onChange={e=>handlePortfolioValueChange(e.target.value)}
               onFocus={(e) => {
                 setPvFocused(true);
-                // Snapshot the value at focus so blur can decide whether
-                // the user actually edited it (vs tabbed through). Use
-                // the live displayed value rather than the bare base
-                // so a user who tabs in and out without typing won't
-                // trip the first-time popup.
-                pvAtFocusRef.current = portfolioInputDisplay;
+                // Snapshot the SEED (portfolioValue) at focus, not the live
+                // display. When focused the input shows the bare seed, so the
+                // blur comparison must also be against the seed. The previous
+                // version captured portfolioInputDisplay, which at focus time
+                // is still the live value (base x today's %) because pvFocused
+                // hasn't flipped yet - so before(live) != after(seed) and the
+                // modal misfired on a plain focus/blur with no typing.
+                pvAtFocusRef.current = portfolioValue;
                 e.currentTarget.select();
               }}
               onBlur={() => { setPvFocused(false); maybeShowFirstSetModal(); }}

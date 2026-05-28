@@ -4376,48 +4376,24 @@ def market_summary(tickers: str = Query(default=""), account_type: str = Query(d
             if is_cash_ticker(t):
                 holdings_data[t] = 0.0
         if real_tickers:
-            try:
-                dl_arg = real_tickers[0] if len(real_tickers) == 1 else real_tickers
-                dl = yf.download(dl_arg, period="2d", auto_adjust=True, progress=False)
-                if dl is not None and not dl.empty:
-                    if isinstance(dl.columns, pd.MultiIndex):
-                        close = dl["Close"]
-                        if isinstance(close, pd.Series):
-                            close = close.to_frame(name=real_tickers[0])
-                    else:
-                        close = dl[["Close"]].rename(columns={"Close": real_tickers[0]}) if "Close" in dl.columns else dl.iloc[:, :1].rename(columns={dl.columns[0]: real_tickers[0]})
-                    close = close.dropna(how="all")
-                    if len(close) >= 2:
-                        prev_row = close.iloc[-2]
-                        curr_row = close.iloc[-1]
-                        for t in real_tickers:
-                            if t in close.columns:
-                                p0 = safe_float(prev_row.get(t, 0))
-                                p1 = safe_float(curr_row.get(t, 0))
-                                holdings_data[t] = round(((p1 - p0) / p0 * 100) if p0 > 0 else 0.0, 2)
-                            else:
-                                holdings_data[t] = 0.0
-                    else:
-                        # Only one row - fall back to fast_info
-                        for t in real_tickers:
-                            try:
-                                fi = yf.Ticker(t).fast_info
-                                p1 = safe_float(getattr(fi, "last_price", 0) or 0)
-                                p0 = safe_float(getattr(fi, "previous_close", 0) or 0)
-                                holdings_data[t] = round(((p1 - p0) / p0 * 100) if p0 > 0 else 0.0, 2)
-                            except Exception:
-                                holdings_data[t] = 0.0
-            except Exception as e:
-                print(f"market-summary holdings batch error: {e}")
-                for sym in real_tickers:
-                    if sym not in holdings_data:
-                        try:
-                            fi = yf.Ticker(sym).fast_info
-                            p1 = safe_float(getattr(fi, "last_price", 0) or 0)
-                            p0 = safe_float(getattr(fi, "previous_close", 0) or 0)
-                            holdings_data[sym] = round(((p1 - p0) / p0 * 100) if p0 > 0 else 0.0, 2)
-                        except Exception as e2:
-                            print(f"market-summary holdings fallback error for {sym}: {e2}")
+            # IMPORTANT: compute per-holding change with the EXACT same method
+            # /watchlist-data uses for the ticker pills - fast_info last_price
+            # vs previous_close - so the briefing's "Your Portfolio" numbers
+            # match the live pills on the right. The previous implementation
+            # used yf.download(period="2d") close-to-close, which produced
+            # different values and occasionally a different SIGN than the
+            # pills (e.g. brief said "VT +0.18%" while the pill showed
+            # "VT -0.03%"). Same method = no contradictions; any residual
+            # difference is just the <=60s cache-refresh skew, never a flip.
+            for t in real_tickers:
+                try:
+                    fi = yf.Ticker(t).fast_info
+                    p1 = safe_float(getattr(fi, "last_price", None) or 0)
+                    p0 = safe_float(getattr(fi, "previous_close", None) or 0)
+                    holdings_data[t] = round(((p1 - p0) / p0 * 100) if (p0 > 0 and p1 > 0) else 0.0, 2)
+                except Exception as e:
+                    print(f"market-summary holdings error for {t}: {e}")
+                    holdings_data[t] = 0.0
 
     # Fetch upcoming earnings dates within 14 days for WHAT TO WATCH section
     # earnings_data maps ticker -> days until earnings (int)
