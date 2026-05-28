@@ -63,6 +63,10 @@ interface MarketSummary {
   as_of_iso?: string;
   next_update_label?: string;
   is_stale?: boolean;
+  // Per-holding 1-day % change keyed by ticker, computed server-side with the
+  // same fast_info method /watchlist-data uses. The brief text quotes these,
+  // and the holding pills now display these too, so the two never contradict.
+  holdings_pct?: Record<string, number>;
 }
 interface HoldingPrice { ticker: string; price: number | null; changePct: number | null; sparkline: number[]; }
 interface IndexPrice { label: string; ticker: string; price: number | null; changePct: number | null; sparkline: number[]; }
@@ -469,9 +473,21 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
   // grid (Mock A). Falls back to skeleton rows (null price, null pct) when
   // the watchlist-data fetch hasn't resolved yet, keyed by the user's saved
   // tickers so the row count is stable across loads.
+  // Per-holding % shown on each pill prefers the brief's own holdings_pct
+  // (from /market-summary) so the pills match the "Your Portfolio" sentence
+  // in the brief EXACTLY - they're presented together as one snapshot, and
+  // the brief quotes these numbers verbatim. Falls back to the live
+  // watchlist-data change_pct only before the brief has loaded (or for a
+  // ticker the brief didn't return). Price + sparkline still come from the
+  // live-polled watchlist-data. The aggregate live value at the top stays on
+  // watchlist-data so it keeps ticking every 60s.
   const holdingRows = validHoldingTickers.map(t => {
     const hp = holdingPrices.find(h => h.ticker === t);
-    return { ticker: t, price: hp?.price ?? null, pct: hp?.changePct ?? null };
+    const briefPct = market?.holdings_pct?.[t];
+    const pct = (briefPct != null && Number.isFinite(briefPct))
+      ? Number(briefPct)
+      : (hp?.changePct ?? null);
+    return { ticker: t, price: hp?.price ?? null, pct };
   });
 
   const hasBriefContent = market && (market.market || market.context || market.holdings || market.outlook);
