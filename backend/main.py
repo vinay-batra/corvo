@@ -14,6 +14,7 @@ import re
 import secrets
 import threading
 import traceback
+import ipaddress
 import requests
 from datetime import datetime, timezone
 import time
@@ -54,22 +55,69 @@ MAX_RATE_LIMIT_KEYS = 50000
 _caches_lock = threading.RLock()
 
 
+# RFC 6598 carrier-grade NAT range. Railway's internal proxies live here.
+# Some Python versions don't fold 100.64.0.0/10 into ipaddress.is_private,
+# so is_global wrongly reports these as public - we check the range
+# explicitly in _is_public_ip below.
+_CGNAT_V4 = ipaddress.ip_network("100.64.0.0/10")
+
+
+def _is_public_ip(ip_str: str) -> bool:
+    """True only for a globally-routable client IP.
+
+    Excludes every non-public class (private, loopback, link-local,
+    reserved, multicast, unspecified) PLUS the CGNAT range explicitly,
+    because is_global / is_private coverage of 100.64.0.0/10 varies across
+    Python versions and Railway's internal hops sit in that range.
+    """
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return False
+    if (ip.is_private or ip.is_loopback or ip.is_link_local
+            or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
+        return False
+    if ip.version == 4 and ip in _CGNAT_V4:
+        return False
+    return True
+
+
 def _client_ip(request: "Request") -> str:
-    """Return the originating client IP, trusting only the proxy's view.
+    """Return the originating client IP, spoof-resistant on Railway's multi-hop proxy.
 
-    The leftmost X-Forwarded-For value is set by the client itself and can be
-    spoofed - a malicious client sending `X-Forwarded-For: 1.2.3.4` would
-    bypass every IP-based rate limit on every endpoint, because Railway
-    appends its observed peer IP rather than replacing the header. Reading
-    the RIGHTMOST entry gives us the proxy's own observation of who
-    connected, which can't be forged from the outside.
+    History: v0.46 switched this to read the RIGHTMOST X-Forwarded-For entry
+    to stop X-Forwarded-For spoofing (the leftmost value is client-supplied,
+    and Railway appends rather than replaces, so a client sending
+    `X-Forwarded-For: 1.2.3.4` would otherwise bypass every IP rate limit).
+    But Railway routes each request through several INTERNAL proxies, each
+    appending its own CGNAT address (100.64.0.0/10) to the chain. The
+    rightmost entry is therefore a rotating internal proxy IP, not the
+    client - so keying rate limits on it scattered each client's requests
+    across many buckets and NO limit ever tripped. Confirmed in production:
+    33 rapid requests from one machine each logged a different 100.64.0.x
+    peer and none were blocked.
 
-    Falls back to X-Real-IP and finally to the TCP peer if no forwarding
-    headers are present (local dev, direct hits).
+    Fix: walk the chain right-to-left and return the first GLOBALLY-ROUTABLE
+    (public) address. Railway's edge appends the true client IP just before
+    the internal CGNAT hops, so the rightmost public entry IS the real
+    client. Any spoofed values a client injects sit to the LEFT of the real
+    IP (Railway appends, never replaces), so they're skipped - this keeps
+    the spoof-resistance that motivated the v0.46 change while actually
+    working on Railway's network.
+
+    Falls back to the rightmost entry (all-private chains, e.g. local dev),
+    then X-Real-IP, then the TCP peer.
     """
     fwd = request.headers.get("X-Forwarded-For") or ""
     if fwd:
         parts = [p.strip() for p in fwd.split(",") if p.strip()]
+        # Rightmost public IP = the real client, skipping internal proxy hops.
+        for candidate in reversed(parts):
+            if _is_public_ip(candidate):
+                return candidate
+        # Whole chain was private/CGNAT (local dev behind a proxy, or an
+        # all-internal hop): fall back to the rightmost entry so the key is
+        # still deterministic rather than empty.
         if parts:
             return parts[-1]
     real = (request.headers.get("X-Real-IP") or "").strip()
