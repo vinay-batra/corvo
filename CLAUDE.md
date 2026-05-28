@@ -59,18 +59,24 @@ Long session continued past sundown. Net dashboard top-of-fold: GreetingBar (wit
 
 ### Open items / next session
 
-All four items from the v0.50 backlog are now closed:
-- Items 1 (save hint) and 2 (401k MUST-name-wrapper) were already live from v0.37 / v0.34.
-- Items 3 (onboarding account type) and 4 (cross-account net worth) shipped in v0.51.
+Clean slate. Everything from the v0.50 backlog shipped in v0.51. Today's session (May 28) closed:
+- v0.51: Onboarding account type capture + cross-account Net Worth panel in Saved tab
+- v0.52: PDF export overhaul (multi-page, diverging bars, sector breakdown, benchmark delta, AI report with real drawn bars + account-type-aware Claude prompt)
+- v0.53: Light/dark parity (PublicAIChat panel shadow + user message text), accessibility pass (skip link, aria-labels, keyboard nav on portfolio chips, dialog roles), public changelog updated to v0.52
 
-### Premium polish queue - pick up here next session
+**Supabase change (end of session):** Email confirmation turned OFF in Supabase Auth settings. Users can now sign in immediately after signup without confirming their email.
 
-Likely next moves: demo video, YC application (Founder Profile is open and needs Education/Work history + accomplishments), product direction brainstorm, Plaid sandbox build, PDF reports refresh, light/dark parity tour, accessibility pass.
+### Next session - pick up here
+
+1. **Demo video** - record the product walkthrough (needs Vinay)
+2. **YC application** - Founder Profile Education/Work history + accomplishments still empty (needs Vinay)
+3. **Crisis Simulator / Portfolio Time Machine** - new Simulations subtab showing how the user's current portfolio would have performed through 2008, COVID, 2022. Fetch actual historical price data for each ticker, compute portfolio-weighted drawdown, animated chart, Claude narrative. Strong YC demo material.
+4. **Accessibility pass round 2** - PortfolioBuilder inputs still lack labels (weight input + ticker search), heading hierarchy on homepage (h3s before h1). Low priority.
 
 ### Blocked / non-design work
 
 1. **Stripe/Pro tier ($9/mo)** - needs parent (Vinay is under 18; TOS requires 18+ to sign for Stripe)
-2. **Plaid integration** - auto-sync brokerage. Needs parent to sign for Plaid + production-access approval (weeks). Can build against sandbox in the meantime.
+2. **Plaid integration** - removed from active queue. Needs parent to sign (18+ TOS) + production-access approval (weeks). Revisit after Stripe ships.
 
 ### Logo asset reference (updated end-of-day v0.30)
 
