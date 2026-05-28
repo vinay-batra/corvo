@@ -4,7 +4,7 @@
 
 [Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js 16 · FastAPI · Supabase · All Rights Reserved
 
-Current release: **v0.49** (May 27, 2026) — per-account settings + brief context + import loading + portfolio-value education. Each saved portfolio now carries its own portfolio value, account type, and reinvest-dividends preference (two new Supabase migrations); the dashboard brief shows an "As of Friday, May 22 · Updates Monday at 9:30 AM ET" pill when the data is stale so users don't mistake yesterday's brief for live coverage; the brief AI prompt now tax-frames by account_type (Roth users stop getting TLH advice in the brief); screenshot import gets a visible loading state with spinner + skeleton rows; and a one-time popup explains how the portfolio value works the first time a user edits it.
+Current release: **v0.50** (May 28, 2026) — code audit + critical rate-limit fix + portfolio-value rework + briefing/pill sync. A full code-level audit found that rate limiting had been silently broken on Railway since v0.46 (the rightmost `X-Forwarded-For` entry is a rotating internal proxy IP, so no per-IP limit ever tripped) — now fixed by extracting the first globally-routable IP from the chain. The portfolio value system was reworked so the value you type is the single source of truth (the old snapshot/anchor override that ignored explicit input was removed). The daily brief's per-holding percentages now match the live ticker pills exactly (unified `fast_info` method + pills read the brief's own numbers). Plus: 4 missing rate limits, hardcoded colors migrated to CSS variables for light-mode parity, sitemap corrections, and a per-account first-time value popup with a re-open info button.
 
 ---
 

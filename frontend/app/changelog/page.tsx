@@ -83,7 +83,7 @@ function AnimatedHeading({ text, accentText, style = {} }: { text: string; accen
   );
 }
 
-// Six chapters covering v0.1 → v0.49. Each chapter caps at six bullets so
+// Six chapters covering v0.1 → v0.50. Each chapter caps at six bullets so
 // the timeline reads as a coherent arc instead of a dump. Each bullet is a
 // short thematic summary, not a single commit.
 const ERAS = [
@@ -170,15 +170,15 @@ const ERAS = [
   {
     num: "06",
     name: "Launch Prep & Polish",
-    versions: "v0.42 → v0.49",
-    dateRange: "May 17 → May 27, 2026",
-    intro: "Pricing got real, the AI got sharper, every saved account now carries its own settings end to end, and a parallel backend on Fly.io stands by for the next Railway hiccup.",
+    versions: "v0.42 → v0.50",
+    dateRange: "May 17 → May 28, 2026",
+    intro: "Pricing got real, the AI got sharper, every saved account carries its own settings end to end, and a full code audit hardened the backend and tightened the dashboard.",
     highlights: [
       "Pricing tier rename to Lite / Pro / Max with waitlist framing and trust signals reinstated",
       "Homepage scroll-nav fixed, bento card tilt jitter killed, /learn route fully purged",
-      "Every saved portfolio carries its own value, account type, and reinvest setting, with day-over-day ratcheting from EOD snapshots",
-      "Daily brief tells you what day it's from (Live now or As of Friday with the next update time) and tax-frames itself to your account wrapper",
-      "Three-session security pass: IDOR closures, blocking-loop fixes, RLS hardening, audit backlog cleared",
+      "Every saved account carries its own value, type, and reinvest setting; the value you enter is the single source of truth",
+      "Daily brief tells you what day it's from, tax-frames itself to your account, and its holding numbers now match the live tickers exactly",
+      "Full security + code audit: IDOR closures, RLS hardening, backend rate-limit hardening, and light-mode color cleanup across every page",
       "Fly.io migration prepared so the next Railway outage is a 30-minute flip, not a scramble",
     ],
     tags: ["Pricing", "AI Integrity", "Accounts", "Security", "Polish", "Infra"],
