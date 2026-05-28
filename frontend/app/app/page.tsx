@@ -2765,7 +2765,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         )}
 
         {/* Content */}
-        <main ref={contentRef} className="c-content" style={S.content}>
+        <main ref={contentRef} id="main-content" className="c-content" style={S.content}>
           {/* Demo-mode banner: shows when an anon visitor lands on a preset
               demo URL (/app?demo=bogleheads etc). Drives sign-up by framing
               the experience as a sample they can't save. Hidden the moment

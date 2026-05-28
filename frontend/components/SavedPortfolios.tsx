@@ -378,6 +378,10 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
             const isActive = !!pKey && pKey === activeTickersKey;
             return (
               <motion.div key={p.id} initial={false} animate={{ opacity: 1 }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Load portfolio: ${p.name}`}
+                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onLoad(p.assets, p.accountType, p.id, p.name, p.portfolioValue ?? null, p.reinvestDividends === false ? false : true); } }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -452,6 +456,9 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
             onClick={() => setDeleteConfirm(null)}>
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-confirm-title"
               initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
               onClick={e => e.stopPropagation()}
@@ -469,7 +476,7 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 </div>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", margin: 0, letterSpacing: -0.2 }}>Delete portfolio?</p>
+                  <p id="delete-confirm-title" style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", margin: 0, letterSpacing: -0.2 }}>Delete portfolio?</p>
                   <p style={{ fontSize: 10, color: "var(--text3)", margin: 0, letterSpacing: 0.5 }}>This cannot be undone</p>
                 </div>
               </div>

@@ -63,6 +63,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#c9a84c" />
       </head>
       <body style={{ margin: 0 }}>
+        {/* Skip-to-content for keyboard users - styled via globals.css .skip-link */}
+        <a href="#main-content" className="skip-link">Skip to main content</a>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "WebApplication",

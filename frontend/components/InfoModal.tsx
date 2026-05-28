@@ -107,7 +107,7 @@ export default function InfoModal({ title, sections, children }: InfoModalProps)
                     {title}
                   </div>
                 </div>
-                <button onClick={() => setOpen(false)}
+                <button onClick={() => setOpen(false)} aria-label="Close"
                   style={{ width: 28, height: 28, borderRadius: 8, border: "0.5px solid var(--border)", background: "var(--bg3)", cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s, border-color 0.15s", flexShrink: 0 }}
                   onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderColor = "var(--border2)"; }}
                   onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>

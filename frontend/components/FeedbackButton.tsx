@@ -133,7 +133,7 @@ export default function FeedbackButton() {
                   <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase" as const, marginBottom: 7, fontFamily: "var(--font-mono)", fontWeight: 700 }}>Corvo</div>
                   <div style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.2 }}>Send feedback</div>
                 </div>
-                <button onClick={handleClose}
+                <button onClick={handleClose} aria-label="Close feedback"
                   style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text3)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "color 0.15s, border-color 0.15s" }}
                   onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.4)"; }}
                   onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>

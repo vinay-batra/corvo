@@ -83,7 +83,7 @@ function AnimatedHeading({ text, accentText, style = {} }: { text: string; accen
   );
 }
 
-// Six chapters covering v0.1 → v0.50. Each chapter caps at six bullets so
+// Six chapters covering v0.1 → v0.52. Each chapter caps at six bullets so
 // the timeline reads as a coherent arc instead of a dump. Each bullet is a
 // short thematic summary, not a single commit.
 const ERAS = [
@@ -170,18 +170,18 @@ const ERAS = [
   {
     num: "06",
     name: "Launch Prep & Polish",
-    versions: "v0.42 → v0.50",
+    versions: "v0.42 → v0.52",
     dateRange: "May 17 → May 28, 2026",
-    intro: "Pricing got real, the AI got sharper, every saved account carries its own settings end to end, and a full code audit hardened the backend and tightened the dashboard.",
+    intro: "Pricing got real, the AI got sharper, every saved account carries its own settings end to end, and a full audit hardened the backend. Latest releases overhaul PDF exports and round out the onboarding experience.",
     highlights: [
       "Pricing tier rename to Lite / Pro / Max with waitlist framing and trust signals reinstated",
       "Homepage scroll-nav fixed, bento card tilt jitter killed, /learn route fully purged",
-      "Every saved account carries its own value, type, and reinvest setting; the value you enter is the single source of truth",
+      "Every saved account carries its own value, type, and reinvest setting; onboarding captures account type upfront and the Saved tab shows total net worth across all accounts",
       "Daily brief tells you what day it's from, tax-frames itself to your account, and its holding numbers now match the live tickers exactly",
-      "Full security + code audit: IDOR closures, RLS hardening, backend rate-limit hardening, and light-mode color cleanup across every page",
-      "Fly.io migration prepared so the next Railway outage is a 30-minute flip, not a scramble",
+      "Full security + code audit: IDOR closures, RLS hardening, backend rate-limit fix (Railway proxy routing was silently bypassing all limits), and light-mode color cleanup",
+      "PDF export rebuilt: multi-page, diverging performance bars, sector breakdown, benchmark delta, account-type-aware AI narrative",
     ],
-    tags: ["Pricing", "AI Integrity", "Accounts", "Security", "Polish", "Infra"],
+    tags: ["Pricing", "AI Integrity", "Accounts", "Security", "Polish", "PDF"],
   },
 ];
 

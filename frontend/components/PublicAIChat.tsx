@@ -180,7 +180,9 @@ function PublicAIChatInner() {
             background: "var(--card-bg)",
             border: "1px solid rgba(var(--accent-rgb),0.2)",
             borderRadius: 16,
-            boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--accent-rgb),0.06)",
+            boxShadow: dark
+              ? "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--accent-rgb),0.06)"
+              : "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(var(--accent-rgb),0.08)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -261,7 +263,7 @@ function PublicAIChatInner() {
                     border: msg.role === "assistant" ? "1px solid var(--border)" : "none",
                     fontSize: 13,
                     lineHeight: 1.6,
-                    color: msg.role === "user" ? "#0a0e14" : "var(--text)",
+                    color: msg.role === "user" ? "var(--bg)" : "var(--text)",
                     fontWeight: msg.role === "user" ? 500 : 300,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
