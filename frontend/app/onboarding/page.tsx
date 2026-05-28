@@ -8,6 +8,7 @@ import UserMenu from "../../components/UserMenu";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import FinancialGoals, { type FinancialGoal } from "../../components/FinancialGoals";
 import { RESOLVED_API_URL } from "../../lib/api";
+import { ACCOUNT_TYPES, type AccountTypeId, DEFAULT_ACCOUNT_TYPE } from "../../lib/accountType";
 
 // 11 steps → 8: combined age+income into one step, risk+horizon into one step, dropped life events
 const TOTAL = 8;
@@ -239,6 +240,7 @@ function OnboardingContent() {
   const [assets, setAssets] = useState<{ ticker: string; weight: number; purchasePrice?: number }[]>([
     { ticker: "", weight: 0.05 },
   ]);
+  const [accountType, setAccountType] = useState<AccountTypeId>(DEFAULT_ACCOUNT_TYPE);
 
   useEffect(() => {
     (async () => {
@@ -374,6 +376,8 @@ function OnboardingContent() {
     if (validAssets.length > 0) {
       localStorage.setItem("corvo_onboarding_assets", JSON.stringify(validAssets));
     }
+    // Persist account type so the dashboard loads with the right tax context on first visit
+    localStorage.setItem("corvo_account_type", accountType);
     if (!isReplay) {
       localStorage.setItem("corvo_just_onboarded", "true");
     }
@@ -461,8 +465,29 @@ function OnboardingContent() {
 
   const renderPortfolioBuilder = () => (
     <div>
-      <div className="ob-builder-scroll" style={{ maxHeight: 340, overflowY: "auto", marginBottom: 16 }}>
-        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} loading={false} />
+      {/* Account type - captured here so AI advice is tax-context-aware from day one */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text2)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8, fontFamily: "var(--font-mono)" }}>
+          Account type
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
+          {ACCOUNT_TYPES.map(t => (
+            <SelectCard
+              key={t.id}
+              label={t.short}
+              desc={t.chip}
+              selected={accountType === t.id}
+              onClick={() => setAccountType(t.id)}
+            />
+          ))}
+        </div>
+      </div>
+      <div style={{ height: 1, background: "var(--border)", marginBottom: 14 }} />
+      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text2)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8, fontFamily: "var(--font-mono)" }}>
+        Holdings (optional)
+      </div>
+      <div className="ob-builder-scroll" style={{ maxHeight: 240, overflowY: "auto", marginBottom: 16 }}>
+        <PortfolioBuilder assets={assets} onAssetsChange={setAssets} loading={false} accountType={accountType} />
       </div>
       <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "center" }}>
         You can add or edit holdings anytime from the dashboard.

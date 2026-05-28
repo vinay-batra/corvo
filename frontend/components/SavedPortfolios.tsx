@@ -7,6 +7,30 @@ import { type AccountTypeId, isAccountTypeId, DEFAULT_ACCOUNT_TYPE, getAccountTy
 const LS_KEY = "corvo_saved_portfolios";
 const HISTORY_KEY_PREFIX = "corvo_history_";
 const C = { amber: "var(--accent)", amber2: "rgba(184,134,11,0.1)", border: "var(--border)", cream: "var(--text)", cream2: "var(--text2)", cream3: "var(--text3)" };
+
+// Tax bucket classification - used for the cross-account Net Worth panel
+type TaxBucket = "free" | "deferred" | "taxable";
+const TAX_BUCKET: Record<AccountTypeId, TaxBucket> = {
+  roth_ira: "free",
+  roth_401k: "free",
+  hsa: "free",
+  "529": "free",
+  traditional_ira: "deferred",
+  traditional_401k: "deferred",
+  taxable_brokerage: "taxable",
+  custodial: "taxable",
+};
+const BUCKET_META: Record<TaxBucket, { label: string; color: string }> = {
+  free:     { label: "Tax-Free",     color: "#4caf7d" },
+  deferred: { label: "Tax-Deferred", color: "var(--accent)" },
+  taxable:  { label: "Taxable",      color: "var(--text3)" },
+};
+
+function fmtDollar(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 10_000)    return `$${Math.round(n).toLocaleString()}`;
+  return `$${n.toFixed(2)}`;
+}
 interface Asset { ticker: string; weight: number; accountType?: AccountTypeId; }
 interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; portfolioValue?: number | null; reinvestDividends?: boolean; }
 
@@ -273,8 +297,51 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
     }
   };
 
+  // Cross-account Net Worth panel - shows when 2+ portfolios have a value set
+  const portfoliosWithValues = portfolios.filter(p => (p.portfolioValue ?? 0) > 0);
+  const showNetWorth = portfoliosWithValues.length >= 2;
+  const netWorthTotal = portfoliosWithValues.reduce((s, p) => s + (p.portfolioValue ?? 0), 0);
+  const bucketTotals: Record<TaxBucket, number> = { free: 0, deferred: 0, taxable: 0 };
+  portfoliosWithValues.forEach(p => { bucketTotals[TAX_BUCKET[p.accountType] ?? "taxable"] += p.portfolioValue ?? 0; });
+
   return (
     <div>
+      {/* Net Worth aggregate panel */}
+      {showNetWorth && (
+        <div style={{ marginBottom: 14, padding: "12px 13px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
+          <div style={{ fontSize: 9.5, letterSpacing: 2, color: C.amber, textTransform: "uppercase", fontWeight: 700, fontFamily: "Space Mono, monospace", marginBottom: 6 }}>Net Worth</div>
+          <div style={{ fontSize: 19, fontWeight: 700, fontFamily: "Space Mono, monospace", color: C.cream, letterSpacing: -0.5, marginBottom: 10 }}>
+            {fmtDollar(netWorthTotal)}
+          </div>
+          {/* Stacked tax-bucket bar */}
+          <div style={{ display: "flex", height: 5, borderRadius: 3, overflow: "hidden", gap: 1.5, marginBottom: 8 }}>
+            {(["free", "deferred", "taxable"] as TaxBucket[]).map(bucket => {
+              const pct = netWorthTotal > 0 ? (bucketTotals[bucket] / netWorthTotal) * 100 : 0;
+              if (pct < 0.5) return null;
+              return (
+                <div key={bucket} style={{ flex: pct, background: BUCKET_META[bucket].color, borderRadius: 3, minWidth: 4, opacity: bucket === "taxable" ? 0.55 : 0.85 }} />
+              );
+            })}
+          </div>
+          {/* Legend */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {(["free", "deferred", "taxable"] as TaxBucket[]).map(bucket => {
+              if (bucketTotals[bucket] <= 0) return null;
+              const pct = Math.round((bucketTotals[bucket] / netWorthTotal) * 100);
+              return (
+                <div key={bucket} style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: BUCKET_META[bucket].color, flexShrink: 0, opacity: bucket === "taxable" ? 0.55 : 0.85 }} />
+                    <span style={{ fontSize: 9.5, color: C.cream3, fontFamily: "Space Mono, monospace", letterSpacing: 0.2 }}>{BUCKET_META[bucket].label}</span>
+                  </div>
+                  <span style={{ fontSize: 9.5, color: C.cream2, fontFamily: "Space Mono, monospace", letterSpacing: 0.2 }}>{fmtDollar(bucketTotals[bucket])} <span style={{ color: C.cream3 }}>({pct}%)</span></span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <span style={{ fontSize: 10, letterSpacing: 2.5, color: C.amber, textTransform: "uppercase", fontWeight: 700, fontFamily: "Space Mono, monospace" }}>Saved</span>
         <button id="tour-save-btn" data-save-trigger onClick={() => setShowSave(s => !s)}
