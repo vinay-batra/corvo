@@ -962,6 +962,8 @@ interface TopbarActionsProps {
   period: string;
   benchmark: string;
   exportCSV: () => void;
+  accountType?: string;
+  portfolioValue?: number | null;
   setShowAlerts: (v: boolean) => void;
   setShowEmailPrefs: (v: boolean) => void;
   setShowReferral: (v: boolean) => void;
@@ -974,6 +976,7 @@ interface TopbarActionsProps {
 const TopbarActions = memo(function TopbarActions({
   dark, toggleDark, alertCount, avatarUrl, displayName,
   data, assets, period, benchmark, exportCSV,
+  accountType, portfolioValue,
   setShowAlerts, setShowEmailPrefs, setShowReferral, setShowSettings,
   setShowProfile, setShowDashboardTour, setShowShareImage,
 }: TopbarActionsProps) {
@@ -1021,7 +1024,7 @@ const TopbarActions = memo(function TopbarActions({
             <>
               <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setOverflowOpen(false)} />
               <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 160, boxShadow: "var(--shadow-md)" }}>
-                <ExportPDF data={data} assets={assets} menuItem onClose={() => setOverflowOpen(false)} onAiGenerationStart={() => setAiToast(true)} onAiGenerationEnd={() => setAiToast(false)} />
+                <ExportPDF data={data} assets={assets} accountType={accountType} portfolioValue={portfolioValue ?? null} menuItem onClose={() => setOverflowOpen(false)} onAiGenerationStart={() => setAiToast(true)} onAiGenerationEnd={() => setAiToast(false)} />
                 {data && (
                   <button onClick={() => { exportCSV(); setOverflowOpen(false); }}
                     style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: "var(--text)", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "background 0.12s" }}
@@ -2738,6 +2741,8 @@ const { dark, toggle: toggleDark }  = useTheme();
             period={period}
             benchmark={benchmark}
             exportCSV={exportCSV}
+            accountType={accountType}
+            portfolioValue={portfolioInputValue ?? null}
             setShowAlerts={setShowAlerts}
             setShowEmailPrefs={setShowEmailPrefs}
             setShowReferral={setShowReferral}

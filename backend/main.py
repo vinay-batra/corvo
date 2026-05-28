@@ -1889,15 +1889,41 @@ def generate_report(req: ReportRequest, request: Request):
         ctx = req.portfolio_context
         goals = req.user_goals
 
-        tickers = ctx.get("tickers", [])
-        weights = ctx.get("weights", [])
-        ret = ctx.get("annualized_return") or ctx.get("portfolio_return", 0)
-        vol = ctx.get("portfolio_volatility", 0)
-        rf = ctx.get("rf_rate", 0.043)
-        sharpe = ctx.get("sharpe_ratio") or (safe_float((ret - rf) / vol) if vol > 0 else 0.0)
-        dd = ctx.get("max_drawdown", 0)
-        period = ctx.get("period", "1y")
-        ind_returns = ctx.get("individual_returns", {})
+        tickers      = ctx.get("tickers", [])
+        weights      = ctx.get("weights", [])
+        ret          = ctx.get("annualized_return") or ctx.get("portfolio_return", 0)
+        vol          = ctx.get("portfolio_volatility", 0)
+        rf           = ctx.get("rf_rate", 0.043)
+        sharpe       = ctx.get("sharpe_ratio") or (safe_float((ret - rf) / vol) if vol > 0 else 0.0)
+        dd           = ctx.get("max_drawdown", 0)
+        period       = ctx.get("period", "1y")
+        ind_returns  = ctx.get("individual_returns", {})
+        bench_ret    = ctx.get("benchmark_return")
+        bench_ticker = ctx.get("benchmark_ticker") or "S&P 500"
+        health_score = ctx.get("health_score")
+        account_type = ctx.get("account_type") or "taxable_brokerage"
+        pv           = ctx.get("portfolio_value")
+
+        # Account-type context block (mirrors _account_type_block in /chat)
+        at_labels = {
+            "taxable_brokerage": "Taxable Brokerage",
+            "roth_ira": "Roth IRA",
+            "traditional_ira": "Traditional IRA",
+            "roth_401k": "Roth 401(k)",
+            "traditional_401k": "Traditional 401(k)",
+            "hsa": "HSA",
+            "529": "529 Education",
+            "custodial": "Custodial (UGMA/UTMA)",
+        }
+        at_label = at_labels.get(account_type, "Taxable Brokerage")
+        tax_free_types = {"roth_ira", "roth_401k", "hsa", "529"}
+        deferred_types = {"traditional_ira", "traditional_401k"}
+        if account_type in tax_free_types:
+            tax_context = f"This is a {at_label} account. Growth and qualified withdrawals are tax-free. Do NOT recommend tax-loss harvesting or discuss capital gains tax."
+        elif account_type in deferred_types:
+            tax_context = f"This is a {at_label} account. Growth is tax-deferred; ordinary income tax applies on withdrawal. Do NOT recommend tax-loss harvesting or discuss capital gains tax."
+        else:
+            tax_context = f"This is a {at_label} account. Capital gains tax and tax-loss harvesting are relevant."
 
         goals_text = ""
         if goals:
@@ -1916,17 +1942,37 @@ def generate_report(req: ReportRequest, request: Request):
 
         stock_perf = ""
         if ind_returns:
-            stock_perf = "\n\nIndividual holding returns (CAGR):\n" + "\n".join(
-                f"- {t}: {r*100:+.1f}%" for t, r in ind_returns.items()
+            sorted_ret = sorted(ind_returns.items(), key=lambda x: -x[1])
+            stock_perf = "\n\nIndividual holding returns (CAGR, best to worst):\n" + "\n".join(
+                f"- {t}: {r*100:+.1f}%" for t, r in sorted_ret
             )
 
-        prompt = f"""You are a senior portfolio analyst. Write a professional portfolio analysis report.
+        bench_text = ""
+        if bench_ret is not None:
+            diff = ret - bench_ret
+            direction = "outperformed" if diff >= 0 else "underperformed"
+            bench_text = f"\n\nBenchmark ({bench_ticker}): {bench_ret:.2%}. Portfolio {direction} by {abs(diff)*100:.2f} percentage points."
+
+        health_text = ""
+        if health_score is not None:
+            hs = int(health_score)
+            hs_label = "Excellent" if hs >= 75 else "Good" if hs >= 60 else "Fair" if hs >= 45 else "At Risk"
+            health_text = f"\n\nCorvo Health Score: {hs}/100 ({hs_label})."
+
+        pv_text = ""
+        if pv and float(pv) > 0:
+            pv_text = f"\n\nPortfolio Value: ${float(pv):,.0f}."
+
+        prompt = f"""You are a senior portfolio analyst at Corvo. Write a professional portfolio analysis report.
+
+Account Type: {at_label}
+{tax_context}
 
 Portfolio ({period}): {holdings_report}
 Annualized Return (CAGR): {ret:.2%}
 Annualized Volatility: {vol:.2%}
 Sharpe Ratio: {sharpe:.2f}
-Max Drawdown: {dd:.2%}{stock_perf}{goals_text}
+Max Drawdown: {dd:.2%}{bench_text}{health_text}{pv_text}{stock_perf}{goals_text}
 
 Write a full analysis with these sections:
 ## Executive Summary
@@ -1941,13 +1987,15 @@ Rules:
 - List all {len(tickers)} holdings with their exact weights and types in Portfolio Composition
 - Label cash and money market positions (e.g. FDRXX, SPAXX) as cash equivalents, never as stocks
 - Be specific with numbers and always mention the period when discussing returns
-- Use bullet points (- item) for lists. 500-700 words total.
+- Frame ALL advice through the account type - never give tax-loss harvesting advice for tax-sheltered accounts
+- Reference the benchmark comparison and health score in your analysis when present
+- Use bullet points (- item) for lists. 550-750 words total.
 - Never use em dashes. Never use asterisks (*) or markdown bold/italic. Write in plain prose only.
 - Use ## for section headers only. Never use # (single hash) headers."""
 
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1500,
+            max_tokens=1800,
             messages=[{"role": "user", "content": prompt}]
         )
         analysis_text = clean_ai_response(response.content[0].text)
@@ -2071,33 +2119,126 @@ Rules:
         story.append(metric_table)
         story.append(Spacer(1, 5*mm))
 
-        # ── Allocation bar ───────────────────────────────────────────────────
+        # ── Allocation bars (drawn with canvas via a Flowable) ────────────────
+        from reportlab.platypus import Flowable
+
+        CONTENT_W = W - 48*mm  # matches leftMargin + rightMargin
+        TICK_W    = 22*mm
+        BAR_X     = TICK_W + 2*mm
+        BAR_MAX_W = CONTENT_W - TICK_W - 14*mm
+        BAR_H     = 3*mm
+        ROW_H     = 8*mm
+
+        class AllocBar(Flowable):
+            def __init__(self, ticker: str, weight: float, color=AMBER, bar_h=BAR_H, row_h=ROW_H):
+                super().__init__()
+                self.ticker  = ticker
+                self.weight  = weight
+                self.color   = color
+                self.bar_h   = bar_h
+                self.row_h   = row_h
+                self.width   = CONTENT_W
+                self.height  = row_h
+
+            def draw(self):
+                c = self.canv
+                y_center = self.row_h / 2
+                bar_top  = y_center - self.bar_h / 2
+
+                # Ticker label
+                c.setFont("Helvetica-Bold", 9)
+                c.setFillColor(AMBER)
+                c.drawString(0, y_center - 3, self.ticker[:10])
+
+                # Track
+                c.setFillColor(BORDER)
+                c.roundRect(BAR_X, bar_top, BAR_MAX_W, self.bar_h, 1.5, fill=1, stroke=0)
+
+                # Fill
+                fill_w = BAR_MAX_W * min(self.weight, 1.0)
+                if fill_w > 0:
+                    c.setFillColor(self.color)
+                    c.roundRect(BAR_X, bar_top, fill_w, self.bar_h, 1.5, fill=1, stroke=0)
+
+                # Percentage
+                c.setFont("Helvetica", 9)
+                c.setFillColor(BODY)
+                pct_str = f"{self.weight*100:.1f}%"
+                c.drawRightString(float(CONTENT_W), y_center - 3, pct_str)
+
+        class DivergingBar(Flowable):
+            """Performance bar that diverges from a center zero line."""
+            def __init__(self, ticker: str, ret_val: float, max_abs: float):
+                super().__init__()
+                self.ticker  = ticker
+                self.ret_val = ret_val
+                self.max_abs = max_abs
+                self.width   = CONTENT_W
+                self.height  = ROW_H
+
+            def draw(self):
+                c    = self.canv
+                rv   = self.ret_val
+                y_c  = self.height / 2
+                bt   = y_c - BAR_H / 2
+                cx   = BAR_X + BAR_MAX_W / 2  # center (zero) x
+
+                c.setFont("Helvetica-Bold", 9)
+                c.setFillColor(AMBER)
+                c.drawString(0, y_c - 3, self.ticker[:10])
+
+                c.setFillColor(BORDER)
+                c.roundRect(BAR_X, bt, BAR_MAX_W, BAR_H, 1.5, fill=1, stroke=0)
+
+                pct  = min(abs(rv) / self.max_abs, 1.0) if self.max_abs > 0 else 0
+                hw   = BAR_MAX_W / 2 * pct
+                col  = GREEN if rv >= 0 else RED
+                c.setFillColor(col)
+                if rv >= 0:
+                    c.roundRect(cx, bt, hw, BAR_H, 1.5, fill=1, stroke=0)
+                else:
+                    c.roundRect(cx - hw, bt, hw, BAR_H, 1.5, fill=1, stroke=0)
+
+                # Zero tick
+                c.setStrokeColor(DIM)
+                c.setLineWidth(0.5)
+                c.line(cx, bt, cx, bt + BAR_H)
+
+                sign = "+" if rv >= 0 else ""
+                c.setFont("Helvetica-Bold", 9)
+                c.setFillColor(col)
+                c.drawRightString(float(CONTENT_W), y_c - 3, f"{sign}{rv*100:.1f}%")
+
         story.append(HRFlowable(width="100%", thickness=0.3, color=BORDER))
         story.append(Paragraph("PORTFOLIO ALLOCATION", S_SECTION))
-        for i, (ticker, w) in enumerate(zip(tickers, norm_w)):
-            story.append(Paragraph(
-                f'<font color="#c9a84c"><b>{ticker}</b></font>'
-                f'<font color="#666666">{"&nbsp;" * 4}</font>'
-                f'<font color="#cccccc">{w*100:.1f}%</font>',
-                ParagraphStyle("alloc", fontName="Helvetica", fontSize=11, textColor=BODY, spaceAfter=4, leading=14)
-            ))
+        for ticker, w in zip(tickers, norm_w):
+            story.append(AllocBar(ticker, w))
 
-        # Individual returns (if any)
+        # Individual returns (diverging bars)
         if ind_returns:
             story.append(Spacer(1, 3*mm))
             story.append(HRFlowable(width="100%", thickness=0.3, color=BORDER))
             story.append(Paragraph("INDIVIDUAL PERFORMANCE", S_SECTION))
             sorted_ret = sorted(ind_returns.items(), key=lambda x: -x[1])
+            max_abs = max(abs(r) for _, r in sorted_ret) if sorted_ret else 0.01
             for t, r in sorted_ret:
-                rv = r * 100
-                col = "#5cb88a" if rv >= 0 else "#e05c5c"
-                sign = "+" if rv >= 0 else ""
-                story.append(Paragraph(
-                    f'<font color="#c9a84c"><b>{t}</b></font>'
-                    f'<font color="#666666">{"&nbsp;" * 4}</font>'
-                    f'<font color="{col}">{sign}{rv:.1f}%</font>',
-                    ParagraphStyle("iret", fontName="Helvetica", fontSize=11, textColor=BODY, spaceAfter=4, leading=14)
-                ))
+                story.append(DivergingBar(t, r, max_abs))
+
+        # Benchmark comparison (if present)
+        if bench_ret is not None:
+            story.append(Spacer(1, 3*mm))
+            story.append(HRFlowable(width="100%", thickness=0.3, color=BORDER))
+            story.append(Paragraph("BENCHMARK COMPARISON", S_SECTION))
+            max_val = max(abs(ret), abs(bench_ret), 0.01)
+            story.append(AllocBar("Portfolio", abs(ret) / max_val, color=GREEN if ret >= 0 else RED))
+            story.append(AllocBar(bench_ticker[:10], abs(bench_ret) / max_val, color=GREEN if bench_ret >= 0 else RED))
+            diff = ret - bench_ret
+            diff_col = "#5cb88a" if diff >= 0 else "#e05c5c"
+            direction = "outperforming" if diff >= 0 else "underperforming"
+            story.append(Paragraph(
+                f'<font color="{diff_col}">Portfolio is {direction} by {abs(diff)*100:.2f}pp</font>',
+                ParagraphStyle("bench_note", fontName="Helvetica", fontSize=9, textColor=BODY, spaceAfter=4, leading=13)
+            ))
 
         # ── AI Analysis ──────────────────────────────────────────────────────
         story.append(Spacer(1, 3*mm))

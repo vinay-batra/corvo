@@ -4,27 +4,65 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RESOLVED_API_URL } from "../lib/api";
 import { cssVar } from "../lib/theme";
 
-// `amber` is the brand-fixed gold (matches --accent across themes). The rest
-// resolve from the active theme at render-time via cssVar() so PDF exports and
-// HTML fallbacks respect the user's theme.
 const C = { amber: "#c9a84c", amber2: "rgba(201,168,76,0.12)", cream3: "rgba(232,224,204,0.35)" };
 const API_URL = RESOLVED_API_URL;
 
-interface Props { data: any; assets: any[]; goals?: any; menuItem?: boolean; onClose?: () => void; onAiGenerationStart?: () => void; onAiGenerationEnd?: () => void; }
+interface Props {
+  data: any;
+  assets: any[];
+  goals?: any;
+  accountType?: string;
+  portfolioValue?: number | null;
+  menuItem?: boolean;
+  onClose?: () => void;
+  onAiGenerationStart?: () => void;
+  onAiGenerationEnd?: () => void;
+}
 
-// ── jsPDF single-page PDF builder ────────────────────────────────────────────
-async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> {
+// ── Health score (mirrors HealthScore.tsx logic) ──────────────────────────────
+function computeHealthScore(data: any): number {
+  const ret = data.portfolio_return ?? 0;
+  const vol = data.portfolio_volatility ?? 0.2;
+  const sharpe = vol > 0 ? (ret - 0.04) / vol : 0;
+  const rS  = Math.min(Math.max(((ret + 0.3) / 0.6) * 100, 0), 100);
+  const shS = Math.min(Math.max((sharpe / 3) * 100, 0), 100);
+  const vS  = Math.min(Math.max((1 - vol / 0.6) * 100, 0), 100);
+  const dS  = Math.min(Math.max((1 + (data.max_drawdown ?? 0) / 0.5) * 100, 0), 100);
+  return Math.round(rS * 0.3 + shS * 0.3 + vS * 0.25 + dS * 0.15);
+}
+
+// ── jsPDF multi-page PDF builder ──────────────────────────────────────────────
+async function buildJsPDF(
+  data: any,
+  assets: any[],
+  goals?: any,
+  accountType?: string,
+  portfolioValue?: number | null,
+): Promise<void> {
   const { jsPDF } = await import("jspdf");
+
+  // Fetch sector breakdown before building the doc (cached 1h on backend)
+  const tickers  = (data.tickers ?? assets.map((a: any) => a.ticker)).filter(Boolean);
+  const rawW     = data.weights ?? assets.map((a: any) => a.weight);
+  let sectors: Record<string, number> = {};
+  try {
+    const res = await fetch(
+      `${API_URL}/portfolio/sectors?tickers=${encodeURIComponent(tickers.join(","))}&weights=${encodeURIComponent(rawW.join(","))}`,
+    );
+    if (res.ok) { const d = await res.json(); sectors = d.sectors ?? {}; }
+  } catch { /* skip sectors silently */ }
+
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const isLight = document.documentElement.getAttribute("data-theme") === "light";
 
   const W = 210, H = 297;
   const ML = 14, MR = 14;
   const CW = W - ML - MR;
-  const FOOTER_Y = 280;  // fixed footer top
+  const FOOTER_Y = 280;
 
+  // Color palette
   const bg:         [number,number,number] = isLight ? [255,255,255]  : [10,14,20];
-  const text:       [number,number,number] = isLight ? [20,20,20]     : [232,224,204];
+  const textC:      [number,number,number] = isLight ? [20,20,20]     : [232,224,204];
   const cardBg:     [number,number,number] = isLight ? [248,248,248]  : [20,28,40];
   const cardBorder: [number,number,number] = isLight ? [220,220,220]  : [40,50,65];
   const dim:        [number,number,number] = isLight ? [140,140,140]  : [100,110,115];
@@ -34,7 +72,136 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
   const red:        [number,number,number] = [224,92,92];
   const green:      [number,number,number] = [92,184,138];
 
-  // helpers
+  // Derived data
+  const ret    = data.portfolio_return ?? data.annualized_return ?? 0;
+  const vol    = data.portfolio_volatility ?? 0;
+  const sharpe = data.sharpe_ratio ?? (vol > 0 ? (ret - 0.04) / vol : 0);
+  const dd     = data.max_drawdown ?? 0;
+  const score  = computeHealthScore(data);
+  const scoreColor: [number,number,number] = score >= 75 ? green : score >= 50 ? amber : red;
+  const scoreLabel  = score >= 75 ? "Excellent" : score >= 60 ? "Good" : score >= 45 ? "Fair" : "At Risk";
+  const period      = data.period ?? "1y";
+  const periodLabel = period.toUpperCase();
+  const accType: string | null = accountType ?? data.account_type ?? null;
+  const benchRet: number | null  = data.benchmark_return ?? null;
+  const benchTicker: string      = data.benchmark_ticker ?? "S&P 500";
+  const indRet: Record<string, number> = data.individual_returns ?? {};
+  const insights: string[]  = Array.isArray(data.ai_insights) ? data.ai_insights.slice(0, 6) : [];
+
+  // Normalized weights
+  const normWeights: number[] = (() => {
+    const w: number[] = rawW;
+    const total = w.reduce((s: number, v: number) => s + v, 0) || 1;
+    return w.map((v: number) => v / total);
+  })();
+
+  const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const tickerStr = (() => {
+    const parts = assets.slice(0, 7).map((a: any) => String(a.ticker));
+    return parts.join("  ·  ") + (assets.length > 7 ? "  ·  ..." : "");
+  })();
+
+  // ── Page management ───────────────────────────────────────────────────────────
+  let y     = 28;
+  let pageN = 1;
+
+  const drawFooter = () => {
+    doc.setDrawColor(...amber);
+    doc.setLineWidth(0.5);
+    doc.line(0, FOOTER_Y, W, FOOTER_Y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...dim);
+    doc.text(
+      "Generated by Corvo Portfolio Intelligence  ·  corvo.capital  ·  Not financial advice",
+      W / 2, FOOTER_Y + 7, { align: "center" },
+    );
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...dim);
+    doc.text(`${pageN}`, W - MR, FOOTER_Y + 7, { align: "right" });
+  };
+
+  const drawPageBg = () => {
+    doc.setFillColor(...bg);
+    doc.rect(0, 0, W, H, "F");
+    doc.setFillColor(...amber);
+    doc.rect(0, 0, W, 1.5, "F");
+    doc.setFillColor(...hdrBg);
+    doc.rect(0, 1.5, W, 18, "F");
+    doc.setDrawColor(...amber);
+    doc.setLineWidth(0.3);
+    doc.line(0, 19.5, W, 19.5);
+    drawFooter();
+  };
+
+  const drawFirstHeader = () => {
+    // Brand - left
+    doc.setFont("courier", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...amber);
+    doc.text("CORVO", ML, 12.5);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(4.5);
+    doc.setTextColor(...dim);
+    doc.setCharSpace(2.5);
+    doc.text("PORTFOLIO INTELLIGENCE", ML, 17.5);
+    doc.setCharSpace(0);
+
+    // Tickers - center
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...textC);
+    let ts = tickerStr;
+    if (doc.getTextWidth(ts) > 85) {
+      const parts = assets.slice(0, 7).map((a: any) => String(a.ticker));
+      while (parts.length > 1 && doc.getTextWidth(parts.join("  ·  ") + "  ·  ...") > 85) parts.pop();
+      ts = parts.join("  ·  ") + "  ·  ...";
+    }
+    doc.text(ts, W / 2, 12.5, { align: "center" });
+
+    // Date + period - right
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...dim);
+    doc.text(now.toUpperCase(), W - MR, 10.5, { align: "right" });
+    doc.setFontSize(6);
+    doc.text(periodLabel, W - MR, 15, { align: "right" });
+    if (accType) {
+      const atLabel = accType.replace(/_/g, " ").toUpperCase();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(5.5);
+      doc.setTextColor(...amber);
+      doc.setCharSpace(0.4);
+      doc.text(atLabel, W - MR, 19, { align: "right" });
+      doc.setCharSpace(0);
+    }
+  };
+
+  const drawContinuationHeader = () => {
+    doc.setFont("courier", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...amber);
+    doc.text("CORVO", ML, 13);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...dim);
+    doc.text("Portfolio Report (continued)", ML + 18, 13);
+  };
+
+  const addPage = () => {
+    pageN++;
+    doc.addPage();
+    drawPageBg();
+    drawContinuationHeader();
+    y = 28;
+  };
+
+  // checkPage: add a new page if the next section of `needed` mm won't fit
+  const checkPage = (needed: number) => {
+    if (y + needed > FOOTER_Y - 8) addPage();
+  };
+
   const sectionLabel = (label: string, yy: number) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
@@ -47,116 +214,68 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     doc.line(ML, yy + 2, W - MR, yy + 2);
   };
 
-  const ret    = data.portfolio_return    ?? 0;
-  const vol    = data.portfolio_volatility ?? 0;
-  const sharpe = vol > 0 ? (ret - 0.04) / vol : 0;
-  const dd     = data.max_drawdown ?? 0;
-  const score  = computeHealthScore(data);
-  const scoreColor = score >= 75 ? green : score >= 50 ? amber : red;
-  const weights: number[] = data.weights ?? assets.map((a: any) => a.weight);
-  const total = weights.reduce((s, w) => s + w, 0) || 1;
-  const normWeights = weights.map(w => w / total);
-  const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  const indRet: Record<string, number> = data.individual_returns ?? {};
-  const tickerRaw = assets.slice(0, 6).map((a: any) => a.ticker).join("  ·  ") + (assets.length > 6 ? "  ·  …" : "");
+  // ── Build page 1 ─────────────────────────────────────────────────────────────
+  drawPageBg();
+  drawFirstHeader();
 
-  // ── BACKGROUND ───────────────────────────────────────────────────────────────
-  doc.setFillColor(...bg);
-  doc.rect(0, 0, W, H, "F");
-
-  // ── HEADER ───────────────────────────────────────────────────────────────────
-  // 4px amber top stripe
-  doc.setFillColor(...amber);
-  doc.rect(0, 0, W, 1.5, "F");
-
-  // header background
-  doc.setFillColor(...hdrBg);
-  doc.rect(0, 1.5, W, 18, "F");
-
-  // CORVO - courier bold amber (keep mono for brand)
-  doc.setFont("courier", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(...amber);
-  doc.text("CORVO", ML, 12.5);
-
-  // Subtitle - smaller, tighter, less crowding
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(4.5);
-  doc.setTextColor(...dim);
-  doc.setCharSpace(3);
-  doc.text("PORTFOLIO INTELLIGENCE", ML, 17.5);
-  doc.setCharSpace(0);
-
-  // Tickers centered - helvetica bold
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...text);
-  let tickerStr = tickerRaw;
-  if (doc.getTextWidth(tickerStr) > 80) {
-    const parts = assets.slice(0, 6).map((a: any) => a.ticker);
-    while (parts.length > 1 && doc.getTextWidth(parts.join("  ·  ") + "  ·  …") > 80) parts.pop();
-    tickerStr = parts.join("  ·  ") + "  ·  …";
-  }
-  doc.text(tickerStr, W / 2, 12.5, { align: "center" });
-
-  // Date top-right
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(...dim);
-  doc.text(now.toUpperCase(), W - MR, 12.5, { align: "right" });
-
-  // Period below date
-  if (data.period) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6);
-    doc.setTextColor(...dim);
-    doc.text(String(data.period).toUpperCase(), W - MR, 17.5, { align: "right" });
-  }
-
-  // Amber divider under header
-  doc.setDrawColor(...amber);
-  doc.setLineWidth(0.3);
-  doc.line(0, 19.5, W, 19.5);
-
-  let y = 28;
-
-  // ── METRIC CARDS (5 in a row: return, vol, sharpe, drawdown, health) ──────────
+  // ── METRIC CARDS (5 in a row) ─────────────────────────────────────────────────
   const cardW = (CW - 4 * 3) / 5;
-  const cardH = 32;
-  const metricData = [
-    { label: "CAGR (1Y)",     value: `${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, color: ret >= 0 ? amber : red },
-    { label: "Volatility",    value: `${(vol * 100).toFixed(2)}%`,                       color: text },
-    { label: "Sharpe Ratio",  value: sharpe.toFixed(2),                                  color: sharpe >= 1 ? green : sharpe >= 0 ? amber : red },
-    { label: "Max Drawdown",  value: `${(dd * 100).toFixed(2)}%`,                        color: red },
-    { label: "Health Score",  value: String(score),                                       color: scoreColor },
+  const cardH = 30;
+  checkPage(cardH + 10);
+
+  type RGB = [number, number, number];
+  const metricData: { label: string; value: string; color: RGB; bgTint?: RGB; sub?: string }[] = [
+    { label: `CAGR (${periodLabel})`, value: `${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, color: ret >= 0 ? amber : red },
+    { label: "VOLATILITY",            value: `${(vol * 100).toFixed(2)}%`,                        color: textC },
+    { label: "SHARPE RATIO",          value: sharpe.toFixed(2),                                   color: sharpe >= 1 ? green : sharpe >= 0 ? amber : red },
+    { label: "MAX DRAWDOWN",          value: `${(dd * 100).toFixed(2)}%`,                         color: red },
+    { label: "HEALTH SCORE",          value: String(score), sub: scoreLabel,                       color: scoreColor, bgTint: scoreColor },
   ];
 
   metricData.forEach((m, i) => {
     const mx = ML + i * (cardW + 3);
-    doc.setFillColor(...cardBg);
+    // Background - tinted for health score
+    if (m.bgTint) {
+      const tint: RGB = [
+        Math.round(cardBg[0] * 0.82 + m.bgTint[0] * 0.18),
+        Math.round(cardBg[1] * 0.82 + m.bgTint[1] * 0.18),
+        Math.round(cardBg[2] * 0.82 + m.bgTint[2] * 0.18),
+      ];
+      doc.setFillColor(...tint);
+    } else {
+      doc.setFillColor(...cardBg);
+    }
     doc.roundedRect(mx, y, cardW, cardH, 1.5, 1.5, "F");
-    doc.setDrawColor(...cardBorder);
-    doc.setLineWidth(0.2);
+    doc.setDrawColor(...(m.bgTint ? m.color : cardBorder));
+    doc.setLineWidth(m.bgTint ? 0.5 : 0.2);
     doc.roundedRect(mx, y, cardW, cardH, 1.5, 1.5, "S");
 
-    // Value - courier bold, 16 (keep mono for numbers)
+    // Value
     doc.setFont("courier", "bold");
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setTextColor(...m.color);
-    doc.text(m.value, mx + cardW / 2, y + 15, { align: "center" });
+    doc.text(m.value, mx + cardW / 2, y + 11, { align: "center" });
 
-    // Label - helvetica, dim, spaced
+    // Sub label (e.g. "Excellent" for health)
+    if (m.sub) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...m.color);
+      doc.text(m.sub, mx + cardW / 2, y + 19, { align: "center" });
+    }
+
+    // Label
     doc.setFont("helvetica", "normal");
     doc.setFontSize(5.5);
     doc.setTextColor(...dim);
-    doc.setCharSpace(0.8);
-    const labelLines = doc.splitTextToSize(m.label.toUpperCase(), cardW - 2);
-    doc.text(labelLines[0], mx + cardW / 2, y + 27, { align: "center" });
+    doc.setCharSpace(0.5);
+    doc.text(m.label, mx + cardW / 2, y + 26.5, { align: "center" });
     doc.setCharSpace(0);
   });
   y += cardH + 8;
 
   // ── PORTFOLIO ALLOCATION ──────────────────────────────────────────────────────
+  checkPage(14 + Math.min(assets.length, 20) * 9);
   sectionLabel("PORTFOLIO ALLOCATION", y);
   y += 8;
 
@@ -168,99 +287,198 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
   const allocRowH  = 9;
 
   assets.forEach((a: any, i: number) => {
+    checkPage(allocRowH);
     const w = normWeights[i] ?? 0;
-    if (y + allocRowH > FOOTER_Y - 6) return;
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     doc.setTextColor(...amber);
-    const tickLabel = doc.splitTextToSize(String(a.ticker), allocTickW - 1);
-    doc.text(tickLabel[0], ML, y + barH);
-
+    doc.text(String(a.ticker).slice(0, 9), ML, y + barH);
     doc.setFillColor(...barTrack);
     doc.roundedRect(allocBarX, y, allocBarW, barH, 1, 1, "F");
     doc.setFillColor(...amber);
     doc.roundedRect(allocBarX, y, allocBarW * w, barH, 1, 1, "F");
-
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(...text);
+    doc.setTextColor(...textC);
     doc.text(`${(w * 100).toFixed(1)}%`, W - MR, y + barH, { align: "right" });
-
     y += allocRowH;
   });
   y += 6;
 
-  // ── INDIVIDUAL PERFORMANCE ────────────────────────────────────────────────────
-  if (Object.keys(indRet).length > 0 && y + 20 < FOOTER_Y - 6) {
+  // ── INDIVIDUAL PERFORMANCE (diverging bars) ───────────────────────────────────
+  const retEntries = Object.entries(indRet).sort((a, b) => (b[1] as number) - (a[1] as number));
+  if (retEntries.length > 0) {
+    checkPage(20);
     sectionLabel("INDIVIDUAL PERFORMANCE", y);
     y += 8;
 
     const retTickW   = 24;
-    const retBarX    = ML + retTickW;
     const retBarMaxW = 80;
     const retValW    = 22;
     const retRowH    = 8;
+    const retBarX    = ML + retTickW;
+    const centerX    = retBarX + retBarMaxW / 2;
+    const maxAbs     = Math.max(...retEntries.map(([, r]) => Math.abs(r as number)), 0.01);
 
-    const retEntries = Object.entries(indRet).sort((a, b) => (b[1] as number) - (a[1] as number));
     retEntries.forEach(([ticker, r]) => {
-      const rv = r as number;
-      if (y + retRowH > FOOTER_Y - 6) return;
-      const col = rv >= 0 ? amber : red;
-      const pct = Math.min(Math.abs(rv) / 0.5, 1);
+      checkPage(retRowH);
+      const rv  = r as number;
+      const pct = Math.min(Math.abs(rv) / maxAbs, 1);
+      const hw  = (retBarMaxW / 2) * pct;
+      const col: RGB = rv >= 0 ? amber : red;
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       doc.setTextColor(...amber);
       doc.text(ticker, ML, y + 3);
 
+      // Track
       doc.setFillColor(...barTrack);
       doc.roundedRect(retBarX, y, retBarMaxW, 3, 1, 1, "F");
-      doc.setFillColor(...col);
-      doc.roundedRect(retBarX, y, retBarMaxW * pct, 3, 1, 1, "F");
 
+      // Colored half (diverging from center)
+      doc.setFillColor(...col);
+      if (rv >= 0) {
+        doc.roundedRect(centerX, y, hw, 3, 1, 1, "F");
+      } else {
+        doc.roundedRect(centerX - hw, y, hw, 3, 1, 1, "F");
+      }
+
+      // Zero tick mark
+      doc.setDrawColor(...dim);
+      doc.setLineWidth(0.4);
+      doc.line(centerX, y, centerX, y + 3);
+
+      // Value
       doc.setFont("courier", "bold");
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
       doc.setTextColor(...col);
-      doc.text(`${rv >= 0 ? "+" : ""}${(rv * 100).toFixed(1)}%`, retBarX + retBarMaxW + retValW, y + 3, { align: "right" });
+      doc.text(
+        `${rv >= 0 ? "+" : ""}${(rv * 100).toFixed(1)}%`,
+        retBarX + retBarMaxW + retValW,
+        y + 3,
+        { align: "right" },
+      );
 
       y += retRowH;
     });
     y += 6;
   }
 
+  // ── SECTOR BREAKDOWN ──────────────────────────────────────────────────────────
+  const sectorEntries = Object.entries(sectors).sort((a, b) => (b[1] as number) - (a[1] as number));
+  if (sectorEntries.length > 0) {
+    checkPage(20);
+    sectionLabel("SECTOR BREAKDOWN", y);
+    y += 8;
+
+    const secLabelW = 50;
+    const secBarX   = ML + secLabelW;
+    const secBarW   = CW - secLabelW - 16;
+    const secRowH   = 9;
+
+    sectorEntries.forEach(([sector, weight]) => {
+      checkPage(secRowH);
+      const w = weight as number;
+      const sectorName = sector.length > 22 ? sector.slice(0, 21) + "." : sector;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...textC);
+      doc.text(sectorName, ML, y + barH);
+      doc.setFillColor(...barTrack);
+      doc.roundedRect(secBarX, y, secBarW, barH, 1, 1, "F");
+      doc.setFillColor(...amber);
+      doc.roundedRect(secBarX, y, secBarW * Math.min(w, 1), barH, 1, 1, "F");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...dim);
+      doc.text(`${(w * 100).toFixed(1)}%`, W - MR, y + barH, { align: "right" });
+      y += secRowH;
+    });
+    y += 6;
+  }
+
+  // ── BENCHMARK COMPARISON ──────────────────────────────────────────────────────
+  if (benchRet !== null) {
+    checkPage(32);
+    sectionLabel("BENCHMARK COMPARISON", y);
+    y += 8;
+
+    const bHalfW = (CW - 10) / 2;
+    const bBarH  = 4;
+    const bX2    = ML + bHalfW + 10;
+    const maxVal = Math.max(Math.abs(ret), Math.abs(benchRet), 0.01);
+    const pCol: RGB = ret      >= 0 ? green : red;
+    const bCol: RGB = benchRet >= 0 ? green : red;
+    const diff       = ret - benchRet;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...dim);
+    doc.setCharSpace(1);
+    doc.text("PORTFOLIO", ML, y);
+    doc.text(`BENCHMARK (${benchTicker})`, bX2, y);
+    doc.setCharSpace(0);
+    y += 4;
+
+    doc.setFillColor(...barTrack);
+    doc.roundedRect(ML, y, bHalfW, bBarH, 1, 1, "F");
+    doc.setFillColor(...pCol);
+    doc.roundedRect(ML, y, bHalfW * Math.min(Math.abs(ret) / maxVal, 1), bBarH, 1, 1, "F");
+
+    doc.setFillColor(...barTrack);
+    doc.roundedRect(bX2, y, bHalfW, bBarH, 1, 1, "F");
+    doc.setFillColor(...bCol);
+    doc.roundedRect(bX2, y, bHalfW * Math.min(Math.abs(benchRet) / maxVal, 1), bBarH, 1, 1, "F");
+
+    y += bBarH + 3.5;
+    doc.setFont("courier", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...pCol);
+    doc.text(`${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, ML, y);
+    doc.setTextColor(...bCol);
+    doc.text(`${benchRet >= 0 ? "+" : ""}${(benchRet * 100).toFixed(2)}%`, bX2, y);
+
+    y += 8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...(diff >= 0 ? green : red));
+    const diffLabel = diff >= 0 ? "Outperforming" : "Underperforming";
+    doc.text(
+      `${diffLabel} benchmark by ${Math.abs(diff * 100).toFixed(2)} percentage points`,
+      W / 2, y, { align: "center" },
+    );
+    y += 10;
+  }
+
   // ── INVESTOR PROFILE ──────────────────────────────────────────────────────────
   const profileRows: [string, string][] = [];
-
-  // Portfolio-derived rows (always present)
+  if ((portfolioValue ?? 0) > 0) {
+    profileRows.push(["Portfolio Value", `$${Number(portfolioValue).toLocaleString(undefined, { maximumFractionDigits: 0 })}`]);
+  }
   const riskLabel = vol < 0.10 ? "Low" : vol < 0.20 ? "Moderate" : "High";
+  profileRows.push(["Risk Profile", `${riskLabel}  (Vol ${(vol * 100).toFixed(1)}%)`]);
   const topHoldings = assets
     .map((a: any, i: number) => ({ ticker: a.ticker, w: normWeights[i] ?? 0 }))
     .sort((a, b) => b.w - a.w)
     .slice(0, 3)
     .map(h => `${h.ticker} ${(h.w * 100).toFixed(0)}%`)
     .join("  ·  ");
-
-  if (data.portfolio_value != null) profileRows.push(["Portfolio Value", `$${Number(data.portfolio_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`]);
-  profileRows.push(["Risk Profile",   `${riskLabel}  (Vol ${(vol * 100).toFixed(1)}%)`]);
-  profileRows.push(["Top Holdings",   topHoldings]);
-  if (data.period)                  profileRows.push(["Period Analyzed",  String(data.period)]);
-
-  // Goals rows
+  profileRows.push(["Top Holdings", topHoldings]);
+  if (accType) profileRows.push(["Account Type", accType.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())]);
+  if (data.period) profileRows.push(["Period Analyzed", String(data.period).toUpperCase()]);
   if (goals?.age)                 profileRows.push(["Age",                  String(goals.age)]);
   if (goals?.riskTolerance)       profileRows.push(["Risk Tolerance",       goals.riskTolerance.replace(/_/g, " ")]);
   if (goals?.goal)                profileRows.push(["Goal",                 goals.goal]);
   if (goals?.monthlyContribution) profileRows.push(["Monthly Contribution", `$${Number(goals.monthlyContribution).toLocaleString()}`]);
-  if (goals?.retirementAge)       profileRows.push(["Retirement Age",       String(goals.retirementAge)]);
 
-  if (y + 18 < FOOTER_Y - 6) {
+  if (profileRows.length > 0) {
+    checkPage(18 + Math.ceil(profileRows.length / 2) * 11);
     sectionLabel("INVESTOR PROFILE", y);
     y += 8;
-
-    // 2-column layout
     const colW = CW / 2;
     for (let i = 0; i < profileRows.length; i += 2) {
-      if (y + 8 > FOOTER_Y - 6) break;
+      checkPage(12);
       ([0, 1] as const).forEach(col => {
         const row = profileRows[i + col];
         if (!row) return;
@@ -273,7 +491,7 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
         doc.setCharSpace(0);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8.5);
-        doc.setTextColor(...text);
+        doc.setTextColor(...textC);
         doc.text(row[1], rx, y + 5.5);
       });
       y += 11;
@@ -281,119 +499,45 @@ async function buildJsPDF(data: any, assets: any[], goals?: any): Promise<void> 
     y += 6;
   }
 
-  // ── BENCHMARK COMPARISON ──────────────────────────────────────────────────────
-  const benchRet: number | null = data.benchmark_return ?? null;
-  if (benchRet !== null && y + 22 < FOOTER_Y - 6) {
-    sectionLabel("BENCHMARK COMPARISON", y);
-    y += 8;
-
-    const bHalfW = (CW - 10) / 2;
-    const bBarH  = 4;
-    const bX2    = ML + bHalfW + 10;
-    const maxVal = Math.max(Math.abs(ret), Math.abs(benchRet), 0.01);
-    const pCol   = ret      >= 0 ? green : red;
-    const bCol   = benchRet >= 0 ? green : red;
-
-    // Labels
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.5);
-    doc.setTextColor(...dim);
-    doc.setCharSpace(1);
-    doc.text("PORTFOLIO", ML, y);
-    const bLabel = data.benchmark_ticker ? `BENCHMARK (${data.benchmark_ticker})` : "BENCHMARK (S&P 500)";
-    doc.text(bLabel, bX2, y);
-    doc.setCharSpace(0);
-    y += 4;
-
-    // Portfolio bar
-    const pBarW = bHalfW * Math.min(Math.abs(ret) / maxVal, 1);
-    doc.setFillColor(...barTrack);
-    doc.roundedRect(ML, y, bHalfW, bBarH, 1, 1, "F");
-    doc.setFillColor(...pCol);
-    doc.roundedRect(ML, y, pBarW, bBarH, 1, 1, "F");
-
-    // Benchmark bar
-    const benchBarW = bHalfW * Math.min(Math.abs(benchRet) / maxVal, 1);
-    doc.setFillColor(...barTrack);
-    doc.roundedRect(bX2, y, bHalfW, bBarH, 1, 1, "F");
-    doc.setFillColor(...bCol);
-    doc.roundedRect(bX2, y, benchBarW, bBarH, 1, 1, "F");
-    y += bBarH + 3.5;
-
-    // Values
-    doc.setFont("courier", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...pCol);
-    doc.text(`${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(2)}%`, ML, y);
-    doc.setTextColor(...bCol);
-    doc.text(`${benchRet >= 0 ? "+" : ""}${(benchRet * 100).toFixed(2)}%`, bX2, y);
-    y += 6;
-  }
-
   // ── KEY INSIGHTS ──────────────────────────────────────────────────────────────
-  const insights: string[] = Array.isArray(data.ai_insights) ? data.ai_insights.slice(0, 3) : [];
-  if (insights.length > 0 && y + 16 < FOOTER_Y - 6) {
+  if (insights.length > 0) {
+    checkPage(20);
     sectionLabel("KEY INSIGHTS", y);
     y += 8;
 
     insights.forEach(insight => {
-      if (y + 6 > FOOTER_Y - 6) return;
+      const lines = doc.splitTextToSize(String(insight), CW - 8);
+      const insightH = lines.length * 5 + 3;
+      checkPage(insightH + 2);
       doc.setFillColor(...amber);
       doc.circle(ML + 1.5, y - 1.2, 0.9, "F");
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(...text);
-      const lines = doc.splitTextToSize(String(insight), CW - 8);
-      doc.text(lines[0], ML + 5, y);
-      y += 7;
+      doc.setFontSize(7.5);
+      doc.setTextColor(...textC);
+      lines.forEach((line: string, li: number) => {
+        doc.text(line, ML + 5, y + li * 5);
+      });
+      y += insightH;
     });
-    y += 6;
   }
 
-  // ── FOOTER BAR (y=280, always at fixed position) ─────────────────────────────
-  doc.setDrawColor(...amber);
-  doc.setLineWidth(0.5);
-  doc.line(0, FOOTER_Y, W, FOOTER_Y);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(...dim);
-  doc.text(
-    "Generated by Corvo Portfolio Intelligence  ·  corvo.capital  ·  Not financial advice",
-    W / 2, FOOTER_Y + 7, { align: "center" },
-  );
-
   doc.save(`corvo_${assets.map((a: any) => a.ticker).join("-")}_report.pdf`);
-}
-
-function computeHealthScore(data: any): number {
-  const ret = data.portfolio_return ?? 0;
-  const vol = data.portfolio_volatility ?? 0.2;
-  const sharpe = vol > 0 ? (ret - 0.04) / vol : 0;
-  const rS = Math.min(Math.max(((ret + 0.3) / 0.6) * 100, 0), 100);
-  const shS = Math.min(Math.max((sharpe / 3) * 100, 0), 100);
-  const vS = Math.min(Math.max((1 - vol / 0.6) * 100, 0), 100);
-  const dS = Math.min(Math.max((1 + (data.max_drawdown ?? 0) / 0.5) * 100, 0), 100);
-  return Math.round(rS * 0.3 + shS * 0.3 + vS * 0.25 + dS * 0.15);
 }
 
 // ── HTML print fallback (AI report) ──────────────────────────────────────────
 function buildAiReport(analysis: string, data: any, assets: any[]): string {
   const isLight = document.documentElement.getAttribute("data-theme") === "light";
 
-  // Resolve from theme variables so we never drift from globals.css; keep the
-  // isLight branches only for the rgba-with-base derivations the variables
-  // can't express directly.
   const bg         = cssVar("--bg");
   const fg         = cssVar("--text");
   const hdrBg      = cssVar("--bg2");
   const strongColor = cssVar("--text");
-  const cardBg     = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
+  const cardBg     = isLight ? "rgba(0,0,0,0.04)"   : "rgba(255,255,255,0.04)";
   const cardBorder = isLight ? "1px solid rgba(201,168,76,0.3)" : "1px solid rgba(201,168,76,0.15)";
   const mutedText  = (a: number) => isLight ? `rgba(0,0,0,${a})` : `rgba(232,224,204,${a})`;
-  const subtleBg     = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)";
-  const subtleBorder = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)";
-  const wbgColor     = isLight ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.07)";
+  const subtleBg     = isLight ? "rgba(0,0,0,0.04)"   : "rgba(255,255,255,0.03)";
+  const subtleBorder = isLight ? "rgba(0,0,0,0.07)"   : "rgba(255,255,255,0.07)";
+  const wbgColor     = isLight ? "rgba(0,0,0,0.1)"    : "rgba(255,255,255,0.07)";
 
   const printCss = `
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -404,16 +548,19 @@ function buildAiReport(analysis: string, data: any, assets: any[]): string {
     .amber { color: #c9a84c !important; } .red { color: #e05c5c !important; } .green { color: #5cb88a !important; }
   `;
 
-  const ret = data.portfolio_return, vol = data.portfolio_volatility;
-  const sharpe = (data.sharpe_ratio ?? ((data.annualized_return ?? ret) - 0.04) / vol).toFixed(2), dd = (data.max_drawdown * 100).toFixed(2);
+  const ret     = data.portfolio_return;
+  const vol     = data.portfolio_volatility;
+  const sharpe  = (data.sharpe_ratio ?? ((data.annualized_return ?? ret) - 0.04) / vol).toFixed(2);
+  const dd      = (data.max_drawdown * 100).toFixed(2);
   const weights: number[] = data.weights ?? assets.map((a: any) => a.weight);
-  const total = weights.reduce((s, w) => s + w, 1);
-  const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const total   = weights.reduce((s: number, w: number) => s + w, 1);
+  const now     = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
   const fmt = (text: string) => text
-    .replace(/^# (.+)$/gm, `<div style="font-size:11px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;margin:0 0 16px;border-bottom:2px solid rgba(201,168,76,0.3);padding-bottom:6px;font-family:'Courier New',monospace">$1</div>`)
+    .replace(/^# (.+)$/gm,  `<div style="font-size:11px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;margin:0 0 16px;border-bottom:2px solid rgba(201,168,76,0.3);padding-bottom:6px;font-family:'Courier New',monospace">$1</div>`)
     .replace(/^## (.+)$/gm, `<div style="font-size:9px;letter-spacing:4px;color:#c9a84c;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid rgba(201,168,76,0.2);padding-bottom:4px">$1</div>`)
     .replace(/\*\*(.+?)\*\*/g, `<strong style="color:${strongColor}">$1</strong>`)
-    .replace(/^[•\-] (.+)$/gm, `<div style="display:flex;gap:8px;margin:5px 0"><span style="color:#c9a84c">▸</span><span>$1</span></div>`)
+    .replace(/^[•\-] (.+)$/gm, `<div style="display:flex;gap:8px;margin:5px 0"><span style="color:#c9a84c">&#9658;</span><span>$1</span></div>`)
     .replace(/\n\n/g, `</p><p style="margin:10px 0;color:${mutedText(0.8)};font-family:Georgia,serif;font-size:13px;line-height:1.8">`);
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${printCss}
@@ -450,54 +597,64 @@ function buildAiReport(analysis: string, data: any, assets: any[]): string {
   <p style="margin:10px 0;color:${mutedText(0.8)};font-family:Georgia,serif;font-size:13px;line-height:1.8">${fmt(analysis)}</p>
   <div style="margin-top:40px;padding-top:14px;border-top:1px solid ${subtleBorder};display:flex;justify-content:space-between">
     <span style="color:#c9a84c;font-size:10px;letter-spacing:3px">CORVO</span>
-    <span style="font-size:8px;color:${mutedText(0.2)}">AI analysis by Claude · Not financial advice</span>
+    <span style="font-size:8px;color:${mutedText(0.2)}">AI analysis by Claude  ·  Not financial advice</span>
   </div>
   </body></html>`;
 }
 
-export default function ExportPDF({ data, assets, goals, menuItem, onClose, onAiGenerationStart, onAiGenerationEnd }: Props) {
-  const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"jspdf" | "ai">("jspdf");
-  const [open, setOpen] = useState(false);
+// ── Component ─────────────────────────────────────────────────────────────────
+export default function ExportPDF({
+  data, assets, goals, accountType, portfolioValue, menuItem, onClose, onAiGenerationStart, onAiGenerationEnd,
+}: Props) {
+  const [loading, setLoading]   = useState(false);
+  const [mode, setMode]         = useState<"jspdf" | "ai">("jspdf");
+  const [open, setOpen]         = useState(false);
 
   const handleExport = async (exportMode?: "jspdf" | "ai") => {
     if (!data) return;
     const m = exportMode ?? mode;
-    setLoading(true); setOpen(false); onClose?.();
+    setLoading(true);
+    setOpen(false);
+    onClose?.();
     if (m === "ai") onAiGenerationStart?.();
     try {
       if (m === "jspdf") {
-        await buildJsPDF(data, assets, goals);
+        await buildJsPDF(data, assets, goals, accountType, portfolioValue);
       } else {
-        // AI narrative PDF from backend (ReportLab)
+        // AI narrative report from backend (ReportLab)
         const res = await fetch(`${API_URL}/generate-report`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             portfolio_context: {
-              tickers: assets.map((a: any) => a.ticker),
-              weights: data.weights ?? assets.map((a: any) => a.weight),
-              portfolio_return: data.portfolio_return,
+              tickers:              assets.map((a: any) => a.ticker),
+              weights:              data.weights ?? assets.map((a: any) => a.weight),
+              portfolio_return:     data.portfolio_return,
               portfolio_volatility: data.portfolio_volatility,
-              max_drawdown: data.max_drawdown,
-              sharpe_ratio: data.sharpe_ratio,
-              period: data.period,
-              individual_returns: data.individual_returns,
+              max_drawdown:         data.max_drawdown,
+              sharpe_ratio:         data.sharpe_ratio,
+              period:               data.period,
+              individual_returns:   data.individual_returns,
+              benchmark_return:     data.benchmark_return ?? null,
+              benchmark_ticker:     data.benchmark_ticker ?? null,
+              health_score:         data.health_score ?? null,
+              account_type:         accountType ?? data.account_type ?? null,
+              portfolio_value:      portfolioValue ?? null,
             },
             user_goals: goals ?? {},
           }),
         });
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement("a");
+        a.href     = url;
         a.download = `corvo_${assets.map((a: any) => a.ticker).join("-")}_report.pdf`;
         a.click();
         URL.revokeObjectURL(url);
       }
     } catch {
-      // silently ignore, user can try again
+      // silently ignore - user can retry
     } finally {
       setLoading(false);
       if (m === "ai") onAiGenerationEnd?.();
@@ -510,10 +667,10 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose, onAi
         style={{ width: "100%", textAlign: "left" as const, padding: "9px 14px", fontSize: 12, color: !data ? "var(--text3)" : "var(--text)", background: "transparent", border: "none", cursor: !data || loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, opacity: !data ? 0.5 : 1, transition: "background 0.12s" }}
         onMouseEnter={e => { if (data && !loading) e.currentTarget.style.background = "var(--bg3)"; }}
         onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
-        {loading && mode === m ? (m === "jspdf" ? "Building…" : "Writing…") : label}
+        {loading && mode === m ? (m === "jspdf" ? "Building..." : "Writing...") : label}
       </button>
     );
-    return <>{row("AI Report", "ai")}{row("↓ Download PDF", "jspdf")}</>;
+    return <>{row("AI Report", "ai")}{row("Download PDF", "jspdf")}</>;
   }
 
   return (
@@ -521,7 +678,6 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose, onAi
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ display: "flex", gap: 0 }}>
         <motion.button
-          // initial={false} is required - do not remove
           initial={false}
           whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
           onClick={() => handleExport()} disabled={!data || loading}
@@ -531,18 +687,19 @@ export default function ExportPDF({ data, assets, goals, menuItem, onClose, onAi
             : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>{mode === "ai" ? "AI Report" : "Export PDF"}</>}
         </motion.button>
         <button onClick={() => setOpen(o => !o)} disabled={!data || loading}
-          style={{ padding: "7px 8px", background: C.amber2, border: "1px solid rgba(201,168,76,0.25)", borderRadius: "0 8px 8px 0", color: C.amber, cursor: !data ? "not-allowed" : "pointer", opacity: !data ? 0.4 : 1, fontSize: 9 }}>▾</button>
+          style={{ padding: "7px 8px", background: C.amber2, border: "1px solid rgba(201,168,76,0.25)", borderRadius: "0 8px 8px 0", color: C.amber, cursor: !data ? "not-allowed" : "pointer", opacity: !data ? 0.4 : 1, fontSize: 9 }}>
+          {open ? "▴" : "▾"}
+        </button>
       </div>
 
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            // initial={false} is required - do not remove
             initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", zIndex: 100, width: 220, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+            style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", zIndex: 100, width: 240, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
             {[
-              { value: "jspdf", label: "↓ Single-page PDF", desc: "Metrics · allocation · returns · health" },
-              { value: "ai",    label: "AI Narrative PDF", desc: "Claude writes full analysis (print)" },
+              { value: "jspdf", label: "Download PDF", desc: "Metrics, allocation, sectors, performance" },
+              { value: "ai",    label: "AI Narrative Report", desc: "Claude writes full analysis (print)" },
             ].map(opt => (
               <button key={opt.value} onClick={() => { setMode(opt.value as "jspdf" | "ai"); setOpen(false); }}
                 style={{ width: "100%", textAlign: "left", padding: "11px 14px", background: mode === opt.value ? C.amber2 : "transparent", border: "none", cursor: "pointer", transition: "background 0.1s" }}
