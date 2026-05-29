@@ -153,6 +153,8 @@ function BriefAsOfPill({ asOfLabel, nextUpdateLabel, isStale }: { asOfLabel?: st
         <>
           <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#4caf7d", animation: "gb-live-pulse 2s ease-in-out infinite", flexShrink: 0 }} />
           <span>Live now</span>
+          <span aria-hidden style={{ color: "var(--text3)", letterSpacing: 0 }}>·</span>
+          <span>{new Date().toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: true })} ET</span>
         </>
       )}
     </div>
