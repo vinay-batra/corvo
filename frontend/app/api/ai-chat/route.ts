@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   const ip = getIp(req);
   if (isRateLimited(ip)) {
     return Response.json(
-      { content: "You've used all 5 free messages for today. Sign up free at corvo.capital to keep going." },
+      { content: "You've used all 5 free messages for today. Sign up for free to keep going." },
       { status: 429 }
     );
   }
