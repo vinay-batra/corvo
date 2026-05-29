@@ -101,7 +101,7 @@ export default function AboutPage() {
         </ScrollReveal>
 
         <div style={{ margin: "0 auto 80px", maxWidth: 1040 }}>
-          <AnimatedHeading text="Built to be" accentText="the advisor I needed." style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(32px, 4.4vw, 60px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.12 }} />
+          <AnimatedHeading text="Built for the investor" accentText="the market ignores." style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(32px, 4.4vw, 60px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1.5, lineHeight: 1.12 }} />
         </div>
       </div>
 
@@ -109,22 +109,22 @@ export default function AboutPage() {
       <div className="ab-body" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 56px 120px", textAlign: "left" }}>
         <ScrollReveal from="left" delay={0}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
-            Every tool was expensive, outdated, or ugly. So I built a better one.
+            There are tens of millions of self-directed investors managing real portfolios across brokerage accounts, IRAs, and retirement savings. They are not day traders. They are not institutions. They are people who take their own money seriously and deserve tools that match.
           </p>
         </ScrollReveal>
         <ScrollReveal from="up" delay={0.1}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
-            I have always been obsessed with finance and investing. Tracking positions, running analysis, trying to actually understand what my portfolio was doing. But every tool I tried felt like it was built for someone else. The good ones cost money. The free ones were stuck in 2012. None of them felt like they were built by someone who actually cared.
+            The market has not served them well. Professional platforms cost thousands of dollars a year. Brokerage-built tools are intentionally limited. Free alternatives are stuck in 2012. The result is a massive gap: investors with real portfolios making decisions without real analytics.
           </p>
         </ScrollReveal>
         <ScrollReveal from="right" delay={0.1}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
-            So I built Corvo. It started as a personal project, a way to see my portfolio the way I actually wanted to see it. Real metrics. AI that gives useful context. An interface that does not make you feel like you are filing taxes.
+            Corvo started from that frustration. I have been managing my own investments since I was 11, and I could never find a tool that actually explained what my portfolio was doing and why it mattered. So I built one. The goal from the start was to bring professional-grade portfolio intelligence to the investors who have always been left out: real AI analysis, honest risk metrics, and an interface that respects your time.
           </p>
         </ScrollReveal>
         <ScrollReveal from="left" delay={0.1}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300 }}>
-            It is still a project. I work on it constantly. Every week there is something new, something better. Built by one person who uses it every day.
+            Corvo is a commercial product built to grow. The free tier covers the core analytics that most investors need. A Pro tier with live data, backtesting, and brokerage integrations is in active development. The long-term mission is straightforward: close the gap between what self-directed investors deserve and what they have actually had access to.
           </p>
         </ScrollReveal>
       </div>
@@ -138,7 +138,7 @@ export default function AboutPage() {
               Vinay Batra
             </h2>
             <p style={{ fontSize: 14, color: "var(--text2)", fontWeight: 300, lineHeight: 1.7, margin: 0 }}>
-              Sophomore in high school. Built Corvo because every portfolio tool was either expensive, outdated, or ugly.
+              Sophomore in high school. Started investing at 11. Built Corvo at 16 to give self-directed investors the analytics that have always been reserved for professionals.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
