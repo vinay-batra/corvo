@@ -2409,7 +2409,10 @@ const { dark, toggle: toggleDark }  = useTheme();
             savedPortfolioId={savedPortfolioId}
           />
         )}
-        {sidebarTab === "saved" && (
+        {/* SavedPortfolios is always mounted (never conditionally rendered) so
+            the Supabase fetch happens once on page load and tab switches are
+            instant. CSS display:none hides it when another tab is active. */}
+        <div style={{ display: sidebarTab === "saved" ? "block" : "none" }}>
           <SavedPortfolios
             assets={assets}
             data={data}
@@ -2463,7 +2466,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               };
             }}
           />
-        )}
+        </div>
       </div>
 
       {/* Analyze button - flows naturally right after the tab content. */}
