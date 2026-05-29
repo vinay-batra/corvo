@@ -1575,7 +1575,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               <div style={{ display: "flex", alignItems: "flex-start", gap: 9, padding: "10px 12px", border: "0.5px dashed rgba(201,168,76,0.32)", borderRadius: 8, background: "rgba(201,168,76,0.04)", marginBottom: 18 }}>
                 <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: C.amber, flexShrink: 0, marginTop: 6, boxShadow: "0 0 6px rgba(201,168,76,0.5)" }} />
                 <p style={{ fontSize: 11, color: "var(--text2)", margin: 0, lineHeight: 1.55 }}>
-                  Save this portfolio in the <span style={{ color: C.amber, fontWeight: 700 }}>Saved</span> tab to lock the value in. Tomorrow&apos;s opening balance picks up where today closed.
+                  Save this portfolio in the <span style={{ color: C.amber, fontWeight: 700 }}>Saved</span>{" "}tab to lock the value in. Tomorrow&apos;s opening balance picks up where today closed.
                 </p>
               </div>
 
