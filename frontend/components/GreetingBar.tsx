@@ -119,7 +119,7 @@ function BriefAsOfPill({ asOfLabel, nextUpdateLabel, isStale, briefTs }: { asOfL
   return (
     <div
       role="note"
-      aria-label={stale ? `Brief is from ${asOfLabel}.${nextClean ? ` Updates ${nextClean}.` : ""}` : "Brief is live, updating throughout the trading day."}
+      aria-label={stale ? `Brief is from ${asOfLabel}.${nextClean ? ` Updates ${nextClean}.` : ""}` : "Brief updates every 5 minutes during market hours."}
       style={{
         // alignSelf so the pill stays content-sized inside flex-column
         // parents (otherwise it stretches to 100% width because flex
@@ -156,14 +156,9 @@ function BriefAsOfPill({ asOfLabel, nextUpdateLabel, isStale, briefTs }: { asOfL
       ) : (
         <>
           <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#4caf7d", animation: "gb-live-pulse 2s ease-in-out infinite", flexShrink: 0 }} />
-          <span>Live now</span>
+          <span>As of {(briefTs ? new Date(briefTs * 1000) : new Date()).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: true })} ET</span>
           <span aria-hidden style={{ color: "var(--text3)", letterSpacing: 0 }}>·</span>
-          <span>
-            {(briefTs
-              ? new Date(briefTs * 1000)
-              : new Date()
-            ).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: true })} ET
-          </span>
+          <span>Updates every 5 min</span>
         </>
       )}
     </div>
