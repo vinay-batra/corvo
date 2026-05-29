@@ -63,6 +63,10 @@ interface MarketSummary {
   as_of_iso?: string;
   next_update_label?: string;
   is_stale?: boolean;
+  // Unix timestamp (seconds) of when this brief was generated on the server.
+  // Used by BriefAsOfPill to show "Live now · 11:01 AM ET" with the time
+  // the data was actually collected, not the client's current render time.
+  ts?: number;
   // Per-holding 1-day % change keyed by ticker, computed server-side with the
   // same fast_info method /watchlist-data uses. The brief text quotes these,
   // and the holding pills now display these too, so the two never contradict.
@@ -104,7 +108,7 @@ interface Props {
 // the brief is from a previous calendar day), dim and informational when
 // the data is live. Returns null when the backend hasn't shipped the new
 // fields yet (so the pill silently no-ops on older deployments).
-function BriefAsOfPill({ asOfLabel, nextUpdateLabel, isStale }: { asOfLabel?: string; nextUpdateLabel?: string; isStale?: boolean }) {
+function BriefAsOfPill({ asOfLabel, nextUpdateLabel, isStale, briefTs }: { asOfLabel?: string; nextUpdateLabel?: string; isStale?: boolean; briefTs?: number }) {
   if (!asOfLabel) return null;
   const stale = !!isStale;
   // Strip a leading "Updates " on the backend label so we don't render
@@ -154,7 +158,12 @@ function BriefAsOfPill({ asOfLabel, nextUpdateLabel, isStale }: { asOfLabel?: st
           <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#4caf7d", animation: "gb-live-pulse 2s ease-in-out infinite", flexShrink: 0 }} />
           <span>Live now</span>
           <span aria-hidden style={{ color: "var(--text3)", letterSpacing: 0 }}>·</span>
-          <span>{new Date().toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: true })} ET</span>
+          <span>
+            {(briefTs
+              ? new Date(briefTs * 1000)
+              : new Date()
+            ).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: true })} ET
+          </span>
         </>
       )}
     </div>
@@ -723,6 +732,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
                 asOfLabel={market.as_of_label}
                 nextUpdateLabel={market.next_update_label}
                 isStale={market.is_stale}
+                briefTs={market.ts}
               />
             )}
             <div
@@ -772,6 +782,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
                       asOfLabel={market!.as_of_label}
                       nextUpdateLabel={market!.next_update_label}
                       isStale={market!.is_stale}
+                      briefTs={market!.ts}
                     />
                   )}
                   {market!.market && <BriefSection label="Markets Today" text={market!.market} delay={0} />}

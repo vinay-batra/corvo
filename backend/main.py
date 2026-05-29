@@ -4472,9 +4472,15 @@ def market_summary(tickers: str = Query(default=""), account_type: str = Query(d
     # Refresh base market data (indexes + news) if stale.
     # Use actual index tickers (^GSPC/^IXIC/^DJI) not ETF proxies (SPY/QQQ/DIA)
     # so the numbers the AI writes match the live index cards in the frontend.
+    # Double-checked locking: check under lock, fetch outside (avoid holding
+    # lock during blocking I/O), write under lock with re-check so two
+    # concurrent cache misses don't double-write.
     now = time.time()
-    if now - _market_base_cache["ts"] > 300:
-        index_data = {}
+    with _caches_lock:
+        _need_base_refresh = now - _market_base_cache["ts"] > 300
+
+    if _need_base_refresh:
+        _new_index_data: dict = {}
         def _fetch_index(sym: str) -> tuple[str, dict]:
             try:
                 fi = yf.Ticker(sym).fast_info
@@ -4487,10 +4493,10 @@ def market_summary(tickers: str = Query(default=""), account_type: str = Query(d
                 return sym, {"price": 0.0, "pct": 0.0}
         with ThreadPoolExecutor(max_workers=4) as _ex:
             for _sym, _row in _ex.map(_fetch_index, ["^GSPC", "^IXIC", "^DJI", "^VIX"]):
-                index_data[_sym] = _row
+                _new_index_data[_sym] = _row
 
-        # Top 3 news headlines from SPY
-        headlines: list[str] = []
+        # Top 3 news headlines from SPY (fetched outside lock)
+        _new_headlines: list[str] = []
         try:
             news_items = yf.Ticker("SPY").news or []
             for item in news_items[:5]:
@@ -4500,15 +4506,20 @@ def market_summary(tickers: str = Query(default=""), account_type: str = Query(d
                     or (item.get("content") or {}).get("title")
                     or ""
                 )
-                if title and len(headlines) < 3:
-                    headlines.append(title.strip())
+                if title and len(_new_headlines) < 3:
+                    _new_headlines.append(title.strip())
         except Exception as e:
             print(f"market-summary news error: {e}")
 
-        _market_base_cache = {"indexes": index_data, "headlines": headlines, "ts": now}
+        # Write under lock, with double-check so only one thread wins on
+        # a simultaneous cache miss.
+        with _caches_lock:
+            if time.time() - _market_base_cache["ts"] > 300:
+                _market_base_cache = {"indexes": _new_index_data, "headlines": _new_headlines, "ts": time.time()}
 
-    index_data = _market_base_cache["indexes"]
-    headlines = _market_base_cache["headlines"]
+    with _caches_lock:
+        index_data = _market_base_cache["indexes"]
+        headlines = _market_base_cache["headlines"]
 
     spy_pct = index_data.get("^GSPC", {}).get("pct", 0.0)
     qqq_pct = index_data.get("^IXIC", {}).get("pct", 0.0)
