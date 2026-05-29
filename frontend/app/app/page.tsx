@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, memo } from "react";
+import { createPortal } from "react-dom";
 import { posthog } from "@/lib/posthog";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -1060,12 +1061,14 @@ const TopbarActions = memo(function TopbarActions({
         </div>
       </div>
 
-      {/* AI Report generation toast */}
-      {aiToast && (
+      {/* AI Report generation toast - rendered via portal so it escapes any
+          parent transform (Framer Motion) that would break position:fixed */}
+      {aiToast && typeof document !== "undefined" && createPortal(
         <div style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", zIndex: 9999, background: "var(--card-bg)", border: "0.5px solid rgba(201,168,76,0.4)", borderRadius: 10, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 4px 24px rgba(0,0,0,0.4)", pointerEvents: "none" }}>
           <div style={{ width: 12, height: 12, border: "1.5px solid rgba(201,168,76,0.3)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: "var(--text2)", whiteSpace: "nowrap" }}>Generating your AI report... this may take a minute.</span>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
