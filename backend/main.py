@@ -15,6 +15,7 @@ import secrets
 import threading
 import traceback
 import ipaddress
+from concurrent.futures import ThreadPoolExecutor
 import requests
 from datetime import datetime, timezone
 import time
@@ -4463,25 +4464,30 @@ def market_summary(tickers: str = Query(default=""), account_type: str = Query(d
     # can't mutate length while we iterate or stale-overwrite a fresher row.
     with _caches_lock:
         cached = _market_per_ticker_cache.get(ticker_key)
-        if cached and time.time() - cached.get("ts", 0) < 60:
+        if cached and time.time() - cached.get("ts", 0) < 300:
             return cached
         while len(_market_per_ticker_cache) > 500:
             _market_per_ticker_cache.pop(next(iter(_market_per_ticker_cache)))
 
-    # Refresh base market data (indexes + news) if stale
+    # Refresh base market data (indexes + news) if stale.
+    # Use actual index tickers (^GSPC/^IXIC/^DJI) not ETF proxies (SPY/QQQ/DIA)
+    # so the numbers the AI writes match the live index cards in the frontend.
     now = time.time()
-    if now - _market_base_cache["ts"] > 60:
+    if now - _market_base_cache["ts"] > 300:
         index_data = {}
-        for sym in ["SPY", "QQQ", "DIA", "^VIX"]:
+        def _fetch_index(sym: str) -> tuple[str, dict]:
             try:
                 fi = yf.Ticker(sym).fast_info
                 price = safe_float(getattr(fi, 'last_price', None) or 0)
                 prev_close = safe_float(getattr(fi, 'previous_close', None) or 0)
                 pct = ((price - prev_close) / prev_close * 100) if price > 0 and prev_close > 0 else 0.0
-                index_data[sym] = {"price": round(price, 2), "pct": round(pct, 4)}
+                return sym, {"price": round(price, 2), "pct": round(pct, 4)}
             except Exception as e:
                 print(f"market-summary index error for {sym}: {e}")
-                index_data[sym] = {"price": 0.0, "pct": 0.0}
+                return sym, {"price": 0.0, "pct": 0.0}
+        with ThreadPoolExecutor(max_workers=4) as _ex:
+            for _sym, _row in _ex.map(_fetch_index, ["^GSPC", "^IXIC", "^DJI", "^VIX"]):
+                index_data[_sym] = _row
 
         # Top 3 news headlines from SPY
         headlines: list[str] = []
@@ -4504,9 +4510,9 @@ def market_summary(tickers: str = Query(default=""), account_type: str = Query(d
     index_data = _market_base_cache["indexes"]
     headlines = _market_base_cache["headlines"]
 
-    spy_pct = index_data.get("SPY", {}).get("pct", 0.0)
-    qqq_pct = index_data.get("QQQ", {}).get("pct", 0.0)
-    dia_pct = index_data.get("DIA", {}).get("pct", 0.0)
+    spy_pct = index_data.get("^GSPC", {}).get("pct", 0.0)
+    qqq_pct = index_data.get("^IXIC", {}).get("pct", 0.0)
+    dia_pct = index_data.get("^DJI", {}).get("pct", 0.0)
     vix_val = index_data.get("^VIX", {}).get("price", 0.0)
 
     # Fetch per-holding 1-day price changes via batch yfinance download (more reliable than fast_info)
@@ -4520,21 +4526,20 @@ def market_summary(tickers: str = Query(default=""), account_type: str = Query(d
             # IMPORTANT: compute per-holding change with the EXACT same method
             # /watchlist-data uses for the ticker pills - fast_info last_price
             # vs previous_close - so the briefing's "Your Portfolio" numbers
-            # match the live pills on the right. The previous implementation
-            # used yf.download(period="2d") close-to-close, which produced
-            # different values and occasionally a different SIGN than the
-            # pills (e.g. brief said "VT +0.18%" while the pill showed
-            # "VT -0.03%"). Same method = no contradictions; any residual
-            # difference is just the <=60s cache-refresh skew, never a flip.
-            for t in real_tickers:
+            # match the live pills on the right. Run in parallel so a 6-holding
+            # portfolio doesn't add 3-6s of sequential yfinance latency.
+            def _fetch_holding_pct(t: str) -> tuple[str, float]:
                 try:
                     fi = yf.Ticker(t).fast_info
                     p1 = safe_float(getattr(fi, "last_price", None) or 0)
                     p0 = safe_float(getattr(fi, "previous_close", None) or 0)
-                    holdings_data[t] = round(((p1 - p0) / p0 * 100) if (p0 > 0 and p1 > 0) else 0.0, 2)
+                    return t, round(((p1 - p0) / p0 * 100) if (p0 > 0 and p1 > 0) else 0.0, 2)
                 except Exception as e:
                     print(f"market-summary holdings error for {t}: {e}")
-                    holdings_data[t] = 0.0
+                    return t, 0.0
+            with ThreadPoolExecutor(max_workers=min(len(real_tickers), 8)) as _ex:
+                for _t, _pct in _ex.map(_fetch_holding_pct, real_tickers):
+                    holdings_data[_t] = _pct
 
     # Fetch upcoming earnings dates within 14 days for WHAT TO WATCH section
     # earnings_data maps ticker -> days until earnings (int)
@@ -4572,6 +4577,25 @@ def market_summary(tickers: str = Query(default=""), account_type: str = Query(d
         except Exception as e:
             if "404" not in str(e) and "Not Found" not in str(e) and "no fundamentals" not in str(e).lower():
                 print(f"market-summary earnings error for {sym}: {e}")
+
+    # Compute market-open state before AI so we can instruct the model to
+    # write in present vs past tense. Duplicates the more-detailed as_of
+    # block below but that block runs after the AI call.
+    try:
+        from zoneinfo import ZoneInfo as _ZI_pre
+        _et_pre = datetime.now(_ZI_pre("America/New_York"))
+        _pre_mins = _et_pre.hour * 60 + _et_pre.minute
+        is_open_now = _et_pre.weekday() < 5 and 9 * 60 + 30 <= _pre_mins < 16 * 60
+    except Exception:
+        is_open_now = False
+
+    tense_ctx = (
+        "The market is currently OPEN. Use present tense for all market and portfolio descriptions "
+        "(e.g., 'the S&P 500 is up', 'stocks are gaining', 'the portfolio is down X%'). "
+        "Do not write as if the day is over."
+        if is_open_now else
+        "The market session is complete for the day. Use past tense."
+    )
 
     # AI generation - four distinct sections
     market_text = holdings_text = context_text = outlook_text = ""
@@ -4627,16 +4651,18 @@ def market_summary(tickers: str = Query(default=""), account_type: str = Query(d
             account_type_block = _account_type_block(at_key)
 
             prompt = f"""Market data:
-S&P 500 (SPY) {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq (QQQ) {direction(qqq_pct)} {abs(qqq_pct):.2f}%, Dow (DIA) {direction(dia_pct)} {abs(dia_pct):.2f}%, VIX {vix_val:.1f}.
+S&P 500 {direction(spy_pct)} {abs(spy_pct):.2f}%, Nasdaq {direction(qqq_pct)} {abs(qqq_pct):.2f}%, Dow {direction(dia_pct)} {abs(dia_pct):.2f}%, VIX {vix_val:.1f}.
 Top news headlines: {news_str}
 
 {holdings_block}
 
 {watch_data_block}{account_type_block}
 
+{tense_ctx}
+
 Return a JSON object with exactly these four string keys. Each value must be 2-3 sentences of plain prose.
 
-"market": State exactly what the S&P 500, Nasdaq, and Dow did today with precise percentage moves. Include whether it was a broad move or sector-led. 2-3 sentences.
+"market": State exactly what the S&P 500, Nasdaq, and Dow are doing today (or did today if the session is complete) with precise percentage moves. Include whether it is a broad move or sector-led. 2-3 sentences.
 
 "market_driver": Explain specifically what caused the move. Name the actual event: if earnings, name the company and whether it beat or missed. If a Fed statement, say what was said. If a CPI or jobs report, give the number and whether it surprised. If a geopolitical or political event, name it plainly. Do not say things like "sentiment remained constructive" or "risk appetite improved" or "tailwinds persisted". Say what actually happened. 2-3 sentences.
 
