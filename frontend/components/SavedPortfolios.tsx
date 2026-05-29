@@ -309,7 +309,7 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
       {/* Net Worth aggregate panel */}
       {showNetWorth && (
         <div style={{ marginBottom: 14, padding: "12px 13px", background: "var(--bg2)", border: "0.5px solid var(--border)", borderRadius: 10 }}>
-          <div style={{ fontSize: 9.5, letterSpacing: 2, color: C.amber, textTransform: "uppercase", fontWeight: 700, fontFamily: "Space Mono, monospace", marginBottom: 6 }}>Net Worth</div>
+          <div style={{ fontSize: 9.5, letterSpacing: 2, color: C.amber, textTransform: "uppercase", fontWeight: 700, fontFamily: "Space Mono, monospace", marginBottom: 6 }}>Portfolio Total</div>
           <div style={{ fontSize: 19, fontWeight: 700, fontFamily: "Space Mono, monospace", color: C.cream, letterSpacing: -0.5, marginBottom: 10 }}>
             {fmtDollar(netWorthTotal)}
           </div>
