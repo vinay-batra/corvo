@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 import { RESOLVED_API_URL } from "../../lib/api";
+import { supabase } from "../../lib/supabase";
 
 const API_URL = RESOLVED_API_URL;
 /* ─── Reveal hook ─── */
@@ -274,9 +275,16 @@ function FAQAIChat() {
     setLoading(true);
     try {
       const history = next.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
+      // Send auth token if signed in so the backend counts this against the
+      // user's personal daily limit instead of the 5/day unauthenticated cap.
+      const reqHeaders: Record<string, string> = { "content-type": "application/json" };
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) reqHeaders["Authorization"] = `Bearer ${session.access_token}`;
+      } catch {}
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: reqHeaders,
         body: JSON.stringify({
           message: text,
           history,

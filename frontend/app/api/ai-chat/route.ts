@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 const SYSTEM = `You are a helpful assistant for Corvo, a free portfolio analytics tool at corvo.capital. Answer questions about Corvo features, investing concepts, portfolio analysis, Sharpe ratio, Monte Carlo simulation, and general finance. Be concise and friendly. No em dashes. No asterisks.`;
 
 // In-memory per-IP rate limit. 5 messages per IP per 24-hour window.
+// Only applies to unauthenticated users — signed-in users are unlimited.
 // Resets on cold starts but provides solid protection against casual abuse.
 // Cap to 2000 IPs to prevent unbounded memory growth.
 const IP_LIMIT = 5;
@@ -33,13 +36,33 @@ function isRateLimited(ip: string): boolean {
   return false;
 }
 
-export async function POST(req: NextRequest) {
-  const ip = getIp(req);
-  if (isRateLimited(ip)) {
-    return Response.json(
-      { content: "You've used all 5 free messages for today. Sign up for free to keep going." },
-      { status: 429 }
+async function isSignedIn(): Promise<boolean> {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll() } }
     );
+    const { data: { user } } = await supabase.auth.getUser();
+    return !!user;
+  } catch {
+    return false;
+  }
+}
+
+export async function POST(req: NextRequest) {
+  // Signed-in users are unlimited on public AI chat
+  const signedIn = await isSignedIn();
+
+  if (!signedIn) {
+    const ip = getIp(req);
+    if (isRateLimited(ip)) {
+      return Response.json(
+        { content: "You've used all 5 free messages for today. Sign up for free to keep going." },
+        { status: 429 }
+      );
+    }
   }
 
   try {
