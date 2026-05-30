@@ -264,7 +264,6 @@ function FAQAIChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const bottomRef = React.useRef<HTMLDivElement>(null);
 
   const send = async () => {
     const text = input.trim();
@@ -317,7 +316,6 @@ function FAQAIChat() {
       setMessages([...next, { role: "assistant", content: "Something went wrong. Please try again." }]);
     } finally {
       setLoading(false);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     }
   };
 
@@ -382,7 +380,7 @@ function FAQAIChat() {
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
+
       </div>
 
       {/* Input */}
