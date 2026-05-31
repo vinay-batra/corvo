@@ -12,16 +12,22 @@ const cspHeader = [
   // (move CSP to proxy.ts, add 'nonce-${nonce}' and 'strict-dynamic',
   // call connection() in pages that must be dynamic).
   // unsafe-eval intentionally omitted.
-  "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://vercel.live https://*.vercel.live",
+  // challenges.cloudflare.com is REQUIRED for the Turnstile captcha on the
+  // auth page. Turnstile loads api.js (script-src) and renders its "verify
+  // your browser" challenge in an iframe (frame-src). Without these the
+  // widget never mounts, the captchaToken stays null, and the Log in button
+  // is permanently disabled - i.e. "login does nothing". Do NOT remove these.
+  "script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://vercel.live https://*.vercel.live https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://fonts.googleapis.com",
   "img-src 'self' data: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
-  `connect-src 'self' https://*.supabase.co ${apiUrl} https://app.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.ingest.sentry.io https://vitals.vercel-insights.com https://*.vercel-insights.com`,
+  `connect-src 'self' https://*.supabase.co ${apiUrl} https://app.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.ingest.sentry.io https://vitals.vercel-insights.com https://*.vercel-insights.com https://challenges.cloudflare.com`,
   // 'none' must stand alone in CSP - mixing it with vercel.live caused
   // the browser to ignore the whole directive (and silently fall back to
   // child-src / default-src 'self'), blocking the Vercel Live feedback
-  // iframe and logging a console warning.
-  "frame-src https://vercel.live",
+  // iframe and logging a console warning. challenges.cloudflare.com is the
+  // Turnstile captcha iframe (see script-src note above).
+  "frame-src https://vercel.live https://challenges.cloudflare.com",
   // Clickjacking defense: only let Corvo itself (and the Vercel Live preview
   // toolbar that we use on preview deploys) iframe Corvo pages. Without this
   // directive the X-Frame-Options=DENY equivalent isn't enforced and an
