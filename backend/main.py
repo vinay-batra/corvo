@@ -3068,8 +3068,11 @@ def chat(req: ChatRequest, request: Request):
             )
     else:
         ip = _client_ip(request)
-        if check_rate_limit(ip, "chat", 20, 3600):
-            raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before trying again.")
+        # 5 messages per IP per day for unauthenticated users (FAQ, public
+        # AI chat, or any other unauthenticated call). Signed-in users go
+        # through the user_id branch above and use their per-user daily limit.
+        if check_rate_limit(ip, "chat_anon_daily", 5, 86400):
+            raise HTTPException(status_code=429, detail="You've used all 5 free messages for today. Sign up for free to keep going.")
 
     import anthropic
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")

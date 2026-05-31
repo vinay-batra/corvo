@@ -458,6 +458,18 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
     onTodayPctChange?.(portfolioToday?.pct ?? null);
   }, [portfolioToday, onTodayPctChange]);
 
+  // True when the user set their portfolio value TODAY (ET). On the set-day we
+  // show the entered value as-is (multiplier 1) because it already reflects
+  // today's market - applying todayPct would double-count the day's move.
+  // Starting the next trading day, todayPct applies normally.
+  const pvSetToday = (() => {
+    if (typeof window === "undefined") return false;
+    const setDate = localStorage.getItem("corvo_pv_set_date") || "";
+    if (!setDate) return false;
+    const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    return setDate === todayET;
+  })();
+
   // Day-over-day change derived from yesterday's vs day-before's snapshot.
   // Sourced from portfolio_snapshots via the EOD cron (backend
   // eod_portfolio_snapshot_loop, writes one row per saved portfolio at 4:15
@@ -636,12 +648,12 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
               >
                 {valueHidden
                   ? "$••••••"
-                  : `$${(portfolioValue! * (1 + (portfolioToday?.pct ?? 0) / 100)).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+                  : `$${(portfolioValue! * (pvSetToday ? 1 : (1 + (portfolioToday?.pct ?? 0) / 100))).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
               </span>
               {!valueHidden && (
                 portfolioToday ? (
                   <span
-                    aria-label={`Today ${portfolioToday.pct >= 0 ? "up" : "down"} ${Math.abs(portfolioToday.pct).toFixed(2)} percent${portfolioToday.dollar != null ? ", " + (portfolioToday.dollar >= 0 ? "gain " : "loss ") + "$" + Math.abs(portfolioToday.dollar).toFixed(0) : ""}`}
+                    aria-label={`Today ${portfolioToday.pct >= 0 ? "up" : "down"} ${Math.abs(portfolioToday.pct).toFixed(2)} percent${!pvSetToday && portfolioToday.dollar != null ? ", " + (portfolioToday.dollar >= 0 ? "gain " : "loss ") + "$" + Math.abs(portfolioToday.dollar).toFixed(0) : ""}`}
                     style={{
                       fontSize: 13,
                       fontWeight: 600,
@@ -659,7 +671,9 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
                     <span aria-hidden style={{ fontSize: 9, lineHeight: 1, fontWeight: 700 }}>
                       {portfolioToday.pct >= 0 ? "▲" : "▼"}
                     </span>
-                    {portfolioToday.dollar != null && (
+                    {/* Dollar delta hidden on the day the value was set - the
+                        base hasn't moved yet so it'd just read +$0. */}
+                    {!pvSetToday && portfolioToday.dollar != null && (
                       <>
                         {portfolioToday.dollar >= 0 ? "+" : "-"}${Math.abs(portfolioToday.dollar).toLocaleString("en-US", { maximumFractionDigits: 0 })}
                         <span style={{ color: "var(--text3)", margin: "0 6px", fontWeight: 400 }}>·</span>

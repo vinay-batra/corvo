@@ -368,6 +368,15 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     setPortfolioValueState(v);
     if (typeof window !== "undefined") {
       localStorage.setItem("corvo_portfolio_value", v);
+      // Record today's date (ET) so the live display does NOT apply that day's
+      // market move to the just-entered value. The user enters their current
+      // balance, which already reflects today's market - applying todayPct on
+      // top would double-count. Starting the next trading day, todayPct builds
+      // on this value normally.
+      try {
+        const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+        localStorage.setItem("corvo_pv_set_date", todayET);
+      } catch {}
       window.dispatchEvent(new Event("storage"));
     }
   };
@@ -455,7 +464,17 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   //    ratchets day-over-day. Falls back to the seed when no snapshots exist.
   const portfolioSeedNum = parseFloat(portfolioValue) || 0;
   const effectiveBaseNum = liveBaseValue && liveBaseValue > 0 ? liveBaseValue : portfolioSeedNum;
-  const liveMultiplier = 1 + ((todayPct ?? 0) / 100);
+  // If the user set their value TODAY (ET), show it as-is - it already reflects
+  // today's market, so applying todayPct would double-count the day's move.
+  // todayPct starts applying the next trading day.
+  const pvSetToday = (() => {
+    if (typeof window === "undefined") return false;
+    const setDate = localStorage.getItem("corvo_pv_set_date") || "";
+    if (!setDate) return false;
+    const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    return setDate === todayET;
+  })();
+  const liveMultiplier = pvSetToday ? 1 : 1 + ((todayPct ?? 0) / 100);
   const portfolioLiveNum = effectiveBaseNum * liveMultiplier;
   const portfolioInputDisplay =
     pvFocused || effectiveBaseNum <= 0
@@ -1179,7 +1198,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             value (yesterday's close), not the user's input seed, so the math
             reads as "live = base x (1 + today's pct)" with both numbers
             traceable. */}
-        {!valueHidden && todayPct != null && effectiveBaseNum > 0 && (
+        {!valueHidden && todayPct != null && effectiveBaseNum > 0 && !pvSetToday && (
           <div style={{
             fontSize: 10,
             marginTop: 6,
