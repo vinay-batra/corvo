@@ -44,7 +44,7 @@ import {
   subscribeRecentlyViewed,
   type RecentlyViewedEntry,
 } from "../../lib/recentlyViewed";
-import { type AccountTypeId, DEFAULT_ACCOUNT_TYPE } from "../../lib/accountType";
+import { type AccountTypeId, DEFAULT_ACCOUNT_TYPE, isAccountTypeId } from "../../lib/accountType";
 import { getDemoPortfolio } from "../../lib/demoPortfolios";
 import AlertsPanel from "../../components/AlertsPanel";
 import WhatIfDrawer from "../../components/WhatIfDrawer";
@@ -1617,7 +1617,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             let portfolioRow: any = null;
             const { data: byUpdated, error: updErr } = await supabase
               .from("portfolios")
-              .select("id, name, tickers, weights, updated_at")
+              .select("id, name, tickers, weights, updated_at, portfolio_value, reinvest_dividends, account_type")
               .eq("user_id", user.id)
               .order("updated_at", { ascending: false })
               .limit(1);
@@ -1626,7 +1626,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             } else {
               const { data: byCreated, error: creErr } = await supabase
                 .from("portfolios")
-                .select("id, name, tickers, weights")
+                .select("id, name, tickers, weights, portfolio_value, reinvest_dividends, account_type")
                 .eq("user_id", user.id)
                 .order("created_at", { ascending: false })
                 .limit(1);
@@ -1646,10 +1646,40 @@ const { dark, toggle: toggleDark }  = useTheme();
                 setAssets(autoAssets);
                 setSavedPortfolioId(latest.id);
                 setSavedPortfolioName(latest.name || "");
+                // Apply this account's OWN saved settings (value / account_type /
+                // reinvest) and seed the persist-back refs. Without this, the
+                // mount auto-load left portfolioInputValue on the stale shared
+                // localStorage seed and lastPersistedPvRef null, so the debounced
+                // persist effect would overwrite THIS account's saved value with
+                // the value from whatever account was last viewed. That was the
+                // "portfolio values aren't saving per account" bug.
+                const autoAt: AccountTypeId = isAccountTypeId(latest.account_type) ? latest.account_type : DEFAULT_ACCOUNT_TYPE;
+                const autoReinvest: boolean = latest.reinvest_dividends === false ? false : true;
+                setAccountType(autoAt);
+                setReinvestDividends(autoReinvest);
+                try {
+                  localStorage.setItem("corvo_reinvest_dividends", autoReinvest ? "true" : "false");
+                } catch {}
+                lastPersistedSettingsRef.current = { portfolioId: latest.id, accountType: autoAt, reinvest: autoReinvest };
+                const autoPv = latest.portfolio_value;
+                if (autoPv != null && Number.isFinite(Number(autoPv)) && Number(autoPv) > 0) {
+                  const pvNum = Number(autoPv);
+                  setPortfolioInputValue(pvNum);
+                  try {
+                    localStorage.setItem("corvo_portfolio_value", String(pvNum));
+                    window.dispatchEvent(new Event("storage"));
+                  } catch {}
+                  lastPersistedPvRef.current = { portfolioId: latest.id, value: pvNum };
+                } else {
+                  // Older row with no saved value: keep the current display value
+                  // but seed the ref to it so the debounce treats this as "already
+                  // persisted" and does NOT clobber the row with the stale seed.
+                  lastPersistedPvRef.current = { portfolioId: latest.id, value: portfolioInputValue };
+                }
                 setLoading(true);
                 setAnalysisStep(0);
                 try {
-                  const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "", true, accountType);
+                  const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "", true, autoAt);
                   if (cancelled) return;
                   if (result && !result.error) {
                     setAnalysisStep(ANALYSIS_STEPS.length);
@@ -1942,7 +1972,17 @@ const { dark, toggle: toggleDark }  = useTheme();
     if (!savedPortfolioId || !userId) return;
     if (!(portfolioInputValue > 0)) return;
     const last = lastPersistedPvRef.current;
-    if (last.portfolioId === savedPortfolioId && last.value === portfolioInputValue) return;
+    // Account switched out from under us via a path that didn't seed the ref
+    // (e.g. the ticker-match auto-detect). Do NOT write the current value to
+    // the newly-active account - that would clobber its own saved value with
+    // a value carried over from the previously-viewed account. Adopt the
+    // current value as this account's baseline instead; only genuine user
+    // edits from here (same id, changed value) persist.
+    if (last.portfolioId !== savedPortfolioId) {
+      lastPersistedPvRef.current = { portfolioId: savedPortfolioId, value: portfolioInputValue };
+      return;
+    }
+    if (last.value === portfolioInputValue) return;
     const id = setTimeout(async () => {
       try {
         await supabase
@@ -1973,9 +2013,15 @@ const { dark, toggle: toggleDark }  = useTheme();
   useEffect(() => {
     if (!savedPortfolioId || !userId) return;
     const last = lastPersistedSettingsRef.current;
+    // Same anti-clobber guard as the portfolio_value effect: an account switch
+    // that didn't seed the ref must not write the previous account's settings
+    // onto the new one. Adopt current as baseline; only real edits persist.
+    if (last.portfolioId !== savedPortfolioId) {
+      lastPersistedSettingsRef.current = { portfolioId: savedPortfolioId, accountType, reinvest: reinvestDividends };
+      return;
+    }
     if (
-      last.portfolioId === savedPortfolioId
-      && last.accountType === accountType
+      last.accountType === accountType
       && last.reinvest === reinvestDividends
     ) return;
     const id = setTimeout(async () => {
