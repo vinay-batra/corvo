@@ -648,7 +648,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
               >
                 {valueHidden
                   ? "$••••••"
-                  : `$${(portfolioValue! * (pvSetToday ? 1 : (1 + (portfolioToday?.pct ?? 0) / 100))).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+                  : `$${(portfolioValue! * (pvSetToday ? 1 : (1 + (portfolioToday?.pct ?? 0) / 100))).toLocaleString("en-US", { maximumFractionDigits: 2 })}`}
               </span>
               {!valueHidden && (
                 portfolioToday ? (
@@ -779,7 +779,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
             {!hideBriefing ? (
               summaryLoading ? (
                 [72, 55, 88, 64, 78].map((w, i) => (
-                  <div key={i} style={{ width: `${w}%`, height: 13, borderRadius: 4, background: "var(--bg3)", animation: "gb-pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
+                  <div key={i} style={{ width: `${w}%`, height: 13, borderRadius: 4, background: "var(--skeleton)", animation: "gb-pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
                 ))
               ) : hasBriefContent ? (
                 <>
@@ -835,7 +835,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
               <span style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: "var(--text3)", fontWeight: 600, display: "block", marginBottom: 8 }}>Markets</span>
               {indexData.every(d => d.changePct == null) ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  {[1, 2, 3].map(i => <div key={i} style={{ height: 38, borderRadius: 9, background: "var(--bg3)", animation: "gb-pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.1}s` }} />)}
+                  {[1, 2, 3].map(i => <div key={i} style={{ height: 38, borderRadius: 9, background: "var(--skeleton)", animation: "gb-pulse 1.5s ease-in-out infinite", animationDelay: `${i * 0.1}s` }} />)}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>

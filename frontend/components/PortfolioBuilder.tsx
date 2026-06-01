@@ -479,7 +479,10 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const portfolioInputDisplay =
     pvFocused || effectiveBaseNum <= 0
       ? portfolioValue
-      : Math.round(portfolioLiveNum).toString();
+      // Round to cents (not whole dollars) so decimal values like 297.58
+      // survive the live display. .toString() drops a trailing .00 so whole
+      // values still read "50000", not "50000.00".
+      : (Math.round(portfolioLiveNum * 100) / 100).toString();
   const portfolioDeltaDollar = portfolioLiveNum - effectiveBaseNum;
 
   // Reinvest dividends toggle - persisted to localStorage
@@ -1171,7 +1174,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
               name="portfolioValue"
               type="number"
               min="0"
-              step="1000"
+              step="any"
               value={portfolioInputDisplay}
               onChange={e=>handlePortfolioValueChange(e.target.value)}
               onFocus={(e) => {
