@@ -18,25 +18,27 @@ export async function middleware(request: NextRequest) {
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) => {
-            // Force-hardened cookie flags. supabase/ssr's defaults are
-            // sane (Lax + httpOnly) but were not explicitly recorded in
-            // code, so a future Supabase release could change them
-            // without our review. Lax over Strict because the magic-link
-            // and OAuth callback flows depend on cookies being sent on
-            // top-level GET navigations from email clients and OAuth
-            // providers; Strict would log the user out on that hop.
-            // Lax still blocks cross-site POST CSRF, which is the actual
-            // threat for our state-changing endpoints. secure=true
-            // requires HTTPS in production; flagged true only when not
-            // in dev so localhost still works.
-            const hardened: CookieOptions = {
+            // CRITICAL: httpOnly MUST be false on these cookies. @supabase/ssr's
+            // BROWSER client (lib/supabase.ts createBrowserClient) restores the
+            // session by reading the auth-token cookie from document.cookie on
+            // every page load. If the middleware rewrites it httpOnly:true, the
+            // browser can no longer read its own session cookie -> the client
+            // thinks you're logged out on the next visit even though the cookie
+            // is still there (server can see it, JS can't). That mismatch is
+            // exactly the "randomly logged out / log in several times a day"
+            // bug. Non-httpOnly is the intended config for Supabase SSR; XSS is
+            // mitigated by the CSP. We still keep sameSite=lax (blocks cross-
+            // site POST CSRF while allowing magic-link / OAuth top-level GETs)
+            // and secure in production. maxAge/expires flow through from
+            // `options` so the 30-day persistent session is preserved.
+            const merged: CookieOptions = {
               ...(options ?? {}),
-              httpOnly: true,
+              httpOnly: false,
               sameSite: "lax",
               secure: process.env.NODE_ENV === "production",
               path: options?.path ?? "/",
             };
-            supabaseResponse.cookies.set(name, value, hardened as Parameters<typeof supabaseResponse.cookies.set>[2]);
+            supabaseResponse.cookies.set(name, value, merged as Parameters<typeof supabaseResponse.cookies.set>[2]);
           });
         },
       },
