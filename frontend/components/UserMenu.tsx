@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -26,6 +26,11 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
   const [profile, setProfile] = useState<{ displayName: string; avatarUrl: string | null } | null>(null);
   const [open, setOpen] = useState(false);
   const [refLinkCopied, setRefLinkCopied] = useState(false);
+  // Per-instance wrapper ref so the outside-click close is scoped to THIS
+  // menu. getElementById would return the first match if UserMenu renders in
+  // more than one place (e.g. desktop + mobile), breaking the contains() check
+  // and causing the toggle button to reopen instead of close.
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => { setUser(data.user); setLoading(false); }).catch(() => { setLoading(false); });
@@ -45,14 +50,15 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
       });
   }, [user, displayNameProp]);
 
-  // Close on outside click
+  // Close on outside click. Scoped to this instance's wrapper ref - the
+  // button lives inside rootRef, so clicking it never triggers the outside
+  // close; the button's own onClick toggles. This is what makes a second
+  // click on the button actually close the menu.
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      const menu = document.getElementById("usermenu-dropdown");
-      const btn = document.getElementById("usermenu-btn");
-      if (menu && !menu.contains(target) && btn && !btn.contains(target)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(target)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -81,7 +87,7 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
   const itemStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13, color: "var(--text2)", textDecoration: "none", transition: "background 0.15s", background: "transparent", border: "none", cursor: "pointer", width: "100%", textAlign: "left", fontFamily: "Inter,sans-serif" };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div ref={rootRef} style={{ position: "relative" }}>
       <button
         id="usermenu-btn"
         onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
@@ -182,16 +188,6 @@ export default function UserMenu({ onEmailPrefs, onReferral, onSettings, onProfi
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
                 Replay Onboarding
               </button>
-            )}
-
-            {/* Referrals (in-app only) */}
-            {isInApp && (
-              <Link href="/referrals" onClick={() => setOpen(false)} style={itemStyle}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--bg3)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                Referrals
-              </Link>
             )}
 
             {/* Settings */}
