@@ -4,6 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { RESOLVED_API_URL } from "../../lib/api";
+
+const API_URL = RESOLVED_API_URL;
 
 function useReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -80,23 +83,23 @@ function AnimatedHeading({ text, accentText, style = {} }: { text: string; accen
   );
 }
 
-// Six chapters covering v0.1 -> the latest release. Exactly six bullets each,
-// each bullet kept to a similar length so every chapter card renders at about
-// the same height. Each bullet is a short thematic summary, not one commit.
+// Six chapters covering v0.1 → v0.52. Each chapter caps at six bullets so
+// the timeline reads as a coherent arc instead of a dump. Each bullet is a
+// short thematic summary, not a single commit.
 const ERAS = [
   {
     num: "01",
     name: "Foundations",
     versions: "v0.1 → v0.6",
     dateRange: "Mar 1 → Mar 28, 2026",
-    intro: "The first real build: every metric and workflow you'd expect from a portfolio tool, in plain English.",
+    intro: "The first build of Corvo: every analytic, every metric, every workflow you'd expect from a real portfolio tool, just done in plain English.",
     highlights: [
-      "Portfolio builder, guided onboarding, and one-click preset portfolios",
-      "Sharpe, alpha, beta, and max drawdown on a live risk-free rate",
-      "Monte Carlo engine with percentile bands and outcome histograms",
-      "AI chat that reads your real holdings, not generic advice",
-      "Health and Diversification scores across return, risk, and resilience",
-      "Dividend tracker, tax-loss harvesting, CSV import, and PDF export",
+      "Portfolio builder, onboarding flow, and one-click preset portfolios",
+      "Sharpe ratio, alpha, beta, max drawdown with live T-bill risk-free rate",
+      "Monte Carlo engine with percentile bands and distribution histograms",
+      "AI chat overlay reading your actual holdings, not generic advice",
+      "Health Score and Diversification Score graded across return, risk, stability, resilience",
+      "Dividend tracker, tax-loss harvesting, CSV import, PDF export, shareable card",
     ],
     tags: ["Launch", "Risk", "AI", "Tax"],
   },
@@ -105,85 +108,103 @@ const ERAS = [
     name: "Smart, Mobile & Connected",
     versions: "v0.7 → v0.18",
     dateRange: "Apr 2 → May 1, 2026",
-    intro: "Corvo learned to talk back, install to your phone, and the math underneath got serious upgrades.",
+    intro: "Corvo learned to talk back, install as a PWA, and survive in your pocket. The math underneath got serious upgrades.",
     highlights: [
-      "Benchmark comparison versus the S&P 500, Nasdaq, and Dow",
-      "Rebalance assistant with a live What-If allocation mode",
-      "PWA install, push notifications, and a daily morning AI brief",
-      "Weekly digest email, referral system, and a command palette",
-      "Cash and money-market tickers with real yield tracking",
-      "Full mobile overhaul plus a critical session-expiry auth fix",
+      "Benchmark comparison vs S&P 500 / NASDAQ / Dow plus rebalance assistant with What-If mode",
+      "PWA install, push notifications, morning AI brief, weekly digest email, referral system, command palette",
+      "Cash and money-market tickers (VMFXX, SPAXX, FDRXX) with real yield tracking",
+      "Mobile overhaul across every authenticated and public tab",
+      "Critical auth fix: middleware was silently expiring sessions every request",
+      "Live web search in AI chat, Monte Carlo rebuilt for 1-30 year horizons, Options Chain viewer, Transaction Log",
     ],
-    tags: ["Benchmarks", "PWA", "Mobile", "Auth"],
+    tags: ["AI", "PWA", "Mobile", "Auth", "Monte Carlo"],
   },
   {
     num: "03",
     name: "Income, Email & Tools",
     versions: "v0.19 → v0.24",
     dateRange: "May 2 → May 10, 2026",
-    intro: "Corvo grew into a real financial workbench: tax tools, dividends, goal-aware advice, and proper email.",
+    intro: "Corvo grew into a real financial workbench: tax, dividends, life-aware goals, and proper email.",
     highlights: [
-      "Email suite on Resend: welcome, digest, briefing, and summary",
-      "Capital gains estimator and a 90-day dividend calendar",
-      "Tax-loss-harvesting alerts wired straight into the dashboard",
-      "Life events and goals personalize AI advice to your situation",
-      "Landing redesign: particles, 3D bento cards, animated headings",
-      "Dashboard customizer, insight card, and animated analysis state",
+      "Email system rebuilt on Resend (welcome, weekly digest, morning briefing, monthly summary, market close)",
+      "Capital Gains Estimator, Dividend Calendar with 90-day ex-date lookahead, tax-loss-harvesting alerts",
+      "Life events and financial goals in onboarding so AI advice is personalized to age, salary, horizon",
+      "Landing-page redesign with Three.js particles, 3D bento cards, animated character-by-character headings",
+      "ETF price fallbacks for tickers yfinance drops, Tax Loss Harvester, Health Score caching, What Should I Do Today",
+      "Dashboard customizer, proactive Corvo insight card, animated analyzing state, browser-back tab navigation",
     ],
-    tags: ["Income", "Email", "Goals", "Design"],
+    tags: ["Income", "Tax", "Email", "Design", "Onboarding"],
   },
   {
     num: "04",
     name: "Guardian Voice & Security",
     versions: "v0.25 → v0.31",
     dateRange: "May 11 → May 12, 2026",
-    intro: "Corvo found its voice as the advisor watching your portfolio, and hardened the surface beneath it.",
+    intro: "Corvo found its voice as the AI advisor watching over your portfolio, and hardened the surface beneath it.",
     highlights: [
-      "Homepage rewrite around the guardian-advisor positioning",
-      "Rebuilt auth page and standardized UI across every tab",
-      "Security audit: IDOR closures, RLS hardening, secret rotation",
-      "New gold raven logo across favicons, OG card, and profile art",
-      "PublicNav refresh with hide-on-scroll and hash-anchor scrolling",
-      "End-of-day snapshot cron and corrected day-over-day value math",
+      "Homepage rewrite around the guardian-advisor positioning plus auth-page rebuild and app-wide UI standardization",
+      "Security audit: 3 IDOR closures, RLS hardening, light/dark theme pass, 330 em dashes swept, leaked secrets rotated",
+      "New gold raven logo across favicons, OG card, and social profile picture",
+      "PublicNav 68px refresh with hide-on-scroll and hash-anchor scroll on the homepage",
+      "Day-over-day EOD snapshot cron, GoalTracker CAGR clamped to 4-10% long-horizon band, PerformanceChart anchored to today's value",
+      "Cache-bust suffix on every logo and OG asset so returning users finally see the new brand without a hard refresh",
     ],
-    tags: ["Brand", "Security", "Voice", "Math"],
+    tags: ["Brand", "UI", "Security", "Math"],
   },
   {
     num: "05",
     name: "Accounts, Sidebar & AI Cost",
     versions: "v0.32 → v0.41",
     dateRange: "May 16 → May 17, 2026",
-    intro: "Eight account types with their own tax rules, a redesigned sidebar, and an AI bill cut roughly fivefold.",
+    intro: "Eight account types with their own tax rules, a tabbed sidebar users picked from a 6-mock brainstorm, and an AI bill ~5x lower.",
     highlights: [
-      "Eight account types, each with their own tax-aware AI rules",
-      "Per-holding account tagging for mixed-wrapper portfolios",
-      "Tabbed sidebar (Holdings / Account / Saved) with natural-language editing",
-      "GreetingBar redesign: sparkline market cards plus a holdings list",
-      "AI cost cut ~5x via Haiku 4.5, prompt caching, and response caches",
-      "Monte Carlo rebuilt with fat tails and an honest percentile fan chart",
+      "Account Type system across 8 wrappers (Taxable / Roth IRA / Trad IRA / Roth 401k / Trad 401k / HSA / 529 / Custodial) with per-holding tagging in v0.41",
+      "Day-over-day live value persistence, per-account portfolio switcher, GreetingBar account-type pill",
+      "Tabbed sidebar (Holdings / Account / Saved) with Edit-with-Corvo NL editor moved into Holdings",
+      "GreetingBar right-column redesign: market sparkline cards plus vertical scrollable holdings list",
+      "API cost reduction: /chat moved to Haiku 4.5 with 1h prompt caching, conditional web_search, server-side caches on /what-should-i-do and /portfolio/rebalance",
+      "Monte Carlo rebuilt with Student-t fat tails and a 250-path fan chart; honest Worst-5% / Best-5% labels replace Bear / Bull Case",
     ],
     tags: ["Accounts", "Sidebar", "AI Cost", "Monte Carlo"],
   },
   {
     num: "06",
     name: "Launch Prep & Polish",
-    versions: "v0.42 → v0.55",
-    dateRange: "May 17 → May 30, 2026",
-    intro: "Pricing got real, every account carries its own settings, and a full audit hardened the whole stack.",
+    versions: "v0.42 → v0.52",
+    dateRange: "May 17 → May 28, 2026",
+    intro: "Pricing got real, the AI got sharper, every saved account carries its own settings end to end, and a full audit hardened the backend. Latest releases overhaul PDF exports and round out the onboarding experience.",
     highlights: [
-      "Pricing renamed to Lite / Pro / Max with clear waitlist framing",
-      "Per-account value, type, and reinvest settings saved end to end",
-      "Daily brief is date-stamped, tax-framed, and matches live tickers",
-      "Full audit: IDOR fixes, RLS, and a critical rate-limit repair",
-      "PDF export rebuilt with sector breakdown and an AI narrative",
-      "Public AI chat redesigned, login hardened, accessibility pass",
+      "Pricing tier rename to Lite / Pro / Max with waitlist framing and trust signals reinstated",
+      "Homepage scroll-nav fixed, bento card tilt jitter killed, /learn route fully purged",
+      "Every saved account carries its own value, type, and reinvest setting; onboarding captures account type upfront and the Saved tab shows total net worth across all accounts",
+      "Daily brief tells you what day it's from, tax-frames itself to your account, and its holding numbers now match the live tickers exactly",
+      "Full security + code audit: IDOR closures, RLS hardening, backend rate-limit fix (Railway proxy routing was silently bypassing all limits), and light-mode color cleanup",
+      "PDF export rebuilt: multi-page, diverging performance bars, sector breakdown, benchmark delta, account-type-aware AI narrative",
     ],
-    tags: ["Pricing", "Accounts", "Security", "Polish"],
+    tags: ["Pricing", "AI Integrity", "Accounts", "Security", "Polish", "PDF"],
   },
 ];
 
 
 export default function ChangelogPage() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+
+  const submit = async () => {
+    if (!email.trim() || status !== "idle") return;
+    setStatus("loading");
+    try {
+      const res = await fetch(`${API_URL}/notify-me`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      setStatus(res.ok ? "done" : "error");
+    } catch {
+      setStatus("error");
+    }
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: "transparent", fontFamily: "Inter, sans-serif", color: "var(--text)" }}>
       <style>{`
@@ -378,6 +399,52 @@ export default function ChangelogPage() {
           </div>
         </div>
       </ScrollReveal>
+
+      {/* Subscribe section */}
+      <div className="cl-footer" style={{ borderTop: "1px solid var(--bg3)", padding: "100px 56px 140px" }}>
+        <ScrollReveal from="up" delay={0}>
+          <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
+            <p style={{ fontSize: 9, letterSpacing: 3, color: "var(--accent)", textTransform: "uppercase", marginBottom: 14 }}>Stay in the loop</p>
+            <h2 style={{ fontFamily: "Space Mono, monospace", fontSize: "clamp(20px, 3vw, 32px)", fontWeight: 700, color: "var(--text)", letterSpacing: -1, marginBottom: 10, lineHeight: 1.2 }}>
+              Subscribe to updates
+            </h2>
+            <p style={{ fontSize: 14, color: "var(--text3)", marginBottom: 32, fontWeight: 300 }}>
+              Get notified when we ship something new. No spam, ever.
+            </p>
+            {status === "done" ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(92,184,138,0.08)", border: "1px solid rgba(92,184,138,0.25)", borderRadius: 12, padding: "16px 28px" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4caf7d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span style={{ fontSize: 14, color: "#4caf7d", fontWeight: 500 }}>{"You're on the list!"}</span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 10, maxWidth: 440, margin: "0 auto" }}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && submit()}
+                  placeholder="your@email.com"
+                  style={{ flex: 1, padding: "14px 18px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+                  onFocus={e => (e.target.style.borderColor = "rgba(201,168,76,0.4)")}
+                  onBlur={e => (e.target.style.borderColor = "var(--border)")}
+                />
+                <button
+                  onClick={submit}
+                  disabled={status === "loading"}
+                  style={{ padding: "14px 24px", background: "var(--accent)", border: "none", borderRadius: 12, color: "var(--bg)", fontSize: 13, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", letterSpacing: 0.3, whiteSpace: "nowrap", flexShrink: 0, transition: "filter 0.15s, opacity 0.2s", opacity: status === "loading" ? 0.8 : 1 }}
+                  onMouseEnter={e => { if (status !== "loading") (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = "none"; }}>
+                  {status === "loading" ? "..." : "Subscribe Free"}
+                </button>
+              </div>
+            )}
+            {status === "error" && (
+              <p style={{ fontSize: 12, color: "#e05c5c", marginTop: 10 }}>Something went wrong. Please try again.</p>
+            )}
+            <p style={{ fontSize: 11, color: "var(--text3)", marginTop: 16 }}>No spam. Unsubscribe at any time.</p>
+          </div>
+        </ScrollReveal>
+      </div>
 
       {/* Footer */}
       <PublicFooter />
