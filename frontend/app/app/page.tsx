@@ -2469,6 +2469,24 @@ const { dark, toggle: toggleDark }  = useTheme();
             currentPortfolioValue={portfolioInputValue}
             currentReinvestDividends={reinvestDividends}
             onLoad={(a, at, id, name, pv, reinvest) => {
+              // Flush any not-yet-persisted value edit on the OUTGOING portfolio
+              // before switching. The value persist is debounced (600ms); a
+              // quick switch would otherwise cancel that pending write via the
+              // effect cleanup and the edit would be lost. Fire-and-forget - it
+              // completes in the background well before the user navigates back.
+              const prevId = savedPortfolioId;
+              const prevVal = portfolioInputValue;
+              if (
+                prevId && prevId !== id && userId && prevVal > 0
+                && lastPersistedPvRef.current.portfolioId === prevId
+                && lastPersistedPvRef.current.value !== prevVal
+              ) {
+                supabase.from("portfolios")
+                  .update({ portfolio_value: prevVal, updated_at: new Date().toISOString() })
+                  .eq("id", prevId).eq("user_id", userId)
+                  .then(() => {}, () => {});
+                lastPersistedPvRef.current = { portfolioId: prevId, value: prevVal };
+              }
               setAssets(a);
               setAccountType(at);
               setSavedPortfolioId(id);

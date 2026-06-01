@@ -297,6 +297,36 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
     }
   };
 
+  // Load a saved portfolio into the dashboard. For logged-in users we read
+  // this row's CURRENT value/settings straight from Supabase at click time,
+  // NOT the cached `portfolios` array. That array is fetched once on mount and
+  // goes stale the moment the dashboard persists a new portfolio_value - so
+  // clicking back to a portfolio you just edited would hand over the old
+  // mount-time value and the display would "reset". Reading fresh here means
+  // each account always loads exactly the value last saved to its row.
+  const loadPortfolio = async (p: Portfolio) => {
+    let pv: number | null = p.portfolioValue ?? null;
+    let reinvest: boolean = p.reinvestDividends === false ? false : true;
+    let at: AccountTypeId = p.accountType;
+    if (user) {
+      try {
+        const { data: row } = await supabase
+          .from("portfolios")
+          .select("portfolio_value, reinvest_dividends, account_type")
+          .eq("id", p.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (row) {
+          const raw = row.portfolio_value;
+          pv = raw == null || raw === "" || !Number.isFinite(Number(raw)) ? null : Number(raw);
+          reinvest = row.reinvest_dividends === false ? false : true;
+          at = isAccountTypeId(row.account_type) ? row.account_type : p.accountType;
+        }
+      } catch { /* fall back to cached values below */ }
+    }
+    onLoad(p.assets, at, p.id, p.name, pv, reinvest);
+  };
+
   // Cross-account Net Worth panel - shows when 2+ portfolios have a value set
   const portfoliosWithValues = portfolios.filter(p => (p.portfolioValue ?? 0) > 0);
   const showNetWorth = portfoliosWithValues.length >= 2;
@@ -381,7 +411,7 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
                 role="button"
                 tabIndex={0}
                 aria-label={`Load portfolio: ${p.name}`}
-                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onLoad(p.assets, p.accountType, p.id, p.name, p.portfolioValue ?? null, p.reinvestDividends === false ? false : true); } }}
+                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); loadPortfolio(p); } }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -396,7 +426,7 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
                   position: "relative",
                   boxShadow: isActive ? "0 0 12px rgba(201,168,76,0.14)" : "none",
                 }}
-                onClick={() => onLoad(p.assets, p.accountType, p.id, p.name, p.portfolioValue ?? null, p.reinvestDividends === false ? false : true)}
+                onClick={() => loadPortfolio(p)}
                 onMouseEnter={e => {
                   if (isActive) return;
                   e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)";
