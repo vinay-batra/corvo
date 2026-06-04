@@ -1991,6 +1991,13 @@ const { dark, toggle: toggleDark }  = useTheme();
           .eq("id", savedPortfolioId)
           .eq("user_id", userId);
         lastPersistedPvRef.current = { portfolioId: savedPortfolioId, value: portfolioInputValue };
+        // The always-mounted SavedPortfolios panel cached every row's value on
+        // mount, so its Portfolio Total + tax-bucket breakdown went stale the
+        // moment the user edited a saved value. Tell it which row changed so it
+        // patches its cache and the aggregate recomputes.
+        window.dispatchEvent(new CustomEvent("corvo:portfolio-row-updated", {
+          detail: { id: savedPortfolioId, portfolio_value: portfolioInputValue },
+        }));
       } catch {
         // Network / RLS error - we keep the localStorage seed so the
         // session-local display is still right; next edit retries.
@@ -2040,6 +2047,12 @@ const { dark, toggle: toggleDark }  = useTheme();
           accountType,
           reinvest: reinvestDividends,
         };
+        // Account type drives the tax bucket (Tax-Free / Tax-Deferred /
+        // Taxable) in the SavedPortfolios aggregate, so keep that panel in
+        // sync on a type change too.
+        window.dispatchEvent(new CustomEvent("corvo:portfolio-row-updated", {
+          detail: { id: savedPortfolioId, account_type: accountType, reinvest_dividends: reinvestDividends },
+        }));
       } catch {
         // Same fallback semantics as portfolio_value: localStorage carries
         // the session-local change so the AI prompts pick it up; next
@@ -2484,7 +2497,14 @@ const { dark, toggle: toggleDark }  = useTheme();
                 supabase.from("portfolios")
                   .update({ portfolio_value: prevVal, updated_at: new Date().toISOString() })
                   .eq("id", prevId).eq("user_id", userId)
-                  .then(() => {}, () => {});
+                  .then(() => {
+                    // Same aggregate-sync as the debounced persist effect, for
+                    // the case where a quick account switch flushed the edit
+                    // before that effect's timer fired.
+                    window.dispatchEvent(new CustomEvent("corvo:portfolio-row-updated", {
+                      detail: { id: prevId, portfolio_value: prevVal },
+                    }));
+                  }, () => {});
                 lastPersistedPvRef.current = { portfolioId: prevId, value: prevVal };
               }
               setAssets(a);

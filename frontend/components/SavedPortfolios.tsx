@@ -226,6 +226,36 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
     if (match) saveHistorySnapshot(match.id, data);
   }, [data]);
 
+  // The dashboard persists per-portfolio value / account-type edits to Supabase
+  // on a debounce, then fires `corvo:portfolio-row-updated`. This component is
+  // always mounted (the Saved tab is a display toggle), so without this its
+  // `portfolios` cache stays frozen at the values fetched on mount and the
+  // Portfolio Total aggregate + tax-bucket breakdown never move when the user
+  // changes a saved portfolio's value. Patch the matching row in place so the
+  // derived totals recompute on the next render.
+  useEffect(() => {
+    const onRowUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        { id?: string; portfolio_value?: number | null; account_type?: string } | undefined;
+      if (!detail?.id) return;
+      setPortfolios(prev => prev.map(p => {
+        if (p.id !== detail.id) return p;
+        const next: Portfolio = { ...p };
+        if ("portfolio_value" in detail) {
+          const raw = detail.portfolio_value;
+          next.portfolioValue =
+            raw == null || !Number.isFinite(Number(raw)) ? null : Number(raw);
+        }
+        if (detail.account_type && isAccountTypeId(detail.account_type)) {
+          next.accountType = detail.account_type;
+        }
+        return next;
+      }));
+    };
+    window.addEventListener("corvo:portfolio-row-updated", onRowUpdated);
+    return () => window.removeEventListener("corvo:portfolio-row-updated", onRowUpdated);
+  }, []);
+
   const fetchPortfolios = async (u?: any) => {
     const activeUser = u ?? user;
     if (activeUser) {
