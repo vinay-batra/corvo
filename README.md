@@ -4,9 +4,9 @@
 
 [Live Site](https://corvo.capital) · [Changelog](https://corvo.capital/changelog) · Next.js 16 · FastAPI · Supabase · All Rights Reserved
 
-Current release: **v0.55** (June 1, 2026) — reliability + public-AI session. Fixed login (the CSP wasn't allowing Cloudflare Turnstile, so the captcha never loaded and the Log in button stayed disabled) and random logouts (middleware was forcing `httpOnly` on Supabase auth cookies, which the browser client must read — existing users need one clean re-login). Per-account portfolio values are now reliable end to end: each saved account loads and keeps its own value (read fresh from Supabase on switch, anti-clobber persistence), decimals are supported, and the value you enter is held as-is the day you set it and only starts tracking the market the next trading day. Public AI chat is capped at 5 messages/IP/day (signed-in users unlimited) and was redesigned into a clean "Ask Corvo" panel (eyebrow + usage counter + suggestion chips). Plus polish: accurate live-matching morning brief, "Portfolio Total" rename, dark-mode skeletons, instant Saved-tab switching, and an About page reframed around the commercial mission.
+Current release: **v0.56** (June 4, 2026) - performance-history reliability. Fixed a chain of issues in the daily performance pipeline: snapshots were never actually persisting (a no-op upsert that returned success while writing nothing), and the cumulative-return math was a price-weighted index rather than a true value-weighted return. The end-of-day cron now writes a correct value-weighted snapshot for every saved portfolio each weekday, anchored to a fixed per-ticker base, with a coverage guard that skips a flaky price fetch instead of recording a bad point. One year of correct history was backfilled for all portfolios so the performance chart and price alerts work immediately. The cross-account Portfolio Total now recomputes instantly when you change a saved portfolio's value or account type (verified live in production).
 
-Previous: **v0.51-v0.54** — onboarding account-type capture + cross-account net-worth panel (v0.51); PDF export overhaul with multi-page support, diverging bars, sector breakdown, and an account-type-aware AI report (v0.52); light/dark parity + accessibility pass (v0.53); morning-brief accuracy and parallelized data fetches (v0.54).
+Previous: **v0.55** - reliability + public-AI (login Turnstile fix, random-logout fix, reliable per-account values, redesigned Ask Corvo panel); **v0.51-v0.54** - onboarding account-type capture + cross-account net-worth panel, PDF export overhaul, light/dark parity + accessibility, morning-brief accuracy and parallelized data fetches.
 
 ---
 
@@ -20,7 +20,7 @@ Corvo is a free, AI-powered portfolio intelligence platform built for retail inv
 
 ### Portfolio Analysis
 - Live portfolio value display: base × today's % change, with delta dollars and percent visible on the dashboard and the sidebar input. One-click privacy toggle replaces the dollar amount with bullets so screenshots and over-the-shoulder reads don't leak net worth (preference persisted across sessions).
-- End-of-day snapshot cron writes one `portfolio_snapshots` row per saved portfolio every weekday at 4:15 PM ET. Day-over-day continuity is now tracked in the database, not derived freshly from base on every page load.
+- End-of-day snapshot cron writes one `portfolio_snapshots` row per saved portfolio every weekday at 4:15 PM ET. Returns are value-weighted (each holding normalized to its own base price), anchored to a fixed per-ticker base so the series stays stable, with a coverage guard that skips writing on an incomplete price fetch rather than recording a misleading point. Day-over-day continuity is tracked in the database, not derived freshly from base on every page load.
 - CAGR across selectable time periods, for both the portfolio and individual holdings
 - Sharpe ratio computed with the live `^IRX` T-bill rate as the risk-free rate
 - Portfolio health score graded across returns, risk, stability, and resilience
