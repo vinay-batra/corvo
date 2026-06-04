@@ -5812,43 +5812,72 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
     from zoneinfo import ZoneInfo
     today = datetime.now(ZoneInfo("America/New_York")).date().isoformat()
 
-    # ── Get first snapshot as the base ────────────────────────────────────────
+    # Per-ticker prices that resolved today; also the fixed base on snapshot #1.
+    prices_today = {t: prices[t] for t in tickers_list if prices.get(t, 0) > 0}
+
+    # ── Base anchor + cumulative return (value-weighted) ───────────────────────
+    # Portfolio return = WEIGHTED SUM OF PER-TICKER RETURNS (each ticker
+    # normalised to its own base price), renormalised over whatever weight
+    # resolved - the same method as /portfolio/calc-history. The previous version
+    # divided a price-weighted index (sum of price*weight) by the first
+    # snapshot's index, which is NOT a portfolio return (a $400 stock dominated a
+    # $1 holding regardless of weight), so the persisted returns were wrong.
+    #
+    # The fixed base is snapshot #1's per-ticker prices, stored in the `holdings`
+    # jsonb and read back each day so every later point stays anchored to the
+    # same start (stable series, consistent with the historical backfill).
+    base_prices: dict = {}
     first_resp = requests.get(
         f"{SUPABASE_URL}/rest/v1/portfolio_snapshots",
         headers=_sb_headers(),
         params={
             "portfolio_id": f"eq.{req.portfolio_id}",
-            "select": "date,raw_value",
+            "select": "date,holdings",
             "order": "date.asc",
             "limit": "1",
         },
         timeout=10,
     )
+    if first_resp.status_code == 200:
+        rows = first_resp.json()
+        if rows and rows[0].get("date") != today and isinstance(rows[0].get("holdings"), dict):
+            base_prices = {k: safe_float(v) for k, v in rows[0]["holdings"].items() if safe_float(v) > 0}
 
     cumulative_return = 0.0
     portfolio_value = 10000.0
-
-    if first_resp.status_code == 200:
-        rows = first_resp.json()
-        if rows and rows[0].get("date") != today:
-            base_raw = safe_float(rows[0].get("raw_value", 0))
-            if base_raw > 0:
-                cumulative_return = (raw_value / base_raw) - 1.0
-                portfolio_value = 10000.0 * (1.0 + cumulative_return)
+    if base_prices:
+        num = 0.0
+        wsum = 0.0
+        for ticker, weight in zip(tickers_list, w_list):
+            bp = base_prices.get(ticker, 0.0)
+            tp = prices.get(ticker, 0.0)
+            if bp > 0 and tp > 0:
+                num += weight * (tp / bp)
+                wsum += weight
+        # Guard against flaky partial price fetches writing a misleading point:
+        # require at least half the base-covered weight to resolve today.
+        base_weight = sum(w for t, w in zip(tickers_list, w_list) if base_prices.get(t, 0) > 0)
+        if wsum <= 0 or (base_weight > 0 and wsum < 0.5 * base_weight):
+            raise HTTPException(status_code=503, detail="Insufficient price coverage this run")
+        cumulative_return = (num / wsum) - 1.0
+        portfolio_value = 10000.0 * (1.0 + cumulative_return)
+    else:
+        # Snapshot #1: today IS the base. Don't anchor on a flaky fetch.
+        if valid_weight < 0.5:
+            raise HTTPException(status_code=503, detail="Insufficient price coverage to set base")
+        base_prices = {k: round(v, 6) for k, v in prices_today.items()}
 
     # ── Upsert today's snapshot in one request ──────────────────────────────
-    # PostgREST native upsert: POST with resolution=merge-duplicates performs
-    # INSERT ... ON CONFLICT (portfolio_id, date) DO UPDATE against the existing
-    # unique index on (portfolio_id, date).
-    #
-    # This REPLACES an earlier PATCH-then-POST dance that silently wrote
-    # nothing: a PATCH matching zero rows returns 204 (not an error), so the
-    # "no existing row -> insert" branch never ran and portfolio_snapshots
-    # stayed empty for every portfolio. snapshot_date is a legacy NOT NULL
-    # column with no default (the table predates the date/raw_value schema), so
-    # we set it equal to `date` to satisfy the constraint. If the dead legacy
-    # columns (snapshot_date, total_value, daily_return, sharpe, holdings) are
-    # ever dropped, remove snapshot_date from this payload at the same time.
+    # Native PostgREST upsert (INSERT ... ON CONFLICT (portfolio_id, date) DO
+    # UPDATE) via resolution=merge-duplicates against the existing unique index.
+    # REPLACES an earlier PATCH-then-POST that silently wrote nothing (a PATCH
+    # matching zero rows returns 204, so the insert branch never ran and the
+    # table stayed empty for every portfolio).
+    #   - snapshot_date: legacy NOT NULL column with no default; set = date.
+    #   - holdings: the fixed per-ticker BASE prices (the return anchor above).
+    #     Only snapshot #1 strictly needs it, but writing it on every row keeps
+    #     the base recoverable if the first row is ever deleted.
+    #   (total_value / daily_return / sharpe stay null - unused legacy columns.)
     payload = {
         "user_id": req.user_id,
         "portfolio_id": req.portfolio_id,
@@ -5857,6 +5886,7 @@ def _portfolio_snapshot_inner(req: SnapshotRequest):
         "raw_value": raw_value,
         "portfolio_value": round(portfolio_value, 4),
         "cumulative_return": round(cumulative_return, 6),
+        "holdings": base_prices,
     }
     upsert_resp = requests.post(
         f"{SUPABASE_URL}/rest/v1/portfolio_snapshots?on_conflict=portfolio_id,date",
