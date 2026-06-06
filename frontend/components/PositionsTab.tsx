@@ -32,6 +32,9 @@ const COLORS = [
   "#b87fd4", "#e0965c", "#5cd4d4", "#d45cb8", "#8abd5b", "#d4c45c",
 ];
 
+// Legend key for the benchmark line (kept distinct from any portfolio id).
+const BENCH_KEY = "__benchmark__";
+
 const PERIOD_API: Record<string, string> = { "6m": "6mo", "1y": "1y", "2y": "2y", "5y": "5y" };
 
 const BENCHMARKS = [
@@ -286,6 +289,10 @@ export default function PositionsTab({
   const [benchmark, setBenchmark] = useState("^GSPC");
   const [benchData, setBenchData] = useState<{ x: string[]; y: number[] }>({ x: [], y: [] });
   const [benchLoading, setBenchLoading] = useState(false);
+  // Legend show/hide: keys are portfolio ids (plus BENCH_KEY). A key in this set
+  // means that line is hidden from the chart. Stale ids (e.g. after switching the
+  // portfolio dropdown) are harmless since nothing references them.
+  const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
 
   // Table
   const [sortKey, setSortKey] = useState<SortKey>("weight");
@@ -553,6 +560,16 @@ export default function PositionsTab({
     else { setSortKey(key); setSortDir("desc"); }
   };
 
+  // Click a legend label to show/hide that line on the performance chart.
+  const toggleSeries = useCallback((key: string) => {
+    setHiddenSeries(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
   // ── Best / worst across ALL visible rows ──────────────────────────────────
   const withChange = sorted.filter(r => r.change1d !== null);
   const best  = withChange.length ? withChange.reduce((b, r) => (r.change1d! > b.change1d!) ? r : b) : null;
@@ -725,19 +742,43 @@ export default function PositionsTab({
               />
             </span>
             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-              {/* Legend */}
-              {savedPortfolios.map((p, i) => (
-                <span key={p.id} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: COLORS[i % COLORS.length], marginRight: 4 }}>
-                  <span style={{ width: 14, height: 2, background: COLORS[i % COLORS.length], display: "inline-block", borderRadius: 1 }} />
-                  {p.name}
-                </span>
-              ))}
-              {benchData.y.length > 0 && (
-                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "var(--text3)", marginRight: 4 }}>
-                  <span style={{ width: 14, height: 0, borderTop: "2px dashed rgba(180,180,180,0.5)", display: "inline-block" }} />
-                  {BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark}
-                </span>
-              )}
+              {/* Legend - click a label to show/hide its line */}
+              {savedPortfolios.map((p, i) => {
+                const hidden = hiddenSeries.has(p.id);
+                return (
+                  <span
+                    key={p.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleSeries(p.id)}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSeries(p.id); } }}
+                    title={hidden ? `Show ${p.name}` : `Hide ${p.name}`}
+                    aria-pressed={!hidden}
+                    style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: COLORS[i % COLORS.length], marginRight: 4, cursor: "pointer", userSelect: "none", opacity: hidden ? 0.4 : 1, textDecoration: hidden ? "line-through" : "none", transition: "opacity 0.15s" }}
+                  >
+                    <span style={{ width: 14, height: 2, background: COLORS[i % COLORS.length], display: "inline-block", borderRadius: 1 }} />
+                    {p.name}
+                  </span>
+                );
+              })}
+              {benchData.y.length > 0 && (() => {
+                const hidden = hiddenSeries.has(BENCH_KEY);
+                const benchLabel = BENCHMARKS.find(b => b.ticker === benchmark)?.label ?? benchmark;
+                return (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleSeries(BENCH_KEY)}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSeries(BENCH_KEY); } }}
+                    title={hidden ? `Show ${benchLabel}` : `Hide ${benchLabel}`}
+                    aria-pressed={!hidden}
+                    style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "var(--text3)", marginRight: 4, cursor: "pointer", userSelect: "none", opacity: hidden ? 0.4 : 1, textDecoration: hidden ? "line-through" : "none", transition: "opacity 0.15s" }}
+                  >
+                    <span style={{ width: 14, height: 0, borderTop: "2px dashed rgba(180,180,180,0.5)", display: "inline-block" }} />
+                    {benchLabel}
+                  </span>
+                );
+              })()}
               {/* Benchmark dropdown */}
               <select
                 value={benchmark}
@@ -812,7 +853,10 @@ export default function PositionsTab({
             <Plot
               data={[
                 ...savedPortfolios
-                  .map((p, i) => ({
+                  // keep the original index so legend + line colors stay in sync
+                  .map((p, i) => ({ p, i }))
+                  .filter(({ p }) => !hiddenSeries.has(p.id))
+                  .map(({ p, i }) => ({
                     x: perfDates[p.id] ?? [],
                     y: perfData[p.id] ?? [],
                     type: "scatter",
@@ -821,7 +865,7 @@ export default function PositionsTab({
                     line: { color: COLORS[i % COLORS.length], width: 1.5 },
                   }))
                   .filter(t => (t.y as number[]).length > 0),
-                ...(benchData.y.length > 0 ? [{
+                ...(benchData.y.length > 0 && !hiddenSeries.has(BENCH_KEY) ? [{
                   x: benchData.x,
                   y: benchData.y,
                   type: "scatter",
