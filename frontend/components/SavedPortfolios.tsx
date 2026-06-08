@@ -107,6 +107,11 @@ function relativeAnalyzed(iso: string | undefined): string {
   const then = new Date(iso).getTime();
   if (isNaN(then)) return "Never analyzed";
   const diffMs = Date.now() - then;
+  const diffMin = Math.floor(diffMs / (1000 * 60));
+  if (diffMin < 1) return "Analyzed just now";
+  if (diffMin < 60) return `Analyzed ${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `Analyzed ${diffHr}h ago`;
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   if (diffDays <= 0) return "Analyzed today";
   if (diffDays === 1) return "Analyzed yesterday";
@@ -236,7 +241,7 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
   useEffect(() => {
     const onRowUpdated = (e: Event) => {
       const detail = (e as CustomEvent).detail as
-        { id?: string; portfolio_value?: number | null; account_type?: string } | undefined;
+        { id?: string; portfolio_value?: number | null; account_type?: string; updated_at?: string } | undefined;
       if (!detail?.id) return;
       setPortfolios(prev => prev.map(p => {
         if (p.id !== detail.id) return p;
@@ -248,6 +253,9 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
         }
         if (detail.account_type && isAccountTypeId(detail.account_type)) {
           next.accountType = detail.account_type;
+        }
+        if (detail.updated_at) {
+          next.updatedAt = detail.updated_at;
         }
         return next;
       }));

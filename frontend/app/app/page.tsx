@@ -1792,6 +1792,14 @@ const { dark, toggle: toggleDark }  = useTheme();
             if (match) {
               setSavedPortfolioId(match.id);
               setSavedPortfolioName(match.name || "");
+              // Bump updated_at so the Saved tab's "Analyzed ..." label reflects
+              // THIS analysis, not just the last value/settings edit. Update the
+              // chip live via the same row-updated event the value edits use.
+              const analyzedAt = new Date().toISOString();
+              supabase.from("portfolios").update({ updated_at: analyzedAt }).eq("id", match.id).then(() => {}, () => {});
+              window.dispatchEvent(new CustomEvent("corvo:portfolio-row-updated", {
+                detail: { id: match.id, updated_at: analyzedAt },
+              }));
               const API_SNAP = RESOLVED_API_URL;
               const { data: { session: snapSession1 } } = await supabase.auth.getSession();
               const snapTickers1 = valid.map(a => a.ticker).filter(Boolean);

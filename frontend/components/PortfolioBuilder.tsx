@@ -1196,27 +1196,10 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             />
           )}
         </div>
-        {/* Live delta line - only shown when we have today's pct, a real base,
-            and the value isn't hidden. "Base" here is the EOD-snapshot-derived
-            value (yesterday's close), not the user's input seed, so the math
-            reads as "live = base x (1 + today's pct)" with both numbers
-            traceable. */}
-        {!valueHidden && todayPct != null && effectiveBaseNum > 0 && !pvSetToday && (
-          <div style={{
-            fontSize: 10,
-            marginTop: 6,
-            lineHeight: 1.4,
-            letterSpacing: 0.1,
-            fontFamily: "Space Mono,monospace",
-            color: portfolioDeltaDollar >= 0 ? "#4caf7d" : "var(--red)",
-          }}>
-            {portfolioDeltaDollar >= 0 ? "+" : "-"}${Math.abs(portfolioDeltaDollar).toLocaleString("en-US", { maximumFractionDigits: 0 })}
-            <span style={{ color: "var(--text3)", margin: "0 5px" }}>·</span>
-            {todayPct >= 0 ? "+" : ""}{todayPct.toFixed(2)}% today
-            <span style={{ color: "var(--text3)", margin: "0 5px" }}>·</span>
-            <span style={{ color: "var(--text3)" }}>base ${effectiveBaseNum.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
-          </div>
-        )}
+        {/* Today's gain/loss intentionally NOT shown here - it lives on the
+            dashboard (GreetingBar). Showing it in the sidebar duplicated that
+            number and, pre-market, displayed a stale "today" move before any
+            real change had occurred. */}
         {/* "Save to track day-over-day" hint - only when the portfolio is
             unsaved AND has holdings. Day-over-day ratcheting requires the
             EOD snapshot cron which is keyed by portfolio_id, so unsaved
