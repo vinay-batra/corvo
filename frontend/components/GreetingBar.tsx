@@ -86,6 +86,9 @@ interface Props {
   // running for a few days, perfHistory will be a contiguous weekday series.
   perfHistory?: PerfSnapshot[];
   portfolioValue?: number;
+  // When true, portfolioValue is the already-tracked live value (anchor-based),
+  // so display it as-is rather than multiplying by today's % on top.
+  valueIsLive?: boolean;
   hideBriefing?: boolean;
   hideTickers?: boolean;
   // Bubble today's % change up so the sidebar input can show the live
@@ -256,7 +259,7 @@ function HoldingRow({ label, pct, price, dotColor }: { label: string; pct: numbe
   );
 }
 
-export default function GreetingBar({ displayName, assets, portfolioValue, perfHistory, hideBriefing, hideTickers, onTodayPctChange, accountType }: Props) {
+export default function GreetingBar({ displayName, assets, portfolioValue, valueIsLive = false, perfHistory, hideBriefing, hideTickers, onTodayPctChange, accountType }: Props) {
   const resolvedAccountType = accountType || DEFAULT_ACCOUNT_TYPE;
   const accountMeta = getAccountType(resolvedAccountType);
   const [resolvedName, setResolvedName] = useState(displayName || "");
@@ -648,7 +651,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, perfH
               >
                 {valueHidden
                   ? "$••••••"
-                  : `$${(portfolioValue! * (pvSetToday ? 1 : (1 + (portfolioToday?.pct ?? 0) / 100))).toLocaleString("en-US", { maximumFractionDigits: 2 })}`}
+                  : `$${(portfolioValue! * ((valueIsLive || pvSetToday) ? 1 : (1 + (portfolioToday?.pct ?? 0) / 100))).toLocaleString("en-US", { maximumFractionDigits: 2 })}`}
               </span>
               {!valueHidden && (
                 portfolioToday ? (

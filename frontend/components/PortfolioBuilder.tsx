@@ -278,6 +278,9 @@ interface Props {
   // seed (corvo_portfolio_value) becomes purely a "first run" seed and a
   // manual override - once snapshots accumulate, they take over.
   liveBaseValue?: number;
+  // When true, liveBaseValue is the already-tracked live value (anchor-based);
+  // display it as-is instead of multiplying by today's % again.
+  valueIsLive?: boolean;
   // Which tab's content to render. The tabbed sidebar (v0.36) routes
   // Holdings + Account into different sub-views of this same component, so
   // both sections share state (account type, live value, assets) without
@@ -298,7 +301,7 @@ interface Props {
   savedPortfolioId?: string | null;
 }
 
-export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange, liveBaseValue, view = "holdings", isSaved = false, savedPortfolioId = null }: Props) {
+export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, onAnalyze, loading, todayPct, accountType = DEFAULT_ACCOUNT_TYPE, onAccountTypeChange, liveBaseValue, valueIsLive = false, view = "holdings", isSaved = false, savedPortfolioId = null }: Props) {
   const update = onAssetsChange || setAssets || (() => {});
   const [dark, setDark] = useState(true);
   const [active, setActive] = useState<number|null>(null);
@@ -474,7 +477,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
     const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
     return setDate === todayET;
   })();
-  const liveMultiplier = pvSetToday ? 1 : 1 + ((todayPct ?? 0) / 100);
+  // valueIsLive: liveBaseValue is already the tracked live value, show as-is.
+  const liveMultiplier = (valueIsLive || pvSetToday) ? 1 : 1 + ((todayPct ?? 0) / 100);
   const portfolioLiveNum = effectiveBaseNum * liveMultiplier;
   const portfolioInputDisplay =
     pvFocused || effectiveBaseNum <= 0

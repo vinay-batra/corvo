@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo, memo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { createPortal } from "react-dom";
 import { posthog } from "@/lib/posthog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -37,6 +37,7 @@ import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import TourInviteModal from "../../components/TourInviteModal";
 import { fetchPortfolio, fetchNaturalLanguageEdit, NLEditResult, RESOLVED_API_URL } from "../../lib/api";
+import { liveValueFromAnchor } from "../../lib/anchorValue";
 import { supabase } from "../../lib/supabase";
 import {
   getRecentlyViewed,
@@ -1393,19 +1394,143 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [savedPortfolioName, setSavedPortfolioName] = useState<string>("");
   const [perfHistory, setPerfHistory] = useState<PerfSnapshot[]>([]);
 
-  // ── Portfolio value base (reworked 2026-05-28) ───────────────────────
-  // The user's typed/saved per-account value IS the base, full stop. An
-  // earlier design (v0.34-v0.46) derived the base from EOD snapshots +
-  // seed-anchors so it would ratchet day-over-day, but that override
-  // IGNORED what the user typed - entering $48,000 still displayed a
-  // snapshot-derived number, so the input read as "does nothing" and the
-  // briefing/sidebar/value all disagreed. Per direct user decision the
-  // typed value is now the single source of truth; the live display
-  // multiplies it by today's market move (todayPct) downstream, and
-  // historical growth still lives in the performance chart via server-side
-  // portfolio_snapshots. This value is simply "what the account is worth
-  // right now" anchored on the number the user actually entered.
-  const liveBaseValue = portfolioInputValue;
+  // ── Portfolio value anchor tracking (reworked 2026-06-08) ────────────
+  // The user enters a value once; from then on it AUTO-TRACKS the market
+  // day-over-day. We capture the per-ticker prices at the moment the value
+  // was set (the "anchor"), then the live value is weighted buy-and-hold
+  // growth from that anchor:
+  //     liveValue = anchorValue * Σ w_i (priceNow_i / anchorPrice_i)
+  // renormalised over covered weight. This follows the market intraday AND
+  // across days (so it stays close to a brokerage like Fidelity) WITHOUT
+  // depending on the separate snapshot pipeline. Typing a new value
+  // re-anchors instantly. Falls back to the raw entered value when no
+  // anchor prices exist yet (legacy rows - the user re-enters once to start
+  // tracking). This replaces the v0.50 static "typed value is the value"
+  // model, which froze the number so it drifted from the brokerage after a
+  // market move.
+  const [valueAnchorPrices, setValueAnchorPrices] = useState<Record<string, number> | null>(null);
+  const [valueAnchorDate, setValueAnchorDate] = useState<string | null>(null);
+  // Live per-ticker prices for the active portfolio. Polled here (not read
+  // from GreetingBar) so the live value + anchor capture work on every tab,
+  // even when GreetingBar is unmounted.
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+  // The value for which the current anchor was captured - guards the capture
+  // effect from re-firing (and from re-anchoring a value that was just loaded).
+  const anchoredForValueRef = useRef<number | null>(null);
+
+  // Poll live prices for the active tickers (independent of GreetingBar).
+  useEffect(() => {
+    const tickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
+    if (!tickers.length) { setLivePrices({}); return; }
+    let cancelled = false;
+    const ctrl = new AbortController();
+    const load = async () => {
+      try {
+        const r = await fetch(`${RESOLVED_API_URL}/watchlist-data?tickers=${tickers.join(",")}`, { signal: ctrl.signal });
+        const d = await r.json();
+        if (cancelled) return;
+        const next: Record<string, number> = {};
+        for (const s of (d.results || [])) {
+          const p = Number(s.price);
+          if (s.ticker && Number.isFinite(p) && p > 0) next[String(s.ticker).toUpperCase()] = p;
+        }
+        setLivePrices(next);
+      } catch { /* AbortError on cleanup, or transient - keep last prices */ }
+    };
+    load();
+    const id = setInterval(load, 60000);
+    return () => { cancelled = true; ctrl.abort(); clearInterval(id); };
+  }, [assets]);
+
+  // Weighted buy-and-hold growth from the anchor → the live value.
+  const { liveValue, anchorActive } = useMemo<{ liveValue: number; anchorActive: boolean }>(() => {
+    const { value, tracked } = liveValueFromAnchor(portfolioInputValue, assets, valueAnchorPrices, livePrices);
+    return { liveValue: value, anchorActive: tracked };
+  }, [portfolioInputValue, valueAnchorPrices, livePrices, assets]);
+
+  // liveBaseValue keeps its old name (PortfolioBuilder prop) but is now the
+  // fully tracked live value; anchorActive tells the display components to
+  // show it as-is rather than re-applying today's % on top.
+  const liveBaseValue = anchorActive ? liveValue : portfolioInputValue;
+
+  // On mount, hydrate the value anchor from localStorage. If a real anchor
+  // (with prices) exists, tracking is active immediately. Otherwise treat the
+  // current seed as "already seen" so we do NOT auto-anchor a legacy value to
+  // today's prices - the user re-enters the value once to start tracking.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("corvo_value_anchor");
+      if (raw) {
+        const a = JSON.parse(raw);
+        if (a && a.prices && typeof a.value === "number" && a.value > 0) {
+          setValueAnchorPrices(a.prices);
+          setValueAnchorDate(a.date || null);
+          anchoredForValueRef.current = a.value;
+          return;
+        }
+      }
+    } catch {}
+    anchoredForValueRef.current = portfolioInputValue;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-anchor when the user SETS a new value (not on load - loads seed the ref).
+  // Fetches fresh prices so the anchor is accurate at the moment of setting,
+  // persists to localStorage (always) + Supabase (saved portfolios).
+  useEffect(() => {
+    const v = portfolioInputValue;
+    if (!(v > 0)) return;
+    if (anchoredForValueRef.current === v) return;
+    const tickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
+    if (!tickers.length) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`${RESOLVED_API_URL}/watchlist-data?tickers=${tickers.join(",")}`);
+        const d = await r.json();
+        if (cancelled) return;
+        const prices: Record<string, number> = {};
+        for (const s of (d.results || [])) {
+          const p = Number(s.price);
+          if (s.ticker && Number.isFinite(p) && p > 0) prices[String(s.ticker).toUpperCase()] = p;
+        }
+        if (!Object.keys(prices).length) return; // empty fetch - retry on next change
+        const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+        setValueAnchorPrices(prices);
+        setValueAnchorDate(todayET);
+        anchoredForValueRef.current = v;
+        try { localStorage.setItem("corvo_value_anchor", JSON.stringify({ value: v, date: todayET, prices })); } catch {}
+        if (savedPortfolioId && userId) {
+          supabase.from("portfolios")
+            .update({ value_anchor_prices: prices, portfolio_value_date: todayET })
+            .eq("id", savedPortfolioId).eq("user_id", userId).then(() => {}, () => {});
+          // Keep the always-mounted SavedPortfolios Total accurate: it caches
+          // each row's anchor, so tell it the active account just re-anchored.
+          window.dispatchEvent(new CustomEvent("corvo:portfolio-row-updated", {
+            detail: { id: savedPortfolioId, anchor_prices: prices, anchor_date: todayET },
+          }));
+        }
+      } catch { /* transient */ }
+    }, 700);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [portfolioInputValue, assets, savedPortfolioId, userId]);
+
+  // Helper: apply a loaded per-account anchor (from a saved row). Seeds the ref
+  // so the capture effect treats the loaded value as already-anchored.
+  const applyLoadedAnchor = useCallback((value: number, prices: Record<string, number> | null, date: string | null) => {
+    anchoredForValueRef.current = value;
+    if (prices && Object.keys(prices).length) {
+      const norm: Record<string, number> = {};
+      for (const k of Object.keys(prices)) { const p = Number(prices[k]); if (p > 0) norm[k.toUpperCase()] = p; }
+      setValueAnchorPrices(Object.keys(norm).length ? norm : null);
+      setValueAnchorDate(date || null);
+      try { localStorage.setItem("corvo_value_anchor", JSON.stringify({ value, date: date || null, prices: norm })); } catch {}
+    } else {
+      // Legacy row with no anchor yet - show the raw value; first edit anchors.
+      setValueAnchorPrices(null);
+      setValueAnchorDate(null);
+    }
+  }, []);
 
   const [perfRange, setPerfRange] = useState<PerfRange>("ALL");
   const [perfLoading, setPerfLoading] = useState(false);
@@ -1617,7 +1742,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             let portfolioRow: any = null;
             const { data: byUpdated, error: updErr } = await supabase
               .from("portfolios")
-              .select("id, name, tickers, weights, updated_at, portfolio_value, reinvest_dividends, account_type")
+              .select("id, name, tickers, weights, updated_at, portfolio_value, reinvest_dividends, account_type, value_anchor_prices, portfolio_value_date")
               .eq("user_id", user.id)
               .order("updated_at", { ascending: false })
               .limit(1);
@@ -1626,7 +1751,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             } else {
               const { data: byCreated, error: creErr } = await supabase
                 .from("portfolios")
-                .select("id, name, tickers, weights, portfolio_value, reinvest_dividends, account_type")
+                .select("id, name, tickers, weights, portfolio_value, reinvest_dividends, account_type, value_anchor_prices, portfolio_value_date")
                 .eq("user_id", user.id)
                 .order("created_at", { ascending: false })
                 .limit(1);
@@ -1670,6 +1795,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                     window.dispatchEvent(new Event("storage"));
                   } catch {}
                   lastPersistedPvRef.current = { portfolioId: latest.id, value: pvNum };
+                  applyLoadedAnchor(pvNum, (latest.value_anchor_prices as Record<string, number> | null) ?? null, (latest.portfolio_value_date as string | null) ?? null);
                 } else {
                   // Older row with no saved value: keep the current display value
                   // but seed the ref to it so the debounce treats this as "already
@@ -2460,6 +2586,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               accountType={accountType}
               onAccountTypeChange={setAccountType}
               liveBaseValue={liveBaseValue}
+              valueIsLive={anchorActive}
               savedPortfolioId={savedPortfolioId}
             />
           </>
@@ -2489,7 +2616,7 @@ const { dark, toggle: toggleDark }  = useTheme();
             accountType={accountType}
             currentPortfolioValue={portfolioInputValue}
             currentReinvestDividends={reinvestDividends}
-            onLoad={(a, at, id, name, pv, reinvest) => {
+            onLoad={(a, at, id, name, pv, reinvest, anchorPrices, anchorDate) => {
               // Flush any not-yet-persisted value edit on the OUTGOING portfolio
               // before switching. The value persist is debounced (600ms); a
               // quick switch would otherwise cancel that pending write via the
@@ -2537,11 +2664,15 @@ const { dark, toggle: toggleDark }  = useTheme();
                 // the user had edited it. Only subsequent edits should
                 // round-trip.
                 lastPersistedPvRef.current = { portfolioId: id, value: pv };
+                // Load this account's value anchor so the live value tracks
+                // from where the user set it (per-account, not the global seed).
+                applyLoadedAnchor(pv, anchorPrices ?? null, anchorDate ?? null);
               } else {
                 // Older row with no saved value - the localStorage seed
                 // stays, but mark this portfolio as needing a first write
                 // on the next user edit so the value gets captured.
                 lastPersistedPvRef.current = { portfolioId: id, value: null };
+                applyLoadedAnchor(portfolioInputValue, anchorPrices ?? null, anchorDate ?? null);
               }
               // Per-saved-portfolio reinvest-dividends toggle. PortfolioBuilder
               // reads localStorage on mount + on the storage event, so writing
@@ -3146,6 +3277,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       assets={assets}
                       perfHistory={perfHistory}
                       portfolioValue={liveBaseValue}
+                      valueIsLive={anchorActive}
                       hideTickers={hiddenCards.has("tickers")}
                       onTodayPctChange={setTodayPct}
                       accountType={accountType}

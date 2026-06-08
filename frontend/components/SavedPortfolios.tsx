@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
+import { RESOLVED_API_URL } from "../lib/api";
+import { liveValueFromAnchor } from "../lib/anchorValue";
 import { type AccountTypeId, isAccountTypeId, DEFAULT_ACCOUNT_TYPE, getAccountType } from "../lib/accountType";
 
 const LS_KEY = "corvo_saved_portfolios";
@@ -32,7 +34,7 @@ function fmtDollar(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 interface Asset { ticker: string; weight: number; accountType?: AccountTypeId; }
-interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; portfolioValue?: number | null; reinvestDividends?: boolean; }
+interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; portfolioValue?: number | null; reinvestDividends?: boolean; anchorPrices?: Record<string, number> | null; anchorDate?: string | null; }
 
 /** Map a Supabase portfolios row → local Portfolio */
 function fromDb(row: any): Portfolio {
@@ -71,6 +73,8 @@ function fromDb(row: any): Portfolio {
     updatedAt: row.updated_at || row.created_at,
     portfolioValue,
     reinvestDividends,
+    anchorPrices: (row.value_anchor_prices && typeof row.value_anchor_prices === "object") ? row.value_anchor_prices : null,
+    anchorDate: row.portfolio_value_date ?? null,
   };
 }
 
@@ -196,7 +200,7 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
   // migration; the dashboard keeps the existing seed in that case.
   // reinvestDividends defaults to true (matching the historical implicit
   // default + DB column default) so it's always a real boolean.
-  onLoad: (a: Asset[], accountType: AccountTypeId, portfolioId: string, portfolioName: string, portfolioValue: number | null, reinvestDividends: boolean) => void;
+  onLoad: (a: Asset[], accountType: AccountTypeId, portfolioId: string, portfolioName: string, portfolioValue: number | null, reinvestDividends: boolean, anchorPrices?: Record<string, number> | null, anchorDate?: string | null) => void;
 }) {
   // Match the active assets against saved portfolios so the matching chip
   // can be visually highlighted as "you're viewing this one right now".
@@ -212,6 +216,10 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
   const [user, setUser] = useState<any>(null);
   const [focused, setFocused] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  // Live prices for every ticker across saved portfolios, so the Portfolio
+  // Total sums each account's LIVE value (anchor x weighted growth) and keeps
+  // updating intraday instead of summing the frozen entered values.
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({});
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: authData }) => {
@@ -241,11 +249,15 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
   useEffect(() => {
     const onRowUpdated = (e: Event) => {
       const detail = (e as CustomEvent).detail as
-        { id?: string; portfolio_value?: number | null; account_type?: string; updated_at?: string } | undefined;
+        { id?: string; portfolio_value?: number | null; account_type?: string; updated_at?: string; anchor_prices?: Record<string, number> | null; anchor_date?: string | null } | undefined;
       if (!detail?.id) return;
       setPortfolios(prev => prev.map(p => {
         if (p.id !== detail.id) return p;
         const next: Portfolio = { ...p };
+        if ("anchor_prices" in detail) {
+          next.anchorPrices = (detail.anchor_prices && typeof detail.anchor_prices === "object") ? detail.anchor_prices : null;
+          next.anchorDate = detail.anchor_date ?? next.anchorDate ?? null;
+        }
         if ("portfolio_value" in detail) {
           const raw = detail.portfolio_value;
           next.portfolioValue =
@@ -263,6 +275,36 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
     window.addEventListener("corvo:portfolio-row-updated", onRowUpdated);
     return () => window.removeEventListener("corvo:portfolio-row-updated", onRowUpdated);
   }, []);
+
+  // Poll live prices for the union of tickers across portfolios that have a
+  // value set, so the Portfolio Total reflects each account's LIVE value and
+  // keeps ticking intraday (instead of summing the frozen entered values).
+  const pricedTickersKey = portfolios
+    .filter(p => (p.portfolioValue ?? 0) > 0)
+    .flatMap(p => p.assets.map(a => a.ticker).filter(Boolean))
+    .sort().join(",");
+  useEffect(() => {
+    const tickers = pricedTickersKey ? Array.from(new Set(pricedTickersKey.split(","))) : [];
+    if (tickers.length < 1) return;
+    let cancelled = false;
+    const ctrl = new AbortController();
+    const load = async () => {
+      try {
+        const r = await fetch(`${RESOLVED_API_URL}/watchlist-data?tickers=${tickers.join(",")}`, { signal: ctrl.signal });
+        const d = await r.json();
+        if (cancelled) return;
+        const next: Record<string, number> = {};
+        for (const s of (d.results || [])) {
+          const p = Number(s.price);
+          if (s.ticker && Number.isFinite(p) && p > 0) next[String(s.ticker).toUpperCase()] = p;
+        }
+        setLivePrices(next);
+      } catch { /* AbortError on cleanup, or transient - keep last prices */ }
+    };
+    load();
+    const id = setInterval(load, 60000);
+    return () => { cancelled = true; ctrl.abort(); clearInterval(id); };
+  }, [pricedTickersKey]);
 
   const fetchPortfolios = async (u?: any) => {
     const activeUser = u ?? user;
@@ -346,11 +388,13 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
     let pv: number | null = p.portfolioValue ?? null;
     let reinvest: boolean = p.reinvestDividends === false ? false : true;
     let at: AccountTypeId = p.accountType;
+    let anchorPrices: Record<string, number> | null = p.anchorPrices ?? null;
+    let anchorDate: string | null = p.anchorDate ?? null;
     if (user) {
       try {
         const { data: row } = await supabase
           .from("portfolios")
-          .select("portfolio_value, reinvest_dividends, account_type")
+          .select("portfolio_value, reinvest_dividends, account_type, value_anchor_prices, portfolio_value_date")
           .eq("id", p.id)
           .eq("user_id", user.id)
           .maybeSingle();
@@ -359,18 +403,24 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
           pv = raw == null || raw === "" || !Number.isFinite(Number(raw)) ? null : Number(raw);
           reinvest = row.reinvest_dividends === false ? false : true;
           at = isAccountTypeId(row.account_type) ? row.account_type : p.accountType;
+          anchorPrices = (row.value_anchor_prices && typeof row.value_anchor_prices === "object") ? row.value_anchor_prices : null;
+          anchorDate = row.portfolio_value_date ?? null;
         }
       } catch { /* fall back to cached values below */ }
     }
-    onLoad(p.assets, at, p.id, p.name, pv, reinvest);
+    onLoad(p.assets, at, p.id, p.name, pv, reinvest, anchorPrices, anchorDate);
   };
 
-  // Cross-account Net Worth panel - shows when 2+ portfolios have a value set
+  // Cross-account Net Worth panel - shows when 2+ portfolios have a value set.
+  // Each account's contribution is its LIVE value (anchor x weighted growth),
+  // so the Total tracks the market and updates intraday with the price poll.
   const portfoliosWithValues = portfolios.filter(p => (p.portfolioValue ?? 0) > 0);
   const showNetWorth = portfoliosWithValues.length >= 2;
-  const netWorthTotal = portfoliosWithValues.reduce((s, p) => s + (p.portfolioValue ?? 0), 0);
+  const liveValueOf = (p: Portfolio): number =>
+    liveValueFromAnchor(p.portfolioValue ?? 0, p.assets, p.anchorPrices, livePrices).value;
+  const netWorthTotal = portfoliosWithValues.reduce((s, p) => s + liveValueOf(p), 0);
   const bucketTotals: Record<TaxBucket, number> = { free: 0, deferred: 0, taxable: 0 };
-  portfoliosWithValues.forEach(p => { bucketTotals[TAX_BUCKET[p.accountType] ?? "taxable"] += p.portfolioValue ?? 0; });
+  portfoliosWithValues.forEach(p => { bucketTotals[TAX_BUCKET[p.accountType] ?? "taxable"] += liveValueOf(p); });
 
   return (
     <div>
