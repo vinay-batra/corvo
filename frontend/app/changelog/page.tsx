@@ -170,12 +170,12 @@ const ERAS = [
   {
     num: "06",
     name: "Launch Prep & Polish",
-    versions: "v0.42 → v0.56",
-    dateRange: "May 17 → Jun 4, 2026",
-    intro: "Pricing got real, every saved account carries its own settings end to end, the public assistant got a redesign, and a run of audits hardened login, sessions, and reliability across the app.",
+    versions: "v0.42 → v0.57",
+    dateRange: "May 17 → Jun 8, 2026",
+    intro: "Pricing got real, every saved account carries its own settings end to end, your value now tracks the market on its own, the public assistant got a redesign, and a run of audits hardened login, sessions, and reliability across the app.",
     highlights: [
       "Pricing tier rename to Lite / Pro / Max with waitlist framing and trust signals reinstated",
-      "Every saved account carries its own value, type, and reinvest setting; onboarding captures account type upfront and the Saved tab shows total net worth across all accounts, recomputing instantly when you change a value",
+      "Every saved account carries its own value, type, and reinvest setting, and your value auto-tracks the market day-over-day from the moment you set it; the Saved tab shows a live total net worth across all accounts that updates intraday",
       "Daily brief tells you what day it's from, tax-frames itself to your account, and its holding numbers now match the live tickers exactly",
       "PDF export rebuilt: multi-page, diverging performance bars, sector breakdown, benchmark delta, account-type-aware AI narrative",
       "Reliability + security: daily performance history now records correctly for every portfolio (powering accurate charts and price alerts), plus rate-limit, login (Turnstile), session-persistence, IDOR, and RLS fixes",
