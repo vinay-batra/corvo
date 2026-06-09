@@ -19,3 +19,12 @@ frontend/.env.local.bak
 frontend/.env.local.save
 .agents/skills/*/node_modules/
 .agents/skills/**/node_modules/
+
+# Supabase CLI local link-state (project ref, pooler url, org id, pinned versions)
+supabase/.temp/
+# Agent / skill scratch execution scripts
+.agents/skills/**/.temp-execution-*.js
+# Editor / agent launch configs
+**/.claude/
+# Vestigial root lockfile (real lockfile is frontend/package-lock.json)
+/package-lock.json
