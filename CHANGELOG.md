@@ -4,6 +4,28 @@ All notable changes to Corvo are documented here.
 
 ---
 
+## v0.58 - June 9, 2026 - security, reliability and performance hardening
+
+A full multi-domain audit (security, correctness, performance, data, infrastructure) followed by a remediation pass that was deployed and verified live against production.
+
+### Security
+- **Server-side authorization tightened on every personalized endpoint.** The AI advice endpoints now derive the user identity strictly from a verified session token and reject requests that supply a user id without one, so personalized data and cached advice can only ever be read by the authenticated owner.
+- **Database row-level security hardened.** Per-user access policies were corrected and made consistent across user-owned tables, reference-data tables had row-level security enabled, and function execution permissions were locked down so privileged database functions can only be called by the backend, not by anonymous clients.
+- **Public endpoints hardened.** Added input validation and request bounds on the public AI chat proxy, a non-spoofable client-IP source for its rate limiting, and a rate limit on the share-image renderer. Removed an unused server endpoint and its dependency.
+- **Response security headers added** (Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) and an open-redirect guard on the auth callback.
+- **Secrets handling locked down** with a pre-commit secret scanner and a CI secret-scanning job.
+
+### Reliability and performance
+- Pooled outbound HTTP connections and bounded third-party API timeouts; parallelized and cached the heaviest market-data endpoints; made the health check report dependency status.
+- Hardened the end-of-day snapshot writer so a partial price fetch can never anchor a corrupt performance series; made background-loop failures observable; added structured request logging.
+- Switched the charting library to a scatter/heatmap-only bundle and code-split the dashboard tabs to shrink the initial download; paused live polling on hidden tabs.
+
+### Quality and accessibility
+- Added a continuous-integration pipeline (build, unit tests, secret scan) and the first automated unit tests.
+- Full accessibility pass: focus traps and focus restoration on dialogs, associated labels on form fields, keyboard-operable toggles, live-region announcements, and larger mobile input fields to prevent zoom.
+
+---
+
 ## v0.43 - May 17, 2026 - 17-commit polish bundle
 
 Rolls up everything shipped after v0.42 without a version bump.
