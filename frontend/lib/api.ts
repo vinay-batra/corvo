@@ -272,9 +272,12 @@ export async function fetchDailySignal(params: {
   user_id?: string;
   account_type?: string;
 }): Promise<DailySignal> {
+  // Attach the Supabase JWT: the backend now derives identity from the verified
+  // token and rejects a body user_id sent without one (IDOR fix), so a logged-in
+  // user's daily-signal request must carry the bearer token like WSID/health-score.
   const res = await fetch(`${RESOLVED_API_URL}/portfolio/daily-signal`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(params),
   });
   if (!res.ok) {
