@@ -28,6 +28,15 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    env:
+      # Build-time only. lib/api.ts throws if NEXT_PUBLIC_API_URL is unset under
+      # NODE_ENV=production (which `next build` is), and the Supabase browser
+      # client needs its public vars defined. These are public, client-exposed
+      # values; the anon key here is a harmless build placeholder (the real one
+      # is injected by Vercel at deploy and is public anyway). No secrets in CI.
+      NEXT_PUBLIC_API_URL: https://web-production-7a78d.up.railway.app
+      NEXT_PUBLIC_SUPABASE_URL: https://bkdjillyzyyysmkpvnos.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder-not-a-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
