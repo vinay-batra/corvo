@@ -254,6 +254,12 @@ export default function AiChat({
   const renameRef  = useRef<HTMLInputElement>(null);
   const panelRef   = useRef<HTMLDivElement>(null);
   const initialMessageSentRef = useRef(false);
+  // Tracks whether the component is still mounted. send() runs async work
+  // (per-ticker price fetches via Promise.all, then a stream) that can outlive
+  // the panel when the user closes it - guard every setState after an await on
+  // this so we don't write to (or saveConversation from) a dead component.
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
   // Tracks whether the user has manually scrolled up during a stream so we
   // stop auto-following. Reset to true (= follow) when they hit the bottom
   // again or send a new message.
@@ -551,11 +557,13 @@ export default function AiChat({
     if (editingConvId) renameRef.current?.focus();
   }, [editingConvId]);
 
-  // Auto-send an initial message when the chat is opened from a panel (e.g. "Continue in AI chat")
+  // Auto-send an initial message when the chat is opened from a panel (e.g. "Continue in AI chat").
+  // Gate on !loading + !messages.length so it can never interleave with a
+  // manual send already in flight (which would send a truncated history).
   useEffect(() => {
-    if (initialMessage && !initialMessageSentRef.current) {
+    if (initialMessage && !initialMessageSentRef.current && !loading && messages.length === 0) {
       initialMessageSentRef.current = true;
-      const timer = setTimeout(() => send(initialMessage), 150);
+      const timer = setTimeout(() => { if (!loading) send(initialMessage); }, 150);
       return () => clearTimeout(timer);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -721,6 +729,7 @@ export default function AiChat({
       }
 
       if (res.status === 429) {
+        if (!mountedRef.current) return;
         setLimitReached(true);
         setMessages(nextHistory);
         setLoading(false);
@@ -741,6 +750,8 @@ export default function AiChat({
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        // Panel was closed mid-stream: stop reading + writing to a dead component.
+        if (!mountedRef.current) { try { await reader.cancel(); } catch {} return; }
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
@@ -778,6 +789,7 @@ export default function AiChat({
         }
       }
 
+      if (!mountedRef.current) return;
       if (!msgAdded) {
         setLoading(false);
         setMessages([...nextHistory, { role: "assistant", content: accumulatedText || "Something went wrong. Please try again.", timestamp: aiMsgTimestamp }]);
@@ -785,9 +797,11 @@ export default function AiChat({
 
       finalMessages = [...nextHistory, { role: "assistant", content: accumulatedText, timestamp: aiMsgTimestamp }];
       await saveConversation(finalMessages, msg);
+      if (!mountedRef.current) return;
       setLoading(false);
 
     } catch (e: any) {
+      if (!mountedRef.current) return;
       setLoading(false);
       setMessages(prev => {
         const last = prev[prev.length - 1];
@@ -1318,7 +1332,7 @@ export default function AiChat({
                   borderRadius: 12, color: "var(--text)", fontSize: 13,
                   resize: "none", lineHeight: 1.5,
                   transition: "border-color .18s, box-shadow .18s",
-                  boxShadow: inputFocused ? "0 0 0 3px rgba(201,168,76,0.12)" : "0 1px 2px rgba(0,0,0,0.04)",
+                  boxShadow: inputFocused ? "0 0 0 3px rgba(201,168,76,0.3)" : "0 1px 2px rgba(0,0,0,0.04)",
                   fontFamily: "var(--font-body)",
                 }}
               />

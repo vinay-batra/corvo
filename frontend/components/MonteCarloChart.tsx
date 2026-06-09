@@ -10,7 +10,7 @@ import { RESOLVED_API_URL } from "../lib/api";
 import { plotlyHoverlabel } from "../lib/theme";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
+const Plot = dynamic(() => import("./PlotBasic"), { ssr: false }) as any;
 
 const API_URL = RESOLVED_API_URL;
 

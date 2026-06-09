@@ -12,6 +12,7 @@ import { useToast } from "../../components/Toast";
 import LifeEvents, { type LifeEvent } from "../../components/LifeEvents";
 import FinancialGoals, { type FinancialGoal } from "../../components/FinancialGoals";
 import { RESOLVED_API_URL } from "../../lib/api";
+import useFocusTrap from "../../hooks/useFocusTrap";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -50,12 +51,17 @@ function Row({ label, desc, children }: { label: string; desc?: string; children
   );
 }
 
-function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
+function Toggle({ on, onChange, label }: { on: boolean; onChange: () => void; label?: string }) {
   return (
     <div
       onClick={onChange}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(); }
+      }}
       role="switch"
       aria-checked={on}
+      aria-label={label}
+      tabIndex={0}
       style={{
         width: 40, height: 22, borderRadius: 11,
         background: on ? "linear-gradient(180deg, var(--accent) 0%, rgba(184,134,11,0.95) 100%)" : "var(--border2)",
@@ -94,8 +100,8 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 6, letterSpacing: 0.3 }}>{children}</div>;
+function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) {
+  return <label htmlFor={htmlFor} style={{ fontSize: 11, color: "var(--text3)", marginBottom: 6, letterSpacing: 0.3, display: "block" }}>{children}</label>;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -185,6 +191,10 @@ export default function SettingsPage({
   // ── Delete account ─────────────────────────────────────────────────────────
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting]                   = useState(false);
+  const cropDialogRef = useRef<HTMLDivElement>(null);
+  const deleteDialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(!!cropSrc, cropDialogRef);
+  useFocusTrap(showDeleteConfirm, deleteDialogRef);
 
   // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -383,7 +393,7 @@ export default function SettingsPage({
       await supabase.auth.signOut();
       window.location.href = "/";
     } catch (err) {
-      alert(`Deletion failed: ${err instanceof Error ? err.message : String(err)}`);
+      toast(`Deletion failed: ${err instanceof Error ? err.message : String(err)}`, "error");
       setDeleting(false);
     }
   };
@@ -460,9 +470,9 @@ export default function SettingsPage({
 
       {/* Display name */}
       <div style={{ padding: "14px 0", borderBottom: "0.5px solid var(--border)" }}>
-        <FieldLabel>Display name</FieldLabel>
+        <FieldLabel htmlFor="display-name">Display name</FieldLabel>
         <div style={{ display: "flex", gap: 8 }}>
-          <input value={displayName} onChange={e => setDisplayName(e.target.value)}
+          <input id="display-name" value={displayName} onChange={e => setDisplayName(e.target.value)}
             placeholder="Enter display name" style={{ ...inputStyle, flex: 1 }} />
           <button onClick={saveProfile} disabled={savingProfile} className="s-btn-save" style={btnSave(profileSaved)}>
             {profileSaved ? "Saved" : savingProfile ? "..." : "Save"}
@@ -506,7 +516,7 @@ export default function SettingsPage({
         </div>
       </Row>
       <Row label="Default benchmark">
-        <select value={benchmark} onChange={e => { setBenchmark(e.target.value); localStorage.setItem("corvo_benchmark", e.target.value); }}
+        <select aria-label="Default benchmark" value={benchmark} onChange={e => { setBenchmark(e.target.value); localStorage.setItem("corvo_benchmark", e.target.value); }}
           style={{ ...selectStyle, width: "auto" }}>
           {BENCHMARKS.map(b => <option key={b.ticker} value={b.ticker}>{b.label}</option>)}
         </select>
@@ -514,13 +524,13 @@ export default function SettingsPage({
       <Row label="Theme" desc="Dark mode affects the entire app interface">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 12, color: "var(--text3)" }}>{dark ? "Dark" : "Light"}</span>
-          <Toggle on={dark} onChange={toggleTheme} />
+          <Toggle on={dark} onChange={toggleTheme} label="Dark mode" />
         </div>
       </Row>
       <Row label="Sound effects" desc="Subtle audio feedback on tab switches and interactions">
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 12, color: "var(--text3)" }}>{soundEnabled ? "On" : "Off"}</span>
-          <Toggle on={soundEnabled} onChange={() => {
+          <Toggle label="Sound effects" on={soundEnabled} onChange={() => {
             const next = !soundEnabled;
             setSoundEnabled(next);
             localStorage.setItem(SOUND_KEY, String(next));
@@ -597,10 +607,10 @@ export default function SettingsPage({
               <p style={{ fontSize: 12, color: "var(--text3)", lineHeight: 1.5 }}>{row.desc}</p>
             </div>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-              {row.email ? <Toggle on={row.email.on} onChange={row.email.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}> - </span>}
+              {row.email ? <Toggle label={`${row.label} email`} on={row.email.on} onChange={row.email.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}> - </span>}
             </div>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-              {row.push ? <Toggle on={row.push.on} onChange={row.push.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}> - </span>}
+              {row.push ? <Toggle label={`${row.label} push`} on={row.push.on} onChange={row.push.onChange} /> : <span style={{ fontSize: 16, color: "var(--border)", display: "block", width: "100%", textAlign: "center" }}> - </span>}
             </div>
           </div>
         ))}
@@ -628,8 +638,8 @@ export default function SettingsPage({
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <div>
-            <FieldLabel>Investor type</FieldLabel>
-            <select value={investorType} onChange={e => setInvestorType(e.target.value)} style={selectStyle}>
+            <FieldLabel htmlFor="investor-type">Investor type</FieldLabel>
+            <select id="investor-type" value={investorType} onChange={e => setInvestorType(e.target.value)} style={selectStyle}>
               <option value="">Not set</option>
               <option value="beginner">Beginner investor</option>
               <option value="active">Active trader</option>
@@ -638,8 +648,8 @@ export default function SettingsPage({
             </select>
           </div>
           <div>
-            <FieldLabel>Age range</FieldLabel>
-            <select value={ageRange} onChange={e => setAgeRange(e.target.value)} style={selectStyle}>
+            <FieldLabel htmlFor="age-range">Age range</FieldLabel>
+            <select id="age-range" value={ageRange} onChange={e => setAgeRange(e.target.value)} style={selectStyle}>
               <option value="">Not set</option>
               <option value="under18">Under 18</option>
               <option value="18-24">18 to 24</option>
@@ -682,8 +692,8 @@ export default function SettingsPage({
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <div>
-            <FieldLabel>Annual income</FieldLabel>
-            <select value={incomeRange} onChange={e => setIncomeRange(e.target.value)} style={selectStyle}>
+            <FieldLabel htmlFor="annual-income">Annual income</FieldLabel>
+            <select id="annual-income" value={incomeRange} onChange={e => setIncomeRange(e.target.value)} style={selectStyle}>
               <option value="">Not set</option>
               <option value="under30k">Under $30k</option>
               <option value="30-60k">$30k to $60k</option>
@@ -694,8 +704,8 @@ export default function SettingsPage({
             </select>
           </div>
           <div>
-            <FieldLabel>Risk tolerance</FieldLabel>
-            <select value={riskTolerance} onChange={e => setRiskTolerance(e.target.value)} style={selectStyle}>
+            <FieldLabel htmlFor="risk-tolerance">Risk tolerance</FieldLabel>
+            <select id="risk-tolerance" value={riskTolerance} onChange={e => setRiskTolerance(e.target.value)} style={selectStyle}>
               <option value="">Not set</option>
               <option value="conservative">Conservative</option>
               <option value="moderate">Moderate</option>
@@ -706,8 +716,8 @@ export default function SettingsPage({
         </div>
 
         <div>
-          <FieldLabel>Investment horizon</FieldLabel>
-          <select value={investmentHorizon} onChange={e => setInvestmentHorizon(e.target.value)} style={{ ...selectStyle, width: "auto", minWidth: 200 }}>
+          <FieldLabel htmlFor="investment-horizon">Investment horizon</FieldLabel>
+          <select id="investment-horizon" value={investmentHorizon} onChange={e => setInvestmentHorizon(e.target.value)} style={{ ...selectStyle, width: "auto", minWidth: 200 }}>
             <option value="">Not set</option>
             <option value="under1y">Less than 1 year</option>
             <option value="1-3y">1 to 3 years</option>
@@ -881,8 +891,8 @@ export default function SettingsPage({
           </button>
         )}
         <div style={{ width: "0.5px", height: 16, background: "var(--border)" }} />
-        <img src="/corvo-logo.png?v=2" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
-        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Settings</span>
+        <img src="/corvo-logo.png?v=2" width={22} height={18} alt="" aria-hidden="true" style={{ opacity: 0.85 }} />
+        <h1 style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", margin: 0 }}>Settings</h1>
       </header>
 
       {/* ── Mobile top tab bar ── */}
@@ -920,13 +930,14 @@ export default function SettingsPage({
               </svg>
               <input
                 type="text"
+                aria-label="Search settings"
                 placeholder="Search settings..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 style={{ width: "100%", padding: "7px 10px 7px 30px", fontSize: 12, borderRadius: "var(--radius)", border: "0.5px solid var(--border)", background: "var(--bg3)", color: "var(--text)", outline: "none", boxSizing: "border-box" }}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 0, display: "flex", lineHeight: 1 }}>
+                <button onClick={() => setSearchQuery("")} aria-label="Clear search" style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 8, display: "flex", lineHeight: 1, minWidth: 32, minHeight: 32, alignItems: "center", justifyContent: "center" }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
               )}
@@ -975,11 +986,16 @@ export default function SettingsPage({
             initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
             <motion.div
+              ref={cropDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="crop-modal-title"
+              tabIndex={-1}
               // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
               className="s-modal-inner"
-              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 420 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 16 }}>Crop photo</div>
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 420, outline: "none" }}>
+              <div id="crop-modal-title" style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 16 }}>Crop photo</div>
               <div className="s-crop-area" style={{ position: "relative", width: "100%", height: 300, borderRadius: 10, overflow: "hidden", background: "var(--bg)" }}>
                 <Cropper image={cropSrc} crop={crop} zoom={zoom} aspect={1} cropShape="round" showGrid={false} onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
               </div>
@@ -1005,11 +1021,16 @@ export default function SettingsPage({
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
             onClick={e => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}>
             <motion.div
+              ref={deleteDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-modal-title"
+              tabIndex={-1}
               // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
               className="s-modal-inner"
-              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400 }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", marginBottom: 10 }}>Delete account?</div>
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, padding: 28, width: "100%", maxWidth: 400, outline: "none" }}>
+              <div id="delete-modal-title" style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", marginBottom: 10 }}>Delete account?</div>
               <div style={{ fontSize: 13, color: "var(--text3)", lineHeight: 1.6, marginBottom: 24 }}>
                 All your portfolios, goals, and preferences will be permanently deleted. This cannot be undone.
               </div>

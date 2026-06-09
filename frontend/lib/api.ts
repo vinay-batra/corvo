@@ -33,7 +33,7 @@ export async function authHeaders(extra: Record<string, string> = {}): Promise<H
 }
 
 export async function fetchPortfolio(assets: any[], period: string, benchmark = "^GSPC", userId = "", referralCode = "", reinvestDividends = true, accountType = "") {
-  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
@@ -55,7 +55,7 @@ export async function fetchPortfolio(assets: any[], period: string, benchmark = 
 }
 
 export async function fetchDrawdown(assets: any[], period: string) {
-  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
@@ -72,7 +72,7 @@ export async function fetchCorrelation(assets: any[], period: string) {
 }
 
 export async function fetchMonteCarlo(assets: any[], period: string, years: number = 5) {
-  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
@@ -116,7 +116,7 @@ export async function fetchEventsCalendar() {
 }
 
 export async function fetchSectors(assets: any[]) {
-  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
@@ -134,7 +134,7 @@ export async function importPortfolioCsv(file: File): Promise<{ tickers: string[
 }
 
 export async function fetchDividends(assets: any[], portfolioValue = 10000) {
-  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
@@ -146,7 +146,7 @@ export async function fetchDividends(assets: any[], portfolioValue = 10000) {
 }
 
 export async function fetchTaxLoss(assets: any[], portfolioValue = 10000) {
-  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
@@ -159,7 +159,7 @@ export async function fetchTaxLoss(assets: any[], portfolioValue = 10000) {
 }
 
 export async function fetchCapitalGains(assets: any[], portfolioValue = 10000, ltcgRate = 15, stcgRate = 22) {
-  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");
@@ -180,7 +180,7 @@ export async function fetchCapitalGains(assets: any[], portfolioValue = 10000, l
 }
 
 export async function fetchDividendCalendar(assets: any[], portfolioValue = 10000) {
-  const total = assets.reduce((sum, a) => sum + a.weight, 0);
+  const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
   const tickers = normalized.map(a => a.ticker).join(",");
   const weights = normalized.map(a => a.weight).join(",");

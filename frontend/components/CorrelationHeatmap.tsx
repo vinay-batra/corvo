@@ -8,7 +8,7 @@ import EmptyState from "./EmptyState";
 import { cssVar } from "../lib/theme";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
+const Plot = dynamic(() => import("./PlotBasic"), { ssr: false }) as any;
 
 const CorrelationHeatmap = memo(function CorrelationHeatmap({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);

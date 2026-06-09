@@ -17,7 +17,13 @@ const C = {
 
 function AuthForm() {
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/app";
+  const rawNext = searchParams.get("next");
+  // Reject //, /\, and absolute URLs (browsers treat // and /\ as
+  // protocol-relative => open redirect). Only allow a same-site rooted path.
+  const nextPath =
+    rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/\\")
+      ? rawNext
+      : "/app";
 
   // Redirect already-authenticated users, hide form until check completes
   useEffect(() => {
@@ -124,14 +130,18 @@ function AuthForm() {
     background: "var(--bg3)",
     border: `1px solid ${focused === field ? C.amber : C.border}`,
     borderRadius: 11,
-    color: C.cream, fontSize: 14,
-    outline: "none",
+    color: C.cream, fontSize: 16, // >=16px avoids iOS Safari focus auto-zoom
+    // outline removed so the global :focus-visible keyboard ring can show.
     transition: "border-color 0.18s, box-shadow 0.18s",
-    boxShadow: focused === field ? "0 0 0 4px rgba(201,168,76,0.10)" : "none",
+    boxShadow: focused === field ? "0 0 0 3px rgba(201,168,76,0.30)" : "none",
   });
 
   if (!sessionChecked) {
-    return <div style={{ minHeight: "100vh", background: C.navy2 }} />;
+    return (
+      <div role="status" aria-live="polite" style={{ minHeight: "100vh", background: C.navy2, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ position: "absolute", left: -9999, width: 1, height: 1, overflow: "hidden" }}>Loading sign-in</span>
+      </div>
+    );
   }
 
   return (
@@ -177,7 +187,7 @@ function AuthForm() {
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: "0 0 24px rgba(201,168,76,0.15) inset",
             }}>
-              <img src="/corvo-logo.png?v=2" width={32} height={26} alt="Corvo" style={{ opacity: 0.95 }} />
+              <img src="/corvo-logo.png?v=2" width={32} height={26} alt="" aria-hidden="true" style={{ opacity: 0.95 }} />
             </div>
             <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700, letterSpacing: 5, color: C.cream }}>CORVO</span>
           </a>
@@ -275,12 +285,12 @@ function AuthForm() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {mode === "reset" && <p style={{ fontSize: 13, color: C.cream2, marginBottom: 6 }}>Enter your email to reset your password.</p>}
           {mode === "magic" && <p style={{ fontSize: 13, color: C.cream2, marginBottom: 6 }}>We'll send you a one-click sign-in link. No password needed.</p>}
-          <input type="email" aria-label="Email address" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)}
+          <input type="email" aria-label="Email address" required aria-required="true" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)}
             onFocus={() => setFocused("email")} onBlur={() => setFocused(null)}
             onKeyDown={e => (mode === "magic" || mode === "reset") && e.key === "Enter" && handle()}
             style={inputStyle("email")} />
           {(mode === "login" || mode === "signup") && (
-            <input type="password" aria-label="Password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+            <input type="password" aria-label="Password" required aria-required="true" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handle()}
               onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
               style={inputStyle("password")} />
@@ -329,11 +339,11 @@ function AuthForm() {
             </label>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => { setMode("magic"); setError(null); setSuccess(null); }}
-                style={{ background: "none", border: "none", fontSize: 11, color: C.amber, cursor: "pointer", letterSpacing: 0.3, opacity: 0.7 }}>
+                style={{ background: "none", border: "none", fontSize: 11, color: C.amber, cursor: "pointer", letterSpacing: 0.3, opacity: 0.7, padding: "10px 6px", minHeight: 44 }}>
                 Magic link
               </button>
               <button onClick={() => { setMode("reset"); setError(null); setSuccess(null); }}
-                style={{ background: "none", border: "none", fontSize: 11, color: C.cream3, cursor: "pointer", letterSpacing: 0.3 }}>
+                style={{ background: "none", border: "none", fontSize: 11, color: C.cream3, cursor: "pointer", letterSpacing: 0.3, padding: "10px 6px", minHeight: 44 }}>
                 Forgot password?
               </button>
             </div>
@@ -343,6 +353,7 @@ function AuthForm() {
         <AnimatePresence>
           {error && (
             <motion.div
+              role="alert"
               // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{ padding: "10px 12px", background: "rgba(224,92,92,0.1)", border: "1px solid rgba(224,92,92,0.25)", borderRadius: 8, fontSize: 12, color: "#e05c5c", marginBottom: 12 }}>
@@ -351,6 +362,7 @@ function AuthForm() {
           )}
           {success && (
             <motion.div
+              role="status" aria-live="polite"
               // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{ padding: "10px 12px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 8, fontSize: 12, color: C.amber, marginBottom: 12 }}>
@@ -363,11 +375,25 @@ function AuthForm() {
           siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAADBKdPhKjxEVElBi"}
           onSuccess={(token) => setCaptchaToken(token)}
           onExpire={() => setCaptchaToken(null)}
+          onError={() => { setCaptchaToken(null); setError("Security check failed to load. Disable blockers and refresh."); }}
           options={{ theme: "dark", size: "normal" }}
           style={{ marginBottom: 12 }}
         />
 
+        {/* Live status for the captcha gate: explains why the submit button is
+            disabled (the v0.55 history shows this gate breaking login silently). */}
+        <div
+          aria-live="polite"
+          role="status"
+          style={{ minHeight: 16, marginBottom: 8, fontSize: 11, color: C.cream3, textAlign: "center" }}
+        >
+          {captchaToken ? null : "Completing security check. If this does not finish, disable any ad or privacy blocker and refresh."}
+        </div>
+
         <button onClick={handle} disabled={loading || !captchaToken}
+          aria-disabled={loading || !captchaToken}
+          aria-describedby="auth-submit-help"
+          title={!captchaToken ? "Waiting for the security check to finish" : undefined}
           style={{
             width: "100%", padding: "13px", borderRadius: 11,
             fontSize: 13.5, fontWeight: 700,
@@ -386,10 +412,14 @@ function AuthForm() {
             <><div style={{ width: 12, height: 12, border: `1.5px solid rgba(10,14,20,0.3)`, borderTopColor: C.navy, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />Processing...</>
           ) : mode === "login" ? "Log in" : mode === "signup" ? "Create account" : mode === "magic" ? "Send magic link" : "Send reset email"}
         </button>
+        <span id="auth-submit-help" style={{ position: "absolute", left: -9999, width: 1, height: 1, overflow: "hidden" }}>
+          {!captchaToken ? "Sign-in is disabled until the security check completes." : ""}
+        </span>
 
         {mode === "login" && (
           magicSent ? (
             <motion.div
+              role="status" aria-live="polite"
               // initial={false} is required - do not remove
               initial={false} animate={{ opacity: 1, y: 0 }}
               style={{ marginTop: 10, padding: "10px 12px", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 8, fontSize: 12, color: C.amber, textAlign: "center" }}>

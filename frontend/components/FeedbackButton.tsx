@@ -9,10 +9,11 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
+import useFocusTrap from "../hooks/useFocusTrap";
 
 const FEEDBACK_TYPES = ["Bug", "Feature Request", "Other"] as const;
 
@@ -25,6 +26,8 @@ export default function FeedbackButton() {
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(open, dialogRef);
 
   const handleSubmit = async () => {
     if (!message.trim()) { setError("Please enter a message."); return; }
@@ -60,6 +63,14 @@ export default function FeedbackButton() {
     setMessage("");
     setType("Bug");
   };
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, submitting]);
 
   return mounted ? createPortal(
     <>
@@ -122,16 +133,21 @@ export default function FeedbackButton() {
             style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
             onClick={e => { if (e.target === e.currentTarget) handleClose(); }}>
             <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="feedback-modal-title"
+              tabIndex={-1}
               initial={false} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 10 }}
               transition={{ duration: 0.18 }}
-              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}
+              style={{ background: "var(--card-bg)", border: "0.5px solid var(--border2)", borderRadius: 14, width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", outline: "none" }}
               onClick={e => e.stopPropagation()}>
 
               {/* Header */}
               <div style={{ padding: "22px 26px 20px", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "var(--accent)", textTransform: "uppercase" as const, marginBottom: 7, fontFamily: "var(--font-mono)", fontWeight: 700 }}>Corvo</div>
-                  <div style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.2 }}>Send feedback</div>
+                  <div id="feedback-modal-title" style={{ fontFamily: "Space Mono, monospace", fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: -0.6, lineHeight: 1.2 }}>Send feedback</div>
                 </div>
                 <button onClick={handleClose} aria-label="Close feedback"
                   style={{ background: "var(--bg3)", border: "0.5px solid var(--border)", borderRadius: 8, cursor: "pointer", color: "var(--text3)", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "color 0.15s, border-color 0.15s" }}
@@ -169,10 +185,14 @@ export default function FeedbackButton() {
 
                     {/* Message */}
                     <div style={{ marginBottom: 16 }}>
-                      <label style={{ fontSize: 11, color: "var(--text3)", display: "block", marginBottom: 7 }}>Message</label>
+                      <label htmlFor="feedback-message" style={{ fontSize: 11, color: "var(--text3)", display: "block", marginBottom: 7 }}>
+                        Message <span aria-hidden="true" style={{ color: "var(--red)" }}>*</span>
+                      </label>
                       <textarea
                         id="feedback-message"
                         name="message"
+                        required
+                        aria-required="true"
                         value={message}
                         onChange={e => setMessage(e.target.value)}
                         placeholder="Describe the bug or feature you'd like to see..."

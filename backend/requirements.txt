@@ -1,3 +1,27 @@
+# ============================================================================
+# DEP-B1 / Finding 7: these 19 packages are currently UNPINNED, so two deploys
+# days apart can ship different dependency trees (silent, non-reproducible,
+# defeats CVE scanning). The direct deps are listed by name here AND in
+# requirements.in.
+#
+# To produce a reproducible, tamper-evident, hash-locked file, run pip-compile
+# (from pip-tools) LOCALLY in a clean venv with the app's Python (3.11):
+#
+#   cd backend
+#   python -m venv .venv && . .venv/bin/activate
+#   pip install pip-tools
+#   pip-compile --generate-hashes --output-file=requirements.txt requirements.in
+#
+# That rewrites THIS file with each package pinned to an exact ==version plus
+# its --hash=sha256:... lines (every transitive dep included), which the
+# Dockerfile's `pip install -r requirements.txt` then verifies.
+#
+# Versions are intentionally NOT hand-pinned here (inventing version numbers
+# that were never resolved/tested would be worse than leaving it floating) -
+# run the command above to generate the real locked file from your tested env.
+# Update deliberately (edit requirements.in, re-run pip-compile), not on every
+# build. The bare list below is the fallback until you generate the lock.
+# ============================================================================
 fastapi
 uvicorn[standard]
 yfinance

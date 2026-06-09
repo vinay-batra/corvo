@@ -1,5 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+/* Google Fonts are loaded via a single preconnected <link> in app/layout.tsx
+   <head>, NOT a render-blocking CSS @import (which serially downloads
+   globals.css -> discovers the @import URLs -> fetches the fonts, blocking
+   FCP/LCP). Do not re-add a font @import here. */
 @import "tailwindcss";
 
 html {
@@ -313,11 +315,24 @@ input::placeholder { color: var(--text3); }
 /* ── Input focus accent glow ── */
 .accent-input:focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 2px rgba(var(--accent-rgb),0.18) !important;
-  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.35) !important;
+}
+/* Unmistakable keyboard ring (the box-shadow already covers mouse focus). */
+.accent-input:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 1px;
 }
 [data-theme="dark"] .accent-input:focus {
-  box-shadow: 0 0 0 2px rgba(var(--accent-rgb),0.2) !important;
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.45) !important;
+}
+
+/* Prevent iOS Safari auto-zoom on focus: form controls must be >= 16px on touch */
+@media (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* ── Tooltip ── */

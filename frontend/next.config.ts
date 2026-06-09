@@ -45,7 +45,20 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/(.*)",
-        headers: [{ key: "Content-Security-Policy", value: cspHeader }],
+        headers: [
+          { key: "Content-Security-Policy", value: cspHeader },
+          // 2 years, include subdomains, eligible for the HSTS preload list.
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // Send origin only on cross-origin navigations so query params (next=,
+          // user_id=, ref=) never leak in the Referer to off-site links.
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Deny powerful features the app does not use.
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), usb=(), payment=(), interest-cohort=()" },
+          // Redundant with the CSP frame-ancestors directive but harmless
+          // defense-in-depth for ancient clients.
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+        ],
       },
     ];
   },

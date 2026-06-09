@@ -14,13 +14,21 @@
 // half the weights are covered - so we never show a partial/garbage number.
 export function liveValueFromAnchor(
   baseValue: number,
-  assets: { ticker: string; weight: number }[],
+  // The holdings AS OF anchor time. When a weight-only edit happens after the
+  // anchor was captured, passing the CURRENT assets would renormalise growth
+  // against frozen anchor prices and make the live value drift on a benign
+  // edit. Callers should pass the assets captured at anchor time; for legacy
+  // anchors with no captured weights, the current assets are an acceptable
+  // approximation (prices are still anchor-time, so it self-corrects on the
+  // next explicit re-anchor).
+  anchorAssets: { ticker: string; weight: number }[],
   anchorPrices: Record<string, number> | null | undefined,
   livePrices: Record<string, number>,
 ): { value: number; tracked: boolean } {
-  if (!(baseValue > 0)) return { value: baseValue, tracked: false };
+  // Clamp a non-finite base to 0 so a corrupted seed never renders $NaN.
+  if (!(baseValue > 0)) return { value: Number.isFinite(baseValue) ? baseValue : 0, tracked: false };
   if (!anchorPrices) return { value: baseValue, tracked: false };
-  const valid = assets.filter(a => a.ticker && a.weight > 0);
+  const valid = anchorAssets.filter(a => a.ticker && a.weight > 0);
   const totalW = valid.reduce((s, a) => s + a.weight, 0);
   if (totalW <= 0) return { value: baseValue, tracked: false };
   let num = 0;

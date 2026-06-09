@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
-import confetti from "canvas-confetti";
 
 /* Palette: route theme-aware colors through CSS variables so the demo respects
    dark/light mode like the rest of the app. Brand gold + status colors stay
@@ -509,9 +508,12 @@ function Step6Panel({ active, onRestart = () => {} }: { active: boolean; onResta
   useEffect(() => {
     if (!active || firedRef.current) return;
     firedRef.current = true;
-    const fire = (ratio: number, opts: confetti.Options) =>
-      confetti({ origin: { y: 0.6 }, particleCount: Math.floor(200 * ratio), colors: ["#c9a84c", "#e8e0cc", "#5cb88a", "#ffffff"], ...opts });
-    const t = setTimeout(() => {
+    // Defer the ~28 KB canvas-confetti payload until the celebration actually
+    // fires, so it never lands in the demo route's initial chunk.
+    const t = setTimeout(async () => {
+      const confetti = (await import("canvas-confetti")).default;
+      const fire = (ratio: number, opts: Record<string, unknown>) =>
+        confetti({ origin: { y: 0.6 }, particleCount: Math.floor(200 * ratio), colors: ["#c9a84c", "#e8e0cc", "#5cb88a", "#ffffff"], ...opts });
       fire(0.25, { spread: 26, startVelocity: 55 });
       fire(0.2, { spread: 60 });
       fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });

@@ -36,13 +36,23 @@ export default function ParticleCanvas() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    let raf: number;
+    let raf = 0;
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
     resize();
     window.addEventListener("resize", resize);
+
+    // Respect reduced-motion: skip the rAF loop entirely (accessibility + battery).
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      return () => {
+        window.removeEventListener("resize", resize);
+        observer.disconnect();
+      };
+    }
+
     const particles = Array.from({ length: N_LIGHT }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
@@ -51,7 +61,10 @@ export default function ParticleCanvas() {
       r: Math.random() * 1.4 + 0.5,
       amber: Math.random() < 0.35,
     }));
+    let hidden = document.hidden;
     const draw = () => {
+      // Stop scheduling while the tab is backgrounded - no CPU burn off-screen.
+      if (hidden) { raf = 0; return; }
       const isDark = isDarkRef.current;
       const colors = getColors(isDark);
       const n = isDark ? N_DARK : N_LIGHT;
@@ -84,10 +97,16 @@ export default function ParticleCanvas() {
       }
       raf = requestAnimationFrame(draw);
     };
+    const onVisibility = () => {
+      hidden = document.hidden;
+      if (!hidden && raf === 0) raf = requestAnimationFrame(draw); // resume
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     draw();
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVisibility);
       observer.disconnect();
     };
   }, []);

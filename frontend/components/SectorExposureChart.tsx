@@ -7,7 +7,7 @@ import ErrorState from "./ErrorState";
 import EmptyState from "./EmptyState";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
+const Plot = dynamic(() => import("./PlotBasic"), { ssr: false }) as any;
 
 const SECTOR_COLORS = [
   "#5b9bd5",

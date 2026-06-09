@@ -10,9 +10,24 @@
 app = "corvo-backend"
 primary_region = "iad"  # Ashburn, VA - closest to Vinay (PA) + Supabase US-East
 
+# Graceful shutdown (Finding 8). These are ROOT-LEVEL keys (must sit above the
+# first [table] header per TOML). uvicorn handles SIGTERM via the FastAPI
+# lifespan teardown - it cancels the 8 background loops and awaits them.
+# kill_timeout gives any in-flight EOD snapshot / email write up to 30s to land
+# before Fly sends SIGKILL.
+kill_signal = "SIGTERM"
+kill_timeout = "30s"
+
 [build]
   # Use the Dockerfile next to this file (backend/Dockerfile).
   dockerfile = "Dockerfile"
+
+# Deploy strategy (Finding 5). rolling: if a machine OOMs or wedges, replace it
+# rather than looping a crashed one. We keep min_machines_running = 1 below, so
+# this does NOT change the single-instance / single-worker architecture - it
+# only governs how a replacement machine is rolled in on deploy.
+[deploy]
+  strategy = "rolling"
 
 [env]
   # Logging. Actual secrets (ANTHROPIC_API_KEY, SUPABASE_*, RESEND_*,

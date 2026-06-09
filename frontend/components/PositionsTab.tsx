@@ -6,8 +6,9 @@ import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, ChevronDown } from "luci
 import { supabase } from "../lib/supabase";
 import dynamic from "next/dynamic";
 import { RESOLVED_API_URL } from "../lib/api";
+import { useVisibilityInterval } from "../hooks/useVisibilityInterval";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
+const Plot = dynamic(() => import("./PlotBasic"), { ssr: false }) as any;
 
 const API_URL = RESOLVED_API_URL;
 const LOCAL_KEY = "corvo_saved_portfolios";
@@ -277,7 +278,6 @@ export default function PositionsTab({
   const [liveLoading, setLiveLoading] = useState(false);
   const [flashSet, setFlashSet] = useState<Set<string>>(new Set());
   const prevPrices = useRef<Record<string, number>>({});
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Performance chart
   const [perfData, setPerfData] = useState<Record<string, number[]>>({});
@@ -473,14 +473,16 @@ export default function PositionsTab({
     } catch {}
   }, [tickersKey]);
 
+  // Show the loading spinner only on the first fetch for a given ticker set;
+  // the recurring poll below refreshes silently.
   useEffect(() => {
     if (!allTickers.length) return;
     setLiveLoading(true);
     fetchLive().finally(() => setLiveLoading(false));
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(fetchLive, 10000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [fetchLive]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickersKey]);
+  // 10s live refresh, paused while the tab is backgrounded.
+  useVisibilityInterval(fetchLive, 10000, [tickersKey]);
 
   // ── Fetch analyst targets for all holdings ─────────────────────────────────
   useEffect(() => {

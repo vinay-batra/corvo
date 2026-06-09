@@ -6,7 +6,7 @@ import { fetchDrawdown } from "../lib/api";
 import ErrorState from "./ErrorState";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
+const Plot = dynamic(() => import("./PlotBasic"), { ssr: false }) as any;
 
 const DrawdownChart = memo(function DrawdownChart({ assets, period }: { assets: any[]; period: string }) {
   const [data, setData] = useState<any>(null);

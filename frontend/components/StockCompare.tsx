@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { RESOLVED_API_URL } from "../lib/api";
 import { plotlyHoverlabel } from "../lib/theme";
 
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
+const Plot = dynamic(() => import("./PlotBasic"), { ssr: false }) as any;
 const API_URL = RESOLVED_API_URL;
 
 const PALETTE = ["#b8860b", "#b47ee0", "#5cb88a", "#e05c5c"];

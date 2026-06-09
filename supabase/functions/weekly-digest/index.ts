@@ -202,7 +202,21 @@ async function fetchPrevHealthScore(userId: string, portfolioId: string): Promis
   }
 }
 
-Deno.serve(async (_req) => {
+const CRON_SECRET = Deno.env.get("DIGEST_CRON_SECRET") ?? "";
+
+Deno.serve(async (req) => {
+  // DATA-M8: gate the entrypoint behind a shared cron secret. Without this the
+  // function is publicly invocable by URL - any caller could trigger a full
+  // digest run (email-bombing / Resend + yfinance cost amplification). The cron
+  // scheduler must send the secret in the x-cron-secret header. Length-then-
+  // equality compare to avoid trivially short-circuiting on length.
+  const provided = req.headers.get("x-cron-secret") ?? "";
+  if (!CRON_SECRET || provided.length !== CRON_SECRET.length || provided !== CRON_SECRET) {
+    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   try {
     const { data: portfolios, error } = await supabase
       .from("portfolios")

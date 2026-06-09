@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 import CommandPalette from "../../components/CommandPalette";
 import InfoModal from "../../components/InfoModal";
-import StockDetail from "../../components/StockDetail";
 import { useSoundEffects, unlockAudio } from "../../hooks/useSoundEffects";
 import { usePWAInstall } from "../../hooks/usePWAInstall";
+import { useVisibilityInterval } from "../../hooks/useVisibilityInterval";
 import PortfolioBuilder from "../../components/PortfolioBuilder";
 import Metrics from "../../components/Metrics";
 import PerformanceChart from "../../components/PerformanceChart";
@@ -27,13 +27,6 @@ import AiChat from "../../components/AiChat";
 import SavedPortfolios from "../../components/SavedPortfolios";
 import UserMenu from "../../components/UserMenu";
 import SectorExposureChart from "../../components/SectorExposureChart";
-import TaxLossHarvester from "../../components/TaxLossHarvester";
-import CapitalGainsEstimator from "../../components/CapitalGainsEstimator";
-import MonteCarloChart from "../../components/MonteCarloChart";
-import NewsFeed from "../../components/NewsFeed";
-import ExportPDF from "../../components/ExportPDF";
-import GoalsModal from "../../components/GoalsModal";
-import ProfileEditor from "../../components/ProfileEditor";
 import OnboardingTour from "../../components/OnboardingTour";
 import TourInviteModal from "../../components/TourInviteModal";
 import { fetchPortfolio, fetchNaturalLanguageEdit, NLEditResult, RESOLVED_API_URL } from "../../lib/api";
@@ -47,28 +40,44 @@ import {
 } from "../../lib/recentlyViewed";
 import { type AccountTypeId, DEFAULT_ACCOUNT_TYPE, isAccountTypeId } from "../../lib/accountType";
 import { getDemoPortfolio } from "../../lib/demoPortfolios";
-import AlertsPanel from "../../components/AlertsPanel";
-import WhatIfDrawer from "../../components/WhatIfDrawer";
-import Watchlist from "../../components/Watchlist";
-import EmailPreferences from "../../components/EmailPreferences";
-import ReferralModal from "../../components/ReferralModal";
 import SettingsPage from "../settings/page";
 import GreetingBar from "../../components/GreetingBar";
 import KeyboardShortcutsModal from "../../components/KeyboardShortcutsModal";
-import PositionsTab from "../../components/PositionsTab";
-import TransactionsTab from "../../components/TransactionsTab";
-import RetirementSimulator from "../../components/RetirementSimulator";
 import DashboardTour from "../../components/DashboardTour";
 import { type SavedPortfolioLine } from "../../components/PerformanceChart";
-import EarningsCalendar from "../../components/EarningsCalendar";
-import EventsCalendar from "../../components/EventsCalendar";
-import { InsiderActivitySummary } from "../../components/InsiderActivity";
-import StockCompare from "../../components/StockCompare";
-import CorrelationHeatmap from "../../components/CorrelationHeatmap";
-import DrawdownChart from "../../components/DrawdownChart";
-import SharePortfolio from "../../components/SharePortfolio";
-import ShareImageModal from "../../components/ShareImageModal";
 import GoalTracker from "../../components/GoalTracker";
+
+// Tab-scoped + modal components: only load when their tab is opened / the modal
+// is shown, so their JS (and the Plotly binding several pull in) stays off the
+// initial overview-tab chunk. All are pure client components rendered only when
+// active, so ssr:false is correct.
+const StockDetail = dynamic(() => import("../../components/StockDetail"), { ssr: false });
+const StockCompare = dynamic(() => import("../../components/StockCompare"), { ssr: false });
+const MonteCarloChart = dynamic(() => import("../../components/MonteCarloChart"), { ssr: false });
+const RetirementSimulator = dynamic(() => import("../../components/RetirementSimulator"), { ssr: false });
+const CorrelationHeatmap = dynamic(() => import("../../components/CorrelationHeatmap"), { ssr: false });
+const DrawdownChart = dynamic(() => import("../../components/DrawdownChart"), { ssr: false });
+const PositionsTab = dynamic(() => import("../../components/PositionsTab"), { ssr: false });
+const TransactionsTab = dynamic(() => import("../../components/TransactionsTab"), { ssr: false });
+const NewsFeed = dynamic(() => import("../../components/NewsFeed"), { ssr: false });
+const EarningsCalendar = dynamic(() => import("../../components/EarningsCalendar"), { ssr: false });
+const EventsCalendar = dynamic(() => import("../../components/EventsCalendar"), { ssr: false });
+const TaxLossHarvester = dynamic(() => import("../../components/TaxLossHarvester"), { ssr: false });
+const CapitalGainsEstimator = dynamic(() => import("../../components/CapitalGainsEstimator"), { ssr: false });
+const ExportPDF = dynamic(() => import("../../components/ExportPDF"), { ssr: false });
+const SharePortfolio = dynamic(() => import("../../components/SharePortfolio"), { ssr: false });
+const ShareImageModal = dynamic(() => import("../../components/ShareImageModal"), { ssr: false });
+const WhatIfDrawer = dynamic(() => import("../../components/WhatIfDrawer"), { ssr: false });
+const Watchlist = dynamic(() => import("../../components/Watchlist"), { ssr: false });
+const EmailPreferences = dynamic(() => import("../../components/EmailPreferences"), { ssr: false });
+const ReferralModal = dynamic(() => import("../../components/ReferralModal"), { ssr: false });
+const GoalsModal = dynamic(() => import("../../components/GoalsModal"), { ssr: false });
+const ProfileEditor = dynamic(() => import("../../components/ProfileEditor"), { ssr: false });
+const AlertsPanel = dynamic(() => import("../../components/AlertsPanel"), { ssr: false });
+const InsiderActivitySummary = dynamic(
+  () => import("../../components/InsiderActivity").then(m => m.InsiderActivitySummary),
+  { ssr: false }
+);
 
 const TABS = [
   // Owned -> projected -> discover -> context. Dashboard + Positions cover
@@ -426,7 +435,7 @@ function Empty() {
   );
 }
 
-const ComparePlot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
+const ComparePlot = dynamic(() => import("../../components/PlotBasic"), { ssr: false }) as any;
 
 const CURRENCIES = ["USD", "GBP", "EUR", "JPY", "CAD"];
 const CURRENCY_SYMBOLS: Record<string, string> = { USD: "$", GBP: "£", EUR: "€", JPY: "¥", CAD: "C$" };
@@ -556,6 +565,16 @@ function NotificationPrompt({ onDismiss }: { onDismiss: () => void }) {
       </div>
     </motion.div>
   );
+}
+
+// Parse a stored portfolio value defensively. Number("48,000") is NaN and
+// Number("48000abc") is NaN; a comma/$-formatted or corrupted localStorage
+// value would otherwise seed portfolioInputValue as NaN and render $NaN
+// everywhere downstream. Returns null for anything non-positive / non-finite.
+function parsePv(s: string | null): number | null {
+  if (!s) return null;
+  const n = Number(String(s).replace(/[, $]/g, ""));
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 // ── Portfolio Performance Trend ───────────────────────────────────────────────
@@ -1331,8 +1350,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [portfolioInputValue, setPortfolioInputValue] = useState<number>(() => {
     if (typeof window === "undefined") return 50000;
-    const stored = localStorage.getItem("corvo_portfolio_value");
-    return stored ? Number(stored) : 50000;
+    return parsePv(localStorage.getItem("corvo_portfolio_value")) ?? 50000;
   });
   // Today's portfolio % change (bubbled up from GreetingBar) so the sidebar
   // PortfolioBuilder can show the live (base + today's gain) value.
@@ -1340,8 +1358,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   // Sync portfolioInputValue from localStorage: fire on mount + cross-tab storage events
   useEffect(() => {
     const handler = () => {
-      const stored = localStorage.getItem("corvo_portfolio_value");
-      if (stored) setPortfolioInputValue(Number(stored));
+      const n = parsePv(localStorage.getItem("corvo_portfolio_value"));
+      if (n != null) setPortfolioInputValue(n);
     };
     handler(); // read immediately on mount to catch any value set before this effect ran
     window.addEventListener("storage", handler);
@@ -1351,8 +1369,8 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   useEffect(() => {
     const end = Date.now() + 5000;
     const id = setInterval(() => {
-      const stored = localStorage.getItem("corvo_portfolio_value");
-      if (stored) setPortfolioInputValue(Number(stored));
+      const n = parsePv(localStorage.getItem("corvo_portfolio_value"));
+      if (n != null) setPortfolioInputValue(n);
       if (Date.now() >= end) clearInterval(id);
     }, 1000);
     return () => clearInterval(id);
@@ -1410,6 +1428,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   // market move.
   const [valueAnchorPrices, setValueAnchorPrices] = useState<Record<string, number> | null>(null);
   const [valueAnchorDate, setValueAnchorDate] = useState<string | null>(null);
+  // The holdings (ticker + weight) captured AT anchor time. The live-value math
+  // must renormalise growth against these frozen weights, not the current ones,
+  // otherwise a benign weight-only edit makes the tracked value drift against
+  // stale anchor prices. Null for legacy anchors with no captured weights.
+  const [valueAnchorAssets, setValueAnchorAssets] = useState<{ ticker: string; weight: number }[] | null>(null);
   // Live per-ticker prices for the active portfolio. Polled here (not read
   // from GreetingBar) so the live value + anchor capture work on every tab,
   // even when GreetingBar is unmounted.
@@ -1419,16 +1442,29 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   const anchoredForValueRef = useRef<number | null>(null);
 
   // Poll live prices for the active tickers (independent of GreetingBar).
+  // Timed via useVisibilityInterval so polling pauses on a backgrounded tab;
+  // the AbortController/cancel guards (stale-fetch races) are kept per-effect.
+  const livePollTickers = useMemo(
+    () => assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker),
+    [assets]
+  );
+  const livePollKey = livePollTickers.join(",");
+  const livePriceCtxRef = useRef<{ ctrl: AbortController | null; cancelled: boolean }>({ ctrl: null, cancelled: false });
   useEffect(() => {
-    const tickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
-    if (!tickers.length) { setLivePrices({}); return; }
-    let cancelled = false;
+    livePriceCtxRef.current.cancelled = false;
+    if (!livePollTickers.length) setLivePrices({});
+    return () => { livePriceCtxRef.current.cancelled = true; livePriceCtxRef.current.ctrl?.abort(); };
+  }, [livePollKey, livePollTickers.length]);
+  const loadLivePrices = useCallback(() => {
+    if (!livePollTickers.length) return;
+    livePriceCtxRef.current.ctrl?.abort();
     const ctrl = new AbortController();
-    const load = async () => {
+    livePriceCtxRef.current.ctrl = ctrl;
+    (async () => {
       try {
-        const r = await fetch(`${RESOLVED_API_URL}/watchlist-data?tickers=${tickers.join(",")}`, { signal: ctrl.signal });
+        const r = await fetch(`${RESOLVED_API_URL}/watchlist-data?tickers=${livePollKey}`, { signal: ctrl.signal });
         const d = await r.json();
-        if (cancelled) return;
+        if (livePriceCtxRef.current.cancelled) return;
         const next: Record<string, number> = {};
         for (const s of (d.results || [])) {
           const p = Number(s.price);
@@ -1436,17 +1472,20 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         }
         setLivePrices(next);
       } catch { /* AbortError on cleanup, or transient - keep last prices */ }
-    };
-    load();
-    const id = setInterval(load, 60000);
-    return () => { cancelled = true; ctrl.abort(); clearInterval(id); };
-  }, [assets]);
+    })();
+  }, [livePollTickers.length, livePollKey]);
+  useVisibilityInterval(loadLivePrices, 60000, [livePollKey, livePollTickers.length]);
 
   // Weighted buy-and-hold growth from the anchor → the live value.
+  // Use the weights captured AT anchor time (not the current assets) so a
+  // weight-only edit doesn't re-weight growth against frozen anchor prices and
+  // make the tracked value drift. Legacy anchors with no captured weights fall
+  // back to the current assets.
   const { liveValue, anchorActive } = useMemo<{ liveValue: number; anchorActive: boolean }>(() => {
-    const { value, tracked } = liveValueFromAnchor(portfolioInputValue, assets, valueAnchorPrices, livePrices);
+    const anchorAssets = (valueAnchorAssets && valueAnchorAssets.length) ? valueAnchorAssets : assets;
+    const { value, tracked } = liveValueFromAnchor(portfolioInputValue, anchorAssets, valueAnchorPrices, livePrices);
     return { liveValue: value, anchorActive: tracked };
-  }, [portfolioInputValue, valueAnchorPrices, livePrices, assets]);
+  }, [portfolioInputValue, valueAnchorPrices, valueAnchorAssets, livePrices, assets]);
 
   // liveBaseValue keeps its old name (PortfolioBuilder prop) but is now the
   // fully tracked live value; anchorActive tells the display components to
@@ -1465,6 +1504,7 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         if (a && a.prices && typeof a.value === "number" && a.value > 0) {
           setValueAnchorPrices(a.prices);
           setValueAnchorDate(a.date || null);
+          setValueAnchorAssets(Array.isArray(a.assets) && a.assets.length ? a.assets : null);
           anchoredForValueRef.current = a.value;
           return;
         }
@@ -1496,10 +1536,16 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
         }
         if (!Object.keys(prices).length) return; // empty fetch - retry on next change
         const todayET = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+        // Snapshot the weights as of this anchor so growth renormalises against
+        // them (not against a later weight-only edit).
+        const anchorAssets = assets
+          .filter(a => a.ticker && a.weight > 0)
+          .map(a => ({ ticker: a.ticker.toUpperCase(), weight: a.weight }));
         setValueAnchorPrices(prices);
         setValueAnchorDate(todayET);
+        setValueAnchorAssets(anchorAssets);
         anchoredForValueRef.current = v;
-        try { localStorage.setItem("corvo_value_anchor", JSON.stringify({ value: v, date: todayET, prices })); } catch {}
+        try { localStorage.setItem("corvo_value_anchor", JSON.stringify({ value: v, date: todayET, prices, assets: anchorAssets })); } catch {}
         if (savedPortfolioId && userId) {
           supabase.from("portfolios")
             .update({ value_anchor_prices: prices, portfolio_value_date: todayET })
@@ -1519,6 +1565,11 @@ const [paletteOpen, setPaletteOpen]   = useState(false);
   // so the capture effect treats the loaded value as already-anchored.
   const applyLoadedAnchor = useCallback((value: number, prices: Record<string, number> | null, date: string | null) => {
     anchoredForValueRef.current = value;
+    // Saved rows don't persist anchor-time weights; the freshly loaded assets
+    // ARE the anchor weights at load time, so clear the captured-assets snapshot
+    // and let the live-value math fall back to the current assets until the next
+    // explicit re-anchor captures fresh weights.
+    setValueAnchorAssets(null);
     if (prices && Object.keys(prices).length) {
       const norm: Record<string, number> = {};
       for (const k of Object.keys(prices)) { const p = Number(prices[k]); if (p > 0) norm[k.toUpperCase()] = p; }
@@ -1805,7 +1856,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                 setLoading(true);
                 setAnalysisStep(0);
                 try {
-                  const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "", true, autoAt);
+                  const result = await fetchPortfolio(autoAssets, prd, "^GSPC", user.id, "", autoReinvest, autoAt);
                   if (cancelled) return;
                   if (result && !result.error) {
                     setAnalysisStep(ANALYSIS_STEPS.length);
@@ -2005,6 +2056,16 @@ const { dark, toggle: toggleDark }  = useTheme();
     }
   };
 
+  // Stable identity so it doesn't break PerformanceChart's React.memo on every
+  // parent render (this page re-renders on every 60s todayPct poll). setState
+  // setters are stable, so no deps are needed.
+  const handleExplainDrawdown = useCallback((date: string) => {
+    setChatInitialMessage(
+      `My portfolio hit its max drawdown around ${date}. What happened in the markets on or around that date that caused this decline? Walk me through what drove it and what it means for my portfolio.`
+    );
+    setChatOpen(true);
+  }, []);
+
   // Sync localBenchmark when data arrives from a new analysis
   useEffect(() => {
     if (data?.benchmark_ticker) {
@@ -2019,11 +2080,17 @@ const { dark, toggle: toggleDark }  = useTheme();
       setLocalBenchmarkSeries(null);
       return;
     }
+    // Cancel flag so a slow A response can't land after B and plot A's line
+    // under a B label, and so a period change mid-flight doesn't write a series
+    // computed for the old time axis.
+    let cancelled = false;
     const valid = assets.filter(a => a.ticker && a.weight > 0);
     fetchPortfolio(valid, period, localBenchmark, "", "").then(res => {
+      if (cancelled) return;
       setLocalBenchmarkSeries({ ticker: localBenchmark, cumulative: res.benchmark_cumulative || res.benchmark || [] });
     }).catch(() => {});
-  }, [localBenchmark]);
+    return () => { cancelled = true; };
+  }, [localBenchmark, data, period, assets]);
 
   // Mark results stale whenever the portfolio, period, or benchmark changes after a successful analysis
   useEffect(() => {
@@ -2102,6 +2169,12 @@ const { dark, toggle: toggleDark }  = useTheme();
   // from the saved row, so the first post-load tick would just re-write the
   // same number back. lastPersistedRef gates that.
   const lastPersistedPvRef = useRef<{ portfolioId: string | null; value: number | null }>({ portfolioId: null, value: null });
+  // Compare portfolio values at cent precision, not raw float. The value field
+  // is step="any" (decimals), so a float !== can both spuriously persist a
+  // round-trip epsilon AND, in the flush-on-switch path, falsely skip a real
+  // edit that was lost when the user switched accounts before the debounce.
+  const pvCents = (n: number | null | undefined): number | null =>
+    n == null ? null : Math.round(n * 100);
   useEffect(() => {
     if (!savedPortfolioId || !userId) return;
     if (!(portfolioInputValue > 0)) return;
@@ -2116,7 +2189,7 @@ const { dark, toggle: toggleDark }  = useTheme();
       lastPersistedPvRef.current = { portfolioId: savedPortfolioId, value: portfolioInputValue };
       return;
     }
-    if (last.value === portfolioInputValue) return;
+    if (pvCents(last.value) === pvCents(portfolioInputValue)) return;
     const id = setTimeout(async () => {
       try {
         await supabase
@@ -2311,6 +2384,9 @@ const { dark, toggle: toggleDark }  = useTheme();
   // ── Load saved portfolio overlay lines when analysis completes ────────────────
   useEffect(() => {
     if (!data) return;
+    // Cancel flag so re-analyzing twice quickly can't let an older batch's
+    // Promise.all resolve last and overwrite the overlay with the wrong set.
+    let cancelled = false;
     const SAVED_PALETTE = ["#5cb88a", "#5b9cf6", "#e05c5c", "#a78bfa", "#fb923c", "#38bdf8"];
     try {
       const raw = localStorage.getItem("corvo_saved_portfolios");
@@ -2336,10 +2412,12 @@ const { dark, toggle: toggleDark }  = useTheme();
         } catch { return null; }
       };
       Promise.all(others.map((p, i) => fetchLine(p, SAVED_PALETTE[i % SAVED_PALETTE.length]))).then(results => {
+        if (cancelled) return;
         const lines = results.filter(Boolean) as SavedPortfolioLine[];
         if (lines.length) setSavedPortfolioLines(lines);
       });
     } catch {}
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
@@ -2422,7 +2500,14 @@ const { dark, toggle: toggleDark }  = useTheme();
       ["Period", period],
       ["Benchmark", benchLabel],
     ];
-    const csv = rows.map(r => r.join(",")).join("\n");
+    // Escape fields so a value containing a comma, quote, or newline (e.g. a
+    // ticker like "BRK,B" or a benchmark label with a comma) can't corrupt the
+    // column layout. Wrap in quotes and double any embedded quotes.
+    const escapeCsv = (v: string | number): string => {
+      const s = String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = rows.map(r => r.map(escapeCsv).join(",")).join("\n");
     const uri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
     const a = document.createElement("a");
     a.href = uri;
@@ -2627,7 +2712,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               if (
                 prevId && prevId !== id && userId && prevVal > 0
                 && lastPersistedPvRef.current.portfolioId === prevId
-                && lastPersistedPvRef.current.value !== prevVal
+                && pvCents(lastPersistedPvRef.current.value) !== pvCents(prevVal)
               ) {
                 supabase.from("portfolios")
                   .update({ portfolio_value: prevVal, updated_at: new Date().toISOString() })
@@ -2820,7 +2905,7 @@ const { dark, toggle: toggleDark }  = useTheme();
         id="tour-desk-sidebar"
         className="c-sidebar"
         style={{ width: "clamp(260px, 22vw, 340px)", flexShrink: 0, borderRight: "0.5px solid var(--border)", display: "flex", flexDirection: "column", background: "var(--bg2)", overflowY: "auto", overflowX: "hidden", position: "relative" }}>
-        {SidebarInner()}
+        <SidebarInner />
       </div>
 
       {/* Mobile drawer */}
@@ -2835,7 +2920,7 @@ const { dark, toggle: toggleDark }  = useTheme();
               initial={false} animate={{ x: 0 }} exit={{ x: -260 }} transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="c-mob-drawer"
               style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: "var(--bg2)", borderRight: "0.5px solid var(--border)", zIndex: 201, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-              {SidebarInner()}
+              <SidebarInner />
             </motion.div>
           </>
         )}
@@ -3593,10 +3678,7 @@ const { dark, toggle: toggleDark }  = useTheme();
                       onCustomDateChange={setCustomDateRange}
                       benchmarkOverride={localBenchmarkSeries ?? undefined}
                       portfolioValue={portfolioInputValue || undefined}
-                      onExplainDrawdown={(date) => {
-                        setChatInitialMessage(`My portfolio hit its max drawdown around ${date}. What happened in the markets on or around that date that caused this decline? Walk me through what drove it and what it means for my portfolio.`);
-                        setChatOpen(true);
-                      }}
+                      onExplainDrawdown={handleExplainDrawdown}
                     />
                   </Card>
                 </motion.div>

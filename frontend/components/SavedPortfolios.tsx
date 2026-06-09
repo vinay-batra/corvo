@@ -1,9 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { RESOLVED_API_URL } from "../lib/api";
 import { liveValueFromAnchor } from "../lib/anchorValue";
+import { useVisibilityInterval } from "../hooks/useVisibilityInterval";
+import useFocusTrap from "../hooks/useFocusTrap";
 import { type AccountTypeId, isAccountTypeId, DEFAULT_ACCOUNT_TYPE, getAccountType } from "../lib/accountType";
 
 const LS_KEY = "corvo_saved_portfolios";
@@ -35,6 +37,19 @@ function fmtDollar(n: number): string {
 }
 interface Asset { ticker: string; weight: number; accountType?: AccountTypeId; }
 interface Portfolio { id: string; name: string; assets: Asset[]; period?: string; accountType: AccountTypeId; updatedAt?: string; portfolioValue?: number | null; reinvestDividends?: boolean; anchorPrices?: Record<string, number> | null; anchorDate?: string | null; }
+
+/** Normalise anchor-price keys to upper-case at the DB boundary so a
+ *  mixed/lower-case stored ticker (legacy or foreign row) doesn't silently
+ *  drop coverage in liveValueFromAnchor (which looks up by UPPER-cased key). */
+function normPrices(raw: any): Record<string, number> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const out: Record<string, number> = {};
+  for (const k of Object.keys(raw)) {
+    const p = Number((raw as Record<string, unknown>)[k]);
+    if (p > 0) out[k.toUpperCase()] = p;
+  }
+  return Object.keys(out).length ? out : null;
+}
 
 /** Map a Supabase portfolios row → local Portfolio */
 function fromDb(row: any): Portfolio {
@@ -73,7 +88,7 @@ function fromDb(row: any): Portfolio {
     updatedAt: row.updated_at || row.created_at,
     portfolioValue,
     reinvestDividends,
-    anchorPrices: (row.value_anchor_prices && typeof row.value_anchor_prices === "object") ? row.value_anchor_prices : null,
+    anchorPrices: normPrices(row.value_anchor_prices),
     anchorDate: row.portfolio_value_date ?? null,
   };
 }
@@ -216,6 +231,8 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
   const [user, setUser] = useState<any>(null);
   const [focused, setFocused] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const deleteDialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(!!deleteConfirm, deleteDialogRef);
   // Live prices for every ticker across saved portfolios, so the Portfolio
   // Total sums each account's LIVE value (anchor x weighted growth) and keeps
   // updating intraday instead of summing the frozen entered values.
@@ -255,7 +272,7 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
         if (p.id !== detail.id) return p;
         const next: Portfolio = { ...p };
         if ("anchor_prices" in detail) {
-          next.anchorPrices = (detail.anchor_prices && typeof detail.anchor_prices === "object") ? detail.anchor_prices : null;
+          next.anchorPrices = normPrices(detail.anchor_prices);
           next.anchorDate = detail.anchor_date ?? next.anchorDate ?? null;
         }
         if ("portfolio_value" in detail) {
@@ -283,16 +300,24 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
     .filter(p => (p.portfolioValue ?? 0) > 0)
     .flatMap(p => p.assets.map(a => a.ticker).filter(Boolean))
     .sort().join(",");
+  // AbortController + cancel flag (kept) guard the stale-fetch race; the timer
+  // is driven by useVisibilityInterval so it pauses on a backgrounded tab.
+  const totalPollCtxRef = useRef<{ ctrl: AbortController | null; cancelled: boolean }>({ ctrl: null, cancelled: false });
   useEffect(() => {
+    totalPollCtxRef.current.cancelled = false;
+    return () => { totalPollCtxRef.current.cancelled = true; totalPollCtxRef.current.ctrl?.abort(); };
+  }, [pricedTickersKey]);
+  const loadTotalPrices = useCallback(() => {
     const tickers = pricedTickersKey ? Array.from(new Set(pricedTickersKey.split(","))) : [];
     if (tickers.length < 1) return;
-    let cancelled = false;
+    totalPollCtxRef.current.ctrl?.abort();
     const ctrl = new AbortController();
-    const load = async () => {
+    totalPollCtxRef.current.ctrl = ctrl;
+    (async () => {
       try {
         const r = await fetch(`${RESOLVED_API_URL}/watchlist-data?tickers=${tickers.join(",")}`, { signal: ctrl.signal });
         const d = await r.json();
-        if (cancelled) return;
+        if (totalPollCtxRef.current.cancelled) return;
         const next: Record<string, number> = {};
         for (const s of (d.results || [])) {
           const p = Number(s.price);
@@ -300,11 +325,9 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
         }
         setLivePrices(next);
       } catch { /* AbortError on cleanup, or transient - keep last prices */ }
-    };
-    load();
-    const id = setInterval(load, 60000);
-    return () => { cancelled = true; ctrl.abort(); clearInterval(id); };
+    })();
   }, [pricedTickersKey]);
+  useVisibilityInterval(loadTotalPrices, 60000, [pricedTickersKey]);
 
   const fetchPortfolios = async (u?: any) => {
     const activeUser = u ?? user;
@@ -403,7 +426,7 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
           pv = raw == null || raw === "" || !Number.isFinite(Number(raw)) ? null : Number(raw);
           reinvest = row.reinvest_dividends === false ? false : true;
           at = isAccountTypeId(row.account_type) ? row.account_type : p.accountType;
-          anchorPrices = (row.value_anchor_prices && typeof row.value_anchor_prices === "object") ? row.value_anchor_prices : null;
+          anchorPrices = normPrices(row.value_anchor_prices);
           anchorDate = row.portfolio_value_date ?? null;
         }
       } catch { /* fall back to cached values below */ }
@@ -475,13 +498,13 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
           <motion.div
             initial={false} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden", marginBottom: 8 }}>
             <div style={{ display: "flex", gap: 5 }}>
-              <input value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && save()}
+              <input value={name} aria-label="Portfolio name" required aria-required="true" onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && save()}
                 onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} placeholder="Portfolio name..."
                 autoFocus
                 style={{ flex: 1, padding: "6px 9px", background: "rgba(255,255,255,0.04)", border: `1px solid ${focused ? "rgba(201,168,76,0.4)" : C.border}`, borderRadius: 7, color: C.cream, fontSize: 11, fontFamily: "Inter,sans-serif", outline: "none", transition: "border-color 0.15s" }} />
-              <button onClick={save} disabled={saving || savedOk}
-                style={{ padding: "6px 10px", background: savedOk ? "rgba(92,184,138,0.15)" : C.amber2, border: `1px solid ${savedOk ? "rgba(92,184,138,0.4)" : "rgba(201,168,76,0.3)"}`, borderRadius: 7, color: savedOk ? "#5cb88a" : C.amber, fontSize: 10, cursor: "pointer", fontWeight: 700, transition: "all 0.2s", minWidth: 32 }}>
-                {saving ? "..." : savedOk ? "OK" : "OK"}
+              <button onClick={save} disabled={saving || savedOk} aria-live="polite"
+                style={{ padding: "6px 10px", background: savedOk ? "rgba(92,184,138,0.15)" : C.amber2, border: `1px solid ${savedOk ? "rgba(92,184,138,0.4)" : "rgba(201,168,76,0.3)"}`, borderRadius: 7, color: savedOk ? "#5cb88a" : C.amber, fontSize: 10, cursor: "pointer", fontWeight: 700, transition: "all 0.2s", minWidth: 48 }}>
+                {saving ? "Saving" : savedOk ? "Saved" : "Save"}
               </button>
             </div>
           </motion.div>
@@ -574,6 +597,8 @@ export default function SavedPortfolios({ assets, data, accountType, currentPort
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
             onClick={() => setDeleteConfirm(null)}>
             <motion.div
+              ref={deleteDialogRef}
+              tabIndex={-1}
               role="dialog"
               aria-modal="true"
               aria-labelledby="delete-confirm-title"

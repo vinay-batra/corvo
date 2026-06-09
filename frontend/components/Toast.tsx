@@ -53,7 +53,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div className="toast-container" role="region" aria-live="polite" aria-label="Notifications">
         {toasts.map(t => (
-          <div key={t.id} className={`toast toast-${t.type}`} role={t.type === "error" ? "alert" : undefined}>
+          <div key={t.id} className={`toast toast-${t.type}`} role={t.type === "error" ? "alert" : "status"}>
+            <span style={{ position: "absolute", left: -9999, width: 1, height: 1, overflow: "hidden" }}>
+              {t.type === "error" ? "Error: " : t.type === "success" ? "Success: " : "Notice: "}
+            </span>
             <span style={{ flex: 1, minWidth: 0 }}>{t.message}</span>
             <button
               type="button"

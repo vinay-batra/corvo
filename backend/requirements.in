@@ -1,0 +1,24 @@
+# Top-level (direct) dependencies for the Corvo backend - names only.
+# This is the human-edited source of truth. The fully-pinned, hash-locked
+# requirements.txt is GENERATED from this file with pip-compile - see the
+# header of requirements.txt for the exact command. Add/remove direct deps
+# HERE, then re-run pip-compile; never hand-edit requirements.txt.
+fastapi
+uvicorn[standard]
+yfinance
+numpy
+pandas
+scipy
+anthropic
+python-dotenv
+pydantic
+httpx
+python-multipart
+resend
+pillow
+reportlab
+pywebpush
+apscheduler
+beautifulsoup4
+curl_cffi
+sentry-sdk

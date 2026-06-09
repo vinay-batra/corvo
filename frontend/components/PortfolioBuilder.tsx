@@ -6,6 +6,7 @@ import { importPortfolioCsv } from "../lib/api";
 import { posthog } from "../lib/posthog";
 import { RESOLVED_API_URL } from "../lib/api";
 import { supabase } from "../lib/supabase";
+import useFocusTrap from "../hooks/useFocusTrap";
 import { ACCOUNT_TYPES, type AccountTypeId, getAccountType, DEFAULT_ACCOUNT_TYPE } from "../lib/accountType";
 
 const API_URL = RESOLVED_API_URL;
@@ -140,12 +141,14 @@ function localSearch(q: string): { ticker: string; name: string; type: string; e
   ).slice(0, 8);
 }
 
-function WeightInput({ weight, onCommit, inputStyle }: { weight: number; onCommit: (v: number) => void; inputStyle: React.CSSProperties }) {
+function WeightInput({ weight, onCommit, inputStyle, label }: { weight: number; onCommit: (v: number) => void; inputStyle: React.CSSProperties; label?: string }) {
   const [draft, setDraft] = useState(String(Math.round(weight * 100)));
   useEffect(() => { setDraft(String(Math.round(weight * 100))); }, [weight]);
   return (
     <input
       type="text"
+      inputMode="numeric"
+      aria-label={label ?? "Weight percent"}
       value={draft}
       onFocus={e => e.target.select()}
       onChange={e => setDraft(e.target.value)}
@@ -527,6 +530,12 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   const [csvLoading, setCsvLoading] = useState(false);
   const [csvError, setCsvError] = useState("");
   const [csvPreview, setCsvPreview] = useState<{ tickers: string[]; weights: number[]; detected_format: string }|null>(null);
+  const presetsDialogRef = useRef<HTMLDivElement>(null);
+  const csvDialogRef = useRef<HTMLDivElement>(null);
+  const firstSetDialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(showPresetsModal, presetsDialogRef);
+  useFocusTrap(showCsvModal, csvDialogRef);
+  useFocusTrap(firstSetModalOpen, firstSetDialogRef);
   const [csvDragOver, setCsvDragOver] = useState(false);
   const blurT = useRef<Record<number,ReturnType<typeof setTimeout>>>({});
   const searchT = useRef<Record<number,ReturnType<typeof setTimeout>>>({});
@@ -614,7 +623,19 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
   };
   const remove = (i: number) => update(assets.filter((_,idx)=>idx!==i));
   const add = () => update([...assets,{ticker:"",weight:0.05}]);
-  const equalize = () => { if(!assets.length)return; const w=parseFloat((1/assets.length).toFixed(4)); update(assets.map(a=>({...a,weight:w}))); };
+  const equalize = () => {
+    if (!assets.length) return;
+    const n = assets.length;
+    // Floor each to 4dp, then push the rounding remainder onto the last holding
+    // so the weights sum to exactly 1 (parseFloat((1/3).toFixed(4)) = 0.3333
+    // would otherwise sum to 0.9999).
+    const base = Math.floor((1 / n) * 10000) / 10000;
+    update(assets.map((a, i) =>
+      i === n - 1
+        ? { ...a, weight: Math.round((1 - base * (n - 1)) * 10000) / 10000 }
+        : { ...a, weight: base }
+    ));
+  };
 
   const loadPreset = (preset: typeof BUILDER_PRESETS[0]) => {
     if (assets.length > 0) {
@@ -862,6 +883,7 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   <input
                     id={`ticker-search-${i}`}
                     name={`ticker-${i}`}
+                    aria-label={`Ticker symbol for holding ${i + 1}`}
                     value={query[i]??a.ticker}
                     onFocus={()=>setActive(i)}
                     onBlur={()=>{
@@ -912,14 +934,16 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                 </div>
 
                 {/* Weight % input */}
-                <WeightInput weight={a.weight} onCommit={v=>updateWeight(i,v)} inputStyle={INPUT_STYLE} />
+                <WeightInput weight={a.weight} onCommit={v=>updateWeight(i,v)} inputStyle={INPUT_STYLE} label={`Weight percent for ${a.ticker || `holding ${i + 1}`}`} />
                 <span style={{fontSize:11,color:C.cream3,flexShrink:0}}>%</span>
 
                 {/* Expand toggle */}
                 <button
                   onClick={()=>toggleSecondary(i)}
                   title={isExpanded?"Collapse":"Expand details"}
-                  style={{background:"none",border:"none",cursor:"pointer",color:isExpanded?"var(--accent)":"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center",transition:"color 0.15s",flexShrink:0}}>
+                  aria-label={isExpanded ? `Collapse details for ${a.ticker || `holding ${i + 1}`}` : `Expand details for ${a.ticker || `holding ${i + 1}`}`}
+                  aria-expanded={isExpanded}
+                  style={{background:"none",border:"none",cursor:"pointer",color:isExpanded?"var(--accent)":"var(--text3)",padding:8,margin:-6,display:"flex",alignItems:"center",justifyContent:"center",minWidth:32,minHeight:32,transition:"color 0.15s",flexShrink:0}}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     {isExpanded
                       ? <polyline points="18 15 12 9 6 15"/>
@@ -936,7 +960,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
                   </button>
                 ) : (
                   <button onClick={e=>{ e.stopPropagation(); setPendingRemove(i); setTimeout(()=>setPendingRemove(p=>p===i?null:p),2500); }}
-                    style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:"0 2px",display:"flex",alignItems:"center",flexShrink:0,transition:"color 0.12s"}}
+                    aria-label={`Remove ${a.ticker || `holding ${i + 1}`}`}
+                    style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",padding:8,margin:-6,display:"flex",alignItems:"center",justifyContent:"center",minWidth:32,minHeight:32,flexShrink:0,transition:"color 0.12s"}}
                     onMouseEnter={e=>e.currentTarget.style.color="var(--red)"}
                     onMouseLeave={e=>e.currentTarget.style.color="var(--text3)"}>
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1368,14 +1393,19 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
             onClick={()=>{setShowPresetsModal(false);setPresetConfirm(null);}}>
             <motion.div
+              ref={presetsDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="presets-modal-title"
+              tabIndex={-1}
               // initial={false} is required - do not remove
               initial={false} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
-              style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:380,boxShadow:"var(--shadow-md)",overflow:"hidden"}}
+              style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:380,boxShadow:"var(--shadow-md)",overflow:"hidden",outline:"none"}}
               onClick={e=>e.stopPropagation()}>
               <div style={{padding:"22px 26px 20px",borderBottom:"0.5px solid var(--border)",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:14}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:9,letterSpacing:"0.22em",color:"var(--accent)",textTransform:"uppercase",marginBottom:7,fontFamily:"var(--font-mono)",fontWeight:700}}>Portfolio</div>
-                  <div style={{fontFamily:"Space Mono, monospace",fontSize:18,fontWeight:700,color:"var(--text)",letterSpacing:-0.6,lineHeight:1.2}}>Load a Preset</div>
+                  <div id="presets-modal-title" style={{fontFamily:"Space Mono, monospace",fontSize:18,fontWeight:700,color:"var(--text)",letterSpacing:-0.6,lineHeight:1.2}}>Load a Preset</div>
                 </div>
                 <button onClick={()=>{setShowPresetsModal(false);setPresetConfirm(null);}}
                   style={{background:"var(--bg3)",border:"0.5px solid var(--border)",borderRadius:8,cursor:"pointer",color:"var(--text3)",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"color 0.15s, border-color 0.15s"}}
@@ -1429,15 +1459,20 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
             onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}>
             <motion.div
+              ref={csvDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="csv-modal-title"
+              tabIndex={-1}
               // initial={false} is required - do not remove
               initial={false} animate={{scale:1,y:0}} exit={{scale:0.94,y:10}} transition={{duration:0.18}}
               className="c-modal-sheet"
-              style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:460,boxShadow:"var(--shadow-md)",overflow:"hidden"}}
+              style={{background:"var(--card-bg)",border:"0.5px solid var(--border)",borderRadius:16,width:"100%",maxWidth:460,boxShadow:"var(--shadow-md)",overflow:"hidden",outline:"none"}}
               onClick={e=>e.stopPropagation()}>
               <div style={{padding:"22px 26px 20px",borderBottom:"0.5px solid var(--border)",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:14}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:9,letterSpacing:"0.22em",color:"var(--accent)",textTransform:"uppercase",marginBottom:7,fontFamily:"var(--font-mono)",fontWeight:700}}>Portfolio</div>
-                  <div style={{fontFamily:"Space Mono, monospace",fontSize:18,fontWeight:700,color:"var(--text)",letterSpacing:-0.6,lineHeight:1.2}}>Import from CSV</div>
+                  <div id="csv-modal-title" style={{fontFamily:"Space Mono, monospace",fontSize:18,fontWeight:700,color:"var(--text)",letterSpacing:-0.6,lineHeight:1.2}}>Import from CSV</div>
                 </div>
                 <button onClick={()=>{setShowCsvModal(false);setCsvPreview(null);setCsvError("");}}
                   style={{background:"var(--bg3)",border:"0.5px solid var(--border)",borderRadius:8,cursor:"pointer",color:"var(--text3)",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"color 0.15s, border-color 0.15s"}}
@@ -1542,6 +1577,8 @@ export default function PortfolioBuilder({ assets, onAssetsChange, setAssets, on
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
             onClick={() => setFirstSetModalOpen(false)}>
             <motion.div
+              ref={firstSetDialogRef}
+              tabIndex={-1}
               initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
               onClick={e => e.stopPropagation()}

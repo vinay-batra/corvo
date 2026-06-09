@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { RESOLVED_API_URL } from "../lib/api";
+import { useVisibilityInterval } from "../hooks/useVisibilityInterval";
 import { type AccountTypeId, getAccountType, DEFAULT_ACCOUNT_TYPE } from "../lib/accountType";
 
 const API_URL = RESOLVED_API_URL;
@@ -23,9 +24,21 @@ function getBriefLabel(): string {
 }
 
 function computeMarketStatus() {
-  const etStr = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
-  const et = new Date(etStr);
-  const h = et.getHours(), m = et.getMinutes(), dow = et.getDay();
+  // Derive the ET wall-clock parts directly via Intl instead of round-tripping
+  // through `new Date(localeString)` (which re-parses in the BROWSER's zone and
+  // can land on the wrong weekday near midnight ET for far-offset users).
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? "";
+  const DOW_MAP: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const h = Number(get("hour")) % 24; // Intl can emit "24" at midnight
+  const m = Number(get("minute"));
+  const dow = DOW_MAP[get("weekday")] ?? 0;
   const mins = h * 60 + m;
   const OPEN = 9 * 60 + 30, CLOSE = 16 * 60, PRE_OPEN = 4 * 60, AH_END = 20 * 60, DAY = 24 * 60;
   const fmt = (n: number) => { const hh = Math.floor(n / 60), mm = n % 60; return hh > 0 ? `${hh}h ${mm}m` : `${mm}m`; };
@@ -355,60 +368,63 @@ export default function GreetingBar({ displayName, assets, portfolioValue, value
     { label: "Nasdaq",  ticker: "^IXIC", price: null, changePct: null, sparkline: [] },
     { label: "Dow",     ticker: "^DJI",  price: null, changePct: null, sparkline: [] },
   ]);
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const r = await fetch(`${API_URL}/watchlist-data?tickers=^GSPC,^IXIC,^DJI`);
-        const d = await r.json();
-        const results = d.results || [];
-        const next: IndexPrice[] = [
-          { label: "S&P 500", ticker: "^GSPC" },
-          { label: "Nasdaq",  ticker: "^IXIC" },
-          { label: "Dow",     ticker: "^DJI"  },
-        ].map(meta => {
-          const row = results.find((x: any) => x.ticker === meta.ticker);
-          return {
-            ...meta,
-            price: row?.price == null ? null : Number(row.price),
-            changePct: row?.change_pct == null ? null : Number(row.change_pct),
-            sparkline: Array.isArray(row?.sparkline) ? row.sparkline.map(Number).filter((n: number) => Number.isFinite(n)) : [],
-          };
-        });
-        setIndexData(next);
-      } catch {}
-    };
-    load(); const id = setInterval(load, 60000); return () => clearInterval(id);
+  const loadIndices = useCallback(async () => {
+    try {
+      const r = await fetch(`${API_URL}/watchlist-data?tickers=^GSPC,^IXIC,^DJI`);
+      const d = await r.json();
+      const results = d.results || [];
+      const next: IndexPrice[] = [
+        { label: "S&P 500", ticker: "^GSPC" },
+        { label: "Nasdaq",  ticker: "^IXIC" },
+        { label: "Dow",     ticker: "^DJI"  },
+      ].map(meta => {
+        const row = results.find((x: any) => x.ticker === meta.ticker);
+        return {
+          ...meta,
+          price: row?.price == null ? null : Number(row.price),
+          changePct: row?.change_pct == null ? null : Number(row.change_pct),
+          sparkline: Array.isArray(row?.sparkline) ? row.sparkline.map(Number).filter((n: number) => Number.isFinite(n)) : [],
+        };
+      });
+      setIndexData(next);
+    } catch {}
   }, []);
+  // Pause on backgrounded tab so two open tabs don't both hammer /watchlist-data.
+  useVisibilityInterval(loadIndices, 60000, []);
 
   const [holdingPrices, setHoldingPrices] = useState<HoldingPrice[]>([]);
 
+  const validHoldingPollTickers = useMemo(
+    () => assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker),
+    [assets]
+  );
+  const holdingPollKey = validHoldingPollTickers.join(",");
+  // AbortController + cancel flag are belt-and-suspenders. If the user clicks
+  // portfolio A then quickly portfolio B, A's in-flight fetch could resolve
+  // AFTER B's and overwrite holdingPrices with A's data. The cancel flag stops
+  // the stale setState; the AbortController stops the underlying request.
+  const holdingCtxRef = useRef<{ ctrl: AbortController | null; cancelled: boolean }>({ ctrl: null, cancelled: false });
   useEffect(() => {
-    const validTickers = assets.filter(a => a.ticker && a.weight > 0).map(a => a.ticker);
-    // Always clear holdingPrices on assets change so the portfolioToday
-    // useMemo below doesn't briefly compute against the previous portfolio's
-    // ticker data. Without this, switching from a portfolio of [AAPL, MSFT]
-    // to [GOOGL, AMZN] would have the new useMemo iterate over the new
-    // tickers but find no matches in the stale holdingPrices, masking the
-    // race - except in the case where the two portfolios overlap on any
-    // ticker, where the overlapping ticker's stale change_pct could leak
-    // into the new portfolio's display until the fetch resolves.
+    holdingCtxRef.current.cancelled = false;
+    // Always clear holdingPrices on assets change so portfolioToday doesn't
+    // briefly compute against the previous portfolio's ticker data (overlapping
+    // tickers could otherwise leak stale change_pct until the fetch resolves).
     setHoldingPrices([]);
-    if (!validTickers.length) return;
-    // AbortController + cancel flag are belt-and-suspenders. If the user
-    // clicks portfolio A then quickly portfolio B, A's in-flight fetch
-    // could resolve AFTER B's fetch and overwrite holdingPrices with A's
-    // data (race condition). The cancel flag stops the stale setState; the
-    // AbortController stops the underlying request.
-    let cancelled = false;
+    return () => { holdingCtxRef.current.cancelled = true; holdingCtxRef.current.ctrl?.abort(); };
+  }, [holdingPollKey]);
+  const loadHoldings = useCallback(() => {
+    if (!validHoldingPollTickers.length) return;
+    holdingCtxRef.current.ctrl?.abort();
     const controller = new AbortController();
-    const load = async () => {
+    holdingCtxRef.current.ctrl = controller;
+    (async () => {
       try {
         const r = await fetch(
-          `${API_URL}/watchlist-data?tickers=${validTickers.join(",")}`,
+          `${API_URL}/watchlist-data?tickers=${holdingPollKey}`,
           { signal: controller.signal }
         );
         const d = await r.json();
-        if (cancelled) return;
+        if (holdingCtxRef.current.cancelled) return;
         setHoldingPrices((d.results || []).map((s: any) => ({
           ticker: s.ticker,
           price: s.price == null ? null : Number(s.price),
@@ -416,18 +432,11 @@ export default function GreetingBar({ displayName, assets, portfolioValue, value
           sparkline: Array.isArray(s.sparkline) ? s.sparkline.map(Number).filter((n: number) => Number.isFinite(n)) : [],
         })));
       } catch (e: any) {
-        // AbortError is expected during cleanup, not a real failure.
         if (e?.name === "AbortError") return;
       }
-    };
-    load();
-    const id = setInterval(load, 60000);
-    return () => {
-      cancelled = true;
-      controller.abort();
-      clearInterval(id);
-    };
-  }, [assets]);
+    })();
+  }, [validHoldingPollTickers.length, holdingPollKey]);
+  useVisibilityInterval(loadHoldings, 60000, [holdingPollKey, validHoldingPollTickers.length]);
 
   const portfolioToday = useMemo(() => {
     if (!holdingPrices.length) return null;
@@ -872,7 +881,7 @@ export default function GreetingBar({ displayName, assets, portfolioValue, value
                       i === 2 ? "rgba(201,168,76,0.5)" :
                       i === 3 ? "rgba(201,168,76,0.35)" :
                       "rgba(201,168,76,0.25)";
-                    return <HoldingRow key={row.ticker} label={row.ticker} pct={row.pct} price={row.price} dotColor={dotColor} />;
+                    return <HoldingRow key={`${row.ticker}-${i}`} label={row.ticker} pct={row.pct} price={row.price} dotColor={dotColor} />;
                   })}
                 </div>
               </div>

@@ -1,0 +1,19 @@
+# Pre-commit guardrails (SEC-C1). Install once with:
+#   pip install pre-commit && pre-commit install
+# Then every `git commit` runs these hooks locally before the commit lands,
+# catching secrets / private keys / oversized blobs before they ever reach
+# the repo (defense-in-depth alongside the gitleaks CI job).
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Block committing private keys (RSA/SSH/PGP blocks).
+      - id: detect-private-key
+      # Block accidentally committing large blobs (default >500 kB).
+      - id: check-added-large-files
+        args: ["--maxkb=500"]

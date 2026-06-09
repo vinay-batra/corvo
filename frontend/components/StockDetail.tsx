@@ -10,8 +10,9 @@ import { supabase } from "../lib/supabase";
 import { RESOLVED_API_URL } from "../lib/api";
 import { plotlyHoverlabel } from "../lib/theme";
 import { trackRecentlyViewed } from "../lib/recentlyViewed";
+import { useVisibilityInterval } from "../hooks/useVisibilityInterval";
 
-const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as any;
+const Plot = dynamic(() => import("./PlotBasic"), { ssr: false }) as any;
 
 const STORAGE_KEY = "corvo_watchlist";
 const API_URL = RESOLVED_API_URL;
@@ -377,14 +378,15 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
       .finally(() => setLoading(false));
   }, [ticker]);
 
-  // ── Live price poll every 10 s ──────────────────────────────────────────────
-  useEffect(() => {
-    if (!info) return;
-    const poll = async () => {
+  // ── Live price poll every 10 s (paused while the tab is backgrounded) ───────
+  const pollTicker = info?.ticker;
+  const pollLivePrice = useCallback(() => {
+    if (!pollTicker) return;
+    (async () => {
       try {
-        const resp = await fetch(`${API_URL}/prices?tickers=${info.ticker}`);
+        const resp = await fetch(`${API_URL}/prices?tickers=${pollTicker}`);
         const data = await resp.json();
-        const p: number = data[info.ticker]?.price;
+        const p: number = data[pollTicker]?.price;
         if (p && p > 0) {
           const prev = prevPriceRef.current;
           if (prev !== null && Math.abs(p - prev) > 0.001) {
@@ -397,14 +399,13 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
           setLivePrice(p);
         }
       } catch {}
-    };
-    poll();
-    const id = setInterval(poll, 10000);
-    return () => {
-      clearInterval(id);
-      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    };
-  }, [info?.ticker]);
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pollTicker]);
+  useVisibilityInterval(pollLivePrice, 10000, [pollTicker]);
+  useEffect(() => {
+    return () => { if (flashTimerRef.current) clearTimeout(flashTimerRef.current); };
+  }, []);
 
   // ── Chart history ───────────────────────────────────────────────────────────
   const loadHistory = useCallback(async (p: Period) => {

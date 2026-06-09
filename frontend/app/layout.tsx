@@ -61,6 +61,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('corvo_theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){}})();` }} />
         {/* Canonical set per-page via metadata.alternates.canonical - no global override here */}
         <meta name="theme-color" content="#c9a84c" />
+        {/* Fonts: one preconnected stylesheet instead of two render-blocking CSS
+            @imports (see globals.css). Collapses three serial network hops into
+            one and guarantees display=swap on all three families. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        />
       </head>
       <body style={{ margin: 0 }}>
         {/* Skip-to-content for keyboard users - styled via globals.css .skip-link */}

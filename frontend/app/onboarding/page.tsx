@@ -615,7 +615,7 @@ function OnboardingContent() {
       {/* Header */}
       <header style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0 }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
-          <img src="/corvo-logo.png?v=2" width={22} height={18} alt="Corvo" style={{ opacity: 0.85 }} />
+          <img src="/corvo-logo.png?v=2" width={22} height={18} alt="" aria-hidden="true" style={{ opacity: 0.85 }} />
           <span style={{ fontFamily: "Space Mono,monospace", fontSize: 13, fontWeight: 700, letterSpacing: 4, color: "var(--text)" }}>CORVO</span>
         </Link>
         <span style={{ fontSize: 11, color: "var(--text3)", letterSpacing: 0.5, fontFamily: "var(--font-mono)" }}>
@@ -639,6 +639,9 @@ function OnboardingContent() {
             boxShadow: "var(--shadow-md)",
           }}
         >
+          <h1 style={{ position: "absolute", left: -9999, width: 1, height: 1, overflow: "hidden" }}>
+            Corvo onboarding
+          </h1>
           <div style={{ fontSize: 10, letterSpacing: "0.15em", color: "var(--accent)", textTransform: "uppercase", marginBottom: 10, fontFamily: "var(--font-mono)" }}>
             Step {step + 1} of {TOTAL}
           </div>

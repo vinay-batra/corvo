@@ -2,10 +2,19 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+function safeNext(raw: string | null): string {
+  // Must be a relative path rooted at a single "/", and not "//" or "/\" which
+  // browsers treat as protocol-relative (open redirect). Reject everything else.
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) {
+    return "/app";
+  }
+  return raw;
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/app";
+  const next = safeNext(searchParams.get("next"));
 
   if (code) {
     const cookieStore = await cookies();

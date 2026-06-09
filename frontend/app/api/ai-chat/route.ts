@@ -12,12 +12,47 @@ const IP_LIMIT = 5;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const _store = new Map<string, number[]>();
 
+// Message validation bounds. Caps input-token cost per request and rejects
+// malformed shapes before they reach Anthropic.
+const MAX_MESSAGES = 30;
+const MAX_CHARS_PER_MSG = 8000;
+const MAX_TOTAL_CHARS = 40000;
+
+type ChatMsg = { role: "user" | "assistant"; content: string };
+
+function validateMessages(input: unknown): ChatMsg[] | null {
+  if (!Array.isArray(input) || input.length === 0 || input.length > MAX_MESSAGES) {
+    return null;
+  }
+  let total = 0;
+  const out: ChatMsg[] = [];
+  for (const m of input) {
+    if (typeof m !== "object" || m === null) return null;
+    const { role, content } = m as Record<string, unknown>;
+    if (role !== "user" && role !== "assistant") return null;
+    if (typeof content !== "string" || content.length === 0) return null;
+    if (content.length > MAX_CHARS_PER_MSG) return null;
+    total += content.length;
+    if (total > MAX_TOTAL_CHARS) return null;
+    out.push({ role, content });
+  }
+  return out;
+}
+
 function getIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-real-ip") ||
-    (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() ||
-    "unknown"
-  );
+  // On Vercel, x-vercel-forwarded-for is set by the edge to the real client IP
+  // and cannot be overridden by the client. Raw X-Forwarded-For is
+  // attacker-prependable from the LEFT, so if we must use it, take the
+  // RIGHTMOST entry (the value Vercel's own proxy appended), never the leftmost.
+  const vercel = req.headers.get("x-vercel-forwarded-for");
+  if (vercel) return vercel.split(",")[0].trim();
+
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) {
+    const parts = xff.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1]; // rightmost = proxy-appended
+  }
+  return "unknown";
 }
 
 function isRateLimited(ip: string): boolean {
@@ -66,7 +101,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { messages } = await req.json();
+    const parsed = await req.json().catch(() => null);
+    const messages = validateMessages(parsed?.messages);
+    if (!messages) {
+      return Response.json(
+        { content: "Your message could not be processed. Please try again." },
+        { status: 400 }
+      );
+    }
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) return Response.json({ content: "AI chat is not configured on this deployment." });
 
