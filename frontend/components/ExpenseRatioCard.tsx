@@ -3,6 +3,7 @@
 import { memo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { fetchExpenseRatio } from "../lib/api";
+import InfoModal from "./InfoModal";
 
 interface ExpenseHolding {
   ticker: string;
@@ -90,11 +91,21 @@ const ExpenseRatioCard = memo(function ExpenseRatioCard({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
         <div>
           {data && (
-            <div style={{ ...MONO, fontSize: 22, fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>
-              {data.weighted_expense_ratio.toFixed(3)}%
-              <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)", marginLeft: 6, fontFamily: "var(--font-body, sans-serif)" }}>
-                weighted expense ratio
-              </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ ...MONO, fontSize: 22, fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>
+                {data.weighted_expense_ratio.toFixed(3)}%
+                <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)", marginLeft: 6, fontFamily: "var(--font-body, sans-serif)" }}>
+                  weighted expense ratio
+                </span>
+              </div>
+              <InfoModal
+                title="Expense Ratio"
+                sections={[
+                  { label: "Plain English", text: "The annual fee charged by a fund as a percentage of assets. Deducted automatically from returns, not billed separately. Individual stocks have no expense ratio since there's no fund wrapper." },
+                  { label: "Example", text: "A 0.03% expense ratio on a $10,000 investment costs $3 per year. This card weights each holding's ratio by its portfolio share, so a fund you barely hold matters less than one that's most of your portfolio." },
+                  { label: "What's Good?", text: "Lower is better. Broad index ETFs typically charge 0.03-0.20%. Anything above 0.50% warrants scrutiny, especially if a cheaper fund tracks the same thing." },
+                ]}
+              />
             </div>
           )}
           {data && (
