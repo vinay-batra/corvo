@@ -64,6 +64,7 @@ const EarningsCalendar = dynamic(() => import("../../components/EarningsCalendar
 const EventsCalendar = dynamic(() => import("../../components/EventsCalendar"), { ssr: false });
 const TaxLossHarvester = dynamic(() => import("../../components/TaxLossHarvester"), { ssr: false });
 const CapitalGainsEstimator = dynamic(() => import("../../components/CapitalGainsEstimator"), { ssr: false });
+const ExpenseRatioCard = dynamic(() => import("../../components/ExpenseRatioCard"), { ssr: false });
 const ExportPDF = dynamic(() => import("../../components/ExportPDF"), { ssr: false });
 const SharePortfolio = dynamic(() => import("../../components/SharePortfolio"), { ssr: false });
 const ShareImageModal = dynamic(() => import("../../components/ShareImageModal"), { ssr: false });
@@ -3262,6 +3263,12 @@ const { dark, toggle: toggleDark }  = useTheme();
                   <PositionsTab
                     onSelectTicker={t => { setStockTicker(t); setTabWithDir("stocks"); }}
                   />
+                </DashReveal>
+
+                {/* ═══ FEES REGION ═══ */}
+                <SectionHeader eyebrow="Fees" title="What your funds cost you" />
+                <DashReveal from="up" delay={0.05}>
+                  <ExpenseRatioCard assets={assets} portfolioValue={portfolioInputValue} />
                 </DashReveal>
 
                 {/* ═══ TAX REGION ═══ */}

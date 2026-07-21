@@ -145,6 +145,18 @@ export async function fetchDividends(assets: any[], portfolioValue = 10000) {
   return res.json();
 }
 
+export async function fetchExpenseRatio(assets: any[], portfolioValue = 10000) {
+  const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
+  const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));
+  const tickers = normalized.map(a => a.ticker).join(",");
+  const weights = normalized.map(a => a.weight).join(",");
+  const res = await fetch(
+    `${RESOLVED_API_URL}/portfolio/expense-ratio?tickers=${tickers}&weights=${weights}&portfolio_value=${portfolioValue}`
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function fetchTaxLoss(assets: any[], portfolioValue = 10000) {
   const total = assets.reduce((sum, a) => sum + a.weight, 0) || 1;
   const normalized = assets.map(a => ({ ...a, weight: a.weight / total }));

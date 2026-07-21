@@ -1604,6 +1604,53 @@ def _lookup_ticker_sector(ticker: str) -> str:
     return sector
 
 
+def _resolve_expense_ratio_pct(info: dict) -> "float | None":
+    """Resolve a fund's expense ratio as a percent (0.03 == 0.03%/yr) from a
+    yfinance .info dict. yfinance surfaces this two different ways depending
+    on the current API version and fund type: `netExpenseRatio` (current-gen
+    field, used for ETFs) is ALREADY a percent; the older
+    `annualReportExpenseRatio` / `expenseRatio` fields (mutual funds) are
+    decimal fractions and need *100. Checking only the old fields (as this
+    endpoint originally did) silently returns nothing for ETFs - the
+    dominant fund type in most portfolios - since yfinance stopped
+    populating them for ETFs. Returns None for individual stocks."""
+    net_er = info.get("netExpenseRatio")
+    if net_er is not None:
+        return round(safe_float(net_er), 4)
+    er_raw = info.get("annualReportExpenseRatio") or info.get("expenseRatio")
+    return round(safe_float(er_raw) * 100, 4) if er_raw is not None else None
+
+
+# Per-ticker expense-ratio cache, keyed by ticker (uppercase). 1-hour TTL,
+# same shape as _ticker_sector_cache. Value is None for individual stocks
+# (no fund wrapper) so callers can distinguish "0% fee" from "not a fund."
+_ticker_expense_ratio_cache: "OrderedDict[str, tuple[float | None, float]]" = OrderedDict()
+_TICKER_EXPENSE_RATIO_CACHE_MAX = 2000
+_TICKER_EXPENSE_RATIO_TTL = 3600
+
+
+def _lookup_ticker_expense_ratio(ticker: str) -> "float | None":
+    """Resolve a ticker's expense ratio as a percent (0.03 == 0.03%/yr).
+    Cached per-ticker for 1 hour. Returns None for tickers with no fund
+    expense ratio (individual stocks, or a lookup failure)."""
+    t = ticker.upper()
+    with _caches_lock:
+        cached = _ticker_expense_ratio_cache.get(t)
+    if cached:
+        er, ts = cached
+        if time.time() - ts < _TICKER_EXPENSE_RATIO_TTL:
+            return er
+    try:
+        info = yf.Ticker(t).info or {}
+        er = _resolve_expense_ratio_pct(info)
+    except Exception:
+        er = None
+    with _caches_lock:
+        _ticker_expense_ratio_cache[t] = (er, time.time())
+        _cap_dict(_ticker_expense_ratio_cache, _TICKER_EXPENSE_RATIO_CACHE_MAX)
+    return er
+
+
 # Per-ticker company-name cache, 24h TTL. Names are static, so the 60s-polled
 # /watchlist-data hot path resolves them from memory instead of calling the slow
 # t.info every poll (info is by far the slowest of the per-ticker yf calls).
@@ -1814,6 +1861,80 @@ def portfolio_dividends(
     with _caches_lock:
         _dividends_cache[cache_key] = (result, time.time())
         _cap_dict(_dividends_cache, _DIVIDENDS_CACHE_MAX)
+    return result
+
+
+_expense_ratio_cache: "OrderedDict[str, tuple[dict, float]]" = OrderedDict()
+_EXPENSE_RATIO_CACHE_MAX = 1000
+
+@app.get("/portfolio/expense-ratio")
+def portfolio_expense_ratio(
+    tickers: str = "AAPL",
+    weights: str = "",
+    portfolio_value: float = 10000.0,
+    request: Request = None,
+):
+    """Weighted-average annual fund expense ratio across the portfolio, plus the
+    estimated dollar cost per year. Individual stocks contribute 0% (no fund
+    wrapper), so the blended figure reflects the whole portfolio, not just the
+    fund-holding sleeve."""
+    if request is not None and check_rate_limit(_client_ip(request), "expense-ratio", 20, 3600):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in an hour.")
+
+    cache_key = f"{tickers.upper()}|{weights}|{portfolio_value}"
+    with _caches_lock:
+        if cache_key in _expense_ratio_cache:
+            cached_result, cached_ts = _expense_ratio_cache[cache_key]
+            if time.time() - cached_ts < 3600:
+                return cached_result
+
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {"holdings": [], "weighted_expense_ratio": 0.0, "annual_cost": 0.0, "fund_weight": 0.0}
+
+    weight_list: list[float] = []
+    if weights:
+        try:
+            weight_list = [float(w) for w in weights.split(",")]
+        except ValueError:
+            weight_list = []
+    if len(weight_list) != len(ticker_list):
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+    total = sum(weight_list)
+    if total <= 0:
+        weight_list = [1.0 / len(ticker_list)] * len(ticker_list)
+        total = 1.0
+    normalized_weights = [w / total for w in weight_list]
+
+    holdings = []
+    weighted_sum = 0.0
+    fund_weight = 0.0
+    for ticker, weight in zip(ticker_list, normalized_weights):
+        er = _lookup_ticker_expense_ratio(ticker)
+        alloc_value = portfolio_value * weight
+        annual_cost = round(alloc_value * er / 100, 2) if er is not None else 0.0
+        if er is not None:
+            weighted_sum += er * weight
+            fund_weight += weight
+        holdings.append({
+            "ticker": ticker,
+            "weight": round(weight, 4),
+            "expense_ratio": er,
+            "annual_cost": annual_cost,
+        })
+
+    weighted_expense_ratio = round(weighted_sum, 4)
+    total_annual_cost = round(sum(h["annual_cost"] for h in holdings), 2)
+
+    result = {
+        "holdings": holdings,
+        "weighted_expense_ratio": weighted_expense_ratio,
+        "annual_cost": total_annual_cost,
+        "fund_weight": round(fund_weight, 4),
+    }
+    with _caches_lock:
+        _expense_ratio_cache[cache_key] = (result, time.time())
+        _cap_dict(_expense_ratio_cache, _EXPENSE_RATIO_CACHE_MAX)
     return result
 
 
@@ -3903,9 +4024,11 @@ def _email_html(
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
             {label_row}
             <tr><td style="padding-bottom:16px;font-family:{sans};font-size:20px;font-weight:700;color:{text};line-height:1.3;">{heading}</td></tr>
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-              {body_rows}
-            </table>
+            <tr><td>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                {body_rows}
+              </table>
+            </td></tr>
             <tr><td style="padding-top:22px;">
               <table cellpadding="0" cellspacing="0" border="0">
                 <tr><td align="center" style="border-radius:8px;background-color:{amber};">
@@ -4247,8 +4370,7 @@ def stock_detail(ticker: str, request: Request):
                 except Exception:
                     pass
 
-        er_raw = info.get("annualReportExpenseRatio") or info.get("expenseRatio")
-        er_pct = _round(safe_float(er_raw) * 100, 4) if er_raw is not None else None
+        er_pct = _resolve_expense_ratio_pct(info)
 
         return {
             "ticker": ticker,
