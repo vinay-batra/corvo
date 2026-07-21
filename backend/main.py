@@ -132,14 +132,25 @@ _caches_lock = threading.RLock()
 # explicitly in _is_public_ip below.
 _CGNAT_V4 = ipaddress.ip_network("100.64.0.0/10")
 
+# RFC 5737 documentation ranges. Not routable, so never a real client IP.
+# Listed explicitly for the same reason as CGNAT above: CPython only folded
+# these into is_private in 3.11.10 / 3.12.5 (gh-113171), so relying on the
+# stdlib classification makes behavior depend on the interpreter patch level.
+_DOC_V4 = (
+    ipaddress.ip_network("192.0.2.0/24"),
+    ipaddress.ip_network("198.51.100.0/24"),
+    ipaddress.ip_network("203.0.113.0/24"),
+)
+
 
 def _is_public_ip(ip_str: str) -> bool:
     """True only for a globally-routable client IP.
 
     Excludes every non-public class (private, loopback, link-local,
-    reserved, multicast, unspecified) PLUS the CGNAT range explicitly,
-    because is_global / is_private coverage of 100.64.0.0/10 varies across
-    Python versions and Railway's internal hops sit in that range.
+    reserved, multicast, unspecified) PLUS the CGNAT and RFC 5737
+    documentation ranges explicitly, because is_global / is_private coverage
+    of those varies across Python versions and Railway's internal hops sit in
+    the CGNAT range.
     """
     try:
         ip = ipaddress.ip_address(ip_str)
@@ -148,7 +159,7 @@ def _is_public_ip(ip_str: str) -> bool:
     if (ip.is_private or ip.is_loopback or ip.is_link_local
             or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
         return False
-    if ip.version == 4 and ip in _CGNAT_V4:
+    if ip.version == 4 and (ip in _CGNAT_V4 or any(ip in net for net in _DOC_V4)):
         return False
     return True
 
