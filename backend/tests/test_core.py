@@ -36,6 +36,13 @@ class _Req:
     ("::1", False),               # ipv6 loopback
     ("2606:4700:4700::1111", True),
     ("not-an-ip", False),
+    # RFC 5737 documentation ranges are NOT routable, so they are not valid
+    # client IPs. CPython folded these into is_private in 3.11.10 / 3.12.5
+    # (gh-113171); pinning these expectations keeps the intent explicit so
+    # nobody "fixes" a future failure by loosening _is_public_ip.
+    ("203.0.113.7", False),       # TEST-NET-3
+    ("192.0.2.1", False),         # TEST-NET-1
+    ("198.51.100.1", False),      # TEST-NET-2
 ])
 def test_is_public_ip(ip, expected):
     assert main._is_public_ip(ip) is expected
@@ -43,14 +50,16 @@ def test_is_public_ip(ip, expected):
 
 def test_client_ip_picks_real_client_through_cgnat_hops():
     # Railway appends internal CGNAT hops to the RIGHT of the true client IP.
-    req = _Req({"X-Forwarded-For": "203.0.113.7, 100.64.0.1, 100.64.0.9"})
-    assert main._client_ip(req) == "203.0.113.7"
+    # The client IP must be genuinely routable - documentation ranges
+    # (203.0.113.0/24 etc) are correctly rejected by _is_public_ip.
+    req = _Req({"X-Forwarded-For": "93.184.216.34, 100.64.0.1, 100.64.0.9"})
+    assert main._client_ip(req) == "93.184.216.34"
 
 
 def test_client_ip_ignores_left_spoof():
     # A client-injected spoof sits to the LEFT and must be skipped.
-    req = _Req({"X-Forwarded-For": "1.2.3.4, 203.0.113.7, 100.64.0.1"})
-    assert main._client_ip(req) == "203.0.113.7"
+    req = _Req({"X-Forwarded-For": "1.2.3.4, 93.184.216.34, 100.64.0.1"})
+    assert main._client_ip(req) == "93.184.216.34"
 
 
 def test_client_ip_all_private_falls_back_deterministically():
