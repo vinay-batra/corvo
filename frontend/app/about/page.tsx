@@ -109,22 +109,12 @@ export default function AboutPage() {
       <div className="ab-body" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 56px 120px", textAlign: "left" }}>
         <ScrollReveal from="left" delay={0}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
-            There are tens of millions of self-directed investors managing real portfolios across brokerage accounts, IRAs, and retirement savings. They are not day traders. They are not institutions. They are people who take their own money seriously and deserve tools that match.
-          </p>
-        </ScrollReveal>
-        <ScrollReveal from="up" delay={0.1}>
-          <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
-            The market has not served them well. Professional platforms cost thousands of dollars a year. Brokerage-built tools are intentionally limited. Free alternatives are stuck in 2012. The result is a massive gap: investors with real portfolios making decisions without real analytics.
+            Tens of millions of people manage their own portfolios across brokerage accounts, IRAs, and retirement savings, yet the tools built for them stop at showing numbers. Corvo goes further: point it at your holdings and it runs the analysis a professional would (Sharpe, drawdown, VaR, Monte Carlo, sector and concentration risk, a portfolio health score) and then explains, in plain language, what each figure means for your money and what to actually do about it. An AI advisor answers questions about your positions, a morning brief tells you what moved and why, and risk, tax, dividend, and fee breakdowns sit one click away.
           </p>
         </ScrollReveal>
         <ScrollReveal from="right" delay={0.1}>
-          <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300, marginBottom: 28 }}>
-            Corvo started from that frustration. I have been managing my own investments since I was 11, and I could never find a tool that actually explained what my portfolio was doing and why it mattered. So I built one. The goal from the start was to bring professional-grade portfolio intelligence to the investors who have always been left out: real AI analysis, honest risk metrics, and an interface that respects your time.
-          </p>
-        </ScrollReveal>
-        <ScrollReveal from="left" delay={0.1}>
           <p style={{ fontSize: 16, color: "var(--text)", lineHeight: 1.9, fontWeight: 300 }}>
-            Corvo is a commercial product built to grow. The free tier covers the core analytics that most investors need. A Pro tier with live data, backtesting, and brokerage integrations is in active development. The long-term mission is straightforward: close the gap between what self-directed investors deserve and what they have actually had access to.
+            I have managed my own investments since I was 11 and could never find a tool that explained what my portfolio was doing and why it mattered, so I built one. Corvo is a commercial product built to grow: the free tier covers the core analytics most investors need, and a Pro tier with live data, backtesting, and brokerage integrations is in active development. The mission is simple: close the gap between the analytics self-directed investors deserve and what they have actually been able to get.
           </p>
         </ScrollReveal>
       </div>

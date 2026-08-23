@@ -40,16 +40,6 @@ function Ring({ score, size = 115 }: { score: number; size?: number }) {
             initial={false} animate={{ strokeDashoffset: offset }}
             transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }}
           />
-          {/* Trailing glow dot at arc tip */}
-          <motion.circle
-            cx={size / 2} cy={6}
-            r={4} fill={ringColor}
-            // initial={false} required - do not remove
-            initial={false}
-            animate={{ opacity: [0, 1, 0.6], scale: [0.5, 1.2, 1] }}
-            transition={{ delay: 0.9, duration: 0.5 }}
-            style={{ filter: `blur(1px) drop-shadow(0 0 4px ${ringColor})`, transformOrigin: `${size/2}px ${size/2}px`, transform: `rotate(${(score / 100) * 360 - 90}deg) translateY(${-(r)}px)` }}
-          />
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <motion.p

@@ -55,7 +55,6 @@ const StockDetail = dynamic(() => import("../../components/StockDetail"), { ssr:
 const StockCompare = dynamic(() => import("../../components/StockCompare"), { ssr: false });
 const MonteCarloChart = dynamic(() => import("../../components/MonteCarloChart"), { ssr: false });
 const RetirementSimulator = dynamic(() => import("../../components/RetirementSimulator"), { ssr: false });
-const CorrelationHeatmap = dynamic(() => import("../../components/CorrelationHeatmap"), { ssr: false });
 const DrawdownChart = dynamic(() => import("../../components/DrawdownChart"), { ssr: false });
 const PositionsTab = dynamic(() => import("../../components/PositionsTab"), { ssr: false });
 const TransactionsTab = dynamic(() => import("../../components/TransactionsTab"), { ssr: false });
@@ -2454,12 +2453,17 @@ const { dark, toggle: toggleDark }  = useTheme();
   // only need a token that changes when the user-saved list mutates.
   const isPortfolioSaved = useMemo(() => {
     if (!assets.length) return false;
+    // A loaded Supabase saved portfolio (logged-in users) sets savedPortfolioId
+    // synchronously on load; those rows never touch the localStorage list below,
+    // so without this check the "Save this analysis" card wrongly showed on an
+    // already-saved account (e.g. the user's Roth).
+    if (savedPortfolioId) return true;
     try {
       const saved = JSON.parse(localStorage.getItem("corvo_saved_portfolios") || "[]");
       const currentTickers = assets.map(a => a.ticker).sort().join(",");
       return saved.some((p: any) => (p.tickers || p.assets?.map((a: any) => a.ticker) || []).sort().join(",") === currentTickers);
     } catch { return false; }
-  }, [assets, savedPortfolioRefreshTick]);
+  }, [assets, savedPortfolioRefreshTick, savedPortfolioId]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
@@ -3881,16 +3885,6 @@ const { dark, toggle: toggleDark }  = useTheme();
                       { label: "What's Good", text: "A max drawdown under 20% is generally considered well-managed. Above 40% means the portfolio experienced severe stress. Compare your drawdown to SPY to understand if you are taking more or less risk than the market." },
                     ]} />
                     <DrawdownChart assets={assets} period={period} />
-                  </Card>
-                </DashReveal>
-                <DashReveal from="right" delay={0.15}>
-                  <Card key="correlation-card" style={{ marginTop: 16 }}>
-                    <TooltipCardHeader title="Correlation Heatmap" sections={[
-                      { label: "Plain English", text: "Shows how closely each pair of holdings moves together. A value of +1.0 means they move in perfect sync. A value of -1.0 means they move in opposite directions." },
-                      { label: "Why it matters", text: "High correlation (above 0.7) between two holdings means they provide little diversification benefit. If one falls, the other likely falls too." },
-                      { label: "What's Good", text: "A well-diversified portfolio has many pairs below 0.5. Holdings near 0 or negative are natural hedges for each other." },
-                    ]} />
-                    <CorrelationHeatmap assets={assets} period={period} />
                   </Card>
                 </DashReveal>
               </motion.div>

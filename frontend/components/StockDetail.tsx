@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
-import { Eye, EyeOff, TrendingUp, CandlestickChart as CandleIcon } from "lucide-react";
+import { TrendingUp, CandlestickChart as CandleIcon } from "lucide-react";
 import InfoModal from "./InfoModal";
 import InsiderActivity from "./InsiderActivity";
 import { supabase } from "../lib/supabase";
@@ -14,7 +14,6 @@ import { useVisibilityInterval } from "../hooks/useVisibilityInterval";
 
 const Plot = dynamic(() => import("./PlotBasic"), { ssr: false }) as any;
 
-const STORAGE_KEY = "corvo_watchlist";
 const API_URL = RESOLVED_API_URL;
 const AMBER = "#b8860b";
 const GREEN = "#4caf7d";
@@ -269,9 +268,6 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
   const [histLoading, setHistLoading] = useState(false);
   const [showHistSpinner, setShowHistSpinner] = useState(false);
   const [activeTab, setActiveTab]     = useState<"overview" | "insider">("overview");
-  const [inWatchlist, setInWatchlist] = useState(false);
-  const [watchUserId, setWatchUserId] = useState<string | null>(null);
-  const [watchDefaultListId, setWatchDefaultListId] = useState<string | null>(null);
   const [livePrice, setLivePrice]     = useState<number | null>(null);
   const [priceFlash, setPriceFlash]   = useState<"up" | "down" | null>(null);
   const [analystConsensus, setAnalystConsensus] = useState<AnalystConsensus | null>(null);
@@ -290,71 +286,6 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
     return () => obs.disconnect();
   }, []);
   const accentColor = dark ? AMBER : "#b8860b";
-
-  // ── Watchlist ───────────────────────────────────────────────────────────────
-  // Resolve user once on mount
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      const uid = data?.user?.id ?? null;
-      setWatchUserId(uid);
-      if (uid) {
-        const { data: lists } = await supabase
-          .from("watchlist_lists")
-          .select("id")
-          .eq("user_id", uid)
-          .order("created_at", { ascending: true })
-          .limit(1);
-        if (lists?.length) setWatchDefaultListId(lists[0].id);
-      }
-    })();
-  }, []);
-
-  // Check watchlist status whenever ticker or user changes
-  useEffect(() => {
-    if (!ticker) return;
-    (async () => {
-      if (watchUserId) {
-        const { data } = await supabase
-          .from("watchlist_items")
-          .select("ticker")
-          .eq("user_id", watchUserId)
-          .eq("ticker", ticker);
-        setInWatchlist((data ?? []).length > 0);
-      } else {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          const items: { ticker: string }[] = raw ? JSON.parse(raw) : [];
-          setInWatchlist(items.some(i => i.ticker === ticker));
-        } catch {}
-      }
-    })();
-  }, [ticker, watchUserId]);
-
-  const toggleWatchlist = async () => {
-    if (watchUserId) {
-      if (inWatchlist) {
-        await supabase.from("watchlist_items").delete().eq("user_id", watchUserId).eq("ticker", ticker);
-        setInWatchlist(false);
-      } else {
-        const listId = watchDefaultListId;
-        if (!listId) return;
-        await supabase.from("watchlist_items").insert({ user_id: watchUserId, list_id: listId, ticker, added_at: new Date().toISOString() });
-        setInWatchlist(true);
-      }
-    } else {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        const items: { ticker: string; addedAt: string }[] = raw ? JSON.parse(raw) : [];
-        const next = inWatchlist
-          ? items.filter(i => i.ticker !== ticker)
-          : [...items, { ticker, addedAt: new Date().toISOString() }];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-        setInWatchlist(v => !v);
-      } catch { return; }
-    }
-    window.dispatchEvent(new CustomEvent("corvo:watchlist-updated"));
-  };
 
   // ── Track view in recently-viewed history ──────────────────────────────────
   // Fires immediately on ticker change so the entry exists even if the user
@@ -643,11 +574,6 @@ export default function StockDetail({ ticker, onBack, onSelectTicker }: {
           <button onClick={onBack}
             style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: "0.5px solid var(--border)", background: "transparent", color: "var(--text3)", cursor: "pointer" }}>
             ← Back
-          </button>
-          <button onClick={toggleWatchlist}
-            style={{ padding: "4px 10px", fontSize: 11, borderRadius: 6, border: `0.5px solid ${inWatchlist ? accentColor : "var(--border)"}`, background: inWatchlist ? "rgba(184,134,11,0.1)" : "transparent", color: inWatchlist ? accentColor : "var(--text3)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s" }}>
-            {inWatchlist ? <EyeOff size={11} /> : <Eye size={11} />}
-            {inWatchlist ? "Watching" : "Watch"}
           </button>
         </div>
 

@@ -1148,7 +1148,7 @@ export default function AiChat({
                 onMouseLeave={e => { e.currentTarget.style.background = "rgba(224,92,92,0.07)"; }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e05c5c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Roast my portfolio - no filters
+                Roast my portfolio
               </button>
 
               {/* Suggestions: 2x2 grid */}
