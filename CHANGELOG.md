@@ -4,6 +4,30 @@ All notable changes to Corvo are documented here.
 
 ---
 
+## v0.59 - August 23, 2026 - expense ratios, CI fixes, and a live bug-hunt session
+
+### Added
+- **Expense ratio tracking.** New `GET /portfolio/expense-ratio` endpoint and a Fees card on the Positions tab showing your portfolio's weighted expense ratio and estimated annual cost in dollars, with a plain-English tooltip explainer matching the existing per-stock pattern.
+
+### Fixed
+- **Analyst rating showed N/A on every stock.** A transient upstream data-provider rate-limit could silently blank out analyst ratings for every stock (not just ETFs, which never had coverage to begin with) with no automatic recovery. Added automatic retries to the two calls that fetch this data, matching the retry protection already used for price data. Verified live across several tickers.
+- **"Continue in AI chat" was contradicting its own recommendations.** Clicking through from the "What should I do today?" card into the AI chat could produce a response arguing against the very recommendations it was supposed to be explaining further. The chat now recognizes when it's continuing its own prior advice and builds on it instead of re-litigating it, correcting only genuine factual errors.
+- **Vercel Toolbar kept reappearing** even after being dismissed. Removed it from the site permanently.
+- **"Save this analysis" card showed up on portfolios that were already saved.** Fixed the detection logic to also check the server-confirmed saved state, not just a local cache.
+- **Health Score ring's small indicator dot was misaligned**, sometimes appearing well ahead of or behind the actual score. Removed the decorative dot; the score arc itself is unaffected.
+- **Broken Correlation Heatmap removed** from the Simulations tab.
+- **Removed a dead "Watch" button** on stock detail pages left over from a previously-removed watchlist feature.
+- **Expense ratio was blank for every ETF** on the stock detail page, a silent break caused by an upstream data-provider field rename. Fixed with a shared resolver that checks both the old and new field names.
+- **Broken email layout** in price alert, price target, and briefing/digest emails - a malformed table structure was causing every email client to render the body outside its styled card.
+- **Backend CI had been red for weeks.** Two independent causes: a working-directory/import-path mismatch between how CI invokes `pytest` and local testing, and two unit tests that broke when a newer Python patch version reclassified certain reserved IP ranges. Both fixed; CI is green again with no change to production behavior.
+
+### Changed
+- Rewrote the About page from four paragraphs of market-framing copy down to two paragraphs describing what Corvo actually does.
+- Shortened the "Roast My Portfolio - No filters" button label to "Roast my portfolio."
+- AI roast-mode responses now render as a few short paragraphs instead of one dense block of text - formatting only, same length and content.
+
+---
+
 ## v0.58 - June 9, 2026 - security, reliability and performance hardening
 
 A full multi-domain audit (security, correctness, performance, data, infrastructure) followed by a remediation pass that was deployed and verified live against production.
